@@ -4,6 +4,17 @@ Verify embedded Windows PE Authenticode signatures on macOS and Linux with a
 Rust CLI. PE hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
+This project is **vibe coded** with AI assistance and developed through local
+fixtures and JSON testcases. It is inspired by
+[jsign](https://github.com/ebourg/jsign) and
+[relic](https://github.com/sassoftware/relic), whose source code serves as a
+reference for PE Authenticode hashing, signatures, and verification behavior.
+[osslsigncode](https://github.com/mtrojnar/osslsigncode) and
+[rcodesign](https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign)
+also inform the project's design discussions. These projects are not runtime
+dependencies, and this attribution does not imply their endorsement or verified
+compatibility.
+
 ```sh
 cargo build --release --locked
 
