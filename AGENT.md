@@ -108,6 +108,11 @@ manifest. Add independent jsign/relic-produced or publicly redistributable
 fixtures with source/version/license information when extending interoperability.
 The existing synthetic corpus alone is not evidence of full interoperability.
 
+Windows-oracle integration is deferred. The current development loop runs the
+committed fixtures and JSON expectations locally; it requires no Windows
+environment or external verifier. Passing these expectations must not be
+described as Windows compatibility validation.
+
 ## Current boundaries
 
 Embedded PE32/PE32+ signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),

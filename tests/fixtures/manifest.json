@@ -18,6 +18,12 @@
       "description": "Correctly signed CA certificate with KeyUsage missing keyCertSign."
     },
     {
+      "file": "bad-certificate-payload.exe",
+      "sha256": "9a3c02b500424de6fbc6f332e9e08dd0373868763a1bb2784534c034d2ddadc9",
+      "bytes": 2176,
+      "description": "Nonzero byte inside WIN_CERTIFICATE after the complete CMS DER object; reject as certificate-table payload error."
+    },
+    {
       "file": "bad-cms-signature.exe",
       "sha256": "0a9f986d663b9469da056642678bc863ee182649ed8f205300d3f9582db18586",
       "bytes": 2176,
@@ -160,6 +166,18 @@
       "sha256": "6ec4f605a911749e36210e9bf86f5f08f096ea43334ea5ddf711af13cc361917",
       "bytes": 1024,
       "description": "Synthetic PE32+ with no embedded signature."
+    },
+    {
+      "file": "unsupported-digest-algorithm.exe",
+      "sha256": "527cd7bffb1233c6e331f536ecb29970dca8f019cf61a4bc135e54c5287c2608",
+      "bytes": 2176,
+      "description": "SignerInfo declares unknown digest OID 2.16.840.1.101.3.4.2.127; report unsupported algorithm."
+    },
+    {
+      "file": "unsupported-signature-algorithm.exe",
+      "sha256": "61f5b5498e329134d2b795fef9ef6db9326cdb5e45c5af10ecf01924f4da420a",
+      "bytes": 2176,
+      "description": "SignerInfo declares unknown ECDSA signature OID 1.2.840.10045.4.3.127; reject before claiming mathematical invalidity."
     }
   ]
 }

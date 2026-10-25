@@ -1,5 +1,6 @@
 //! RustCrypto implementations used by both CMS and webpki path/CRL validation.
-use anyhow::{Result, bail};
+use crate::domain::{ErrorCode, Stage, VerificationError, hex};
+use anyhow::Result;
 use rsa::pkcs8::DecodePublicKey;
 use rustls_pki_types::{AlgorithmIdentifier, InvalidSignature, SignatureVerificationAlgorithm};
 use sha2::Digest;
@@ -19,7 +20,7 @@ impl Hash {
             [0x60, 0x86, 0x48, 1, 0x65, 3, 4, 2, 1] => Ok(Self::Sha256),
             [0x60, 0x86, 0x48, 1, 0x65, 3, 4, 2, 2] => Ok(Self::Sha384),
             [0x60, 0x86, 0x48, 1, 0x65, 3, 4, 2, 3] => Ok(Self::Sha512),
-            _ => bail!("unsupported digest OID"),
+            _ => Err(unsupported_algorithm(oid, "unsupported digest OID").into()),
         }
     }
     pub fn digest(self, bytes: &[u8]) -> Vec<u8> {
@@ -49,16 +50,25 @@ pub(crate) fn verify_spki(
             Hash::Sha384 => 12,
             Hash::Sha512 => 13,
         };
-        anyhow::ensure!(
-            algorithm.len() == 9 && (suffix == 1 || suffix == expected),
-            "unsupported or inconsistent RSA signature algorithm"
-        );
+        if algorithm.len() != 9 || (suffix != 1 && suffix != expected) {
+            return Err(unsupported_algorithm(
+                algorithm,
+                "unsupported or inconsistent RSA signature algorithm",
+            )
+            .into());
+        }
         let key = rsa::RsaPublicKey::from_public_key_der(spki)?;
         use rsa::traits::PublicKeyParts;
-        anyhow::ensure!(
-            key.n().bits() >= 2048,
-            "RSA keys shorter than 2048 bits are rejected"
-        );
+        if key.n().bits() < 2048 {
+            return Err(VerificationError::new(
+                ErrorCode::WeakAlgorithm,
+                Stage::Cms,
+                "RSA keys shorter than 2048 bits are rejected",
+            )
+            .detail("key_bits", key.n().bits())
+            .detail("minimum_key_bits", 2048)
+            .into());
+        }
         let sig = rsa::pkcs1v15::Signature::try_from(sig)?;
         match hash {
             Hash::Sha1 => rsa::pkcs1v15::VerifyingKey::<sha1::Sha1>::new(key).verify(msg, &sig)?,
@@ -79,9 +89,20 @@ pub(crate) fn verify_spki(
         p384::ecdsa::VerifyingKey::from_public_key_der(spki)?
             .verify(msg, &p384::ecdsa::Signature::from_der(sig)?)?;
     } else {
-        bail!("unsupported signature algorithm");
+        return Err(unsupported_algorithm(algorithm, "unsupported signature algorithm").into());
     }
     Ok(())
+}
+
+fn unsupported_algorithm(oid: &[u8], message: &str) -> VerificationError {
+    VerificationError::new(ErrorCode::UnsupportedAlgorithm, Stage::Cms, message)
+        .detail(
+            "oid",
+            ::der::asn1::ObjectIdentifier::from_bytes(oid)
+                .ok()
+                .map(|o| o.to_string()),
+        )
+        .detail("oid_value_hex", hex(oid))
 }
 
 #[derive(Debug)]

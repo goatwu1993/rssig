@@ -954,6 +954,85 @@
           ]
         }
       }
+    },
+    {
+      "id": "unsupported-signature",
+      "input": "unsupported-signature-algorithm.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "unsupported_algorithm",
+                "stage": "cms",
+                "details": {
+                  "oid": "1.2.840.10045.4.3.127"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "unsupported-digest",
+      "input": "unsupported-digest-algorithm.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "unsupported_algorithm",
+                "stage": "cms",
+                "details": {
+                  "oid": "2.16.840.1.101.3.4.2.127"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "certificate-payload",
+      "input": "bad-certificate-payload.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_certificate_table",
+                "stage": "certificate_table",
+                "details": {}
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

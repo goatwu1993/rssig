@@ -41,10 +41,15 @@ fn verify_inner(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verificatio
         // after one complete DER object, never arbitrary unsigned payloads.
         let mut rest = certificate;
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
-        ensure!(
-            rest.iter().all(|b| *b == 0),
-            "nonzero trailing data in WIN_CERTIFICATE"
-        );
+        if !rest.iter().all(|b| *b == 0) {
+            return Err(VerificationError::new(
+                ErrorCode::InvalidCertificateTable,
+                Stage::CertificateTable,
+                "nonzero trailing data in WIN_CERTIFICATE",
+            )
+            .detail("trailing_bytes", rest.len())
+            .into());
+        }
         verify_signature(node.full, &pe, options, 0, &mut reports)?;
     }
     Ok(VerificationBundle {

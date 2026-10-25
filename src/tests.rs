@@ -639,6 +639,30 @@ fn regenerate_cli_fixtures() {
     std::fs::create_dir_all(&dir).unwrap();
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let good = make_pe(true, false, false);
+    let mutate_oid = |needle: &[u8]| {
+        let mut bytes = good.clone();
+        let at = bytes
+            .windows(needle.len())
+            .rposition(|w| w == needle)
+            .unwrap();
+        bytes[at + needle.len() - 1] = 127;
+        bytes
+    };
+    write(
+        "unsupported-signature-algorithm.exe",
+        &mutate_oid(&[6, 8, 42, 134, 72, 206, 61, 4, 3, 2]),
+    );
+    write(
+        "unsupported-digest-algorithm.exe",
+        &mutate_oid(&[6, 9, 96, 134, 72, 1, 101, 3, 4, 2, 1]),
+    );
+    let length = u32::from_le_bytes(good[1024..1028].try_into().unwrap()) as usize;
+    let mut payload = good[1032..1024 + length].to_vec();
+    payload.push(1);
+    write(
+        "bad-certificate-payload.exe",
+        &attach(base_pe(true), &payload, true),
+    );
     write("good-pe32.exe", &make_pe(false, false, false));
     write("good-pe64.exe", &good);
     write("good-intermediate.exe", &intermediate_pe(false));
