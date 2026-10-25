@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "kind": "synthetic",
+    "generator": "src/tests.rs::regenerate_cli_fixtures",
+    "command": "cargo test --locked regenerate_cli_fixtures -- --ignored",
+    "crypto": "RustCrypto P-256 deterministic test keys and signatures; no OpenSSL or external signing command",
+    "license": "Apache-2.0 (repository-generated artifacts)",
+    "validation_time": 1800000000,
+    "warning": "Synthetic PE containers for parsing and cryptographic tests only. Never execute these artifacts. Keys are public test constants.",
+    "interop_status": "Not independently produced by jsign/relic; external interoperability coverage is still needed."
+  },
+  "artifacts": [
+    {
+      "file": "bad-ca-key-usage.exe",
+      "sha256": "161b1a7eed95dc39e80501bde57e2880c7f2176b0d12a27f489c21ab99927a5b",
+      "bytes": 2224,
+      "description": "Correctly signed CA certificate with KeyUsage missing keyCertSign."
+    },
+    {
+      "file": "bad-cms-signature.exe",
+      "sha256": "0a9f986d663b9469da056642678bc863ee182649ed8f205300d3f9582db18586",
+      "bytes": 2176,
+      "description": "One signature byte changed without changing the signed PE image."
+    },
+    {
+      "file": "bad-future-timestamp.exe",
+      "sha256": "572371bc582af56c3b88694834001ca704ab6196aa1896f11a4634c27e194682",
+      "bytes": 3760,
+      "description": "Timestamp after the pinned validation time."
+    },
+    {
+      "file": "bad-image-digest.exe",
+      "sha256": "016ec31e0871181cbfd002efb95f73b75274767bc9ab5f8cc6f887900404f9bb",
+      "bytes": 2176,
+      "description": "One byte changed in the signed section at file offset 700."
+    },
+    {
+      "file": "bad-page-hashes.exe",
+      "sha256": "6c9d3dd0935c5cae73b671f574e52495e7b2f8f54ad69dcf964747a8e9826213",
+      "bytes": 2296,
+      "description": "Valid CMS signature over deliberately incorrect page hashes."
+    },
+    {
+      "file": "bad-timestamp-eku.exe",
+      "sha256": "a0f1327264f2bf6eeb96bfb97bcee11497a012ff349a8ea7e22e68286ff14e63",
+      "bytes": 3776,
+      "description": "Timestamp token signed by a code-signing certificate instead of a TSA certificate."
+    },
+    {
+      "file": "bad-timestamp-imprint.exe",
+      "sha256": "04eb8c3cee22438332ca8ebe422af05ac95975d40decf021347063b962175fdc",
+      "bytes": 3760,
+      "description": "Signed RFC 3161 token with a mismatched parent-signature imprint."
+    },
+    {
+      "file": "bad-trailing-data.exe",
+      "sha256": "c35b7da6c187e9f341b7e8142a14c521efffe8a19435aed8c1399f320f49a508",
+      "bytes": 2177,
+      "description": "Byte appended after the certificate table; rejected layout."
+    },
+    {
+      "file": "bad-truncated.exe",
+      "sha256": "e9a0a293895afc23d8e2bdaaff6f12d207139d952e914b64e3af151440d10b4a",
+      "bytes": 200,
+      "description": "Signed PE truncated inside its optional header."
+    },
+    {
+      "file": "expired.crl",
+      "sha256": "d393ea1236ca507f909f316b8f7e5929d0c438ba30f1c010f48d0549b7556162",
+      "bytes": 184,
+      "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time."
+    },
+    {
+      "file": "forged.crl",
+      "sha256": "1ff08ad2626514f7884e1e1e8465f1173af83c602e83c9f35506c24c9b347434",
+      "bytes": 183,
+      "description": "Current CRL with a modified signature byte."
+    },
+    {
+      "file": "good-countersignature.exe",
+      "sha256": "fc7b895932121217cf31f7854b71ce244c665be06b1b97f4b8175fad2f162dad",
+      "bytes": 2832,
+      "description": "PKCS#9 countersignature binding a signed signingTime to the publisher signature."
+    },
+    {
+      "file": "good-intermediate.exe",
+      "sha256": "f88d7f0096dc642daace4594f4bd0d791f417be7e38c3051598f875c0e5e073d",
+      "bytes": 2224,
+      "description": "Valid chain through a CA without an EKU extension; CA is unrestricted by EKU."
+    },
+    {
+      "file": "good-modified-checksum.exe",
+      "sha256": "3937b4a4e660a33d7be31b0f5287f26d6c30c9ee0e5fae1ba5eeea97c40d74a7",
+      "bytes": 2176,
+      "description": "PE checksum changed; excluded from the Authenticode image digest."
+    },
+    {
+      "file": "good-nested.exe",
+      "sha256": "68cd83c2a39c2a73a94b226325e2287669bf6a14dd5cadf56edfdfee2b76f7e3",
+      "bytes": 3344,
+      "description": "Two valid Authenticode signatures, one nested in an unsigned attribute."
+    },
+    {
+      "file": "good-page-hashes.exe",
+      "sha256": "16dd2f40ca1055988095a8e084b9840c7f979cac3d7265e2f785bd30315f5a3d",
+      "bytes": 2328,
+      "description": "Valid SHA-256 image and page hashes."
+    },
+    {
+      "file": "good-pe32.exe",
+      "sha256": "c71f90f3f583d8303c53160cb72205d098eef7be2f03e42da9376b09aab1a4ff",
+      "bytes": 2176,
+      "description": "Valid synthetic PE32 with a SHA-256/ECDSA P-256 Authenticode signature."
+    },
+    {
+      "file": "good-pe64.exe",
+      "sha256": "c30639fcffdacdc52defddc0b39606fee30e23784d21508c38b6533a278a2f83",
+      "bytes": 2176,
+      "description": "Valid synthetic PE32+ with a SHA-256/ECDSA P-256 Authenticode signature."
+    },
+    {
+      "file": "good-rfc3161.exe",
+      "sha256": "5e7a2e5696619a50e2262033879dfe7e6e0bf17bf3753d8ac4501200fc639276",
+      "bytes": 3760,
+      "description": "RFC 3161 timestamp with valid binding to the publisher signature and dedicated TSA EKU."
+    },
+    {
+      "file": "good.crl",
+      "sha256": "8f8808824ea23e422ee22b86737d4626847d7d56226fa5990307fe079500e796",
+      "bytes": 183,
+      "description": "Authentic current root-issued CRL with no revoked serials."
+    },
+    {
+      "file": "not-pe.bin",
+      "sha256": "ba3c08670cc5741f524d3298bb1a47cb56dd1771292d8395eea2f205427a4e79",
+      "bytes": 25,
+      "description": "Plain text, not a PE image."
+    },
+    {
+      "file": "revoked.crl",
+      "sha256": "00f343914863f661f501ad230d2e91fc304c8e1fc4348674b67e8fef3bdc9031",
+      "bytes": 208,
+      "description": "Authentic current root-issued CRL listing the test publisher serial."
+    },
+    {
+      "file": "root.der",
+      "sha256": "240a0d897e8088d327bf395e4b083d3ef395189a3e001e6f367a01b91cbae844",
+      "bytes": 362,
+      "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store."
+    },
+    {
+      "file": "unrelated-root.der",
+      "sha256": "ea73d71e7b3010966448b61430a7b1208f0a3e2cb35c512fb842081c017a3350",
+      "bytes": 368,
+      "description": "Unrelated test root with a different subject and key."
+    },
+    {
+      "file": "unsigned.exe",
+      "sha256": "6ec4f605a911749e36210e9bf86f5f08f096ea43334ea5ddf711af13cc361917",
+      "bytes": 1024,
+      "description": "Synthetic PE32+ with no embedded signature."
+    }
+  ]
+}

@@ -1,0 +1,959 @@
+{
+  "schema_version": 1,
+  "fixtures": "fixtures",
+  "cases": [
+    {
+      "id": "pe32",
+      "input": "good-pe32.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pe64",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    },
+                    "extended_key_usage": {
+                      "usages": [
+                        {
+                          "oid": "1.3.6.1.5.5.7.3.3",
+                          "name": "code_signing"
+                        }
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "page-hashes",
+      "input": "good-page-hashes.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "checksum-excluded",
+      "input": "good-modified-checksum.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "integrity-only",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "nested-signatures",
+      "input": "good-nested.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "nested_depth": 0
+                },
+                {
+                  "nested_depth": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "current-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl",
+                      "crls": [
+                        {
+                          "issuer": {
+                            "common_names": [
+                              "rssig test root"
+                            ]
+                          },
+                          "this_update": 1799999900,
+                          "next_update": 1800001000
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tampered-image",
+      "input": "bad-image-digest.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "image_digest_mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "PE image digest mismatch"
+        }
+      }
+    },
+    {
+      "id": "bad-cms",
+      "input": "bad-cms-signature.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "CMS signature verification"
+        }
+      }
+    },
+    {
+      "id": "bad-page-hashes",
+      "input": "bad-page-hashes.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "page_hash_mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "page hash mismatch"
+        }
+      }
+    },
+    {
+      "id": "bad-imprint",
+      "input": "bad-timestamp-imprint.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "timestamp_imprint_mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "timestamp imprint mismatch"
+        }
+      }
+    },
+    {
+      "id": "future-timestamp",
+      "input": "bad-future-timestamp.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "timestamp_in_future"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "timestamp is in the future"
+        }
+      }
+    },
+    {
+      "id": "unsigned",
+      "input": "unsigned.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "unsigned"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "no embedded signature"
+        }
+      }
+    },
+    {
+      "id": "not-pe",
+      "input": "not-pe.bin",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_pe"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "missing MZ"
+        }
+      }
+    },
+    {
+      "id": "truncated",
+      "input": "bad-truncated.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_pe"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "truncated optional header"
+        }
+      }
+    },
+    {
+      "id": "trailing-data",
+      "input": "bad-trailing-data.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_pe"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "certificate table must end at EOF"
+        }
+      }
+    },
+    {
+      "id": "wrong-tsa-eku",
+      "input": "bad-timestamp-eku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_eku"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "TSA EKU"
+        }
+      }
+    },
+    {
+      "id": "rfc3161",
+      "input": "good-rfc3161.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "chain_trusted": true,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "signing_time": 1800000000,
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "legacy-counter",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "chain_trusted": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "expired-without-timestamp",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "certificate_expired"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "CertExpired"
+        }
+      }
+    },
+    {
+      "id": "expired-with-rfc3161",
+      "input": "good-rfc3161.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "chain_trusted": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "expired-with-counter",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "chain_trusted": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "revoked",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "certificate_revoked"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "CertRevoked"
+        }
+      }
+    },
+    {
+      "id": "expired-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "crl_expired"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "CRL has expired"
+        }
+      }
+    },
+    {
+      "id": "forged-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/forged.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_crl_signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "InvalidCrlSignature"
+        }
+      }
+    },
+    {
+      "id": "unknown-root",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "untrusted_root"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnknownIssuer"
+        }
+      }
+    },
+    {
+      "id": "missing-crl-policy",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "error": {
+            "code": "configuration"
+          }
+        },
+        "contains": {
+          "/error/message": "supply --crl"
+        }
+      }
+    },
+    {
+      "id": "missing-input",
+      "input": "missing.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "read_failed"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "reading"
+        }
+      }
+    },
+    {
+      "id": "intermediate-without-eku",
+      "input": "good-intermediate.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "ca-key-usage",
+      "input": "bad-ca-key-usage.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "invalid_key_usage"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
