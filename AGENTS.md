@@ -34,59 +34,76 @@ project at build or runtime.
   must not be labeled individually verified merely because it was loaded.
 - Errors carry a typed stable `code`, verification `stage`, readable `message`,
   structured `details`, and causal diagnostics. Consumers match enum codes,
-  never prose. Add JSON cases for domain fields before extending the schema.
+  never prose. Add declarative spec cases and Rust assertions for serialized domain fields before extending the schema.
 
 ## Required TDD workflow
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
    artifact when possible. Never execute PE/MSI fixtures.
-2. Add a case to `tests/cases.json` describing its unique `id`, fixture `input`,
-   CLI `command` argv, and expected exit code and JSON. Pin `--time`, use
-   `--no-system-roots` with explicit test roots, and provide local CRLs so tests
-   are independent of wall time, network, OS root contents, and machine paths.
-3. Run that case through the real CLI and observe the intended **failure**.
-   A parser/setup failure is not evidence of the target cryptographic failure.
+2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
+   language-independent specification. Add a named Rust test under `tests/cli/`
+   for implementation-specific checks of the fixture, CLI argv, exit
+   code, and serialized domain result. Invoke the Clap-based `rssig::cli::run`
+   directly with an argument array and captured writer; never spawn the binary.
+   Pin `--time`, use `--no-system-roots` with explicit test roots, and provide
+   local CRLs so tests are independent of wall time, network, OS roots, and paths.
+3. Run the focused Cargo test and observe the intended **failure**. A parser or
+   setup failure is not evidence of the target cryptographic failure.
 4. Make the smallest production change that passes the testcase. Preserve all
    existing good and bad expectations; never relax expected failures to hide a
    verifier regression.
-5. Run the complete JSON suite and `cargo test --locked`. Add focused unit tests
+5. Run `cargo test --locked` for the complete suite. Add focused unit tests
    for parser bounds and cryptographic invariants where black-box cases cannot
    isolate the issue. Refactor only while the suite stays green.
 6. Run `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`.
    Record any validation that could not run, including missing target platforms.
 
-## JSON testcases and runner
+## Native Rust tests and coverage
 
-`cargo run --locked -- test --cases tests/cases.json` invokes the same executable
-once per testcase. It emits a JSON report with `total`, `passed`, `failed`, and
-per-case command, actual exit code, parsed output, and assertion failures.
-Exit 0 means all cases pass, 1 means assertion failures, and 2 means invalid
-configuration. `cargo test --locked` includes an integration test for this runner.
+`cargo test --locked` is the single entry point for all parser, crypto, CLI,
+fixture, domain, and declarative specification tests. `tests/spec.rs` deserializes
+`tests/cases.json` with Serde and invokes `rssig::cli::run` in-process, collecting
+exit codes and JSON output. It never runs a child executable.
 
-The suite schema is in `tests/cases.schema.json`. Example case:
+The 142 original fixture cases also have individually named
+Rust tests under `tests/cli/pe.rs` and `tests/cli/msi.rs`; shared helpers only
+capture output and assert the domain contract. CLI syntax, configuration errors,
+help/version, multiple files, and writer failures live in `tests/cli_interface.rs`.
 
-```json
-{
-  "id": "tampered-image",
-  "input": "bad-image-digest.exe",
-  "command": ["verify", "--integrity-only", "--time", "1800000000"],
-  "expect": {
-    "exit_code": 1,
-    "json": {"ok": false, "results": [{"error": {"code": "image_digest_mismatch"}}]},
-    "contains": {"/results/0/error/message": "PE image digest mismatch"}
-  }
+The public CLI entry point accepts argv including the program name and any
+`std::io::Write` sink, returns an exit code, and never exits the calling process.
+Tests use absolute fixture paths without changing the process working directory
+or invoking a child executable. Prefer stable error codes/stages, exact arrays
+and serialized fields, and specific diagnostic fragments over OS error prose.
+Keep `cases.json`, `cases.schema.json`, the committed fixtures, and their manifest
+as the portable specification. They must remain sufficient for another language
+to implement the same CLI without Rust source. Do not add test commands to the
+product CLI or require another language/runtime to execute Cargo tests.
+
+Example fixture-first regression:
+
+```rust
+#[test]
+fn rejects_modified_image() {
+    let input = format!("{}/tests/fixtures/bad-image-digest.exe", env!("CARGO_MANIFEST_DIR"));
+    let mut stdout = Vec::new();
+    let code = rssig::cli::run(
+        ["rssig", "verify", "--integrity-only", "--time", "1800000000", &input],
+        &mut stdout,
+    ).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
+    assert_eq!(code, 1);
+    assert_eq!(report["results"][0]["error"]["code"], "image_digest_mismatch");
 }
 ```
 
-`input` is relative to the suite's `fixtures` directory. Argument paths such as
-`--roots fixtures/root.der` are relative to the suite file's directory.
-Commands are argv arrays passed directly to rssig, never shell strings.
-The runner accepts `verify` commands only, preventing recursive suite execution.
-`expect.json` matches object subsets, exact array lengths/order, and exact scalar
-values. `expect.contains` checks strings at JSON Pointer locations. Every case
-also requires valid JSON stdout and empty stderr. Prefer stable fields and
-specific error fragments over full OS-dependent error messages.
+CI runs formatting, Clippy, and Cargo tests on Linux and macOS. A coverage job
+runs `make coverage`, using cargo-llvm-cov to run native tests and the Serde
+specification test with instrumentation. It publishes Cobertura XML, standalone
+HTML, and a per-case specification report. See `docs/testing.md` for local commands.
+Fixture builders and Rust test source files are excluded from coverage reports;
+production source, including the thin process adapter, remains included.
 
 ## Fixtures
 

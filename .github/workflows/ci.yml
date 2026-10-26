@@ -37,28 +37,28 @@ jobs:
         run: cargo clippy --all-targets --locked -- -D warnings
       - name: Run Rust tests against committed fixtures
         run: cargo test --locked
-      - name: Run real CLI fixture cases
-        shell: bash
-        run: |
-          set +e
-          cargo run --locked -- test --cases tests/cases.json > cli-test-report.json
-          suite_exit=$?
-          set -e
-          python3 - <<'PY'
-          import json
-          with open("cli-test-report.json") as source:
-              report = json.load(source)
-          print({key: report.get(key) for key in ("ok", "total", "passed", "failed")})
-          for case in report.get("results", []):
-              if not case["ok"]:
-                  print(case["id"], case["failures"])
-          PY
-          exit "$suite_exit"
-      - name: Save CLI report
-        if: always()
+
+  coverage:
+    name: Coverage (Cobertura and HTML)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Rust with coverage tools
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
+        with:
+          tool: cargo-llvm-cov@0.9.1
+      - name: Run native tests and the independent CLI specification
+        run: make coverage
+      - name: Upload coverage reports
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: cli-test-report-${{ matrix.os }}
-          path: cli-test-report.json
-          if-no-files-found: ignore
-          retention-days: 7
+          name: coverage
+          path: target/coverage/
+          if-no-files-found: error
+          retention-days: 14

@@ -32,9 +32,9 @@ its Problem Details members. For `verify`, the first failed input supplies the
 root problem; `results` retains successful inputs and every per-file error in
 input order. Every nested `error` is itself a Problem Details object.
 
-The testcase runner uses `test_assertion_failed` for the failed suite and each
-failed case, preserving counts, captured output, and assertion diagnostics.
-Invalid suite configuration uses `invalid_test_suite` instead.
+The former product `test --cases` command has been retired. `invalid_test_suite` and
+`test_assertion_failed` remain reserved for deserializing historical reports;
+the current CLI exposes verification, help, and version. Tests run through Cargo.
 
 ## Problem types
 

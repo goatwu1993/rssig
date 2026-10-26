@@ -27,7 +27,8 @@ and timestamp faults. Never execute these synthetic PE containers.
 | `bad-intermediate-signature.exe` | `good-intermediate.exe` | Only the intermediate certificate ECDSA signature is corrupted; leaf certificate signature and CMS signature remain valid. |
 | `bad-crl-not-yet-valid.crl` | `good.crl` | Correctly root-signed CRL has thisUpdate NOW+1 while nextUpdate remains NOW+1000. Expected crl_not_yet_valid. |
 
-Each case in [tests/cases.json](../tests/cases.json) pins its exit code, error
+[The declarative CLI specification](../tests/cases.json) and native tests in
+[tests/cli](../tests/cli) pin exit codes, error
 code, stage, and Problem Details type. Runs use a fixed validation time and
 explicit local roots/CRLs, or explicit integrity-only mode.
 
@@ -38,7 +39,7 @@ page-hash, and RFC 3161 imprint mismatch fixtures remain in the suite.
 Run the complete CLI suite with:
 
 ```sh
-cargo run --locked -- test --cases tests/cases.json
+cargo test --locked
 ```
 
 Fixture hashes, sizes, provenance, and good/bad pairing are recorded in

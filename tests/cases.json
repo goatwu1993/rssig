@@ -4968,6 +4968,280 @@
           "/detail": "too many nested signatures"
         }
       }
+    },
+    {
+      "id": "cli-help",
+      "command": [
+        "--help"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "help",
+          "ok": true
+        },
+        "contains": {
+          "/text": "verify"
+        }
+      }
+    },
+    {
+      "id": "cli-version",
+      "command": [
+        "--version"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "version",
+          "ok": true
+        },
+        "contains": {
+          "/text": "0.1.0"
+        }
+      }
+    },
+    {
+      "id": "cli-unknown-subcommand",
+      "command": [
+        "does-not-exist"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "arguments",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+          "title": "Invalid arguments",
+          "error": {
+            "code": "invalid_arguments",
+            "stage": "arguments",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+            "title": "Invalid arguments"
+          },
+          "results": []
+        }
+      }
+    },
+    {
+      "id": "cli-retired-test-subcommand",
+      "command": [
+        "test"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "arguments",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+          "title": "Invalid arguments",
+          "error": {
+            "code": "invalid_arguments",
+            "stage": "arguments",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+            "title": "Invalid arguments"
+          },
+          "results": []
+        }
+      }
+    },
+    {
+      "id": "cli-conflicting-policies",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--no-system-roots",
+        "fixtures/good-pe64.exe"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "arguments",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+          "title": "Invalid arguments",
+          "error": {
+            "code": "invalid_arguments",
+            "stage": "arguments",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+            "title": "Invalid arguments"
+          },
+          "results": []
+        }
+      }
+    },
+    {
+      "id": "cli-mixed-results",
+      "inputs": [
+        "good-pe64.exe",
+        "bad-image-digest.exe",
+        "not-pe.bin"
+      ],
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#image_digest_mismatch",
+          "title": "PE image digest mismatch",
+          "results": [
+            {
+              "ok": true,
+              "format": "pe_authenticode"
+            },
+            {
+              "ok": false,
+              "error": {
+                "code": "image_digest_mismatch",
+                "stage": "image_digest",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#image_digest_mismatch",
+                "title": "PE image digest mismatch"
+              }
+            },
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+                "title": "Invalid PE image"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cli-missing-root",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/missing-root.der"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+          "title": "Invalid configuration",
+          "error": {
+            "code": "configuration",
+            "stage": "configuration",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+            "title": "Invalid configuration"
+          },
+          "results": []
+        }
+      },
+      "input": "good-pe64.exe"
+    },
+    {
+      "id": "cli-malformed-root",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/not-pe.bin"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+          "title": "Invalid configuration",
+          "error": {
+            "code": "configuration",
+            "stage": "configuration",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+            "title": "Invalid configuration"
+          },
+          "results": []
+        }
+      },
+      "input": "good-pe64.exe"
+    },
+    {
+      "id": "cli-missing-crl",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/missing.crl"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+          "title": "Invalid configuration",
+          "error": {
+            "code": "configuration",
+            "stage": "configuration",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+            "title": "Invalid configuration"
+          },
+          "results": []
+        }
+      },
+      "input": "good-pe64.exe"
+    },
+    {
+      "id": "cli-malformed-crl",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/not-pe.bin"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+          "title": "Invalid configuration",
+          "error": {
+            "code": "configuration",
+            "stage": "configuration",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+            "title": "Invalid configuration"
+          },
+          "results": []
+        }
+      },
+      "input": "good-pe64.exe"
     }
   ]
 }

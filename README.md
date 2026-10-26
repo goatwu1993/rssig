@@ -5,7 +5,7 @@ Rust CLI. PE/MSI hashing, CMS signatures, certificate chains, timestamps, and CR
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
-fixtures and JSON testcases. It is inspired by
+fixtures, a portable JSON specification, and native Rust tests. It is inspired by
 [jsign](https://github.com/ebourg/jsign) and
 [relic](https://github.com/sassoftware/relic), whose source code serves as a
 reference for PE/MSI Authenticode hashing, signatures, and verification behavior.
@@ -30,9 +30,11 @@ rssig verify application.exe --integrity-only
 # MSI packages use the same trust and revocation policy.
 rssig verify installer.msi --no-system-roots --roots roots.pem --crl issuer.crl
 
-# Run all committed JSON cases; stdout is a JSON test report.
-cargo run --locked -- test --cases tests/cases.json
+# Run native tests and the JSON specification through the CLI library.
 cargo test --locked
+
+# Run the same tests with coverage; write Cobertura XML and openable HTML.
+make coverage
 ```
 
 All output is JSON, including help/version and argument errors. Exit codes are 0 for
@@ -69,12 +71,16 @@ CMS, timestamp, certificate, and algorithm mismatch cases.
 See [MSI support and fixture provenance](docs/msi.md) for container hashing,
 extended metadata, format-specific JSON fields, and limits.
 See [AGENTS.md](AGENTS.md) for the TDD workflow and
-[tests/cases.json](tests/cases.json) for executable test definitions.
+[tests/cases.json](tests/cases.json) for the portable CLI specification and
+[tests/cli](tests/cli) for individually named Rust regressions.
+See [testing and coverage](docs/testing.md) for the testable Clap interface,
+Cobertura XML, and HTML reports.
 
 This is an initial verifier, not a Windows trust-policy replacement. It requires
 embedded certificates and supplied CRLs; automatic CRL/AIA downloads and OCSP
 are not implemented. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
 roots for controlled publisher policies. See `AGENTS.md` for supported algorithms
-and additional compatibility limits. GitHub Actions runs formatting, Clippy, Rust tests, and the real CLI fixture
-suite on Linux and macOS. External signing tools are not required for CI.
+and additional compatibility limits. GitHub Actions runs formatting, Clippy,
+and Rust tests on Linux and macOS. A coverage job publishes Cobertura XML and
+openable HTML reports. External signing tools are not required for CI.

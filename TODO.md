@@ -2,7 +2,7 @@
 
 Work from the top down. Rank reflects verification correctness and confidence
 before convenience or additional formats. Every behavior change starts with a
-committed fixture and JSON testcase that fails for the intended reason; follow
+committed fixture, declarative specification case, and named Rust test that fails for the intended reason; follow
 [AGENTS.md](AGENTS.md). Production verification stays pure Rust, with the OS used
 only to load roots. All CLI output stays serialized domain data.
 
@@ -43,13 +43,11 @@ only to load roots. All CLI output stays serialized domain data.
    section-table ordering, header/section padding, overlays, PE32/PE32+, page
    sizes, and page hashes. Document deliberately rejected layouts; do not
    silently broaden hashing rules without fixture evidence.
-8. [ ] **Harden the local JSON testcase runner.** Add regression tests for wrong
-   expectations, malformed suites, duplicate IDs, recursive commands, invalid
-   JSON stdout, and process timeouts. Ensure the fixture manifest covers every
-   artifact and detects unexpected additions or omissions.
-9. [ ] **Run ordinary Rust/fixture CI on Linux and macOS.** Check formatting,
-   Clippy, tests, and the JSON suite; retain JSON reports. Confirm Linux behavior
-   before claiming Linux execution has been validated. This requires no oracle.
+8. [x] **Move CLI coverage into Cargo.** Keep individually named in-process
+   Clap tests and the Serde-loaded JSON specification with committed fixtures.
+   The product has no custom test runner.
+9. [x] **Run Rust tests on Linux and macOS with coverage artifacts.** Check
+   formatting, Clippy, and `cargo test --locked`; publish Cobertura XML and HTML.
 
 ## P2 — Interoperability and additional features
 
@@ -83,11 +81,12 @@ only to load roots. All CLI output stays serialized domain data.
   certificate-chain validation, timestamps, and supplied-CRL validation.
 - [x] Serializable verification bundles and typed errors, parsed CN/RDNs, EKUs,
   certificate chains, timestamps, and CRL artifacts.
-- [x] Local fixture corpus, JSON testcase runner, provenance/hash manifest, and
-  fixture-first TDD guide.
+- [x] Local fixture corpus, native in-process CLI tests, provenance/hash manifest, and
+  fixture-first TDD guide and language-independent JSON specification.
 - [x] Explicit unsupported digest/signature OID errors and correct classification
   of nonzero trailing WIN_CERTIFICATE payloads, with three regression fixtures.
 
-Current local suite: 33 JSON cases and 12 passing Rust tests; the explicit fixture
-regenerator is ignored during ordinary tests. These counts describe local
-coverage, not an external compatibility or security certification.
+All 142 fixture cases are native Rust tests, alongside CLI interface, parser,
+crypto, and domain tests. Explicit maintenance helpers are ignored during
+ordinary tests. Coverage reports measure exercised source lines; they do not
+establish Windows policy equivalence or constitute a security certification.
