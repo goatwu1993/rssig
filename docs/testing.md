@@ -44,7 +44,13 @@ cargo test --locked --test cli_interface
 
 ## Coverage reports
 
-Install the optional development tool and matching LLVM tools:
+Install the optional development tool and matching LLVM tools. For Homebrew Rust:
+
+```sh
+brew install cargo-llvm-cov llvm
+```
+
+For a rustup-managed toolchain:
 
 ```sh
 rustup component add llvm-tools-preview
@@ -71,10 +77,10 @@ can read `target/coverage/cobertura.xml`. Both reports use the same recorded run
 rendering a second format does not rerun tests. No coverage service or token is
 required. Coverage and test tooling are not runtime dependencies.
 
-With a Homebrew Rust installation, set `LLVM_COV` and `LLVM_PROFDATA` to matching
-LLVM binaries instead of installing a rustup component. Their LLVM major version
-must be compatible with `rustc -vV` (for example, Homebrew LLVM tools under
-`/opt/homebrew/opt/llvm/bin/`).
+With Homebrew Rust, `make coverage` automatically locates the installed Homebrew
+LLVM tools. Explicit `LLVM_COV` and `LLVM_PROFDATA` overrides are preserved.
+Their LLVM major version must be compatible with `rustc -vV`. With rustup,
+matching tools come from the `llvm-tools-preview` component.
 
 Reports exclude integration-test files and fixture builders under `src/tests.rs`
 and `src/tests/`. Production source remains included, including the thin binary
