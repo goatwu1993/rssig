@@ -39,7 +39,7 @@
       "file": "bad-image-digest.exe",
       "sha256": "016ec31e0871181cbfd002efb95f73b75274767bc9ab5f8cc6f887900404f9bb",
       "bytes": 2176,
-      "description": "One byte changed in the signed section at file offset 700."
+      "description": "Paired with good-pe64.exe: only the signed section byte at file offset 700 is XORed with 1; the embedded CMS signature is unchanged and remains valid for the original image. Computed PE SHA-256 (hash a): 821ba3d28e9ea20b53901de76a090d109e9dced8426ca75f2f844543b59cd243. Signed PE SHA-256 (hash b): dea5b51087a941e1757bc435b116fc1a7dfc9c8343bf4cb27b7fc9431a9dd30f. Expected error: image_digest_mismatch at image_digest stage."
     },
     {
       "file": "bad-page-hashes.exe",
@@ -178,6 +178,152 @@
       "sha256": "61f5b5498e329134d2b795fef9ef6db9326cdb5e45c5af10ecf01924f4da420a",
       "bytes": 2176,
       "description": "SignerInfo declares unknown ECDSA signature OID 1.2.840.10045.4.3.127; reject before claiming mathematical invalidity."
+    },
+    {
+      "file": "failing-cases.json",
+      "sha256": "c490251a52636d107bc0cabfbce580e552bc3911634696677ef89797d0ea8e1c",
+      "bytes": 361,
+      "description": "Deterministic testcase suite with deliberately incorrect success expectations for not-pe.bin; exercises the runner assertion-failure Problem Details response."
+    },
+    {
+      "file": "bad-cms-content-digest.exe",
+      "sha256": "0c3993faf23bfbcf056caa2fdf0489ce9a6993d9856b84628daeeee4b1ea2cdd",
+      "bytes": 2176,
+      "description": "Correctly signed attributes contain the digest of different CMS content; PE image digest remains correct.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-cms-content-type.exe",
+      "sha256": "091bb75045360a41db7261b0cdbd546d301b36374721c4f6775292d24beba7cf",
+      "bytes": 2176,
+      "description": "Correctly signed contentType attribute declares TSTInfo while encapsulated content is SpcIndirectDataContent.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signer-issuer.exe",
+      "sha256": "5c759e6641bc78cb7f4efcb593b5697e2d66cbb37e60cdf95c8ce4b9185530c9",
+      "bytes": 2184,
+      "description": "SignerInfo names an unrelated issuer; serial and signed attributes remain unchanged.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signer-serial.exe",
+      "sha256": "3ef55838d1c3d3f602efbe94c36cc8d94df635699f8ac09f1473acff788288f9",
+      "bytes": 2176,
+      "description": "SignerInfo names serial 99 instead of the embedded signer certificate serial 2; issuer is unchanged.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-cms-digest-set.exe",
+      "sha256": "ae4857db490a348bd278d3586d06af050adfd33ddb65e0e9320da1b43addd3df",
+      "bytes": 2176,
+      "description": "SignedData digestAlgorithms declares SHA384 while SignerInfo and the content digest use SHA256.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signature-digest-algorithm.exe",
+      "sha256": "5baae330d1db26cf82b4342570d0d8ae8566809c58814047dc8f4230eded4647",
+      "bytes": 2176,
+      "description": "Signature algorithm declares ECDSA-with-SHA384 while SignerInfo digestAlgorithm is SHA256.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signature-key-algorithm.exe",
+      "sha256": "500ca904a357f26bf4daa03cac77e5193d9f23ecd291e8513806c9e752c1bde3",
+      "bytes": 2184,
+      "description": "Signature algorithm declares RSA while the embedded signer certificate contains an EC public key.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signer-public-key.exe",
+      "sha256": "4882a389d854a9ea44a1453d644f2d877dfaea205146a01d1eb6524d635ef3fb",
+      "bytes": 2176,
+      "description": "Root-signed signer certificate contains a different valid P256 public key; CMS is signed by the original key.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-countersignature-digest.exe",
+      "sha256": "0baf08d2099afbc60cde8b5033ed99b436885a1c4daa81e7c07041ae51c632da",
+      "bytes": 2832,
+      "description": "Correctly signed PKCS9 countersignature attributes bind to different parent signature bytes.",
+      "paired_good": "good-countersignature.exe"
+    },
+    {
+      "file": "bad-timestamp-signature.exe",
+      "sha256": "f5a4e9a51955128d31a9234561f1e6d052943287b862c57d2bbf860f882b5cba",
+      "bytes": 3760,
+      "description": "Only the RFC3161 token signer signature is corrupted; parent CMS signature and timestamp imprint remain valid.",
+      "paired_good": "good-rfc3161.exe"
+    },
+    {
+      "file": "bad-countersignature-signature.exe",
+      "sha256": "60546b0cd11e146b3562a2d17500f64c98a0ee2b0e0fb7ce2c0b1f6fc58db12e",
+      "bytes": 2832,
+      "description": "Only the PKCS9 countersignature signature is corrupted; parent CMS signature and countersignature content digest remain valid.",
+      "paired_good": "good-countersignature.exe"
+    },
+    {
+      "file": "bad-nested-signature.exe",
+      "sha256": "61f99e2ff1668f46999066f4d87c5a8322f9add25d7702ae45b7793bf0fd767b",
+      "bytes": 3344,
+      "description": "Only the nested CMS signature is corrupted; outer CMS signature and both PE image digests remain valid.",
+      "paired_good": "good-nested.exe"
+    },
+    {
+      "file": "bad-certificate-not-yet-valid.exe",
+      "sha256": "6dd967cbb5e8d59608a913db3cc644a904c49b3c2956059ecfe1595fd2162b8a",
+      "bytes": 2184,
+      "description": "Root-signed leaf certificate notBefore is NOW+1; CMS signature and image digest are valid.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-certificate-expired.exe",
+      "sha256": "ad5e238940c12725364beaefa0ea3885503f5904f5d9f4d88c4dee0057a42926",
+      "bytes": 2184,
+      "description": "Root-signed leaf certificate notAfter is NOW-1; CMS signature and image digest are valid.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signer-eku.exe",
+      "sha256": "a3b1de5e7bcacc6b216a67a0fe67a42f158aa00de3825c9e42c2eb573cc16b5b",
+      "bytes": 2176,
+      "description": "Root-signed leaf has serverAuth instead of codeSigning EKU; CMS signature remains valid.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-signer-key-usage.exe",
+      "sha256": "e16391dfc4af9181b3679bce4e4d86e382f0db2b25b5175f4f5635b400513f64",
+      "bytes": 2176,
+      "description": "Root-signed leaf permits keyEncipherment but lacks digitalSignature; CMS signature remains valid.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-certificate-signature.exe",
+      "sha256": "ae92b225877243be7dd36a223daaade219e81b2d10a02a0acdd58c2d4d0096ad",
+      "bytes": 2176,
+      "description": "Only the leaf certificate ECDSA signature is corrupted; the PE image and CMS signature are valid.",
+      "paired_good": "good-pe64.exe"
+    },
+    {
+      "file": "bad-intermediate-signature.exe",
+      "sha256": "febc8ea1f1a405a27c3f28cdf4d5c0bea07a3c5499f35f1900e0fa699e2edc6f",
+      "bytes": 2224,
+      "description": "Only the intermediate certificate ECDSA signature is corrupted; leaf certificate signature and CMS signature remain valid.",
+      "paired_good": "good-intermediate.exe"
+    },
+    {
+      "file": "bad-crl-not-yet-valid.crl",
+      "sha256": "fc66805dd5dbf064f05ee2abe12fe843568c9ae6e41eacbe75d1f301a4a32b8c",
+      "bytes": 184,
+      "description": "Correctly root-signed CRL has thisUpdate NOW+1 while nextUpdate remains NOW+1000. Expected crl_not_yet_valid.",
+      "paired_good": "good.crl"
+    },
+    {
+      "file": "good-intermediate.crl",
+      "sha256": "189e682c5474dd3767fdd6ec43c8eb7591aff7353c66b23f101a575f97d3553e",
+      "bytes": 188,
+      "description": "Current CRL signed by the deterministic intermediate CA key, covering the leaf of good-intermediate.exe. Paired with good.crl for complete chain revocation coverage.",
+      "paired_good": "good.crl"
     }
   ]
 }

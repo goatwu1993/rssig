@@ -298,13 +298,27 @@
           "results": [
             {
               "error": {
-                "code": "image_digest_mismatch"
+                "code": "image_digest_mismatch",
+                "stage": "image_digest",
+                "details": {
+                  "digest": {
+                    "algorithm": "Sha256",
+                    "computed": "821ba3d28e9ea20b53901de76a090d109e9dced8426ca75f2f844543b59cd243",
+                    "expected": "dea5b51087a941e1757bc435b116fc1a7dfc9c8343bf4cb27b7fc9431a9dd30f"
+                  }
+                },
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#image_digest_mismatch",
+                "title": "PE image digest mismatch"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#image_digest_mismatch",
+          "title": "PE image digest mismatch"
         },
         "contains": {
-          "/results/0/error/message": "PE image digest mismatch"
+          "/results/0/error/message": "PE image digest mismatch",
+          "/results/0/error/detail": "PE image digest mismatch",
+          "/detail": "PE image digest mismatch"
         }
       }
     },
@@ -326,13 +340,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_signature"
+                "code": "invalid_signature",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature"
         },
         "contains": {
-          "/results/0/error/message": "CMS signature verification"
+          "/results/0/error/message": "CMS signature verification",
+          "/results/0/error/detail": "CMS signature verification",
+          "/detail": "CMS signature verification"
         }
       }
     },
@@ -354,13 +374,19 @@
           "results": [
             {
               "error": {
-                "code": "page_hash_mismatch"
+                "code": "page_hash_mismatch",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#page_hash_mismatch",
+                "title": "Page hash mismatch"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#page_hash_mismatch",
+          "title": "Page hash mismatch"
         },
         "contains": {
-          "/results/0/error/message": "page hash mismatch"
+          "/results/0/error/message": "page hash mismatch",
+          "/results/0/error/detail": "page hash mismatch",
+          "/detail": "page hash mismatch"
         }
       }
     },
@@ -382,13 +408,19 @@
           "results": [
             {
               "error": {
-                "code": "timestamp_imprint_mismatch"
+                "code": "timestamp_imprint_mismatch",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#timestamp_imprint_mismatch",
+                "title": "Timestamp imprint mismatch"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#timestamp_imprint_mismatch",
+          "title": "Timestamp imprint mismatch"
         },
         "contains": {
-          "/results/0/error/message": "timestamp imprint mismatch"
+          "/results/0/error/message": "timestamp imprint mismatch",
+          "/results/0/error/detail": "timestamp imprint mismatch",
+          "/detail": "timestamp imprint mismatch"
         }
       }
     },
@@ -410,13 +442,19 @@
           "results": [
             {
               "error": {
-                "code": "timestamp_in_future"
+                "code": "timestamp_in_future",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#timestamp_in_future",
+                "title": "Timestamp is in the future"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#timestamp_in_future",
+          "title": "Timestamp is in the future"
         },
         "contains": {
-          "/results/0/error/message": "timestamp is in the future"
+          "/results/0/error/message": "timestamp is in the future",
+          "/results/0/error/detail": "timestamp is in the future",
+          "/detail": "timestamp is in the future"
         }
       }
     },
@@ -438,13 +476,19 @@
           "results": [
             {
               "error": {
-                "code": "unsigned"
+                "code": "unsigned",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsigned",
+                "title": "Missing embedded signature"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsigned",
+          "title": "Missing embedded signature"
         },
         "contains": {
-          "/results/0/error/message": "no embedded signature"
+          "/results/0/error/message": "no embedded signature",
+          "/results/0/error/detail": "no embedded signature",
+          "/detail": "no embedded signature"
         }
       }
     },
@@ -466,13 +510,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_pe"
+                "code": "invalid_pe",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+                "title": "Invalid PE image"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+          "title": "Invalid PE image"
         },
         "contains": {
-          "/results/0/error/message": "missing MZ"
+          "/results/0/error/message": "missing MZ",
+          "/results/0/error/detail": "missing MZ",
+          "/detail": "missing MZ"
         }
       }
     },
@@ -494,13 +544,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_pe"
+                "code": "invalid_pe",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+                "title": "Invalid PE image"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+          "title": "Invalid PE image"
         },
         "contains": {
-          "/results/0/error/message": "truncated optional header"
+          "/results/0/error/message": "truncated optional header",
+          "/results/0/error/detail": "truncated optional header",
+          "/detail": "truncated optional header"
         }
       }
     },
@@ -522,13 +578,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_pe"
+                "code": "invalid_pe",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+                "title": "Invalid PE image"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
+          "title": "Invalid PE image"
         },
         "contains": {
-          "/results/0/error/message": "certificate table must end at EOF"
+          "/results/0/error/message": "certificate table must end at EOF",
+          "/results/0/error/detail": "certificate table must end at EOF",
+          "/detail": "certificate table must end at EOF"
         }
       }
     },
@@ -553,13 +615,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_eku"
+                "code": "invalid_eku",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_eku",
+                "title": "Invalid extended key usage"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_eku",
+          "title": "Invalid extended key usage"
         },
         "contains": {
-          "/results/0/error/message": "TSA EKU"
+          "/results/0/error/message": "TSA EKU",
+          "/results/0/error/detail": "TSA EKU",
+          "/detail": "TSA EKU"
         }
       }
     },
@@ -657,13 +725,19 @@
           "results": [
             {
               "error": {
-                "code": "certificate_expired"
+                "code": "certificate_expired",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_expired",
+                "title": "Certificate expired"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_expired",
+          "title": "Certificate expired"
         },
         "contains": {
-          "/results/0/error/message": "CertExpired"
+          "/results/0/error/message": "CertExpired",
+          "/results/0/error/detail": "CertExpired",
+          "/detail": "CertExpired"
         }
       }
     },
@@ -751,13 +825,19 @@
           "results": [
             {
               "error": {
-                "code": "certificate_revoked"
+                "code": "certificate_revoked",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_revoked",
+                "title": "Certificate revoked"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_revoked",
+          "title": "Certificate revoked"
         },
         "contains": {
-          "/results/0/error/message": "CertRevoked"
+          "/results/0/error/message": "CertRevoked",
+          "/results/0/error/detail": "CertRevoked",
+          "/detail": "CertRevoked"
         }
       }
     },
@@ -783,13 +863,19 @@
           "results": [
             {
               "error": {
-                "code": "crl_expired"
+                "code": "crl_expired",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#crl_expired",
+                "title": "CRL expired"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#crl_expired",
+          "title": "CRL expired"
         },
         "contains": {
-          "/results/0/error/message": "CRL has expired"
+          "/results/0/error/message": "CRL has expired",
+          "/results/0/error/detail": "CRL has expired",
+          "/detail": "CRL has expired"
         }
       }
     },
@@ -815,13 +901,19 @@
           "results": [
             {
               "error": {
-                "code": "invalid_crl_signature"
+                "code": "invalid_crl_signature",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_crl_signature",
+                "title": "Invalid CRL signature"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_crl_signature",
+          "title": "Invalid CRL signature"
         },
         "contains": {
-          "/results/0/error/message": "InvalidCrlSignature"
+          "/results/0/error/message": "InvalidCrlSignature",
+          "/results/0/error/detail": "InvalidCrlSignature",
+          "/detail": "InvalidCrlSignature"
         }
       }
     },
@@ -846,13 +938,19 @@
           "results": [
             {
               "error": {
-                "code": "untrusted_root"
+                "code": "untrusted_root",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#untrusted_root",
+                "title": "Untrusted root certificate"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#untrusted_root",
+          "title": "Untrusted root certificate"
         },
         "contains": {
-          "/results/0/error/message": "UnknownIssuer"
+          "/results/0/error/message": "UnknownIssuer",
+          "/results/0/error/detail": "UnknownIssuer",
+          "/detail": "UnknownIssuer"
         }
       }
     },
@@ -874,11 +972,17 @@
           "command": "verify",
           "ok": false,
           "error": {
-            "code": "configuration"
-          }
+            "code": "configuration",
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+            "title": "Invalid configuration"
+          },
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
+          "title": "Invalid configuration"
         },
         "contains": {
-          "/error/message": "supply --crl"
+          "/error/message": "supply --crl",
+          "/error/detail": "supply --crl",
+          "/detail": "supply --crl"
         }
       }
     },
@@ -900,13 +1004,19 @@
           "results": [
             {
               "error": {
-                "code": "read_failed"
+                "code": "read_failed",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#read_failed",
+                "title": "Input read failed"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#read_failed",
+          "title": "Input read failed"
         },
         "contains": {
-          "/results/0/error/message": "reading"
+          "/results/0/error/message": "reading",
+          "/results/0/error/detail": "reading",
+          "/detail": "reading"
         }
       }
     },
@@ -948,10 +1058,14 @@
           "results": [
             {
               "error": {
-                "code": "invalid_key_usage"
+                "code": "invalid_key_usage",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_key_usage",
+                "title": "Invalid key usage"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_key_usage",
+          "title": "Invalid key usage"
         }
       }
     },
@@ -975,10 +1089,14 @@
                 "stage": "cms",
                 "details": {
                   "oid": "1.2.840.10045.4.3.127"
-                }
+                },
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+                "title": "Unsupported algorithm"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+          "title": "Unsupported algorithm"
         }
       }
     },
@@ -1002,10 +1120,14 @@
                 "stage": "cms",
                 "details": {
                   "oid": "2.16.840.1.101.3.4.2.127"
-                }
+                },
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+                "title": "Unsupported algorithm"
               }
             }
-          ]
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+          "title": "Unsupported algorithm"
         }
       }
     },
@@ -1027,8 +1149,771 @@
               "error": {
                 "code": "invalid_certificate_table",
                 "stage": "certificate_table",
-                "details": {}
+                "details": {},
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_certificate_table",
+                "title": "Invalid certificate table"
               }
+            }
+          ],
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_certificate_table",
+          "title": "Invalid certificate table"
+        }
+      }
+    },
+    {
+      "id": "rfc9457-invalid-arguments",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "invalid"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "json": {
+          "schema_version": 1,
+          "command": "arguments",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+          "title": "Invalid arguments",
+          "error": {
+            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
+            "title": "Invalid arguments",
+            "code": "invalid_arguments",
+            "stage": "arguments"
+          },
+          "results": []
+        },
+        "contains": {
+          "/detail": "invalid",
+          "/error/detail": "invalid"
+        }
+      }
+    },
+    {
+      "id": "bad-cms-content-digest",
+      "input": "bad-cms-content-digest.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#content_digest_mismatch",
+          "title": "Content digest mismatch",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "content_digest_mismatch",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#content_digest_mismatch",
+                "title": "Content digest mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "CMS content digest mismatch",
+          "/results/0/error/detail": "CMS content digest mismatch"
+        }
+      }
+    },
+    {
+      "id": "bad-cms-content-type",
+      "input": "bad-cms-content-type.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signed contentType mismatch",
+          "/results/0/error/detail": "signed contentType mismatch"
+        }
+      }
+    },
+    {
+      "id": "bad-signer-issuer",
+      "input": "bad-signer-issuer.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signer certificate missing",
+          "/results/0/error/detail": "signer certificate missing"
+        }
+      }
+    },
+    {
+      "id": "bad-signer-serial",
+      "input": "bad-signer-serial.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signer certificate missing",
+          "/results/0/error/detail": "signer certificate missing"
+        }
+      }
+    },
+    {
+      "id": "bad-cms-digest-set",
+      "input": "bad-cms-digest-set.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signer digest absent from SignedData digestAlgorithms",
+          "/results/0/error/detail": "signer digest absent from SignedData digestAlgorithms"
+        }
+      }
+    },
+    {
+      "id": "bad-signature-digest-algorithm",
+      "input": "bad-signature-digest-algorithm.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+          "title": "Unsupported algorithm",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsupported_algorithm",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsupported_algorithm",
+                "title": "Unsupported algorithm"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "unsupported signature algorithm",
+          "/results/0/error/detail": "unsupported signature algorithm"
+        }
+      }
+    },
+    {
+      "id": "bad-signature-key-algorithm",
+      "input": "bad-signature-key-algorithm.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "unknown/unsupported algorithm OID: 1.2.840.113549.1.1.1",
+          "/results/0/error/detail": "unknown/unsupported algorithm OID: 1.2.840.113549.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "bad-signer-public-key",
+      "input": "bad-signer-public-key.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signature error",
+          "/results/0/error/detail": "signature error"
+        }
+      }
+    },
+    {
+      "id": "bad-countersignature-digest",
+      "input": "bad-countersignature-digest.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#content_digest_mismatch",
+          "title": "Content digest mismatch",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "content_digest_mismatch",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#content_digest_mismatch",
+                "title": "Content digest mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "CMS content digest mismatch",
+          "/results/0/error/detail": "CMS content digest mismatch"
+        }
+      }
+    },
+    {
+      "id": "bad-timestamp-signature",
+      "input": "bad-timestamp-signature.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_timestamp",
+          "title": "Invalid timestamp",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_timestamp",
+                "title": "Invalid timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signature error",
+          "/results/0/error/detail": "signature error"
+        }
+      }
+    },
+    {
+      "id": "bad-countersignature-signature",
+      "input": "bad-countersignature-signature.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_timestamp",
+          "title": "Invalid timestamp",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_timestamp",
+                "title": "Invalid timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signature error",
+          "/results/0/error/detail": "signature error"
+        }
+      }
+    },
+    {
+      "id": "bad-nested-signature",
+      "input": "bad-nested-signature.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+          "title": "Invalid signature",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_signature",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signature error",
+          "/results/0/error/detail": "signature error"
+        }
+      }
+    },
+    {
+      "id": "bad-certificate-not-yet-valid",
+      "input": "bad-certificate-not-yet-valid.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_not_yet_valid",
+          "title": "Certificate not yet valid",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_not_yet_valid",
+                "title": "Certificate not yet valid"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "CertNotValidYet",
+          "/results/0/error/detail": "CertNotValidYet"
+        }
+      }
+    },
+    {
+      "id": "bad-certificate-expired",
+      "input": "bad-certificate-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_expired",
+          "title": "Certificate expired",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_expired",
+                "title": "Certificate expired"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "CertExpired",
+          "/results/0/error/detail": "CertExpired"
+        }
+      }
+    },
+    {
+      "id": "bad-signer-eku",
+      "input": "bad-signer-eku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_eku",
+          "title": "Invalid extended key usage",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_eku",
+                "stage": "certificate",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_eku",
+                "title": "Invalid extended key usage"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signer certificate lacks required EKU",
+          "/results/0/error/detail": "signer certificate lacks required EKU"
+        }
+      }
+    },
+    {
+      "id": "bad-signer-key-usage",
+      "input": "bad-signer-key-usage.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_key_usage",
+          "title": "Invalid key usage",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_key_usage",
+                "title": "Invalid key usage"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "signer KeyUsage lacks digitalSignature",
+          "/results/0/error/detail": "signer KeyUsage lacks digitalSignature"
+        }
+      }
+    },
+    {
+      "id": "bad-certificate-signature",
+      "input": "bad-certificate-signature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_chain_invalid",
+          "title": "Invalid certificate chain",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_chain_invalid",
+                "title": "Invalid certificate chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "InvalidSignatureForPublicKey",
+          "/results/0/error/detail": "InvalidSignatureForPublicKey"
+        }
+      }
+    },
+    {
+      "id": "bad-intermediate-signature",
+      "input": "bad-intermediate-signature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/good-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_chain_invalid",
+          "title": "Invalid certificate chain",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#certificate_chain_invalid",
+                "title": "Invalid certificate chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "InvalidSignatureForPublicKey",
+          "/results/0/error/detail": "InvalidSignatureForPublicKey"
+        }
+      }
+    },
+    {
+      "id": "bad-crl-not-yet-valid",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/bad-crl-not-yet-valid.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#crl_not_yet_valid",
+          "title": "CRL not yet valid",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_not_yet_valid",
+                "stage": "revocation",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#crl_not_yet_valid",
+                "title": "CRL not yet valid"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "CRL thisUpdate is in the future",
+          "/results/0/error/detail": "CRL thisUpdate is in the future"
+        }
+      }
+    },
+    {
+      "id": "intermediate-current-crls",
+      "input": "good-intermediate.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/good-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
             }
           ]
         }

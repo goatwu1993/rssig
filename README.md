@@ -39,11 +39,18 @@ validation time for reproducible tests; otherwise the current time is used.
 
 Successes serialize a verification bundle with image digests, parsed certificate
 CN/RDNs, EKUs, key usage, validity, trust chain, timestamp signer, and CRL
-artifacts. Failures serialize a stable error code, stage, message, details, and
-causes. The public Serde types are in `src/domain.rs`. Example failure:
+artifacts. Every failed invocation and nested error uses the RFC 9457 Problem
+Details data model: `type`, `title`, and `detail`, with existing error codes,
+stages, messages, structured details, and causes retained as extensions. CLI
+output omits HTTP `status`; process exit codes keep their existing meaning.
+See [the error contract and problem type registry](docs/problems.md). The public
+Serde types are in `src/domain.rs`. Example error object:
 
 ```json
 {
+  "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#image_digest_mismatch",
+  "title": "PE image digest mismatch",
+  "detail": "PE image digest mismatch (file was modified)",
   "code": "image_digest_mismatch",
   "stage": "image_digest",
   "message": "PE image digest mismatch (file was modified)",
@@ -54,6 +61,8 @@ causes. The public Serde types are in `src/domain.rs`. Example failure:
 
 The fixture suite covers good/bad PE signatures, image/page digest tampering,
 nested signatures, timestamp binding and EKU, expiry, trust roots, and CRLs.
+See [the negative fixture coverage](docs/mismatch-fixtures.md) for isolated
+CMS, timestamp, certificate, and algorithm mismatch cases.
 See [AGENT.md](AGENT.md) for the TDD workflow and
 [tests/cases.json](tests/cases.json) for executable test definitions.
 

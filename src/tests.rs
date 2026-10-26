@@ -1,3 +1,5 @@
+mod fixture_faults;
+
 use super::*;
 use ::der::{Encode, asn1::BitString};
 use p256::ecdsa::{Signature, SigningKey};
@@ -637,6 +639,7 @@ fn rsa_pkcs1_signature_and_chain_use_rustcrypto() {
 fn regenerate_cli_fixtures() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     std::fs::create_dir_all(&dir).unwrap();
+    fixture_faults::write(&dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let good = make_pe(true, false, false);
     let mutate_oid = |needle: &[u8]| {

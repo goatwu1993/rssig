@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "fixtures": ".",
+  "cases": [
+    {
+      "id": "intentional-assertion-failure",
+      "input": "not-pe.bin",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true
+        }
+      }
+    }
+  ]
+}
