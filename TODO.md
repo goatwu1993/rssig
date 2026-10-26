@@ -3,7 +3,7 @@
 Work from the top down. Rank reflects verification correctness and confidence
 before convenience or additional formats. Every behavior change starts with a
 committed fixture and JSON testcase that fails for the intended reason; follow
-[AGENT.md](AGENT.md). Production verification stays pure Rust, with the OS used
+[AGENTS.md](AGENTS.md). Production verification stays pure Rust, with the OS used
 only to load roots. All CLI output stays serialized domain data.
 
 ## P0 — Verification correctness

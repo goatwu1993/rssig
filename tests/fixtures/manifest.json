@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "provenance": {
-    "kind": "synthetic",
+    "kind": "mixed",
     "generator": "src/tests.rs::regenerate_cli_fixtures",
     "command": "cargo test --locked regenerate_cli_fixtures -- --ignored",
-    "crypto": "RustCrypto P-256 deterministic test keys and signatures; no OpenSSL or external signing command",
+    "crypto": "Synthetic RustCrypto deterministic test keys/signatures; independently signed artifacts record their own tool provenance. No native crypto in the engine.",
     "license": "Apache-2.0 (repository-generated artifacts)",
     "validation_time": 1800000000,
-    "warning": "Synthetic PE containers for parsing and cryptographic tests only. Never execute these artifacts. Keys are public test constants.",
-    "interop_status": "Not independently produced by jsign/relic; external interoperability coverage is still needed."
+    "warning": "Test-only PE/CFB containers. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance.",
+    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence."
   },
   "artifacts": [
     {
@@ -324,6 +324,828 @@
       "bytes": 188,
       "description": "Current CRL signed by the deterministic intermediate CA key, covering the leaf of good-intermediate.exe. Paired with good.crl for complete chain revocation coverage.",
       "paired_good": "good.crl"
+    },
+    {
+      "file": "msi-bad-ca-key-usage.msi",
+      "sha256": "2855462f38068664052dcd9a4fd9bd09d372763b623067a177456f4e96f532fd",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_key_usage. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-ca-key-usage"
+      ],
+      "paired_good": "msi-good-intermediate.msi"
+    },
+    {
+      "file": "msi-bad-certificate-expired.msi",
+      "sha256": "3e52c3d8b49aa60680b30b69442a6e6db08046eb92e01ddddb85a2c30dafb1ce",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: certificate_expired. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-certificate-expired"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-certificate-not-yet-valid.msi",
+      "sha256": "75dd47bb167795d83adb92fbb659ffb1c19c7654c28406ef17546ee39a765fef",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: certificate_not_yet_valid. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-certificate-not-yet-valid"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-certificate-signature.msi",
+      "sha256": "ce0d8f4f3e2e9a0324d6476fb9fb331cf952150823aed6986d569859f492dca3",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: certificate_chain_invalid. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-certificate-signature"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-cms-content-digest.msi",
+      "sha256": "6da9ab183a59a23b43f35d18d43f2666ac18f11a95fa422da859644dcc00d73f",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: content_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-cms-content-digest"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-cms-content-type.msi",
+      "sha256": "249f47361a8dfa86f03e4e8367acc202c1a1af88f12f6ebf9d6773926c63eee3",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-cms-content-type"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-cms-digest-set.msi",
+      "sha256": "961917fa05545780863536389e875a00e5a4f66333d831a77cb595d787666d14",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-cms-digest-set"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-cms-signature.msi",
+      "sha256": "bbb9f4bb4909c3f468f4eec55e7e5d474ed6d7064668e275c591e46aaa4dce2a",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-cms"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-cms-trailer.msi",
+      "sha256": "846650781a658cbf97b992eae19af7d3344175c01c6f0e970e534b7a414a6061",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-cms-trailer"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-countersignature-digest.msi",
+      "sha256": "3d21f89207af69e86c582926b1efa0cc984126042edac0db47a3b71f999ba8d2",
+      "bytes": 11776,
+      "description": "Deterministic MSI fixture for 1: content_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-countersignature-digest"
+      ],
+      "paired_good": "msi-good-countersignature.msi"
+    },
+    {
+      "file": "msi-bad-countersignature-signature.msi",
+      "sha256": "457faa2ad4e1ea85090c4151b88b3e0504ce4427639f61e310555a24af30d933",
+      "bytes": 11776,
+      "description": "Deterministic MSI fixture for 1: invalid_timestamp. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-countersignature-signature"
+      ],
+      "paired_good": "msi-good-countersignature.msi"
+    },
+    {
+      "file": "msi-bad-directory-cycle.msi",
+      "sha256": "fb9037ac6625bcda39ad8766744ec2f55216cfbdb6362f44804c2de10dd218e6",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-directory-cycle"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-empty-extended.msi",
+      "sha256": "a23593504a4fe72092fd1c589a4ada9fe4509230198bc8032f0c8d3b47cd5d83",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-empty-extended"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-empty-signature.msi",
+      "sha256": "fb8694dc691d4ef030272416a255f4484530685dbcef37990ccb2cfaf35cbad9",
+      "bytes": 9728,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-empty-signature"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-extended-digest.msi",
+      "sha256": "cfe487e649c45d0c461a0b799dc64f5e60d486b48e42ee8ef701bd24b5578aba",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-extended-digest"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-extended-size.msi",
+      "sha256": "a25e98c4b3a830c293c5028ddede662883df3952663ebee0a9e0785396e11ced",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-extended-size"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-extended-storage.msi",
+      "sha256": "fc44a64af78f5e66717f44bcea3a0fd0d1ef76e41b4278b9d32e31d352824e3f",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-extended-storage"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-future-timestamp.msi",
+      "sha256": "a387f239f087d09afb54c92a34591cf22fa383c7753f9af6f09bca88393eddce",
+      "bytes": 12800,
+      "description": "Deterministic MSI fixture for 1: timestamp_in_future. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-future-timestamp"
+      ],
+      "paired_good": "msi-good-rfc3161.msi"
+    },
+    {
+      "file": "msi-bad-intermediate-signature.msi",
+      "sha256": "63d0ba97a693185aa1e3bca698ca99a41789f128fc967f4096d9fa5d24596624",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: certificate_chain_invalid. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-intermediate-signature"
+      ],
+      "paired_good": "msi-good-intermediate.msi"
+    },
+    {
+      "file": "msi-bad-legacy-clsid.msi",
+      "sha256": "d3420dfaf4b8cd9524d955fe62df0b9e3e3db2e29e62f13eca81de868ed9b629",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: package_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-legacy-clsid"
+      ],
+      "paired_good": "msi-good-legacy.msi"
+    },
+    {
+      "file": "msi-bad-legacy-stream.msi",
+      "sha256": "3e9f71e06a499ef93e3c50567b12e8800299bdf894a6880016ee5e65553bc8e4",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: package_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-legacy-stream"
+      ],
+      "paired_good": "msi-good-legacy.msi"
+    },
+    {
+      "file": "msi-bad-malformed-cms.msi",
+      "sha256": "04110e52fee4482bb097a79271fbd2a758faf199ac9d6730df760df83f4d71b1",
+      "bytes": 9728,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-malformed-cms"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-metadata-flags.msi",
+      "sha256": "c31b043af699ea8a4df93e0708b0896919725db4c7b0c8ee656d0d03fa5f1ba8",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-metadata-flags"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-metadata-name.msi",
+      "sha256": "7074c2874d1f9d3acd081862e848f5a6588d29f30433622ad36349d318af95ef",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-metadata-name"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-metadata-time.msi",
+      "sha256": "f350df46c69a7752ffb43caaaeae5e84c1af90c8732eac41ef27afeb49a117ed",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-metadata-time"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-name-length.msi",
+      "sha256": "d3533239c6481070699facbf732d39b116d4dd4d588a816fc853a334c7181306",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-name-length"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-nested-signature-stream.msi",
+      "sha256": "8ec6e8c2d06415750302b1b42941a1ffb507258f3af19143d407d4613eb5da96",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-nested-signature-stream"
+      ],
+      "paired_good": "msi-good-nested.msi"
+    },
+    {
+      "file": "msi-bad-nested-signature.msi",
+      "sha256": "1da3f97832741e8090d752aad3167aa0d3e8e899366ea8e7ef89642fc9d9b6c3",
+      "bytes": 12288,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-nested-signature"
+      ],
+      "paired_good": "msi-good-nested.msi"
+    },
+    {
+      "file": "msi-bad-sector-size.msi",
+      "sha256": "6e5e153fef977d62cc4bd3eeda49420a1b7618d899b4157ad9e92c6c7e62e2f2",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-sector-size"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signature-digest-algorithm.msi",
+      "sha256": "de4c889d1106436c5687a8badd86aab02bf3ce52c2a41b3f8ddadf0e2d5bde2a",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: unsupported_algorithm. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signature-digest-algorithm"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signature-key-algorithm.msi",
+      "sha256": "d1dc28caa674e05f56b1ff39f120682d7b700802605b4ddd7438e3c32bca7817",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signature-key-algorithm"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signature-name-case.msi",
+      "sha256": "32ea710942fc0fed0bf67c72c58cfa7559973106c1b3ec6dc47c69d8dd31d2e8",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signature-name-case"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signature-storage.msi",
+      "sha256": "c4ca6a1cea20bcb69c36f7b70ba374aa77a494cfcd40b54e290e268966f86e3f",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signature-storage"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-eku.msi",
+      "sha256": "2f01e19c056fddb3e647803a6fc48dd41a32af346f98d5e3a3b0e75a5dae6256",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_eku. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signer-eku"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-issuer.msi",
+      "sha256": "7df7db7fe2cce8343b8657ecb3bff017783df93a58040142e6441dbeb479bbe2",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signer-issuer"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-key-usage.msi",
+      "sha256": "b7a901db3e51ecb9bcceccd09cf7d07659e08704edb3e25c8e89eccae22cd02e",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_key_usage. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signer-key-usage"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-public-key.msi",
+      "sha256": "8872fc57c04c4a03ad20a5f351d1c3b052078ba91464d54593425cfe2ff53601",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signer-public-key"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-serial.msi",
+      "sha256": "f087a5e8c676fea19e20c1de959b6a153f3408d2cde0c3102d81c34433cb3fc8",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_signature. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-signer-serial"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-sip-reserved.msi",
+      "sha256": "3bbe2873ff6af95525c06d229700a42232973521c4bbdc386fae4af2d6c552b4",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-sip-reserved"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-sip-type.msi",
+      "sha256": "45d66640eccc07e0daa3a3e647ff18a839fa804c16e838a25c95003c21257a75",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-sip-type"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-sip-uuid.msi",
+      "sha256": "21ecfc1f657e9e1a54722a453c145238e95ac4d56732eedf79a50875b1319300",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-sip-uuid"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-sip-version.msi",
+      "sha256": "24272395d704ed09b6e8d2c0d148ac3aa279998c453e8d07d7db3c36de9893d0",
+      "bytes": 11264,
+      "description": "Correctly signed MSI SIP version 3 is unsupported. Versions 1 (jsign/relic) and 2 (observed signtool fixture) are accepted.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-sip-version"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-storage-clsid.msi",
+      "sha256": "70fbcf9edf658c59e5f17a36fc472a2a7e5bf648a0f56bced83cb8a33345939f",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-storage-clsid"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-stream-chain.msi",
+      "sha256": "964a4542445190f5925420d9aa107d78355e78ad9fdf50ea625726697b597538",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-stream-chain"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-stream-content.msi",
+      "sha256": "edbd977f30575f04d630bc679b7e8c2315f62b805882d2e5570f428345141231",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: package_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-stream-content"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-stream-overflow.msi",
+      "sha256": "6141064689ca6a59a44d73a7f8be3296f07a8803cb034e084ffd18a02a1aca50",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-stream-overflow"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-stream-size.msi",
+      "sha256": "e0774964417e26b3327c0c1152f6453180d978cea941d16fb72b0fba6b716e9a",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: extended_digest_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-stream-size"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-timestamp-eku.msi",
+      "sha256": "0917202f306a72fb9f6de9c63ea962e6b6342cda7e655fb0ed7b40cb721c5e36",
+      "bytes": 12800,
+      "description": "Deterministic MSI fixture for 1: invalid_eku. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-wrong-tsa-eku"
+      ],
+      "paired_good": "msi-good-rfc3161.msi"
+    },
+    {
+      "file": "msi-bad-timestamp-imprint.msi",
+      "sha256": "82089cb679a05dae2f48a1ef0113f5f9c2c8b67344fde319031677f4a137f484",
+      "bytes": 12800,
+      "description": "Deterministic MSI fixture for 1: timestamp_imprint_mismatch. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-imprint"
+      ],
+      "paired_good": "msi-good-rfc3161.msi"
+    },
+    {
+      "file": "msi-bad-timestamp-signature.msi",
+      "sha256": "b18f23d1a6eb1d87beb621fcea800ac3ce59d199ce0ae433d787711016a4738d",
+      "bytes": 12800,
+      "description": "Deterministic MSI fixture for 1: invalid_timestamp. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-timestamp-signature"
+      ],
+      "paired_good": "msi-good-rfc3161.msi"
+    },
+    {
+      "file": "msi-bad-truncated.msi",
+      "sha256": "e90a06e72c64a31688d7f020abe4755f9a2f5a6c6c7913ea30446ee12ec37f47",
+      "bytes": 300,
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-bad-truncated"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-good-countersignature.msi",
+      "sha256": "863b67c95eeeabddf3432df3734cd7e7063f3a5216e87ec40d24074e1dc46fd2",
+      "bytes": 11776,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-legacy-counter",
+        "msi-expired-with-counter"
+      ]
+    },
+    {
+      "file": "msi-good-intermediate.msi",
+      "sha256": "e11355083394d21a95b8f47d3bde49581599f0c353ebd8491f1ff630d35fe4b8",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: configuration, 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-intermediate-without-eku",
+        "msi-intermediate-current-crls"
+      ]
+    },
+    {
+      "file": "msi-good-legacy.msi",
+      "sha256": "de25e0e2bfefa9b0c609b120785451e761a215b92201e4711e2f3876d331b50d",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-good-legacy"
+      ]
+    },
+    {
+      "file": "msi-good-nested.msi",
+      "sha256": "3976890fa6751f4e191cf5911a0aafd98aabb42dd815e3cdc7c00ab00abce674",
+      "bytes": 12288,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-nested-signatures"
+      ]
+    },
+    {
+      "file": "msi-good-pe64.msi",
+      "sha256": "0633d203a38dcf951ac3dd91a0b6e69024420c3b59223efd5e6115d03a5d178b",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: success, 1: certificate_expired, 1: certificate_revoked, 1: crl_expired, 1: crl_not_yet_valid, 1: invalid_crl_signature, 1: untrusted_root, 2: configuration, 2: invalid_arguments. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-pe64",
+        "msi-integrity-only",
+        "msi-current-crl",
+        "msi-expired-without-timestamp",
+        "msi-revoked",
+        "msi-expired-crl",
+        "msi-forged-crl",
+        "msi-unknown-root",
+        "msi-missing-crl-policy",
+        "msi-rfc9457-invalid-arguments",
+        "msi-bad-crl-not-yet-valid"
+      ]
+    },
+    {
+      "file": "msi-good-rfc3161.msi",
+      "sha256": "d4575d5aef8011327dd24f8d17c8d5b3293d95293f10a66905e065d5b93950f6",
+      "bytes": 12800,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-rfc3161",
+        "msi-expired-with-rfc3161"
+      ]
+    },
+    {
+      "file": "msi-good-sha1.msi",
+      "sha256": "7f4948a8d0979148763289dbebacd1aebcc0f6956de6eaf86069ff7e673dbb7c",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: success, 1: weak_algorithm. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-good-sha1",
+        "msi-sha1-explicit-opt-in"
+      ]
+    },
+    {
+      "file": "msi-good-sha384.msi",
+      "sha256": "588b08861c9577b4fd08d571b29c04862de737d653c6958cd83b72b94750d20b",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-good-sha384"
+      ]
+    },
+    {
+      "file": "msi-good-sha512.msi",
+      "sha256": "f5c4877fb1c6fd8bf2fd75dd7d6e3fd41ad8acd971ee126e7fb32e3e2e7dace6",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-good-sha512"
+      ]
+    },
+    {
+      "file": "msi-good-v4.msi",
+      "sha256": "45e7cebb6d64a3a41a3d9ec35b18a589f237060e87e67949268277018a90ff6a",
+      "bytes": 28672,
+      "description": "Deterministic MSI fixture for 0: success. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-good-v4"
+      ]
+    },
+    {
+      "file": "msi-independent-signtool.msi",
+      "sha256": "2d7d9e46867815a01e1111c88264a913503a247c678fa31d7633c77e62907ece",
+      "bytes": 24576,
+      "description": "Unmodified upstream signtool-signed MSI: SIP version 2, sign-padded serial, SHA1 package digest, RSA1024 signer. Digest is independently pinned in focused tests; CLI must reject weak RSA1024 even with SHA1 opt-in.",
+      "source": "https://github.com/ebourg/jsign/blob/cf5d2ceaf2ec80cb793f7377749ef811d4be4d34/jsign-core/src/test/resources/minimal-signed-with-signtool.msi",
+      "license": "Apache-2.0 (jsign repository)",
+      "upstream_revision": "cf5d2ceaf2ec80cb793f7377749ef811d4be4d34",
+      "cases": [
+        "msi-independent-signtool"
+      ]
+    },
+    {
+      "file": "msi-unsigned.msi",
+      "sha256": "f83cf8229ac87fa0e29170a7a738e66e2f4c4d5f2dc565dd6cf4904724a9865a",
+      "bytes": 9728,
+      "description": "Deterministic MSI fixture for 1: unsigned. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-unsigned"
+      ]
+    },
+    {
+      "file": "msi-unsupported-digest-algorithm.msi",
+      "sha256": "be10a2ace0a06c04832bafdf66ea9a45212b65d762ffda0b09de684577802398",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: unsupported_algorithm. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-unsupported-digest"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-unsupported-signature-algorithm.msi",
+      "sha256": "f58c73f78d819b1479b0bf95b72489b4118d7e26a84d80485d4f0961fb74a0b8",
+      "bytes": 11264,
+      "description": "Deterministic MSI fixture for 1: unsupported_algorithm. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "cases": [
+        "msi-unsupported-signature"
+      ],
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-empty-signer-set.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "f4e4a91acc995f0fe7abb35cdd0ece531be78ec845f1e2e2b2b7511d70861a4f",
+      "bytes": 10752,
+      "cases": [
+        "msi-bad-empty-signer-set"
+      ],
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-encoded-signature.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "a7f46b72f5548a08e6a5971ec749f7775b01b2ca537ecc3709912b83f296a218",
+      "bytes": 11264,
+      "cases": [
+        "msi-bad-encoded-signature"
+      ],
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-nested-depth.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "1e7c4381e71cc8fdb3dc95aa72f85faafc6f27dfdf4754823bad8ca3dde5a38c",
+      "bytes": 22016,
+      "cases": [
+        "msi-bad-nested-depth"
+      ],
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-oversized-extended.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "285a80e1500344567e8e8bffe5acf72ac85a2c866d4e9889d9ad7a27a7c1d954",
+      "bytes": 11264,
+      "cases": [
+        "msi-bad-oversized-extended"
+      ],
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-signer-count.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "b6671f605926a3e4285acf58714975c0f567586ccb91709bd55e36e48820b343",
+      "bytes": 25088,
+      "cases": [
+        "msi-bad-signer-count"
+      ],
+      "description": "Deterministic MSI fixture for 1: malformed_cms. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-storage-depth.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "5cccbe469e520512c4b9449a2bc43424bafb7733caf9ae2ff262d7334159f52b",
+      "bytes": 19968,
+      "cases": [
+        "msi-bad-storage-depth"
+      ],
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-total-stream-size.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "1429fb8686030f775157da9baa4e08bb10090ae38177d1c3ff56854594b0b337",
+      "bytes": 11264,
+      "cases": [
+        "msi-bad-total-stream-size"
+      ],
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-bad-trailing-data.msi",
+      "generator": "src/tests/msi_fixtures.rs::write",
+      "sha256": "1c6995091f4cecadbaab0e35e3ce661a79e308d7752141dcba3b81497432fe30",
+      "bytes": 11265,
+      "cases": [
+        "msi-bad-trailing-data"
+      ],
+      "description": "Deterministic MSI fixture for 1: invalid_msi. Signature/content/trust faults are isolated and asserted in the listed CLI cases.",
+      "paired_good": "msi-good-pe64.msi"
+    },
+    {
+      "file": "msi-independent-jsign.msi",
+      "sha256": "b7fed72dcdad866d3ce6edb38a7ba4dbc4164a23198c82c13e5a6b4ffc349215",
+      "bytes": 11264,
+      "cases": [
+        "msi-independent-jsign"
+      ],
+      "description": "Independently signed by jsign 7.6 using public deterministic test-only RSA2048 key (StdRng seed 42), no timestamp, SHA256. Integrity-only success; no trust assertion. Source container is msi-unsigned.msi.",
+      "signer": "jsign 7.6",
+      "source": "https://github.com/ebourg/jsign/releases/tag/7.6",
+      "license": "Apache-2.0 (repository-generated container, externally signed)",
+      "command": "java -jar jsign-7.6.jar --keyfile <temporary-test-key.pem> --certfile <temporary-test-certificate.pem> --alg SHA-256 msi-independent-jsign.msi",
+      "key_recipe": "cargo test --locked export_msi_test_identity -- --ignored; public deterministic RSA test key, no production secrets",
+      "signer_jar_sha256": "6cf58aa080e7ff82656f320cff8d4a3bff30408df8766806dcba3740dd839fa5"
     }
   ]
 }

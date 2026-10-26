@@ -140,8 +140,8 @@ impl<'a> SignedData<'a> {
             .iter()
             .find(|cert| {
                 cert.tbs_certificate.issuer.to_der().ok().as_deref() == Some(sid[0].full)
-                    && cert.tbs_certificate.serial_number.as_bytes()
-                        == sid[1].body.strip_prefix(&[0]).unwrap_or(sid[1].body)
+                    && cert.tbs_certificate.serial_number.to_der().ok().as_deref()
+                        == Some(sid[1].full)
             })
             .context("signer certificate missing")?
             .clone();
@@ -215,8 +215,44 @@ impl<'a> SignedData<'a> {
             !data.is_empty() && der::oid(data[0], PE_IMAGE),
             "not a PE image signature"
         );
+        self.indirect_digest()
+    }
+    fn indirect_digest(&self) -> Result<(Hash, &'a [u8])> {
+        let indirect = der::fields(self.content, 2)?;
         let digest = der::fields(indirect[1].expect(0x30)?, 2)?;
         Ok((algorithm(digest[0])?, digest[1].expect(4)?.body))
+    }
+
+    pub fn package_digest(&self) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not an MSI Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = der::fields(indirect[0].expect(0x30)?, 2)?;
+        ensure!(
+            der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 30]),
+            "invalid MSI SIP type"
+        );
+        let sip = der::fields(data[1].expect(0x30)?, 7)?;
+        ensure!(
+            matches!(sip[0].expect(2)?.body, [1] | [2]),
+            "unsupported MSI SIP version"
+        );
+        ensure!(
+            sip[1].expect(4)?.body
+                == [
+                    0xf1, 0x10, 0x0c, 0, 0, 0, 0, 0, 0xc0, 0, 0, 0, 0, 0, 0, 0x46
+                ],
+            "invalid MSI SIP UUID"
+        );
+        for reserved in &sip[2..] {
+            ensure!(
+                reserved.expect(2)?.body == [0],
+                "invalid MSI SIP reserved field"
+            );
+        }
+        self.indirect_digest()
     }
 
     pub fn page_hashes(&self) -> Result<Option<(Hash, &'a [u8])>> {

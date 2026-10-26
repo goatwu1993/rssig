@@ -3,6 +3,7 @@ use crate::{
     cms::{self, SignedData},
     crypto::Hash,
     der::{self, Node},
+    msi::Msi,
     pe::Pe,
     trust::{self, TrustStore},
 };
@@ -20,27 +21,76 @@ pub fn verify_pe(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_inner(bytes, options).map_err(|e| {
+    verify_inner(bytes, options, false).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
+}
+
+/// Detect the signed container from its bytes; file extensions are not trusted.
+pub fn verify(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    if bytes.starts_with(crate::msi::MAGIC) {
+        verify_msi(bytes, options)
+    } else {
+        verify_pe(bytes, options)
+    }
+}
+
+pub fn verify_msi(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, true).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+enum Container<'a> {
+    Pe(Pe<'a>),
+    Msi(Box<Msi<'a>>),
 }
 
 fn tagged<T>(result: Result<T>, code: ErrorCode, stage: Stage) -> Result<T> {
     result.map_err(|e| VerificationError::from_internal(e, code, stage).into())
 }
 
-fn verify_inner(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<VerificationBundle> {
-    let pe = tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?;
+fn verify_inner(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    msi: bool,
+) -> Result<VerificationBundle> {
+    let mut container = if msi {
+        Container::Msi(Box::new(Msi::parse(bytes)?))
+    } else {
+        Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?)
+    };
     let mut reports = Vec::new();
-    for certificate in tagged(
-        pe.certificates(),
-        ErrorCode::InvalidCertificateTable,
-        Stage::CertificateTable,
-    )? {
+    let certificates: Vec<Vec<u8>> = match &container {
+        Container::Pe(pe) => tagged(
+            pe.certificates(),
+            ErrorCode::InvalidCertificateTable,
+            Stage::CertificateTable,
+        )?
+        .iter()
+        .map(|c| c.to_vec())
+        .collect(),
+        Container::Msi(msi) => vec![msi.signature().to_vec()],
+    };
+    for certificate in &certificates {
         // Some signers count zero padding inside dwLength. Only permit zeroes
         // after one complete DER object, never arbitrary unsigned payloads.
-        let mut rest = certificate;
+        let mut rest = certificate.as_slice();
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
+        if msi && !rest.is_empty() {
+            return Err(VerificationError::new(
+                ErrorCode::MalformedCms,
+                Stage::Cms,
+                "trailing data in MSI signature stream",
+            )
+            .into());
+        }
         if !rest.iter().all(|b| *b == 0) {
             return Err(VerificationError::new(
                 ErrorCode::InvalidCertificateTable,
@@ -50,10 +100,15 @@ fn verify_inner(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verificatio
             .detail("trailing_bytes", rest.len())
             .into());
         }
-        verify_signature(node.full, &pe, options, 0, &mut reports)?;
+        verify_signature(node.full, &mut container, options, 0, &mut reports)?;
     }
     Ok(VerificationBundle {
-        format: "pe_authenticode".into(),
+        format: if msi {
+            "msi_authenticode"
+        } else {
+            "pe_authenticode"
+        }
+        .into(),
         validation_time: options.now,
         file_sha256: hex(&Hash::Sha256.digest(bytes)),
         signatures: reports,
@@ -62,30 +117,51 @@ fn verify_inner(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verificatio
 
 fn verify_signature(
     bytes: &[u8],
-    pe: &Pe<'_>,
+    container: &mut Container<'_>,
     options: &VerifyOptions<'_>,
     depth: usize,
     reports: &mut Vec<SignatureReport>,
 ) -> Result<()> {
-    ensure!(
-        depth <= 8 && reports.len() < 64,
-        "too many nested signatures"
-    );
+    if depth > 8 || reports.len() >= 64 {
+        return Err(VerificationError::new(
+            ErrorCode::MalformedCms,
+            Stage::Cms,
+            "too many nested signatures",
+        )
+        .into());
+    }
     let sd = tagged(
         SignedData::parse(bytes),
         ErrorCode::MalformedCms,
         Stage::Cms,
     )?;
-    let (hash, expected) = tagged(sd.image_digest(), ErrorCode::MalformedCms, Stage::Cms)?;
+    let is_msi = matches!(container, Container::Msi(_));
+    let stage = if is_msi {
+        Stage::PackageDigest
+    } else {
+        Stage::ImageDigest
+    };
+    let (hash, expected) = tagged(
+        if is_msi {
+            sd.package_digest()
+        } else {
+            sd.image_digest()
+        },
+        ErrorCode::MalformedCms,
+        Stage::Cms,
+    )?;
     if !options.allow_sha1 && hash == Hash::Sha1 {
         return Err(VerificationError::new(
             ErrorCode::WeakAlgorithm,
-            Stage::ImageDigest,
-            "SHA-1 image digest requires --allow-sha1",
+            stage,
+            "SHA-1 image/package digest requires --allow-sha1",
         )
         .into());
     }
-    let computed = pe.digest(hash)?;
+    let (computed, extended_digest) = match container {
+        Container::Pe(pe) => (pe.digest(hash)?, None),
+        Container::Msi(msi) => msi.digests(hash)?,
+    };
     let image_digest = DigestReport {
         algorithm: format!("{hash:?}"),
         expected: hex(expected),
@@ -93,16 +169,25 @@ fn verify_signature(
     };
     if computed != expected {
         return Err(VerificationError::new(
-            ErrorCode::ImageDigestMismatch,
-            Stage::ImageDigest,
-            "PE image digest mismatch (file was modified)",
+            if is_msi {
+                ErrorCode::PackageDigestMismatch
+            } else {
+                ErrorCode::ImageDigestMismatch
+            },
+            stage,
+            if is_msi {
+                "MSI package digest mismatch (file was modified)"
+            } else {
+                "PE image digest mismatch (file was modified)"
+            },
         )
         .detail("digest", &image_digest)
         .into());
     }
     let mut page_hashes = None;
-    if let Some((hash, expected)) =
-        tagged(sd.page_hashes(), ErrorCode::MalformedCms, Stage::PageHashes)?
+    if let Container::Pe(pe) = container
+        && let Some((hash, expected)) =
+            tagged(sd.page_hashes(), ErrorCode::MalformedCms, Stage::PageHashes)?
     {
         if !options.allow_sha1 && hash == Hash::Sha1 {
             return Err(VerificationError::new(
@@ -173,7 +258,9 @@ fn verify_signature(
                 .iter()
                 .map(CertificateReport::parse)
                 .collect::<Result<_>>()?,
-            image_digest: image_digest.clone(),
+            image_digest: (!is_msi).then(|| image_digest.clone()),
+            package_digest: is_msi.then(|| image_digest.clone()),
+            extended_digest: extended_digest.clone(),
             page_hashes: page_hashes.clone(),
             trust: trust_report,
             timestamp_verification,
@@ -181,7 +268,7 @@ fn verify_signature(
         for (oid, values) in &signer.unsigned {
             if oid == cms::NESTED {
                 for value in values {
-                    verify_signature(value.full, pe, options, depth + 1, reports)?;
+                    verify_signature(value.full, container, options, depth + 1, reports)?;
                 }
             }
         }

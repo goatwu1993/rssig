@@ -72,3 +72,6 @@ Invalid suite configuration uses `invalid_test_suite` instead.
 | <a id="invalid_test_suite"></a>`invalid_test_suite` | Invalid testcase suite | 400 | Supply an existing, valid testcase suite matching the supported schema. |
 | <a id="test_assertion_failed"></a>`test_assertion_failed` | Testcase assertions failed | 422 | Inspect each result and its failures; fix the behavior or incorrect test configuration. |
 | <a id="internal_error"></a>`internal_error` | Internal error | 500 | Inspect the diagnostic extensions and report the failure with a reproducing input. |
+| <a id="invalid_msi"></a>`invalid_msi` | Invalid MSI container | 422 | Supply a complete, supported CFB container with unambiguous signature streams and valid stream chains. |
+| <a id="package_digest_mismatch"></a>`package_digest_mismatch` | MSI package digest mismatch | 422 | The package content/CLSID digest differs from the signed digest. Obtain the original package or re-sign it. |
+| <a id="extended_digest_mismatch"></a>`extended_digest_mismatch` | MSI extended digest mismatch | 422 | The extended metadata hash differs from the supplied Ex stream. Obtain the original metadata or re-sign the package. |

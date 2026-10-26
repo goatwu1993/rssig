@@ -23,6 +23,14 @@ impl Hash {
             _ => Err(unsupported_algorithm(oid, "unsupported digest OID").into()),
         }
     }
+    pub fn hasher(self) -> Box<dyn sha2::digest::DynDigest> {
+        match self {
+            Self::Sha1 => Box::new(sha1::Sha1::default()),
+            Self::Sha256 => Box::new(sha2::Sha256::default()),
+            Self::Sha384 => Box::new(sha2::Sha384::default()),
+            Self::Sha512 => Box::new(sha2::Sha512::default()),
+        }
+    }
     pub fn digest(self, bytes: &[u8]) -> Vec<u8> {
         match self {
             Self::Sha1 => sha1::Sha1::digest(bytes).to_vec(),

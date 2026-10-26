@@ -1,4 +1,5 @@
 mod fixture_faults;
+mod msi_fixtures;
 
 use super::*;
 use ::der::{Encode, asn1::BitString};
@@ -749,6 +750,7 @@ fn regenerate_cli_fixtures() {
             true,
         ),
     );
+    msi_fixtures::write(&dir);
 }
 
 fn intermediate_pe(bad_key_usage: bool) -> Vec<u8> {
