@@ -1,0 +1,64 @@
+name: Rust verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Check Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Run Rust tests against committed fixtures
+        run: cargo test --locked
+      - name: Run real CLI fixture cases
+        shell: bash
+        run: |
+          set +e
+          cargo run --locked -- test --cases tests/cases.json > cli-test-report.json
+          suite_exit=$?
+          set -e
+          python3 - <<'PY'
+          import json
+          with open("cli-test-report.json") as source:
+              report = json.load(source)
+          print({key: report.get(key) for key in ("ok", "total", "passed", "failed")})
+          for case in report.get("results", []):
+              if not case["ok"]:
+                  print(case["id"], case["failures"])
+          PY
+          exit "$suite_exit"
+      - name: Save CLI report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-test-report-${{ matrix.os }}
+          path: cli-test-report.json
+          if-no-files-found: ignore
+          retention-days: 7
