@@ -68,13 +68,13 @@ See [the negative fixture coverage](docs/mismatch-fixtures.md) for isolated
 CMS, timestamp, certificate, and algorithm mismatch cases.
 See [MSI support and fixture provenance](docs/msi.md) for container hashing,
 extended metadata, format-specific JSON fields, and limits.
-See [AGENT.md](AGENT.md) for the TDD workflow and
+See [AGENTS.md](AGENTS.md) for the TDD workflow and
 [tests/cases.json](tests/cases.json) for executable test definitions.
 
 This is an initial verifier, not a Windows trust-policy replacement. It requires
 embedded certificates and supplied CRLs; automatic CRL/AIA downloads and OCSP
 are not implemented. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
-roots for controlled publisher policies. See `AGENT.md` for supported algorithms
+roots for controlled publisher policies. See `AGENTS.md` for supported algorithms
 and additional compatibility limits. GitHub Actions runs formatting, Clippy, Rust tests, and the real CLI fixture
 suite on Linux and macOS. External signing tools are not required for CI.
