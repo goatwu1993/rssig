@@ -1,5 +1,6 @@
 //! Black-box fixture runner. Commands are argv arrays, never shell programs.
 use anyhow::{Context, Result, ensure};
+use rssig::domain::{ErrorCode, ProblemDetails};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
@@ -34,6 +35,8 @@ struct Expected {
 
 #[derive(Serialize)]
 struct TestCaseReport {
+    #[serde(flatten)]
+    problem: Option<ProblemDetails>,
     id: String,
     input: String,
     command: Vec<String>,
@@ -44,6 +47,8 @@ struct TestCaseReport {
 }
 #[derive(Serialize)]
 struct TestSuiteReport {
+    #[serde(flatten)]
+    problem: Option<ProblemDetails>,
     schema_version: u32,
     command: String,
     ok: bool,
@@ -141,6 +146,15 @@ pub(crate) fn run(path: &Path) -> Result<(Value, u8)> {
         let ok = failures.is_empty();
         passed += usize::from(ok);
         results.push(TestCaseReport {
+            problem: (!ok).then(|| {
+                ProblemDetails::new(
+                    ErrorCode::TestAssertionFailed,
+                    format!(
+                        "Testcase {} failed; inspect failures for assertion diagnostics",
+                        case.id
+                    ),
+                )
+            }),
             id: case.id.clone(),
             input: case.input.clone(),
             command: case.command.clone(),
@@ -153,6 +167,16 @@ pub(crate) fn run(path: &Path) -> Result<(Value, u8)> {
     let ok = passed == suite.cases.len();
     Ok((
         serde_json::to_value(TestSuiteReport {
+            problem: (!ok).then(|| {
+                ProblemDetails::new(
+                    ErrorCode::TestAssertionFailed,
+                    format!(
+                        "{} of {} testcases failed; inspect results for assertion diagnostics",
+                        suite.cases.len() - passed,
+                        suite.cases.len()
+                    ),
+                )
+            }),
             schema_version: 1,
             command: "test".into(),
             ok,

@@ -39,6 +39,7 @@ pub enum ErrorCode {
     InvalidArguments,
     Configuration,
     InvalidTestSuite,
+    TestAssertionFailed,
     InternalError,
 }
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -59,8 +60,72 @@ pub enum Stage {
     TestSuite,
 }
 
+/// RFC 9457 members shared by error objects and failed command documents.
+/// CLI output has no HTTP status or occurrence URI, so those optional members
+/// are omitted. The type URI is the primary machine-readable identifier.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProblemDetails {
+    #[serde(rename = "type")]
+    pub type_uri: String,
+    pub title: String,
+    pub detail: String,
+}
+impl ProblemDetails {
+    pub fn new(code: ErrorCode, detail: impl Into<String>) -> Self {
+        let code_name = serde_json::to_value(code).expect("error code serializes");
+        Self {
+            type_uri: format!(
+                "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#{}",
+                code_name.as_str().expect("error code is a string")
+            ),
+            title: code.title().into(),
+            detail: detail.into(),
+        }
+    }
+}
+impl ErrorCode {
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::InvalidPe => "Invalid PE image",
+            Self::Unsigned => "Missing embedded signature",
+            Self::InvalidCertificateTable => "Invalid certificate table",
+            Self::MalformedCms => "Malformed CMS data",
+            Self::UnsupportedAlgorithm => "Unsupported algorithm",
+            Self::WeakAlgorithm => "Weak algorithm disallowed",
+            Self::ImageDigestMismatch => "PE image digest mismatch",
+            Self::PageHashMismatch => "Page hash mismatch",
+            Self::InvalidSignature => "Invalid signature",
+            Self::ContentDigestMismatch => "Content digest mismatch",
+            Self::InvalidTimestamp => "Invalid timestamp",
+            Self::TimestampImprintMismatch => "Timestamp imprint mismatch",
+            Self::TimestampInFuture => "Timestamp is in the future",
+            Self::CertificateExpired => "Certificate expired",
+            Self::CertificateNotYetValid => "Certificate not yet valid",
+            Self::UntrustedRoot => "Untrusted root certificate",
+            Self::InvalidEku => "Invalid extended key usage",
+            Self::InvalidKeyUsage => "Invalid key usage",
+            Self::CertificateRevoked => "Certificate revoked",
+            Self::CrlExpired => "CRL expired",
+            Self::CrlNotYetValid => "CRL not yet valid",
+            Self::InvalidCrlSignature => "Invalid CRL signature",
+            Self::RevocationUnknown => "Revocation status unknown",
+            Self::InvalidCrl => "Invalid CRL",
+            Self::InvalidCertificate => "Invalid certificate",
+            Self::CertificateChainInvalid => "Invalid certificate chain",
+            Self::ReadFailed => "Input read failed",
+            Self::InvalidArguments => "Invalid arguments",
+            Self::Configuration => "Invalid configuration",
+            Self::InvalidTestSuite => "Invalid testcase suite",
+            Self::TestAssertionFailed => "Testcase assertions failed",
+            Self::InternalError => "Internal error",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationError {
+    #[serde(flatten)]
+    pub problem: Box<ProblemDetails>,
     pub code: ErrorCode,
     pub stage: Stage,
     pub message: String,
@@ -69,10 +134,12 @@ pub struct VerificationError {
 }
 impl VerificationError {
     pub fn new(code: ErrorCode, stage: Stage, message: impl Into<String>) -> Self {
+        let message = message.into();
         Self {
+            problem: Box::new(ProblemDetails::new(code, &message)),
             code,
             stage,
-            message: message.into(),
+            message,
             details: BTreeMap::new(),
             causes: Vec::new(),
         }
@@ -447,12 +514,26 @@ pub enum FileResult {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CommandReport<T> {
+    #[serde(flatten)]
+    pub problem: Option<ProblemDetails>,
     pub schema_version: u32,
     pub command: String,
     pub ok: bool,
     pub results: Vec<T>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<VerificationError>,
+}
+impl<T> CommandReport<T> {
+    pub fn failure(command: impl Into<String>, error: VerificationError) -> Self {
+        Self {
+            problem: Some(error.problem.as_ref().clone()),
+            schema_version: 1,
+            command: command.into(),
+            ok: false,
+            results: vec![],
+            error: Some(error),
+        }
+    }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InformationReport {

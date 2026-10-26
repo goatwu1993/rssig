@@ -136,8 +136,15 @@ fn run(command: Command) -> Result<(Value, u8)> {
             }
         }
     }
+    // The first failing input is the primary problem; retain every result,
+    // including successful files and subsequent problems, in the extension.
+    let problem = output.iter().find_map(|result| match result {
+        FileResult::Failure(failure) => Some(failure.error.problem.as_ref().clone()),
+        FileResult::Success(_) => None,
+    });
     Ok((
         serde_json::to_value(CommandReport {
+            problem,
             schema_version: 1,
             command: "verify".into(),
             ok: success,
@@ -180,17 +187,14 @@ fn main() -> ExitCode {
         }
         Err(error) => {
             return emit(
-                &serde_json::to_value(CommandReport::<FileResult> {
-                    schema_version: 1,
-                    command: "arguments".into(),
-                    ok: false,
-                    error: Some(VerificationError::new(
+                &serde_json::to_value(CommandReport::<FileResult>::failure(
+                    "arguments",
+                    VerificationError::new(
                         ErrorCode::InvalidArguments,
                         Stage::Arguments,
                         error.to_string(),
-                    )),
-                    results: vec![],
-                })
+                    ),
+                ))
                 .expect("report serializes"),
                 2,
             );
@@ -203,11 +207,9 @@ fn main() -> ExitCode {
     match run(cli.command) {
         Ok((value, code)) => emit(&value, code),
         Err(error) => emit(
-            &serde_json::to_value(CommandReport::<FileResult> {
-                schema_version: 1,
-                command: name.into(),
-                ok: false,
-                error: Some(VerificationError::from_internal(
+            &serde_json::to_value(CommandReport::<FileResult>::failure(
+                name,
+                VerificationError::from_internal(
                     error,
                     if name == "test" {
                         ErrorCode::InvalidTestSuite
@@ -219,9 +221,8 @@ fn main() -> ExitCode {
                     } else {
                         Stage::Configuration
                     },
-                )),
-                results: vec![],
-            })
+                ),
+            ))
             .expect("report serializes"),
             2,
         ),
