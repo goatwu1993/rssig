@@ -1,3 +1,4 @@
+pub mod cli;
 mod cms;
 mod crypto;
 mod der;

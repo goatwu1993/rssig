@@ -58,7 +58,7 @@ follow [the RFC 9457 contract](problems.md).
 ## Fixtures and independent references
 
 [The manifest](../tests/fixtures/manifest.json) pins every artifact's SHA-256,
-size, provenance, good/bad pairing, and CLI case IDs. The fixture suite covers
+size, provenance, good/bad pairing, and Rust test names. Native Rust CLI tests under `tests/cli/msi.rs` cover
 legacy/extended signatures, both CFB versions, SHA-256/384/512, SHA-1 opt-in,
 content/metadata/CLSID/extended-digest tampering, invalid signature streams,
 malformed containers/SIP/CMS, resource limits, and MSI counterparts of the
@@ -90,5 +90,5 @@ Algorithm references are the read-only local clones at these pinned revisions:
 
 These fixtures establish specific interoperability checks, not comprehensive
 Windows policy equivalence. The local clones are not build/runtime dependencies.
-CI runs the committed suite on Linux and macOS without Java, Go, external signers,
+CI runs `cargo test --locked` on Linux and macOS without Java, Go, external signers,
 or network-based certificate/revocation lookup.
