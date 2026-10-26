@@ -32,7 +32,7 @@ its Problem Details members. For `verify`, the first failed input supplies the
 root problem; `results` retains successful inputs and every per-file error in
 input order. Every nested `error` is itself a Problem Details object.
 
-The former JSON testcase runner has been retired. `invalid_test_suite` and
+The former product `test --cases` command has been retired. `invalid_test_suite` and
 `test_assertion_failed` remain reserved for deserializing historical reports;
 the current CLI exposes verification, help, and version. Tests run through Cargo.
 

@@ -34,14 +34,16 @@ project at build or runtime.
   must not be labeled individually verified merely because it was loaded.
 - Errors carry a typed stable `code`, verification `stage`, readable `message`,
   structured `details`, and causal diagnostics. Consumers match enum codes,
-  never prose. Add Rust assertions for serialized domain fields before extending the schema.
+  never prose. Add declarative spec cases and Rust assertions for serialized domain fields before extending the schema.
 
 ## Required TDD workflow
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
    artifact when possible. Never execute PE/MSI fixtures.
-2. Add a named Rust test under `tests/cli/` for the fixture, CLI argv, exit
+2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
+   language-independent specification. Add a named Rust test under `tests/cli/`
+   for implementation-specific checks of the fixture, CLI argv, exit
    code, and serialized domain result. Invoke the Clap-based `rssig::cli::run`
    directly with an argument array and captured writer; never spawn the binary.
    Pin `--time`, use `--no-system-roots` with explicit test roots, and provide
@@ -60,7 +62,11 @@ project at build or runtime.
 ## Native Rust tests and coverage
 
 `cargo test --locked` is the single entry point for all parser, crypto, CLI,
-fixture, and domain tests. The 142 migrated fixture cases are individually named
+fixture, domain, and declarative specification tests. `tests/spec.rs` deserializes
+`tests/cases.json` with Serde and invokes `rssig::cli::run` in-process, collecting
+exit codes and JSON output. It never runs a child executable.
+
+The 142 original fixture cases also have individually named
 Rust tests under `tests/cli/pe.rs` and `tests/cli/msi.rs`; shared helpers only
 capture output and assert the domain contract. CLI syntax, configuration errors,
 help/version, multiple files, and writer failures live in `tests/cli_interface.rs`.
@@ -70,7 +76,10 @@ The public CLI entry point accepts argv including the program name and any
 Tests use absolute fixture paths without changing the process working directory
 or invoking a child executable. Prefer stable error codes/stages, exact arrays
 and serialized fields, and specific diagnostic fragments over OS error prose.
-Do not recreate a JSON case runner or add test commands to the product CLI.
+Keep `cases.json`, `cases.schema.json`, the committed fixtures, and their manifest
+as the portable specification. They must remain sufficient for another language
+to implement the same CLI without Rust source. Do not add test commands to the
+product CLI or require another language/runtime to execute Cargo tests.
 
 Example fixture-first regression:
 
@@ -90,8 +99,9 @@ fn rejects_modified_image() {
 ```
 
 CI runs formatting, Clippy, and Cargo tests on Linux and macOS. A coverage job
-uses cargo-llvm-cov to run the same tests with instrumentation and publishes
-Cobertura XML and standalone HTML. See `docs/testing.md` for local commands.
+runs `make coverage`, using cargo-llvm-cov to run native tests and the Serde
+specification test with instrumentation. It publishes Cobertura XML, standalone
+HTML, and a per-case specification report. See `docs/testing.md` for local commands.
 Fixture builders and Rust test source files are excluded from coverage reports;
 production source, including the thin process adapter, remains included.
 

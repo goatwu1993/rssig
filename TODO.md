@@ -2,7 +2,7 @@
 
 Work from the top down. Rank reflects verification correctness and confidence
 before convenience or additional formats. Every behavior change starts with a
-committed fixture and named Rust test that fails for the intended reason; follow
+committed fixture, declarative specification case, and named Rust test that fails for the intended reason; follow
 [AGENTS.md](AGENTS.md). Production verification stays pure Rust, with the OS used
 only to load roots. All CLI output stays serialized domain data.
 
@@ -44,7 +44,8 @@ only to load roots. All CLI output stays serialized domain data.
    sizes, and page hashes. Document deliberately rejected layouts; do not
    silently broaden hashing rules without fixture evidence.
 8. [x] **Move CLI coverage into Cargo.** Keep individually named in-process
-   Clap tests and committed fixtures. The product has no custom test runner.
+   Clap tests and the Serde-loaded JSON specification with committed fixtures.
+   The product has no custom test runner.
 9. [x] **Run Rust tests on Linux and macOS with coverage artifacts.** Check
    formatting, Clippy, and `cargo test --locked`; publish Cobertura XML and HTML.
 
@@ -81,7 +82,7 @@ only to load roots. All CLI output stays serialized domain data.
 - [x] Serializable verification bundles and typed errors, parsed CN/RDNs, EKUs,
   certificate chains, timestamps, and CRL artifacts.
 - [x] Local fixture corpus, native in-process CLI tests, provenance/hash manifest, and
-  fixture-first TDD guide.
+  fixture-first TDD guide and language-independent JSON specification.
 - [x] Explicit unsupported digest/signature OID errors and correct classification
   of nonzero trailing WIN_CERTIFICATE payloads, with three regression fixtures.
 

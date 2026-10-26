@@ -53,14 +53,8 @@ jobs:
         uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
         with:
           tool: cargo-llvm-cov@0.9.1
-      - name: Run all Cargo tests with coverage
-        run: |
-          cargo llvm-cov clean --workspace
-          cargo llvm-cov --locked --all-targets --no-report
-      - name: Generate coverage reports
-        run: |
-          cargo llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$)' --html --output-dir target/coverage
-          cargo llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$)' --cobertura --output-path target/coverage/cobertura.xml
+      - name: Run native tests and the independent CLI specification
+        run: make coverage
       - name: Upload coverage reports
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -1,3 +1,7 @@
 jsign
 relic
 /target/
+
+# LLVM coverage profiles belong in target, not source control.
+/*.profraw
+/*.profdata

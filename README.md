@@ -5,7 +5,7 @@ Rust CLI. PE/MSI hashing, CMS signatures, certificate chains, timestamps, and CR
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
-fixtures and native Rust tests. It is inspired by
+fixtures, a portable JSON specification, and native Rust tests. It is inspired by
 [jsign](https://github.com/ebourg/jsign) and
 [relic](https://github.com/sassoftware/relic), whose source code serves as a
 reference for PE/MSI Authenticode hashing, signatures, and verification behavior.
@@ -30,8 +30,11 @@ rssig verify application.exe --integrity-only
 # MSI packages use the same trust and revocation policy.
 rssig verify installer.msi --no-system-roots --roots roots.pem --crl issuer.crl
 
-# Run every parser, crypto, fixture, and in-process CLI test.
+# Run native tests and the JSON specification through the CLI library.
 cargo test --locked
+
+# Run the same tests with coverage; write Cobertura XML and openable HTML.
+make coverage
 ```
 
 All output is JSON, including help/version and argument errors. Exit codes are 0 for
@@ -68,7 +71,8 @@ CMS, timestamp, certificate, and algorithm mismatch cases.
 See [MSI support and fixture provenance](docs/msi.md) for container hashing,
 extended metadata, format-specific JSON fields, and limits.
 See [AGENTS.md](AGENTS.md) for the TDD workflow and
-[tests/cli](tests/cli) for individually named CLI regression tests.
+[tests/cases.json](tests/cases.json) for the portable CLI specification and
+[tests/cli](tests/cli) for individually named Rust regressions.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 

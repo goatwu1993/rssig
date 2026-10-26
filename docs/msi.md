@@ -58,7 +58,9 @@ follow [the RFC 9457 contract](problems.md).
 ## Fixtures and independent references
 
 [The manifest](../tests/fixtures/manifest.json) pins every artifact's SHA-256,
-size, provenance, good/bad pairing, and Rust test names. Native Rust CLI tests under `tests/cli/msi.rs` cover
+size, provenance, good/bad pairing, declarative case IDs, and Rust test names.
+The portable contract remains in `tests/cases.json`; `tests/spec.rs` loads it
+with Serde and invokes the CLI library under Cargo tests and `make coverage`. Native Rust CLI tests under `tests/cli/msi.rs` cover
 legacy/extended signatures, both CFB versions, SHA-256/384/512, SHA-1 opt-in,
 content/metadata/CLSID/extended-digest tampering, invalid signature streams,
 malformed containers/SIP/CMS, resource limits, and MSI counterparts of the
