@@ -2,11 +2,12 @@ mod cms;
 mod crypto;
 mod der;
 pub mod domain;
+mod msi;
 mod pe;
 mod trust;
 mod verify;
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
-pub use verify::{VerifyOptions, verify_pe};
+pub use verify::{VerifyOptions, verify, verify_msi, verify_pe};
 #[cfg(test)]
 mod tests;

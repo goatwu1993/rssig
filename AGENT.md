@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI Authenticode
 signatures on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -8,7 +8,7 @@ project at build or runtime.
 
 ## Architecture and constraints
 
-- Use pure Rust for PE parsing/hashing, CMS/PKCS#7, signature verification,
+- Use pure Rust for PE/MSI parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
   adapter. macOS framework calls are allowed for root enumeration, never for
@@ -40,7 +40,7 @@ project at build or runtime.
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
-   artifact when possible. Never execute PE fixtures.
+   artifact when possible. Never execute PE/MSI fixtures.
 2. Add a case to `tests/cases.json` describing its unique `id`, fixture `input`,
    CLI `command` argv, and expected exit code and JSON. Pin `--time`, use
    `--no-system-roots` with explicit test roots, and provide local CRLs so tests
@@ -94,7 +94,7 @@ Commit binary fixtures and their provenance, SHA-256 digests, and intended
 outcomes in `tests/fixtures/manifest.json`. Ordinary tests consume committed
 fixtures; they must never regenerate expected data or overwrite fixtures.
 Generated fixtures use public, deterministic **test-only** keys and a fixed
-validation time. These are synthetic PE containers, not runnable applications.
+validation time. Synthetic fixtures are PE/CFB containers, not runnable applications; externally signed artifacts have per-artifact provenance.
 Do not put real private keys or proprietary binaries in the repository.
 
 The explicit maintenance command is:
@@ -115,10 +115,12 @@ described as Windows compatibility validation.
 
 ## Current boundaries
 
-Embedded PE32/PE32+ signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
+Embedded PE32/PE32+ and MSI CFB v3/v4 signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
 ECDSA P-256/SHA-256 and P-384/SHA-384, nested signatures, page hashes, RFC 3161,
 and PKCS#9 countersignatures are supported. SHA-1 image/CMS/timestamp digests
 require `--allow-sha1`; SHA-1 certificate/CRL chains are not supported.
+MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
+`verify` detects formats; `verify_pe` and `verify_msi` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

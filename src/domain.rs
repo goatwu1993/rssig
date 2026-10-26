@@ -10,6 +10,9 @@ use x509_cert::{Certificate, crl::CertificateList, name::Name};
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
     InvalidPe,
+    InvalidMsi,
+    PackageDigestMismatch,
+    ExtendedDigestMismatch,
     Unsigned,
     InvalidCertificateTable,
     MalformedCms,
@@ -50,6 +53,8 @@ pub enum Stage {
     CertificateTable,
     Cms,
     ImageDigest,
+    Msi,
+    PackageDigest,
     PageHashes,
     Timestamp,
     Certificate,
@@ -86,6 +91,9 @@ impl ProblemDetails {
 impl ErrorCode {
     pub fn title(self) -> &'static str {
         match self {
+            Self::InvalidMsi => "Invalid MSI container",
+            Self::PackageDigestMismatch => "MSI package digest mismatch",
+            Self::ExtendedDigestMismatch => "MSI extended digest mismatch",
             Self::InvalidPe => "Invalid PE image",
             Self::Unsigned => "Missing embedded signature",
             Self::InvalidCertificateTable => "Invalid certificate table",
@@ -474,7 +482,12 @@ pub struct SignatureReport {
     pub nested_depth: usize,
     pub certificate: CertificateReport,
     pub embedded_certificates: Vec<CertificateReport>,
-    pub image_digest: DigestReport,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_digest: Option<DigestReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub package_digest: Option<DigestReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extended_digest: Option<DigestReport>,
     pub page_hashes: Option<DigestReport>,
     pub trust: Option<TrustReport>,
     pub timestamp_verification: Option<TimestampReport>,

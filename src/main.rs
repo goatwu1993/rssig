@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use rssig::domain::{
     CommandReport, ErrorCode, FileFailure, FileResult, FileSuccess, Stage, VerificationError,
 };
-use rssig::{TrustStore, VerifyOptions, verify_pe};
+use rssig::{TrustStore, VerifyOptions, verify};
 use serde_json::Value;
 use std::{
     path::PathBuf,
@@ -16,7 +16,7 @@ mod testcases;
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE Authenticode signatures in pure Rust; results are JSON"
+    about = "Verify embedded Windows PE/MSI Authenticode signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -110,7 +110,7 @@ fn run(command: Command) -> Result<(Value, u8)> {
     let mut output = Vec::new();
     for path in files {
         let result = match std::fs::read(&path) {
-            Ok(bytes) => verify_pe(&bytes, &options),
+            Ok(bytes) => verify(&bytes, &options),
             Err(error) => Err(VerificationError::new(
                 ErrorCode::ReadFailed,
                 Stage::Input,
