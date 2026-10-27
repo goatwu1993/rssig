@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell Authenticode
 signatures on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -8,7 +8,7 @@ project at build or runtime.
 
 ## Architecture and constraints
 
-- Use pure Rust for PE/MSI/CAB parsing/hashing, CMS/PKCS#7, signature verification,
+- Use pure Rust for PE/MSI/CAB/PowerShell parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
   adapter. macOS framework calls are allowed for root enumeration, never for
@@ -40,7 +40,7 @@ project at build or runtime.
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
-   artifact when possible. Never execute PE/MSI fixtures.
+   artifact when possible. Never execute PE/MSI/CAB or script fixtures.
 2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
    language-independent specification. Add a named Rust test under `tests/cli/`
    for implementation-specific checks of the fixture, CLI argv, exit
@@ -111,7 +111,7 @@ Commit binary fixtures and their provenance, SHA-256 digests, and intended
 outcomes in `tests/fixtures/manifest.json`. Ordinary tests consume committed
 fixtures; they must never regenerate expected data or overwrite fixtures.
 Generated fixtures use public, deterministic **test-only** keys and a fixed
-validation time. Synthetic fixtures are PE/CFB containers, not runnable applications; externally signed artifacts have per-artifact provenance.
+validation time. Synthetic fixtures are PE/CFB/CAB containers and inert comment-only scripts; externally signed artifacts have per-artifact provenance.
 Do not put real private keys or proprietary binaries in the repository.
 
 The explicit maintenance command is:
@@ -138,7 +138,9 @@ and PKCS#9 countersignatures are supported. SHA-1 image/CMS/timestamp digests
 require `--allow-sha1`; SHA-1 certificate/CRL chains are not supported.
 MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
 CAB layouts and limits are documented in `docs/cab.md`.
-`verify` detects formats; `verify_pe`, `verify_msi`, and `verify_cab` select one explicitly.
+PowerShell hash-comment signatures for `.ps1`, `.psm1`, and `.psd1`, including strict
+UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for limits.
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, and `verify_powershell` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

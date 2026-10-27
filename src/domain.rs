@@ -12,6 +12,8 @@ pub enum ErrorCode {
     InvalidPe,
     InvalidMsi,
     InvalidCab,
+    InvalidPowershell,
+    ScriptDigestMismatch,
     CabDigestMismatch,
     PackageDigestMismatch,
     ExtendedDigestMismatch,
@@ -57,6 +59,8 @@ pub enum Stage {
     ImageDigest,
     Msi,
     Cab,
+    Powershell,
+    ScriptDigest,
     PackageDigest,
     PageHashes,
     Timestamp,
@@ -94,6 +98,8 @@ impl ProblemDetails {
 impl ErrorCode {
     pub fn title(self) -> &'static str {
         match self {
+            Self::InvalidPowershell => "Invalid PowerShell script",
+            Self::ScriptDigestMismatch => "Script digest mismatch",
             Self::InvalidCab => "Invalid CAB container",
             Self::CabDigestMismatch => "CAB digest mismatch",
             Self::InvalidMsi => "Invalid MSI container",
@@ -491,6 +497,8 @@ pub struct SignatureReport {
     pub image_digest: Option<DigestReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package_digest: Option<DigestReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_digest: Option<DigestReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extended_digest: Option<DigestReport>,
     pub page_hashes: Option<DigestReport>,

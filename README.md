@@ -1,7 +1,7 @@
 # rssig
 
-Verify embedded Windows PE, MSI, and CAB Authenticode signatures on macOS and Linux with a
-Rust CLI. PE/MSI/CAB hashing, CMS signatures, certificate chains, timestamps, and CRLs
+Verify embedded Windows PE, MSI, CAB, and PowerShell Authenticode signatures on macOS and Linux with a
+Rust CLI. PE/MSI/CAB/PowerShell hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
@@ -33,6 +33,9 @@ rssig verify installer.msi --no-system-roots --roots roots.pem --crl issuer.crl
 # CAB archives use the same trust, timestamp, and revocation policy.
 rssig verify archive.cab --no-system-roots --roots roots.pem --crl issuer.crl
 
+# PowerShell scripts/modules/data files share the same trust policy.
+rssig verify script.ps1 module.psm1 data.psd1 --no-system-roots --roots roots.pem --crl issuer.crl
+
 # Run native tests and the JSON specification through the CLI library.
 cargo test --locked
 
@@ -45,7 +48,7 @@ success, 1 for a failed verification/assertion, and 2 for invalid configuration
 or arguments. `verify` accepts multiple files. `--time UNIX_SECONDS` fixes the
 validation time for reproducible tests; otherwise the current time is used.
 
-Successes serialize a verification bundle with image digests, parsed certificate
+Successes serialize a verification bundle with image/package/script digests, parsed certificate
 CN/RDNs, EKUs, key usage, validity, trust chain, timestamp signer, and CRL
 artifacts. Every failed invocation and nested error uses the RFC 9457 Problem
 Details data model: `type`, `title`, and `detail`, with existing error codes,
@@ -78,6 +81,8 @@ See [AGENTS.md](AGENTS.md) for the TDD workflow and
 [tests/cli](tests/cli) for individually named Rust regressions.
 See [CAB support and fixture provenance](docs/cab.md) for supported layouts,
 hashing, and CAB JSON fields.
+See [PowerShell support and fixture provenance](docs/powershell.md) for encodings,
+text hashing, signature-block limits, and script JSON fields.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 

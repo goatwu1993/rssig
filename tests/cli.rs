@@ -5,5 +5,7 @@ mod cab;
 mod msi;
 #[path = "cli/pe.rs"]
 mod pe;
+#[path = "cli/powershell.rs"]
+mod powershell;
 #[path = "cli/support.rs"]
 mod support;
