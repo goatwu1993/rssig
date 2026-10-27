@@ -1,4 +1,4 @@
-//! Hash-comment PowerShell Authenticode signatures; scripts are never executed.
+//! Hash-comment and XML-comment PowerShell Authenticode signatures; scripts are never executed.
 use crate::{
     crypto::Hash,
     domain::{ErrorCode, Stage, VerificationError},
@@ -26,8 +26,19 @@ pub(crate) fn has_extension(path: &Path) -> bool {
     })
 }
 
+pub(crate) fn has_xml_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(|s| s.to_str())
+        .is_some_and(|s| s.eq_ignore_ascii_case("ps1xml"))
+}
+pub(crate) fn looks_like_xml(bytes: &[u8]) -> bool {
+    contains_marker(bytes, "<!-- SIG #")
+}
+
 pub(crate) fn looks_like(bytes: &[u8]) -> bool {
-    let marker = "# SIG #";
+    contains_marker(bytes, "# SIG #")
+}
+fn contains_marker(bytes: &[u8], marker: &str) -> bool {
     let le: Vec<_> = marker.encode_utf16().flat_map(u16::to_le_bytes).collect();
     let be: Vec<_> = marker.encode_utf16().flat_map(u16::to_be_bytes).collect();
     [marker.as_bytes(), &le, &be]
@@ -68,8 +79,37 @@ fn decode(bytes: &[u8]) -> Result<String> {
 
 impl Powershell {
     pub(crate) fn parse(bytes: &[u8]) -> Result<Self> {
+        Self::parse_style(bytes, false)
+    }
+    pub(crate) fn parse_xml(bytes: &[u8]) -> Result<Self> {
+        Self::parse_style(bytes, true)
+    }
+    fn parse_style(bytes: &[u8], xml: bool) -> Result<Self> {
+        if xml
+            && !bytes.starts_with(&[0xef, 0xbb, 0xbf])
+            && !bytes.starts_with(&[0xff, 0xfe])
+            && !bytes.starts_with(&[0xfe, 0xff])
+        {
+            ensure!(
+                bytes.is_ascii(),
+                "BOM-less PowerShell XML must be ASCII; Unicode requires a BOM"
+            );
+        }
+        let (begin, end, prefix, suffix, comment_start, comment_end, hint) = if xml {
+            (
+                "<!-- SIG # Begin signature block -->",
+                "<!-- SIG # End signature block -->",
+                "\r\n<!-- SIG # Begin signature block -->\r\n",
+                "<!-- SIG # End signature block -->\r\n",
+                "<!-- ",
+                " -->",
+                "SIG #",
+            )
+        } else {
+            (BEGIN, END, PREFIX, SUFFIX, "# ", "", "# SIG #")
+        };
         let mut text = decode(bytes)?;
-        if !text.contains("# SIG #") {
+        if !text.contains(hint) {
             return Err(VerificationError::new(
                 ErrorCode::Unsigned,
                 Stage::Powershell,
@@ -77,17 +117,23 @@ impl Powershell {
             )
             .into());
         }
+        if xml {
+            ensure!(
+                !text.contains("# SIG #"),
+                "mixed hash/XML signature styles are unsupported"
+            );
+        }
         ensure!(
-            text.matches(BEGIN).count() == 1 && text.matches(END).count() == 1,
+            text.matches(begin).count() == 1 && text.matches(end).count() == 1,
             "missing or duplicate PowerShell signature markers"
         );
-        let start = text.find(PREFIX).ok_or_else(|| {
+        let start = text.find(prefix).ok_or_else(|| {
             anyhow::anyhow!(
                 "PowerShell signature block requires a preceding CRLF and CRLF marker lines"
             )
         })?;
-        let encoded_start = start + PREFIX.len();
-        let before_end = text.strip_suffix(SUFFIX).ok_or_else(|| {
+        let encoded_start = start + prefix.len();
+        let before_end = text.strip_suffix(suffix).ok_or_else(|| {
             anyhow::anyhow!("PowerShell signature end marker must terminate the file with CRLF")
         })?;
         ensure!(
@@ -104,9 +150,12 @@ impl Powershell {
             .ok_or_else(|| anyhow::anyhow!("PowerShell signature payload requires CRLF lines"))?;
         let mut base64 = String::with_capacity(lines.len());
         for line in lines.split("\r\n") {
-            let value = line.strip_prefix("# ").ok_or_else(|| {
-                anyhow::anyhow!("PowerShell signature line requires '# ' comment prefix")
-            })?;
+            let value = line
+                .strip_prefix(comment_start)
+                .and_then(|v| v.strip_suffix(comment_end))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("PowerShell signature line has invalid comment delimiters")
+                })?;
             ensure!(
                 !value.is_empty() && value.len() <= 64 && value.len().is_multiple_of(4),
                 "invalid PowerShell base64 line length"
@@ -290,5 +339,115 @@ mod tests {
             assert_eq!(crate::verify(&b, &options).unwrap().format, expected);
         }
         assert!(!crate::verify::is_binary(&fixture("good-powershell.ps1")));
+    }
+}
+
+#[cfg(test)]
+mod xml_tests {
+    use super::*;
+    fn fixture(name: &str) -> Vec<u8> {
+        std::fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(name),
+        )
+        .unwrap()
+    }
+    #[test]
+    fn xml_digest_faults_preserve_valid_cms_signatures() {
+        for (good, bad) in [
+            ("good-psxml.ps1xml", "bad-psxml-digest.ps1xml"),
+            ("good-psxml.ps1xml", "bad-psxml-line-endings.ps1xml"),
+            (
+                "good-psxml-ascii-bom.ps1xml",
+                "bad-psxml-missing-bom.ps1xml",
+            ),
+            (
+                "psxml-independent-jsign-ascii.ps1xml",
+                "bad-psxml-independent-digest.ps1xml",
+            ),
+        ] {
+            let good = Powershell::parse_xml(&fixture(good)).unwrap();
+            let bad = Powershell::parse_xml(&fixture(bad)).unwrap();
+            assert_eq!(good.signature(), bad.signature());
+            let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
+            sd.verify(sd.signers[0], false).unwrap();
+            let (hash, expected) = sd.script_digest().unwrap();
+            assert_eq!(good.digest(hash), expected);
+            assert_ne!(bad.digest(hash), expected);
+        }
+        let bad = Powershell::parse_xml(&fixture("bad-psxml-cms-signature.ps1xml")).unwrap();
+        let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
+        let (hash, expected) = sd.script_digest().unwrap();
+        assert_eq!(bad.digest(hash), expected);
+        assert!(sd.verify(sd.signers[0], false).is_err());
+    }
+    #[test]
+    fn xml_prefixes_and_comment_delimiters_fail_closed() {
+        for name in [
+            "good-psxml.ps1xml",
+            "good-psxml-utf16le.ps1xml",
+            "good-psxml-utf16be.ps1xml",
+        ] {
+            let bytes = fixture(name);
+            for end in 0..bytes.len() {
+                assert!(
+                    Powershell::parse_xml(&bytes[..end]).is_err(),
+                    "accepted {name} prefix {end}"
+                );
+            }
+        }
+        let bad = fixture("bad-psxml-comment-end.ps1xml");
+        let message = Powershell::parse_xml(&bad).err().unwrap().to_string();
+        assert!(message.contains("invalid comment delimiters"), "{message}");
+        assert!(has_xml_extension(Path::new("types.PS1XML")));
+        assert!(!has_xml_extension(Path::new("types.ps1")));
+        assert!(!has_xml_extension(Path::new("types.psc1")));
+        assert!(Powershell::parse_xml(&fixture("good-powershell.ps1")).is_err());
+        assert!(Powershell::parse(&fixture("good-psxml.ps1xml")).is_err());
+    }
+    #[test]
+    fn xml_library_dispatch_and_json_use_the_existing_script_contract() {
+        let options = crate::VerifyOptions {
+            trust: None,
+            check_revocation: false,
+            allow_sha1: false,
+            now: 1_800_000_000,
+        };
+        for name in [
+            "good-psxml.ps1xml",
+            "good-psxml-utf8-bom.ps1xml",
+            "good-psxml-utf16le.ps1xml",
+            "good-psxml-utf16be.ps1xml",
+        ] {
+            let bytes = fixture(name);
+            for report in [
+                crate::verify(&bytes, &options).unwrap(),
+                crate::verify_powershell_xml(&bytes, &options).unwrap(),
+            ] {
+                assert_eq!(report.format, "powershell_xml_authenticode");
+                let value = serde_json::to_value(report).unwrap();
+                let signature = &value["signatures"][0];
+                assert!(signature.get("script_digest").is_some());
+                for field in ["image_digest", "package_digest", "extended_digest"] {
+                    assert!(signature.get(field).is_none());
+                }
+                assert!(value.get("rdp").is_none());
+                let roundtrip: crate::VerificationBundle =
+                    serde_json::from_value(value.clone()).unwrap();
+                assert_eq!(serde_json::to_value(roundtrip).unwrap(), value);
+            }
+        }
+        let error =
+            crate::verify_powershell_xml(&fixture("unsigned.ps1xml"), &options).unwrap_err();
+        assert_eq!(error.code, ErrorCode::Unsigned);
+        assert_eq!(error.stage, Stage::Powershell);
+        let value = serde_json::to_value(
+            crate::verify_powershell_xml(&fixture("bad-psxml-ambiguous-utf8.ps1xml"), &options)
+                .unwrap_err(),
+        )
+        .unwrap();
+        assert_eq!(value["code"], "invalid_powershell");
+        assert_eq!(value["stage"], "powershell");
     }
 }

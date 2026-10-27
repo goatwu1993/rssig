@@ -8,7 +8,7 @@
     "license": "Apache-2.0 (repository-generated artifacts)",
     "validation_time": 1800000000,
     "warning": "Test-only PE/CFB/CAB containers and inert PowerShell scripts. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance. RDP fixtures use reserved example.invalid hosts; never open them in an RDP client.",
-    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation."
+    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation. PowerShell XML adds jsign 7.6-signed ASCII and BOM-marked UTF-8/UTF-16LE/BE fixtures, an isolated digest-tampered pair, and explicit rejection of a signed Windows-1252 artifact."
   },
   "artifacts": [
     {
@@ -2644,6 +2644,404 @@
       "cases": [
         "rdp-powershell-comment"
       ]
+    },
+    {
+      "file": "bad-psxml-ambiguous-utf8.ps1xml",
+      "sha256": "e781c6eb0b54cde8e64cf618c404a206a91656c087c17d9550a9340194289b25",
+      "bytes": 1951,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-ambiguous-utf8.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-ambiguous-utf8"
+      ]
+    },
+    {
+      "file": "bad-psxml-base64.ps1xml",
+      "sha256": "7df7570d4f6533ddbe1422cc5ce29b155b26dd8b86521c07edbea8e0f5af6f67",
+      "bytes": 1922,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-base64.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-base64"
+      ]
+    },
+    {
+      "file": "bad-psxml-cms-signature.ps1xml",
+      "sha256": "763508ce6f4e8237c2cc1c13b603191ed17bf5bdd6116c68775211a0a1adc2f2",
+      "bytes": 1922,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-cms-signature.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-cms-signature"
+      ]
+    },
+    {
+      "file": "bad-psxml-cms-trailing.ps1xml",
+      "sha256": "864f554c7b322c82633c45e9ccf4eb248a52ab31c062700a9e0201fd943a1548",
+      "bytes": 1926,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-cms-trailing.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-cms-trailing"
+      ]
+    },
+    {
+      "file": "bad-psxml-comment-end.ps1xml",
+      "sha256": "38f88184257c14f3547b23bf4018eb3cf51e3571eb80af0432cc85968f013d2a",
+      "bytes": 1918,
+      "description": "Paired with good-psxml.ps1xml: only the final base64 payload line loses its XML comment closing delimiter. Both signature marker lines are intact; expected invalid_powershell.",
+      "cases": [
+        "psxml-comment-end"
+      ]
+    },
+    {
+      "file": "bad-psxml-digest.ps1xml",
+      "sha256": "182e88581d67f343e8a10ef8d2af8c9da567b54b61fce8fcd78cd15793dabced",
+      "bytes": 1922,
+      "description": "Paired with good-psxml.ps1xml: only s in Types becomes S. Entire valid CMS preserved; expected script_digest_mismatch.",
+      "cases": [
+        "psxml-digest"
+      ]
+    },
+    {
+      "file": "bad-psxml-duplicate.ps1xml",
+      "sha256": "4b6f341b400eaedd4a26c478db9ee3808f802e621249385578a6f17c2256e53a",
+      "bytes": 3833,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-duplicate.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-duplicate"
+      ]
+    },
+    {
+      "file": "bad-psxml-encoding.ps1xml",
+      "sha256": "bde968d6207f2cf379e46db53d93f047b1e124e622207e48c6747d9cd4357f4b",
+      "bytes": 1922,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-encoding.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-encoding"
+      ]
+    },
+    {
+      "file": "bad-psxml-hash-style.ps1xml",
+      "sha256": "bef9ba3b61caf5b2e06c310280f70e221576d8a28d7f2915c30902d0961a4329",
+      "bytes": 1733,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-hash-style.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-hash-style"
+      ]
+    },
+    {
+      "file": "bad-psxml-line-endings.ps1xml",
+      "sha256": "8204317e7611e31b5e14216eff0eab7f6fb636b93a6958f33c6d87315fcec3c6",
+      "bytes": 1921,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-line-endings.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-line-endings"
+      ]
+    },
+    {
+      "file": "bad-psxml-marker-lf.ps1xml",
+      "sha256": "cf65b188bd4f175221537438e83b2c78ffc73a3e2199e14f8989e28950dbaa0f",
+      "bytes": 1920,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-marker-lf.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-marker-lf"
+      ]
+    },
+    {
+      "file": "bad-psxml-missing-bom.ps1xml",
+      "sha256": "8c2d4515391c3a967d089c51c23310962c7a736849d97d8c1c588bdb53a00b18",
+      "bytes": 1926,
+      "description": "Paired with good-psxml-ascii-bom.ps1xml: only the UTF-8 BOM is removed; ASCII remains unambiguous, but the original signed digest must mismatch.",
+      "cases": [
+        "psxml-missing-bom"
+      ]
+    },
+    {
+      "file": "bad-psxml-missing-end.ps1xml",
+      "sha256": "8bccc4b905445b009f2f05e29a75ddfe0570fff6be4a1b2cc10208b77a859a1e",
+      "bytes": 1886,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-missing-end.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-missing-end"
+      ]
+    },
+    {
+      "file": "bad-psxml-odd-utf16.ps1xml",
+      "sha256": "05f0b7fb41cec41aac7ae8bce9275fe78d8a2bab2f4ac42e93be338f6a654824",
+      "bytes": 3897,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-odd-utf16.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-odd-utf16"
+      ]
+    },
+    {
+      "file": "bad-psxml-payload-no-crlf.ps1xml",
+      "sha256": "33c26ffe65361f78fcf3c25864913928706f6453c3715fc956e08ed721badf1a",
+      "bytes": 1920,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-payload-no-crlf.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-payload-no-crlf"
+      ]
+    },
+    {
+      "file": "bad-psxml-sip.ps1xml",
+      "sha256": "d8fc2d401755ac663f4c31fd8b84b9a78c282d6c7b09eab521256a155491bd18",
+      "bytes": 1926,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-sip.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-sip"
+      ]
+    },
+    {
+      "file": "bad-psxml-timestamp-imprint.ps1xml",
+      "sha256": "0f60919effd336e9960ffdc2cb6139b2788e38012036500fce1657513de3bbcc",
+      "bytes": 4397,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-timestamp-imprint.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-timestamp-imprint"
+      ]
+    },
+    {
+      "file": "bad-psxml-trailing.ps1xml",
+      "sha256": "652717d466cdc8a38ef50e5be4e68773f6e57699e74fc822f153a484a7b36df5",
+      "bytes": 1941,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: bad-psxml-trailing.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-trailing"
+      ]
+    },
+    {
+      "file": "good-psxml-ascii-bom.ps1xml",
+      "sha256": "6ee5800f647bdec52482f06d852fb626289635c7f92d256839367da87638599e",
+      "bytes": 1929,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-ascii-bom.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-ascii-bom"
+      ]
+    },
+    {
+      "file": "good-psxml-countersignature.ps1xml",
+      "sha256": "e3bb94a3976d70e1b9680fd581e23c12c23ef575c503157c09c90cffadcba7c3",
+      "bytes": 2952,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-countersignature.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-countersignature",
+        "psxml-expired-with-countersignature"
+      ]
+    },
+    {
+      "file": "good-psxml-lf.ps1xml",
+      "sha256": "536f452a830ad42f1670263c204cdaee3cda416c099e15ddbbf8ff16991ac513",
+      "bytes": 1925,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-lf.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-lf"
+      ]
+    },
+    {
+      "file": "good-psxml-nested.ps1xml",
+      "sha256": "3bbf7756e3e50ab6c98f9ee5373b6f27b2757c6b54b55dcb89f88871d0da5f94",
+      "bytes": 3793,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-nested.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-nested"
+      ]
+    },
+    {
+      "file": "good-psxml-rfc3161.ps1xml",
+      "sha256": "e4d676845264cf8a553fff9d76fe793d69145c9e7bbef1a12c8186bc6489f465",
+      "bytes": 4397,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-rfc3161.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-rfc3161",
+        "psxml-expired-with-rfc3161"
+      ]
+    },
+    {
+      "file": "good-psxml-sha384.ps1xml",
+      "sha256": "e8acdc359428cb2c363cbe2c5f8cf36d95fc3778c085b6525137335bbd6aec8f",
+      "bytes": 1946,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-sha384.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-sha384"
+      ]
+    },
+    {
+      "file": "good-psxml-sha512.ps1xml",
+      "sha256": "6ce9ca55ccf74e5dff2ff4b487feb6d0a6a23774cda9de540be312f1b0e06268",
+      "bytes": 1981,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-sha512.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-sha512"
+      ]
+    },
+    {
+      "file": "good-psxml-utf16be.ps1xml",
+      "sha256": "2e0cfeab43664e2df5cf601c3abc171e2f24e1499c53aff6d848c3cd1ea8ab1c",
+      "bytes": 3898,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-utf16be.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-utf16be"
+      ]
+    },
+    {
+      "file": "good-psxml-utf16le.ps1xml",
+      "sha256": "6c6bad63cb85579cf9cf286b3ca887891f47656f1724b77504a20f935cf77207",
+      "bytes": 3898,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-utf16le.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-utf16le"
+      ]
+    },
+    {
+      "file": "good-psxml-utf8-bom.ps1xml",
+      "sha256": "b1556496567469c01fc6e4daa29c92d6048ab1acd844de9e64b95d4a46bad324",
+      "bytes": 1954,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: good-psxml-utf8-bom.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-utf8-bom"
+      ]
+    },
+    {
+      "file": "good-psxml.ps1xml",
+      "sha256": "6f012377337c1aefe187d775351a3e7f18afb49e88dad51125eeb27d29f544c3",
+      "bytes": 1922,
+      "description": "Inert <Types /> XML body with CRLF and standard XML-comment Authenticode block; deterministic public P-256/SHA-256 signer and explicit test root. Never load or execute.",
+      "cases": [
+        "psxml-trusted",
+        "psxml-integrity",
+        "psxml-no-revocation",
+        "psxml-revoked",
+        "psxml-untrusted",
+        "psxml-expired"
+      ]
+    },
+    {
+      "file": "legacy-psxml-sha1.ps1xml",
+      "sha256": "fffd9dc74bca29cb0054044458701b133f9fb0fd466f1a514dc3cde88e4c4a6d",
+      "bytes": 1902,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: legacy-psxml-sha1.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-sha1-denied",
+        "psxml-sha1-allowed"
+      ]
+    },
+    {
+      "file": "psxml-misnamed.bin",
+      "sha256": "6f012377337c1aefe187d775351a3e7f18afb49e88dad51125eeb27d29f544c3",
+      "bytes": 1922,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: psxml-misnamed.bin. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-misnamed"
+      ]
+    },
+    {
+      "file": "unsigned.ps1xml",
+      "sha256": "dd42eaa0cd610adc5daaf5511319a219ba148540cdf74662868fb3b91ad54ed8",
+      "bytes": 11,
+      "description": "Deterministic inert PowerShell XML fixture from src/tests/psxml_fixtures.rs: unsigned.ps1xml. Exact intended outcomes are pinned in the listed declarative cases.",
+      "cases": [
+        "psxml-unsigned"
+      ]
+    },
+    {
+      "file": "psxml-independent-jsign-ascii.ps1xml",
+      "sha256": "95267f4aa2dad508953dfec8e6a379212cec3dd2b4400915490a8497926c39c3",
+      "bytes": 2317,
+      "description": "Independently jsign 7.6-signed inert XML using public deterministic RSA-2048 test-only identity. Explicit integrity-only verification of psxml-independent-jsign-ascii.ps1xml.",
+      "cases": [
+        "psxml-independent-ascii"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
+    },
+    {
+      "file": "psxml-independent-jsign-utf8-bom.ps1xml",
+      "sha256": "47251cfc67a7801026b6fc98a5de3e96c1a63b5ca306622e1fbccc294fb8e695",
+      "bytes": 2345,
+      "description": "Independently jsign 7.6-signed inert XML using public deterministic RSA-2048 test-only identity. Explicit integrity-only verification of psxml-independent-jsign-utf8-bom.ps1xml.",
+      "cases": [
+        "psxml-independent-utf8-bom"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
+    },
+    {
+      "file": "psxml-independent-jsign-utf16le.ps1xml",
+      "sha256": "b46c31b4090bbeca28684e16403eaff573c50f762453a095e7eec009a8c8f46a",
+      "bytes": 4680,
+      "description": "Independently jsign 7.6-signed inert XML using public deterministic RSA-2048 test-only identity. Explicit integrity-only verification of psxml-independent-jsign-utf16le.ps1xml.",
+      "cases": [
+        "psxml-independent-utf16le"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
+    },
+    {
+      "file": "psxml-independent-jsign-utf16be.ps1xml",
+      "sha256": "ed31e1dfd883e79b609643c83d26a189e23d979798880437716b0ada0733f37b",
+      "bytes": 4680,
+      "description": "Independently jsign 7.6-signed inert XML using public deterministic RSA-2048 test-only identity. Explicit integrity-only verification of psxml-independent-jsign-utf16be.ps1xml.",
+      "cases": [
+        "psxml-independent-utf16be"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
+    },
+    {
+      "file": "psxml-independent-jsign-windows1252.ps1xml",
+      "sha256": "859fa8f16c760e52d362725b37b3958c30816faf49715c777ed13429c1a70cb5",
+      "bytes": 2338,
+      "description": "Independently jsign 7.6-signed inert XML text. BOM-less Windows-1252 is intentionally unsupported and must fail invalid_powershell; the signing tool uses its Windows-1252 interpretation.",
+      "cases": [
+        "psxml-independent-windows1252"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
+    },
+    {
+      "file": "bad-psxml-independent-digest.ps1xml",
+      "sha256": "6976e5a6a5f6d55ddadc5a2960f45bae1395518b4791a99d6b4402acfdeb9b82",
+      "bytes": 2317,
+      "description": "Paired with psxml-independent-jsign-ascii.ps1xml: only s in Types becomes S, preserving the complete jsign CMS; expected script_digest_mismatch.",
+      "cases": [
+        "psxml-independent-tampered"
+      ],
+      "provenance": {
+        "tool": "jsign",
+        "version": "7.6",
+        "kind": "mutated_independently_signed",
+        "license": "Apache-2.0",
+        "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
+      }
     }
   ]
 }
