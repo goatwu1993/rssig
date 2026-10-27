@@ -6075,6 +6075,70 @@
           ]
         }
       }
+    },
+    {
+      "id": "cab-unsigned-no-reserve",
+      "input": "unsigned-cab-no-reserve.cab",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "cab",
+                "title": "Missing embedded signature",
+                "message": "CAB has no signature reserve",
+                "details": {}
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cab-no-reserve-trailing",
+      "input": "bad-cab-no-reserve-trailing.cab",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_cab",
+                "stage": "cab",
+                "title": "Invalid CAB container",
+                "message": "trailing data after unsigned CAB",
+                "details": {}
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -1601,6 +1601,24 @@
       "cases": [
         "cab-unsigned"
       ]
+    },
+    {
+      "file": "unsigned-cab-no-reserve.cab",
+      "sha256": "b3bcc29c815e9a9cb3225414e6c05572e3ea5e978bf8f5cc85198148206bdc83",
+      "bytes": 74,
+      "description": "Single-volume uncompressed CAB derived from unsigned.cab by removing the 24-byte reserve and adjusting cabinet size, file-table offset, folder-data offset, and flags; contains only inert text test. Expected unsigned at cab with CAB has no signature reserve.",
+      "cases": [
+        "cab-unsigned-no-reserve"
+      ]
+    },
+    {
+      "file": "bad-cab-no-reserve-trailing.cab",
+      "sha256": "70631acce59b6c83eb0aae9ed267d2fc947beda7e8a7da5f9d7a78eedbc0c2b4",
+      "bytes": 75,
+      "description": "Paired with unsigned-cab-no-reserve.cab: one zero byte appended without changing cbCabinet. Expected invalid_cab at cab with trailing data after unsigned CAB.",
+      "cases": [
+        "cab-no-reserve-trailing"
+      ]
     }
   ]
 }

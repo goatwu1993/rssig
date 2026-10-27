@@ -128,6 +128,15 @@ pub(super) fn write(dir: &std::path::Path) {
     let mut b = base();
     b[48..52].fill(0);
     write("unsigned.cab", &b);
+    let mut no_reserve = base();
+    no_reserve.drain(36..60);
+    no_reserve[8..12].copy_from_slice(&74u32.to_le_bytes());
+    no_reserve[16..20].copy_from_slice(&44u32.to_le_bytes());
+    no_reserve[30..32].fill(0);
+    no_reserve[36..40].copy_from_slice(&62u32.to_le_bytes());
+    write("unsigned-cab-no-reserve.cab", &no_reserve);
+    no_reserve.push(0);
+    write("bad-cab-no-reserve-trailing.cab", &no_reserve);
     let mut b = good.clone();
     b[98..].fill(0);
     write("bad-cab-malformed-cms.cab", &b);

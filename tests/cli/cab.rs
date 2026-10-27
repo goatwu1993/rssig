@@ -612,3 +612,58 @@ fn cab_independent_tampered() {
     assert_eq!(digest["algorithm"], "Sha256");
     assert_ne!(digest["expected"], digest["computed"]);
 }
+
+#[test]
+fn cab_unsigned_no_reserve() {
+    let output = run_fixture("unsigned-cab-no-reserve.cab", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "unsigned",
+        "Missing embedded signature",
+        Some("cab"),
+        Some("CAB has no signature reserve"),
+    );
+    assert_eq!(
+        output.json["results"][0]["error"]["message"],
+        "CAB has no signature reserve"
+    );
+    assert_eq!(
+        output.json["results"][0]["error"]["details"],
+        serde_json::json!({})
+    );
+}
+
+#[test]
+fn cab_no_reserve_trailing() {
+    let output = run_fixture("bad-cab-no-reserve-trailing.cab", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_cab",
+        "Invalid CAB container",
+        Some("cab"),
+        Some("trailing data after unsigned CAB"),
+    );
+    assert_eq!(
+        output.json["results"][0]["error"]["message"],
+        "trailing data after unsigned CAB"
+    );
+    assert_eq!(
+        output.json["results"][0]["error"]["details"],
+        serde_json::json!({})
+    );
+}
+
+#[test]
+fn cab_no_reserve_trailing_fixture_only_appends_one_byte() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let mut unsigned = std::fs::read(dir.join("unsigned-cab-no-reserve.cab")).unwrap();
+    assert_eq!(&unsigned[30..32], &[0, 0]);
+    assert_eq!(unsigned.len(), 74);
+    unsigned.push(0);
+    assert_eq!(
+        unsigned,
+        std::fs::read(dir.join("bad-cab-no-reserve-trailing.cab")).unwrap()
+    );
+}
