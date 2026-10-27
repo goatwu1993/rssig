@@ -237,6 +237,39 @@ impl<'a> SignedData<'a> {
         Ok((algorithm(digest[0])?, digest[1].expect(4)?.body))
     }
 
+    pub fn script_digest(&self) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not a PowerShell Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = der::fields(indirect[0].expect(0x30)?, 2)?;
+        ensure!(
+            der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 30]),
+            "invalid PowerShell SIP type"
+        );
+        let sip = der::fields(data[1].expect(0x30)?, 7)?;
+        ensure!(
+            sip[0].expect(2)?.body == [1, 0, 0],
+            "unsupported PowerShell SIP version"
+        );
+        ensure!(
+            sip[1].expect(4)?.body
+                == [
+                    0x1f, 0xcc, 0x3b, 0x60, 0x59, 0x4b, 0x08, 0x4e, 0xb7, 0x24, 0xd2, 0xc6, 0x29,
+                    0x7e, 0xf3, 0x51
+                ],
+            "invalid PowerShell SIP UUID"
+        );
+        for reserved in &sip[2..] {
+            ensure!(
+                reserved.expect(2)?.body == [0],
+                "invalid PowerShell SIP reserved field"
+            );
+        }
+        self.indirect_digest()
+    }
+
     pub fn package_digest(&self) -> Result<(Hash, &'a [u8])> {
         ensure!(
             self.content_type == INDIRECT,

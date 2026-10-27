@@ -6,6 +6,7 @@ description = "Cross-platform embedded Windows PE Authenticode signature verifie
 license = "Apache-2.0"
 
 [dependencies]
+base64ct = { version = "1", features = ["alloc"] }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 der = { version = "0.7", features = ["alloc", "derive", "oid"] }

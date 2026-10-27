@@ -16,7 +16,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE/MSI/CAB Authenticode signatures in pure Rust; results are JSON"
+    about = "Verify embedded Windows PE/MSI/CAB/PowerShell Authenticode signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -99,7 +99,13 @@ fn execute(command: Command) -> Result<(Value, u8)> {
     let mut output = Vec::new();
     for path in files {
         let result = match std::fs::read(&path) {
-            Ok(bytes) => verify(&bytes, &options),
+            Ok(bytes) => {
+                if crate::powershell::has_extension(&path) && !crate::verify::is_binary(&bytes) {
+                    crate::verify_powershell(&bytes, &options)
+                } else {
+                    verify(&bytes, &options)
+                }
+            }
             Err(error) => Err(VerificationError::new(
                 ErrorCode::ReadFailed,
                 Stage::Input,

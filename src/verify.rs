@@ -6,6 +6,7 @@ use crate::{
     der::{self, Node},
     msi::Msi,
     pe::Pe,
+    powershell::Powershell,
     trust::{self, TrustStore},
 };
 use ::der::Decode;
@@ -36,6 +37,8 @@ pub fn verify(
         verify_msi(bytes, options)
     } else if bytes.starts_with(crate::cab::MAGIC) {
         verify_cab(bytes, options)
+    } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like(bytes) {
+        verify_powershell(bytes, options)
     } else {
         verify_pe(bytes, options)
     }
@@ -59,15 +62,33 @@ pub fn verify_cab(
     })
 }
 
+/// Verify a hash-comment PowerShell script with an embedded Authenticode block.
+pub fn verify_powershell(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::Powershell).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+pub(crate) fn is_binary(bytes: &[u8]) -> bool {
+    bytes.starts_with(b"MZ")
+        || bytes.starts_with(crate::msi::MAGIC)
+        || bytes.starts_with(crate::cab::MAGIC)
+}
+
 enum Format {
     Pe,
     Msi,
     Cab,
+    Powershell,
 }
 
 enum Container<'a> {
     Pe(Pe<'a>),
     Cab(Cab<'a>),
+    Powershell(Powershell),
     Msi(Box<Msi<'a>>),
 }
 
@@ -81,6 +102,11 @@ fn verify_inner(
     format: Format,
 ) -> Result<VerificationBundle> {
     let mut container = match format {
+        Format::Powershell => Container::Powershell(tagged(
+            Powershell::parse(bytes),
+            ErrorCode::InvalidPowershell,
+            Stage::Powershell,
+        )?),
         Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
         Format::Pe => Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?),
         Format::Cab => Container::Cab(tagged(
@@ -101,12 +127,21 @@ fn verify_inner(
         .collect(),
         Container::Msi(msi) => vec![msi.signature().to_vec()],
         Container::Cab(cab) => vec![cab.signature().to_vec()],
+        Container::Powershell(script) => vec![script.signature().to_vec()],
     };
     for certificate in &certificates {
         // Some signers count zero padding inside dwLength. Only permit zeroes
         // after one complete DER object, never arbitrary unsigned payloads.
         let mut rest = certificate.as_slice();
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
+        if matches!(format, Format::Powershell) && !rest.is_empty() {
+            return Err(VerificationError::new(
+                ErrorCode::MalformedCms,
+                Stage::Cms,
+                "trailing data in PowerShell CMS signature",
+            )
+            .into());
+        }
         if matches!(format, Format::Msi) && !rest.is_empty() {
             return Err(VerificationError::new(
                 ErrorCode::MalformedCms,
@@ -139,6 +174,7 @@ fn verify_inner(
             Format::Msi => "msi_authenticode",
             Format::Pe => "pe_authenticode",
             Format::Cab => "cab_authenticode",
+            Format::Powershell => "powershell_authenticode",
         }
         .into(),
         validation_time: options.now,
@@ -169,14 +205,19 @@ fn verify_signature(
     )?;
     let is_msi = matches!(container, Container::Msi(_));
     let is_cab = matches!(container, Container::Cab(_));
+    let is_script = matches!(container, Container::Powershell(_));
     let is_package = is_msi || is_cab;
-    let stage = if is_package {
+    let stage = if is_script {
+        Stage::ScriptDigest
+    } else if is_package {
         Stage::PackageDigest
     } else {
         Stage::ImageDigest
     };
     let (hash, expected) = tagged(
-        if is_cab {
+        if is_script {
+            sd.script_digest()
+        } else if is_cab {
             sd.cab_digest()
         } else if is_msi {
             sd.package_digest()
@@ -190,7 +231,7 @@ fn verify_signature(
         return Err(VerificationError::new(
             ErrorCode::WeakAlgorithm,
             stage,
-            "SHA-1 image/package digest requires --allow-sha1",
+            "SHA-1 image/package/script digest requires --allow-sha1",
         )
         .into());
     }
@@ -198,6 +239,7 @@ fn verify_signature(
         Container::Pe(pe) => (pe.digest(hash)?, None),
         Container::Msi(msi) => msi.digests(hash)?,
         Container::Cab(cab) => (cab.digest(hash), None),
+        Container::Powershell(script) => (script.digest(hash), None),
     };
     let image_digest = DigestReport {
         algorithm: format!("{hash:?}"),
@@ -206,7 +248,9 @@ fn verify_signature(
     };
     if computed != expected {
         return Err(VerificationError::new(
-            if is_cab {
+            if is_script {
+                ErrorCode::ScriptDigestMismatch
+            } else if is_cab {
                 ErrorCode::CabDigestMismatch
             } else if is_msi {
                 ErrorCode::PackageDigestMismatch
@@ -214,7 +258,9 @@ fn verify_signature(
                 ErrorCode::ImageDigestMismatch
             },
             stage,
-            if is_cab {
+            if is_script {
+                "PowerShell script digest mismatch (file was modified)"
+            } else if is_cab {
                 "CAB digest mismatch (file was modified)"
             } else if is_msi {
                 "MSI package digest mismatch (file was modified)"
@@ -299,8 +345,9 @@ fn verify_signature(
                 .iter()
                 .map(CertificateReport::parse)
                 .collect::<Result<_>>()?,
-            image_digest: (!is_package).then(|| image_digest.clone()),
+            image_digest: (!is_package && !is_script).then(|| image_digest.clone()),
             package_digest: is_package.then(|| image_digest.clone()),
+            script_digest: is_script.then(|| image_digest.clone()),
             extended_digest: extended_digest.clone(),
             page_hashes: page_hashes.clone(),
             trust: trust_report,
