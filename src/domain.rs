@@ -11,6 +11,8 @@ use x509_cert::{Certificate, crl::CertificateList, name::Name};
 pub enum ErrorCode {
     InvalidPe,
     InvalidMsi,
+    InvalidCab,
+    CabDigestMismatch,
     PackageDigestMismatch,
     ExtendedDigestMismatch,
     Unsigned,
@@ -54,6 +56,7 @@ pub enum Stage {
     Cms,
     ImageDigest,
     Msi,
+    Cab,
     PackageDigest,
     PageHashes,
     Timestamp,
@@ -91,6 +94,8 @@ impl ProblemDetails {
 impl ErrorCode {
     pub fn title(self) -> &'static str {
         match self {
+            Self::InvalidCab => "Invalid CAB container",
+            Self::CabDigestMismatch => "CAB digest mismatch",
             Self::InvalidMsi => "Invalid MSI container",
             Self::PackageDigestMismatch => "MSI package digest mismatch",
             Self::ExtendedDigestMismatch => "MSI extended digest mismatch",

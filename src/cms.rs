@@ -217,6 +217,20 @@ impl<'a> SignedData<'a> {
         );
         self.indirect_digest()
     }
+    pub fn cab_digest(&self) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not a CAB Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = indirect[0].expect(0x30)?.children()?;
+        ensure!(
+            (1..=2).contains(&data.len())
+                && der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 25]),
+            "not a CAB signature"
+        );
+        self.indirect_digest()
+    }
     fn indirect_digest(&self) -> Result<(Hash, &'a [u8])> {
         let indirect = der::fields(self.content, 2)?;
         let digest = der::fields(indirect[1].expect(0x30)?, 2)?;

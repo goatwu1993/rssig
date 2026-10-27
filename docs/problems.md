@@ -40,8 +40,10 @@ the current CLI exposes verification, help, and version. Tests run through Cargo
 
 | Code / URI fragment | Title | HTTP status | Meaning and corrective action |
 | --- | --- | --- | --- |
+| <a id="invalid_cab"></a>`invalid_cab` | Invalid CAB container | 422 | Supply a complete supported single-volume cabinet; see CAB layout limits. |
+| <a id="cab_digest_mismatch"></a>`cab_digest_mismatch` | CAB digest mismatch | 422 | The computed cabinet digest differs from its signed digest. Obtain the original signed cabinet or re-sign it. |
 | <a id="invalid_pe"></a>`invalid_pe` | Invalid PE image | 422 | Supply a complete supported PE image. |
-| <a id="unsigned"></a>`unsigned` | Missing embedded signature | 422 | Supply a PE with an embedded Authenticode signature. |
+| <a id="unsigned"></a>`unsigned` | Missing embedded signature | 422 | Supply a supported PE, MSI, or CAB with an embedded Authenticode signature. |
 | <a id="invalid_certificate_table"></a>`invalid_certificate_table` | Invalid certificate table | 422 | Replace the damaged or unsupported certificate table with a valid signed artifact. |
 | <a id="malformed_cms"></a>`malformed_cms` | Malformed CMS data | 422 | Supply a well-formed supported CMS signature. |
 | <a id="unsupported_algorithm"></a>`unsupported_algorithm` | Unsupported algorithm | 422 | Use a supported digest and signature algorithm. |

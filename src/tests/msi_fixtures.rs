@@ -221,7 +221,7 @@ fn rewrite_attrs(si: &[u8], old: &[u8], new: &[u8], package: &[u8]) -> Vec<u8> {
 
     seq(&si)
 }
-fn convert_cms(bytes: &[u8], package: &[u8]) -> Vec<u8> {
+pub(super) fn convert_cms(bytes: &[u8], package: &[u8]) -> Vec<u8> {
     let mut outer = fields(bytes);
     let mut sd = fields(der::one(&outer[1], 0xa0).unwrap().body);
     let mut ci = fields(&sd[2]);

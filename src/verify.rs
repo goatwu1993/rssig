@@ -1,5 +1,6 @@
 use crate::domain::*;
 use crate::{
+    cab::Cab,
     cms::{self, SignedData},
     crypto::Hash,
     der::{self, Node},
@@ -21,7 +22,7 @@ pub fn verify_pe(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_inner(bytes, options, false).map_err(|e| {
+    verify_inner(bytes, options, Format::Pe).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
@@ -33,6 +34,8 @@ pub fn verify(
 ) -> std::result::Result<VerificationBundle, VerificationError> {
     if bytes.starts_with(crate::msi::MAGIC) {
         verify_msi(bytes, options)
+    } else if bytes.starts_with(crate::cab::MAGIC) {
+        verify_cab(bytes, options)
     } else {
         verify_pe(bytes, options)
     }
@@ -42,13 +45,29 @@ pub fn verify_msi(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_inner(bytes, options, true).map_err(|e| {
+    verify_inner(bytes, options, Format::Msi).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
 
+pub fn verify_cab(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::Cab).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+enum Format {
+    Pe,
+    Msi,
+    Cab,
+}
+
 enum Container<'a> {
     Pe(Pe<'a>),
+    Cab(Cab<'a>),
     Msi(Box<Msi<'a>>),
 }
 
@@ -59,12 +78,16 @@ fn tagged<T>(result: Result<T>, code: ErrorCode, stage: Stage) -> Result<T> {
 fn verify_inner(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-    msi: bool,
+    format: Format,
 ) -> Result<VerificationBundle> {
-    let mut container = if msi {
-        Container::Msi(Box::new(Msi::parse(bytes)?))
-    } else {
-        Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?)
+    let mut container = match format {
+        Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
+        Format::Pe => Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?),
+        Format::Cab => Container::Cab(tagged(
+            Cab::parse(bytes),
+            ErrorCode::InvalidCab,
+            Stage::Cab,
+        )?),
     };
     let mut reports = Vec::new();
     let certificates: Vec<Vec<u8>> = match &container {
@@ -77,17 +100,26 @@ fn verify_inner(
         .map(|c| c.to_vec())
         .collect(),
         Container::Msi(msi) => vec![msi.signature().to_vec()],
+        Container::Cab(cab) => vec![cab.signature().to_vec()],
     };
     for certificate in &certificates {
         // Some signers count zero padding inside dwLength. Only permit zeroes
         // after one complete DER object, never arbitrary unsigned payloads.
         let mut rest = certificate.as_slice();
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
-        if msi && !rest.is_empty() {
+        if matches!(format, Format::Msi) && !rest.is_empty() {
             return Err(VerificationError::new(
                 ErrorCode::MalformedCms,
                 Stage::Cms,
                 "trailing data in MSI signature stream",
+            )
+            .into());
+        }
+        if matches!(format, Format::Cab) && (rest.len() > 7 || !rest.iter().all(|b| *b == 0)) {
+            return Err(VerificationError::new(
+                ErrorCode::MalformedCms,
+                Stage::Cms,
+                "invalid trailing data in CAB signature",
             )
             .into());
         }
@@ -103,10 +135,10 @@ fn verify_inner(
         verify_signature(node.full, &mut container, options, 0, &mut reports)?;
     }
     Ok(VerificationBundle {
-        format: if msi {
-            "msi_authenticode"
-        } else {
-            "pe_authenticode"
+        format: match format {
+            Format::Msi => "msi_authenticode",
+            Format::Pe => "pe_authenticode",
+            Format::Cab => "cab_authenticode",
         }
         .into(),
         validation_time: options.now,
@@ -136,13 +168,17 @@ fn verify_signature(
         Stage::Cms,
     )?;
     let is_msi = matches!(container, Container::Msi(_));
-    let stage = if is_msi {
+    let is_cab = matches!(container, Container::Cab(_));
+    let is_package = is_msi || is_cab;
+    let stage = if is_package {
         Stage::PackageDigest
     } else {
         Stage::ImageDigest
     };
     let (hash, expected) = tagged(
-        if is_msi {
+        if is_cab {
+            sd.cab_digest()
+        } else if is_msi {
             sd.package_digest()
         } else {
             sd.image_digest()
@@ -161,6 +197,7 @@ fn verify_signature(
     let (computed, extended_digest) = match container {
         Container::Pe(pe) => (pe.digest(hash)?, None),
         Container::Msi(msi) => msi.digests(hash)?,
+        Container::Cab(cab) => (cab.digest(hash), None),
     };
     let image_digest = DigestReport {
         algorithm: format!("{hash:?}"),
@@ -169,13 +206,17 @@ fn verify_signature(
     };
     if computed != expected {
         return Err(VerificationError::new(
-            if is_msi {
+            if is_cab {
+                ErrorCode::CabDigestMismatch
+            } else if is_msi {
                 ErrorCode::PackageDigestMismatch
             } else {
                 ErrorCode::ImageDigestMismatch
             },
             stage,
-            if is_msi {
+            if is_cab {
+                "CAB digest mismatch (file was modified)"
+            } else if is_msi {
                 "MSI package digest mismatch (file was modified)"
             } else {
                 "PE image digest mismatch (file was modified)"
@@ -258,8 +299,8 @@ fn verify_signature(
                 .iter()
                 .map(CertificateReport::parse)
                 .collect::<Result<_>>()?,
-            image_digest: (!is_msi).then(|| image_digest.clone()),
-            package_digest: is_msi.then(|| image_digest.clone()),
+            image_digest: (!is_package).then(|| image_digest.clone()),
+            package_digest: is_package.then(|| image_digest.clone()),
             extended_digest: extended_digest.clone(),
             page_hashes: page_hashes.clone(),
             trust: trust_report,

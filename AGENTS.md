@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB Authenticode
 signatures on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -8,7 +8,7 @@ project at build or runtime.
 
 ## Architecture and constraints
 
-- Use pure Rust for PE/MSI parsing/hashing, CMS/PKCS#7, signature verification,
+- Use pure Rust for PE/MSI/CAB parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
   adapter. macOS framework calls are allowed for root enumeration, never for
@@ -132,12 +132,13 @@ described as Windows compatibility validation.
 
 ## Current boundaries
 
-Embedded PE32/PE32+ and MSI CFB v3/v4 signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
+Embedded PE32/PE32+, MSI CFB v3/v4, and standard-reserve single-volume CAB signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
 ECDSA P-256/SHA-256 and P-384/SHA-384, nested signatures, page hashes, RFC 3161,
 and PKCS#9 countersignatures are supported. SHA-1 image/CMS/timestamp digests
 require `--allow-sha1`; SHA-1 certificate/CRL chains are not supported.
 MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
-`verify` detects formats; `verify_pe` and `verify_msi` select one explicitly.
+CAB layouts and limits are documented in `docs/cab.md`.
+`verify` detects formats; `verify_pe`, `verify_msi`, and `verify_cab` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

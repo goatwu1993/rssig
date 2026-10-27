@@ -8,7 +8,7 @@
     "license": "Apache-2.0 (repository-generated artifacts)",
     "validation_time": 1800000000,
     "warning": "Test-only PE/CFB containers. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance.",
-    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence."
+    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only."
   },
   "artifacts": [
     {
@@ -1391,6 +1391,215 @@
       ],
       "cases": [
         "msi-independent-jsign"
+      ]
+    },
+    {
+      "file": "bad-cab-cms-signature.cab",
+      "sha256": "0e6dd935016e1ac1532453c6923d73a48b3ddffd6f34a40314bef4749de790cf",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab cms signature. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-cms-signature"
+      ]
+    },
+    {
+      "file": "bad-cab-digest.cab",
+      "sha256": "77fe0e4d07adddd47a699b3307637c75761bc5138f84fdcc1e9bf64446bbe663",
+      "bytes": 1234,
+      "description": "Paired with good.cab: only payload byte 96 XORed with 1, preserving the complete valid CMS signature. Expected cab_digest_mismatch at package_digest.",
+      "cases": [
+        "cab-digest"
+      ]
+    },
+    {
+      "file": "bad-cab-flags.cab",
+      "sha256": "fb80d84e296f3261e1fa5afb0129178d824573c277c8bb18a286856627665778",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab flags. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-flags"
+      ]
+    },
+    {
+      "file": "bad-cab-folder-offset.cab",
+      "sha256": "26479c6507c6bd02dbeb86b122b60ae0520624ba0a4cc0723032efa96d0c98a5",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab folder offset. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-folder-offset"
+      ]
+    },
+    {
+      "file": "bad-cab-independent-digest.cab",
+      "sha256": "c528fb66d5f8ff7d2aed1f877cc16f705d2ffaf2902b60f2478a45fe90f86d12",
+      "bytes": 1492,
+      "description": "Paired with cab-independent-jsign.cab: only payload byte 96 XORed with 1, preserving the jsign CMS signature. Expected cab_digest_mismatch.",
+      "cases": [
+        "cab-independent-tampered"
+      ],
+      "provenance": {
+        "kind": "mutated_independently_signed",
+        "tool": "jsign",
+        "version": "7.6",
+        "license": "Apache-2.0",
+        "source": "Repository-generated unsigned.cab and public deterministic RSA-2048 test-only identity; signing performed outside the verifier. See docs/cab.md for reproduction.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 cab-independent-jsign.cab"
+      }
+    },
+    {
+      "file": "bad-cab-malformed-cms.cab",
+      "sha256": "a3c64a27afc2dbfb7ada524057614410967ac8cec34d12c2106d78d94fa7dcb6",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab malformed cms. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-malformed-cms"
+      ]
+    },
+    {
+      "file": "bad-cab-offset.cab",
+      "sha256": "b2119f6baf1e6175bd29cfc2c0cc8042f846b5df4770a09a0e642c7eb66dd004",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab offset. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-offset"
+      ]
+    },
+    {
+      "file": "bad-cab-reserve.cab",
+      "sha256": "378c5ed824af35fceb7ac21d8bcc6f579ce618c68e03470eed66bd61b1f55d6f",
+      "bytes": 1234,
+      "description": "CAB regression fixture: bad cab reserve. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-reserve"
+      ]
+    },
+    {
+      "file": "bad-cab-sip.cab",
+      "sha256": "e20be26d695896b007a6b1ce6714b243d627ce4bbc3b47dda86bd4f5c2236afb",
+      "bytes": 1242,
+      "description": "CAB regression fixture: bad cab sip. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-wrong-sip"
+      ]
+    },
+    {
+      "file": "bad-cab-timestamp-imprint.cab",
+      "sha256": "1b6fef5b9f582305964006d86145e82522c97fb4004ea94380c0851cf3dc1061",
+      "bytes": 2818,
+      "description": "CAB regression fixture: bad cab timestamp imprint. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-timestamp-imprint"
+      ]
+    },
+    {
+      "file": "bad-cab-trailing.cab",
+      "sha256": "385aab9b3a51d6188ad630cc5d5658724c69c419cedfaa8435430992a6bd67d7",
+      "bytes": 1235,
+      "description": "CAB regression fixture: bad cab trailing. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-trailing"
+      ]
+    },
+    {
+      "file": "bad-cab-truncated.cab",
+      "sha256": "ab6b4dadf184043832447009a7e09977acdc904efabe6b1f34f8cf06e8b6f045",
+      "bytes": 50,
+      "description": "CAB regression fixture: bad cab truncated. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-truncated"
+      ]
+    },
+    {
+      "file": "cab-independent-jsign.cab",
+      "sha256": "a66bf5c4e26c84c25a1c9a93a77227d19dcc34f9fb235631152cdedbd05c73ef",
+      "bytes": 1492,
+      "description": "The synthetic unsigned.cab container independently signed by jsign 7.6 with the public deterministic RSA-2048 identity exported by export_msi_test_identity. Integrity verification succeeds; no trust or Windows policy claim.",
+      "cases": [
+        "cab-independent-jsign"
+      ],
+      "provenance": {
+        "kind": "independently_signed",
+        "tool": "jsign",
+        "version": "7.6",
+        "license": "Apache-2.0",
+        "source": "Repository-generated unsigned.cab and public deterministic RSA-2048 test-only identity; signing performed outside the verifier. See docs/cab.md for reproduction.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 cab-independent-jsign.cab"
+      }
+    },
+    {
+      "file": "good-cab-countersignature.cab",
+      "sha256": "98934bf0beed077034abe335234414531af43317e6e76df3270b1072331aa5e2",
+      "bytes": 1890,
+      "description": "CAB regression fixture: good cab countersignature. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-countersignature"
+      ]
+    },
+    {
+      "file": "good-cab-nested.cab",
+      "sha256": "e9005a6328a2561ca4e390a9edda72680737787c56839d6bd03a1820f6e1275d",
+      "bytes": 2394,
+      "description": "CAB regression fixture: good cab nested. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-nested"
+      ]
+    },
+    {
+      "file": "good-cab-rfc3161.cab",
+      "sha256": "5cfed1e64322664355d67b28952d6d7f50bf663eb138b2ad2fc28825dd9f1263",
+      "bytes": 2818,
+      "description": "CAB regression fixture: good cab rfc3161. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-rfc3161"
+      ]
+    },
+    {
+      "file": "good-cab-sha384.cab",
+      "sha256": "be38ecd39150e960de7b43fbecb6b75b3e8b9471441a91e07171bb891a55a4f1",
+      "bytes": 1250,
+      "description": "CAB regression fixture: good cab sha384. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-sha384"
+      ]
+    },
+    {
+      "file": "good-cab-sha512.cab",
+      "sha256": "471268aa3237da72e030793aca85ba54c71c855b3a0fc07184187c62f1b282a2",
+      "bytes": 1266,
+      "description": "CAB regression fixture: good cab sha512. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-sha512"
+      ]
+    },
+    {
+      "file": "good.cab",
+      "sha256": "b6c8e1fff783d7d667a435f123286e587f60cc7da954b76ec593d2cd4cabfb83",
+      "bytes": 1234,
+      "description": "Valid single-volume uncompressed CAB with one inert four-byte file, deterministic test-only P-256 signature and the configured test-root chain.",
+      "cases": [
+        "cab-trusted",
+        "cab-integrity",
+        "cab-revoked",
+        "cab-untrusted"
+      ]
+    },
+    {
+      "file": "legacy-cab-sha1.cab",
+      "sha256": "b7e9586f04d6af01bc683b94b1e634b0b6831a89257697d608b892d36ed58103",
+      "bytes": 1218,
+      "description": "CAB regression fixture: legacy cab sha1. Expected outcomes are pinned by the listed declarative cases.",
+      "cases": [
+        "cab-sha1-denied",
+        "cab-sha1-allowed"
+      ]
+    },
+    {
+      "file": "unsigned.cab",
+      "sha256": "70cd71ae9a92afd88fafd15de04c6bc7a10a2ee32ed2d558c01c8fa2a0145641",
+      "bytes": 98,
+      "description": "Standard CAB signature reserve with zero signature length; expected unsigned at cab.",
+      "cases": [
+        "cab-unsigned"
       ]
     }
   ]
