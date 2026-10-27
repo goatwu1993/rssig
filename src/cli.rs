@@ -100,7 +100,10 @@ fn execute(command: Command) -> Result<(Value, u8)> {
     for path in files {
         let result = match std::fs::read(&path) {
             Ok(bytes) => {
-                if crate::rdp::has_extension(&path) && !crate::verify::is_binary(&bytes) {
+                if crate::powershell::has_xml_extension(&path) && !crate::verify::is_binary(&bytes)
+                {
+                    crate::verify_powershell_xml(&bytes, &options)
+                } else if crate::rdp::has_extension(&path) && !crate::verify::is_binary(&bytes) {
                     crate::verify_rdp(&bytes, &options)
                 } else if crate::powershell::has_extension(&path)
                     && !crate::verify::is_binary(&bytes)

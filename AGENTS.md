@@ -140,9 +140,12 @@ MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
 CAB layouts and limits are documented in `docs/cab.md`.
 PowerShell hash-comment signatures for `.ps1`, `.psm1`, and `.psd1`, including strict
 UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for limits.
+PowerShell XML-comment `.ps1xml` signatures support BOM-less ASCII and BOM-marked
+UTF-8/UTF-16LE/BE; see `docs/powershell-xml.md`. They use the same SIP identity and
+shared verification engine as hash-comment scripts, not XMLDSig.
 RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
 unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, and `verify_rdp` select one explicitly.
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, and `verify_rdp` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

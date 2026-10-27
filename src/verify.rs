@@ -39,6 +39,8 @@ pub fn verify(
         verify_cab(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like(bytes) {
         verify_powershell(bytes, options)
+    } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like_xml(bytes) {
+        verify_powershell_xml(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::rdp::looks_like(bytes) {
         verify_rdp(bytes, options)
     } else {
@@ -74,6 +76,16 @@ pub fn verify_powershell(
     })
 }
 
+/// Verify XML-comment PowerShell Authenticode (.ps1xml), not XMLDSig.
+pub fn verify_powershell_xml(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::PowershellXml).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
 /// Verify a detached CMS signature over the explicitly scoped RDP settings.
 pub fn verify_rdp(
     bytes: &[u8],
@@ -95,6 +107,7 @@ enum Format {
     Msi,
     Cab,
     Powershell,
+    PowershellXml,
 }
 
 enum Container<'a> {
@@ -114,6 +127,11 @@ fn verify_inner(
     format: Format,
 ) -> Result<VerificationBundle> {
     let mut container = match format {
+        Format::PowershellXml => Container::Powershell(tagged(
+            Powershell::parse_xml(bytes),
+            ErrorCode::InvalidPowershell,
+            Stage::Powershell,
+        )?),
         Format::Powershell => Container::Powershell(tagged(
             Powershell::parse(bytes),
             ErrorCode::InvalidPowershell,
@@ -146,7 +164,7 @@ fn verify_inner(
         // after one complete DER object, never arbitrary unsigned payloads.
         let mut rest = certificate.as_slice();
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
-        if matches!(format, Format::Powershell) && !rest.is_empty() {
+        if matches!(format, Format::Powershell | Format::PowershellXml) && !rest.is_empty() {
             return Err(VerificationError::new(
                 ErrorCode::MalformedCms,
                 Stage::Cms,
@@ -187,6 +205,7 @@ fn verify_inner(
             Format::Pe => "pe_authenticode",
             Format::Cab => "cab_authenticode",
             Format::Powershell => "powershell_authenticode",
+            Format::PowershellXml => "powershell_xml_authenticode",
         }
         .into(),
         validation_time: options.now,

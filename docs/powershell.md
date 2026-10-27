@@ -59,9 +59,11 @@ The signed indirect data must use `SPC_SIPINFO_OBJID`
 SIP identities are rejected. Script SHA-256/384/512 digests are supported;
 SHA-1 requires `--allow-sha1`. Certificate/CRL SHA-1 remains unsupported.
 
-XML-style PowerShell files (`.ps1xml`, `.psc1`, `.cdxml`), MOF, other script
-signature styles, detached signatures, execution-policy enforcement, script
-syntax validation, and Windows trust-policy equivalence are outside this scope.
+XML-comment `.ps1xml` signatures use the separate
+[PowerShell XML verifier](powershell-xml.md), including its stricter BOM-less
+encoding policy. `.psc1`, `.cdxml`, MOF, other script signature styles, detached
+signatures, execution-policy enforcement, script syntax validation, and Windows
+trust-policy equivalence are outside this hash-comment scope.
 
 ## JSON contract
 

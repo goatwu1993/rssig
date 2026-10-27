@@ -10277,6 +10277,1542 @@
           ]
         }
       }
+    },
+    {
+      "id": "psxml-trusted",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "ce4eef1b60af94cffb7a3f07d2dbeaef799feb1694024f1aad2788ca681ab0f9",
+                    "computed": "ce4eef1b60af94cffb7a3f07d2dbeaef799feb1694024f1aad2788ca681ab0f9"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-lf",
+      "input": "good-psxml-lf.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-ascii-bom",
+      "input": "good-psxml-ascii-bom.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-utf8-bom",
+      "input": "good-psxml-utf8-bom.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-utf16le",
+      "input": "good-psxml-utf16le.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-utf16be",
+      "input": "good-psxml-utf16be.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-misnamed",
+      "input": "psxml-misnamed.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-integrity",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-no-revocation",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-sha384",
+      "input": "good-psxml-sha384.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha384",
+                  "script_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-sha512",
+      "input": "good-psxml-sha512.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha512",
+                  "script_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-sha1-denied",
+      "input": "legacy-psxml-sha1.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "script_digest",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-sha1-allowed",
+      "input": "legacy-psxml-sha1.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000",
+        "--allow-sha1"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha1",
+                  "script_digest": {
+                    "algorithm": "Sha1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-nested",
+      "input": "good-psxml-nested.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "nested_depth": 0,
+                  "chain_trusted": true
+                },
+                {
+                  "nested_depth": 1,
+                  "chain_trusted": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-rfc3161",
+      "input": "good-psxml-rfc3161.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-expired-with-rfc3161",
+      "input": "good-psxml-rfc3161.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-countersignature",
+      "input": "good-psxml-countersignature.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-expired-with-countersignature",
+      "input": "good-psxml-countersignature.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-digest",
+      "input": "bad-psxml-digest.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-line-endings",
+      "input": "bad-psxml-line-endings.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-missing-bom",
+      "input": "bad-psxml-missing-bom.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-ambiguous-utf8",
+      "input": "bad-psxml-ambiguous-utf8.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-duplicate",
+      "input": "bad-psxml-duplicate.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-trailing",
+      "input": "bad-psxml-trailing.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-missing-end",
+      "input": "bad-psxml-missing-end.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-marker-lf",
+      "input": "bad-psxml-marker-lf.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-payload-no-crlf",
+      "input": "bad-psxml-payload-no-crlf.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-comment-end",
+      "input": "bad-psxml-comment-end.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-base64",
+      "input": "bad-psxml-base64.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-hash-style",
+      "input": "bad-psxml-hash-style.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-encoding",
+      "input": "bad-psxml-encoding.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-odd-utf16",
+      "input": "bad-psxml-odd-utf16.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell",
+                "title": "Invalid PowerShell script"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-sip",
+      "input": "bad-psxml-sip.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-cms-trailing",
+      "input": "bad-psxml-cms-trailing.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-cms-signature",
+      "input": "bad-psxml-cms-signature.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-timestamp-imprint",
+      "input": "bad-psxml-timestamp-imprint.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-unsigned",
+      "input": "unsigned.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "powershell",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-revoked",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "title": "Certificate revoked"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-untrusted",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-expired",
+      "input": "good-psxml.ps1xml",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "title": "Certificate expired"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-ascii",
+      "input": "psxml-independent-jsign-ascii.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-utf8-bom",
+      "input": "psxml-independent-jsign-utf8-bom.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-utf16le",
+      "input": "psxml-independent-jsign-utf16le.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-utf16be",
+      "input": "psxml-independent-jsign-utf16be.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-windows1252",
+      "input": "psxml-independent-jsign-windows1252.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_powershell",
+                "stage": "powershell"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "psxml-independent-tampered",
+      "input": "bad-psxml-independent-digest.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

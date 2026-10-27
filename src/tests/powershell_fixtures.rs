@@ -20,7 +20,7 @@ fn algorithm(hash: crypto::Hash) -> Vec<u8> {
         }
     }
 }
-fn content(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
+pub(super) fn content(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
     let input: Vec<u8> = body.encode_utf16().flat_map(u16::to_le_bytes).collect();
     let mut sip = vec![
         vec![2, 3, 1, 0, 0],

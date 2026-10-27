@@ -36,6 +36,9 @@ rssig verify archive.cab --no-system-roots --roots roots.pem --crl issuer.crl
 # PowerShell scripts/modules/data files share the same trust policy.
 rssig verify script.ps1 module.psm1 data.psd1 --no-system-roots --roots roots.pem --crl issuer.crl
 
+# PowerShell XML uses XML-comment signature blocks.
+rssig verify types.ps1xml --no-system-roots --roots roots.pem --crl issuer.crl
+
 # RDP signatures cover selected settings; JSON distinguishes unsigned settings.
 rssig verify connection.rdp --no-system-roots --roots roots.pem --crl issuer.crl
 
@@ -86,6 +89,8 @@ See [CAB support and fixture provenance](docs/cab.md) for supported layouts,
 hashing, and CAB JSON fields.
 See [PowerShell support and fixture provenance](docs/powershell.md) for encodings,
 text hashing, signature-block limits, and script JSON fields.
+See [PowerShell XML support](docs/powershell-xml.md) for `.ps1xml` signature blocks
+and its BOM-less ASCII / BOM-marked Unicode encoding policy.
 See [RDP support and fixture provenance](docs/rdp.md) for signed-setting coverage,
 canonicalization, and trust-policy limits.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
