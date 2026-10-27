@@ -13,6 +13,8 @@ pub enum ErrorCode {
     InvalidMsi,
     InvalidCab,
     InvalidPowershell,
+    InvalidRdp,
+    UnsupportedRdpScope,
     ScriptDigestMismatch,
     CabDigestMismatch,
     PackageDigestMismatch,
@@ -60,6 +62,7 @@ pub enum Stage {
     Msi,
     Cab,
     Powershell,
+    Rdp,
     ScriptDigest,
     PackageDigest,
     PageHashes,
@@ -98,6 +101,8 @@ impl ProblemDetails {
 impl ErrorCode {
     pub fn title(self) -> &'static str {
         match self {
+            Self::InvalidRdp => "Invalid RDP file",
+            Self::UnsupportedRdpScope => "Unsupported RDP signature scope",
             Self::InvalidPowershell => "Invalid PowerShell script",
             Self::ScriptDigestMismatch => "Script digest mismatch",
             Self::InvalidCab => "Invalid CAB container",
@@ -506,11 +511,36 @@ pub struct SignatureReport {
     pub timestamp_verification: Option<TimestampReport>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum RdpValueType {
+    #[serde(rename = "s")]
+    String,
+    #[serde(rename = "i")]
+    Integer,
+    #[serde(rename = "b")]
+    Binary,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RdpSetting {
+    pub name: String,
+    pub value_type: RdpValueType,
+    pub value: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RdpCoverage {
+    pub full_file_signed: bool,
+    pub signscope: Vec<String>,
+    pub signed_settings: Vec<RdpSetting>,
+    pub unsigned_settings: Vec<RdpSetting>,
+    pub canonical_sha256: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {
     pub format: String,
     pub validation_time: u64,
     pub file_sha256: String,
     pub signatures: Vec<SignatureReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdp: Option<RdpCoverage>,
 }
 // Preserve convenient library indexing while returning a named domain bundle.
 impl std::ops::Deref for VerificationBundle {

@@ -16,7 +16,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE/MSI/CAB/PowerShell Authenticode signatures in pure Rust; results are JSON"
+    about = "Verify embedded Windows PE/MSI/CAB/PowerShell Authenticode and RDP signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -100,7 +100,11 @@ fn execute(command: Command) -> Result<(Value, u8)> {
     for path in files {
         let result = match std::fs::read(&path) {
             Ok(bytes) => {
-                if crate::powershell::has_extension(&path) && !crate::verify::is_binary(&bytes) {
+                if crate::rdp::has_extension(&path) && !crate::verify::is_binary(&bytes) {
+                    crate::verify_rdp(&bytes, &options)
+                } else if crate::powershell::has_extension(&path)
+                    && !crate::verify::is_binary(&bytes)
+                {
                     crate::verify_powershell(&bytes, &options)
                 } else {
                     verify(&bytes, &options)

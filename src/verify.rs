@@ -39,6 +39,8 @@ pub fn verify(
         verify_cab(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like(bytes) {
         verify_powershell(bytes, options)
+    } else if !bytes.starts_with(b"MZ") && crate::rdp::looks_like(bytes) {
+        verify_rdp(bytes, options)
     } else {
         verify_pe(bytes, options)
     }
@@ -68,6 +70,16 @@ pub fn verify_powershell(
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Powershell).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify a detached CMS signature over the explicitly scoped RDP settings.
+pub fn verify_rdp(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    crate::rdp::verify(bytes, options).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
@@ -180,6 +192,7 @@ fn verify_inner(
         validation_time: options.now,
         file_sha256: hex(&Hash::Sha256.digest(bytes)),
         signatures: reports,
+        rdp: None,
     })
 }
 
@@ -309,7 +322,7 @@ fn verify_signature(
             Stage::Cms,
         )?;
         let timestamp_verification = tagged(
-            verify_timestamp(&sd, &signer, options),
+            verify_timestamp(&sd.certs, &signer, options),
             ErrorCode::InvalidTimestamp,
             Stage::Timestamp,
         )?;
@@ -364,8 +377,8 @@ fn verify_signature(
     Ok(())
 }
 
-fn verify_timestamp(
-    sd: &SignedData<'_>,
+pub(crate) fn verify_timestamp(
+    certificates: &[x509_cert::Certificate],
     signer: &cms::Signer<'_>,
     options: &VerifyOptions<'_>,
 ) -> Result<Option<TimestampReport>> {
@@ -377,7 +390,7 @@ fn verify_timestamp(
                 "multiple timestamps are unsupported"
             );
             let mut token = SignedData::parse(values[0].full)?;
-            token.certs.extend(sd.certs.iter().cloned());
+            token.certs.extend(certificates.iter().cloned());
             ensure!(
                 token.content_type == cms::TST_INFO && token.signers.len() == 1,
                 "invalid RFC3161 token"
@@ -437,7 +450,12 @@ fn verify_timestamp(
                 values.len() == 1 && timestamp.is_none(),
                 "multiple timestamps are unsupported"
             );
-            let tsa = sd.verify_signer(values[0], signer.signature, None, options.allow_sha1)?;
+            let tsa = cms::verify_countersigner(
+                certificates,
+                values[0],
+                signer.signature,
+                options.allow_sha1,
+            )?;
             let time = cms::attribute(&tsa.signed, &[42, 134, 72, 134, 247, 13, 1, 9, 5])?
                 .context("countersignature lacks signingTime")?;
             let at = parse_time(time)?;
@@ -454,7 +472,7 @@ fn verify_timestamp(
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
                     &tsa.cert,
-                    &sd.certs,
+                    certificates,
                     trust::TIME_STAMPING,
                     at,
                     options.now,

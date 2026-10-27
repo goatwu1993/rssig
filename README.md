@@ -1,7 +1,7 @@
 # rssig
 
-Verify embedded Windows PE, MSI, CAB, and PowerShell Authenticode signatures on macOS and Linux with a
-Rust CLI. PE/MSI/CAB/PowerShell hashing, CMS signatures, certificate chains, timestamps, and CRLs
+Verify Windows PE, MSI, CAB, and PowerShell Authenticode signatures and signed RDP
+settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/PowerShell hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
@@ -35,6 +35,9 @@ rssig verify archive.cab --no-system-roots --roots roots.pem --crl issuer.crl
 
 # PowerShell scripts/modules/data files share the same trust policy.
 rssig verify script.ps1 module.psm1 data.psd1 --no-system-roots --roots roots.pem --crl issuer.crl
+
+# RDP signatures cover selected settings; JSON distinguishes unsigned settings.
+rssig verify connection.rdp --no-system-roots --roots roots.pem --crl issuer.crl
 
 # Run native tests and the JSON specification through the CLI library.
 cargo test --locked
@@ -83,6 +86,8 @@ See [CAB support and fixture provenance](docs/cab.md) for supported layouts,
 hashing, and CAB JSON fields.
 See [PowerShell support and fixture provenance](docs/powershell.md) for encodings,
 text hashing, signature-block limits, and script JSON fields.
+See [RDP support and fixture provenance](docs/rdp.md) for signed-setting coverage,
+canonicalization, and trust-policy limits.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 

@@ -8012,6 +8012,2271 @@
           ]
         }
       }
+    },
+    {
+      "id": "rdp-trusted",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false,
+                "signscope": [
+                  "Full Address",
+                  "Server Port",
+                  "RedirectClipboard"
+                ],
+                "signed_settings": [
+                  {
+                    "name": "full address",
+                    "value_type": "s",
+                    "value": "example.invalid"
+                  },
+                  {
+                    "name": "server port",
+                    "value_type": "i",
+                    "value": "3389"
+                  },
+                  {
+                    "name": "redirectclipboard",
+                    "value_type": "i",
+                    "value": "0"
+                  }
+                ],
+                "unsigned_settings": [
+                  {
+                    "name": "desktopwidth",
+                    "value_type": "i",
+                    "value": "1024"
+                  }
+                ],
+                "canonical_sha256": "8b1c82e6a56153929cb52e3cdb69f2af822e0f5b817aa3aea0ab9cf3eecaab52"
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ],
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-attributes",
+      "input": "good-rdp-attributes.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-utf8-bom",
+      "input": "good-rdp-utf8-bom.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-utf16le",
+      "input": "good-rdp-utf16le.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-utf16be",
+      "input": "good-rdp-utf16be.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-lf",
+      "input": "good-rdp-lf.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-no-final-newline",
+      "input": "good-rdp-no-final-newline.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-rsa",
+      "input": "good-rdp-rsa.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-server-auth",
+      "input": "good-rdp-server-auth.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-remote-auth",
+      "input": "good-rdp-remote-auth.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-unicode-unsigned",
+      "input": "good-rdp-unicode-unsigned.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-misnamed",
+      "input": "rdp-misnamed.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-integrity",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": false,
+                  "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-no-revocation",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-unsigned-change",
+      "input": "good-rdp-unsigned-change.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false,
+                "signscope": [
+                  "Full Address",
+                  "Server Port",
+                  "RedirectClipboard"
+                ],
+                "signed_settings": [
+                  {
+                    "name": "full address",
+                    "value_type": "s",
+                    "value": "example.invalid"
+                  },
+                  {
+                    "name": "server port",
+                    "value_type": "i",
+                    "value": "3389"
+                  },
+                  {
+                    "name": "redirectclipboard",
+                    "value_type": "i",
+                    "value": "0"
+                  }
+                ],
+                "unsigned_settings": [
+                  {
+                    "name": "desktopwidth",
+                    "value_type": "i",
+                    "value": "2048"
+                  }
+                ],
+                "canonical_sha256": "8b1c82e6a56153929cb52e3cdb69f2af822e0f5b817aa3aea0ab9cf3eecaab52"
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-rfc3161",
+      "input": "good-rdp-rfc3161.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-expired-with-rfc3161",
+      "input": "good-rdp-rfc3161.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-countersignature",
+      "input": "good-rdp-countersignature.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-expired-with-countersignature",
+      "input": "good-rdp-countersignature.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-sha384",
+      "input": "good-rdp-sha384.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha384"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-sha512",
+      "input": "good-rdp-sha512.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha512"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-sha1-denied",
+      "input": "legacy-rdp-sha1.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "cms",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-sha1-allowed",
+      "input": "legacy-rdp-sha1.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000",
+        "--allow-sha1"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-setting",
+      "input": "bad-rdp-setting.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-scope-order",
+      "input": "bad-rdp-scope-order.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-cms-signature",
+      "input": "bad-rdp-cms-signature.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-attributes-setting",
+      "input": "bad-rdp-attributes-setting.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "content_digest_mismatch",
+                "stage": "cms",
+                "title": "Content digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-timestamp-imprint",
+      "input": "bad-rdp-timestamp-imprint.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-duplicate",
+      "input": "bad-rdp-duplicate.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-case-duplicate",
+      "input": "bad-rdp-case-duplicate.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-duplicate-signature",
+      "input": "bad-rdp-duplicate-signature.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-duplicate-scope",
+      "input": "bad-rdp-duplicate-scope.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-missing-setting",
+      "input": "bad-rdp-missing-setting.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-wrong-type",
+      "input": "bad-rdp-wrong-type.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-invalid-integer",
+      "input": "bad-rdp-invalid-integer.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-missing-scope",
+      "input": "bad-rdp-missing-scope.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-empty-scope",
+      "input": "bad-rdp-empty-scope.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-scope-no-host",
+      "input": "bad-rdp-scope-no-host.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-blank-line",
+      "input": "bad-rdp-blank-line.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-lone-cr",
+      "input": "bad-rdp-lone-cr.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-empty-host",
+      "input": "bad-rdp-empty-host.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-invalid-line",
+      "input": "bad-rdp-invalid-line.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-base64",
+      "input": "bad-rdp-base64.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-header",
+      "input": "bad-rdp-header.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-version",
+      "input": "bad-rdp-version.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-length",
+      "input": "bad-rdp-length.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-short-header",
+      "input": "bad-rdp-short-header.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-utf8",
+      "input": "bad-rdp-utf8.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-odd-utf16",
+      "input": "bad-rdp-odd-utf16.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_rdp",
+                "stage": "rdp",
+                "title": "Invalid RDP file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-unknown-scope",
+      "input": "bad-rdp-unknown-scope.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsupported_rdp_scope",
+                "stage": "rdp",
+                "title": "Unsupported RDP signature scope"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-cms-trailing",
+      "input": "bad-rdp-cms-trailing.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-malformed-cms",
+      "input": "bad-rdp-malformed-cms.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-attached-cms",
+      "input": "bad-rdp-attached-cms.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-eku",
+      "input": "bad-rdp-eku.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_eku",
+                "stage": "certificate",
+                "title": "Invalid extended key usage"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-no-eku",
+      "input": "bad-rdp-no-eku.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_eku",
+                "stage": "certificate",
+                "title": "Invalid extended key usage"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-key-usage",
+      "input": "bad-rdp-key-usage.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate",
+                "title": "Invalid key usage"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-unsigned",
+      "input": "unsigned.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "rdp",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-revoked",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "title": "Certificate revoked"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-expired-crl",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "title": "CRL expired"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-untrusted",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-expired",
+      "input": "good.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "title": "Certificate expired"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-independent-nfedera",
+      "input": "rdp-independent-nfedera.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-rdp-independent-setting",
+      "input": "bad-rdp-independent-setting.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-rdp-independent-unsigned-change",
+      "input": "good-rdp-independent-unsigned-change.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-pe-requires-attributes",
+      "input": "bad-rdp-pe-no-attributes.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-nested-unsupported",
+      "input": "bad-rdp-nested.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-powershell-comment",
+      "input": "good-rdp-powershell-comment.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }
