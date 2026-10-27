@@ -1,7 +1,7 @@
 # rssig
 
 rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell Authenticode
-signatures on **macOS and Linux**. The local `jsign/` and `relic/` clones are
+signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
 project at build or runtime.
@@ -40,7 +40,7 @@ project at build or runtime.
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
-   artifact when possible. Never execute PE/MSI/CAB or script fixtures.
+   artifact when possible. Never execute PE/MSI/CAB or script fixtures, or open RDP fixtures in a client.
 2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
    language-independent specification. Add a named Rust test under `tests/cli/`
    for implementation-specific checks of the fixture, CLI argv, exit
@@ -140,7 +140,9 @@ MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
 CAB layouts and limits are documented in `docs/cab.md`.
 PowerShell hash-comment signatures for `.ps1`, `.psm1`, and `.psd1`, including strict
 UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for limits.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, and `verify_powershell` select one explicitly.
+RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
+unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, and `verify_rdp` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

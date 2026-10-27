@@ -2,6 +2,7 @@ mod cab_fixtures;
 mod fixture_faults;
 mod msi_fixtures;
 mod powershell_fixtures;
+mod rdp_fixtures;
 
 use super::*;
 use ::der::{Encode, asn1::BitString};
@@ -755,6 +756,7 @@ fn regenerate_cli_fixtures() {
     msi_fixtures::write(&dir);
     cab_fixtures::write(&dir);
     powershell_fixtures::write(&dir);
+    rdp_fixtures::write(&dir);
 }
 
 fn intermediate_pe(bad_key_usage: bool) -> Vec<u8> {

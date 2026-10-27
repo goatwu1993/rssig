@@ -7,6 +7,7 @@ use ::der::{Decode, Encode};
 use anyhow::{Context, Result, ensure};
 use x509_cert::Certificate;
 
+pub(crate) const DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 1];
 pub(crate) const SIGNED_DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 2];
 pub(crate) const INDIRECT: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 4];
 const PE_IMAGE: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 15];
@@ -26,6 +27,7 @@ pub(crate) struct SignedData<'a> {
     digest_algorithms: Vec<Hash>,
 }
 pub(crate) struct Signer<'a> {
+    pub hash: Hash,
     pub cert: Certificate,
     pub signature: &'a [u8],
     pub unsigned: Vec<(Vec<u8>, Vec<Node<'a>>)>,
@@ -116,92 +118,15 @@ impl<'a> SignedData<'a> {
         content_type: Option<&[u8]>,
         allow_sha1: bool,
     ) -> Result<Signer<'a>> {
-        let si = signer.expect(0x30)?.children()?;
-        ensure!(
-            si.len() == 6 || si.len() == 7,
-            "SignerInfo must contain authenticated attributes"
-        );
-        si[0].expect(2)?;
-        let sid = der::fields(si[1].expect(0x30)?, 2)?;
-        sid[1].expect(2)?;
-        let hash = algorithm(si[2])?;
-        ensure!(
-            allow_sha1 || hash != Hash::Sha1,
-            "SHA-1 requires --allow-sha1"
-        );
-        if content_type.is_some() {
-            ensure!(
-                self.digest_algorithms.contains(&hash),
-                "signer digest absent from SignedData digestAlgorithms"
-            );
-        }
-        let cert = self
-            .certs
-            .iter()
-            .find(|cert| {
-                cert.tbs_certificate.issuer.to_der().ok().as_deref() == Some(sid[0].full)
-                    && cert.tbs_certificate.serial_number.to_der().ok().as_deref()
-                        == Some(sid[1].full)
-            })
-            .context("signer certificate missing")?
-            .clone();
-        let signed = attributes(si[3].expect(0xa0)?)?;
-        let md = attribute(&signed, MESSAGE_DIGEST)?.context("missing signed messageDigest")?;
-        let computed = hash.digest(content);
-        if md.tag != 4 || md.body != computed {
-            return Err(VerificationError::new(
-                ErrorCode::ContentDigestMismatch,
-                Stage::Cms,
-                "CMS content digest mismatch",
-            )
-            .detail("expected", crate::domain::hex(md.body))
-            .detail("computed", crate::domain::hex(&computed))
-            .into());
-        }
-        if let Some(content_type) = content_type {
-            ensure!(
-                attribute(&signed, CONTENT_TYPE)?.is_some_and(|n| der::oid(n, content_type)),
-                "signed contentType mismatch"
-            );
-        } else {
-            ensure!(
-                attribute(&signed, CONTENT_TYPE)?.is_none(),
-                "countersignature must omit contentType"
-            );
-        }
-        let alg = si[4].expect(0x30)?.children()?;
-        ensure!(
-            !alg.is_empty() && alg.len() <= 2,
-            "invalid signature algorithm"
-        );
-        alg[0].expect(6)?;
-        if alg.len() == 2 {
-            ensure!(
-                alg[1].tag == 5 && alg[1].body.is_empty(),
-                "unsupported signature parameters"
-            );
-        }
-        let signature = si[5].expect(4)?.body;
-        let mut attrs_der = si[3].full.to_vec();
-        attrs_der[0] = 0x31; // Signature is over the DER SET OF, not its implicit [0] tag.
-        crypto::verify_spki(
-            &cert.tbs_certificate.subject_public_key_info.to_der()?,
-            hash,
-            alg[0].body,
-            &attrs_der,
-            signature,
-        )?;
-        let unsigned = if si.len() == 7 {
-            attributes(si[6].expect(0xa1)?)?
-        } else {
-            Vec::new()
-        };
-        Ok(Signer {
-            cert,
-            signature,
-            unsigned,
-            signed,
-        })
+        verify_signer_inner(
+            &self.certs,
+            &self.digest_algorithms,
+            signer,
+            content,
+            content_type,
+            allow_sha1,
+            false,
+        )
     }
 
     pub fn image_digest(&self) -> Result<(Hash, &'a [u8])> {
@@ -372,5 +297,208 @@ pub(crate) fn attribute<'a>(attrs: &Attributes<'a>, oid: &[u8]) -> Result<Option
         Ok(Some(values[0]))
     } else {
         Ok(None)
+    }
+}
+
+fn verify_signer_inner<'a>(
+    certificates: &[Certificate],
+    digest_algorithms: &[Hash],
+    signer: Node<'a>,
+    content: &[u8],
+    content_type: Option<&[u8]>,
+    allow_sha1: bool,
+    allow_bare: bool,
+) -> Result<Signer<'a>> {
+    let si = signer.expect(0x30)?.children()?;
+    let has_attributes = si.get(3).is_some_and(|n| n.tag == 0xa0);
+    ensure!(
+        has_attributes || allow_bare,
+        "SignerInfo must contain authenticated attributes"
+    );
+    let fields = if has_attributes { 6 } else { 5 };
+    ensure!(
+        si.len() == fields || si.len() == fields + 1,
+        "invalid SignerInfo fields"
+    );
+    if allow_bare {
+        ensure!(
+            si[0].expect(2)?.body == [1],
+            "unsupported detached signer version"
+        );
+    }
+    si[0].expect(2)?;
+    let sid = der::fields(si[1].expect(0x30)?, 2)?;
+    sid[1].expect(2)?;
+    let hash = algorithm(si[2])?;
+    if allow_bare && !allow_sha1 && hash == Hash::Sha1 {
+        return Err(VerificationError::new(
+            ErrorCode::WeakAlgorithm,
+            Stage::Cms,
+            "SHA-1 RDP CMS requires --allow-sha1",
+        )
+        .into());
+    }
+    ensure!(
+        allow_sha1 || hash != Hash::Sha1,
+        "SHA-1 requires --allow-sha1"
+    );
+    if content_type.is_some() {
+        ensure!(
+            digest_algorithms.contains(&hash),
+            "signer digest absent from SignedData digestAlgorithms"
+        );
+    }
+    let cert = certificates
+        .iter()
+        .find(|cert| {
+            cert.tbs_certificate.issuer.to_der().ok().as_deref() == Some(sid[0].full)
+                && cert.tbs_certificate.serial_number.to_der().ok().as_deref() == Some(sid[1].full)
+        })
+        .context("signer certificate missing")?
+        .clone();
+    let signed = if has_attributes {
+        attributes(si[3].expect(0xa0)?)?
+    } else {
+        Vec::new()
+    };
+    let mut attrs_der = Vec::new();
+    if has_attributes {
+        let md = attribute(&signed, MESSAGE_DIGEST)?.context("missing signed messageDigest")?;
+        let computed = hash.digest(content);
+        if md.tag != 4 || md.body != computed {
+            return Err(VerificationError::new(
+                ErrorCode::ContentDigestMismatch,
+                Stage::Cms,
+                "CMS content digest mismatch",
+            )
+            .detail("expected", crate::domain::hex(md.body))
+            .detail("computed", crate::domain::hex(&computed))
+            .into());
+        }
+        if let Some(content_type) = content_type {
+            ensure!(
+                attribute(&signed, CONTENT_TYPE)?.is_some_and(|n| der::oid(n, content_type)),
+                "signed contentType mismatch"
+            );
+        } else {
+            ensure!(
+                attribute(&signed, CONTENT_TYPE)?.is_none(),
+                "countersignature must omit contentType"
+            );
+        }
+        attrs_der = si[3].full.to_vec();
+        attrs_der[0] = 0x31;
+    }
+    let algorithm_index = if has_attributes { 4 } else { 3 };
+    let alg = si[algorithm_index].expect(0x30)?.children()?;
+    ensure!(
+        !alg.is_empty() && alg.len() <= 2,
+        "invalid signature algorithm"
+    );
+    alg[0].expect(6)?;
+    if alg.len() == 2 {
+        ensure!(
+            alg[1].tag == 5 && alg[1].body.is_empty(),
+            "unsupported signature parameters"
+        );
+    }
+    let signature = si[algorithm_index + 1].expect(4)?.body;
+    crypto::verify_spki(
+        &cert.tbs_certificate.subject_public_key_info.to_der()?,
+        hash,
+        alg[0].body,
+        if has_attributes { &attrs_der } else { content },
+        signature,
+    )?;
+    let unsigned = if si.len() == fields + 1 {
+        attributes(si[fields].expect(0xa1)?)?
+    } else {
+        Vec::new()
+    };
+    Ok(Signer {
+        hash,
+        cert,
+        signature,
+        unsigned,
+        signed,
+    })
+}
+
+pub(crate) fn verify_countersigner<'a>(
+    certificates: &[Certificate],
+    signer: Node<'a>,
+    content: &[u8],
+    allow_sha1: bool,
+) -> Result<Signer<'a>> {
+    verify_signer_inner(certificates, &[], signer, content, None, allow_sha1, false)
+}
+
+/// Explicit detached id-data CMS entry point. Authenticode stays attached and
+/// requires signed attributes through SignedData::parse/verify.
+pub(crate) struct DetachedData<'a> {
+    pub certs: Vec<Certificate>,
+    pub signers: Vec<Node<'a>>,
+    digest_algorithms: Vec<Hash>,
+}
+impl<'a> DetachedData<'a> {
+    pub fn parse(bytes: &'a [u8]) -> Result<Self> {
+        let outer = der::fields(der::one(bytes, 0x30)?, 2)?;
+        ensure!(der::oid(outer[0], SIGNED_DATA), "not PKCS#7 SignedData");
+        let sd = der::one(outer[1].expect(0xa0)?.body, 0x30)?.children()?;
+        ensure!(
+            (4..=6).contains(&sd.len()) && sd[0].expect(2)?.body == [1],
+            "invalid detached SignedData version or fields"
+        );
+        let digest_algorithms = sd[1]
+            .expect(0x31)?
+            .children()?
+            .into_iter()
+            .map(algorithm)
+            .collect::<Result<Vec<_>>>()?;
+        ensure!(
+            !digest_algorithms.is_empty(),
+            "empty detached digestAlgorithms"
+        );
+        let ci = der::fields(sd[2].expect(0x30)?, 1)?;
+        ensure!(
+            der::oid(ci[0], DATA),
+            "detached RDP signature must use id-data without embedded content"
+        );
+        let mut i = 3;
+        let mut certs = Vec::new();
+        if sd[i].tag == 0xa0 {
+            for node in sd[i].children()? {
+                certs.push(
+                    Certificate::from_der(node.full).context("invalid embedded certificate")?,
+                );
+            }
+            i += 1;
+        }
+        // Local configured CRLs alone supply revocation validation.
+        if i < sd.len() && sd[i].tag == 0xa1 {
+            i += 1;
+        }
+        ensure!(i + 1 == sd.len(), "invalid detached SignedData fields");
+        let signers = sd[i].expect(0x31)?.children()?;
+        ensure!(
+            !signers.is_empty() && signers.len() <= 64,
+            "invalid detached signer count"
+        );
+        Ok(Self {
+            certs,
+            signers,
+            digest_algorithms,
+        })
+    }
+    pub fn verify(&self, signer: Node<'a>, content: &[u8], allow_sha1: bool) -> Result<Signer<'a>> {
+        verify_signer_inner(
+            &self.certs,
+            &self.digest_algorithms,
+            signer,
+            content,
+            Some(DATA),
+            allow_sha1,
+            true,
+        )
     }
 }

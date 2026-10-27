@@ -47,7 +47,7 @@ fn content(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
         seq(&[algorithm(hash), tlv(4, &hash.digest(&input))]),
     ])
 }
-fn cms_for(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
+pub(super) fn cms_for(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
     let content = content(body, hash, fault);
     let si = signer_info(
         identity(),
@@ -58,7 +58,7 @@ fn cms_for(body: &str, hash: crypto::Hash, fault: Option<&str>) -> Vec<u8> {
     );
     signed_data(identity(), content, cms::INDIRECT, si)
 }
-fn block(signature: &[u8]) -> String {
+pub(super) fn block(signature: &[u8]) -> String {
     let mut block = String::from("\r\n# SIG # Begin signature block\r\n");
     let b64 = Base64::encode_string(signature);
     for chunk in b64.as_bytes().chunks(64) {

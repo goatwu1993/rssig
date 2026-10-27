@@ -7,10 +7,13 @@ pub mod domain;
 mod msi;
 mod pe;
 mod powershell;
+mod rdp;
 mod trust;
 mod verify;
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
-pub use verify::{VerifyOptions, verify, verify_cab, verify_msi, verify_pe, verify_powershell};
+pub use verify::{
+    VerifyOptions, verify, verify_cab, verify_msi, verify_pe, verify_powershell, verify_rdp,
+};
 #[cfg(test)]
 mod tests;

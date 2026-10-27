@@ -7,5 +7,7 @@ mod msi;
 mod pe;
 #[path = "cli/powershell.rs"]
 mod powershell;
+#[path = "cli/rdp.rs"]
+mod rdp;
 #[path = "cli/support.rs"]
 mod support;
