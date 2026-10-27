@@ -6,6 +6,9 @@ description = "Cross-platform embedded Windows PE Authenticode signature verifie
 license = "Apache-2.0"
 
 [dependencies]
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+crc32fast = "1"
+roxmltree = "0.21"
 base64ct = { version = "1", features = ["alloc"] }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }

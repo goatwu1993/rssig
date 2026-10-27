@@ -1,4 +1,6 @@
 //! All fixture cases are native Rust tests; no test executable is spawned.
+#[path = "cli/appx.rs"]
+mod appx;
 #[path = "cli/cab.rs"]
 mod cab;
 #[path = "cli/msi.rs"]

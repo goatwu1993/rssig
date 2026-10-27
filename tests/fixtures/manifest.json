@@ -7,8 +7,8 @@
     "crypto": "Synthetic RustCrypto deterministic test keys/signatures; independently signed artifacts record their own tool provenance. No native crypto in the engine.",
     "license": "Apache-2.0 (repository-generated artifacts)",
     "validation_time": 1800000000,
-    "warning": "Test-only PE/CFB/CAB containers and inert PowerShell scripts. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance. RDP fixtures use reserved example.invalid hosts; never open them in an RDP client.",
-    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation. PowerShell XML adds jsign 7.6-signed ASCII and BOM-marked UTF-8/UTF-16LE/BE fixtures, an isolated digest-tampered pair, and explicit rejection of a signed Windows-1252 artifact."
+    "warning": "Test-only PE/CFB/CAB containers and inert PowerShell scripts. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance. RDP fixtures use reserved example.invalid hosts; never open them in an RDP client. MSIX/AppX fixtures must never be installed or executed.",
+    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation. PowerShell XML adds jsign 7.6-signed ASCII and BOM-marked UTF-8/UTF-16LE/BE fixtures, an isolated digest-tampered pair, and explicit rejection of a signed Windows-1252 artifact. MSIX/AppX adds an independently jsign 7.6-signed package and an unchanged upstream signtool-signed ZIP64 package; specific integrity checks only, not Windows policy equivalence."
   },
   "artifacts": [
     {
@@ -3042,6 +3042,430 @@
         "source": "Repository-created inert <Types /> XML text and public RSA-2048 test identity exported by export_msi_test_identity. Exact encodings and source text are documented in docs/powershell-xml.md.",
         "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 psxml-independent-jsign-*.ps1xml"
       }
+    },
+    {
+      "file": "appx-jsign-input.msix",
+      "sha256": "228e87f46f468e3993aa6d92d6e0b88ae2ec0d7c2f059d1c5e32e9159e0971e8",
+      "bytes": 1534,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: appx-jsign-input.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-appx-jsign-input"
+      ]
+    },
+    {
+      "file": "appx-misnamed.bin",
+      "sha256": "e831151ff43053d1349160a93ee1eed1336f5ace52bc6a736485f7671e4f94bb",
+      "bytes": 2928,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: appx-misnamed.bin. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-misnamed"
+      ]
+    },
+    {
+      "file": "bad-appx-block-algorithm.msix",
+      "sha256": "9dd0b02089b4125d2d835f3f45c112ef0e97759a05c4f7ee0ca2711a9e66ca67",
+      "bytes": 2926,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-block-algorithm.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-block-algorithm"
+      ]
+    },
+    {
+      "file": "bad-appx-block-extra.msix",
+      "sha256": "05a64fed392934ba25235094de56796d74cd20a2c7ea6637734ab3bbf6f1b9d6",
+      "bytes": 2974,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-block-extra.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-block-extra"
+      ]
+    },
+    {
+      "file": "bad-appx-block-hash.msix",
+      "sha256": "456b9db165162053b9426f61a6be25e1cb979d6da74e1acb768da442f020ef0b",
+      "bytes": 2929,
+      "description": "Complete correctly signed package whose block map contains one deliberately incorrect data.bin hash; package/CMS digests remain valid. Expected block_hash_mismatch.",
+      "cases": [
+        "appx-block-hash"
+      ]
+    },
+    {
+      "file": "bad-appx-block-missing.msix",
+      "sha256": "c87cb400beab239775f45bb7d28392f13114ba8086bbd53f2223839b80c0adaf",
+      "bytes": 2816,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-block-missing.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-block-missing"
+      ]
+    },
+    {
+      "file": "bad-appx-bundle.msix",
+      "sha256": "940ce3e4acf1092323117f5b62e43966735fd6f4c0cb3a93ff1b88409340b760",
+      "bytes": 3225,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-bundle.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-bundle"
+      ]
+    },
+    {
+      "file": "bad-appx-cms-signature.msix",
+      "sha256": "dbc5b9a1aa6d6833f12f3161f6a7b3d4976e68f5a39f739d7b31fceead2277d8",
+      "bytes": 2928,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-cms-signature.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-cms-signature"
+      ]
+    },
+    {
+      "file": "bad-appx-cms-trailing.msix",
+      "sha256": "8381dd7be8b76de336e511e010fe69972eeea286bd931c6eb14d4bbdc7285127",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-cms-trailing.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-cms-trailing"
+      ]
+    },
+    {
+      "file": "bad-appx-content-types.msix",
+      "sha256": "50e4e6a24b79b0c6cfbe6f918333d4f3ad424a588b1ddaf402ac9c0c4b784f1b",
+      "bytes": 2920,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-content-types.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-content-types"
+      ]
+    },
+    {
+      "file": "bad-appx-digest-AXBM.msix",
+      "sha256": "51e25a6681e5ecf81b4de44235425e6ce30daa7f15c307002bec1b2614d84bdd",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-digest-AXBM.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-digest-AXBM"
+      ]
+    },
+    {
+      "file": "bad-appx-digest-AXCD.msix",
+      "sha256": "89e4beaaf8cf5e38af378643464394d94b306daf7fe3a486d77aa89ab63e78a2",
+      "bytes": 2927,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-digest-AXCD.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-digest-AXCD"
+      ]
+    },
+    {
+      "file": "bad-appx-digest-AXCT.msix",
+      "sha256": "9a58015a2930bf3d44e769797b13fe0c5aa40bb5b369d53ca69511ea0365e68b",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-digest-AXCT.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-digest-AXCT"
+      ]
+    },
+    {
+      "file": "bad-appx-digest-AXPC.msix",
+      "sha256": "3605a657ef50ada16370a7b6390e5ca22bf69ad3150ae41fbde33967946cea34",
+      "bytes": 2927,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-digest-AXPC.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-digest-AXPC"
+      ]
+    },
+    {
+      "file": "bad-appx-dtd.msix",
+      "sha256": "965e1624c092a65279d536930ad50659bd61e8f317a42e18b55748fb6037a72d",
+      "bytes": 2965,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-dtd.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-dtd"
+      ]
+    },
+    {
+      "file": "bad-appx-duplicate.msix",
+      "sha256": "1b763e87d9ddfa2e53611b657a7de16a44d1c3c2ae139d002af0f59a0726bf58",
+      "bytes": 3024,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-duplicate.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-duplicate"
+      ]
+    },
+    {
+      "file": "bad-appx-lfh.msix",
+      "sha256": "2917af3039d35f660050ff848a476740d17fb65ecedd323a887a0a123bd4d471",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-lfh.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-lfh"
+      ]
+    },
+    {
+      "file": "bad-appx-namespace.msix",
+      "sha256": "a333c5890aeccdd4a428da80ea70e32b87da8a9a973118d5a54280b523574ccb",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-namespace.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-namespace"
+      ]
+    },
+    {
+      "file": "bad-appx-path.msix",
+      "sha256": "94365a3cb32b87592624ce8ce69becf3aad3baf71b2a2039c689f68d40545075",
+      "bytes": 2934,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-path.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-path"
+      ]
+    },
+    {
+      "file": "bad-appx-payload.msix",
+      "sha256": "2983943912e344f22a5a9ca6cdce998a23b3301bc28977a26fab73f765ecad07",
+      "bytes": 2928,
+      "description": "Paired with good.msix: only stored payload byte at offset 38 is XORed with 1, preserving the entire valid CMS. Expected appx_digest_mismatch, component AXPC.",
+      "cases": [
+        "appx-payload"
+      ]
+    },
+    {
+      "file": "bad-appx-pkcx.msix",
+      "sha256": "6d5ff69222881faf7f7be78667fe530910313c44901e28cabe2f9d98c283623c",
+      "bytes": 2928,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-pkcx.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-pkcx"
+      ]
+    },
+    {
+      "file": "bad-appx-publisher.msix",
+      "sha256": "cfa9e4299a379d68233205832077a655032ea42bc1ac59829b7fb65b92e9054d",
+      "bytes": 2923,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-publisher.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-publisher"
+      ]
+    },
+    {
+      "file": "bad-appx-signature-order.msix",
+      "sha256": "ac02d6060921f0a943dad9191f64d92a3fd0e85e55b61d983bf8c40916dc72e8",
+      "bytes": 2928,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-signature-order.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-signature-order"
+      ]
+    },
+    {
+      "file": "bad-appx-timestamp-imprint.msix",
+      "sha256": "890009c0af5f52598d87f0a68cff77c76fd3edb0a5c50e87cc0498aca4aa3d93",
+      "bytes": 4512,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-timestamp-imprint.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-timestamp-imprint"
+      ]
+    },
+    {
+      "file": "bad-appx-trailing.msix",
+      "sha256": "329ed58ec3d8fd62275ad35e3205ea7ce896723018bf1155e4e6a503132d2463",
+      "bytes": 2929,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-trailing.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-trailing"
+      ]
+    },
+    {
+      "file": "bad-appx-truncated.msix",
+      "sha256": "fab1395ce3611fafd07b75e7a736abfde7cf40963f00eacd43414380f6b8fa84",
+      "bytes": 100,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-truncated.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-truncated"
+      ]
+    },
+    {
+      "file": "good-appx-catalog.msix",
+      "sha256": "2aeb1945532776d2738a17cf936f6b1f2283b860c167a07da578f2e9d6e94c88",
+      "bytes": 3166,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-catalog.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-catalog"
+      ]
+    },
+    {
+      "file": "good-appx-countersignature.msix",
+      "sha256": "530460f3351d86f79be8d4e2354c2e28cd6ba097e49b43c9a9a50b8273bad3d6",
+      "bytes": 3587,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-countersignature.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-countersignature",
+        "appx-expired-with-countersignature"
+      ]
+    },
+    {
+      "file": "good-appx-deflate.msix",
+      "sha256": "4ac60ca64e21a67a9b8a3963c30d4adf9abeca7c1d21aa7a372fd77e05b830e2",
+      "bytes": 2947,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-deflate.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-deflate"
+      ]
+    },
+    {
+      "file": "good-appx-descriptor.msix",
+      "sha256": "4d625dc57ee37128539061faed4339ef6b9b09c55da3f3ae90a1d5028f092a80",
+      "bytes": 3009,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-descriptor.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-descriptor"
+      ]
+    },
+    {
+      "file": "good-appx-empty.msix",
+      "sha256": "22da78e16915508c0e10ce21151c1a3f55cdfeb0dfbbce5c4edb3b4800096299",
+      "bytes": 2862,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-empty.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-empty"
+      ]
+    },
+    {
+      "file": "good-appx-multi.msix",
+      "sha256": "67e7e9988294cb9115c93996b6befc0d9717bed7016d43f211175e3ef3236d41",
+      "bytes": 3117,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-multi.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-multi"
+      ]
+    },
+    {
+      "file": "good-appx-nested.msix",
+      "sha256": "4bd772c7e056572d6e6471368d1c9e1b6f158f017b78220aee4d80a6312f7421",
+      "bytes": 4247,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-nested.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-nested"
+      ]
+    },
+    {
+      "file": "good-appx-rfc3161.msix",
+      "sha256": "504cff2e7fc8e9508b7278e03bcf110d49e40ab97b0e7ccd4cb756b23ed9ab8f",
+      "bytes": 4512,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-rfc3161.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-rfc3161",
+        "appx-expired-with-rfc3161"
+      ]
+    },
+    {
+      "file": "good-appx-sha384.msix",
+      "sha256": "8ed2bf91436834bac4acaaa73b49daa62215b49880adff2976941980c90dcb1b",
+      "bytes": 3041,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-sha384.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-sha384"
+      ]
+    },
+    {
+      "file": "good-appx-sha512.msix",
+      "sha256": "150596d1864ce93ac9744027394821e52aaf429de51627c36b61d81f15c58442",
+      "bytes": 3149,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-sha512.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-sha512"
+      ]
+    },
+    {
+      "file": "good-appx-zip64.msix",
+      "sha256": "485873fa2ccaf467f61db72789fbfa34dddb28bfe329f8bc4a5573f1ac71499e",
+      "bytes": 3005,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good-appx-zip64.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-zip64"
+      ]
+    },
+    {
+      "file": "good.appx",
+      "sha256": "e831151ff43053d1349160a93ee1eed1336f5ace52bc6a736485f7671e4f94bb",
+      "bytes": 2928,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: good.appx. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-appx-extension"
+      ]
+    },
+    {
+      "file": "good.msix",
+      "sha256": "e831151ff43053d1349160a93ee1eed1336f5ace52bc6a736485f7671e4f94bb",
+      "bytes": 2928,
+      "description": "Deterministic inert single-package MSIX ZIP with data.bin containing test, a synthetic manifest for CN=rssig test publisher, complete block map and content types, and public P-256/SHA-256 Authenticode signature. Never install or execute.",
+      "cases": [
+        "appx-trusted",
+        "appx-integrity",
+        "appx-no-revocation",
+        "appx-revoked",
+        "appx-untrusted",
+        "appx-expired"
+      ]
+    },
+    {
+      "file": "unsigned.msix",
+      "sha256": "105c4193c0caa6d2dffcfe161e540a24d14d613c06823a729e6fe3a6f38d7595",
+      "bytes": 1521,
+      "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: unsigned.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appx-unsigned"
+      ]
+    },
+    {
+      "file": "appx-independent-jsign.msix",
+      "sha256": "cdb488626d303b022bfbe0234cee928ab888471564bbc5b6c09030360ce2bb31",
+      "bytes": 3193,
+      "description": "Repository-generated inert package independently signed by jsign 7.6 with public deterministic RSA-2048 identity. Integrity-only success checks package components, block hashes, and publisher binding.",
+      "cases": [
+        "appx-independent-jsign"
+      ],
+      "provenance": {
+        "kind": "independently_signed",
+        "tool": "jsign 7.6",
+        "license": "Apache-2.0 (repository-generated test artifact)",
+        "source": "appx-jsign-input.msix, public test-only export_msi_test_identity, jsign 7.6; see docs/appx.md for maintenance.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 appx-independent-jsign.msix"
+      }
+    },
+    {
+      "file": "appx-independent-signtool.msix",
+      "sha256": "3cb3561c5fbaa0a5ba5a7aec84cba70ca6d14569a419146b9f9b94cf7cbb90d7",
+      "bytes": 12337,
+      "description": "Unmodified upstream jsign minimal-signed-by-signtool.msix test artifact. ZIP64 with streamed DEFLATE payloads and block-map compression sizes. Exact signtool version unrecorded; creation metadata mentions MSIX Packaging Tool 1.2023.319.0. Integrity-only verification.",
+      "cases": [
+        "appx-independent-signtool"
+      ],
+      "provenance": {
+        "kind": "upstream_external_fixture",
+        "tool": "Microsoft signtool (version unrecorded)",
+        "license": "Apache-2.0 (upstream jsign test resource)",
+        "source": "https://github.com/ebourg/jsign/blob/cf5d2ceaf2ec80cb793f7377749ef811d4be4d34/jsign-core/src/test/resources/minimal-signed-by-signtool.msix",
+        "command": "Unmodified upstream artifact copied byte-for-byte"
+      }
+    },
+    {
+      "file": "bad-appx-independent-payload.msix",
+      "sha256": "51234a84bbaef0d39e4048253040328bdd0c1e85918b5b7e46ee33d49079209e",
+      "bytes": 3193,
+      "description": "Paired with appx-independent-jsign.msix: one stored data.bin payload byte XORed with 1; complete original jsign CMS retained. Expected appx_digest_mismatch AXPC.",
+      "cases": [
+        "appx-independent-tampered"
+      ],
+      "provenance": {
+        "kind": "mutated_independently_signed",
+        "tool": "jsign 7.6",
+        "license": "Apache-2.0 (repository-generated test artifact)",
+        "source": "appx-jsign-input.msix, public test-only export_msi_test_identity, jsign 7.6; see docs/appx.md for maintenance.",
+        "command": "java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem --alg SHA-256 appx-independent-jsign.msix"
+      }
+    },
+    {
+      "file": "bad-appx-compressed-size.msix",
+      "sha256": "622f7d76b96d284151ac6855bf9d40b6fdb89ae9f9ce91f9cd9e2f653f9b3afa",
+      "bytes": 2947,
+      "description": "Correctly signed DEFLATE package whose block-map compressed Size includes one byte of the final two-byte stream terminator; package and CMS digests are valid. Expected invalid_appx at block_map.",
+      "cases": [
+        "appx-compressed-size"
+      ]
     }
   ]
 }

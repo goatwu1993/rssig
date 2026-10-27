@@ -1,6 +1,6 @@
 # rssig
 
-Verify Windows PE, MSI, CAB, and PowerShell Authenticode signatures and signed RDP
+Verify Windows PE, MSI, CAB, PowerShell, and MSIX/AppX Authenticode signatures and signed RDP
 settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/PowerShell hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
@@ -41,6 +41,9 @@ rssig verify types.ps1xml --no-system-roots --roots roots.pem --crl issuer.crl
 
 # RDP signatures cover selected settings; JSON distinguishes unsigned settings.
 rssig verify connection.rdp --no-system-roots --roots roots.pem --crl issuer.crl
+
+# Single MSIX/AppX packages include package, block-map, and publisher checks.
+rssig verify app.msix --no-system-roots --roots roots.pem --crl issuer.crl
 
 # Run native tests and the JSON specification through the CLI library.
 cargo test --locked
@@ -93,6 +96,8 @@ See [PowerShell XML support](docs/powershell-xml.md) for `.ps1xml` signature blo
 and its BOM-less ASCII / BOM-marked Unicode encoding policy.
 See [RDP support and fixture provenance](docs/rdp.md) for signed-setting coverage,
 canonicalization, and trust-policy limits.
+See [MSIX/AppX support and provenance](docs/appx.md) for ZIP limits, block maps,
+manifest publisher binding, and optional embedded catalog reporting.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 

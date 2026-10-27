@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell/MSIX/AppX Authenticode
 signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -8,7 +8,7 @@ project at build or runtime.
 
 ## Architecture and constraints
 
-- Use pure Rust for PE/MSI/CAB/PowerShell parsing/hashing, CMS/PKCS#7, signature verification,
+- Use pure Rust for PE/MSI/CAB/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
   adapter. macOS framework calls are allowed for root enumeration, never for
@@ -40,7 +40,7 @@ project at build or runtime.
 
 1. Before changing behavior, commit or add the smallest fixture reproducing it
    under `tests/fixtures/`. Pair a good artifact with a narrowly changed bad
-   artifact when possible. Never execute PE/MSI/CAB or script fixtures, or open RDP fixtures in a client.
+   artifact when possible. Never execute PE/MSI/CAB or script fixtures, open RDP fixtures in a client, or install MSIX/AppX fixtures.
 2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
    language-independent specification. Add a named Rust test under `tests/cli/`
    for implementation-specific checks of the fixture, CLI argv, exit
@@ -145,7 +145,11 @@ UTF-8/UTF-16LE/BE; see `docs/powershell-xml.md`. They use the same SIP identity 
 shared verification engine as hash-comment scripts, not XMLDSig.
 RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
 unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, and `verify_rdp` select one explicitly.
+Single MSIX/AppX embedded signatures, package components, block maps, and Publisher
+binding are supported; see `docs/appx.md` for ZIP/compression limits. Bundles are
+unsupported. Embedded CodeIntegrity catalogs are package-hashed but not independently
+signature-verified; JSON must report this explicitly.
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, and `verify_appx` select one explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

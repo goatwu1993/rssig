@@ -40,6 +40,11 @@ the current CLI exposes verification, help, and version. Tests run through Cargo
 
 | Code / URI fragment | Title | HTTP status | Meaning and corrective action |
 | --- | --- | --- | --- |
+| <a id="invalid_appx"></a>`invalid_appx` | Invalid MSIX/AppX package | 422 | Supply a bounded single package with consistent ZIP records, footprint XML, and complete block-map coverage. |
+| <a id="unsupported_appx"></a>`unsupported_appx` | Unsupported MSIX/AppX package | 422 | Bundles and unsupported ZIP/compression profiles are rejected; see MSIX/AppX limits. |
+| <a id="appx_digest_mismatch"></a>`appx_digest_mismatch` | MSIX/AppX package digest mismatch | 422 | Signed package components differ; inspect `details.component` and digest evidence. |
+| <a id="block_hash_mismatch"></a>`block_hash_mismatch` | Block-map hash mismatch | 422 | A payload block differs from its signed block-map hash. |
+| <a id="appx_publisher_mismatch"></a>`appx_publisher_mismatch` | Package publisher mismatch | 422 | The manifest Publisher differs from the signing certificate subject. |
 | <a id="invalid_rdp"></a>`invalid_rdp` | Invalid RDP file | 422 | Supply supported Unicode RDP text, an unambiguous signature scope, and a valid signature frame. |
 | <a id="unsupported_rdp_scope"></a>`unsupported_rdp_scope` | Unsupported RDP signature scope | 422 | A scope entry has no supported key/type mapping; inspect `details.scope`. |
 | <a id="invalid_powershell"></a>`invalid_powershell` | Invalid PowerShell script | 422 | Supply supported Unicode text with one complete terminal hash-comment signature block. |

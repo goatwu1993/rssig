@@ -1,3 +1,4 @@
+mod appx_fixtures;
 mod cab_fixtures;
 mod fixture_faults;
 mod msi_fixtures;
@@ -759,6 +760,7 @@ fn regenerate_cli_fixtures() {
     powershell_fixtures::write(&dir);
     psxml_fixtures::write(&dir);
     rdp_fixtures::write(&dir);
+    appx_fixtures::write(&dir);
 }
 
 fn intermediate_pe(bad_key_usage: bool) -> Vec<u8> {
