@@ -94,6 +94,11 @@ GitHub Actions runs `cargo fmt --check`, Clippy, and `cargo test --locked` on
 Linux and macOS. A separate Linux coverage job runs `make coverage` and uploads
 the `coverage` artifact. Download and extract it,
 then open `html/index.html`; `cobertura.xml` is alongside the HTML directory.
+The coverage job also uses the
+[Cobertura coverage action](https://github.com/goatwu1993/actions/tree/main/coverage-action)
+on pull request and push events to post a report and a neutral coverage check.
+The report step is skipped for fork PRs because their token cannot write PR
+comments or checks. It does not enforce a coverage threshold.
 The ordinary test jobs require no coverage tool. No job regenerates fixtures or
 needs Java, Go, external signing tools, system trust contents, or network CRLs.
 
