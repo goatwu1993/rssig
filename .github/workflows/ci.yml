@@ -42,6 +42,10 @@ jobs:
     name: Coverage (Cobertura and HTML)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust with coverage tools
@@ -62,3 +66,11 @@ jobs:
           path: target/coverage/
           if-no-files-found: error
           retention-days: 14
+      - name: Comment coverage on the pull request
+        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: goatwu1993/actions/coverage-action@b82e05f593b2c91141c5f74c7af6d45d8fe02334 # main
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          path: target/coverage/cobertura.xml
+          minimum_coverage: 0
+          fail_below_threshold: false

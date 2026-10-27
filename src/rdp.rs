@@ -290,6 +290,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
         file_sha256: hex(&Hash::Sha256.digest(bytes)),
         signatures,
         rdp: Some(rdp.coverage),
+        appx: None,
     })
 }
 fn verify_trust(

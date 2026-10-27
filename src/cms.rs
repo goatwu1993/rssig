@@ -195,6 +195,63 @@ impl<'a> SignedData<'a> {
         self.indirect_digest()
     }
 
+    pub fn appx_digest(&self) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not an MSIX/AppX Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = der::fields(indirect[0].expect(0x30)?, 2)?;
+        ensure!(
+            der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 30]),
+            "invalid MSIX/AppX SIP type"
+        );
+        let sip = der::fields(data[1].expect(0x30)?, 7)?;
+        ensure!(
+            sip[0].expect(2)?.body == [1, 1, 0, 0],
+            "unsupported MSIX/AppX SIP version"
+        );
+        ensure!(
+            sip[1].expect(4)?.body
+                == [
+                    0x4b, 0xdf, 0xc5, 0x0a, 7, 0xce, 0xe2, 0x4d, 0xb7, 0x6e, 0x23, 0xc8, 0x39,
+                    0xa0, 0x9f, 0xd1
+                ],
+            "unsupported MSIX/AppX SIP UUID (bundles are unsupported)"
+        );
+        for value in &sip[2..] {
+            ensure!(
+                value.expect(2)?.body == [0],
+                "invalid MSIX/AppX SIP reserved field"
+            );
+        }
+        let (hash, digest) = self.indirect_digest()?;
+        if hash == Hash::Sha1 {
+            return Err(VerificationError::new(
+                ErrorCode::UnsupportedAlgorithm,
+                Stage::PackageDigest,
+                "MSIX/AppX requires SHA-256, SHA-384, or SHA-512",
+            )
+            .into());
+        }
+        let width = hash.digest(b"").len() + 4;
+        ensure!(
+            digest.starts_with(b"APPX") && [4 + 4 * width, 4 + 5 * width].contains(&digest.len()),
+            "invalid MSIX/AppX digest bundle size"
+        );
+        for (i, name) in [b"AXPC", b"AXCD", b"AXCT", b"AXBM", b"AXCI"]
+            .iter()
+            .take((digest.len() - 4) / width)
+            .enumerate()
+        {
+            ensure!(
+                &digest[4 + i * width..8 + i * width] == *name,
+                "unknown, duplicate, or reordered MSIX/AppX digest component"
+            );
+        }
+        Ok((hash, digest))
+    }
+
     pub fn package_digest(&self) -> Result<(Hash, &'a [u8])> {
         ensure!(
             self.content_type == INDIRECT,

@@ -1,5 +1,6 @@
 use crate::domain::*;
 use crate::{
+    appx::Appx,
     cab::Cab,
     cms::{self, SignedData},
     crypto::Hash,
@@ -37,6 +38,8 @@ pub fn verify(
         verify_msi(bytes, options)
     } else if bytes.starts_with(crate::cab::MAGIC) {
         verify_cab(bytes, options)
+    } else if bytes.starts_with(b"PK\x03\x04") {
+        verify_appx(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like(bytes) {
         verify_powershell(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like_xml(bytes) {
@@ -96,10 +99,21 @@ pub fn verify_rdp(
     })
 }
 
+/// Verify a single embedded-signature MSIX/AppX package.
+pub fn verify_appx(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::Appx).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
 pub(crate) fn is_binary(bytes: &[u8]) -> bool {
     bytes.starts_with(b"MZ")
         || bytes.starts_with(crate::msi::MAGIC)
         || bytes.starts_with(crate::cab::MAGIC)
+        || bytes.starts_with(b"PK\x03\x04")
 }
 
 enum Format {
@@ -108,10 +122,12 @@ enum Format {
     Cab,
     Powershell,
     PowershellXml,
+    Appx,
 }
 
 enum Container<'a> {
     Pe(Pe<'a>),
+    Appx(Box<Appx<'a>>),
     Cab(Cab<'a>),
     Powershell(Powershell),
     Msi(Box<Msi<'a>>),
@@ -127,6 +143,11 @@ fn verify_inner(
     format: Format,
 ) -> Result<VerificationBundle> {
     let mut container = match format {
+        Format::Appx => Container::Appx(Box::new(tagged(
+            Appx::parse(bytes),
+            ErrorCode::InvalidAppx,
+            Stage::Appx,
+        )?)),
         Format::PowershellXml => Container::Powershell(tagged(
             Powershell::parse_xml(bytes),
             ErrorCode::InvalidPowershell,
@@ -156,6 +177,7 @@ fn verify_inner(
         .map(|c| c.to_vec())
         .collect(),
         Container::Msi(msi) => vec![msi.signature().to_vec()],
+        Container::Appx(appx) => vec![appx.signature().to_vec()],
         Container::Cab(cab) => vec![cab.signature().to_vec()],
         Container::Powershell(script) => vec![script.signature().to_vec()],
     };
@@ -164,7 +186,11 @@ fn verify_inner(
         // after one complete DER object, never arbitrary unsigned payloads.
         let mut rest = certificate.as_slice();
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
-        if matches!(format, Format::Powershell | Format::PowershellXml) && !rest.is_empty() {
+        if matches!(
+            format,
+            Format::Powershell | Format::PowershellXml | Format::Appx
+        ) && !rest.is_empty()
+        {
             return Err(VerificationError::new(
                 ErrorCode::MalformedCms,
                 Stage::Cms,
@@ -206,12 +232,17 @@ fn verify_inner(
             Format::Cab => "cab_authenticode",
             Format::Powershell => "powershell_authenticode",
             Format::PowershellXml => "powershell_xml_authenticode",
+            Format::Appx => "appx_authenticode",
         }
         .into(),
         validation_time: options.now,
         file_sha256: hex(&Hash::Sha256.digest(bytes)),
         signatures: reports,
         rdp: None,
+        appx: match &container {
+            Container::Appx(appx) => appx.report.clone(),
+            _ => None,
+        },
     })
 }
 
@@ -238,7 +269,8 @@ fn verify_signature(
     let is_msi = matches!(container, Container::Msi(_));
     let is_cab = matches!(container, Container::Cab(_));
     let is_script = matches!(container, Container::Powershell(_));
-    let is_package = is_msi || is_cab;
+    let is_appx = matches!(container, Container::Appx(_));
+    let is_package = is_msi || is_cab || is_appx;
     let stage = if is_script {
         Stage::ScriptDigest
     } else if is_package {
@@ -247,7 +279,9 @@ fn verify_signature(
         Stage::ImageDigest
     };
     let (hash, expected) = tagged(
-        if is_script {
+        if is_appx {
+            sd.appx_digest()
+        } else if is_script {
             sd.script_digest()
         } else if is_cab {
             sd.cab_digest()
@@ -270,6 +304,10 @@ fn verify_signature(
     let (computed, extended_digest) = match container {
         Container::Pe(pe) => (pe.digest(hash)?, None),
         Container::Msi(msi) => msi.digests(hash)?,
+        Container::Appx(appx) => (
+            tagged(appx.digests(hash), ErrorCode::InvalidAppx, Stage::Appx)?,
+            None,
+        ),
         Container::Cab(cab) => (cab.digest(hash), None),
         Container::Powershell(script) => (script.digest(hash), None),
     };
@@ -279,6 +317,9 @@ fn verify_signature(
         computed: hex(&computed),
     };
     if computed != expected {
+        if let Container::Appx(appx) = container {
+            return Err(appx.mismatch(expected, &computed, hash).into());
+        }
         return Err(VerificationError::new(
             if is_script {
                 ErrorCode::ScriptDigestMismatch
@@ -302,6 +343,9 @@ fn verify_signature(
         )
         .detail("digest", &image_digest)
         .into());
+    }
+    if let Container::Appx(appx) = container {
+        tagged(appx.validate(hash), ErrorCode::InvalidAppx, Stage::Appx)?;
     }
     let mut page_hashes = None;
     if let Container::Pe(pe) = container
@@ -340,6 +384,13 @@ fn verify_signature(
             ErrorCode::InvalidSignature,
             Stage::Cms,
         )?;
+        if let Container::Appx(appx) = container {
+            tagged(
+                appx.publisher(&signer.cert),
+                ErrorCode::AppxPublisherMismatch,
+                Stage::Appx,
+            )?;
+        }
         let timestamp_verification = tagged(
             verify_timestamp(&sd.certs, &signer, options),
             ErrorCode::InvalidTimestamp,

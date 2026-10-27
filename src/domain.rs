@@ -14,6 +14,11 @@ pub enum ErrorCode {
     InvalidCab,
     InvalidPowershell,
     InvalidRdp,
+    InvalidAppx,
+    UnsupportedAppx,
+    AppxDigestMismatch,
+    BlockHashMismatch,
+    AppxPublisherMismatch,
     UnsupportedRdpScope,
     ScriptDigestMismatch,
     CabDigestMismatch,
@@ -63,6 +68,8 @@ pub enum Stage {
     Cab,
     Powershell,
     Rdp,
+    Appx,
+    BlockMap,
     ScriptDigest,
     PackageDigest,
     PageHashes,
@@ -101,6 +108,11 @@ impl ProblemDetails {
 impl ErrorCode {
     pub fn title(self) -> &'static str {
         match self {
+            Self::InvalidAppx => "Invalid MSIX/AppX package",
+            Self::UnsupportedAppx => "Unsupported MSIX/AppX package",
+            Self::AppxDigestMismatch => "MSIX/AppX package digest mismatch",
+            Self::BlockHashMismatch => "Block-map hash mismatch",
+            Self::AppxPublisherMismatch => "Package publisher mismatch",
             Self::InvalidRdp => "Invalid RDP file",
             Self::UnsupportedRdpScope => "Unsupported RDP signature scope",
             Self::InvalidPowershell => "Invalid PowerShell script",
@@ -534,6 +546,38 @@ pub struct RdpCoverage {
     pub canonical_sha256: String,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxIdentity {
+    pub name: String,
+    pub publisher: String,
+    pub version: String,
+    pub processor_architecture: Option<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxBlockMapReport {
+    pub algorithm: String,
+    pub files_verified: usize,
+    pub blocks_verified: usize,
+    pub uncompressed_bytes: usize,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxComponentReport {
+    pub component: String,
+    pub digest: DigestReport,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxCatalogReport {
+    pub sha256: String,
+    pub signature_verified: bool,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxReport {
+    pub identity: AppxIdentity,
+    pub block_map: AppxBlockMapReport,
+    pub components: Vec<AppxComponentReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code_integrity_catalog: Option<AppxCatalogReport>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {
     pub format: String,
     pub validation_time: u64,
@@ -541,6 +585,8 @@ pub struct VerificationBundle {
     pub signatures: Vec<SignatureReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rdp: Option<RdpCoverage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub appx: Option<Box<AppxReport>>,
 }
 // Preserve convenient library indexing while returning a named domain bundle.
 impl std::ops::Deref for VerificationBundle {

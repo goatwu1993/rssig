@@ -11813,6 +11813,1745 @@
           ]
         }
       }
+    },
+    {
+      "id": "appx-trusted",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "appx": {
+                "identity": {
+                  "name": "rssig.test",
+                  "publisher": "CN=rssig test publisher",
+                  "version": "1.0.0.0",
+                  "processor_architecture": "neutral"
+                },
+                "block_map": {
+                  "algorithm": "Sha256",
+                  "files_verified": 2,
+                  "blocks_verified": 2
+                },
+                "components": [
+                  {
+                    "component": "AXPC"
+                  },
+                  {
+                    "component": "AXCD"
+                  },
+                  {
+                    "component": "AXCT"
+                  },
+                  {
+                    "component": "AXBM"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-appx-extension",
+      "input": "good.appx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-misnamed",
+      "input": "appx-misnamed.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-integrity",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-no-revocation",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-zip64",
+      "input": "good-appx-zip64.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-descriptor",
+      "input": "good-appx-descriptor.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-deflate",
+      "input": "good-appx-deflate.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-multi",
+      "input": "good-appx-multi.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-empty",
+      "input": "good-appx-empty.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-nested",
+      "input": "good-appx-nested.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "nested_depth": 0
+                },
+                {
+                  "nested_depth": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-catalog",
+      "input": "good-appx-catalog.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ],
+              "appx": {
+                "code_integrity_catalog": {
+                  "signature_verified": false
+                },
+                "components": [
+                  {
+                    "component": "AXPC"
+                  },
+                  {
+                    "component": "AXCD"
+                  },
+                  {
+                    "component": "AXCT"
+                  },
+                  {
+                    "component": "AXBM"
+                  },
+                  {
+                    "component": "AXCI"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-rfc3161",
+      "input": "good-appx-rfc3161.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-expired-with-rfc3161",
+      "input": "good-appx-rfc3161.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-countersignature",
+      "input": "good-appx-countersignature.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-expired-with-countersignature",
+      "input": "good-appx-countersignature.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "common_names": [
+                          "rssig test TSA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-sha384",
+      "input": "good-appx-sha384.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha384",
+                  "package_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ],
+              "appx": {
+                "block_map": {
+                  "algorithm": "Sha384"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-sha512",
+      "input": "good-appx-sha512.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha512",
+                  "package_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ],
+              "appx": {
+                "block_map": {
+                  "algorithm": "Sha512"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-digest-AXPC",
+      "input": "bad-appx-digest-AXPC.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "details": {
+                  "component": "AXPC"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-digest-AXCD",
+      "input": "bad-appx-digest-AXCD.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "details": {
+                  "component": "AXCD"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-digest-AXCT",
+      "input": "bad-appx-digest-AXCT.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "details": {
+                  "component": "AXCT"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-digest-AXBM",
+      "input": "bad-appx-digest-AXBM.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "details": {
+                  "component": "AXBM"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-payload",
+      "input": "bad-appx-payload.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "title": "MSIX/AppX package digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-block-hash",
+      "input": "bad-appx-block-hash.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "block_hash_mismatch",
+                "stage": "block_map",
+                "title": "Block-map hash mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-block-missing",
+      "input": "bad-appx-block-missing.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-block-extra",
+      "input": "bad-appx-block-extra.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-lfh",
+      "input": "bad-appx-lfh.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-dtd",
+      "input": "bad-appx-dtd.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-namespace",
+      "input": "bad-appx-namespace.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-block-algorithm",
+      "input": "bad-appx-block-algorithm.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsupported_algorithm",
+                "stage": "block_map",
+                "title": "Unsupported algorithm"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-publisher",
+      "input": "bad-appx-publisher.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_publisher_mismatch",
+                "stage": "appx",
+                "title": "Package publisher mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-content-types",
+      "input": "bad-appx-content-types.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-pkcx",
+      "input": "bad-appx-pkcx.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-signature-order",
+      "input": "bad-appx-signature-order.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-duplicate",
+      "input": "bad-appx-duplicate.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-path",
+      "input": "bad-appx-path.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-trailing",
+      "input": "bad-appx-trailing.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-truncated",
+      "input": "bad-appx-truncated.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-bundle",
+      "input": "bad-appx-bundle.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsupported_appx",
+                "stage": "appx",
+                "title": "Unsupported MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-cms-trailing",
+      "input": "bad-appx-cms-trailing.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-cms-signature",
+      "input": "bad-appx-cms-signature.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-timestamp-imprint",
+      "input": "bad-appx-timestamp-imprint.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-unsigned",
+      "input": "unsigned.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "appx",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-appx-jsign-input",
+      "input": "appx-jsign-input.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "appx",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-revoked",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "title": "Certificate revoked"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-untrusted",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-expired",
+      "input": "good.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800020000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "title": "Certificate expired"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-independent-jsign",
+      "input": "appx-independent-jsign.msix",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ],
+              "appx": {
+                "block_map": {
+                  "algorithm": "Sha256"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-independent-signtool",
+      "input": "appx-independent-signtool.msix",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ],
+              "appx": {
+                "block_map": {
+                  "algorithm": "Sha256"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-independent-tampered",
+      "input": "bad-appx-independent-payload.msix",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "details": {
+                  "component": "AXPC"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-compressed-size",
+      "input": "bad-appx-compressed-size.msix",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "block_map"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
