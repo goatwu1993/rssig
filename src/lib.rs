@@ -1,3 +1,4 @@
+mod cab;
 pub mod cli;
 mod cms;
 mod crypto;
@@ -9,6 +10,6 @@ mod trust;
 mod verify;
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
-pub use verify::{VerifyOptions, verify, verify_msi, verify_pe};
+pub use verify::{VerifyOptions, verify, verify_cab, verify_msi, verify_pe};
 #[cfg(test)]
 mod tests;

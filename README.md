@@ -1,7 +1,7 @@
 # rssig
 
-Verify embedded Windows PE and MSI Authenticode signatures on macOS and Linux with a
-Rust CLI. PE/MSI hashing, CMS signatures, certificate chains, timestamps, and CRLs
+Verify embedded Windows PE, MSI, and CAB Authenticode signatures on macOS and Linux with a
+Rust CLI. PE/MSI/CAB hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
@@ -29,6 +29,9 @@ rssig verify application.exe --integrity-only
 
 # MSI packages use the same trust and revocation policy.
 rssig verify installer.msi --no-system-roots --roots roots.pem --crl issuer.crl
+
+# CAB archives use the same trust, timestamp, and revocation policy.
+rssig verify archive.cab --no-system-roots --roots roots.pem --crl issuer.crl
 
 # Run native tests and the JSON specification through the CLI library.
 cargo test --locked
@@ -73,6 +76,8 @@ extended metadata, format-specific JSON fields, and limits.
 See [AGENTS.md](AGENTS.md) for the TDD workflow and
 [tests/cases.json](tests/cases.json) for the portable CLI specification and
 [tests/cli](tests/cli) for individually named Rust regressions.
+See [CAB support and fixture provenance](docs/cab.md) for supported layouts,
+hashing, and CAB JSON fields.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 
