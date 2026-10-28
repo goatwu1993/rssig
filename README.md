@@ -39,7 +39,7 @@ supported list with a green check.
 
 | Format | Extensions | Notes |
 | --- | --- | --- |
-| Windows Script Host scripts | `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf` | Script Authenticode formats outside the PowerShell signature block. |
+| Windows Script Host scripts | `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf` | Implementation in progress on `feat/windows-script-host`; awaiting fixture-backed verification before marking ✅. |
 | Catalog files | `.cat` | Standalone catalog signature and catalog membership verification. |
 | Windows Installer patches | `.msp` | Patch signatures and patch-specific hashing. |
 | NAVX packages | `.navx` | Dynamics NAV extension package signatures. |
