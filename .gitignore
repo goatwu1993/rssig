@@ -1,5 +1,11 @@
 jsign
 relic
+authenticode-rs
+authenticode-parser
+cross-authenticode
+rsigncode
+pe-sign
+verifysign
 /target/
 
 # LLVM coverage profiles belong in target, not source control.

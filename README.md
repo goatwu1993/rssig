@@ -15,6 +15,30 @@ also inform the project's design discussions. These projects are not runtime
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 
+## Comparison with other tools
+
+This comparison covers **verification only**, based on source snapshots reviewed
+on 2026-10-28. File-digest matching, cryptographic signature validity, certificate
+trust, and revocation are separate checks. A tool's `Valid` result does not
+necessarily establish a trusted publisher.
+
+| Tool / library | Verification implementation | Scope and differences |
+| --- | --- | --- |
+| **rssig** | Pure Rust with RustCrypto and webpki; OS used only for roots | Windows artifacts on macOS/Linux: PE, MSI/MSP, CAB, NAVX, PowerShell/XML, WSH, RDP, and AppX/MSIX packages/bundles. Checks CMS, configured-root trust, signer/TSA EKUs, timestamps, and supplied CRLs. JSON reports explicit integrity-only or revocation-disabled modes. No automatic AIA/CRL retrieval, OCSP, or standalone catalogs. |
+| [authenticode-rs / authenticode-tool](https://github.com/google/authenticode-rs) | Rust `no_std` parsing/hashing library; inspection CLI | PE digest computation, signature parsing, and certificate extraction. No CMS public-key verification, trusted-chain validation, or timestamp/revocation verification workflow. Hosted under Google, but explicitly not an official Google project. |
+| [authenticode-parser 0.5.0](https://docs.rs/authenticode-parser/0.5.0/authenticode_parser/) | Rust bindings to Avast's C/OpenSSL engine | PE digest, CMS, nested-signature, and timestamp cryptographic checks. Chains are reconstructed without validating trust; `Valid` does not mean trusted. `parse()` leaves file-digest comparison to the caller; `parse_pe()` includes it. |
+| [cross-authenticode](https://github.com/secana/cross-authenticode) | Rust PE library | `verify()` compares the computed PE digest with the embedded digest. It does not verify CMS public-key signatures, certificate trust, timestamps, or revocation. |
+| [rsigncode](https://github.com/divvun/rsigncode) | Rust PE tool with CMS verification | Checks PE digests and CMS signatures, including immediate nested signatures. Trust checking is optional and uses a limited certificate-signature walk; timestamp verification has binding/trust gaps. No implemented CRL validation path found. |
+| [pe-sign](https://github.com/0xlane/pe-sign) | RustCrypto RSA with a custom chain verifier | PE digest and RSA/CMS checks; bundled or explicit CA certificates and automatic AIA retrieval. Lacks full path-policy enforcement, timestamp validation in normal verification, and revocation checks. Inspected source uses `std`; CLI invalid statuses do not produce failure exits. |
+| [verifysign](https://docs.rs/verifysign/1.0.1/verifysign/) | Native WinTrust on Windows; Apple Security code-signing services on macOS | Native file/process verification, including Windows system catalogs. macOS support verifies Apple code signatures, not Windows Authenticode. No Linux support. Revocation is configurable and disabled by default. |
+| [Jsign](https://github.com/ebourg/jsign) | Java / Bouncy Castle | Broad Windows format handlers. **8.0 development** adds file/CMS integrity, PKIX trust, and timestamp verification; this verifier is not a 7.6 feature. Uses different trust-anchor and timestamp policies; inspected verification rules leave revocation disabled. |
+| [Relic](https://github.com/sassoftware/relic) | Go cryptography and X.509 | Broad package verification, including PE/MSI/CAB/AppX, PowerShell, catalogs, and detached inputs. Checks CMS, timestamps, and chains; inspected CLI uses any primary-signer EKU and adds no CRL/OCSP checks. Low-level Authenticode APIs leave chain validation to callers. |
+
+See the [detailed comparison](docs/comparison.md) for exact revisions, source
+references, policy differences, and remaining rssig gaps. These are source-level
+findings, not a shared-corpus benchmark, security audit, or validation of Windows
+policy equivalence.
+
 ## Windows file formats
 
 This checklist tracks Windows Authenticode files and related signed settings in
