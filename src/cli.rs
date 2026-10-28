@@ -16,7 +16,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE/MSI/CAB/PowerShell/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
+    about = "Verify embedded Windows PE/MSI/CAB/PowerShell/WSH/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -112,6 +112,10 @@ fn execute(command: Command) -> Result<(Value, u8)> {
                     && !crate::verify::is_binary(&bytes)
                 {
                     crate::verify_powershell(&bytes, &options)
+                } else if let Some(kind) = crate::wsh::extension(&path)
+                    && !crate::verify::is_binary(&bytes)
+                {
+                    crate::verify::verify_wsh_as(&bytes, kind, &options)
                 } else {
                     verify(&bytes, &options)
                 }

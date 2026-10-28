@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell/MSIX/AppX Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell/WSH/MSIX/AppX Authenticode
 signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -143,6 +143,8 @@ UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for li
 PowerShell XML-comment `.ps1xml` signatures support BOM-less ASCII and BOM-marked
 UTF-8/UTF-16LE/BE; see `docs/powershell-xml.md`. They use the same SIP identity and
 shared verification engine as hash-comment scripts, not XMLDSig.
+Windows Script Host `.vbs`/`.vbe`/`.js`/`.jse` and single-job `.wsf` signatures are supported;
+see `docs/wsh.md` for strict encoding/block limits and opaque encoded-text handling.
 RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
 unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
 MSIX/AppX package and bundle embedded signatures, package components, block maps,
@@ -150,7 +152,7 @@ Publisher binding, and embedded package verification are supported; see `docs/ap
 for ZIP/compression and bundle limits. Flat/external, stub, and nested bundles are
 unsupported. Embedded CodeIntegrity catalogs are package-hashed but not independently
 signature-verified; JSON must report this explicitly.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, and `verify_appx` select one explicitly.
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,

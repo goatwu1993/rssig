@@ -1,7 +1,7 @@
 # rssig
 
-Verify Windows PE, MSI, CAB, PowerShell, and MSIX/AppX Authenticode signatures and signed RDP
-settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/PowerShell hashing, CMS signatures, certificate chains, timestamps, and CRLs
+Verify Windows PE, MSI, CAB, PowerShell, Windows Script Host, and MSIX/AppX Authenticode signatures and signed RDP
+settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/PowerShell/WSH/MSIX hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
@@ -31,6 +31,7 @@ supported list with a green check.
 | ✅ | Cabinet archive | `.cab` | Standard-reserve single-volume CAB signatures. See [CAB support](docs/cab.md). |
 | ✅ | PowerShell scripts and data | `.ps1`, `.psm1`, `.psd1` | Hash-comment Authenticode signatures. See [PowerShell support](docs/powershell.md). |
 | ✅ | PowerShell XML | `.ps1xml` | XML-comment Authenticode signatures (not XMLDSig). See [PowerShell XML support](docs/powershell-xml.md). |
+| ✅ | Windows Script Host scripts | `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf` | VBScript/JScript comment blocks and single-job WSF signatures; encoded scripts are hashed as stored. See [WSH support and encoding limits](docs/wsh.md). |
 | ✅ | Remote Desktop settings | `.rdp` | Detached CMS signatures over the supported scoped settings. See [RDP support](docs/rdp.md). |
 | ✅ | Single AppX/MSIX packages | `.appx`, `.msix` | Embedded package signature, package digests, block map, and Publisher binding. See [AppX/MSIX support](docs/appx.md). |
 | ✅ | AppX/MSIX bundles | `.appxbundle`, `.msixbundle` | Bundle signature and manifest, plus every embedded application's or resource package's signature, identity, digests, timestamps, trust, and CRLs. See [bundle limits](docs/appx.md#bundles). |
@@ -39,7 +40,6 @@ supported list with a green check.
 
 | Format | Extensions | Notes |
 | --- | --- | --- |
-| Windows Script Host scripts | `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf` | Implementation in progress on `feat/windows-script-host`; awaiting fixture-backed verification before marking ✅. |
 | Catalog files | `.cat` | Standalone catalog signature and catalog membership verification. |
 | Windows Installer patches | `.msp` | Patch signatures and patch-specific hashing. |
 | NAVX packages | `.navx` | Dynamics NAV extension package signatures. |

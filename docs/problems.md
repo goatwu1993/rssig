@@ -47,6 +47,7 @@ the current CLI exposes verification, help, and version. Tests run through Cargo
 | <a id="appx_publisher_mismatch"></a>`appx_publisher_mismatch` | Package publisher mismatch | 422 | The manifest Publisher differs from the signing certificate subject. |
 | <a id="invalid_rdp"></a>`invalid_rdp` | Invalid RDP file | 422 | Supply supported Unicode RDP text, an unambiguous signature scope, and a valid signature frame. |
 | <a id="unsupported_rdp_scope"></a>`unsupported_rdp_scope` | Unsupported RDP signature scope | 422 | A scope entry has no supported key/type mapping; inspect `details.scope`. |
+| <a id="invalid_wsh"></a>`invalid_wsh` | Invalid Windows Script Host file | 422 | Supply supported text with one correctly framed VBScript/JScript block or single-job WSF signature. See [WSH limits](wsh.md). |
 | <a id="invalid_powershell"></a>`invalid_powershell` | Invalid PowerShell script | 422 | Supply supported Unicode text with one complete terminal hash-comment signature block. |
 | <a id="script_digest_mismatch"></a>`script_digest_mismatch` | Script digest mismatch | 422 | The computed UTF-16LE script digest differs from its signed digest. Obtain the original signed text, including BOM and line endings, or re-sign it. |
 | <a id="invalid_cab"></a>`invalid_cab` | Invalid CAB container | 422 | Supply a complete supported single-volume cabinet; see CAB layout limits. |

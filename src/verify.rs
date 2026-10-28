@@ -9,6 +9,7 @@ use crate::{
     pe::Pe,
     powershell::Powershell,
     trust::{self, TrustStore},
+    wsh::{Kind, Wsh},
 };
 use ::der::Decode;
 use anyhow::{Context, Result, ensure};
@@ -40,6 +41,8 @@ pub fn verify(
         verify_cab(bytes, options)
     } else if bytes.starts_with(b"PK\x03\x04") {
         verify_appx(bytes, options)
+    } else if !bytes.starts_with(b"MZ") && crate::wsh::looks_like(bytes) {
+        verify_wsh(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like(bytes) {
         verify_powershell(bytes, options)
     } else if !bytes.starts_with(b"MZ") && crate::powershell::looks_like_xml(bytes) {
@@ -109,6 +112,25 @@ pub fn verify_appx(
     })
 }
 
+/// Verify Windows Script Host Authenticode, detecting the signature comment style.
+pub fn verify_wsh(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    let kind = crate::wsh::detect(bytes)
+        .map_err(|e| VerificationError::from_internal(e, ErrorCode::InvalidWsh, Stage::Wsh))?;
+    verify_wsh_as(bytes, kind, options)
+}
+pub(crate) fn verify_wsh_as(
+    bytes: &[u8],
+    kind: Kind,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::Wsh(kind)).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
 pub(crate) fn is_binary(bytes: &[u8]) -> bool {
     bytes.starts_with(b"MZ")
         || bytes.starts_with(crate::msi::MAGIC)
@@ -122,6 +144,7 @@ enum Format {
     Cab,
     Powershell,
     PowershellXml,
+    Wsh(Kind),
     Appx,
 }
 
@@ -130,6 +153,7 @@ enum Container<'a> {
     Appx(Box<Appx<'a>>),
     Cab(Cab<'a>),
     Powershell(Powershell),
+    Wsh(Wsh),
     Msi(Box<Msi<'a>>),
 }
 
@@ -143,6 +167,11 @@ fn verify_inner(
     format: Format,
 ) -> Result<VerificationBundle> {
     let mut container = match format {
+        Format::Wsh(kind) => Container::Wsh(tagged(
+            Wsh::parse(bytes, kind),
+            ErrorCode::InvalidWsh,
+            Stage::Wsh,
+        )?),
         Format::Appx => Container::Appx(Box::new(tagged(
             Appx::parse(bytes),
             ErrorCode::InvalidAppx,
@@ -180,6 +209,7 @@ fn verify_inner(
         Container::Appx(appx) => vec![appx.signature().to_vec()],
         Container::Cab(cab) => vec![cab.signature().to_vec()],
         Container::Powershell(script) => vec![script.signature().to_vec()],
+        Container::Wsh(script) => vec![script.signature().to_vec()],
     };
     for certificate in &certificates {
         // Some signers count zero padding inside dwLength. Only permit zeroes
@@ -188,13 +218,13 @@ fn verify_inner(
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
         if matches!(
             format,
-            Format::Powershell | Format::PowershellXml | Format::Appx
+            Format::Powershell | Format::PowershellXml | Format::Wsh(_) | Format::Appx
         ) && !rest.is_empty()
         {
             return Err(VerificationError::new(
                 ErrorCode::MalformedCms,
                 Stage::Cms,
-                "trailing data in PowerShell CMS signature",
+                "trailing data in embedded CMS signature",
             )
             .into());
         }
@@ -227,6 +257,7 @@ fn verify_inner(
     }
     let mut verification = VerificationBundle {
         format: match format {
+            Format::Wsh(kind) => kind.format(),
             Format::Msi => "msi_authenticode",
             Format::Pe => "pe_authenticode",
             Format::Cab => "cab_authenticode",
@@ -365,7 +396,7 @@ fn verify_signature(
     )?;
     let is_msi = matches!(container, Container::Msi(_));
     let is_cab = matches!(container, Container::Cab(_));
-    let is_script = matches!(container, Container::Powershell(_));
+    let is_script = matches!(container, Container::Powershell(_) | Container::Wsh(_));
     let is_appx = matches!(container, Container::Appx(_));
     let is_package = is_msi || is_cab || is_appx;
     let stage = if is_script {
@@ -381,7 +412,9 @@ fn verify_signature(
         (hash, expected, Some((signed_bundle, appx.is_bundle())))
     } else {
         let (hash, expected) = tagged(
-            if is_script {
+            if let Container::Wsh(script) = container {
+                sd.wsh_digest(script.kind)
+            } else if is_script {
                 sd.script_digest()
             } else if is_cab {
                 sd.cab_digest()
@@ -422,6 +455,7 @@ fn verify_signature(
         ),
         Container::Cab(cab) => (cab.digest(hash), None),
         Container::Powershell(script) => (script.digest(hash), None),
+        Container::Wsh(script) => (script.digest(hash), None),
     };
     let image_digest = DigestReport {
         algorithm: format!("{hash:?}"),
@@ -444,7 +478,7 @@ fn verify_signature(
             },
             stage,
             if is_script {
-                "PowerShell script digest mismatch (file was modified)"
+                "Script digest mismatch (file was modified)"
             } else if is_cab {
                 "CAB digest mismatch (file was modified)"
             } else if is_msi {

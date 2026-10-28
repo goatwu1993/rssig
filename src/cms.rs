@@ -195,6 +195,32 @@ impl<'a> SignedData<'a> {
         self.indirect_digest()
     }
 
+    pub fn wsh_digest(&self, kind: crate::wsh::Kind) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not a WSH Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = der::fields(indirect[0].expect(0x30)?, 2)?;
+        ensure!(
+            der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 30]),
+            "invalid WSH SIP type"
+        );
+        let sip = der::fields(data[1].expect(0x30)?, 7)?;
+        ensure!(sip[0].expect(2)?.body == [1], "unsupported WSH SIP version");
+        ensure!(
+            sip[1].expect(4)?.body == kind.uuid(),
+            "invalid WSH SIP UUID"
+        );
+        for reserved in &sip[2..] {
+            ensure!(
+                reserved.expect(2)?.body == [0],
+                "invalid WSH SIP reserved field"
+            );
+        }
+        self.indirect_digest()
+    }
+
     pub fn appx_digest(&self) -> Result<(Hash, &'a [u8], bool)> {
         ensure!(
             self.content_type == INDIRECT,
