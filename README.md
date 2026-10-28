@@ -43,7 +43,6 @@ supported list with a green check.
 | --- | --- | --- |
 | Catalog files | `.cat` | Standalone catalog signature and catalog membership verification. |
 | Windows Installer patches | `.msp` | Patch signatures and patch-specific hashing. |
-| NAVX packages | `.navx` | Dynamics NAV extension package signatures. |
 | Detached Authenticode sidecars | `.sig`, `.p7s` with the signed file | Generic detached signature inputs beyond the RDP-specific verifier. |
 
 `Report.wer` files are Windows Error Reporting metadata, not a separate
