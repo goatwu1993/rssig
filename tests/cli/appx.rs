@@ -2,6 +2,19 @@ use super::support::*;
 fn expect_appx(output: &Output) {
     expect_success(output);
     assert_eq!(output.success().format, "appx_authenticode");
+    assert_eq!(
+        output.success().appx.as_ref().unwrap().kind,
+        rssig::domain::AppxKind::Package
+    );
+    assert!(
+        output
+            .success()
+            .appx
+            .as_ref()
+            .unwrap()
+            .bundle_packages
+            .is_none()
+    );
     let value = &output.json["results"][0];
     assert!(value.get("appx").is_some());
     assert!(value.get("rdp").is_none());
@@ -825,7 +838,7 @@ fn appx_truncated() {
 }
 
 #[test]
-fn appx_bundle() {
+fn appx_bundle_mixed_manifests() {
     let output = run_fixture(
         "bad-appx-bundle.msix",
         &[
@@ -842,10 +855,60 @@ fn appx_bundle() {
     expect_failure(
         &output,
         1,
-        "unsupported_appx",
-        "Unsupported MSIX/AppX package",
+        "invalid_appx",
+        "Invalid MSIX/AppX package",
         Some("appx"),
         None,
+    );
+}
+
+#[test]
+fn appx_bundle_trusted() {
+    let output = run_fixture(
+        "good.appxbundle",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            "fixtures/good.crl",
+            "--time",
+            "1800000000",
+        ],
+    );
+    expect_success(&output);
+    assert_eq!(output.success().format, "appx_authenticode");
+    let appx = output.success().appx.as_ref().unwrap();
+    assert!(matches!(&appx.kind, rssig::domain::AppxKind::Bundle));
+    assert_eq!(appx.identity.name, "rssig.test");
+    assert_eq!(appx.block_map.files_verified, 1);
+    let packages = appx.bundle_packages.as_ref().unwrap();
+    assert_eq!(packages.len(), 1);
+    assert_eq!(packages[0].file_name, "neutral.appx");
+    assert_eq!(packages[0].package_type, "application");
+    assert_eq!(packages[0].architecture.as_deref(), Some("neutral"));
+    assert_eq!(packages[0].offset, 42);
+    assert_eq!(packages[0].size, 2928);
+    assert!(output.success().signatures[0].chain_trusted);
+    assert!(packages[0].verification.signatures[0].chain_trusted);
+    assert!(matches!(
+        &packages[0].verification.appx.as_ref().unwrap().kind,
+        rssig::domain::AppxKind::Package
+    ));
+    assert_eq!(
+        packages[0]
+            .verification
+            .appx
+            .as_ref()
+            .unwrap()
+            .block_map
+            .files_verified,
+        2
+    );
+    assert_eq!(
+        output.json["results"][0]["appx"]["bundle_packages"][0]["verification"]["format"],
+        "appx_authenticode"
     );
 }
 

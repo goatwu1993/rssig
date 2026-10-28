@@ -3098,12 +3098,22 @@
       ]
     },
     {
+      "file": "good.appxbundle",
+      "sha256": "cc433ab25832ed47785342d84f3652f541fa5955e01759b36cb611c2f2f3ed9d",
+      "bytes": 5995,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appx-bundle",
+        "appxbundle-integrity"
+      ]
+    },
+    {
       "file": "bad-appx-bundle.msix",
       "sha256": "940ce3e4acf1092323117f5b62e43966735fd6f4c0cb3a93ff1b88409340b760",
       "bytes": 3225,
       "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-bundle.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
       "cases": [
-        "appx-bundle"
+        "appx-bundle-mixed-manifests"
       ]
     },
     {
@@ -3465,6 +3475,411 @@
       "description": "Correctly signed DEFLATE package whose block-map compressed Size includes one byte of the final two-byte stream terminator; package and CMS digests are valid. Expected invalid_appx at block_map.",
       "cases": [
         "appx-compressed-size"
+      ]
+    },
+    {
+      "file": "appxbundle-independent-jsign.msixbundle",
+      "sha256": "06f28d22fd559dbac0c6312f07177eb0969e3069c96aff62aecff2b40a23bb0a",
+      "bytes": 6526,
+      "description": "Synthetic bundle containing the committed appx-independent-jsign.msix, signed externally with jsign 7.6 and the public deterministic RSA-2048 test identity exported by export_msi_test_identity. No external signer is required by ordinary tests. Never install or execute.",
+      "cases": [
+        "appxbundle-independent-jsign"
+      ]
+    },
+    {
+      "file": "appxbundle-jsign-input.msixbundle",
+      "sha256": "b90221906ca5c21bc6d9a84e344d44a8b12287c72745e9cd7912cd47c2b2f5e3",
+      "bytes": 4867,
+      "description": "Unsigned synthetic bundle containing the independently jsign-signed package; input for jsign 7.6 maintenance signing. Expected unsigned.",
+      "cases": [
+        "appxbundle-jsign-input"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-architecture.msixbundle",
+      "sha256": "b1b4d83b00db0643ef721b0a61b2f1729035d278cfcedf5c864fc3eb10f846c7",
+      "bytes": 5991,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-architecture"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-block-hash.msixbundle",
+      "sha256": "4c14fe412b78a41e58a80238afe28ecb71c456774e89cb24d53b8466c106ff3f",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-block-hash"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-child-digest.msixbundle",
+      "sha256": "3b8f6b45488d13a55f34e1412e44e6c1795cc6b0bb35a4d0cbcfe10eaa9b0d6d",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-child-digest"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-child-signature.msixbundle",
+      "sha256": "fb0b475bfe77e1d6ab40d9861d5670cbb2af76cb2b7f946d26a2f57f0c91ec68",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-child-signature"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-child-unsigned.msixbundle",
+      "sha256": "ec81d7d8cbbdd1f76fbdc4d292963b8a926aefc45b02b1c2f943bb38f4349b9c",
+      "bytes": 4589,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-child-unsigned"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-compressed.msixbundle",
+      "sha256": "68ff8c4442d434ac02a77fd38b2d156803fdde1161b8783ca0974158eb56800d",
+      "bytes": 4793,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-compressed"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-content-types.msixbundle",
+      "sha256": "ee34733ca106554c02b5fa25717aba0bc1f62826f76ba918126d89f6f0d1d8ba",
+      "bytes": 5971,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-content-types"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-different-signer.msixbundle",
+      "sha256": "8788c3c5e3ad63ff73c6ba5af4e3dd51115e7d0273c2e4bdd18217d8580b51d6",
+      "bytes": 6260,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-different-signer"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-duplicate.msixbundle",
+      "sha256": "7f92552d5e392c14fccb544def131d8bda5a8f8297b0a8cb4e4dfaf184bae1c3",
+      "bytes": 6114,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-duplicate"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-empty.msixbundle",
+      "sha256": "e97012194470cd76353a0491c112661b42f0fd7becab58ac62c36c53e5d108d4",
+      "bytes": 5879,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-empty"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-flat.msixbundle",
+      "sha256": "523e11480b535856e72988db524b89afa1d9b93f8398e6ec368723ed6b31c89b",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-flat"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-independent-payload.msixbundle",
+      "sha256": "54b39e9ae1726907304486bb8c6523b223553ac2592264d9d4a6991e7b98ef5e",
+      "bytes": 6526,
+      "description": "One byte at bundle offset 90 changed in appxbundle-independent-jsign.msixbundle; retains the complete original outer CMS signature. Expected AXPC digest mismatch.",
+      "cases": [
+        "appxbundle-independent-payload"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-missing.msixbundle",
+      "sha256": "ccdee39919c79f34c636f832bb007d64fbdcf8b96958f9013a80e2fc7a2653b0",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-missing"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-name.msixbundle",
+      "sha256": "19c050c530d274f885a5ff45deb8ad9f67f602558f9d96e4fbe33b8e06e1208d",
+      "bytes": 5998,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-name"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-namespace.msixbundle",
+      "sha256": "5b7806f596584581dec824eac0658fb5d076e9e8c64df3e9e86879282d940c40",
+      "bytes": 5996,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-namespace"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-nested-bundle.msixbundle",
+      "sha256": "1d152d21ba26e99e4e31398e32685956533e7ee8b29efb016c3598b61d692c90",
+      "bytes": 9062,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-nested-bundle"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-offset.msixbundle",
+      "sha256": "13170e42a909b3692737e0d6253a7e7113e39d1725a7fb24c5ba3e085fd9792a",
+      "bytes": 5997,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-offset"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-orphan.msixbundle",
+      "sha256": "e8e7244dad19b8332201a404e03454b8b55d6f33c7452bcaa637ef1676abf6cd",
+      "bytes": 9022,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-orphan"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-publisher.msixbundle",
+      "sha256": "3abd8a2646e82c6fa3d643b4f09f3b36b874fd0541ad7e9392bf868151de0a82",
+      "bytes": 5991,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-publisher"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-sip.msixbundle",
+      "sha256": "e76d8ad1d883420eba775e3984f6210b54c758adc5c557ca38be32ac7907f96c",
+      "bytes": 5997,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-sip"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-size.msixbundle",
+      "sha256": "c55b5cea98368d8e72787ed6931540413c50d44a092c70c0d3b29271052b9fb9",
+      "bytes": 5997,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-size"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-stub.msixbundle",
+      "sha256": "8eb22a03dbcf096379d2341de8c61d3885402fc89f9a61d1632b7dea49531216",
+      "bytes": 6009,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-stub"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-unknown.msixbundle",
+      "sha256": "24add9a1f19ec7f32288168a1fd63a45807a078b8a5d3fbbec3c927014551ef7",
+      "bytes": 6007,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-unknown"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-version.msixbundle",
+      "sha256": "0269fbf184b3ad98f2a4cdb12256c0fc07b39c5608fb9c75efcd1c6ce4ca37c5",
+      "bytes": 5997,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-version"
+      ]
+    },
+    {
+      "file": "good-appxbundle-descriptor.msixbundle",
+      "sha256": "35ddd0353a0c48f4b2344105a1e8e4dd0f9cbe08719e9592fdc37e0359bff43b",
+      "bytes": 6076,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-descriptor"
+      ]
+    },
+    {
+      "file": "good-appxbundle-multi.msixbundle",
+      "sha256": "6e9ffc0e424289ceddb03f0a2c46de11cde16016192914b5f7311796da8b88a3",
+      "bytes": 9112,
+      "description": "Synthetic bundle containing signed x64 and arm64 application packages with matching per-package manifest entries. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appxbundle-multi"
+      ]
+    },
+    {
+      "file": "good-appxbundle-schema5.msixbundle",
+      "sha256": "5a2d736d711f9032c069fa3dc047504323f936c6bbca87466fca073a21377194",
+      "bytes": 6277,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-schema5"
+      ]
+    },
+    {
+      "file": "good-appxbundle-zip64.msixbundle",
+      "sha256": "ee7d3d0c5b8b05b68025cb93398ead7a189806abb121344b70d9d7c3e0681326",
+      "bytes": 6072,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-zip64"
+      ]
+    },
+    {
+      "file": "good.msixbundle",
+      "sha256": "cc433ab25832ed47785342d84f3652f541fa5955e01759b36cb611c2f2f3ed9d",
+      "bytes": 5995,
+      "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
+      "cases": [
+        "appxbundle-msix-extension"
+      ]
+    },
+    {
+      "file": "good-appxbundle-resource.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-resource"
+      ],
+      "sha256": "9851ea5d12de67d37f531421ec0f65cfa95694509307b2b3e61c052f37626f40",
+      "bytes": 6095
+    },
+    {
+      "file": "bad-appxbundle-resource-id.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-resource-id"
+      ],
+      "sha256": "53734ccb914f2d42cd585972cf43ae1e5574e6987432a154789ce4037d95e0cf",
+      "bytes": 6096
+    },
+    {
+      "file": "bad-appxbundle-package-ctype.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-package-ctype"
+      ],
+      "sha256": "5237d746a798ad11b7e4aeac66de66b3b79449a2b1cb2ed45098bf5ae09ed688",
+      "bytes": 5984
+    },
+    {
+      "file": "bad-appxbundle-resource-type.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-resource-type"
+      ],
+      "sha256": "66b4fb6e37bba79c2a250fa4561ccb4b24089e77571103b4bb1e220eff5812bb",
+      "bytes": 6079
+    },
+    {
+      "file": "bad-appxbundle-architecture-default.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-architecture-default"
+      ],
+      "sha256": "20449838909486967dd58ff37cb9a4b1820ff1230986bbc126b92f332c05104b",
+      "bytes": 5969
+    },
+    {
+      "file": "bad-appxbundle-package-child.msixbundle",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys; the outer CMS authenticates the intentionally changed manifest or child package. Never install or execute.",
+      "cases": [
+        "appxbundle-package-child"
+      ],
+      "sha256": "e496cb60d3fee4b569d6f74c12b1cf6415387c482fd4ca50f0bfe8be47b3c23c",
+      "bytes": 6016
+    },
+    {
+      "file": "bad-appxbundle-child-crc.msixbundle",
+      "bytes": 5996,
+      "sha256": "ae532de33a060210fdc7ab4bbcb89504066a5d67baeab48aeb4cb8f162be84d6",
+      "description": "Synthetic bundle with a deliberately malformed package ZIP CRC or an unlisted non-package payload, authenticated by a mathematically valid outer CMS signature. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appxbundle-child-crc"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-orphan-other.msixbundle",
+      "bytes": 6276,
+      "sha256": "fd943e7b1d17bd77eeed044788fadce1be4ef2c18f5d413713b7b83dcdf34a71",
+      "description": "Synthetic bundle with a deliberately malformed package ZIP CRC or an unlisted non-package payload, authenticated by a mathematically valid outer CMS signature. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appxbundle-orphan-other"
+      ]
+    },
+    {
+      "file": "good-appxbundle-sha384.msixbundle",
+      "bytes": 6201,
+      "sha256": "044e56dc03662580f9bb5702bb1669fb0b0032eba7054d8ce519b029a619bc6e",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Exercises package hashing or timestamp verification in both the bundle and its embedded package. Never install or execute.",
+      "cases": [
+        "appxbundle-sha384"
+      ]
+    },
+    {
+      "file": "good-appxbundle-sha512.msixbundle",
+      "bytes": 6394,
+      "sha256": "e2580d4b5155f76be5bee1130fecc8a663668f3b67baada015ef9e75f6a2e808",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Exercises package hashing or timestamp verification in both the bundle and its embedded package. Never install or execute.",
+      "cases": [
+        "appxbundle-sha512"
+      ]
+    },
+    {
+      "file": "good-appxbundle-rfc3161.msixbundle",
+      "bytes": 9165,
+      "sha256": "25d91f7dc3fced8f78196d4c11897e5aedc9506b04d9efe8e9e8cb6b21a5f3b8",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Exercises package hashing or timestamp verification in both the bundle and its embedded package. Never install or execute.",
+      "cases": [
+        "appxbundle-rfc3161"
+      ]
+    },
+    {
+      "file": "good-appxbundle-countersignature.msixbundle",
+      "bytes": 7312,
+      "sha256": "4f4402e0b994fe697d21017497817480b623ac86d332246aa52512e2153dc014",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Exercises package hashing or timestamp verification in both the bundle and its embedded package. Never install or execute.",
+      "cases": [
+        "appxbundle-countersignature"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-child-timestamp.msixbundle",
+      "bytes": 7580,
+      "sha256": "0a051bade69660c7d8bbe418f4ead34be8a5278daf4e1d791dd0d2e1cc5599d3",
+      "description": "Synthetic bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Exercises package hashing or timestamp verification in both the bundle and its embedded package. Never install or execute.",
+      "cases": [
+        "appxbundle-child-timestamp"
+      ]
+    },
+    {
+      "file": "bad-appxbundle-resource-boolean.msixbundle",
+      "bytes": 6113,
+      "sha256": "5011a45336ea270085de796b80010ae12e6281408d85ddc59638af75882eb069",
+      "description": "Synthetic resource package with a ResourcePackage boolean split by an XML comment into true and false text; both inner and outer signatures/digests remain valid. Public deterministic test-only keys; never install or execute.",
+      "cases": [
+        "appxbundle-resource-boolean"
       ]
     }
   ]

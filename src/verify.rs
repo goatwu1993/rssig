@@ -99,7 +99,7 @@ pub fn verify_rdp(
     })
 }
 
-/// Verify a single embedded-signature MSIX/AppX package.
+/// Verify an embedded-signature MSIX/AppX package or bundle and its embedded packages.
 pub fn verify_appx(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
@@ -225,7 +225,7 @@ fn verify_inner(
         }
         verify_signature(node.full, &mut container, options, 0, &mut reports)?;
     }
-    Ok(VerificationBundle {
+    let mut verification = VerificationBundle {
         format: match format {
             Format::Msi => "msi_authenticode",
             Format::Pe => "pe_authenticode",
@@ -243,7 +243,104 @@ fn verify_inner(
             Container::Appx(appx) => appx.report.clone(),
             _ => None,
         },
-    })
+    };
+    if let Container::Appx(appx) = &container
+        && appx.is_bundle()
+    {
+        let bundle_signer = verification
+            .signatures
+            .first()
+            .context("bundle has no verified signing certificate")?
+            .certificate_sha256
+            .clone();
+        let mut package_reports = Vec::with_capacity(appx.bundle_packages().len());
+        for package in appx.bundle_packages() {
+            let nested = tagged(
+                Appx::parse(package.bytes),
+                ErrorCode::InvalidAppx,
+                Stage::Appx,
+            )?;
+            if nested.is_bundle() {
+                return Err(VerificationError::new(
+                    ErrorCode::UnsupportedAppx,
+                    Stage::Appx,
+                    "nested MSIX/AppX bundles are unsupported",
+                )
+                .detail("file_name", &package.file_name)
+                .into());
+            }
+            let package_verification =
+                verify_inner(package.bytes, options, Format::Appx).map_err(|error| {
+                    VerificationError::from_internal(error, ErrorCode::InvalidAppx, Stage::Appx)
+                        .detail("bundle_package", &package.file_name)
+                })?;
+            let package_report = package_verification
+                .appx
+                .as_ref()
+                .context("verified bundle package has no AppX report")?;
+            if !(package_report.kind == AppxKind::Package
+                && package_report.identity.name == appx.report.as_ref().unwrap().identity.name
+                && package_report.identity.version == package.version
+                && package_report.identity.resource_id == package.resource_id
+                && (package.package_type == "resource")
+                    == tagged(
+                        nested.resource_package(),
+                        ErrorCode::InvalidAppx,
+                        Stage::Appx,
+                    )?
+                && package.architecture.as_ref().is_none_or(|architecture| {
+                    package_report
+                        .identity
+                        .processor_architecture
+                        .as_deref()
+                        .unwrap_or("neutral")
+                        == architecture
+                }))
+            {
+                return Err(VerificationError::new(
+                    ErrorCode::InvalidAppx,
+                    Stage::Appx,
+                    "bundle package identity differs from its manifest entry",
+                )
+                .detail("bundle_package", &package.file_name)
+                .into());
+            }
+            let package_signer = package_verification
+                .signatures
+                .first()
+                .context("bundle package has no verified signing certificate")?;
+            if package_signer.certificate_sha256 != bundle_signer {
+                return Err(VerificationError::new(
+                    ErrorCode::AppxPublisherMismatch,
+                    Stage::Appx,
+                    "bundle package and bundle use different signing certificates",
+                )
+                .detail("file_name", &package.file_name)
+                .detail("bundle_certificate_sha256", &bundle_signer)
+                .detail(
+                    "package_certificate_sha256",
+                    &package_signer.certificate_sha256,
+                )
+                .into());
+            }
+            package_reports.push(AppxBundlePackageReport {
+                file_name: package.file_name.clone(),
+                package_type: package.package_type.clone(),
+                architecture: package.architecture.clone(),
+                resource_id: package.resource_id.clone(),
+                version: package.version.clone(),
+                offset: package.offset,
+                size: package.size,
+                verification: Box::new(package_verification),
+            });
+        }
+        verification
+            .appx
+            .as_mut()
+            .context("verified bundle has no AppX report")?
+            .bundle_packages = Some(package_reports);
+    }
+    Ok(verification)
 }
 
 fn verify_signature(
@@ -278,21 +375,36 @@ fn verify_signature(
     } else {
         Stage::ImageDigest
     };
-    let (hash, expected) = tagged(
-        if is_appx {
-            sd.appx_digest()
-        } else if is_script {
-            sd.script_digest()
-        } else if is_cab {
-            sd.cab_digest()
-        } else if is_msi {
-            sd.package_digest()
-        } else {
-            sd.image_digest()
-        },
-        ErrorCode::MalformedCms,
-        Stage::Cms,
-    )?;
+    let (hash, expected, appx_kind) = if let Container::Appx(appx) = container {
+        let (hash, expected, signed_bundle) =
+            tagged(sd.appx_digest(), ErrorCode::MalformedCms, Stage::Cms)?;
+        (hash, expected, Some((signed_bundle, appx.is_bundle())))
+    } else {
+        let (hash, expected) = tagged(
+            if is_script {
+                sd.script_digest()
+            } else if is_cab {
+                sd.cab_digest()
+            } else if is_msi {
+                sd.package_digest()
+            } else {
+                sd.image_digest()
+            },
+            ErrorCode::MalformedCms,
+            Stage::Cms,
+        )?;
+        (hash, expected, None)
+    };
+    if let Some((signed_bundle, package_is_bundle)) = appx_kind
+        && signed_bundle != package_is_bundle
+    {
+        return Err(VerificationError::new(
+            ErrorCode::MalformedCms,
+            Stage::Cms,
+            "MSIX/AppX SIP UUID does not match the package kind",
+        )
+        .into());
+    }
     if !options.allow_sha1 && hash == Hash::Sha1 {
         return Err(VerificationError::new(
             ErrorCode::WeakAlgorithm,

@@ -1,4 +1,4 @@
-//! Embedded single-package MSIX/AppX integrity. No extraction or installation.
+//! Embedded MSIX/AppX package and bundle integrity. No extraction or installation.
 mod zip;
 use crate::{crypto::Hash, domain::*};
 use anyhow::{Context, Result, ensure};
@@ -10,10 +10,12 @@ const SIG: &str = "AppxSignature.p7x";
 const CT: &str = "[Content_Types].xml";
 const BM: &str = "AppxBlockMap.xml";
 const MANIFEST: &str = "AppxManifest.xml";
+const BUNDLE_MANIFEST: &str = "AppxMetadata/AppxBundleManifest.xml";
 const CI: &str = "AppxMetadata/CodeIntegrity.cat";
 const XML_LIMIT: usize = 8 * 1024 * 1024;
 const BM_NS: &str = "http://schemas.microsoft.com/appx/2010/blockmap";
 const CT_NS: &str = "http://schemas.openxmlformats.org/package/2006/content-types";
+const BUNDLE_NS: &str = "http://schemas.microsoft.com/appx/2013/bundle";
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension().and_then(|s| s.to_str()).is_some_and(|s| {
         ["appx", "msix", "appxbundle", "msixbundle"]
@@ -64,28 +66,124 @@ fn number(node: Node<'_, '_>, name: &str) -> Result<usize> {
     );
     Ok(text.parse()?)
 }
+fn validate_version(version: &str) -> Result<()> {
+    let parts: Vec<_> = version.split('.').collect();
+    ensure!(
+        parts.len() == 4
+            && parts.iter().all(|v| !v.is_empty()
+                && v.bytes().all(|c| c.is_ascii_digit())
+                && v.parse::<u16>().is_ok()),
+        "invalid package version"
+    );
+    Ok(())
+}
+fn identity(
+    name: &str,
+    publisher: &str,
+    version: &str,
+    architecture: Option<&str>,
+    resource_id: Option<&str>,
+) -> Result<AppxIdentity> {
+    ensure!(
+        (3..=50).contains(&name.len())
+            && name
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || c == b'.' || c == b'-'),
+        "unsupported package identity name"
+    );
+    ensure!(!publisher.is_empty(), "empty package publisher");
+    Name::from_str(publisher).context("unsupported manifest publisher DN")?;
+    validate_version(version)?;
+    ensure!(
+        architecture.is_none_or(|a| ["neutral", "x86", "x64", "arm", "arm64"].contains(&a)),
+        "unsupported package architecture"
+    );
+    Ok(AppxIdentity {
+        name: name.into(),
+        publisher: publisher.into(),
+        version: version.into(),
+        processor_architecture: architecture.map(str::to_owned),
+        resource_id: resource_id.filter(|s| !s.is_empty()).map(str::to_owned),
+    })
+}
 fn excluded(name: &str) -> bool {
     [SIG, CT, BM, CI].contains(&name)
+}
+fn is_package_name(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    name.ends_with(".appx") || name.ends_with(".msix")
+}
+fn bundle_metadata(node: Node<'_, '_>) -> Result<()> {
+    for child in node.children().filter(|n| n.is_element()) {
+        attrs(child, &[])?;
+        if child.has_tag_name((BUNDLE_NS, "Resources")) {
+            for resource in child.children().filter(|n| n.is_element()) {
+                ensure!(
+                    resource.has_tag_name((BUNDLE_NS, "Resource")),
+                    "unsupported bundle resource element"
+                );
+                attrs(resource, &["Language", "Scale", "DXFeatureLevel"])?;
+                ensure!(
+                    !resource.children().any(|n| n.is_element()),
+                    "nested bundle resource element"
+                );
+            }
+        } else {
+            let ns = child.tag_name().namespace().unwrap_or("");
+            ensure!(
+                [BUNDLE_NS, "http://schemas.microsoft.com/appx/2018/bundle"].contains(&ns)
+                    && child.tag_name().name() == "Dependencies",
+                "unsupported bundle package metadata"
+            );
+            for dependency in child.children().filter(|n| n.is_element()) {
+                ensure!(
+                    dependency.has_tag_name((ns, "TargetDeviceFamily")),
+                    "unsupported bundle dependency"
+                );
+                attrs(dependency, &["Name", "MinVersion", "MaxVersionTested"])?;
+                ensure!(
+                    !attr(dependency, "Name")?.is_empty(),
+                    "empty target device family"
+                );
+                validate_version(attr(dependency, "MinVersion")?)?;
+                validate_version(attr(dependency, "MaxVersionTested")?)?;
+                ensure!(
+                    !dependency.children().any(|n| n.is_element()),
+                    "nested bundle dependency"
+                );
+            }
+        }
+    }
+    Ok(())
 }
 pub(crate) struct Appx<'a> {
     bytes: &'a [u8],
     zip: zip::Zip<'a>,
     signature: Vec<u8>,
     components: Vec<AppxComponentReport>,
+    bundle_packages: Vec<BundlePackage<'a>>,
     pub report: Option<Box<AppxReport>>,
+}
+pub(crate) struct BundlePackage<'a> {
+    pub file_name: String,
+    pub package_type: String,
+    pub architecture: Option<String>,
+    pub resource_id: Option<String>,
+    pub version: String,
+    pub offset: usize,
+    pub size: usize,
+    pub bytes: &'a [u8],
 }
 impl<'a> Appx<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self> {
         let zip = tagged(zip::Zip::parse(bytes), Stage::Appx)?;
-        if zip.get("AppxMetadata/AppxBundleManifest.xml").is_some() {
-            return Err(VerificationError::new(
-                ErrorCode::UnsupportedAppx,
-                Stage::Appx,
-                "MSIX/AppX bundles are unsupported; supply a single package",
-            )
-            .into());
-        }
-        for name in [CT, BM, MANIFEST] {
+        let is_bundle = zip.get(BUNDLE_MANIFEST).is_some();
+        ensure!(
+            !(is_bundle && zip.get(MANIFEST).is_some()),
+            "package contains both package and bundle manifests"
+        );
+        let manifest = if is_bundle { BUNDLE_MANIFEST } else { MANIFEST };
+        for name in [CT, BM, manifest] {
             ensure!(
                 zip.get(name).is_some(),
                 "missing required MSIX/AppX part: {name}"
@@ -109,8 +207,15 @@ impl<'a> Appx<'a> {
             zip,
             signature: blob[4..].to_vec(),
             components: Vec::new(),
+            bundle_packages: Vec::new(),
             report: None,
         })
+    }
+    pub fn is_bundle(&self) -> bool {
+        self.zip.get(BUNDLE_MANIFEST).is_some()
+    }
+    pub fn bundle_packages(&self) -> &[BundlePackage<'a>] {
+        &self.bundle_packages
     }
     pub fn signature(&self) -> &[u8] {
         &self.signature
@@ -179,7 +284,13 @@ impl<'a> Appx<'a> {
     }
     pub fn validate(&mut self, hash: Hash) -> Result<()> {
         tagged(self.content_types(), Stage::Appx)?;
-        let identity = tagged(self.identity(), Stage::Appx)?;
+        let identity = if self.is_bundle() {
+            let (identity, packages) = tagged(self.bundle_identity(), Stage::Appx)?;
+            self.bundle_packages = packages;
+            identity
+        } else {
+            tagged(self.identity(), Stage::Appx)?
+        };
         let block_map = tagged(self.block_map(hash), Stage::BlockMap)?;
         let catalog = self
             .zip
@@ -192,10 +303,16 @@ impl<'a> Appx<'a> {
             })
             .transpose()?;
         self.report = Some(Box::new(AppxReport {
+            kind: if self.is_bundle() {
+                AppxKind::Bundle
+            } else {
+                AppxKind::Package
+            },
             identity,
             block_map,
             components: self.components.clone(),
             code_integrity_catalog: catalog,
+            bundle_packages: None,
         }));
         Ok(())
     }
@@ -225,37 +342,213 @@ impl<'a> Appx<'a> {
             "manifest must contain exactly one package Identity"
         );
         let id = identities[0];
-        let name = attr(id, "Name")?;
-        let publisher = attr(id, "Publisher")?;
-        let version = attr(id, "Version")?;
-        ensure!(
-            (3..=50).contains(&name.len())
-                && name
-                    .bytes()
-                    .all(|c| c.is_ascii_alphanumeric() || c == b'.' || c == b'-'),
-            "unsupported package identity name"
-        );
-        ensure!(!publisher.is_empty(), "empty package publisher");
-        Name::from_str(publisher).context("unsupported manifest publisher DN")?;
-        let parts: Vec<_> = version.split('.').collect();
-        ensure!(
-            parts.len() == 4
-                && parts.iter().all(|v| !v.is_empty()
-                    && v.bytes().all(|c| c.is_ascii_digit())
-                    && v.parse::<u16>().is_ok()),
-            "invalid package version"
-        );
         let architecture = id.attribute("ProcessorArchitecture");
+        identity(
+            attr(id, "Name")?,
+            attr(id, "Publisher")?,
+            attr(id, "Version")?,
+            architecture,
+            id.attribute("ResourceId"),
+        )
+    }
+    pub fn resource_package(&self) -> Result<bool> {
+        let bytes = self.read(MANIFEST)?;
+        let doc = xml(&bytes)?;
+        let root = doc.root_element();
+        let ns = root
+            .tag_name()
+            .namespace()
+            .context("missing manifest namespace")?;
+        let properties: Vec<_> = root
+            .children()
+            .filter(|n| n.has_tag_name((ns, "Properties")))
+            .collect();
+        ensure!(properties.len() <= 1, "duplicate package Properties");
+        let values: Vec<_> = properties
+            .iter()
+            .flat_map(|n| n.children())
+            .filter(|n| n.has_tag_name((ns, "ResourcePackage")))
+            .collect();
+        ensure!(values.len() <= 1, "duplicate ResourcePackage property");
+        let Some(node) = values.first() else {
+            return Ok(false);
+        };
         ensure!(
-            architecture.is_none_or(|a| ["neutral", "x86", "x64", "arm", "arm64"].contains(&a)),
-            "unsupported package architecture"
+            node.attributes().len() == 0 && !node.children().any(|n| n.is_element()),
+            "invalid ResourcePackage property"
         );
-        Ok(AppxIdentity {
-            name: name.into(),
-            publisher: publisher.into(),
-            version: version.into(),
-            processor_architecture: architecture.map(str::to_owned),
-        })
+        let value: String = node
+            .children()
+            .filter(|n| n.is_text())
+            .filter_map(|n| n.text())
+            .collect();
+        match value.trim() {
+            "true" | "1" => Ok(true),
+            "false" | "0" => Ok(false),
+            _ => anyhow::bail!("invalid ResourcePackage boolean"),
+        }
+    }
+    fn bundle_identity(&self) -> Result<(AppxIdentity, Vec<BundlePackage<'a>>)> {
+        let bytes = self.read(BUNDLE_MANIFEST)?;
+        let doc = xml(&bytes)?;
+        let root = doc.root_element();
+        ensure!(
+            root.has_tag_name((BUNDLE_NS, "Bundle")),
+            "invalid bundle manifest root or namespace"
+        );
+        attrs(root, &["SchemaVersion", "IgnorableNamespaces"])?;
+        ensure!(
+            ["1.0", "2.0", "3.0", "4.0", "5.0"].contains(&attr(root, "SchemaVersion")?),
+            "unsupported bundle manifest schema version"
+        );
+        ensure!(
+            root.children().filter(|n| n.is_element()).all(|n| {
+                n.has_tag_name((BUNDLE_NS, "Identity")) || n.has_tag_name((BUNDLE_NS, "Packages"))
+            }),
+            "unsupported bundle manifest element"
+        );
+        let identities: Vec<_> = root
+            .children()
+            .filter(|n| n.has_tag_name((BUNDLE_NS, "Identity")))
+            .collect();
+        let package_lists: Vec<_> = root
+            .children()
+            .filter(|n| n.has_tag_name((BUNDLE_NS, "Packages")))
+            .collect();
+        ensure!(
+            identities.len() == 1 && package_lists.len() == 1,
+            "bundle manifest must have one Identity and Packages element"
+        );
+        let identity_node = identities[0];
+        attrs(
+            identity_node,
+            &["Name", "Publisher", "Version", "ResourceId"],
+        )?;
+        ensure!(
+            !identity_node.children().any(|n| n.is_element()),
+            "nested bundle Identity element"
+        );
+        let identity = identity(
+            attr(identity_node, "Name")?,
+            attr(identity_node, "Publisher")?,
+            attr(identity_node, "Version")?,
+            None,
+            identity_node.attribute("ResourceId"),
+        )?;
+        let list = package_lists[0];
+        attrs(list, &[])?;
+        let package_nodes: Vec<_> = list.children().filter(|n| n.is_element()).collect();
+        ensure!(!package_nodes.is_empty(), "bundle contains no packages");
+        let mut seen = BTreeMap::new();
+        let mut packages = Vec::with_capacity(package_nodes.len());
+        for node in package_nodes {
+            ensure!(
+                node.has_tag_name((BUNDLE_NS, "Package")),
+                "unsupported bundle Packages element"
+            );
+            attrs(
+                node,
+                &[
+                    "Type",
+                    "Version",
+                    "Architecture",
+                    "FileName",
+                    "Offset",
+                    "Size",
+                    "ResourceId",
+                    "IsStub",
+                ],
+            )?;
+            ensure!(
+                node.attribute("IsStub").is_none_or(|v| v == "false"),
+                "stub bundle packages are unsupported"
+            );
+            let package_type = attr(node, "Type")?;
+            ensure!(
+                ["application", "resource"].contains(&package_type),
+                "unsupported bundle package type"
+            );
+            let version = attr(node, "Version")?;
+            validate_version(version)?;
+            bundle_metadata(node)?;
+            let architecture = Some(node.attribute("Architecture").unwrap_or("neutral"));
+            ensure!(
+                architecture
+                    .is_none_or(|a| { ["neutral", "x86", "x64", "arm", "arm64"].contains(&a) }),
+                "unsupported bundle package architecture"
+            );
+            let file_name = attr(node, "FileName")?;
+            let zip_name = file_name.replace('\\', "/");
+            ensure!(
+                zip::safe_name(&zip_name)
+                    && [".appx", ".msix"]
+                        .iter()
+                        .any(|ext| zip_name.to_ascii_lowercase().ends_with(ext)),
+                "invalid bundle package filename"
+            );
+            ensure!(
+                seen.insert(zip_name.to_ascii_lowercase(), ()).is_none(),
+                "duplicate bundle package filename"
+            );
+            let entry = self
+                .zip
+                .get(&zip_name)
+                .context("bundle manifest references a missing package")?;
+            ensure!(
+                entry.method == 0,
+                "compressed bundle packages are unsupported"
+            );
+            ensure!(
+                entry.compressed.len() == entry.size
+                    && crc32fast::hash(entry.compressed) == entry.crc,
+                "bundle package ZIP size or CRC mismatch"
+            );
+            let offset = number(node, "Offset")?;
+            let size = number(node, "Size")?;
+            ensure!(
+                offset == entry.offset + entry.lfh_size && size == entry.size,
+                "bundle package offset or size differs from its ZIP record"
+            );
+            packages.push(BundlePackage {
+                file_name: zip_name,
+                package_type: package_type.into(),
+                architecture: architecture.map(str::to_owned),
+                resource_id: node
+                    .attribute("ResourceId")
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_owned),
+                version: version.into(),
+                offset,
+                size,
+                bytes: entry.compressed,
+            });
+        }
+        let zipped: Vec<_> = self
+            .zip
+            .entries
+            .iter()
+            .filter(|entry| {
+                [".appx", ".msix"]
+                    .iter()
+                    .any(|ext| entry.name.to_ascii_lowercase().ends_with(ext))
+            })
+            .collect();
+        ensure!(
+            zipped.len() == packages.len()
+                && zipped
+                    .iter()
+                    .all(|entry| seen.contains_key(&entry.name.to_ascii_lowercase())),
+            "bundle manifest and embedded package entries differ"
+        );
+        ensure!(
+            self.zip.entries.iter().all(|entry| {
+                excluded(&entry.name)
+                    || entry.name == BUNDLE_MANIFEST
+                    || seen.contains_key(&entry.name.to_ascii_lowercase())
+            }),
+            "bundle contains an unlisted payload part"
+        );
+        Ok((identity, packages))
     }
     pub fn publisher(&self, cert: &Certificate) -> Result<()> {
         let publisher = &self
@@ -364,7 +657,11 @@ impl<'a> Appx<'a> {
                 SIG => Some("application/vnd.ms-appx.signature"),
                 BM => Some("application/vnd.ms-appx.blockmap+xml"),
                 MANIFEST => Some("application/vnd.ms-appx.manifest+xml"),
+                BUNDLE_MANIFEST => Some("application/vnd.ms-appx.bundlemanifest+xml"),
                 CI => Some("application/vnd.ms-pkiseccat"),
+                _ if self.is_bundle() && is_package_name(&e.name) => {
+                    Some("application/vnd.ms-appx")
+                }
                 _ => None,
             };
             if let Some(required) = required {
@@ -407,7 +704,13 @@ impl<'a> Appx<'a> {
             .zip
             .entries
             .iter()
-            .filter(|e| !excluded(&e.name))
+            .filter(|e| {
+                !excluded(&e.name)
+                    && !self
+                        .bundle_packages
+                        .iter()
+                        .any(|package| package.file_name == e.name)
+            })
             .collect();
         let files: Vec<_> = root.children().filter(|n| n.is_element()).collect();
         ensure!(
@@ -579,7 +882,7 @@ mod tests {
             let signature = bad.signature().to_vec();
             let sd = crate::cms::SignedData::parse(&signature).unwrap();
             sd.verify(sd.signers[0], false).unwrap();
-            let (hash, expected) = sd.appx_digest().unwrap();
+            let (hash, expected, _) = sd.appx_digest().unwrap();
             assert_eq!(good.digests(hash).unwrap(), expected);
             let computed = bad.digests(hash).unwrap();
             assert_ne!(computed, expected);
@@ -599,7 +902,7 @@ mod tests {
             let signature = package.signature().to_vec();
             let sd = crate::cms::SignedData::parse(&signature).unwrap();
             sd.verify(sd.signers[0], false).unwrap();
-            let (hash, expected) = sd.appx_digest().unwrap();
+            let (hash, expected, _) = sd.appx_digest().unwrap();
             assert_eq!(package.digests(hash).unwrap(), expected);
             let error = package.validate(hash).unwrap_err();
             assert_eq!(
@@ -612,7 +915,7 @@ mod tests {
         let signature = package.signature().to_vec();
         let sd = crate::cms::SignedData::parse(&signature).unwrap();
         let signer = sd.verify(sd.signers[0], false).unwrap();
-        let (hash, expected) = sd.appx_digest().unwrap();
+        let (hash, expected, _) = sd.appx_digest().unwrap();
         assert_eq!(package.digests(hash).unwrap(), expected);
         package.validate(hash).unwrap();
         let error = package.publisher(&signer.cert).unwrap_err();
@@ -628,7 +931,7 @@ mod tests {
         let signature = package.signature().to_vec();
         let sd = crate::cms::SignedData::parse(&signature).unwrap();
         let signer = sd.verify(sd.signers[0], false).unwrap();
-        let (hash, expected) = sd.appx_digest().unwrap();
+        let (hash, expected, _) = sd.appx_digest().unwrap();
         assert_eq!(package.digests(hash).unwrap(), expected);
         package.validate(hash).unwrap();
         package.publisher(&signer.cert).unwrap();
@@ -642,6 +945,70 @@ mod tests {
                 .map(|c| c.component.as_str())
                 .collect::<Vec<_>>(),
             ["AXPC", "AXCD", "AXCT", "AXBM"]
+        );
+    }
+    #[test]
+    fn bundle_faults_retain_valid_outer_signature_and_digest_math() {
+        for fault in [
+            "offset",
+            "size",
+            "duplicate",
+            "missing",
+            "orphan",
+            "orphan-other",
+            "architecture",
+            "version",
+            "name",
+            "namespace",
+            "unknown",
+            "empty",
+            "compressed",
+            "child-digest",
+            "child-signature",
+            "child-unsigned",
+            "child-timestamp",
+            "different-signer",
+            "nested-bundle",
+            "block-hash",
+            "content-types",
+            "stub",
+            "flat",
+            "resource-id",
+            "resource-type",
+            "architecture-default",
+            "package-child",
+            "package-ctype",
+            "child-crc",
+            "resource-boolean",
+        ] {
+            let bytes = fixture(&format!("bad-appxbundle-{fault}.msixbundle"));
+            let mut appx = Appx::parse(&bytes).unwrap();
+            assert!(appx.is_bundle());
+            let signature = appx.signature().to_vec();
+            let sd = crate::cms::SignedData::parse(&signature).unwrap();
+            let (hash, expected, bundle) = sd.appx_digest().unwrap();
+            assert!(bundle);
+            sd.verify(sd.signers[0], false).unwrap();
+            assert_eq!(appx.digests(hash).unwrap(), expected, "{fault}");
+        }
+    }
+    #[test]
+    fn independent_bundle_payload_fault_retains_the_original_signature() {
+        let good_bytes = fixture("appxbundle-independent-jsign.msixbundle");
+        let bad_bytes = fixture("bad-appxbundle-independent-payload.msixbundle");
+        let good = Appx::parse(&good_bytes).unwrap();
+        let mut bad = Appx::parse(&bad_bytes).unwrap();
+        assert_eq!(good.signature(), bad.signature());
+        let signature = bad.signature().to_vec();
+        let sd = crate::cms::SignedData::parse(&signature).unwrap();
+        sd.verify(sd.signers[0], false).unwrap();
+        let (hash, expected, bundle) = sd.appx_digest().unwrap();
+        assert!(bundle);
+        let computed = bad.digests(hash).unwrap();
+        assert_ne!(computed, expected);
+        assert_eq!(
+            bad.mismatch(expected, &computed, hash).details["component"],
+            "AXPC"
         );
     }
     #[test]
@@ -674,6 +1041,10 @@ mod tests {
             assert!(value["signatures"][0].get("image_digest").is_none());
             let roundtrip: VerificationBundle = serde_json::from_value(value.clone()).unwrap();
             assert_eq!(serde_json::to_value(roundtrip).unwrap(), value);
+            let mut legacy = value.clone();
+            legacy["appx"].as_object_mut().unwrap().remove("kind");
+            let legacy: VerificationBundle = serde_json::from_value(legacy).unwrap();
+            assert_eq!(legacy.appx.unwrap().kind, AppxKind::Package);
         }
         let bytes = fixture("good-appx-catalog.msix");
         let report = crate::verify_appx(&bytes, &options).unwrap();
