@@ -5,6 +5,18 @@ edition = "2024"
 description = "Cross-platform embedded Windows PE Authenticode signature verifier"
 license = "Apache-2.0"
 
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+# Keep individual lint overrides above the group priority.
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = 0 }
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
 [dependencies]
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 crc32fast = "1"

@@ -31,10 +31,8 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
-      - name: Check formatting
-        run: cargo fmt --check
-      - name: Check Clippy
-        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Check formatting and Clippy
+        run: make lint
       - name: Run Rust tests against committed fixtures
         run: cargo test --locked
 

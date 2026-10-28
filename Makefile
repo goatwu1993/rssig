@@ -10,18 +10,24 @@ export LLVM_PROFDATA ?= $(RSSIG_LLVM_PREFIX)/bin/llvm-profdata
 endif
 endif
 
-.PHONY: test coverage check-coverage-tools
-
+.PHONY: test
 test:
 	$(CARGO) test --locked
 
+.PHONY: lint
+lint:
+	$(CARGO) fmt --check
+	$(CARGO) clippy --all-targets --locked -- -D warnings
+
 # Both native tests and the JSON specification invoke the CLI library.
+.PHONY: coverage
 coverage: check-coverage-tools
 	$(CARGO) llvm-cov clean --workspace
 	RSSIG_SPEC_REPORT="$(CURDIR)/target/coverage/conformance.json" $(CARGO) llvm-cov --locked --all-targets --no-report
 	$(CARGO) llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$$)' --html --output-dir target/coverage
 	$(CARGO) llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$$)' --cobertura --output-path target/coverage/cobertura.xml
 
+.PHONY: check-coverage-tools
 check-coverage-tools:
 	@$(CARGO) llvm-cov --version >/dev/null 2>&1 || { \
 		echo "Coverage requires cargo-llvm-cov. Install with:"; \
