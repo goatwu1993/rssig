@@ -16,7 +16,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE/MSI/CAB/PowerShell/WSH/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
+    about = "Verify embedded Windows PE/MSI/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]

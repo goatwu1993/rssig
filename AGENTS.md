@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/PowerShell/WSH/MSIX/AppX Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode
 signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -8,7 +8,7 @@ project at build or runtime.
 
 ## Architecture and constraints
 
-- Use pure Rust for PE/MSI/CAB/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
+- Use pure Rust for PE/MSI/CAB/NAVX/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
   adapter. macOS framework calls are allowed for root enumeration, never for
@@ -152,7 +152,7 @@ Publisher binding, and embedded package verification are supported; see `docs/ap
 for ZIP/compression and bundle limits. Flat/external, stub, and nested bundles are
 unsupported. Embedded CodeIntegrity catalogs are package-hashed but not independently
 signature-verified; JSON must report this explicitly.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
+`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_navx`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,
@@ -160,3 +160,5 @@ catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 Revocation of a timestamped signer is handled conservatively: an entry on a
 current CRL rejects it even if its revocation date is after the signing time.
+
+NAVX embedded signatures use the shared verification engine; see `docs/navx.md` for envelope, SIP, hashing, and interoperability limits.

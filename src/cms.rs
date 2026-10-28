@@ -195,6 +195,39 @@ impl<'a> SignedData<'a> {
         self.indirect_digest()
     }
 
+    pub fn navx_digest(&self) -> Result<(Hash, &'a [u8])> {
+        ensure!(
+            self.content_type == INDIRECT,
+            "not a NAVX Authenticode signature"
+        );
+        let indirect = der::fields(self.content, 2)?;
+        let data = der::fields(indirect[0].expect(0x30)?, 2)?;
+        ensure!(
+            der::oid(data[0], &[43, 6, 1, 4, 1, 130, 55, 2, 1, 30]),
+            "invalid NAVX SIP type"
+        );
+        let sip = der::fields(data[1].expect(0x30)?, 7)?;
+        ensure!(
+            sip[0].expect(2)?.body == [1],
+            "unsupported NAVX SIP version"
+        );
+        ensure!(
+            sip[1].expect(4)?.body
+                == [
+                    0x12, 0x34, 0x12, 0x34, 0xf8, 0x04, 0, 0, 0x78, 0x1d, 0x12, 0x34, 0x12, 0x34,
+                    0x12, 0x34
+                ],
+            "invalid NAVX SIP UUID"
+        );
+        for reserved in &sip[2..] {
+            ensure!(
+                reserved.expect(2)?.body == [0],
+                "invalid NAVX SIP reserved field"
+            );
+        }
+        self.indirect_digest()
+    }
+
     pub fn wsh_digest(&self, kind: crate::wsh::Kind) -> Result<(Hash, &'a [u8])> {
         ensure!(
             self.content_type == INDIRECT,

@@ -5760,6 +5760,274 @@
         "source": "src/tests/wsh_fixtures.rs; see docs/wsh.md for recipes, derived mutations, and maintenance",
         "license": "Apache-2.0 (repository-generated inert test artifacts)"
       }
+    },
+    {
+      "file": "bad-navx-bad-nested.navx",
+      "bytes": 2420,
+      "sha256": "d43ccb44e3b60247d557830aa213c3991cec8d533fae4871aa8cf53e84a50cfa",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-bad-nested"
+      ]
+    },
+    {
+      "file": "bad-navx-block.navx",
+      "bytes": 1225,
+      "sha256": "4bdac7d9ce6eb5ecb26ea1fcb7cc85ccb6f95c3e2ec5576a171de01d72406c36",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-block"
+      ]
+    },
+    {
+      "file": "bad-navx-cms-signature.navx",
+      "bytes": 1225,
+      "sha256": "0b78cce9e5d39b6a7e835b23cc14b0672264921f751ef5c0410c7224192e7324",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-cms-signature"
+      ]
+    },
+    {
+      "file": "bad-navx-cms-trailing.navx",
+      "bytes": 1226,
+      "sha256": "895be72624f20b8c1e9e896bcdd808f5793f3b88efe09730afd3efd27ef52ea2",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-cms-trailing"
+      ]
+    },
+    {
+      "file": "bad-navx-digest.navx",
+      "bytes": 1225,
+      "sha256": "11b886d9d7aa9f186f0e45b84e0f4c47c2fff9fb5ab0f1148d89ea7e2b619a66",
+      "description": "Deterministic test-only NAVX container. Only payload byte 40 differs from the corresponding good artifact; CMS is unchanged. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-digest"
+      ]
+    },
+    {
+      "file": "bad-navx-header.navx",
+      "bytes": 1225,
+      "sha256": "515418e66740ed98dbb9e18b0daabed6aa920b952dea5327e0c89d07a9c5c334",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-header"
+      ]
+    },
+    {
+      "file": "bad-navx-independent-digest.navx",
+      "bytes": 1477,
+      "sha256": "bae43486b4b882cf5691ba81f65bd414ae7b886ddcf6298c6622a208a32eed3c",
+      "description": "Deterministic test-only NAVX container. Only payload byte 40 differs from the corresponding good artifact; CMS is unchanged. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-independent-digest"
+      ],
+      "provenance": {
+        "tool": "jsign 7.6",
+        "source": "https://github.com/ebourg/jsign/releases/tag/7.6",
+        "license": "Apache-2.0",
+        "recipe": "unsigned.navx signed with export_msi_test_identity public deterministic RSA-2048 identity; SHA-256; no timestamp. Tampered counterpart XORs payload byte 40 with 1."
+      }
+    },
+    {
+      "file": "bad-navx-malformed-cms.navx",
+      "bytes": 58,
+      "sha256": "244c8c96c42c7717b95a1580a6e1991f8a692baeeeb89cea9b8750d19619fa07",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-malformed-cms"
+      ]
+    },
+    {
+      "file": "bad-navx-offset.navx",
+      "bytes": 1225,
+      "sha256": "56b9877bde249c6145c91ca90222799eb628ecfa6a38cc5641290e80b3b7667e",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-offset"
+      ]
+    },
+    {
+      "file": "bad-navx-sip-reserved.navx",
+      "bytes": 1224,
+      "sha256": "7cf4be37159088a977950eed05a5ebdb5f5c765867ec1c8481de0ac8cb296190",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-sip-reserved"
+      ]
+    },
+    {
+      "file": "bad-navx-sip-type.navx",
+      "bytes": 1224,
+      "sha256": "1b42745fe6b964e8ce183537654f08e9ba05ca3dfa60ce4c2655bd8283474ca3",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-sip-type"
+      ]
+    },
+    {
+      "file": "bad-navx-sip-uuid.navx",
+      "bytes": 1226,
+      "sha256": "12adfdcefb65369243e7656a6752c483e719e0a73f563b5f5d3f74f2bd967854",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-sip-uuid"
+      ]
+    },
+    {
+      "file": "bad-navx-sip-version.navx",
+      "bytes": 1225,
+      "sha256": "7e426a61b36ba36a31fd60eaf262a9dbf2d86a274433d0b79d4def1d5c46df7a",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-sip-version"
+      ]
+    },
+    {
+      "file": "bad-navx-size.navx",
+      "bytes": 1225,
+      "sha256": "4fbfbf7e7ebd90ace058d0881f16076640cb391c5d506dc68afd50a532624665",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-size"
+      ]
+    },
+    {
+      "file": "bad-navx-timestamp-imprint.navx",
+      "bytes": 2809,
+      "sha256": "d7094fa1625a7eeb40d3010803d1113e7510bbe7e1120003803335e7d20f81a7",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-timestamp-imprint"
+      ]
+    },
+    {
+      "file": "bad-navx-trailer.navx",
+      "bytes": 1225,
+      "sha256": "1fa5462a232d20c1f865dc8f8cd229cbef02789764716f8a8b1e71d4d7377383",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-trailer"
+      ]
+    },
+    {
+      "file": "bad-navx-trailing.navx",
+      "bytes": 1226,
+      "sha256": "82b9296f02a06f6f65f061b09e366d02c7f33ad6718a2b73d6abec01ca23ec09",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-trailing"
+      ]
+    },
+    {
+      "file": "bad-navx-truncated.navx",
+      "bytes": 39,
+      "sha256": "4b71e84701da99bda59284c31d2da3578de4e517de60dfa3a73442ddaf62270a",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-truncated"
+      ]
+    },
+    {
+      "file": "good-navx-countersignature.navx",
+      "bytes": 1882,
+      "sha256": "d1ec3a5385583807d36997723427cf6b88d51bf1b567660e9ef335a374952329",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good-navx-countersignature"
+      ]
+    },
+    {
+      "file": "good-navx-nested.navx",
+      "bytes": 2420,
+      "sha256": "b30a73bc0b395bdc932efc6ac2a92c0abcf261aa6d8efe472609fba1858827e3",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good-navx-nested"
+      ]
+    },
+    {
+      "file": "good-navx-rfc3161.navx",
+      "bytes": 2809,
+      "sha256": "b2a0d40a7f5bcca86bba9887784cb066e8ee049859b637a3e0b9c180241dfb83",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good-navx-rfc3161"
+      ]
+    },
+    {
+      "file": "good-navx-sha384.navx",
+      "bytes": 1241,
+      "sha256": "621815cfe3d85681d3aabd45a28dc48eb81eed8324ae4e68e4ea8cf27ac0924e",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good-navx-sha384"
+      ]
+    },
+    {
+      "file": "good-navx-sha512.navx",
+      "bytes": 1261,
+      "sha256": "15246f8cdf5c1e613ec2f8ad2551434cc2f4111a43156fa4651531c047f16637",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good-navx-sha512"
+      ]
+    },
+    {
+      "file": "good.navx",
+      "bytes": 1225,
+      "sha256": "cdb33729017252e0c737ba3f108b2dfa68d47313a5ce0cb765150587e2debb77",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-good",
+        "navx-integrity",
+        "navx-revoked",
+        "navx-untrusted"
+      ]
+    },
+    {
+      "file": "legacy-navx-sha1.navx",
+      "bytes": 1210,
+      "sha256": "366cd06f5bc1946fb52f0ae0bb7f6f9799b2bb5d988937040029218eb70dceae",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-sha1-denied",
+        "navx-sha1-allowed"
+      ]
+    },
+    {
+      "file": "navx-independent-jsign.navx",
+      "bytes": 1477,
+      "sha256": "5923ffdfc974598d67db518b92af601ba0b5429ae377b52970023a8853e8b0d9",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-independent"
+      ],
+      "provenance": {
+        "tool": "jsign 7.6",
+        "source": "https://github.com/ebourg/jsign/releases/tag/7.6",
+        "license": "Apache-2.0",
+        "recipe": "unsigned.navx signed with export_msi_test_identity public deterministic RSA-2048 identity; SHA-256; no timestamp. Tampered counterpart XORs payload byte 40 with 1."
+      }
+    },
+    {
+      "file": "navx-misnamed.ps1",
+      "bytes": 1225,
+      "sha256": "cdb33729017252e0c737ba3f108b2dfa68d47313a5ce0cb765150587e2debb77",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-navx-misnamed"
+      ]
+    },
+    {
+      "file": "unsigned.navx",
+      "bytes": 44,
+      "sha256": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+      "description": "Deterministic test-only NAVX container. Expected outcomes pinned by NAVX cases in tests/cases.json.",
+      "cases": [
+        "navx-unsigned"
+      ]
     }
   ]
 }

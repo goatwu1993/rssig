@@ -19,3 +19,6 @@ mod rdp;
 mod support;
 #[path = "cli/wsh.rs"]
 mod wsh;
+
+#[path = "cli/navx.rs"]
+mod navx;

@@ -19804,6 +19804,1042 @@
           ]
         }
       }
+    },
+    {
+      "id": "navx-good",
+      "input": "good.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-good-navx-sha384",
+      "input": "good-navx-sha384.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-good-navx-sha512",
+      "input": "good-navx-sha512.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-good-navx-nested",
+      "input": "good-navx-nested.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                },
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-good-navx-rfc3161",
+      "input": "good-navx-rfc3161.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-good-navx-countersignature",
+      "input": "good-navx-countersignature.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-navx-misnamed",
+      "input": "navx-misnamed.ps1",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-integrity",
+      "input": "good.navx",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-independent",
+      "input": "navx-independent-jsign.navx",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-independent-digest",
+      "input": "bad-navx-independent-digest.navx",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "navx_digest_mismatch",
+                "stage": "package_digest",
+                "title": "NAVX digest mismatch",
+                "details": {
+                  "digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "f788d1cdaa937c20409a533405e89cfe13cc6052a9d980af37d5280736ab42b0"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sha1-denied",
+      "input": "legacy-navx-sha1.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "package_digest",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sha1-allowed",
+      "input": "legacy-navx-sha1.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--allow-sha1",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "package_digest": {
+                    "algorithm": "Sha1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-revoked",
+      "input": "good.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "title": "Certificate revoked"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-untrusted",
+      "input": "good.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-block",
+      "input": "bad-navx-block.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-header",
+      "input": "bad-navx-header.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-size",
+      "input": "bad-navx-size.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-offset",
+      "input": "bad-navx-offset.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-trailer",
+      "input": "bad-navx-trailer.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-trailing",
+      "input": "bad-navx-trailing.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-truncated",
+      "input": "bad-navx-truncated.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_navx",
+                "stage": "navx",
+                "title": "Invalid NAVX container"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sip-type",
+      "input": "bad-navx-sip-type.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sip-version",
+      "input": "bad-navx-sip-version.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sip-uuid",
+      "input": "bad-navx-sip-uuid.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-sip-reserved",
+      "input": "bad-navx-sip-reserved.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-cms-trailing",
+      "input": "bad-navx-cms-trailing.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-malformed-cms",
+      "input": "bad-navx-malformed-cms.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-cms-signature",
+      "input": "bad-navx-cms-signature.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-digest",
+      "input": "bad-navx-digest.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "navx_digest_mismatch",
+                "stage": "package_digest",
+                "title": "NAVX digest mismatch",
+                "details": {
+                  "digest": {
+                    "algorithm": "Sha256",
+                    "expected": "d4730dbf146d65b907b10aa60abd91eb4afb5c169a8921bef08d77edac3aa1e3",
+                    "computed": "f788d1cdaa937c20409a533405e89cfe13cc6052a9d980af37d5280736ab42b0"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-timestamp-imprint",
+      "input": "bad-navx-timestamp-imprint.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-bad-nested",
+      "input": "bad-navx-bad-nested.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-unsigned",
+      "input": "unsigned.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "navx",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

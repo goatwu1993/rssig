@@ -2,6 +2,7 @@ mod appx_fixtures;
 mod cab_fixtures;
 mod fixture_faults;
 mod msi_fixtures;
+mod navx_fixtures;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
@@ -758,6 +759,7 @@ fn regenerate_cli_fixtures() {
     );
     msi_fixtures::write(&dir);
     cab_fixtures::write(&dir);
+    navx_fixtures::write(&dir);
     powershell_fixtures::write(&dir);
     psxml_fixtures::write(&dir);
     rdp_fixtures::write(&dir);

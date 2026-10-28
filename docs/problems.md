@@ -50,6 +50,8 @@ the current CLI exposes verification, help, and version. Tests run through Cargo
 | <a id="invalid_wsh"></a>`invalid_wsh` | Invalid Windows Script Host file | 422 | Supply supported text with one correctly framed VBScript/JScript block or single-job WSF signature. See [WSH limits](wsh.md). |
 | <a id="invalid_powershell"></a>`invalid_powershell` | Invalid PowerShell script | 422 | Supply supported Unicode text with one complete terminal hash-comment signature block. |
 | <a id="script_digest_mismatch"></a>`script_digest_mismatch` | Script digest mismatch | 422 | The computed UTF-16LE script digest differs from its signed digest. Obtain the original signed text, including BOM and line endings, or re-sign it. |
+| <a id="invalid_navx"></a>`invalid_navx` | Invalid NAVX container | 422 | Supply a complete NAVX header, payload, and consistent NXSB wrapper; see [NAVX limits](navx.md). |
+| <a id="navx_digest_mismatch"></a>`navx_digest_mismatch` | NAVX digest mismatch | 422 | Header or payload differs from its signed digest; obtain the original package or re-sign it. |
 | <a id="invalid_cab"></a>`invalid_cab` | Invalid CAB container | 422 | Supply a complete supported single-volume cabinet; see CAB layout limits. |
 | <a id="cab_digest_mismatch"></a>`cab_digest_mismatch` | CAB digest mismatch | 422 | The computed cabinet digest differs from its signed digest. Obtain the original signed cabinet or re-sign it. |
 | <a id="invalid_pe"></a>`invalid_pe` | Invalid PE image | 422 | Supply a complete supported PE image. |
