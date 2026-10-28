@@ -75,7 +75,7 @@ readable:
 
 | Verification concern | pe-sign | Difference from rssig |
 | --- | --- | --- |
-| PE digest + CMS verification | RSA PKCS#1 v1.5 signature and signed-attribute digest checks | More than digest-only verification; no ECDSA verifier in the inspected path |
+| PE digest + CMS verification | Checks PE digest, CMS signed-attribute digest, and RSA PKCS#1 v1.5 signature; no ECDSA verifier found in pe-sign's inspected path | rssig implements all three checks and additionally supports ECDSA P-256/SHA-256 and P-384/SHA-384 |
 | Trust path | Custom certificate signature walk, bundled or explicit PEM CA set | No full path-policy checks; automatic AIA retrieval |
 | Code-signing / TSA EKU | Not enforced by verification path | rssig enforces purpose-specific EKUs in trusted mode |
 | Certificate time | Current wall-clock validity, optional bypass | No fixed-time option or authenticated historical timestamp policy |
