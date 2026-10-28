@@ -330,8 +330,8 @@ and an independently produced RDP signature. See
 [the fixture manifest](../tests/fixtures/manifest.json) and format documents for
 provenance and exact expectations. Some are integrity-only checks; the legacy
 SignTool MSI is intentionally rejected for weak RSA. They establish specific
-behaviors, not general trust-policy parity. The roadmap's independent-fixture
-item predates some of these additions and should not be read as “none exist.”
+behaviors, not general trust-policy parity. The [roadmap](../TODO.md) tracks
+expansion of this existing corpus rather than treating it as absent.
 
 ## Verification-focused priorities
 
