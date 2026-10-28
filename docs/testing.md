@@ -127,8 +127,9 @@ input or Windows policy has been tested.
 
 ## CI
 
-GitHub Actions runs `make lint` in dedicated lint jobs and `cargo test --locked`
-in separate verification jobs on Linux and macOS. A separate Linux coverage job runs `make coverage` and uploads
+GitHub Actions runs `make lint` in a dedicated Ubuntu lint job and
+`cargo test --locked` in separate verification jobs on Linux and macOS.
+A separate Linux coverage job runs `make coverage` and uploads
 the `coverage` artifact. Download and extract it,
 then open `html/index.html`; `cobertura.xml` is alongside the HTML directory.
 The coverage job also uses the

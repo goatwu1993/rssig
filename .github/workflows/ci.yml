@@ -15,13 +15,9 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Lint
+    runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
     env:
       CARGO_TERM_COLOR: always
     steps:
