@@ -1,7 +1,8 @@
-# Single-package MSIX/AppX verification
+# MSIX/AppX package and bundle verification
 
-`rssig verify app.msix` and `rssig verify app.appx` verify the embedded
-`AppxSignature.p7x` signature and package integrity. The library entry point is
+`rssig verify app.msix`, `rssig verify app.appx`, and their `.msixbundle`/`.appxbundle`
+counterparts verify the embedded `AppxSignature.p7x` signature and package integrity.
+Bundles also verify every embedded application or resource package. The library entry point is
 `verify_appx`; generic `verify` recognizes ZIP file-record magic before text
 signature markers. The CLI also uses MSIX/AppX extensions to classify malformed
 input. A filename alone never establishes authenticity. Files are never extracted,
@@ -14,7 +15,7 @@ The verifier checks all of the following in pure Rust:
 1. Consistent, bounded ZIP file records, central directory, data descriptors,
    compression streams, and CRCs.
 2. A `PKCX`-prefixed, complete CMS/PKCS#7 Authenticode signature, with no trailing
-   DER bytes, using the single-package MSIX/AppX SIP identity.
+   DER bytes, using the matching package or bundle SIP identity.
 3. All required signed package digest components:
    - `AXPC`: raw ZIP file records before the final signature record.
    - `AXCD`: the central directory and end records reconstructed without the
@@ -33,7 +34,9 @@ The signed DigestInfo carries `APPX` plus component labels and digest bytes,
 not a second hash of that bundle. Component order is `AXPC`, `AXCD`, `AXCT`, `AXBM`,
 then optional `AXCI`; unknown, duplicate, or reordered labels are rejected.
 The SIP uses `SPC_SIPINFO_OBJID` (`1.3.6.1.4.1.311.2.1.30`), version `0x01010000`,
-UUID `4BDFC50A-07CE-E24D-B76E-23C839A09FD1`, and five zero reserved integers.
+UUID `4BDFC50A-07CE-E24D-B76E-23C839A09FD1` for packages or
+`B3585F0F-DEAA-9A4B-A434-95742D92ECEB` for bundles, and five zero reserved integers.
+The SIP kind must match the manifest kind.
 
 SHA-256, SHA-384, and SHA-512 package/block-map digests are supported. The block-map
 algorithm must match the signed package DigestInfo algorithm. SHA-1 package/block
@@ -77,9 +80,38 @@ archive/entry comments, split archives, gaps/overlaps, and appended data are
 outside the supported profile. Unknown extra fields are bounded and preserved as
 signed raw metadata; fields do not provide an alternative filename view.
 
-`.msixbundle` and `.appxbundle` are explicitly unsupported. A bundle manifest in
-an otherwise valid package returns `unsupported_appx`, rather than a successful
-single-package result. Encrypted packages are not supported.
+Encrypted packages are not supported.
+
+## Bundles
+
+Supported bundles contain stored (uncompressed) `.appx` or `.msix` package entries
+and `AppxMetadata/AppxBundleManifest.xml`. The bundle manifest uses the 2013 bundle
+namespace and the core Identity/Packages layout of schema versions 1.0 through 5.0.
+It must contain exactly one Identity and one nonempty Packages list. Every listed
+package must exist exactly once with the declared ZIP data offset and byte size;
+unlisted payload parts and duplicate filenames are rejected. ZIP CRCs are checked
+for embedded packages as well as the footprint files.
+
+The outer block map covers the bundle manifest and omits embedded package entries.
+Those bytes are authenticated by the outer `AXPC` digest and by each package's own
+signature, component digests, and complete block map. Every embedded package must
+have a supported signature; unsigned packages fail even when the outer bundle is
+signed. A bundle cannot contain another bundle.
+
+Each package's Name must match the bundle Name. Its Version, effective architecture
+(defaulting to neutral), ResourceId, and ResourcePackage flag must match its package
+entry. The primary signing certificate must be identical to the bundle's primary
+signing certificate. Every selected package signature and timestamp is verified
+with the same configured trust roots, CRLs, time, and algorithm policy as the bundle.
+Bundle Version may differ from the per-package versions.
+
+Resources qualifiers and base/2018 TargetDeviceFamily dependency metadata are
+authenticated and parsed as bounded XML. Deployment selection, capability policy,
+device applicability, and installability are not evaluated. Unknown manifest
+elements/attributes, flat or external package references, optional bundles, stub
+packages, compressed package entries, and nested bundles are outside this profile.
+The existing ZIP limits apply to both levels: each embedded package is at most
+64 MiB, and the entire bundle is at most 256 MiB.
 
 ## XML, identity, and catalogs
 
@@ -92,8 +124,8 @@ block-map, signature, and optional catalog MIME types.
 
 Manifest root namespaces supported here are the Windows 10 foundation namespace
 and the 2010 AppX manifest namespace. Exactly one direct `Identity` is selected.
-The report includes Name, Publisher, four-component Version, and optional supported
-ProcessorArchitecture. Manifest application/capability semantics and installability
+The report includes Name, Publisher, four-component Version, optional supported
+ProcessorArchitecture, and optional ResourceId. Manifest application/capability semantics and installability
 are not validated.
 
 Publisher DNs use the Rust X.509 parser's RFC 4514 spelling. RDN sequence, all
@@ -120,14 +152,23 @@ Certificate names/RDNs, EKUs, key usage, validity, selected chain, timestamps, a
 supplied CRL artifacts retain their existing domain types and trust-mode fields.
 Image/script/extended digests and `rdp` are omitted; `page_hashes` is null.
 
-The new optional `appx` domain object contains:
+The optional `appx` domain object contains:
 
-- `identity`: `name`, `publisher`, `version`, `processor_architecture`.
+- `kind`: `package` or `bundle`.
+- `identity`: `name`, `publisher`, `version`, `processor_architecture`, and optional `resource_id`.
 - `block_map`: `algorithm`, `files_verified`, `blocks_verified`,
   `uncompressed_bytes`.
 - `components`: ordered entries with `component` and `digest` (algorithm,
   expected/computed hex). All reported digests match on success.
 - Optional `code_integrity_catalog`: `sha256` and `signature_verified: false`.
+- For bundles, `bundle_packages`: entries in manifest order, each with `file_name`,
+  `package_type`, `architecture`, optional `resource_id`, `version`, `offset`, `size`,
+  and `verification`. Each `verification` is a complete package verification bundle,
+  including its own signature/certificate/trust/timestamp and AppX reports. It uses
+  `kind: "package"` and omits `bundle_packages`.
+
+When deserializing older single-package reports, a missing `kind` defaults to
+`package`. New verification output always includes it.
 
 Other formats omit `appx` entirely. The JSON remains one document per invocation.
 
@@ -136,7 +177,7 @@ New stable error codes are:
 | Code | Stage | Meaning |
 | --- | --- | --- |
 | `invalid_appx` | `appx` or `block_map` | Malformed ZIP/footprint metadata, missing parts, bad framing, or structural block-map mismatch. |
-| `unsupported_appx` | `appx` | Bundle or unsupported ZIP/package profile. |
+| `unsupported_appx` | `appx` | Nested bundle or unsupported ZIP/package profile. |
 | `appx_digest_mismatch` | `package_digest` | Signed package components differ; `details.component` identifies the differing component where possible, and `details.digest` preserves expected/computed evidence. |
 | `block_hash_mismatch` | `block_map` | Payload differs from a signed block hash; details include file, zero-based block index, and digest evidence. |
 | `appx_publisher_mismatch` | `appx` | Manifest Publisher differs from the signing certificate subject. |
@@ -173,6 +214,19 @@ This is a specific independent-artifact check, not a Windows oracle or general
 interoperability/trust-policy validation. Per-artifact provenance and SHA-256 hashes
 are committed in the fixture manifest.
 
+Bundle fixtures cover multiple embedded packages, resource packages, ZIP64,
+streaming descriptors, SHA-256/384/512, RFC 3161 and PKCS#9 timestamps, manifest
+binding, inner signature/digest/timestamp faults, ZIP CRCs, and unlisted payloads.
+Invariant tests confirm that targeted inner-package and manifest faults retain
+valid outer CMS signatures and package digests.
+
+`appxbundle-independent-jsign.msixbundle` contains the committed
+`appx-independent-jsign.msix`, is assembled by the independent test ZIP recipe,
+and is signed externally by jsign 7.6 with the same public test identity. Both
+outer and inner signatures are verified. This is a synthetic container signed by
+an independent signer, not a MakeAppx- or Windows-produced bundle. Its bad pair
+changes byte 90 while preserving the complete original outer signature.
+
 Normal tests consume committed artifacts only. To intentionally regenerate the
 synthetic corpus and export public test credentials:
 
@@ -191,6 +245,10 @@ java -jar jsign-7.6.jar --keyfile key.pem --certfile certificate.pem \
 ```
 
 Review/copy the result, derive the payload mutation, and update manifest hashes.
+For the independent bundle, copy `appxbundle-jsign-input.msixbundle` to
+`appxbundle-independent-jsign.msixbundle` and sign it with the same command and
+credentials. Its embedded package is already independently signed. The maintenance
+generator consumes that committed package; normal tests only read committed files.
 External signing tools are never required for normal builds, verification, or
 Cargo tests. The new runtime dependencies are pure Rust `flate2` with only the
 `rust_backend` (miniz_oxide), `crc32fast`, and `roxmltree`. Resolved-feature review
@@ -199,5 +257,7 @@ only its existing `std`/`alloc` features and RustCrypto adapter.
 
 Read-only implementation references:
 
+- [Microsoft bundle Package schema](https://learn.microsoft.com/en-us/uwp/schemas/bundlemanifestschema/element-package)
+- [Microsoft bundle signing](https://learn.microsoft.com/en-us/windows/msix/package/sign-app-package-using-signtool)
 - [jsign APPXFile and ZIP records, revision cf5d2ce](https://github.com/ebourg/jsign/tree/cf5d2ceaf2ec80cb793f7377749ef811d4be4d34/jsign-core/src/main/java/net/jsign)
 - [relic signappx and ZIP normalization, revision 02c54d5](https://github.com/sassoftware/relic/tree/02c54d584ca9eaa8f648763cd53bc77c4ff3d19c/lib/signappx)

@@ -145,8 +145,9 @@ UTF-8/UTF-16LE/BE; see `docs/powershell-xml.md`. They use the same SIP identity 
 shared verification engine as hash-comment scripts, not XMLDSig.
 RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
 unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
-Single MSIX/AppX embedded signatures, package components, block maps, and Publisher
-binding are supported; see `docs/appx.md` for ZIP/compression limits. Bundles are
+MSIX/AppX package and bundle embedded signatures, package components, block maps,
+Publisher binding, and embedded package verification are supported; see `docs/appx.md`
+for ZIP/compression and bundle limits. Flat/external, stub, and nested bundles are
 unsupported. Embedded CodeIntegrity catalogs are package-hashed but not independently
 signature-verified; JSON must report this explicitly.
 `verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, and `verify_appx` select one explicitly.

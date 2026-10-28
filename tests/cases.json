@@ -13161,7 +13161,7 @@
       }
     },
     {
-      "id": "appx-bundle",
+      "id": "appx-bundle-mixed-manifests",
       "input": "bad-appx-bundle.msix",
       "command": [
         "verify",
@@ -13181,9 +13181,56 @@
             {
               "ok": false,
               "error": {
-                "code": "unsupported_appx",
+                "code": "invalid_appx",
                 "stage": "appx",
-                "title": "Unsupported MSIX/AppX package"
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appx-bundle",
+      "input": "good.appxbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "file_name": "neutral.appx",
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      },
+                      "validation_time": 1800000000,
+                      "file_sha256": "e831151ff43053d1349160a93ee1eed1336f5ace52bc6a736485f7671e4f94bb"
+                    },
+                    "package_type": "application",
+                    "architecture": "neutral",
+                    "version": "1.0.0.0",
+                    "offset": 42,
+                    "size": 2928
+                  }
+                ]
               }
             }
           ]
@@ -13547,6 +13594,1491 @@
               "error": {
                 "code": "invalid_appx",
                 "stage": "block_map"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-msix-extension",
+      "input": "good.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-multi",
+      "input": "good-appxbundle-multi.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    },
+                    "file_name": "x64.appx",
+                    "architecture": "x64"
+                  },
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    },
+                    "file_name": "arm64.msix",
+                    "architecture": "arm64"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-zip64",
+      "input": "good-appxbundle-zip64.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-descriptor",
+      "input": "good-appxbundle-descriptor.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-schema5",
+      "input": "good-appxbundle-schema5.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-integrity",
+      "input": "good.appxbundle",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-offset",
+      "input": "bad-appxbundle-offset.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-size",
+      "input": "bad-appxbundle-size.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-duplicate",
+      "input": "bad-appxbundle-duplicate.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-missing",
+      "input": "bad-appxbundle-missing.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-orphan",
+      "input": "bad-appxbundle-orphan.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-architecture",
+      "input": "bad-appxbundle-architecture.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-version",
+      "input": "bad-appxbundle-version.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-name",
+      "input": "bad-appxbundle-name.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-namespace",
+      "input": "bad-appxbundle-namespace.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-unknown",
+      "input": "bad-appxbundle-unknown.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-empty",
+      "input": "bad-appxbundle-empty.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-compressed",
+      "input": "bad-appxbundle-compressed.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-content-types",
+      "input": "bad-appxbundle-content-types.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-stub",
+      "input": "bad-appxbundle-stub.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-flat",
+      "input": "bad-appxbundle-flat.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-publisher",
+      "input": "bad-appxbundle-publisher.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_publisher_mismatch",
+                "stage": "appx",
+                "title": "Package publisher mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-child-digest",
+      "input": "bad-appxbundle-child-digest.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "title": "MSIX/AppX package digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-child-signature",
+      "input": "bad-appxbundle-child-signature.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-child-unsigned",
+      "input": "bad-appxbundle-child-unsigned.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "appx",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-different-signer",
+      "input": "bad-appxbundle-different-signer.msixbundle",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_publisher_mismatch",
+                "stage": "appx",
+                "title": "Package publisher mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-nested-bundle",
+      "input": "bad-appxbundle-nested-bundle.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsupported_appx",
+                "stage": "appx",
+                "title": "Unsupported MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-block-hash",
+      "input": "bad-appxbundle-block-hash.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "block_hash_mismatch",
+                "stage": "block_map",
+                "title": "Block-map hash mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-sip",
+      "input": "bad-appxbundle-sip.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-independent-jsign",
+      "input": "appxbundle-independent-jsign.msixbundle",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-independent-payload",
+      "input": "bad-appxbundle-independent-payload.msixbundle",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_digest_mismatch",
+                "stage": "package_digest",
+                "title": "MSIX/AppX package digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-jsign-input",
+      "input": "appxbundle-jsign-input.msixbundle",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "appx",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-resource-id",
+      "input": "bad-appxbundle-resource-id.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-resource-type",
+      "input": "bad-appxbundle-resource-type.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-architecture-default",
+      "input": "bad-appxbundle-architecture-default.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-package-child",
+      "input": "bad-appxbundle-package-child.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-package-ctype",
+      "input": "bad-appxbundle-package-ctype.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-resource",
+      "input": "good-appxbundle-resource.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package",
+                        "identity": {
+                          "resource_id": "en-us"
+                        }
+                      }
+                    },
+                    "package_type": "resource",
+                    "resource_id": "en-us"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-child-crc",
+      "input": "bad-appxbundle-child-crc.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-orphan-other",
+      "input": "bad-appxbundle-orphan-other.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-sha384",
+      "input": "good-appxbundle-sha384.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-sha512",
+      "input": "good-appxbundle-sha512.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-rfc3161",
+      "input": "good-appxbundle-rfc3161.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-countersignature",
+      "input": "good-appxbundle-countersignature.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "appx_authenticode",
+              "appx": {
+                "kind": "bundle",
+                "bundle_packages": [
+                  {
+                    "verification": {
+                      "format": "appx_authenticode",
+                      "appx": {
+                        "kind": "package"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-child-timestamp",
+      "input": "bad-appxbundle-child-timestamp.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "appxbundle-resource-boolean",
+      "input": "bad-appxbundle-resource-boolean.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
               }
             }
           ]

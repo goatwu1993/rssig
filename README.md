@@ -15,6 +15,39 @@ also inform the project's design discussions. These projects are not runtime
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 
+## Windows file formats
+
+This checklist tracks Windows Authenticode files and related signed settings in
+the project's scope; it is not an inventory of every Windows file extension.
+Formats marked ✅ are implemented. When a format is added, its row moves to the
+supported list with a green check.
+
+### Supported
+
+| Status | Format | Extensions | Coverage |
+| --- | --- | --- | --- |
+| ✅ | PE images | `.exe`, `.dll`, `.sys`, and other PE32/PE32+ files | Embedded Authenticode signatures, image/page hashes, nested signatures, timestamps, trust, and CRLs. |
+| ✅ | Windows Installer package | `.msi` | CFB v3/v4 package signatures and package/extended metadata hashes. See [MSI support](docs/msi.md). |
+| ✅ | Cabinet archive | `.cab` | Standard-reserve single-volume CAB signatures. See [CAB support](docs/cab.md). |
+| ✅ | PowerShell scripts and data | `.ps1`, `.psm1`, `.psd1` | Hash-comment Authenticode signatures. See [PowerShell support](docs/powershell.md). |
+| ✅ | PowerShell XML | `.ps1xml` | XML-comment Authenticode signatures (not XMLDSig). See [PowerShell XML support](docs/powershell-xml.md). |
+| ✅ | Remote Desktop settings | `.rdp` | Detached CMS signatures over the supported scoped settings. See [RDP support](docs/rdp.md). |
+| ✅ | Single AppX/MSIX packages | `.appx`, `.msix` | Embedded package signature, package digests, block map, and Publisher binding. See [AppX/MSIX support](docs/appx.md). |
+| ✅ | AppX/MSIX bundles | `.appxbundle`, `.msixbundle` | Bundle signature and manifest, plus every embedded application's or resource package's signature, identity, digests, timestamps, trust, and CRLs. See [bundle limits](docs/appx.md#bundles). |
+
+### Not implemented
+
+| Format | Extensions | Notes |
+| --- | --- | --- |
+| Windows Script Host scripts | `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf` | Script Authenticode formats outside the PowerShell signature block. |
+| Catalog files | `.cat` | Standalone catalog signature and catalog membership verification. |
+| Windows Installer patches | `.msp` | Patch signatures and patch-specific hashing. |
+| NAVX packages | `.navx` | Dynamics NAV extension package signatures. |
+| Detached Authenticode sidecars | `.sig`, `.p7s` with the signed file | Generic detached signature inputs beyond the RDP-specific verifier. |
+
+`Report.wer` files are Windows Error Reporting metadata, not a separate
+Authenticode file format, so they are not on this verification checklist.
+
 ```sh
 cargo build --release --locked
 
@@ -44,6 +77,9 @@ rssig verify connection.rdp --no-system-roots --roots roots.pem --crl issuer.crl
 
 # Single MSIX/AppX packages include package, block-map, and publisher checks.
 rssig verify app.msix --no-system-roots --roots roots.pem --crl issuer.crl
+
+# Bundles also verify every embedded application and resource package.
+rssig verify app.msixbundle --no-system-roots --roots roots.pem --crl issuer.crl
 
 # Run native tests and the JSON specification through the CLI library.
 cargo test --locked

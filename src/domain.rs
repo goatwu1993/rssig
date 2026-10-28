@@ -545,12 +545,21 @@ pub struct RdpCoverage {
     pub unsigned_settings: Vec<RdpSetting>,
     pub canonical_sha256: String,
 }
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AppxKind {
+    #[default]
+    Package,
+    Bundle,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppxIdentity {
     pub name: String,
     pub publisher: String,
     pub version: String,
     pub processor_architecture: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_id: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppxBlockMapReport {
@@ -570,12 +579,28 @@ pub struct AppxCatalogReport {
     pub signature_verified: bool,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppxBundlePackageReport {
+    pub file_name: String,
+    pub package_type: String,
+    pub architecture: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_id: Option<String>,
+    pub version: String,
+    pub offset: usize,
+    pub size: usize,
+    pub verification: Box<VerificationBundle>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppxReport {
+    #[serde(default)]
+    pub kind: AppxKind,
     pub identity: AppxIdentity,
     pub block_map: AppxBlockMapReport,
     pub components: Vec<AppxComponentReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code_integrity_catalog: Option<AppxCatalogReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bundle_packages: Option<Vec<AppxBundlePackageReport>>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {

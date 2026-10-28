@@ -195,7 +195,7 @@ impl<'a> SignedData<'a> {
         self.indirect_digest()
     }
 
-    pub fn appx_digest(&self) -> Result<(Hash, &'a [u8])> {
+    pub fn appx_digest(&self) -> Result<(Hash, &'a [u8], bool)> {
         ensure!(
             self.content_type == INDIRECT,
             "not an MSIX/AppX Authenticode signature"
@@ -211,14 +211,23 @@ impl<'a> SignedData<'a> {
             sip[0].expect(2)?.body == [1, 1, 0, 0],
             "unsupported MSIX/AppX SIP version"
         );
-        ensure!(
-            sip[1].expect(4)?.body
-                == [
-                    0x4b, 0xdf, 0xc5, 0x0a, 7, 0xce, 0xe2, 0x4d, 0xb7, 0x6e, 0x23, 0xc8, 0x39,
-                    0xa0, 0x9f, 0xd1
+        let uuid = sip[1].expect(4)?.body;
+        let is_bundle = if uuid
+            == [
+                0x4b, 0xdf, 0xc5, 0x0a, 7, 0xce, 0xe2, 0x4d, 0xb7, 0x6e, 0x23, 0xc8, 0x39, 0xa0,
+                0x9f, 0xd1,
+            ] {
+            false
+        } else {
+            ensure!(
+                uuid == [
+                    0xb3, 0x58, 0x5f, 0x0f, 0xde, 0xaa, 0x9a, 0x4b, 0xa4, 0x34, 0x95, 0x74, 0x2d,
+                    0x92, 0xec, 0xeb,
                 ],
-            "unsupported MSIX/AppX SIP UUID (bundles are unsupported)"
-        );
+                "unsupported MSIX/AppX SIP UUID"
+            );
+            true
+        };
         for value in &sip[2..] {
             ensure!(
                 value.expect(2)?.body == [0],
@@ -249,7 +258,7 @@ impl<'a> SignedData<'a> {
                 "unknown, duplicate, or reordered MSIX/AppX digest component"
             );
         }
-        Ok((hash, digest))
+        Ok((hash, digest, is_bundle))
     }
 
     pub fn package_digest(&self) -> Result<(Hash, &'a [u8])> {
