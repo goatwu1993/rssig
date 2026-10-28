@@ -1,11 +1,72 @@
-# MSI verification
+# MSI and MSP verification
 
 `rssig verify` detects CFB containers from their bytes and verifies embedded MSI
-Authenticode signatures. `verify` is also the library entry point for detection;
+and MSP Authenticode signatures. `verify` is also the library entry point for detection;
 `verify_msi` and the existing `verify_pe` explicitly select a format. MSI
 verification parses the compound file, not the Windows Installer database schema.
 It does not execute an installer or verify external CABs or embedded applications
 as separate signed objects.
+
+## MSP patches
+
+`rssig verify update.msp` verifies the patch package by itself. No original MSI,
+installed application, Windows environment, or patch execution is required.
+The library's `verify` and `verify_msi` accept the same patch bytes. MSP uses the
+existing MSI SIP, CFB traversal, signature streams, and legacy or extended hashing;
+there is no separate patch hashing algorithm or CLI option.
+
+The package digest covers transform substorages and embedded cabinet streams as
+logical CFB content. It also covers the root patch CLSID and transform storage
+CLSIDs. Extended signatures additionally authenticate the metadata described
+below. Embedded cabinets are hashed as streams, without extraction or separate
+CAB signature verification.
+
+MSP results keep `format: "msi_authenticode"`, `package_digest`, the optional
+`extended_digest`, and the existing MSI error codes/stages. This value identifies
+the signature family; it does not distinguish an installer from a patch or
+assert that either is installable. Detection uses bytes rather than extensions.
+The verifier does not validate patch database semantics, target products or
+versions, patch applicability or sequencing, UAC patch authorization, or the
+result of applying a patch. Trust, timestamps, and revocation follow the existing
+verification policy, with no Windows policy equivalence claim.
+
+Microsoft documents the [patch package structure](https://learn.microsoft.com/en-us/windows/win32/msi/patch-packages)
+and the distinct [patch and transform storage class IDs](https://devblogs.microsoft.com/setup/identifying-windows-installer-file-types/).
+
+### MSP fixtures
+
+The committed `msp-*.msp` fixtures use the patch root CLSID
+`000c1086-0000-0000-c000-000000000046`, two transform substorages with CLSID
+`000c1082-0000-0000-c000-000000000046`, an inert summary placeholder, and a
+committed unsigned cabinet. They are synthetic CFB containers, not installable
+patches. Tests cover legacy/extended hashing, CFB v3/v4, local CRL trust and
+revocation, nested signatures, RFC 3161 timestamps, missing signatures, and
+isolated transform/cabinet/CLSID/metadata/CMS mutations.
+
+`msp-independent-jsign.msp` is a copy of `msp-unsigned.msp`, independently signed
+by Jsign 7.6 with the public deterministic RSA-2048 test identity already used by
+the MSI fixture. Jsign produces a legacy SHA-256 signature here, without an
+extended digest or timestamp. Its counterpart changes exactly one byte of a
+transform stream while preserving the valid CMS signature. This checks shared
+SIP/hash interoperability on a synthetic structure, not real patch installability
+or Microsoft SignTool/Windows validation. The manifest records hashes, tool
+version, license, commands, and expected results.
+
+For intentional maintenance, run the repository fixture regeneration command,
+then export the test identity with
+`cargo test --locked export_msi_test_identity -- --ignored`. The helper writes
+`key.pem` and `certificate.pem` under `std::env::temp_dir()/rssig-msi-test-signing`.
+Copy `msp-unsigned.msp` to `msp-independent-jsign.msp` and sign the copy:
+
+```sh
+java -jar jsign-7.6.jar --keyfile <temporary-test-key.pem> \
+  --certfile <temporary-test-certificate.pem> --alg SHA-256 \
+  tests/fixtures/msp-independent-jsign.msp
+cargo test --locked regenerate_msp_jsign_mutation -- --ignored
+```
+
+Review binary changes and update the manifest after regeneration. Jsign and Java
+are maintenance tools only; builds, ordinary tests, and verification use Rust.
 
 ## Container hashing
 

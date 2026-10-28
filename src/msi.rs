@@ -1,4 +1,4 @@
-//! MSI Authenticode hashing. Ordering and metadata layout follow the read-only
+//! MSI/MSP Authenticode hashing. Ordering and metadata layout follow the read-only
 //! jsign MSIFile/MSIStreamName and relic authenticode/msiverify references.
 use crate::{crypto::Hash, domain::*};
 use anyhow::{Context, Result, ensure};

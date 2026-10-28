@@ -1,6 +1,6 @@
 # rssig
 
-Verify Windows PE, MSI, CAB, NAVX, PowerShell, Windows Script Host, and MSIX/AppX Authenticode signatures and signed RDP
+Verify Windows PE, MSI/MSP, CAB, NAVX, PowerShell, Windows Script Host, and MSIX/AppX Authenticode signatures and signed RDP
 settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/NAVX/PowerShell/WSH/MSIX hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
@@ -28,6 +28,7 @@ supported list with a green check.
 | --- | --- | --- | --- |
 | ✅ | PE images | `.exe`, `.dll`, `.sys`, and other PE32/PE32+ files | Embedded Authenticode signatures, image/page hashes, nested signatures, timestamps, trust, and CRLs. |
 | ✅ | Windows Installer package | `.msi` | CFB v3/v4 package signatures and package/extended metadata hashes. See [MSI support](docs/msi.md). |
+| ✅ | Windows Installer patch | `.msp` | Embedded signature verification using the MSI SIP, including transform storages and cabinet streams. No original MSI required. See [MSP support](docs/msi.md#msp-patches). |
 | ✅ | Dynamics extension | `.navx` | Embedded NAVX Authenticode signatures. See [NAVX support](docs/navx.md). |
 | ✅ | Cabinet archive | `.cab` | Standard-reserve single-volume CAB signatures. See [CAB support](docs/cab.md). |
 | ✅ | PowerShell scripts and data | `.ps1`, `.psm1`, `.psd1` | Hash-comment Authenticode signatures. See [PowerShell support](docs/powershell.md). |
@@ -42,7 +43,6 @@ supported list with a green check.
 | Format | Extensions | Notes |
 | --- | --- | --- |
 | Catalog files | `.cat` | Standalone catalog signature and catalog membership verification. |
-| Windows Installer patches | `.msp` | Patch signatures and patch-specific hashing. |
 | Detached Authenticode sidecars | `.sig`, `.p7s` with the signed file | Generic detached signature inputs beyond the RDP-specific verifier. |
 
 `Report.wer` files are Windows Error Reporting metadata, not a separate
@@ -62,6 +62,9 @@ rssig verify application.exe --integrity-only
 
 # MSI packages use the same trust and revocation policy.
 rssig verify installer.msi --no-system-roots --roots roots.pem --crl issuer.crl
+
+# MSP patches are verified independently, without the original MSI.
+rssig verify update.msp --no-system-roots --roots roots.pem --crl issuer.crl
 
 # CAB archives use the same trust, timestamp, and revocation policy.
 rssig verify archive.cab --no-system-roots --roots roots.pem --crl issuer.crl

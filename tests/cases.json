@@ -20840,6 +20840,578 @@
           ]
         }
       }
+    },
+    {
+      "id": "msp-trusted",
+      "input": "msp-good.msp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  },
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "extended_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-legacy",
+      "input": "msp-good-legacy.msp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  },
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-v4",
+      "input": "msp-good-v4.msp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  },
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "extended_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-rfc3161",
+      "input": "msp-good-rfc3161.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-nested",
+      "input": "msp-good-nested.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "nested_depth": 0
+                },
+                {
+                  "nested_depth": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-independent-jsign",
+      "input": "msp-independent-jsign.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "msi_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "package_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-transform-tampered",
+      "input": "msp-bad-transform.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "package_digest_mismatch",
+                "stage": "package_digest"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-cab-tampered",
+      "input": "msp-bad-cab.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "package_digest_mismatch",
+                "stage": "package_digest"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-clsid-tampered",
+      "input": "msp-bad-clsid.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "package_digest_mismatch",
+                "stage": "package_digest"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-metadata-tampered",
+      "input": "msp-bad-metadata.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "extended_digest_mismatch",
+                "stage": "package_digest"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-cms-tampered",
+      "input": "msp-bad-cms.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-unsigned",
+      "input": "msp-unsigned.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "msi"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-independent-jsign-tampered",
+      "input": "msp-independent-jsign-tampered.msp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "package_digest_mismatch",
+                "stage": "package_digest"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-revoked",
+      "input": "msp-good.msp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-untrusted",
+      "input": "msp-good.msp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msp-help",
+      "command": [
+        "--help"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "help",
+          "ok": true
+        },
+        "contains": {
+          "/text": "MSP"
+        }
+      }
     }
   ]
 }

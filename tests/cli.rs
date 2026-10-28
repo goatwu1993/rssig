@@ -7,6 +7,8 @@ mod appx_bundle;
 mod cab;
 #[path = "cli/msi.rs"]
 mod msi;
+#[path = "cli/msp.rs"]
+mod msp;
 #[path = "cli/pe.rs"]
 mod pe;
 #[path = "cli/powershell.rs"]
