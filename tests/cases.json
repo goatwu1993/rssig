@@ -15084,6 +15084,4726 @@
           ]
         }
       }
+    },
+    {
+      "id": "wsh-bad-attributes-wsf",
+      "input": "bad-wsh-attributes.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-bad-nested-js",
+      "input": "bad-wsh-bad-nested.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-bad-nested-vbs",
+      "input": "bad-wsh-bad-nested.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-bad-nested-wsf",
+      "input": "bad-wsh-bad-nested.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-base64-js",
+      "input": "bad-wsh-base64.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-base64-vbs",
+      "input": "bad-wsh-base64.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-base64-wsf",
+      "input": "bad-wsh-base64.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-bomless-unicode-js",
+      "input": "bad-wsh-bomless-unicode.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-bomless-unicode-vbs",
+      "input": "bad-wsh-bomless-unicode.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cdata-wsf",
+      "input": "bad-wsh-cdata.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-signature-js",
+      "input": "bad-wsh-cms-signature.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-signature-vbs",
+      "input": "bad-wsh-cms-signature.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-signature-wsf",
+      "input": "bad-wsh-cms-signature.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "title": "Invalid signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-trailing-js",
+      "input": "bad-wsh-cms-trailing.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-trailing-vbs",
+      "input": "bad-wsh-cms-trailing.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-cms-trailing-wsf",
+      "input": "bad-wsh-cms-trailing.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-digest-js",
+      "input": "bad-wsh-digest.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-digest-jse",
+      "input": "bad-wsh-digest.jse",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-digest-vbe",
+      "input": "bad-wsh-digest.vbe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-digest-vbs",
+      "input": "bad-wsh-digest.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-digest-wsf",
+      "input": "bad-wsh-digest.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-dtd-wsf",
+      "input": "bad-wsh-dtd.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-duplicate-js",
+      "input": "bad-wsh-duplicate.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-duplicate-vbs",
+      "input": "bad-wsh-duplicate.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-duplicate-wsf",
+      "input": "bad-wsh-duplicate.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-empty-signature-js",
+      "input": "bad-wsh-empty-signature.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-empty-signature-vbs",
+      "input": "bad-wsh-empty-signature.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-empty-signature-wsf",
+      "input": "bad-wsh-empty-signature.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-utf8-bom-js",
+      "input": "bad-wsh-independent-digest-utf8-bom.js",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-utf8-bom-vbs",
+      "input": "bad-wsh-independent-digest-utf8-bom.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-utf8-bom-wsf",
+      "input": "bad-wsh-independent-digest-utf8-bom.wsf",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-js",
+      "input": "bad-wsh-independent-digest.js",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-jse",
+      "input": "bad-wsh-independent-digest.jse",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-vbe",
+      "input": "bad-wsh-independent-digest.vbe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-vbs",
+      "input": "bad-wsh-independent-digest.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-independent-digest-wsf",
+      "input": "bad-wsh-independent-digest.wsf",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-long-line-js",
+      "input": "bad-wsh-long-line.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-long-line-vbs",
+      "input": "bad-wsh-long-line.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-long-line-wsf",
+      "input": "bad-wsh-long-line.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-malformed-cms-js",
+      "input": "bad-wsh-malformed-cms.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-malformed-cms-vbs",
+      "input": "bad-wsh-malformed-cms.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-malformed-cms-wsf",
+      "input": "bad-wsh-malformed-cms.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-marker-lf-js",
+      "input": "bad-wsh-marker-lf.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-marker-lf-vbs",
+      "input": "bad-wsh-marker-lf.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-marker-lf-wsf",
+      "input": "bad-wsh-marker-lf.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-begin-js",
+      "input": "bad-wsh-missing-begin.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-begin-vbs",
+      "input": "bad-wsh-missing-begin.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-begin-wsf",
+      "input": "bad-wsh-missing-begin.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-end-js",
+      "input": "bad-wsh-missing-end.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-end-vbs",
+      "input": "bad-wsh-missing-end.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-missing-end-wsf",
+      "input": "bad-wsh-missing-end.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-mixed-vbs",
+      "input": "bad-wsh-mixed.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-multijob-wsf",
+      "input": "bad-wsh-multijob.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-nested-job-wsf",
+      "input": "bad-wsh-nested-job.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-no-offset-js",
+      "input": "bad-wsh-no-offset.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-no-offset-vbs",
+      "input": "bad-wsh-no-offset.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-no-offset-wsf",
+      "input": "bad-wsh-no-offset.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-nul-vbs",
+      "input": "bad-wsh-nul.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-odd-utf16-vbs",
+      "input": "bad-wsh-odd-utf16.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-offset-js",
+      "input": "bad-wsh-offset.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-offset-vbs",
+      "input": "bad-wsh-offset.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-offset-wsf",
+      "input": "bad-wsh-offset.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-placement-wsf",
+      "input": "bad-wsh-placement.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-cross-js",
+      "input": "bad-wsh-sip-cross.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-cross-vbs",
+      "input": "bad-wsh-sip-cross.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-cross-wsf",
+      "input": "bad-wsh-sip-cross.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-reserved-js",
+      "input": "bad-wsh-sip-reserved.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-reserved-vbs",
+      "input": "bad-wsh-sip-reserved.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-reserved-wsf",
+      "input": "bad-wsh-sip-reserved.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-type-js",
+      "input": "bad-wsh-sip-type.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-type-vbs",
+      "input": "bad-wsh-sip-type.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-type-wsf",
+      "input": "bad-wsh-sip-type.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-uuid-js",
+      "input": "bad-wsh-sip-uuid.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-uuid-vbs",
+      "input": "bad-wsh-sip-uuid.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-uuid-wsf",
+      "input": "bad-wsh-sip-uuid.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-version-js",
+      "input": "bad-wsh-sip-version.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-version-vbs",
+      "input": "bad-wsh-sip-version.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-sip-version-wsf",
+      "input": "bad-wsh-sip-version.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "title": "Malformed CMS data"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-surrogate-js",
+      "input": "bad-wsh-surrogate.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-tail-wsf",
+      "input": "bad-wsh-tail.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-timestamp-imprint-js",
+      "input": "bad-wsh-timestamp-imprint.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-timestamp-imprint-vbs",
+      "input": "bad-wsh-timestamp-imprint.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-timestamp-imprint-wsf",
+      "input": "bad-wsh-timestamp-imprint.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_imprint_mismatch",
+                "stage": "timestamp",
+                "title": "Timestamp imprint mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-trailing-js",
+      "input": "bad-wsh-trailing.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-trailing-vbs",
+      "input": "bad-wsh-trailing.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-utf8-wsf",
+      "input": "bad-wsh-utf8.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-wrong-style-js",
+      "input": "bad-wsh-wrong-style.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-bad-xml-wsf",
+      "input": "bad-wsh-xml.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_wsh",
+                "stage": "wsh",
+                "title": "Invalid Windows Script Host file"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-bomless-unicode-wsf",
+      "input": "good-wsh-bomless-unicode.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-countersignature-js",
+      "input": "good-wsh-countersignature.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-countersignature-vbs",
+      "input": "good-wsh-countersignature.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-countersignature-wsf",
+      "input": "good-wsh-countersignature.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-nested-js",
+      "input": "good-wsh-nested.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                },
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-nested-vbs",
+      "input": "good-wsh-nested.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                },
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-nested-wsf",
+      "input": "good-wsh-nested.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                },
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-rfc3161-js",
+      "input": "good-wsh-rfc3161.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-rfc3161-vbs",
+      "input": "good-wsh-rfc3161.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-rfc3161-wsf",
+      "input": "good-wsh-rfc3161.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-js",
+      "input": "good-wsh-sha1.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "script_digest",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-js-allowed",
+      "input": "good-wsh-sha1.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--allow-sha1",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-vbs",
+      "input": "good-wsh-sha1.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "script_digest",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-vbs-allowed",
+      "input": "good-wsh-sha1.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--allow-sha1",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-wsf",
+      "input": "good-wsh-sha1.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "weak_algorithm",
+                "stage": "script_digest",
+                "title": "Weak algorithm disallowed"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha1-wsf-allowed",
+      "input": "good-wsh-sha1.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--allow-sha1",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha384-js",
+      "input": "good-wsh-sha384.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha384-vbs",
+      "input": "good-wsh-sha384.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha384-wsf",
+      "input": "good-wsh-sha384.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha384"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha512-js",
+      "input": "good-wsh-sha512.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha512-vbs",
+      "input": "good-wsh-sha512.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-sha512-wsf",
+      "input": "good-wsh-sha512.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha512"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16be-js",
+      "input": "good-wsh-utf16be.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16be-vbs",
+      "input": "good-wsh-utf16be.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16be-wsf",
+      "input": "good-wsh-utf16be.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16le-js",
+      "input": "good-wsh-utf16le.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16le-vbs",
+      "input": "good-wsh-utf16le.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf16le-wsf",
+      "input": "good-wsh-utf16le.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf8-bom-js",
+      "input": "good-wsh-utf8-bom.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf8-bom-vbs",
+      "input": "good-wsh-utf8-bom.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-utf8-bom-wsf",
+      "input": "good-wsh-utf8-bom.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-js",
+      "input": "good-wsh.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-jse",
+      "input": "good-wsh.jse",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-vbe",
+      "input": "good-wsh.vbe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-vbs",
+      "input": "good-wsh.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-good-wsf",
+      "input": "good-wsh.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-unsigned-js",
+      "input": "unsigned-wsh.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-unsigned-vbs",
+      "input": "unsigned-wsh.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-unsigned-wsf",
+      "input": "unsigned-wsh.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-binary-precedence-js",
+      "input": "wsh-binary-precedence.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "image_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-utf8-bom-js",
+      "input": "wsh-independent-jsign-utf8-bom.js",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-utf8-bom-vbs",
+      "input": "wsh-independent-jsign-utf8-bom.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-utf8-bom-wsf",
+      "input": "wsh-independent-jsign-utf8-bom.wsf",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-js",
+      "input": "wsh-independent-jsign.js",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-jse",
+      "input": "wsh-independent-jsign.jse",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-vbe",
+      "input": "wsh-independent-jsign.vbe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-vbs",
+      "input": "wsh-independent-jsign.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-independent-jsign-wsf",
+      "input": "wsh-independent-jsign.wsf",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-input-js",
+      "input": "wsh-jsign-input.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-input-jse",
+      "input": "wsh-jsign-input.jse",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-input-vbe",
+      "input": "wsh-jsign-input.vbe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-input-vbs",
+      "input": "wsh-jsign-input.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-input-wsf",
+      "input": "wsh-jsign-input.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-utf8-bom-input-js",
+      "input": "wsh-jsign-utf8-bom-input.js",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-utf8-bom-input-vbs",
+      "input": "wsh-jsign-utf8-bom-input.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-jsign-utf8-bom-input-wsf",
+      "input": "wsh-jsign-utf8-bom-input.wsf",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "wsh",
+                "title": "Missing embedded signature"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-misnamed-js-bin",
+      "input": "wsh-misnamed-js.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "jscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-misnamed-vbs-bin",
+      "input": "wsh-misnamed-vbs.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-wsh-misnamed-wsf-bin",
+      "input": "wsh-misnamed-wsf.bin",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "wsf_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-integrity",
+      "input": "good-wsh.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-no-revocation",
+      "input": "good-wsh.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-revoked",
+      "input": "good-wsh.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "title": "Certificate revoked"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wsh-untrusted",
+      "input": "good-wsh.vbs",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/unrelated-root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
