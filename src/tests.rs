@@ -5,6 +5,7 @@ mod msi_fixtures;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
+mod wsh_fixtures;
 
 use super::*;
 use ::der::{Encode, asn1::BitString};
@@ -761,6 +762,7 @@ fn regenerate_cli_fixtures() {
     psxml_fixtures::write(&dir);
     rdp_fixtures::write(&dir);
     appx_fixtures::write(&dir);
+    wsh_fixtures::write(&dir);
 }
 
 fn intermediate_pe(bad_key_usage: bool) -> Vec<u8> {

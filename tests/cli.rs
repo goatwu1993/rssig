@@ -17,3 +17,5 @@ mod psxml;
 mod rdp;
 #[path = "cli/support.rs"]
 mod support;
+#[path = "cli/wsh.rs"]
+mod wsh;
