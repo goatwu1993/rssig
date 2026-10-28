@@ -57,6 +57,10 @@ pub fn verify(
     }
 }
 
+/// Verify an MSI installer or MSP patch's embedded Authenticode signature.
+///
+/// Both use the MSI SIP and report `msi_authenticode`. An MSP is verified on its
+/// own; this does not check applicability to an installation or apply the patch.
 pub fn verify_msi(
     bytes: &[u8],
     options: &VerifyOptions<'_>,

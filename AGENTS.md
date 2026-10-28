@@ -1,6 +1,6 @@
 # rssig
 
-rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode
+rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/MSP/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode
 signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
 read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
@@ -132,11 +132,14 @@ described as Windows compatibility validation.
 
 ## Current boundaries
 
-Embedded PE32/PE32+, MSI CFB v3/v4, and standard-reserve single-volume CAB signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
+Embedded PE32/PE32+, MSI/MSP CFB v3/v4, and standard-reserve single-volume CAB signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
 ECDSA P-256/SHA-256 and P-384/SHA-384, nested signatures, page hashes, RFC 3161,
 and PKCS#9 countersignatures are supported. SHA-1 image/CMS/timestamp digests
 require `--allow-sha1`; SHA-1 certificate/CRL chains are not supported.
 MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
+MSP patches use the same MSI SIP, `verify_msi` entry point, error codes, and
+`msi_authenticode` JSON format. Verification needs no original MSI; patch
+applicability, database semantics, and Windows patch authorization are not checked.
 CAB layouts and limits are documented in `docs/cab.md`.
 PowerShell hash-comment signatures for `.ps1`, `.psm1`, and `.psd1`, including strict
 UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for limits.

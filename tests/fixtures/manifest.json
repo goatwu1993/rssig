@@ -8,7 +8,7 @@
     "license": "Apache-2.0 (repository-generated artifacts)",
     "validation_time": 1800000000,
     "warning": "Test-only PE/CFB/CAB containers and inert PowerShell scripts. Never execute these artifacts. Synthetic signing keys are public test constants; external fixtures have individual provenance. RDP fixtures use reserved example.invalid hosts; never open them in an RDP client. MSIX/AppX fixtures must never be installed or executed. WSH fixtures are inert comments, empty jobs, or synthetic empty encoded-text envelopes; never execute them.",
-    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation. PowerShell XML adds jsign 7.6-signed ASCII and BOM-marked UTF-8/UTF-16LE/BE fixtures, an isolated digest-tampered pair, and explicit rejection of a signed Windows-1252 artifact. MSIX/AppX adds an independently jsign 7.6-signed package and an unchanged upstream signtool-signed ZIP64 package; specific integrity checks only, not Windows policy equivalence. WSH adds independent jsign 7.6 signatures for all five extensions and UTF-8 BOM Unicode for VBScript/JScript/WSF; encoded envelopes establish stored-text hashing only, not runtime validity."
+    "interop_status": "Synthetic PE/MSI corpus plus independently jsign 7.6-signed MSI and an unmodified upstream signtool fixture. Specific checks only; not full interoperability or Windows policy equivalence. CAB adds an independent jsign 7.6 signature and payload-tampered counterpart; limited standard-reserve layout only. PowerShell adds independently jsign 7.6-signed UTF-8 BOM, UTF-16LE, and UTF-16BE scripts and an isolated payload-tampered counterpart. RDP adds a pinned nfedera/rdpsign-produced detached signature and mutation counterparts; no Microsoft rdpsign.exe interoperability validation. PowerShell XML adds jsign 7.6-signed ASCII and BOM-marked UTF-8/UTF-16LE/BE fixtures, an isolated digest-tampered pair, and explicit rejection of a signed Windows-1252 artifact. MSIX/AppX adds an independently jsign 7.6-signed package and an unchanged upstream signtool-signed ZIP64 package; specific integrity checks only, not Windows policy equivalence. WSH adds independent jsign 7.6 signatures for all five extensions and UTF-8 BOM Unicode for VBScript/JScript/WSF; encoded envelopes establish stored-text hashing only, not runtime validity. MSP adds a Jsign 7.6-signed synthetic patch-shaped CFB and a single-byte transform mutation. This establishes shared MSI SIP hashing only; no installability or Windows patch-policy validation."
   },
   "artifacts": [
     {
@@ -6028,6 +6028,191 @@
       "cases": [
         "navx-unsigned"
       ]
+    },
+    {
+      "file": "msp-good.msp",
+      "sha256": "623c6a0b1495bdeff610407dd5a682459b60cf656ddedd6f593b2adbf3bda985",
+      "bytes": 5120,
+      "description": "Signed extended SHA-256 MSP-shaped CFB v3 with patch CLSID 000c1086 and two transform substorages (000c1082), an inert summary placeholder and a committed unsigned CAB payload. Trusted success with root.der and good.crl at 1800000000; no original MSI is supplied. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::trusted_without_original_msi",
+        "msp::revoked",
+        "msp::untrusted",
+        "msp::library_dispatch_uses_the_msi_family_without_a_filename"
+      ],
+      "cases": [
+        "msp-trusted",
+        "msp-revoked",
+        "msp-untrusted"
+      ]
+    },
+    {
+      "file": "msp-good-legacy.msp",
+      "sha256": "91304c2141910e59740b1f2bd06659a72f207f566c9fdd9f97be3da65377b594",
+      "bytes": 4096,
+      "description": "Same inert MSP layout with a legacy SHA-256 signature (no extended digest). Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::legacy"
+      ],
+      "cases": [
+        "msp-legacy"
+      ]
+    },
+    {
+      "file": "msp-good-v4.msp",
+      "sha256": "16015087171dd4cc08fd9b709db506576c30c23793b25fae6bf1c8e0ccbbb380",
+      "bytes": 20480,
+      "description": "Same extended SHA-256 MSP layout in CFB v4. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::cfb_v4"
+      ],
+      "cases": [
+        "msp-v4"
+      ]
+    },
+    {
+      "file": "msp-good-rfc3161.msp",
+      "sha256": "9279115863065c7aa3cd2eb446323eaba742ed67c91098cd05682f9cd1315ad4",
+      "bytes": 6656,
+      "description": "Extended SHA-256 MSP with a valid RFC3161 timestamp at 1800000000. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::rfc3161"
+      ],
+      "cases": [
+        "msp-rfc3161"
+      ]
+    },
+    {
+      "file": "msp-good-nested.msp",
+      "sha256": "157421ba63b6cc1bce818478c729965ab1473134748d7d8a4343941751998beb",
+      "bytes": 6144,
+      "description": "Extended SHA-256 MSP with two valid nested signatures. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::nested"
+      ],
+      "cases": [
+        "msp-nested"
+      ]
+    },
+    {
+      "file": "msp-bad-transform.msp",
+      "sha256": "0ef2205cc070cd3f65a1eb330f71a5ad75aca12ca71221d3d3ac98d23d2cd8b3",
+      "bytes": 5120,
+      "description": "Only the first payload byte of TransformA/Data is XORed with 1; CMS and metadata are unchanged. Reject package_digest_mismatch. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::tampered_transform"
+      ],
+      "cases": [
+        "msp-transform-tampered"
+      ],
+      "paired_good": "msp-good.msp"
+    },
+    {
+      "file": "msp-bad-cab.msp",
+      "sha256": "075ea65e33ecc2cac7650aabb6a545ec31354139647765601e689a70e9ccaac5",
+      "bytes": 5120,
+      "description": "Only the first byte of the embedded PatchCab stream is XORed with 1; CMS and metadata are unchanged. Reject package_digest_mismatch, without parsing or executing the cabinet. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::tampered_cab"
+      ],
+      "cases": [
+        "msp-cab-tampered"
+      ],
+      "paired_good": "msp-good.msp"
+    },
+    {
+      "file": "msp-bad-clsid.msp",
+      "sha256": "b0040de0cada31007cc60fe3137d1d2946f565f972ac89e643877b6516fb4c21",
+      "bytes": 4096,
+      "description": "Only root CLSID byte 0x86 becomes 0x84 in the legacy signed MSP. Reject package_digest_mismatch. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::tampered_patch_clsid"
+      ],
+      "cases": [
+        "msp-clsid-tampered"
+      ],
+      "paired_good": "msp-good-legacy.msp"
+    },
+    {
+      "file": "msp-bad-metadata.msp",
+      "sha256": "edeb67a1347b68f3a5156aacb45f6adae165ea6351803a8900ca89ccca419ec0",
+      "bytes": 5120,
+      "description": "Only TransformA storage state bits change from 0 to 1. Reject extended_digest_mismatch. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::tampered_metadata"
+      ],
+      "cases": [
+        "msp-metadata-tampered"
+      ],
+      "paired_good": "msp-good.msp"
+    },
+    {
+      "file": "msp-bad-cms.msp",
+      "sha256": "45ac0e1eab00048f4f885698b9b571eae6a56f3145c2b85a19912146154bd98d",
+      "bytes": 5120,
+      "description": "Only the final CMS signature byte is XORed with 1. Valid package digest; reject invalid_signature. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::tampered_signature"
+      ],
+      "cases": [
+        "msp-cms-tampered"
+      ],
+      "paired_good": "msp-good.msp"
+    },
+    {
+      "file": "msp-unsigned.msp",
+      "sha256": "cdc9cd0f57d9eb702466c420d44431e874c5427cf8ff381f511d82e14985b9b5",
+      "bytes": 3072,
+      "description": "Unsigned inert MSP-shaped CFB v3 used as the independently signed input. Missing embedded signature is rejected. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::unsigned"
+      ],
+      "cases": [
+        "msp-unsigned"
+      ]
+    },
+    {
+      "file": "msp-independent-jsign.msp",
+      "sha256": "4fa52cc3d4c29076c4887137172b79fb58c6abaf6b591852d97361801ac0d1b0",
+      "bytes": 4608,
+      "description": "Copy of msp-unsigned.msp independently signed by Jsign 7.6, legacy SHA-256 without an extended metadata digest, no timestamp. Uses the public deterministic RSA-2048 test identity (StdRng seed 42). Integrity-only success, no trust claim. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::independent_jsign"
+      ],
+      "cases": [
+        "msp-independent-jsign"
+      ],
+      "signer": "jsign 7.6",
+      "source": "https://github.com/ebourg/jsign/releases/tag/7.6",
+      "command": "java -jar jsign-7.6.jar --keyfile <temporary-test-key.pem> --certfile <temporary-test-certificate.pem> --alg SHA-256 msp-independent-jsign.msp",
+      "key_recipe": "cargo test --locked export_msi_test_identity -- --ignored; public deterministic test key",
+      "signer_jar_sha256": "6cf58aa080e7ff82656f320cff8d4a3bff30408df8766806dcba3740dd839fa5"
+    },
+    {
+      "file": "msp-independent-jsign-tampered.msp",
+      "sha256": "979559a4c274094cf4f95de3573b0b26c586314cefd9b8a3aaa696cf29b8f5b8",
+      "bytes": 4608,
+      "description": "Jsign-signed MSP with only the first TransformA/Data payload byte replaced by X; unchanged CMS remains mathematically valid. Reject package_digest_mismatch. Synthetic structure only: not an installable patch and not Windows policy validation.",
+      "license": "Apache-2.0 (repository-generated fixture)",
+      "tests": [
+        "msp::independent_jsign_tampered"
+      ],
+      "cases": [
+        "msp-independent-jsign-tampered"
+      ],
+      "paired_good": "msp-independent-jsign.msp"
     }
   ]
 }

@@ -85,7 +85,7 @@ fn recipe(extended: bool, hash: crypto::Hash) -> (Vec<u8>, Vec<u8>) {
     let digest = hash.digest(&[if extended { prehash.as_slice() } else { &[] }, &content].concat());
     (digest, prehash)
 }
-fn content(digest: &[u8], hash: crypto::Hash) -> Vec<u8> {
+pub(super) fn content(digest: &[u8], hash: crypto::Hash) -> Vec<u8> {
     let suffix = match hash {
         crypto::Hash::Sha1 => 0,
         crypto::Hash::Sha256 => 1,
