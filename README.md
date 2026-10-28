@@ -1,7 +1,7 @@
 # rssig
 
-Verify Windows PE, MSI, CAB, PowerShell, Windows Script Host, and MSIX/AppX Authenticode signatures and signed RDP
-settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/PowerShell/WSH/MSIX hashing, CMS signatures, certificate chains, timestamps, and CRLs
+Verify Windows PE, MSI, CAB, NAVX, PowerShell, Windows Script Host, and MSIX/AppX Authenticode signatures and signed RDP
+settings on macOS and Linux with a Rust CLI. PE/MSI/CAB/NAVX/PowerShell/WSH/MSIX hashing, CMS signatures, certificate chains, timestamps, and CRLs
 use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 
 This project is **vibe coded** with AI assistance and developed through local
@@ -28,6 +28,7 @@ supported list with a green check.
 | --- | --- | --- | --- |
 | ✅ | PE images | `.exe`, `.dll`, `.sys`, and other PE32/PE32+ files | Embedded Authenticode signatures, image/page hashes, nested signatures, timestamps, trust, and CRLs. |
 | ✅ | Windows Installer package | `.msi` | CFB v3/v4 package signatures and package/extended metadata hashes. See [MSI support](docs/msi.md). |
+| ✅ | Dynamics extension | `.navx` | Embedded NAVX Authenticode signatures. See [NAVX support](docs/navx.md). |
 | ✅ | Cabinet archive | `.cab` | Standard-reserve single-volume CAB signatures. See [CAB support](docs/cab.md). |
 | ✅ | PowerShell scripts and data | `.ps1`, `.psm1`, `.psd1` | Hash-comment Authenticode signatures. See [PowerShell support](docs/powershell.md). |
 | ✅ | PowerShell XML | `.ps1xml` | XML-comment Authenticode signatures (not XMLDSig). See [PowerShell XML support](docs/powershell-xml.md). |

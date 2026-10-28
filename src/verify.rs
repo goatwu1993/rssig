@@ -6,6 +6,7 @@ use crate::{
     crypto::Hash,
     der::{self, Node},
     msi::Msi,
+    navx::Navx,
     pe::Pe,
     powershell::Powershell,
     trust::{self, TrustStore},
@@ -37,6 +38,8 @@ pub fn verify(
 ) -> std::result::Result<VerificationBundle, VerificationError> {
     if bytes.starts_with(crate::msi::MAGIC) {
         verify_msi(bytes, options)
+    } else if bytes.starts_with(crate::navx::MAGIC) {
+        verify_navx(bytes, options)
     } else if bytes.starts_with(crate::cab::MAGIC) {
         verify_cab(bytes, options)
     } else if bytes.starts_with(b"PK\x03\x04") {
@@ -59,6 +62,16 @@ pub fn verify_msi(
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Msi).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify a Microsoft Dynamics NAVX package with an embedded Authenticode signature.
+pub fn verify_navx(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, Format::Navx).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
@@ -134,6 +147,7 @@ pub(crate) fn verify_wsh_as(
 pub(crate) fn is_binary(bytes: &[u8]) -> bool {
     bytes.starts_with(b"MZ")
         || bytes.starts_with(crate::msi::MAGIC)
+        || bytes.starts_with(crate::navx::MAGIC)
         || bytes.starts_with(crate::cab::MAGIC)
         || bytes.starts_with(b"PK\x03\x04")
 }
@@ -142,6 +156,7 @@ enum Format {
     Pe,
     Msi,
     Cab,
+    Navx,
     Powershell,
     PowershellXml,
     Wsh(Kind),
@@ -152,6 +167,7 @@ enum Container<'a> {
     Pe(Pe<'a>),
     Appx(Box<Appx<'a>>),
     Cab(Cab<'a>),
+    Navx(Navx<'a>),
     Powershell(Powershell),
     Wsh(Wsh),
     Msi(Box<Msi<'a>>),
@@ -189,6 +205,11 @@ fn verify_inner(
         )?),
         Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
         Format::Pe => Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?),
+        Format::Navx => Container::Navx(tagged(
+            Navx::parse(bytes),
+            ErrorCode::InvalidNavx,
+            Stage::Navx,
+        )?),
         Format::Cab => Container::Cab(tagged(
             Cab::parse(bytes),
             ErrorCode::InvalidCab,
@@ -207,6 +228,7 @@ fn verify_inner(
         .collect(),
         Container::Msi(msi) => vec![msi.signature().to_vec()],
         Container::Appx(appx) => vec![appx.signature().to_vec()],
+        Container::Navx(navx) => vec![navx.signature().to_vec()],
         Container::Cab(cab) => vec![cab.signature().to_vec()],
         Container::Powershell(script) => vec![script.signature().to_vec()],
         Container::Wsh(script) => vec![script.signature().to_vec()],
@@ -218,7 +240,11 @@ fn verify_inner(
         let node = tagged(der::take(&mut rest), ErrorCode::MalformedCms, Stage::Cms)?;
         if matches!(
             format,
-            Format::Powershell | Format::PowershellXml | Format::Wsh(_) | Format::Appx
+            Format::Powershell
+                | Format::PowershellXml
+                | Format::Wsh(_)
+                | Format::Appx
+                | Format::Navx
         ) && !rest.is_empty()
         {
             return Err(VerificationError::new(
@@ -261,6 +287,7 @@ fn verify_inner(
             Format::Msi => "msi_authenticode",
             Format::Pe => "pe_authenticode",
             Format::Cab => "cab_authenticode",
+            Format::Navx => "navx_authenticode",
             Format::Powershell => "powershell_authenticode",
             Format::PowershellXml => "powershell_xml_authenticode",
             Format::Appx => "appx_authenticode",
@@ -395,10 +422,11 @@ fn verify_signature(
         Stage::Cms,
     )?;
     let is_msi = matches!(container, Container::Msi(_));
+    let is_navx = matches!(container, Container::Navx(_));
     let is_cab = matches!(container, Container::Cab(_));
     let is_script = matches!(container, Container::Powershell(_) | Container::Wsh(_));
     let is_appx = matches!(container, Container::Appx(_));
-    let is_package = is_msi || is_cab || is_appx;
+    let is_package = is_msi || is_cab || is_appx || is_navx;
     let stage = if is_script {
         Stage::ScriptDigest
     } else if is_package {
@@ -416,6 +444,8 @@ fn verify_signature(
                 sd.wsh_digest(script.kind)
             } else if is_script {
                 sd.script_digest()
+            } else if is_navx {
+                sd.navx_digest()
             } else if is_cab {
                 sd.cab_digest()
             } else if is_msi {
@@ -454,6 +484,7 @@ fn verify_signature(
             None,
         ),
         Container::Cab(cab) => (cab.digest(hash), None),
+        Container::Navx(navx) => (navx.digest(hash), None),
         Container::Powershell(script) => (script.digest(hash), None),
         Container::Wsh(script) => (script.digest(hash), None),
     };
@@ -469,6 +500,8 @@ fn verify_signature(
         return Err(VerificationError::new(
             if is_script {
                 ErrorCode::ScriptDigestMismatch
+            } else if is_navx {
+                ErrorCode::NavxDigestMismatch
             } else if is_cab {
                 ErrorCode::CabDigestMismatch
             } else if is_msi {
@@ -479,6 +512,8 @@ fn verify_signature(
             stage,
             if is_script {
                 "Script digest mismatch (file was modified)"
+            } else if is_navx {
+                "NAVX digest mismatch (file was modified)"
             } else if is_cab {
                 "CAB digest mismatch (file was modified)"
             } else if is_msi {
