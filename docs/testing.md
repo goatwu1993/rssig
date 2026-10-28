@@ -1,5 +1,42 @@
 # Tests and coverage
 
+## Formatting and lint rules
+
+Rust uses [Clippy](https://doc.rust-lang.org/clippy/) for linting and
+[rustfmt](https://github.com/rust-lang/rustfmt) for formatting. Together they
+serve the role of a lint/style toolchain such as golangci-lint and gofmt.
+Install the development components for a rustup-managed toolchain:
+
+```sh
+rustup component add rustfmt clippy
+```
+
+Run the same formatting and lint checks used by CI:
+
+```sh
+make lint
+```
+
+The phony `lint` target runs `cargo fmt --check` followed by
+`cargo clippy --all-targets --locked -- -D warnings`. It checks every Rust
+target, including tests, without rewriting files. Run `cargo fmt` to apply
+formatting using the standard defaults for the package's Rust 2024 edition.
+
+`Cargo.toml` defines the package-wide lint policy:
+
+- Forbid unsafe Rust in this package and reject ignored `must_use` values.
+- Enable Clippy's default correctness, suspicious, style, complexity, and
+  performance checks, retaining errors for correctness lints.
+- Reject `dbg!`, `todo!`, and `unimplemented!` macros.
+- Treat every warning as an error in `make lint` and CI.
+
+Add stricter pedantic or restriction lints individually when they fit the
+project. If a lint needs an exception, keep it local and explain the reason
+with the lint attribute's `reason` field. Dependencies keep their own lint
+policies; these settings apply to rssig's code.
+
+## Running tests
+
 Run the complete native and specification suite with:
 
 ```sh
@@ -90,8 +127,9 @@ input or Windows policy has been tested.
 
 ## CI
 
-GitHub Actions runs `cargo fmt --check`, Clippy, and `cargo test --locked` on
-Linux and macOS. A separate Linux coverage job runs `make coverage` and uploads
+GitHub Actions runs `make lint` in a dedicated Ubuntu lint job and
+`cargo test --locked` in separate verification jobs on Linux and macOS.
+A separate Linux coverage job runs `make coverage` and uploads
 the `coverage` artifact. Download and extract it,
 then open `html/index.html`; `cobertura.xml` is alongside the HTML directory.
 The coverage job also uses the
