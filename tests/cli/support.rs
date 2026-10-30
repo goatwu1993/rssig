@@ -51,6 +51,23 @@ pub fn run_fixture(input: &str, arguments: &[&str]) -> Output {
     }
 }
 
+pub fn expect_command_error(input: &str, arguments: &[&str], fragment: &str) {
+    let mut args = vec![OsString::from("rssig")];
+    args.extend(arguments.iter().map(OsString::from));
+    args.push(fixture(input).into_os_string());
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    assert_eq!(
+        cli::run_with_writers(args, &mut stdout, &mut stderr).unwrap(),
+        2
+    );
+    assert!(stdout.is_empty());
+    assert!(serde_json::from_slice::<Value>(&stderr).is_err());
+    let text = String::from_utf8(stderr).unwrap();
+    assert!(text.starts_with("error:"));
+    assert!(text.contains(fragment));
+}
+
 pub fn expect_success(output: &Output) {
     assert_eq!(output.exit_code, 0);
     assert_eq!(output.json["schema_version"], 1);

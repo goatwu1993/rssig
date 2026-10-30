@@ -28,7 +28,13 @@ struct Case {
 #[serde(deny_unknown_fields)]
 struct Expectation {
     exit_code: u8,
-    json: Value,
+    json: Option<Value>,
+    stdout: Option<String>,
+    stderr: Option<String>,
+    #[serde(default)]
+    stdout_contains: Vec<String>,
+    #[serde(default)]
+    stderr_contains: Vec<String>,
     #[serde(default)]
     contains: BTreeMap<String, String>,
 }
@@ -38,6 +44,8 @@ struct CaseResult {
     command: Vec<String>,
     exit_code: u8,
     output: Value,
+    stdout: String,
+    stderr: String,
     failures: Vec<String>,
 }
 impl Suite {
@@ -47,6 +55,16 @@ impl Suite {
         }
         let mut ids = HashSet::new();
         for case in &self.cases {
+            let expect = &case.expect;
+            let modes = usize::from(expect.json.is_some())
+                + usize::from(!expect.stdout_contains.is_empty())
+                + usize::from(!expect.stderr_contains.is_empty());
+            if modes != 1 || (expect.json.is_none() && !expect.contains.is_empty()) {
+                return Err(format!(
+                    "expected one JSON or text output mode: {}",
+                    case.id
+                ));
+            }
             if case.id.is_empty() || !ids.insert(&case.id) || case.command.is_empty() {
                 return Err(format!("empty/duplicate case id or command: {}", case.id));
             }
@@ -144,21 +162,56 @@ fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> V
 fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> CaseResult {
     let command = argv(case, parent, fixtures, fixture_prefix);
     let mut stdout = Vec::new();
-    let exit_code = cli::run(&command, &mut stdout).unwrap();
-    let output: Value = serde_json::from_slice(&stdout).unwrap_or_else(|error| {
-        panic!(
-            "{}: stdout must be exactly one JSON document: {error}",
-            case.id
-        )
-    });
+    let mut stderr = Vec::new();
+    let exit_code = cli::run_with_writers(&command, &mut stdout, &mut stderr).unwrap();
+    let output = serde_json::from_slice::<Value>(&stdout);
     let mut failures = Vec::new();
+    if let Some(expected) = &case.expect.json {
+        match &output {
+            Ok(output) => compare(expected, output, "", &mut failures),
+            Err(error) => {
+                failures.push(format!("stdout must be exactly one JSON document: {error}"))
+            }
+        }
+    } else if output.is_ok() || serde_json::from_slice::<Value>(&stderr).is_ok() {
+        failures.push("command diagnostics must be plain text, not JSON".into());
+    }
+    let output = output.unwrap_or(Value::Null);
+    let stdout = String::from_utf8(stdout).unwrap();
+    let stderr = String::from_utf8(stderr).unwrap();
+    for (name, actual, expected, fragments) in [
+        (
+            "stdout",
+            &stdout,
+            case.expect.stdout.as_deref(),
+            &case.expect.stdout_contains,
+        ),
+        (
+            "stderr",
+            &stderr,
+            case.expect.stderr.as_deref(),
+            &case.expect.stderr_contains,
+        ),
+    ] {
+        if let Some(expected) = expected {
+            if actual != expected {
+                failures.push(format!("{name}: expected {expected:?}, got {actual:?}"));
+            }
+        } else if name == "stderr" && fragments.is_empty() && !actual.is_empty() {
+            failures.push(format!("unexpected stderr: {actual:?}"));
+        }
+        for fragment in fragments {
+            if !actual.contains(fragment) {
+                failures.push(format!("{name}: expected {fragment:?}, got {actual:?}"));
+            }
+        }
+    }
     if exit_code != case.expect.exit_code {
         failures.push(format!(
             "exit code: expected {}, got {exit_code}",
             case.expect.exit_code
         ));
     }
-    compare(&case.expect.json, &output, "", &mut failures);
     for (pointer, fragment) in &case.expect.contains {
         if !output
             .pointer(pointer)
@@ -178,6 +231,8 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             .collect(),
         exit_code,
         output,
+        stdout,
+        stderr,
         failures,
     }
 }

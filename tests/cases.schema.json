@@ -47,8 +47,7 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-              "exit_code",
-              "json"
+              "exit_code"
             ],
             "properties": {
               "exit_code": {
@@ -62,8 +61,45 @@
                 "additionalProperties": {
                   "type": "string"
                 }
+              },
+              "stdout": {
+                "type": "string"
+              },
+              "stderr": {
+                "type": "string"
+              },
+              "stdout_contains": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stderr_contains": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
               }
-            }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "json"
+                ]
+              },
+              {
+                "required": [
+                  "stdout_contains"
+                ]
+              },
+              {
+                "required": [
+                  "stderr_contains"
+                ]
+              }
+            ]
           },
           "inputs": {
             "type": "array",

@@ -25,8 +25,9 @@ project at build or runtime.
   Any integrity-only or revocation-disabled mode must be explicit and reflected
   in JSON. Unsupported policies must be documented; do not claim Windows policy
   equivalence.
-- Every CLI invocation emits exactly one JSON document, including failures,
-  help, and version. Keep logs off stdout.
+- Verification emits exactly one JSON document on stdout, including per-file
+  failures. Argument/configuration errors use plain text on stderr (exit 2);
+  help/version use plain text on stdout (exit 0). Keep logs off stdout.
 - Public verification results are Serde domain types in `src/domain.rs`.
   Successful bundles include parsed certificate names (CN and all RDNs), EKUs,
   key usage, validity, the selected trust chain, timestamp signer, and supplied
@@ -63,8 +64,9 @@ project at build or runtime.
 
 `cargo test --locked` is the single entry point for all parser, crypto, CLI,
 fixture, domain, and declarative specification tests. `tests/spec.rs` deserializes
-`tests/cases.json` with Serde and invokes `rssig::cli::run` in-process, collecting
-exit codes and JSON output. It never runs a child executable.
+`tests/cases.json` with Serde and invokes `rssig::cli::run_with_writers` in-process, collecting
+exit codes, JSON verification results, and plain-text stdout/stderr for command
+diagnostics. It never runs a child executable.
 
 The 142 original fixture cases also have individually named
 Rust tests under `tests/cli/pe.rs` and `tests/cli/msi.rs`; shared helpers only
@@ -73,6 +75,8 @@ help/version, multiple files, and writer failures live in `tests/cli_interface.r
 
 The public CLI entry point accepts argv including the program name and any
 `std::io::Write` sink, returns an exit code, and never exits the calling process.
+`rssig::cli::run` captures combined output; `run_with_writers` accepts separate
+stdout/stderr sinks and is used by the process adapter and stream-contract tests.
 Tests use absolute fixture paths without changing the process working directory
 or invoking a child executable. Prefer stable error codes/stages, exact arrays
 and serialized fields, and specific diagnostic fragments over OS error prose.

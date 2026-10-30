@@ -2,22 +2,47 @@ use rssig::cli;
 use serde_json::Value;
 
 #[test]
-fn invalid_arguments_are_captured_without_exiting_the_test_process() {
-    let mut output = Vec::new();
-    let exit = cli::run(["rssig", "verify"], &mut output).unwrap();
-    let json: Value = serde_json::from_slice(&output).unwrap();
-    assert_eq!(exit, 2);
-    assert_eq!(json["error"]["code"], "invalid_arguments");
+fn missing_files_are_plain_usage_errors() {
+    let case: Value =
+        serde_json::from_str(include_str!("fixtures/cli-missing-files.json")).unwrap();
+    let argv: Vec<_> = case["argv"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let exit = cli::run_with_writers(argv, &mut stdout, &mut stderr).unwrap();
+    assert_eq!(exit, case["exit_code"].as_u64().unwrap() as u8);
+    assert_eq!(
+        String::from_utf8(stdout).unwrap(),
+        case["stdout"].as_str().unwrap()
+    );
+    assert!(serde_json::from_slice::<Value>(&stderr).is_err());
+    let text = String::from_utf8(stderr).unwrap();
+    for fragment in case["stderr_contains"].as_array().unwrap() {
+        assert!(text.contains(fragment.as_str().unwrap()));
+    }
 }
 
 #[test]
-fn help_is_json_written_to_the_supplied_writer() {
-    let mut output = Vec::new();
-    let exit = cli::run(["rssig", "--help"], &mut output).unwrap();
-    let json: Value = serde_json::from_slice(&output).unwrap();
+fn invalid_arguments_are_captured_without_exiting_the_test_process() {
+    let (exit, stdout, stderr) = invoke_raw(&["rssig".into(), "verify".into()]);
+    assert_eq!(exit, 2);
+    assert!(stdout.is_empty());
+    assert!(stderr.starts_with("error:"));
+    assert!(stderr.contains("<FILES>..."));
+}
+
+#[test]
+fn help_is_plain_text_on_stdout() {
+    let (exit, stdout, stderr) = invoke_raw(&["rssig".into(), "--help".into()]);
     assert_eq!(exit, 0);
-    assert_eq!(json["command"], "help");
-    assert!(json["text"].as_str().unwrap().contains("verify"));
+    assert!(stderr.is_empty());
+    assert!(stdout.contains("Usage:"));
+    assert!(stdout.contains("verify"));
+    assert!(serde_json::from_str::<Value>(&stdout).is_err());
 }
 
 fn fixture(name: &str) -> std::path::PathBuf {
@@ -27,9 +52,20 @@ fn fixture(name: &str) -> std::path::PathBuf {
 }
 
 fn invoke(arguments: &[std::ffi::OsString]) -> (u8, Value) {
-    let mut output = Vec::new();
-    let code = cli::run(arguments, &mut output).unwrap();
-    (code, serde_json::from_slice(&output).unwrap())
+    let (code, stdout, stderr) = invoke_raw(arguments);
+    assert!(stderr.is_empty());
+    (code, serde_json::from_str(&stdout).unwrap())
+}
+
+fn invoke_raw(arguments: &[std::ffi::OsString]) -> (u8, String, String) {
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let code = cli::run_with_writers(arguments, &mut stdout, &mut stderr).unwrap();
+    (
+        code,
+        String::from_utf8(stdout).unwrap(),
+        String::from_utf8(stderr).unwrap(),
+    )
 }
 
 #[test]
@@ -54,32 +90,34 @@ fn multiple_inputs_preserve_successes_and_each_problem_in_input_order() {
 }
 
 #[test]
-fn version_is_a_serialized_information_report() {
-    let (code, json) = invoke(&["rssig".into(), "--version".into()]);
-    let info: rssig::domain::InformationReport = serde_json::from_value(json).unwrap();
+fn version_is_plain_text_on_stdout() {
+    let (code, stdout, stderr) = invoke_raw(&["rssig".into(), "--version".into()]);
     assert_eq!(code, 0);
-    assert!(info.ok);
-    assert_eq!(info.command, "version");
-    assert!(info.text.contains(env!("CARGO_PKG_VERSION")));
+    assert!(stderr.is_empty());
+    assert_eq!(stdout, format!("rssig {}\n", env!("CARGO_PKG_VERSION")));
 }
 
 #[test]
 fn unknown_subcommands_are_argument_problems() {
-    let (code, json) = invoke(&["rssig".into(), "does-not-exist".into()]);
+    let (code, stdout, stderr) = invoke_raw(&["rssig".into(), "does-not-exist".into()]);
     assert_eq!(code, 2);
-    assert_eq!(json["error"]["code"], "invalid_arguments");
+    assert!(stdout.is_empty());
+    assert!(stderr.contains("unrecognized subcommand"));
+    assert!(stderr.contains("'does-not-exist'"));
 }
 
 #[test]
 fn old_test_runner_is_no_longer_a_product_command() {
-    let (code, json) = invoke(&["rssig".into(), "test".into()]);
+    let (code, stdout, stderr) = invoke_raw(&["rssig".into(), "test".into()]);
     assert_eq!(code, 2);
-    assert_eq!(json["error"]["code"], "invalid_arguments");
+    assert!(stdout.is_empty());
+    assert!(stderr.contains("unrecognized subcommand"));
+    assert!(stderr.contains("'test'"));
 }
 
 #[test]
 fn integrity_only_conflicts_with_trust_policy_flags() {
-    let (code, json) = invoke(&[
+    let (code, stdout, stderr) = invoke_raw(&[
         "rssig".into(),
         "verify".into(),
         "--integrity-only".into(),
@@ -87,7 +125,8 @@ fn integrity_only_conflicts_with_trust_policy_flags() {
         fixture("good-pe64.exe").into_os_string(),
     ]);
     assert_eq!(code, 2);
-    assert_eq!(json["error"]["code"], "invalid_arguments");
+    assert!(stdout.is_empty());
+    assert!(stderr.contains("cannot be used with"));
 }
 
 fn configuration_problem(flag: &str, file: &str) {
@@ -107,11 +146,12 @@ fn configuration_problem(flag: &str, file: &str) {
         fixture(file).into_os_string(),
         fixture("good-pe64.exe").into_os_string(),
     ]);
-    let (code, json) = invoke(&args);
+    let (code, stdout, stderr) = invoke_raw(&args);
     assert_eq!(code, 2);
-    assert_eq!(json["error"]["code"], "configuration");
-    assert_eq!(json["error"]["stage"], "configuration");
-    assert_eq!(json["detail"], json["error"]["detail"]);
+    assert!(stdout.is_empty());
+    assert!(stderr.starts_with("error:"));
+    assert!(stderr.contains(file));
+    assert!(serde_json::from_str::<Value>(&stderr).is_err());
 }
 
 #[test]
@@ -160,4 +200,27 @@ fn writer_failures_are_returned_without_panicking() {
     }
     let error = cli::run(["rssig", "--help"], Closed).unwrap_err();
     assert!(error.to_string().contains("sink closed"));
+    let mut stdout = Vec::new();
+    let error = cli::run_with_writers(["rssig", "verify"], &mut stdout, Closed).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+    assert!(stdout.is_empty());
+    let mut stderr = Vec::new();
+    let args = [
+        "rssig".into(),
+        "verify".into(),
+        "--integrity-only".into(),
+        "--time".into(),
+        "1800000000".into(),
+        fixture("unsigned.exe").into_os_string(),
+    ];
+    let error = cli::run_with_writers(args, Closed, &mut stderr).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+    assert!(stderr.is_empty());
+}
+
+#[test]
+fn single_writer_entry_point_captures_plain_command_diagnostics() {
+    let mut output = Vec::new();
+    assert_eq!(cli::run(["rssig", "verify"], &mut output).unwrap(), 2);
+    assert!(String::from_utf8(output).unwrap().starts_with("error:"));
 }

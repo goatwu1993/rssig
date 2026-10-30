@@ -467,15 +467,7 @@ fn unknown_root() {
 
 #[test]
 fn missing_crl_policy() {
-    let output = run_fixture("good-pe64.exe", MISSING_CRL_POLICY);
-    expect_failure(
-        &output,
-        2,
-        "configuration",
-        "Invalid configuration",
-        None,
-        Some("supply --crl"),
-    );
+    expect_command_error("good-pe64.exe", MISSING_CRL_POLICY, "supply --crl");
 }
 
 #[test]
@@ -559,15 +551,7 @@ fn certificate_payload() {
 
 #[test]
 fn rfc9457_invalid_arguments() {
-    let output = run_fixture("good-pe64.exe", INVALID_TIME);
-    expect_failure(
-        &output,
-        2,
-        "invalid_arguments",
-        "Invalid arguments",
-        Some("arguments"),
-        Some("invalid"),
-    );
+    expect_command_error("good-pe64.exe", INVALID_TIME, "invalid");
 }
 
 #[test]

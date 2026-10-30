@@ -6213,6 +6213,12 @@
         "msp-independent-jsign-tampered"
       ],
       "paired_good": "msp-independent-jsign.msp"
+    },
+    {
+      "file": "cli-missing-files.json",
+      "sha256": "ee9ca16a6ebe688b68046d2a6be4890f58afa153afa46d443a85074cd888bb23",
+      "bytes": 166,
+      "description": "CLI argv regression: missing verify input must emit plain usage diagnostics to stderr with exit 2 and empty stdout. Inert JSON, no executable input."
     }
   ]
 }
