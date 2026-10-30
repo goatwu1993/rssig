@@ -967,23 +967,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "error": {
-            "code": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration"
-        },
-        "contains": {
-          "/error/message": "supply --crl",
-          "/error/detail": "supply --crl",
-          "/detail": "supply --crl"
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "supply --crl"
+        ]
       }
     },
     {
@@ -1171,24 +1158,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "arguments",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-          "title": "Invalid arguments",
-          "error": {
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-            "title": "Invalid arguments",
-            "code": "invalid_arguments",
-            "stage": "arguments"
-          },
-          "results": []
-        },
-        "contains": {
-          "/detail": "invalid",
-          "/error/detail": "invalid"
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "invalid"
+        ]
       }
     },
     {
@@ -2591,23 +2564,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "error": {
-            "code": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration"
-        },
-        "contains": {
-          "/error/message": "supply --crl",
-          "/error/detail": "supply --crl",
-          "/detail": "supply --crl"
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "supply --crl"
+        ]
       }
     },
     {
@@ -2732,24 +2692,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "arguments",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-          "title": "Invalid arguments",
-          "error": {
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-            "title": "Invalid arguments",
-            "code": "invalid_arguments",
-            "stage": "arguments"
-          },
-          "results": []
-        },
-        "contains": {
-          "/detail": "invalid",
-          "/error/detail": "invalid"
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "invalid"
+        ]
       }
     },
     {
@@ -4976,14 +4922,10 @@
       ],
       "expect": {
         "exit_code": 0,
-        "json": {
-          "schema_version": 1,
-          "command": "help",
-          "ok": true
-        },
-        "contains": {
-          "/text": "verify"
-        }
+        "stdout_contains": [
+          "verify"
+        ],
+        "stderr": ""
       }
     },
     {
@@ -4993,14 +4935,10 @@
       ],
       "expect": {
         "exit_code": 0,
-        "json": {
-          "schema_version": 1,
-          "command": "version",
-          "ok": true
-        },
-        "contains": {
-          "/text": "0.1.0"
-        }
+        "stdout_contains": [
+          "0.1.0"
+        ],
+        "stderr": ""
       }
     },
     {
@@ -5010,20 +4948,11 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "arguments",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-          "title": "Invalid arguments",
-          "error": {
-            "code": "invalid_arguments",
-            "stage": "arguments",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-            "title": "Invalid arguments"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "unrecognized subcommand",
+          "does-not-exist"
+        ]
       }
     },
     {
@@ -5033,20 +4962,11 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "arguments",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-          "title": "Invalid arguments",
-          "error": {
-            "code": "invalid_arguments",
-            "stage": "arguments",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-            "title": "Invalid arguments"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "unrecognized subcommand",
+          "'test'"
+        ]
       }
     },
     {
@@ -5059,20 +4979,12 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "arguments",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-          "title": "Invalid arguments",
-          "error": {
-            "code": "invalid_arguments",
-            "stage": "arguments",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_arguments",
-            "title": "Invalid arguments"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "cannot be used with",
+          "--integrity-only",
+          "--no-system-roots"
+        ]
       }
     },
     {
@@ -5136,20 +5048,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration",
-          "error": {
-            "code": "configuration",
-            "stage": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "error:"
+        ]
       },
       "input": "good-pe64.exe"
     },
@@ -5166,20 +5068,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration",
-          "error": {
-            "code": "configuration",
-            "stage": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "error:"
+        ]
       },
       "input": "good-pe64.exe"
     },
@@ -5196,20 +5088,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration",
-          "error": {
-            "code": "configuration",
-            "stage": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "error:"
+        ]
       },
       "input": "good-pe64.exe"
     },
@@ -5226,20 +5108,10 @@
       ],
       "expect": {
         "exit_code": 2,
-        "json": {
-          "schema_version": 1,
-          "command": "verify",
-          "ok": false,
-          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-          "title": "Invalid configuration",
-          "error": {
-            "code": "configuration",
-            "stage": "configuration",
-            "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#configuration",
-            "title": "Invalid configuration"
-          },
-          "results": []
-        }
+        "stdout": "",
+        "stderr_contains": [
+          "error:"
+        ]
       },
       "input": "good-pe64.exe"
     },
@@ -21404,13 +21276,25 @@
       ],
       "expect": {
         "exit_code": 0,
-        "json": {
-          "command": "help",
-          "ok": true
-        },
-        "contains": {
-          "/text": "MSP"
-        }
+        "stdout_contains": [
+          "MSP"
+        ],
+        "stderr": ""
+      }
+    },
+    {
+      "id": "cli-missing-files-plain-error",
+      "command": [
+        "verify"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "error:",
+          "<FILES>...",
+          "Usage: rssig verify"
+        ]
       }
     }
   ]

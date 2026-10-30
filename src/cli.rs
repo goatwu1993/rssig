@@ -48,7 +48,7 @@ enum Command {
         /// Validation time as Unix seconds. Defaults to the current time.
         #[arg(long = "time")]
         at: Option<u64>,
-        /// Compatibility flag; JSON is always the output format.
+        /// Compatibility flag; verification results are always JSON.
         #[arg(long, hide = true)]
         json: bool,
     },
@@ -76,14 +76,16 @@ fn execute(command: Command) -> Result<(Value, u8)> {
         TrustStore::from_system()?
     };
     for path in roots {
-        trust.add_roots(
-            &std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?,
-        )?;
+        trust
+            .add_roots(
+                &std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?,
+            )
+            .with_context(|| format!("loading roots from {}", path.display()))?;
     }
     for path in &crl {
-        trust.add_crl(
-            &std::fs::read(path).with_context(|| format!("reading {}", path.display()))?,
-        )?;
+        trust
+            .add_crl(&std::fs::read(path).with_context(|| format!("reading {}", path.display()))?)
+            .with_context(|| format!("loading CRL from {}", path.display()))?;
     }
     let now = match at {
         Some(at) => at,
@@ -163,88 +165,97 @@ fn execute(command: Command) -> Result<(Value, u8)> {
         if success { 0 } else { 1 },
     ))
 }
-/// Parse argv (including the program name), execute, and write one JSON document.
+/// Parse argv (including the program name) and capture all CLI output in one sink.
 ///
-/// All command paths, including help and argument errors, return an exit code
-/// instead of exiting the process. Tests and embedders can capture output with
-/// any `Write` implementation; no global stdout or working directory is changed.
+/// Verification results are JSON; usage/configuration errors, help, and version
+/// are plain text. This convenience API combines stdout and stderr for embedders.
+/// Use [`run_with_writers`] to preserve the process stream separation.
+/// Neither entry point exits the process or changes the working directory.
 ///
 /// ```
-/// let mut stdout = Vec::new();
-/// let code = rssig::cli::run(["rssig", "--version"], &mut stdout)?;
+/// let mut output = Vec::new();
+/// let code = rssig::cli::run(["rssig", "--version"], &mut output)?;
 /// assert_eq!(code, 0);
-/// let report: serde_json::Value = serde_json::from_slice(&stdout)?;
-/// assert_eq!(report["command"], "version");
+/// assert!(String::from_utf8(output)?.starts_with("rssig "));
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
-pub fn run<I, T, W>(arguments: I, mut stdout: W) -> io::Result<u8>
+pub fn run<I, T, W>(arguments: I, output: W) -> io::Result<u8>
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
     W: Write,
 {
-    let (value, exit) = dispatch(arguments);
-    serde_json::to_writer_pretty(&mut stdout, &value).map_err(io::Error::other)?;
-    stdout.write_all(b"\n")?;
-    Ok(exit)
+    dispatch(arguments).write(output)
 }
 
-fn dispatch<I, T>(arguments: I) -> (Value, u8)
+/// Execute with separate output sinks, without exiting the calling process.
+///
+/// Verification emits one JSON document to stdout (exit 0 or 1). Argument and
+/// configuration errors emit plain text to stderr (exit 2). Help/version emit
+/// plain text to stdout (exit 0). Writer failures are returned to the caller.
+pub fn run_with_writers<I, T, O, E>(arguments: I, stdout: O, stderr: E) -> io::Result<u8>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+    O: Write,
+    E: Write,
+{
+    let output = dispatch(arguments);
+    if matches!(output, Output::Text { stderr: true, .. }) {
+        output.write(stderr)
+    } else {
+        output.write(stdout)
+    }
+}
+
+enum Output {
+    Verification(Value, u8),
+    Text {
+        text: String,
+        exit: u8,
+        stderr: bool,
+    },
+}
+
+impl Output {
+    fn write(self, mut writer: impl Write) -> io::Result<u8> {
+        match self {
+            Self::Verification(value, exit) => {
+                serde_json::to_writer_pretty(&mut writer, &value).map_err(|error| {
+                    io::Error::new(error.io_error_kind().unwrap_or(io::ErrorKind::Other), error)
+                })?;
+                writer.write_all(b"\n")?;
+                Ok(exit)
+            }
+            Self::Text { text, exit, .. } => {
+                writer.write_all(text.as_bytes())?;
+                Ok(exit)
+            }
+        }
+    }
+}
+
+fn dispatch<I, T>(arguments: I) -> Output
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
 {
     let cli = match Cli::try_parse_from(arguments) {
         Ok(cli) => cli,
-        Err(error)
-            if matches!(
-                error.kind(),
-                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion
-            ) =>
-        {
-            return (
-                serde_json::to_value(crate::domain::InformationReport {
-                    schema_version: 1,
-                    command: if error.kind() == clap::error::ErrorKind::DisplayVersion {
-                        "version".into()
-                    } else {
-                        "help".into()
-                    },
-                    ok: true,
-                    text: error.to_string(),
-                })
-                .expect("information serializes"),
-                0,
-            );
-        }
         Err(error) => {
-            return (
-                serde_json::to_value(CommandReport::<FileResult>::failure(
-                    "arguments",
-                    VerificationError::new(
-                        ErrorCode::InvalidArguments,
-                        Stage::Arguments,
-                        error.to_string(),
-                    ),
-                ))
-                .expect("report serializes"),
-                2,
-            );
+            return Output::Text {
+                text: error.to_string(),
+                exit: if error.use_stderr() { 2 } else { 0 },
+                stderr: error.use_stderr(),
+            };
         }
     };
     match execute(cli.command) {
-        Ok(output) => output,
-        Err(error) => (
-            serde_json::to_value(CommandReport::<FileResult>::failure(
-                "verify",
-                VerificationError::from_internal(
-                    error,
-                    ErrorCode::Configuration,
-                    Stage::Configuration,
-                ),
-            ))
-            .expect("report serializes"),
-            2,
-        ),
+        Ok((value, exit)) => Output::Verification(value, exit),
+        Err(error) => Output::Text {
+            text: format!("error: {error:#}\n"),
+            exit: 2,
+            stderr: true,
+        },
     }
 }

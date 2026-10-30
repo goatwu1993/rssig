@@ -115,14 +115,16 @@ cargo test --locked
 make coverage
 ```
 
-All output is JSON, including help/version and argument errors. Exit codes are 0 for
-success, 1 for a failed verification/assertion, and 2 for invalid configuration
-or arguments. `verify` accepts multiple files. `--time UNIX_SECONDS` fixes the
+Verification results are JSON on stdout, including per-file verification errors.
+Argument and configuration errors are plain text on stderr; help and version
+are plain text on stdout. Exit codes are 0 for success, 1 for failed verification,
+and 2 for invalid configuration or arguments. `verify` accepts multiple files.
+`--time UNIX_SECONDS` fixes the
 validation time for reproducible tests; otherwise the current time is used.
 
 Successes serialize a verification bundle with image/package/script digests, parsed certificate
 CN/RDNs, EKUs, key usage, validity, trust chain, timestamp signer, and CRL
-artifacts. Every failed invocation and nested error uses the RFC 9457 Problem
+artifacts. Failed verification reports and nested errors use the RFC 9457 Problem
 Details data model: `type`, `title`, and `detail`, with existing error codes,
 stages, messages, structured details, and causes retained as extensions. CLI
 output omits HTTP `status`; process exit codes keep their existing meaning.

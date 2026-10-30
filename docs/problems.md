@@ -1,9 +1,10 @@
 # rssig Problem Details
 
-Every failed CLI invocation emits one JSON Problem Details document using the
+Every failed file-verification invocation emits one JSON Problem Details document using the
 [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html) data model. Each library
-`VerificationError` serializes as the same kind of object. Successful commands
-(including help and version) retain their existing JSON format.
+`VerificationError` serializes as the same kind of object. Successful verification
+also emits JSON. Argument/configuration errors use plain text on stderr;
+help/version use plain text on stdout. Neither emits a JSON report.
 
 `type` is the primary machine-readable identifier, `title` is fixed per type,
 and `detail` explains this occurrence. Type URIs are absolute and stable:
@@ -27,8 +28,9 @@ errors. Prefer `type` (or the typed Rust `ErrorCode`) over parsing prose.
 holds causal diagnostics. Consumers must ignore unknown extension members.
 
 The root document retains `schema_version`, `command`, `ok`, and `results`.
-For a command-level failure, `error` contains the full error and the root repeats
-its Problem Details members. For `verify`, the first failed input supplies the
+Historical command-level JSON failures contain the full error in `error` and
+repeat its Problem Details members at the root. For current `verify` results,
+the first failed input supplies the
 root problem; `results` retains successful inputs and every per-file error in
 input order. Every nested `error` is itself a Problem Details object.
 
@@ -81,8 +83,8 @@ the current CLI exposes verification, help, and version. Tests run through Cargo
 | <a id="invalid_certificate"></a>`invalid_certificate` | Invalid certificate | 422 | Supply a well-formed supported certificate. |
 | <a id="certificate_chain_invalid"></a>`certificate_chain_invalid` | Invalid certificate chain | 422 | Supply valid intermediate certificates and a configured trust anchor. |
 | <a id="read_failed"></a>`read_failed` | Input read failed | 404 | Check the input path and file access permissions. |
-| <a id="invalid_arguments"></a>`invalid_arguments` | Invalid arguments | 400 | Correct the command arguments; consult JSON help output. |
-| <a id="configuration"></a>`configuration` | Invalid configuration | 400 | Correct the configured roots, CRLs, or verification policy described in detail. |
+| <a id="invalid_arguments"></a>`invalid_arguments` | Invalid arguments | 400 | Retained for historical JSON reports/adapters; the CLI now emits plain usage diagnostics. Consult `--help`. |
+| <a id="configuration"></a>`configuration` | Invalid configuration | 400 | Retained for historical JSON reports/adapters; CLI configuration errors are plain text. Correct the roots, CRLs, or verification policy described in the diagnostic. |
 | <a id="invalid_test_suite"></a>`invalid_test_suite` | Invalid testcase suite | 400 | Supply an existing, valid testcase suite matching the supported schema. |
 | <a id="test_assertion_failed"></a>`test_assertion_failed` | Testcase assertions failed | 422 | Inspect each result and its failures; fix the behavior or incorrect test configuration. |
 | <a id="internal_error"></a>`internal_error` | Internal error | 500 | Inspect the diagnostic extensions and report the failure with a reproducing input. |

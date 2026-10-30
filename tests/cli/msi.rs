@@ -373,15 +373,7 @@ fn unknown_root() {
 
 #[test]
 fn missing_crl_policy() {
-    let output = run_fixture("msi-good-pe64.msi", MISSING_CRL_POLICY);
-    expect_failure(
-        &output,
-        2,
-        "configuration",
-        "Invalid configuration",
-        None,
-        Some("supply --crl"),
-    );
+    expect_command_error("msi-good-pe64.msi", MISSING_CRL_POLICY, "supply --crl");
 }
 
 #[test]
@@ -439,15 +431,7 @@ fn unsupported_digest() {
 
 #[test]
 fn rfc9457_invalid_arguments() {
-    let output = run_fixture("msi-good-pe64.msi", INVALID_TIME);
-    expect_failure(
-        &output,
-        2,
-        "invalid_arguments",
-        "Invalid arguments",
-        Some("arguments"),
-        Some("invalid"),
-    );
+    expect_command_error("msi-good-pe64.msi", INVALID_TIME, "invalid");
 }
 
 #[test]

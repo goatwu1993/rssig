@@ -50,17 +50,22 @@ preserved. Rust/Cargo reports each named test directly. Separately, `tests/spec.
 Serde to load `tests/cases.json` and invokes the same CLI library for every
 declarative case. Neither path spawns a child process.
 
-The binary's only job is to pass process arguments and stdout to the public
-Clap-based `rssig::cli::run` entry point. That function takes argv including the
-program name and a writer, returns an exit code, and never calls `process::exit`.
+The binary passes process arguments, stdout, and stderr to the public
+Clap-based `rssig::cli::run_with_writers` entry point. That function takes argv
+including the program name and separate writers, returns an exit code, and never
+calls `process::exit`. `rssig::cli::run` remains a convenience entry point that
+captures both streams in one writer.
 Tests exercise the actual parser and command implementation in-process:
 
 ```rust
 let mut stdout = Vec::new();
-let exit_code = rssig::cli::run(["rssig", "--help"], &mut stdout).unwrap();
-let report: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
+let mut stderr = Vec::new();
+let exit_code = rssig::cli::run_with_writers(
+    ["rssig", "--help"], &mut stdout, &mut stderr,
+).unwrap();
 assert_eq!(exit_code, 0);
-assert_eq!(report["command"], "help");
+assert!(stderr.is_empty());
+assert!(String::from_utf8(stdout).unwrap().contains("Usage:"));
 ```
 
 `tests/cli_interface.rs` tests help/version, invalid arguments, policy conflicts,
@@ -157,13 +162,20 @@ Suite version 1 uses:
   with `input`. Omit both for help/version/argument-only cases.
 - `expect.exit_code`: exact expected exit code.
 - `expect.json`: recursive object subsets, exact array lengths/order, and exact
-  scalar values/types.
+  scalar values/types for verification results on stdout.
 - `expect.contains`: string fragments at RFC 6901 JSON Pointers in the output.
+- `expect.stdout` / `expect.stderr`: exact stream contents, including an empty
+  string to assert that nothing was emitted.
+- `expect.stdout_contains` / `expect.stderr_contains`: nonempty arrays of plain
+  text fragments. Exactly one of `json`, `stdout_contains`, or `stderr_contains`
+  selects the output mode. Text cases reject JSON output; JSON cases require
+  exactly one JSON document. Stderr must be empty unless explicitly expected.
 
 Inputs are relative to the suite's fixtures directory. Root/CRL argument paths
 are relative to the suite file, as are explicit `fixtures/...` argv paths. The
 Rust adapter resolves them to absolute paths without changing global cwd. Each
-invocation returns exactly one JSON document. Keep validation times, explicit
+verification invocation returns exactly one JSON document on stdout. Command
+errors are plain text on stderr; help/version are plain text on stdout. Keep validation times, explicit
 roots, and local CRLs pinned so expected results are portable and offline.
 
 The manifest pins the bytes, SHA-256, provenance, and intended outcomes of the

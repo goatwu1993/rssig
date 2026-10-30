@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "rssig",
+    "verify"
+  ],
+  "exit_code": 2,
+  "stderr_contains": [
+    "error:",
+    "<FILES>...",
+    "Usage: rssig verify"
+  ],
+  "stdout": ""
+}

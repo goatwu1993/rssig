@@ -168,8 +168,7 @@ fn help_advertises_msp() {
         rssig::cli::run(["rssig", "--help"], &mut stdout).unwrap(),
         0
     );
-    let json: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
-    assert!(json["text"].as_str().unwrap().contains("MSP"));
+    assert!(String::from_utf8(stdout).unwrap().contains("MSP"));
 }
 
 #[test]
