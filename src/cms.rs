@@ -3,12 +3,13 @@ use crate::{
     crypto::{self, Hash},
     der::{self, Node},
 };
-use ::der::{Decode, Encode};
+use ::der::Encode;
 use anyhow::{Context, Result, ensure};
 use x509_cert::Certificate;
 
 pub(crate) const DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 1];
-pub(crate) const SIGNED_DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 2];
+#[cfg(test)]
+pub(crate) use crate::parse::cms::SIGNED_DATA;
 pub(crate) const INDIRECT: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 4];
 const PE_IMAGE: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 15];
 const CONTENT_TYPE: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 3];
@@ -23,6 +24,7 @@ pub(crate) struct SignedData<'a> {
     pub content: Node<'a>,
     pub content_type: &'a [u8],
     pub certs: Vec<Certificate>,
+    pub unverified_certificate_choices: Vec<crate::domain::UnverifiedCertificateChoice>,
     pub signers: Vec<Node<'a>>,
     digest_algorithms: Vec<Hash>,
 }
@@ -52,51 +54,29 @@ pub(crate) fn algorithm(node: Node<'_>) -> Result<Hash> {
 
 impl<'a> SignedData<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self> {
-        let outer = der::fields(der::one(bytes, 0x30)?, 2)?;
-        ensure!(der::oid(outer[0], SIGNED_DATA), "not PKCS#7 SignedData");
-        let sd = der::one(outer[1].expect(0xa0)?.body, 0x30)?.children()?;
-        ensure!(sd.len() >= 4 && sd.len() <= 6, "invalid SignedData");
-        sd[0].expect(2)?;
-        let digest_algorithms = sd[1]
-            .expect(0x31)?
-            .children()?
-            .into_iter()
-            .map(algorithm)
+        let parsed = crate::parse::SignedData::parse_inner(bytes)?;
+        let digest_algorithms = parsed
+            .digest_algorithms()
+            .iter()
+            .map(|a| algorithm(a.node))
             .collect::<Result<Vec<_>>>()?;
-        let ci = der::fields(sd[2].expect(0x30)?, 2)?;
-        ci[0].expect(6)?;
-        let mut content = der::one(
-            ci[1].expect(0xa0)?.body,
-            if ci[0].body == TST_INFO { 4 } else { 0x30 },
-        )?;
+        let content_type = parsed.content_type_bytes;
+        let mut content = parsed
+            .content
+            .context("missing attached SignedData content")?
+            .expect(if content_type == TST_INFO { 4 } else { 0x30 })?;
         // RFC 5652 wraps TSTInfo in an OCTET STRING; legacy Authenticode uses ANY.
         if content.tag == 4 {
             content = der::one(content.body, 0x30)?;
         }
-        let mut certs = Vec::new();
-        let mut i = 3;
-        if sd[i].tag == 0xa0 {
-            for cert in sd[i].children()? {
-                certs.push(
-                    Certificate::from_der(cert.full).context("invalid embedded certificate")?,
-                );
-            }
-            i += 1;
-        }
-        if i < sd.len() && sd[i].tag == 0xa1 {
-            i += 1;
-        } // Embedded CRLs are untrusted until path validation.
-        ensure!(i + 1 == sd.len(), "invalid SignedData fields");
-        let signers = sd[i].expect(0x31)?.children()?;
-        ensure!(
-            !signers.is_empty() && signers.len() <= 64,
-            "invalid signer count"
-        );
+        ensure!(!parsed.signers.is_empty(), "invalid signer count");
+        let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
         Ok(Self {
             content,
-            content_type: ci[0].body,
+            content_type,
             certs,
-            signers,
+            unverified_certificate_choices,
+            signers: parsed.signers,
             digest_algorithms,
         })
     }
@@ -562,59 +542,40 @@ pub(crate) fn verify_countersigner<'a>(
 /// requires signed attributes through SignedData::parse/verify.
 pub(crate) struct DetachedData<'a> {
     pub certs: Vec<Certificate>,
+    pub unverified_certificate_choices: Vec<crate::domain::UnverifiedCertificateChoice>,
     pub signers: Vec<Node<'a>>,
     digest_algorithms: Vec<Hash>,
 }
 impl<'a> DetachedData<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self> {
-        let outer = der::fields(der::one(bytes, 0x30)?, 2)?;
-        ensure!(der::oid(outer[0], SIGNED_DATA), "not PKCS#7 SignedData");
-        let sd = der::one(outer[1].expect(0xa0)?.body, 0x30)?.children()?;
+        let parsed = crate::parse::SignedData::parse_inner(bytes)?;
         ensure!(
-            (4..=6).contains(&sd.len()) && sd[0].expect(2)?.body == [1],
+            parsed.version.body == [1],
             "invalid detached SignedData version or fields"
         );
-        let digest_algorithms = sd[1]
-            .expect(0x31)?
-            .children()?
-            .into_iter()
-            .map(algorithm)
+        let digest_algorithms = parsed
+            .digest_algorithms()
+            .iter()
+            .map(|a| algorithm(a.node))
             .collect::<Result<Vec<_>>>()?;
         ensure!(
             !digest_algorithms.is_empty(),
             "empty detached digestAlgorithms"
         );
-        let ci = der::fields(sd[2].expect(0x30)?, 1)?;
         ensure!(
-            der::oid(ci[0], DATA),
+            parsed.content_type_bytes == DATA && parsed.content.is_none(),
             "detached RDP signature must use id-data without embedded content"
         );
-        let mut i = 3;
-        let mut certs = Vec::new();
-        if sd[i].tag == 0xa0 {
-            for node in sd[i].children()? {
-                certs.push(
-                    Certificate::from_der(node.full).context("invalid embedded certificate")?,
-                );
-            }
-            i += 1;
-        }
-        // Local configured CRLs alone supply revocation validation.
-        if i < sd.len() && sd[i].tag == 0xa1 {
-            i += 1;
-        }
-        ensure!(i + 1 == sd.len(), "invalid detached SignedData fields");
-        let signers = sd[i].expect(0x31)?.children()?;
-        ensure!(
-            !signers.is_empty() && signers.len() <= 64,
-            "invalid detached signer count"
-        );
+        ensure!(!parsed.signers.is_empty(), "invalid detached signer count");
+        let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
         Ok(Self {
             certs,
-            signers,
+            unverified_certificate_choices,
+            signers: parsed.signers,
             digest_algorithms,
         })
     }
+
     pub fn verify(&self, signer: Node<'a>, content: &[u8], allow_sha1: bool) -> Result<Signer<'a>> {
         verify_signer_inner(
             &self.certs,
@@ -626,4 +587,27 @@ impl<'a> DetachedData<'a> {
             true,
         )
     }
+}
+
+fn certificate_candidates(
+    parsed: &crate::parse::SignedData<'_>,
+) -> (
+    Vec<Certificate>,
+    Vec<crate::domain::UnverifiedCertificateChoice>,
+) {
+    let certs = parsed
+        .certificate_choices()
+        .iter()
+        .filter_map(|c| c.x509().cloned())
+        .collect();
+    let opaque = parsed
+        .certificate_choices()
+        .iter()
+        .filter(|c| c.x509().is_none())
+        .map(|c| crate::domain::UnverifiedCertificateChoice {
+            tag: c.tag(),
+            der: crate::domain::hex(c.as_der()),
+        })
+        .collect();
+    (certs, opaque)
 }

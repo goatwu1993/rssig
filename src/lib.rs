@@ -7,17 +7,18 @@ mod der;
 pub mod domain;
 mod msi;
 mod navx;
+pub mod parse;
 mod pe;
 mod powershell;
 mod rdp;
 mod trust;
-mod verify;
+pub mod verify;
 mod wsh;
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
 pub use verify::{
-    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_pe,
-    verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
+    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_pe,
+    verify_pe, verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
 };
 #[cfg(test)]
 mod tests;

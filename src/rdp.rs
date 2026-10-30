@@ -261,7 +261,15 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
             None
         };
         let certificate = CertificateReport::parse(&signer.cert)?;
+        if let Some(timestamp) = &timestamp_verification {
+            crate::verify::check_fractional_validity(
+                trust.as_ref(),
+                timestamp.signing_time,
+                timestamp.fractional_seconds.as_deref(),
+            )?;
+        }
         signatures.push(SignatureReport {
+            unverified_certificate_choices: sd.unverified_certificate_choices.clone(),
             subject: certificate.subject.display.clone(),
             digest_algorithm: format!("{:?}", signer.hash),
             certificate_sha256: certificate.sha256.clone(),

@@ -2,6 +2,181 @@
 use super::support::*;
 use serde_json::json;
 
+fn expected_certificate_choice() -> serde_json::Value {
+    let der: String = include_bytes!("../fixtures/attribute-certificate-v1.der")
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    json!([{"tag": 161, "der": der}])
+}
+
+#[test]
+fn certificate_choice_in_publisher_is_unverified_metadata() {
+    let output = run_fixture("good-pe-certificate-choice.exe", TRUSTED);
+    expect_success(&output);
+    let signature = &output.json["results"][0]["signatures"][0];
+    assert_eq!(
+        signature["unverified_certificate_choices"],
+        expected_certificate_choice()
+    );
+    assert_eq!(
+        signature["embedded_certificates"].as_array().unwrap().len(),
+        2
+    );
+    assert_eq!(signature["trust"]["chain"].as_array().unwrap().len(), 2);
+    assert_eq!(signature["revocation_checked"], true);
+    let choices = &output.success().signatures[0].unverified_certificate_choices;
+    assert_eq!(choices.len(), 1);
+    assert_eq!(choices[0].tag, 161);
+    assert_eq!(choices[0].der, expected_certificate_choice()[0]["der"]);
+}
+
+#[test]
+fn certificate_choice_in_timestamp_is_unverified_metadata() {
+    let output = run_fixture("good-rfc3161-certificate-choice.exe", TRUSTED);
+    expect_success(&output);
+    let timestamp = &output.json["results"][0]["signatures"][0]["timestamp_verification"];
+    assert_eq!(
+        timestamp["unverified_certificate_choices"],
+        expected_certificate_choice()
+    );
+    assert_eq!(
+        timestamp["certificate"]["subject"]["common_names"],
+        json!(["rssig test TSA"])
+    );
+    assert_eq!(timestamp["trust"]["revocation"]["status"], "good");
+    assert_eq!(
+        output.success().signatures[0]
+            .timestamp_verification
+            .as_ref()
+            .unwrap()
+            .unverified_certificate_choices[0]
+            .tag,
+        161
+    );
+}
+
+#[test]
+fn certificate_choice_malformed_der_is_rejected() {
+    let output = run_fixture("bad-rfc3161-certificate-choice-der.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_timestamp",
+        "Invalid timestamp",
+        Some("timestamp"),
+        Some("truncated DER value"),
+    );
+}
+
+#[test]
+fn certificate_choice_unknown_tag_is_rejected() {
+    let output = run_fixture("bad-rfc3161-certificate-choice-tag.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_timestamp",
+        "Invalid timestamp",
+        Some("timestamp"),
+        Some("unsupported CertificateChoices tag"),
+    );
+}
+
+#[test]
+fn certificate_choice_does_not_bypass_timestamp_signature() {
+    let output = run_fixture("bad-rfc3161-certificate-choice-signature.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_timestamp",
+        "Invalid timestamp",
+        Some("timestamp"),
+        Some("signature error"),
+    );
+}
+
+#[test]
+fn certificate_choice_cannot_replace_signer() {
+    let output = run_fixture("bad-rfc3161-certificate-choice-no-signer.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_timestamp",
+        "Invalid timestamp",
+        Some("timestamp"),
+        Some("signer certificate missing"),
+    );
+}
+
+#[test]
+fn fractional_timestamp_preserves_precision() {
+    let output = run_fixture("good-rfc3161-fractional.exe", TRUSTED);
+    expect_success(&output);
+    let timestamp = &output.json["results"][0]["signatures"][0]["timestamp_verification"];
+    assert_eq!(timestamp["signing_time"], 1799999999u64);
+    assert_eq!(timestamp["fractional_seconds"], "5");
+    assert_eq!(timestamp["trust"]["validation_time"], 1799999999u64);
+    assert_eq!(
+        output.success().signatures[0]
+            .timestamp_verification
+            .as_ref()
+            .unwrap()
+            .fractional_seconds
+            .as_deref(),
+        Some("5")
+    );
+}
+
+#[test]
+fn fractional_timestamp_cannot_round_down_a_future_time() {
+    let output = run_fixture("bad-rfc3161-fractional-future.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "timestamp_in_future",
+        "Timestamp is in the future",
+        Some("timestamp"),
+        Some("timestamp is in the future"),
+    );
+}
+
+#[test]
+fn fractional_timestamp_cannot_round_down_past_certificate_expiry() {
+    let output = run_fixture(
+        "bad-rfc3161-fractional-expired.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--no-revocation",
+            "--time",
+            "1800010001",
+        ],
+    );
+    expect_failure(
+        &output,
+        1,
+        "certificate_expired",
+        "Certificate expired",
+        Some("certificate_chain"),
+        Some("fractional timestamp exceeds certificate validity"),
+    );
+}
+
+#[test]
+fn fractional_timestamp_requires_canonical_encoding() {
+    let output = run_fixture("bad-rfc3161-fractional-noncanonical.exe", TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "invalid_timestamp",
+        "Invalid timestamp",
+        Some("timestamp"),
+        Some("noncanonical fractional GeneralizedTime"),
+    );
+}
+
 #[test]
 fn pe32() {
     let output = run_fixture("good-pe32.exe", TRUSTED_NO_REVOCATION);

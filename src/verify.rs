@@ -1,3 +1,8 @@
+//! Authenticate parsed containers using explicit time, trust, and revocation policy.
+//!
+//! Parsing alone never establishes integrity or trust. Existing byte-oriented
+//! entry points remain available; [`verify_parsed_pe`] reuses a parsed PE layout.
+
 use crate::domain::*;
 use crate::{
     appx::Appx,
@@ -186,7 +191,7 @@ fn verify_inner(
     options: &VerifyOptions<'_>,
     format: Format,
 ) -> Result<VerificationBundle> {
-    let mut container = match format {
+    let container = match format {
         Format::Wsh(kind) => Container::Wsh(tagged(
             Wsh::parse(bytes, kind),
             ErrorCode::InvalidWsh,
@@ -208,7 +213,7 @@ fn verify_inner(
             Stage::Powershell,
         )?),
         Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
-        Format::Pe => Container::Pe(tagged(Pe::parse(bytes), ErrorCode::InvalidPe, Stage::Pe)?),
+        Format::Pe => Container::Pe(Pe::parse(bytes)?),
         Format::Navx => Container::Navx(tagged(
             Navx::parse(bytes),
             ErrorCode::InvalidNavx,
@@ -220,6 +225,29 @@ fn verify_inner(
             Stage::Cab,
         )?),
     };
+    verify_container(bytes, options, format, container)
+}
+
+/// Verify a parsed PE without reparsing its headers. All hashes, CMS signatures,
+/// timestamps, trust chains, and configured CRLs are still checked.
+///
+/// The parsed value has private fields and borrows immutable bytes, so it
+/// cannot substitute altered bytes or caller-supplied verification assertions.
+pub fn verify_parsed_pe(
+    pe: crate::parse::Pe<'_>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_container(pe.data, options, Format::Pe, Container::Pe(pe)).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+fn verify_container(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    format: Format,
+    mut container: Container<'_>,
+) -> Result<VerificationBundle> {
     let mut reports = Vec::new();
     let certificates: Vec<Vec<u8>> = match &container {
         Container::Pe(pe) => tagged(
@@ -599,7 +627,15 @@ fn verify_signature(
             None
         };
         let certificate = CertificateReport::parse(&signer.cert)?;
+        if let Some(timestamp) = &timestamp_verification {
+            check_fractional_validity(
+                trust_report.as_ref(),
+                timestamp.signing_time,
+                timestamp.fractional_seconds.as_deref(),
+            )?;
+        }
         reports.push(SignatureReport {
+            unverified_certificate_choices: sd.unverified_certificate_choices.clone(),
             subject: certificate.subject.display.clone(),
             digest_algorithm: format!("{hash:?}"),
             certificate_sha256: certificate.sha256.clone(),
@@ -670,14 +706,15 @@ pub(crate) fn verify_timestamp(
                 .detail("computed", hex(&computed))
                 .into());
             }
-            let at = parse_time(info[4])?;
-            if at > options.now {
+            let (at, fractional_seconds) = parse_time(info[4])?;
+            if at > options.now || (at == options.now && fractional_seconds.is_some()) {
                 return Err(VerificationError::new(
                     ErrorCode::TimestampInFuture,
                     Stage::Timestamp,
                     "timestamp is in the future",
                 )
                 .detail("signing_time", at)
+                .detail("fractional_seconds", &fractional_seconds)
                 .detail("validation_time", options.now)
                 .into());
             }
@@ -694,8 +731,11 @@ pub(crate) fn verify_timestamp(
             } else {
                 None
             };
+            check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
             timestamp = Some(TimestampReport {
+                fractional_seconds,
                 kind: "rfc3161".into(),
+                unverified_certificate_choices: token.unverified_certificate_choices,
                 signing_time: at,
                 certificate: CertificateReport::parse(&tsa.cert)?,
                 trust: trust_report,
@@ -713,14 +753,15 @@ pub(crate) fn verify_timestamp(
             )?;
             let time = cms::attribute(&tsa.signed, &[42, 134, 72, 134, 247, 13, 1, 9, 5])?
                 .context("countersignature lacks signingTime")?;
-            let at = parse_time(time)?;
-            if at > options.now {
+            let (at, fractional_seconds) = parse_time(time)?;
+            if at > options.now || (at == options.now && fractional_seconds.is_some()) {
                 return Err(VerificationError::new(
                     ErrorCode::TimestampInFuture,
                     Stage::Timestamp,
                     "timestamp is in the future",
                 )
                 .detail("signing_time", at)
+                .detail("fractional_seconds", &fractional_seconds)
                 .detail("validation_time", options.now)
                 .into());
             }
@@ -736,8 +777,11 @@ pub(crate) fn verify_timestamp(
             } else {
                 None
             };
+            check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
             timestamp = Some(TimestampReport {
+                fractional_seconds,
                 kind: "pkcs9_countersignature".into(),
+                unverified_certificate_choices: Vec::new(),
                 signing_time: at,
                 certificate: CertificateReport::parse(&tsa.cert)?,
                 trust: trust_report,
@@ -747,14 +791,130 @@ pub(crate) fn verify_timestamp(
     Ok(timestamp)
 }
 
-fn parse_time(node: Node<'_>) -> Result<u64> {
+pub(crate) fn check_fractional_validity(
+    trust: Option<&TrustReport>,
+    seconds: u64,
+    fraction: Option<&str>,
+) -> Result<()> {
+    if let (Some(trust), Some(fraction)) = (trust, fraction) {
+        // webpki checks notBefore and notAfter at whole seconds. Also check the
+        // nonzero fraction against leaf/intermediate expiry. Trust anchors are
+        // configured keys and retain webpki's validity policy.
+        for cert in trust.chain.iter().take(trust.chain.len().saturating_sub(1)) {
+            if cert.not_after <= seconds {
+                return Err(VerificationError::new(
+                    ErrorCode::CertificateExpired,
+                    Stage::CertificateChain,
+                    "fractional timestamp exceeds certificate validity",
+                )
+                .detail("certificate", cert)
+                .detail("validation_time", seconds)
+                .detail("fractional_seconds", fraction)
+                .into());
+            }
+        }
+    }
+    Ok(())
+}
+
+fn parse_time(node: Node<'_>) -> Result<(u64, Option<String>)> {
     match node.tag {
-        0x17 => Ok(::der::asn1::UtcTime::from_der(node.full)?
-            .to_unix_duration()
-            .as_secs()),
-        0x18 => Ok(::der::asn1::GeneralizedTime::from_der(node.full)?
-            .to_unix_duration()
-            .as_secs()),
+        0x17 => Ok((
+            ::der::asn1::UtcTime::from_der(node.full)?
+                .to_unix_duration()
+                .as_secs(),
+            None,
+        )),
+        0x18 if node.body.len() > 15 => {
+            let body = node.body;
+            ensure!(
+                body.len() <= 80 && body[14] == b'.' && body.last() == Some(&b'Z'),
+                "noncanonical fractional GeneralizedTime"
+            );
+            let fraction = &body[15..body.len() - 1];
+            ensure!(
+                !fraction.is_empty()
+                    && fraction.iter().all(u8::is_ascii_digit)
+                    && fraction.last() != Some(&b'0'),
+                "noncanonical fractional GeneralizedTime"
+            );
+            let mut whole = vec![0x18, 15];
+            whole.extend_from_slice(&body[..14]);
+            whole.push(b'Z');
+            let seconds = ::der::asn1::GeneralizedTime::from_der(&whole)?
+                .to_unix_duration()
+                .as_secs();
+            Ok((seconds, Some(std::str::from_utf8(fraction)?.into())))
+        }
+        0x18 => Ok((
+            ::der::asn1::GeneralizedTime::from_der(node.full)?
+                .to_unix_duration()
+                .as_secs(),
+            None,
+        )),
         _ => anyhow::bail!("invalid timestamp time encoding"),
+    }
+}
+
+#[cfg(test)]
+mod time_tests {
+    use super::*;
+
+    fn time(text: &str) -> Result<(u64, Option<String>)> {
+        let mut bytes = vec![0x18, text.len() as u8];
+        bytes.extend_from_slice(text.as_bytes());
+        parse_time(der::one(&bytes, 0x18)?)
+    }
+
+    #[test]
+    fn generalized_time_preserves_fraction_and_requires_canonical_bounded_precision() {
+        assert_eq!(time("20270115080000Z").unwrap(), (1800000000, None));
+        assert_eq!(
+            time("20270115080000.009Z").unwrap(),
+            (1800000000, Some("009".into()))
+        );
+        assert!(time(&format!("20270115080000.{}1Z", "0".repeat(63))).is_ok());
+        assert!(time(&format!("20270115080000.{}1Z", "0".repeat(64))).is_err());
+        for text in [
+            "20270115080000.Z",
+            "20270115080000.0Z",
+            "20270115080000.50Z",
+            "20270115080000,5Z",
+            "20270115080000.5+0000",
+            "20270115080000.aZ",
+            "20270230080000.5Z",
+            "20270115086000.5Z",
+        ] {
+            assert!(time(text).is_err(), "{text}");
+        }
+    }
+
+    #[test]
+    fn fractional_expiry_checks_leaf_and_intermediates_but_not_configured_anchor() {
+        let bytes = include_bytes!("../tests/fixtures/good-intermediate.exe");
+        let mut store = TrustStore::default();
+        store
+            .add_roots(include_bytes!("../tests/fixtures/root.der"))
+            .unwrap();
+        let options = VerifyOptions {
+            trust: Some(&store),
+            check_revocation: false,
+            allow_sha1: false,
+            now: 1800000000,
+        };
+        let verified = verify_pe(bytes, &options).unwrap();
+        let trust = verified.signatures[0].trust.as_ref().unwrap();
+        assert_eq!(trust.chain.len(), 3);
+        for index in 0..trust.chain.len() {
+            let mut trust = trust.clone();
+            trust.chain[index].not_after = options.now;
+            assert!(check_fractional_validity(Some(&trust), options.now, None).is_ok());
+            let result = check_fractional_validity(Some(&trust), options.now, Some("001"));
+            if index < 2 {
+                assert!(result.is_err());
+            } else {
+                assert!(result.is_ok());
+            }
+        }
     }
 }

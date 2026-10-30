@@ -21296,6 +21296,366 @@
           "Usage: rssig verify"
         ]
       }
+    },
+    {
+      "id": "good-pe-certificate-choice",
+      "input": "good-pe-certificate-choice.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "unverified_certificate_choices": [
+                    {
+                      "tag": 161,
+                      "der": "a181f730819da123a421301f311d301b06035504030c1472737369672074657374207075626c69736865723023a421301f311d301b06035504030c1472737369672074657374207075626c6973686572300a06082a8648ce3d04030202012a3022180f32303237303131353037353832305a180f32303237303131353038303134305a301e301c06032a030431150c13746573742d6f6e6c7920617474726962757465300a06082a8648ce3d04030203490030460221009be5a43587ec1a3989870458b9a8f717e1ec7ce253b7bee88df904d30824791a022100d00e9e5371f1628aa201593e744bf5fcdc0b5cae5d30d35240b7eca0a03b7a09"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-rfc3161-certificate-choice",
+      "input": "good-rfc3161-certificate-choice.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "timestamp": 1800000000,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "trust": {
+                      "revocation": {
+                        "status": "good"
+                      }
+                    },
+                    "unverified_certificate_choices": [
+                      {
+                        "tag": 161,
+                        "der": "a181f730819da123a421301f311d301b06035504030c1472737369672074657374207075626c69736865723023a421301f311d301b06035504030c1472737369672074657374207075626c6973686572300a06082a8648ce3d04030202012a3022180f32303237303131353037353832305a180f32303237303131353038303134305a301e301c06032a030431150c13746573742d6f6e6c7920617474726962757465300a06082a8648ce3d04030203490030460221009be5a43587ec1a3989870458b9a8f717e1ec7ce253b7bee88df904d30824791a022100d00e9e5371f1628aa201593e744bf5fcdc0b5cae5d30d35240b7eca0a03b7a09"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-rfc3161-certificate-choice-der",
+      "input": "bad-rfc3161-certificate-choice-der.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "truncated DER value"
+        }
+      }
+    },
+    {
+      "id": "bad-rfc3161-certificate-choice-tag",
+      "input": "bad-rfc3161-certificate-choice-tag.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "unsupported CertificateChoices tag"
+        }
+      }
+    },
+    {
+      "id": "bad-rfc3161-certificate-choice-signature",
+      "input": "bad-rfc3161-certificate-choice-signature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "signature error"
+        }
+      }
+    },
+    {
+      "id": "bad-rfc3161-certificate-choice-no-signer",
+      "input": "bad-rfc3161-certificate-choice-no-signer.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "signer certificate missing"
+        }
+      }
+    },
+    {
+      "id": "rfc3161-fractional",
+      "input": "good-rfc3161-fractional.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "timestamp": 1799999999,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "trust": {
+                      "revocation": {
+                        "status": "good"
+                      }
+                    },
+                    "unverified_certificate_choices": [
+                      {
+                        "tag": 161,
+                        "der": "a181f730819da123a421301f311d301b06035504030c1472737369672074657374207075626c69736865723023a421301f311d301b06035504030c1472737369672074657374207075626c6973686572300a06082a8648ce3d04030202012a3022180f32303237303131353037353832305a180f32303237303131353038303134305a301e301c06032a030431150c13746573742d6f6e6c7920617474726962757465300a06082a8648ce3d04030203490030460221009be5a43587ec1a3989870458b9a8f717e1ec7ce253b7bee88df904d30824791a022100d00e9e5371f1628aa201593e744bf5fcdc0b5cae5d30d35240b7eca0a03b7a09"
+                      }
+                    ],
+                    "signing_time": 1799999999,
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rfc3161-fractional-future",
+      "input": "bad-rfc3161-fractional-future.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_in_future",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "timestamp is in the future"
+        }
+      }
+    },
+    {
+      "id": "rfc3161-fractional-expired",
+      "input": "bad-rfc3161-fractional-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800010001"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
+        }
+      }
+    },
+    {
+      "id": "rfc3161-fractional-noncanonical",
+      "input": "bad-rfc3161-fractional-noncanonical.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "noncanonical fractional GeneralizedTime"
+        }
+      }
     }
   ]
 }
