@@ -39,6 +39,37 @@ references, policy differences, and remaining rssig gaps. These are source-level
 findings, not a shared-corpus benchmark, security audit, or validation of Windows
 policy equivalence.
 
+## Rust parsing and verification APIs
+
+`rssig::parse` exposes untrusted PE and CMS structures for inspection.
+`rssig::verify` performs integrity, timestamp, trust, and revocation checks;
+existing crate-root verification functions remain available.
+
+```rust
+use rssig::{VerificationBundle, VerificationError};
+use rssig::parse::{Pe, SignedData};
+use rssig::verify::{VerifyOptions, verify_parsed_pe};
+
+fn inspect_and_verify(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+) -> Result<VerificationBundle, VerificationError> {
+    let pe = Pe::parse(bytes)?;
+    for signature in pe.signatures()? {
+        let cms = SignedData::parse(signature)?;
+        // These are unverified metadata, including unfamiliar algorithm OIDs.
+        let _content_type = cms.content_type();
+        let _certificates = cms.certificate_choices();
+    }
+    verify_parsed_pe(pe, options)
+}
+```
+
+This is the first module boundary within the existing crate. It does not yet
+provide separate crates, a `no_std` build, or public parsers for every container.
+See [the library boundary and compatibility notes](docs/library.md), including
+opaque certificate reporting and fractional timestamp precision.
+
 ## Windows file formats
 
 This checklist tracks Windows Authenticode files and related signed settings in

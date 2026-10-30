@@ -4,7 +4,8 @@ Work from the top down. Rank reflects verification correctness and confidence
 before convenience or additional formats. Every behavior change starts with a
 committed fixture, declarative specification case, and named Rust test that fails for the intended reason; follow
 [AGENTS.md](AGENTS.md). Production verification stays pure Rust, with the OS used
-only to load roots. All CLI output stays serialized domain data.
+only to load roots. Verification output stays serialized domain data; command
+diagnostics remain plain text.
 
 The [verification-only comparison](docs/comparison.md) informs the priorities
 below. Competitor behavior is evidence for a testcase or policy decision, not an
@@ -32,7 +33,7 @@ and ECDSA verification are already implemented; they are not missing features.
    These distinguish full path validation from the simpler walks in pe-sign
    and rsigncode. Embedded or AIA-provided certificates remain untrusted candidates.
 3. [ ] **Strengthen timestamp validation.** Cover malformed TSTInfo fields,
-   fractional GeneralizedTime, TSA EKU/KeyUsage, duplicate timestamp attributes,
+   TSA EKU/KeyUsage, duplicate timestamp attributes,
    timestamp-signature tampering, and parent-signature substitution. Define and
    test lifetime-signing and post-signing revocation policy explicitly. In
    particular, test an expired signer carrying lifetime-signing EKU plus an
@@ -41,6 +42,8 @@ and ECDSA verification are already implemented; they are not missing features.
    a reference for this distinction, not proof of Windows equivalence. Pin
    rejection of duplicate and mixed legacy/RFC 3161 timestamps; supporting a
    selection policy later requires explicit precedence and failure semantics.
+   Canonical fractional GeneralizedTime and opaque CertificateChoices now have
+   fixture coverage, including future/expiry boundaries; see [library notes](docs/library.md).
 4. [ ] **Strengthen CRL correctness and reporting.** Test intermediate revocation,
    missing issuer coverage, future thisUpdate, missing nextUpdate, competing
    CRLs, distribution-point scope, and unsupported delta/indirect CRLs. Report
@@ -123,6 +126,19 @@ and ECDSA verification are already implemented; they are not missing features.
     implement portable verification in Rust rather than delegating to native
     APIs. Test catalog signer trust and target-file membership separately; a
     valid catalog signature alone does not authenticate an arbitrary file.
+
+## Library extraction
+
+- [x] Expose untrusted PE/CMS parsers independently from verification within
+  the existing crate. Preserve unknown algorithm identifiers and opaque DER;
+  allow PE verification to reuse a parsed layout without trusting parse results.
+- [ ] Define public parse/verify boundaries for the remaining container formats
+  and structured SignerInfo/content inspection. Move shared error and DER types
+  into a dependency layer usable by parsing alone, then extract parser/verifier
+  crates while preserving the current facade and CLI.
+- [ ] Evaluate `no_std + alloc` for the parser after extraction. Audit dependency
+  features and add standalone parser build checks; keep native roots and CLI
+  dependencies outside it. Current modules still require `std`.
 
 ## Deferred — Oracle integration
 

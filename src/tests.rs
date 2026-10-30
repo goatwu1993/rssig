@@ -1,9 +1,11 @@
 mod appx_fixtures;
 mod cab_fixtures;
+mod certificate_choices;
 mod fixture_faults;
 mod msi_fixtures;
 mod msp_fixtures;
 mod navx_fixtures;
+mod parser_boundaries;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
@@ -719,6 +721,7 @@ fn regenerate_cli_fixtures() {
     write("not-pe.bin", b"not a Windows executable\n");
     write("root.der", &identity().root.to_der().unwrap());
     write("good.crl", &crl(false, false));
+    certificate_choices::write(&dir);
     write("revoked.crl", &crl(true, false));
     write("expired.crl", &crl(false, true));
     let mut forged = crl(false, false);

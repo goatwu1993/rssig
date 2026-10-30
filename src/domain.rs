@@ -495,11 +495,23 @@ pub struct TrustReport {
     pub revocation: RevocationReport,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UnverifiedCertificateChoice {
+    /// The context-specific ASN.1 tag (160 through 163), including constructed bit.
+    pub tag: u8,
+    /// Complete original DER, hex encoded. Not authenticated or used for trust.
+    pub der: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TimestampReport {
+    /// Exact decimal digits after the seconds, without a leading decimal point.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fractional_seconds: Option<String>,
     pub kind: String,
     pub signing_time: u64,
     pub certificate: CertificateReport,
     pub trust: Option<TrustReport>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unverified_certificate_choices: Vec<UnverifiedCertificateChoice>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DigestReport {
@@ -518,6 +530,8 @@ pub struct SignatureReport {
     pub nested_depth: usize,
     pub certificate: CertificateReport,
     pub embedded_certificates: Vec<CertificateReport>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unverified_certificate_choices: Vec<UnverifiedCertificateChoice>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_digest: Option<DigestReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
