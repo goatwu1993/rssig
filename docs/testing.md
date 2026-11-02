@@ -50,6 +50,16 @@ preserved. Rust/Cargo reports each named test directly. Separately, `tests/spec.
 Serde to load `tests/cases.json` and invokes the same CLI library for every
 declarative case. Neither path spawns a child process.
 
+`tests/cli/parse.rs` and the `parse-*` specification cases cover the inspection
+contract: good/tampered PE pairs, unknown envelope algorithms, opaque certificate
+choices, standalone/truncated CMS, ordered failures, and command diagnostics.
+The standalone CMS pair is extracted from `good-pe64.exe`; its bad counterpart
+loses only the final byte. `parse-unknown-digest.exe` changes only the outer
+SignedData digest OID, unlike the existing signer-algorithm fault fixture.
+Tests consume these committed artifacts and never regenerate them. Parse tests
+need no roots, CRLs, or validation time because they perform no authentication;
+paired verification assertions use explicit options and a pinned time.
+
 The binary passes process arguments, stdout, and stderr to the public
 Clap-based `rssig::cli::run_with_writers` entry point. That function takes argv
 including the program name and separate writers, returns an exit code, and never

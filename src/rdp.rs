@@ -3,7 +3,7 @@ use crate::{
     cms::{self, DetachedData},
     crypto::Hash,
     domain::*,
-    verify::{VerifyOptions, verify_timestamp},
+    verify::{VerifyOptions, timestamp::verify_timestamp},
 };
 use anyhow::{Context, Result, ensure};
 use base64ct::{Base64, Encoding};
@@ -262,7 +262,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
         };
         let certificate = CertificateReport::parse(&signer.cert)?;
         if let Some(timestamp) = &timestamp_verification {
-            crate::verify::check_fractional_validity(
+            crate::verify::timestamp::check_fractional_validity(
                 trust.as_ref(),
                 timestamp.signing_time,
                 timestamp.fractional_seconds.as_deref(),

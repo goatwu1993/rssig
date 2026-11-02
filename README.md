@@ -67,7 +67,18 @@ fn inspect_and_verify(
 
 This is the first module boundary within the existing crate. It does not yet
 provide separate crates, a `no_std` build, or public parsers for every container.
-See [the library boundary and compatibility notes](docs/library.md), including
+The CLI can inspect these structures without verifying them:
+
+```sh
+rssig parse application.exe
+rssig parse --format cms signature.p7s
+```
+
+Inspection JSON explicitly reports `verification_performed: false`. Signed PE
+is the default; standalone CMS requires `--format cms`. This command does not
+accept trust or verification policy flags. Parsing remains `std`-dependent.
+See [the module responsibility map](docs/architecture.md) and
+[the library boundary and compatibility notes](docs/library.md), including
 opaque certificate reporting and fractional timestamp precision.
 
 ## Windows file formats

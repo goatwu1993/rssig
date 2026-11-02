@@ -36,7 +36,12 @@ input order. Every nested `error` is itself a Problem Details object.
 
 The former product `test --cases` command has been retired. `invalid_test_suite` and
 `test_assertion_failed` remain reserved for deserializing historical reports;
-the current CLI exposes verification, help, and version. Tests run through Cargo.
+the current CLI exposes verification, PE/CMS parsing, help, and version. Tests run through Cargo.
+
+The `parse` command uses the same per-file and root Problem Details structure.
+A read or parse failure exits 1; usage errors exit 2. A successful parse reports
+unverified metadata and does not establish a trusted publisher. See the
+[parse command contract](library.md#parse-command).
 
 ## Problem types
 

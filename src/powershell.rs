@@ -335,10 +335,10 @@ mod tests {
             ("good.cab", "cab_authenticode"),
         ] {
             let b = fixture(name);
-            assert!(crate::verify::is_binary(&b));
+            assert!(crate::format::is_binary(&b));
             assert_eq!(crate::verify(&b, &options).unwrap().format, expected);
         }
-        assert!(!crate::verify::is_binary(&fixture("good-powershell.ps1")));
+        assert!(!crate::format::is_binary(&fixture("good-powershell.ps1")));
     }
 }
 
