@@ -5,7 +5,11 @@ modules are organized around the work they own, rather than a new crate hierarch
 
 | Module | Responsibility |
 | --- | --- |
-| `cli` | Arguments, file/configuration I/O, clock/root loading for verification, stdout/stderr and exit codes. |
+| `cli` | Top-level command dispatch, stdout/stderr, and exit codes. |
+| `cli/batch.rs` | Shared file reads, ordered results, first-failure Problem Details, and JSON envelopes. |
+| `cli/verify.rs` | Verification arguments and configuration: roots, CRLs, validation clock, and explicit policy. |
+| `cli/parse.rs` | Inspection arguments and explicit PE/CMS selection, with no verification setup. |
+| `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
 | `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
 | `parse` | Borrowed, untrusted PE/CMS structures; no hashing, signature verification, trust, clocks, or file I/O. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
@@ -21,6 +25,9 @@ modules are organized around the work they own, rather than a new crate hierarch
 
 Parsing is not an authenticated result. The verifier consumes immutable input and
 explicit policy, and embedded certificates remain untrusted chain candidates.
+Inspection has separate domain types and never calls the verifier. Both CLI
+commands share file/stream handling while keeping verification setup out of the
+parse path. The parser remains `std`-dependent; this is not `no_std` support.
 Format classification does not make an input valid: the selected parser enforces
 its structure. Filename hints never override recognized binary magic.
 

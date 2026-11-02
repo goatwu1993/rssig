@@ -6,6 +6,7 @@ mod crypto;
 mod der;
 pub mod domain;
 mod format;
+mod inspection;
 mod msi;
 mod navx;
 pub mod parse;

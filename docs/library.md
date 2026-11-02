@@ -27,7 +27,62 @@ and page hashes, CMS signature/content binding, timestamp, certificate trust,
 and configured CRL checks. Inspecting a CMS envelope does not cache a verified
 verdict; verification parses and authenticates the embedded signatures itself.
 The existing `verify`, `verify_pe`, and other format-specific functions retain
-their behavior and crate-root exports. The CLI continues to use them.
+their behavior and crate-root exports. The CLI uses the same verification engine.
+
+## Parse command
+
+```sh
+rssig parse application.exe library.dll
+rssig parse --format pe application.exe
+rssig parse --format cms signature.p7s
+```
+
+The default format is signed PE. `--format cms` selects a standalone DER
+CMS/PKCS#7 SignedData envelope, including detached envelopes; PEM and other
+container formats are not supported by this command. The selected format
+applies to all files in the invocation. Signed-PE layout restrictions still
+apply, so an unsigned PE returns `unsigned` rather than an empty signature list.
+
+Parsing emits one JSON document on stdout, with `schema_version: 1`,
+`command: "parse"`, `ok`, and ordered per-file `results`. Each successful file
+has `file`, `ok: true`, `format` (`pe` or `cms`),
+`verification_performed: false`, and a `signatures` array. A standalone CMS
+input contributes one envelope to this array, even if its signer set is empty.
+`ok` means the selected structure and reported metadata were decoded; it does
+not establish file integrity, signature validity, certificate trust, or freshness.
+
+Each signature envelope contains:
+
+| Field | Meaning |
+| --- | --- |
+| `version_der` | Original DER INTEGER, encoded as lowercase hex. |
+| `content_type` | Content-type OID in dotted notation. |
+| `content_der` | Original encoded inner content, or `null` for detached CMS. |
+| `digest_algorithms` | Ordered entries with `oid`, original `der`, and `parameters_der` (hex or `null`). Unknown algorithms are preserved. |
+| `certificate_choices` | Ordered entries with the ASN.1 `tag`, original `der`, and `certificate` metadata for X.509 choices; opaque alternatives have `certificate: null`. |
+| `revocation_choices_der` | Raw embedded revocation choices as hex strings; neither loaded into the trust store nor validated. |
+| `signer_infos_der` | Raw SignerInfo encodings as hex strings. Signer bodies, nested signatures, and timestamps are not interpreted recursively. |
+
+Certificate metadata uses the existing `CertificateReport` fields, including
+names/RDNs, EKUs, key usage, validity, extensions, DER, and a SHA-256 certificate
+fingerprint. Fingerprint calculation is for identification, not signature or
+file-integrity verification. The report contains no selected chain, trust
+verdict, revocation verdict, or validation time. Verification policy flags such
+as `--roots`, `--crl`, `--time`, and `--integrity-only` are rejected by `parse`.
+
+Exit codes are 0 when every file parses, 1 for any per-file read/parse/report
+failure, and 2 for invalid arguments. Per-file failures use the existing typed
+Problem Details contract; all inputs are retained, and the first failure also
+supplies the root problem. Usage errors are plain text on stderr; help/version
+are plain text on stdout. The public report types are `ParseReport`,
+`ParsedCmsReport`, `ParsedAlgorithmReport`, `ParsedCertificateChoice`,
+`ParseFileSuccess`, and `ParseFileResult` in `rssig::domain`.
+
+The parsing library still requires `std`. Separating parser and verifier
+responsibilities does not provide a `no_std` build or remove CLI/native-root
+packages from the dependency graph. `no_std + alloc` support needs a separate
+feature/dependency audit and dedicated build checks. See the
+[module responsibility map](architecture.md).
 
 ## CertificateChoices
 

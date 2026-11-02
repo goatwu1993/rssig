@@ -24,3 +24,6 @@ mod wsh;
 
 #[path = "cli/navx.rs"]
 mod navx;
+
+#[path = "cli/parse.rs"]
+mod parse;

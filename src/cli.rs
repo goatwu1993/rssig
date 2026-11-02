@@ -1,22 +1,20 @@
-//! Clap-based, in-process CLI entry point.
-use crate::domain::{
-    CommandReport, ErrorCode, FileFailure, FileResult, FileSuccess, Stage, VerificationError,
-};
-use crate::{TrustStore, VerifyOptions};
-use anyhow::{Context, Result, ensure};
+//! Clap-based, in-process CLI entry point and stream/exit-code contract.
+mod batch;
+mod parse;
+mod verify;
+
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde_json::Value;
 use std::{
     ffi::OsString,
     io::{self, Write},
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Parser)]
 #[command(
     version,
-    about = "Verify embedded Windows PE/MSI/MSP/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
+    about = "Parse PE/CMS metadata or verify embedded Windows PE/MSI/MSP/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode and RDP signatures in pure Rust; results are JSON"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -25,129 +23,22 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    Verify {
-        #[arg(required = true)]
-        files: Vec<PathBuf>,
-        /// Verify cryptography and image integrity without claiming certificate trust.
-        #[arg(long, conflicts_with_all = ["roots", "no_system_roots", "crl", "no_revocation"])]
-        integrity_only: bool,
-        /// Additional trusted roots (PEM bundle or DER certificate); repeatable.
-        #[arg(long)]
-        roots: Vec<PathBuf>,
-        #[arg(long)]
-        no_system_roots: bool,
-        /// Complete, current CRLs (PEM or DER); repeat for every issuer in each chain.
-        #[arg(long)]
-        crl: Vec<PathBuf>,
-        /// Explicitly disable revocation checking (reported in output).
-        #[arg(long)]
-        no_revocation: bool,
-        /// Permit legacy SHA-1 CMS/image digests (not SHA-1 certificate chains).
-        #[arg(long)]
-        allow_sha1: bool,
-        /// Validation time as Unix seconds. Defaults to the current time.
-        #[arg(long = "time")]
-        at: Option<u64>,
-        /// Compatibility flag; verification results are always JSON.
-        #[arg(long, hide = true)]
-        json: bool,
-    },
+    /// Authenticate embedded signatures with explicit trust and revocation policy.
+    Verify(verify::Args),
+    /// Inspect untrusted signed PE or standalone DER CMS metadata without verification.
+    Parse(parse::Args),
 }
 
 fn execute(command: Command) -> Result<(Value, u8)> {
-    let Command::Verify {
-        files,
-        integrity_only,
-        roots,
-        no_system_roots,
-        crl,
-        no_revocation,
-        allow_sha1,
-        at,
-        json: _,
-    } = command;
-    ensure!(
-        integrity_only || no_revocation || !crl.is_empty(),
-        "supply --crl for revocation checks, or explicitly choose --no-revocation / --integrity-only"
-    );
-    let mut trust = if integrity_only || no_system_roots {
-        TrustStore::default()
-    } else {
-        TrustStore::from_system()?
-    };
-    for path in roots {
-        trust
-            .add_roots(
-                &std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?,
-            )
-            .with_context(|| format!("loading roots from {}", path.display()))?;
+    match command {
+        Command::Verify(args) => verify::execute(args),
+        Command::Parse(args) => parse::execute(args),
     }
-    for path in &crl {
-        trust
-            .add_crl(&std::fs::read(path).with_context(|| format!("reading {}", path.display()))?)
-            .with_context(|| format!("loading CRL from {}", path.display()))?;
-    }
-    let now = match at {
-        Some(at) => at,
-        None => SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
-    };
-    let options = VerifyOptions {
-        trust: if integrity_only { None } else { Some(&trust) },
-        check_revocation: !no_revocation,
-        allow_sha1,
-        now,
-    };
-    let mut success = true;
-    let mut output = Vec::new();
-    for path in files {
-        let result = match std::fs::read(&path) {
-            Ok(bytes) => crate::verify::verify_detected(&bytes, Some(&path), &options),
-            Err(error) => Err(VerificationError::new(
-                ErrorCode::ReadFailed,
-                Stage::Input,
-                format!("reading {}: {error}", path.display()),
-            )
-            .detail("file", &path)
-            .detail("io_kind", format!("{:?}", error.kind()))
-            .detail("os_error", error.raw_os_error())),
-        };
-        match result {
-            Ok(verification) => output.push(FileResult::Success(FileSuccess {
-                file: path,
-                ok: true,
-                verification,
-            })),
-            Err(error) => {
-                success = false;
-                output.push(FileResult::Failure(FileFailure {
-                    file: path,
-                    ok: false,
-                    error,
-                }));
-            }
-        }
-    }
-    // The first failing input is the primary problem; retain every result,
-    // including successful files and subsequent problems, in the extension.
-    let problem = output.iter().find_map(|result| match result {
-        FileResult::Failure(failure) => Some(failure.error.problem.as_ref().clone()),
-        FileResult::Success(_) => None,
-    });
-    Ok((
-        serde_json::to_value(CommandReport {
-            problem,
-            schema_version: 1,
-            command: "verify".into(),
-            ok: success,
-            results: output,
-            error: None,
-        })?,
-        if success { 0 } else { 1 },
-    ))
 }
+
 /// Parse argv (including the program name) and capture all CLI output in one sink.
 ///
-/// Verification results are JSON; usage/configuration errors, help, and version
+/// Parse and verification results are JSON; usage/configuration errors, help, and version
 /// are plain text. This convenience API combines stdout and stderr for embedders.
 /// Use [`run_with_writers`] to preserve the process stream separation.
 /// Neither entry point exits the process or changes the working directory.
@@ -170,7 +61,7 @@ where
 
 /// Execute with separate output sinks, without exiting the calling process.
 ///
-/// Verification emits one JSON document to stdout (exit 0 or 1). Argument and
+/// Parsing and verification emit one JSON document to stdout (exit 0 or 1). Argument and
 /// configuration errors emit plain text to stderr (exit 2). Help/version emit
 /// plain text to stdout (exit 0). Writer failures are returned to the caller.
 pub fn run_with_writers<I, T, O, E>(arguments: I, stdout: O, stderr: E) -> io::Result<u8>
@@ -189,7 +80,7 @@ where
 }
 
 enum Output {
-    Verification(Value, u8),
+    Json(Value, u8),
     Text {
         text: String,
         exit: u8,
@@ -200,7 +91,7 @@ enum Output {
 impl Output {
     fn write(self, mut writer: impl Write) -> io::Result<u8> {
         match self {
-            Self::Verification(value, exit) => {
+            Self::Json(value, exit) => {
                 serde_json::to_writer_pretty(&mut writer, &value).map_err(|error| {
                     io::Error::new(error.io_error_kind().unwrap_or(io::ErrorKind::Other), error)
                 })?;
@@ -231,7 +122,7 @@ where
         }
     };
     match execute(cli.command) {
-        Ok((value, exit)) => Output::Verification(value, exit),
+        Ok((value, exit)) => Output::Json(value, exit),
         Err(error) => Output::Text {
             text: format!("error: {error:#}\n"),
             exit: 2,

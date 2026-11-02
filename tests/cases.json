@@ -21656,6 +21656,623 @@
           "/results/0/error/message": "noncanonical fractional GeneralizedTime"
         }
       }
+    },
+    {
+      "id": "parse-pe",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "good-pe64.exe"
+    },
+    {
+      "id": "parse-tampered-image",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "bad-image-digest.exe"
+    },
+    {
+      "id": "parse-invalid-signature",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "bad-cms-signature.exe"
+    },
+    {
+      "id": "parse-unknown-algorithm",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.127",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "parse-unknown-digest.exe"
+    },
+    {
+      "id": "parse-opaque-certificate",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48
+                    },
+                    {
+                      "tag": 48
+                    },
+                    {
+                      "tag": 161,
+                      "certificate": null,
+                      "der": "a181f730819da123a421301f311d301b06035504030c1472737369672074657374207075626c69736865723023a421301f311d301b06035504030c1472737369672074657374207075626c6973686572300a06082a8648ce3d04030202012a3022180f32303237303131353037353832305a180f32303237303131353038303134305a301e301c06032a030431150c13746573742d6f6e6c7920617474726962757465300a06082a8648ce3d04030203490030460221009be5a43587ec1a3989870458b9a8f717e1ec7ce253b7bee88df904d30824791a022100d00e9e5371f1628aa201593e744bf5fcdc0b5cae5d30d35240b7eca0a03b7a09"
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "good-pe-certificate-choice.exe"
+    },
+    {
+      "id": "parse-cms",
+      "command": [
+        "parse",
+        "--format",
+        "cms"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "cms",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "parse-attached-cms.der"
+    },
+    {
+      "id": "parse-explicit-pe",
+      "command": [
+        "parse",
+        "--format",
+        "pe"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "good-pe64.exe"
+    },
+    {
+      "id": "parse-cms-truncated",
+      "command": [
+        "parse",
+        "--format",
+        "cms"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "parse-truncated-cms.der"
+    },
+    {
+      "id": "parse-pe-truncated",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe"
+              }
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "bad-truncated.exe"
+    },
+    {
+      "id": "parse-pe-unsigned",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "unsigned",
+                "stage": "pe"
+              }
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "input": "unsigned.exe"
+    },
+    {
+      "id": "parse-mixed-inputs",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "version_der": "020101",
+                  "content_type": "1.3.6.1.4.1.311.2.1.4",
+                  "digest_algorithms": [
+                    {
+                      "oid": "2.16.840.1.101.3.4.2.1",
+                      "parameters_der": "0500"
+                    }
+                  ],
+                  "certificate_choices": [
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "tag": 48,
+                      "certificate": {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "revocation_choices_der": []
+                }
+              ]
+            },
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe"
+              }
+            },
+            {
+              "ok": false,
+              "error": {
+                "code": "read_failed",
+                "stage": "input"
+              }
+            }
+          ]
+        },
+        "stderr": ""
+      },
+      "inputs": [
+        "good-pe64.exe",
+        "bad-truncated.exe",
+        "missing-parse-input.exe"
+      ]
+    },
+    {
+      "id": "parse-missing-files",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "<FILES>"
+        ]
+      }
+    },
+    {
+      "id": "parse-unknown-format",
+      "command": [
+        "parse",
+        "--format",
+        "msi",
+        "fixtures/good-pe64.exe"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "invalid value",
+          "msi"
+        ]
+      }
+    },
+    {
+      "id": "parse-rejects-verification-policy",
+      "command": [
+        "parse",
+        "--integrity-only",
+        "fixtures/good-pe64.exe"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "unexpected argument",
+          "--integrity-only"
+        ]
+      }
+    },
+    {
+      "id": "parse-help",
+      "command": [
+        "parse",
+        "--help"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "stderr": "",
+        "stdout_contains": [
+          "--format",
+          "pe",
+          "cms",
+          "<FILES>"
+        ]
+      }
     }
   ]
 }

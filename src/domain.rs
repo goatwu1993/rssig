@@ -466,6 +466,51 @@ pub struct FileSuccess {
     #[serde(flatten)]
     pub verification: VerificationBundle,
 }
+/// Inspection metadata only. No field in this report establishes integrity or trust.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParseReport {
+    /// `pe` for an embedded PE envelope, or `cms` for standalone DER SignedData.
+    pub format: String,
+    pub verification_performed: bool,
+    pub signatures: Vec<ParsedCmsReport>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedCmsReport {
+    pub version_der: String,
+    pub content_type: String,
+    pub content_der: Option<String>,
+    pub digest_algorithms: Vec<ParsedAlgorithmReport>,
+    pub certificate_choices: Vec<ParsedCertificateChoice>,
+    /// Raw, untrusted revocation choices, not validated or configured CRLs.
+    pub revocation_choices_der: Vec<String>,
+    /// Raw SignerInfo bodies; nested signatures and timestamps are not interpreted.
+    pub signer_infos_der: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedAlgorithmReport {
+    pub oid: String,
+    pub der: String,
+    pub parameters_der: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedCertificateChoice {
+    pub tag: u8,
+    pub der: String,
+    /// Decoded metadata for X.509 choices; opaque alternatives remain raw DER.
+    pub certificate: Option<CertificateReport>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParseFileSuccess {
+    pub file: std::path::PathBuf,
+    pub ok: bool,
+    #[serde(flatten)]
+    pub parse: ParseReport,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FileFailure {
     pub file: std::path::PathBuf,
@@ -478,6 +523,14 @@ pub enum FileResult {
     Success(FileSuccess),
     Failure(FileFailure),
 }
+/// Per-file inspection outcome, separate from authenticated verification results.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ParseFileResult {
+    Success(ParseFileSuccess),
+    Failure(FileFailure),
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CommandReport<T> {
     #[serde(flatten)]

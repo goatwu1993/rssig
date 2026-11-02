@@ -679,6 +679,19 @@ fn regenerate_cli_fixtures() {
     );
     write("good-pe32.exe", &make_pe(false, false, false));
     write("good-pe64.exe", &good);
+    let parsed = crate::parse::Pe::parse(&good).unwrap();
+    let signatures = parsed.signatures().unwrap();
+    let cms = signatures[0];
+    write("parse-attached-cms.der", cms);
+    write("parse-truncated-cms.der", &cms[..cms.len() - 1]);
+    let needle = [6, 9, 96, 134, 72, 1, 101, 3, 4, 2, 1];
+    let at = good
+        .windows(needle.len())
+        .position(|w| w == needle)
+        .unwrap();
+    let mut unknown_digest = good.clone();
+    unknown_digest[at + needle.len() - 1] = 127;
+    write("parse-unknown-digest.exe", &unknown_digest);
     write("good-intermediate.exe", &intermediate_pe(false));
     write("bad-ca-key-usage.exe", &intermediate_pe(true));
     write("good-page-hashes.exe", &make_pe(true, true, false));

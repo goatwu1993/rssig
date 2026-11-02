@@ -41,7 +41,8 @@
             "minItems": 1,
             "items": {
               "type": "string"
-            }
+            },
+            "description": "CLI argv after rssig. verify authenticates; parse inspects signed PE (default) or standalone DER CMS (--format cms) without verification. See docs/library.md for the parse result contract."
           },
           "expect": {
             "type": "object",
