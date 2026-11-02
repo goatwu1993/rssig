@@ -35,3 +35,7 @@ check-coverage-tools:
 		echo "  cargo install cargo-llvm-cov --version 0.9.1 --locked  # rustup"; \
 		exit 1; \
 	}
+
+.PHONY: build
+build:
+	@$(CARGO) build --locked
