@@ -1,10 +1,12 @@
+mod error;
 use crate::crypto::ALGORITHMS;
 use crate::domain::{
     CertificateReport, CrlReport, ErrorCode, OidReport, RevocationReport, RevocationStatus, Stage,
-    TrustReport, VerificationError, webpki_error,
+    TrustReport, VerificationError,
 };
 use ::der::{Decode, Encode};
 use anyhow::{Context, Result, ensure};
+use error::webpki_error;
 use rustls_pki_types::{CertificateDer, UnixTime};
 use std::time::Duration;
 use x509_cert::{Certificate, crl::CertificateList};

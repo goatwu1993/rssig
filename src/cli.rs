@@ -2,7 +2,7 @@
 use crate::domain::{
     CommandReport, ErrorCode, FileFailure, FileResult, FileSuccess, Stage, VerificationError,
 };
-use crate::{TrustStore, VerifyOptions, verify};
+use crate::{TrustStore, VerifyOptions};
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use serde_json::Value;
@@ -101,27 +101,7 @@ fn execute(command: Command) -> Result<(Value, u8)> {
     let mut output = Vec::new();
     for path in files {
         let result = match std::fs::read(&path) {
-            Ok(bytes) => {
-                if crate::appx::has_extension(&path) && !crate::verify::is_binary(&bytes) {
-                    crate::verify_appx(&bytes, &options)
-                } else if crate::powershell::has_xml_extension(&path)
-                    && !crate::verify::is_binary(&bytes)
-                {
-                    crate::verify_powershell_xml(&bytes, &options)
-                } else if crate::rdp::has_extension(&path) && !crate::verify::is_binary(&bytes) {
-                    crate::verify_rdp(&bytes, &options)
-                } else if crate::powershell::has_extension(&path)
-                    && !crate::verify::is_binary(&bytes)
-                {
-                    crate::verify_powershell(&bytes, &options)
-                } else if let Some(kind) = crate::wsh::extension(&path)
-                    && !crate::verify::is_binary(&bytes)
-                {
-                    crate::verify::verify_wsh_as(&bytes, kind, &options)
-                } else {
-                    verify(&bytes, &options)
-                }
-            }
+            Ok(bytes) => crate::verify::verify_detected(&bytes, Some(&path), &options),
             Err(error) => Err(VerificationError::new(
                 ErrorCode::ReadFailed,
                 Stage::Input,
