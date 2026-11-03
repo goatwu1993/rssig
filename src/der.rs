@@ -1,4 +1,5 @@
 //! Small, bounded DER reader for the legacy PKCS#7 Authenticode envelope.
+use alloc::vec::Vec;
 use anyhow::{Result, bail, ensure};
 
 #[derive(Clone, Copy, Debug)]

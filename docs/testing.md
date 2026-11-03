@@ -43,6 +43,24 @@ Run the complete native and specification suite with:
 cargo test --locked
 ```
 
+Feature-boundary checks run separately in CI:
+
+```sh
+rustup target add thumbv7em-none-eabi
+cargo clippy --locked --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
+cargo test --locked --no-default-features
+cargo test --locked --no-default-features --features std
+cargo test --locked --no-default-features --features verify
+cargo test --locked --no-default-features --features cli
+```
+
+The bare-metal check compiles the library and its production dependencies on a
+target without `std`; it does not execute fixtures on that target. Host tests in
+`tests/parse_core.rs` exercise the same parser API, typed errors, borrowed signer
+encodings, and known PE digests in parser-only builds. The maximum `e_lfanew`
+fixture pins rejection of malformed offsets without 32-bit arithmetic overflow.
+The default suite continues to run every CLI, domain, crypto, and spec test.
+
 Every fixture regression is an individually named Rust test. `tests/cli/pe.rs`
 and `tests/cli/msi.rs` contain the 142 migrated cases, with their exit codes,
 error identities, diagnostics, exact array lengths, and serialized domain fields

@@ -17,9 +17,20 @@ but cannot pass verification.
 
 These types borrow immutable input and have private fields. Parsing does not
 consult a clock, read files, load roots, perform cryptography, or fetch URLs.
-It does not produce trusted/valid flags. Parse failures use the existing typed
-`VerificationError` contract (`invalid_pe`, `unsigned`,
-`invalid_certificate_table`, or `malformed_cms`, as applicable).
+It does not produce trusted/valid flags. Parse failures use `parse::Error`,
+which implements `core::error::Error` and exposes an `ErrorKind` through
+`kind()`: `InvalidPe`, `Unsigned`, `InvalidCertificateTable`, or `MalformedCms`.
+Its source chain retains diagnostic causes without depending on domain reports.
+With `verify` enabled, `VerificationError::from` maps these to the existing
+serialized codes/stages/causes. The CLI JSON contract is unchanged.
+
+`Pe::authenticode_chunks()` returns three borrowed slices in digest order,
+excluding the checksum, security directory, and certificate table. Feed the
+slices to any incremental hasher. The verifier uses the same slices, avoiding
+a whole-image copy. This interface carries no claimed digest or trust verdict.
+`SignedData::signer_infos()` returns a borrowed slice of DER slices, so reading
+the signer encodings does not allocate. X.509 certificates and parser metadata
+still use allocations; `no_std` does not mean allocation-free.
 
 `rssig::verify::verify_parsed_pe` consumes a parsed PE and explicit
 `VerifyOptions`. It reuses the PE layout while performing all the normal image
@@ -78,11 +89,9 @@ are plain text on stdout. The public report types are `ParseReport`,
 `ParsedCmsReport`, `ParsedAlgorithmReport`, `ParsedCertificateChoice`,
 `ParseFileSuccess`, and `ParseFileResult` in `rssig::domain`.
 
-The parsing library still requires `std`. Separating parser and verifier
-responsibilities does not provide a `no_std` build or remove CLI/native-root
-packages from the dependency graph. `no_std + alloc` support needs a separate
-feature/dependency audit and dedicated build checks. See the
-[module responsibility map](architecture.md).
+The CLI/report adapter requires `std`; the underlying parser builds on
+`core + alloc` without CLI, native-root, or verification dependencies. See the
+[feature boundary and module responsibility map](architecture.md).
 
 ## CertificateChoices
 
@@ -162,12 +171,31 @@ signatures, noncanonical fractions, future fractions, and fractions past
 certificate expiry. Public API tests also confirm that parsing a tampered image
 or signature succeeds while verification rejects it.
 
-## Next extraction steps
+## Feature selection and migration from PR #17
 
-The project remains one `std`-using crate with unchanged dependencies. The new
-module boundary covers PE and CMS; other format parsers remain internal.
-Separate parser and verifier crates require moving shared error/DER types out
-of verification-oriented modules, defining the remaining container interfaces,
-and isolating CLI/native-root dependencies. A later `no_std + alloc` parser
-would require a dependency/feature audit and its own build checks. Neither
-crate extraction nor `no_std` support is claimed by this change.
+```toml
+# Signed PE/CMS inspection on core + alloc (an allocator is required).
+rssig = { version = "0.1", default-features = false }
+
+# Alternatively: all verifiers and reports, with explicit roots and CRLs.
+# rssig = { version = "0.1", default-features = false, features = ["verify"] }
+```
+
+The default `cli` and `system-roots` features preserve the complete command-line
+tool. `verify` enables `std`, all supported format verifiers, and Serde domain
+types, without Clap or the native root loader. `system-roots` separately enables
+`TrustStore::from_system()`; explicit `TrustStore::add_roots`/`add_crl` work with
+`verify` alone. `std` alone enables standard-library support for the parser.
+All configurations retain RustCrypto verification and configured-root trust.
+
+Two library signatures change from PR #17: parser methods return `parse::Error`
+instead of `VerificationError`, and `SignedData::signer_infos()` returns
+`&[&[u8]]` instead of `Vec<&[u8]>`. Match parser errors with `error.kind()`;
+use `VerificationError::from(error)` when a report is needed. Functions returning
+`VerificationError` can continue using `?`. Use `.iter().copied()` for signer
+iteration or `.to_vec()` if an owned list is needed. Verification functions,
+options, and JSON types retain their existing signatures and semantics.
+
+The parser supports 32-bit and 64-bit targets and is compile-checked on a target
+without `std`. Full verification still requires `std`; the CFB reader and AppX
+archive/XML path have not been ported. Other container parsers remain internal.

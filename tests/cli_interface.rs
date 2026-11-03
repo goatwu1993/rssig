@@ -1,6 +1,32 @@
 use rssig::cli;
 use serde_json::Value;
 
+#[cfg(not(feature = "system-roots"))]
+#[test]
+fn unavailable_system_roots_require_explicit_policy_instead_of_downgrading_trust() {
+    let input = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/good-pe64.exe");
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let exit = cli::run_with_writers(
+        [
+            "rssig",
+            "verify",
+            "--no-revocation",
+            "--time",
+            "1800000000",
+            input,
+        ],
+        &mut stdout,
+        &mut stderr,
+    )
+    .unwrap();
+    assert_eq!(exit, 2);
+    assert!(stdout.is_empty());
+    let stderr = String::from_utf8(stderr).unwrap();
+    assert!(stderr.contains("system roots are unavailable in this build"));
+    assert!(stderr.contains("--no-system-roots"));
+}
+
 #[test]
 fn missing_files_are_plain_usage_errors() {
     let case: Value =

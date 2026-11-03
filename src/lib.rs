@@ -1,27 +1,56 @@
+//! Untrusted PE/CMS parsing and explicit Authenticode verification.
+//!
+//! Disable default features for a `no_std + alloc` parser. Enable `verify` for
+//! the RustCrypto verifier, `system-roots` for native root enumeration, and
+//! `cli` for the command-line adapter. Defaults retain the complete CLI.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+#[cfg(feature = "verify")]
 mod appx;
+#[cfg(feature = "verify")]
 mod cab;
+#[cfg(feature = "cli")]
 pub mod cli;
+#[cfg(feature = "verify")]
 mod cms;
+#[cfg(feature = "verify")]
 mod crypto;
 mod der;
+#[cfg(feature = "verify")]
 pub mod domain;
+#[cfg(feature = "verify")]
 mod format;
+#[cfg(feature = "cli")]
 mod inspection;
+#[cfg(feature = "verify")]
 mod msi;
+#[cfg(feature = "verify")]
 mod navx;
 pub mod parse;
+#[cfg(feature = "verify")]
 mod pe;
+#[cfg(feature = "verify")]
 mod powershell;
+#[cfg(feature = "verify")]
 mod rdp;
+#[cfg(feature = "verify")]
 mod report;
+#[cfg(feature = "verify")]
 mod trust;
+#[cfg(feature = "verify")]
 pub mod verify;
+#[cfg(feature = "verify")]
 mod wsh;
+#[cfg(feature = "verify")]
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
+#[cfg(feature = "verify")]
 pub use trust::TrustStore;
+#[cfg(feature = "verify")]
 pub use verify::{
     VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_pe,
     verify_pe, verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
 };
-#[cfg(test)]
+#[cfg(all(test, feature = "verify"))]
 mod tests;

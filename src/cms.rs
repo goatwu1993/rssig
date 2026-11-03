@@ -69,14 +69,18 @@ impl<'a> SignedData<'a> {
         if content.tag == 4 {
             content = der::one(content.body, 0x30)?;
         }
-        ensure!(!parsed.signers.is_empty(), "invalid signer count");
+        ensure!(!parsed.signer_infos().is_empty(), "invalid signer count");
         let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
         Ok(Self {
             content,
             content_type,
             certs,
             unverified_certificate_choices,
-            signers: parsed.signers,
+            signers: parsed
+                .signer_infos()
+                .iter()
+                .map(|bytes| der::one(bytes, 0x30))
+                .collect::<Result<_>>()?,
             digest_algorithms,
         })
     }
@@ -566,12 +570,19 @@ impl<'a> DetachedData<'a> {
             parsed.content_type_bytes == DATA && parsed.content.is_none(),
             "detached RDP signature must use id-data without embedded content"
         );
-        ensure!(!parsed.signers.is_empty(), "invalid detached signer count");
+        ensure!(
+            !parsed.signer_infos().is_empty(),
+            "invalid detached signer count"
+        );
         let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
         Ok(Self {
             certs,
             unverified_certificate_choices,
-            signers: parsed.signers,
+            signers: parsed
+                .signer_infos()
+                .iter()
+                .map(|bytes| der::one(bytes, 0x30))
+                .collect::<Result<_>>()?,
             digest_algorithms,
         })
     }

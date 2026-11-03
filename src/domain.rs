@@ -211,6 +211,23 @@ impl fmt::Display for VerificationError {
 }
 impl std::error::Error for VerificationError {}
 
+// Keep report policy at the verification boundary; the parser has no dependency
+// on domain types or serialization. Preserve the existing CLI error contract.
+impl From<crate::parse::Error> for VerificationError {
+    fn from(error: crate::parse::Error) -> Self {
+        use crate::parse::ErrorKind;
+        let (code, stage) = match error.kind() {
+            ErrorKind::InvalidPe => (ErrorCode::InvalidPe, Stage::Pe),
+            ErrorKind::Unsigned => (ErrorCode::Unsigned, Stage::Pe),
+            ErrorKind::InvalidCertificateTable => {
+                (ErrorCode::InvalidCertificateTable, Stage::CertificateTable)
+            }
+            ErrorKind::MalformedCms => (ErrorCode::MalformedCms, Stage::Cms),
+        };
+        Self::from_internal(error.inner, code, stage)
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NameAttribute {
     pub oid: String,

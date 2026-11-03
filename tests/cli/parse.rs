@@ -84,7 +84,8 @@ fn parse_pe_reports_metadata_without_verifying_tampered_images_or_signatures() {
             serde_json::json!(
                 parsed
                     .signer_infos()
-                    .into_iter()
+                    .iter()
+                    .copied()
                     .map(hex)
                     .collect::<Vec<_>>()
             )
@@ -283,4 +284,37 @@ fn parse_returns_writer_failures_without_panicking() {
         cli::run(args, Broken).unwrap_err().kind(),
         std::io::ErrorKind::BrokenPipe
     );
+}
+
+#[test]
+fn parse_rejects_maximum_pe_header_offset_with_a_typed_error() {
+    let (exit, json) = invoke(&["bad-pe-header-offset.exe"], &[]);
+    assert_eq!(exit, 1);
+    let error = &json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_pe");
+    assert_eq!(error["stage"], "pe");
+    assert_eq!(error["message"], "invalid PE signature");
+    assert_eq!(error["causes"], serde_json::json!(["invalid PE signature"]));
+    let bytes = include_bytes!("../fixtures/bad-pe-header-offset.exe");
+    let mut original = include_bytes!("../fixtures/good-pe64.exe").to_vec();
+    original[0x3c..0x40].copy_from_slice(&u32::MAX.to_le_bytes());
+    assert_eq!(bytes.as_slice(), original);
+
+    let mut stdout = Vec::new();
+    let path = fixture("bad-pe-header-offset.exe");
+    let exit = cli::run(
+        [
+            "rssig",
+            "verify",
+            "--integrity-only",
+            "--time",
+            "1800000000",
+            path.to_str().unwrap(),
+        ],
+        &mut stdout,
+    )
+    .unwrap();
+    assert_eq!(exit, 1);
+    let verified: Value = serde_json::from_slice(&stdout).unwrap();
+    assert_eq!(verified["results"][0]["error"], *error);
 }
