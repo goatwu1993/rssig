@@ -1,168 +1,365 @@
 # Prioritized roadmap
 
-Work from the top down. Rank reflects verification correctness and confidence
-before convenience or additional formats. Every behavior change starts with a
-committed fixture, declarative specification case, and named Rust test that fails for the intended reason; follow
-[AGENTS.md](AGENTS.md). Production verification stays pure Rust, with the OS used
-only to load roots. Verification output stays serialized domain data; command
-diagnostics remain plain text.
+Maintained against the merged [PR #18](https://github.com/goatwu1993/rssig/pull/18)
+baseline. **The next scoped implementation is CAB/NAVX parser extraction
+(LIB-01).** Confirmed correctness regressions take priority over planned
+refactoring. New algorithms, formats, and network access require their own
+evidence and policy decisions; this list does not promise every Windows behavior.
 
-The [verification-only comparison](docs/comparison.md) informs the priorities
-below. Competitor behavior is evidence for a testcase or policy decision, not an
-oracle. Preserve configured-root trust and fail-closed revocation rather than
-copying permissive defaults. PE digest, CMS content binding, RSA PKCS#1 v1.5,
-and ECDSA verification are already implemented; they are not missing features.
+Unchecked audit items identify work to investigate or validate, not confirmed
+vulnerabilities. Inventory existing implementation and tests before adding
+coverage. SHA-256/384/512, RSA PKCS#1 v1.5, ECDSA P-256/P-384, nested signatures,
+timestamps, and local CRL validation already exist.
 
-## P0 — Verification correctness
+## Maintenance and completion rules
 
-1. [ ] **Harden parser and resource limits.** Audit PE offset arithmetic, section
-   ranges, ASN.1 lengths, nesting, certificate counts, and total signature limits
-   across multiple certificate-table entries. Bound allocations and expensive
-   cryptographic work. Add adversarial fixtures and a local fuzzing harness;
-   require errors rather than panics or unbounded work. Apply aggregate budgets
-   across nested signatures, timestamps, candidate chains, and embedded AppX
-   packages; a per-node/depth limit alone does not bound total work. Include
-   cyclic/branching issuer candidates and many individually valid signatures.
-2. [ ] **Expand certificate-path policy tests.** Cover intermediate CA KeyUsage,
-   EKU restrictions, path-length and name constraints, unknown critical
-   extensions, alternative/cross-signed chains, and roots embedded by attackers.
-   Assert the exact selected chain and error codes. Review the limitations of
-   webpki's profile before describing it as complete Authenticode trust policy.
-   Add same-subject/different-key issuer and root fixtures, and a chain with
-   mathematically valid certificate signatures but invalid CA constraints.
-   These distinguish full path validation from the simpler walks in pe-sign
-   and rsigncode. Embedded or AIA-provided certificates remain untrusted candidates.
-3. [ ] **Strengthen timestamp validation.** Cover malformed TSTInfo fields,
-   TSA EKU/KeyUsage, duplicate timestamp attributes,
-   timestamp-signature tampering, and parent-signature substitution. Define and
-   test lifetime-signing and post-signing revocation policy explicitly. In
-   particular, test an expired signer carrying lifetime-signing EKU plus an
-   otherwise valid timestamp: add explicit handling or reject the unsupported
-   policy rather than silently extending validity. Jsign's implementation is
-   a reference for this distinction, not proof of Windows equivalence. Pin
-   rejection of duplicate and mixed legacy/RFC 3161 timestamps; supporting a
-   selection policy later requires explicit precedence and failure semantics.
-   Canonical fractional GeneralizedTime and opaque CertificateChoices now have
-   fixture coverage, including future/expiry boundaries; see [library notes](docs/library.md).
-4. [ ] **Strengthen CRL correctness and reporting.** Test intermediate revocation,
-   missing issuer coverage, future thisUpdate, missing nextUpdate, competing
-   CRLs, distribution-point scope, and unsupported delta/indirect CRLs. Report
-   which CRLs were actually used without labeling every supplied artifact
-   verified. Include the affected certificate/CRL in structured failures.
-   Keep the current conservative post-signing-revocation rejection documented
-   and tested; do not infer historical good status from a current CRL alone.
+- Update this file alongside implementation PRs. Keep task IDs stable, record
+  completion evidence or a PR link, and split work that no longer fits one PR.
+- Follow [AGENTS.md](AGENTS.md): committed fixture and manifest provenance,
+  declarative case, named in-process Rust test, observed intended failure, then
+  implementation. Ordinary tests never regenerate fixtures or execute them.
+- Preserve configured-root trust, fail-closed revocation, verification order,
+  explicit integrity-only policy, and stable typed JSON diagnostics. New schema
+  fields require specification cases and serialized-domain assertions first.
+- Completion requires focused tests, `cargo test --locked`, formatting, Clippy,
+  documentation, and applicable feature/target checks. Record platforms or checks
+  not run. Coverage alone is not correctness evidence.
+- Keep production cryptography pure Rust. The OS may enumerate roots only;
+  implementation references are never build/runtime dependencies. Normal tests
+  remain offline and independent of wall time, OS roots, and external verifiers.
+- Keep intentionally unsupported behavior documented. Deferred work remains
+  deferred until explicitly resumed; passing fixtures is not Windows policy parity.
 
-## P1 — Local coverage and dependable results
+## P0 — Verification correctness and bounded work
 
-5. [ ] **Commit broader algorithm fixtures.** Audit existing CLI coverage and
-   fill remaining good/bad SHA-384, SHA-512, ECDSA P-384, legacy SHA-1 opt-in,
-   weak RSA, and mismatched algorithm cases, including independent artifacts.
-   Check the parsed certificate,
-   EKUs, trust chain, and signature metadata in the expected JSON.
-6. [ ] **Make every failure classification precise.** Audit remaining generic
-   anyhow fallbacks so malformed CMS, certificate-table data, invalid
-   certificates/CRLs, weak algorithms, and unsupported features retain their
-   actual domain code and stage. Add code/stage/details assertions, not just
-   message matching.
-7. [ ] **Expand PE layout coverage.** Cover multiple WIN_CERTIFICATE entries,
-   section-table ordering, header/section padding, overlays, PE32/PE32+, page
-   sizes, and page hashes. Document deliberately rejected layouts; do not
-   silently broaden hashing rules without fixture evidence.
-8. [ ] **Protect verification boundaries and failure exits.** Extend isolated
-   fixtures that keep the PE digest valid while corrupting CMS content binding,
-   signed attributes, or the public-key signature. Check valid-but-untrusted,
-   wrong-EKU, missing/revoked-CRL, and invalid-TSA cases across the shared engine.
-   Assert that integrity-only bypasses trust and revocation, while disabling
-   revocation retains trust validation, with matching JSON flags. Invalid
-   cryptography and unsigned input must fail in every mode; untrusted input
-   must fail in trusted mode and must never be reported as trusted. This guards against the
-   digest-only, unchecked-status, and optional-trust pitfalls in the comparison;
-   preserve existing tests rather than duplicating them.
-9. [ ] **Automate the verification dependency boundary.** Check resolved normal
-   dependency graphs for Linux and macOS, including enabled features, and
-   inspect build scripts/native linkage when adding dependencies. Reject
-   OpenSSL, ring, aws-lc, native validation, and subprocess crypto in the engine.
-   authenticode-parser links libcrypto directly from its build script, so a
-   search for an `openssl` Cargo package alone is insufficient. Keep the native
-   root adapter's permitted enumeration role separate from verification.
-10. [x] **Move CLI coverage into Cargo.** Keep individually named in-process
-    Clap tests and the Serde-loaded JSON specification with committed fixtures.
-    The product has no custom test runner.
-11. [x] **Run Rust tests on Linux and macOS with coverage artifacts.** Check
-    formatting, Clippy, and `cargo test --locked`; publish Cobertura XML and HTML.
+- [ ] **SEC-01: Audit arithmetic and structural bounds across every parser.**
+  Cover PE/CFB/CAB/NAVX/ZIP offsets, DER lengths, script encodings, RDP framing,
+  and XML counts. Exercise truncations, zero/maximum counts, overlapping ranges,
+  inconsistent lengths, and 32-bit conversions. Extend PR #18's maximum-offset
+  regression; malformed input must return typed errors without panics or
+  unchecked allocations.
+- [ ] **SEC-02: Enforce aggregate verification budgets.** Inventory existing
+  per-container, per-node, and recursion limits; bound total decoded bytes,
+  certificates, signers, reports, nesting, path candidates, and crypto operations
+  across certificate-table entries, timestamps, nested signatures, and bundle
+  children. Check before each unit of work, including every SignerInfo. Test wide
+  valid structures and deep malformed ones, with predictable failures and no
+  partial success verdict.
+- [ ] **SEC-03: Bound host input and report memory.** The CLI reads entire files
+  before format-specific validation. Define input/root/CRL and batch/report
+  budgets; enforce read limits without relying only on metadata. Cover oversized
+  and changing files and nonregular inputs. Preserve one JSON document, ordered
+  per-file failures, and explicit handling of limit exhaustion.
+- [ ] **SEC-04: Audit CMS structure and signature binding.** Check
+  SignedData/SignerInfo versions, supported signer identifiers, canonical
+  INTEGER/SET encodings, duplicate/empty attributes, digest-set membership,
+  algorithm parameters, and contentType/messageDigest binding. Preserve exact
+  signed bytes; never normalize malformed signed encodings into valid ones.
+  Keep RDP direct-signature allowances out of Authenticode/countersignatures.
+- [ ] **SEC-05: Define ambiguous signer-certificate handling.** Cover duplicate
+  certificates, identical issuer/serial identifiers with different keys, missing
+  signer certificates, and reordered candidate sets. Ensure candidate selection
+  cannot accidentally trust embedded certificates or depend on a permissive
+  first match. Document deterministic rejection or candidate-search behavior.
+- [ ] **SEC-06: Expand certificate-path policy coverage.** Inventory current
+  leaf/intermediate EKU and KeyUsage tests, then cover BasicConstraints, path
+  length, name constraints, unknown critical extensions, alternative/cross-signed
+  paths, cycles, and same-subject/different-key issuers. Assert selected chains
+  and typed failures. Document webpki's applicable profile and trust-anchor
+  validity/constraint treatment without claiming complete Windows policy.
+- [ ] **SEC-07: Make root/CRL loading diagnostics explicit.** Audit unsupported
+  anchors skipped during conversion, mixed valid/invalid PEM bundles, duplicates,
+  empty stores, and partial native-root loading failures. Decide whether each
+  load is atomic and how exclusions are surfaced. Loading artifacts must never
+  imply that a signature or supplied CRL was verified.
+- [ ] **SEC-08: Complete timestamp structure and multiplicity tests.** Validate
+  the whole supported TSTInfo shape, including version, policy/serial fields,
+  optional-field ordering, and unknown fields. Cover duplicate/mixed RFC 3161
+  and PKCS#9 timestamps, TSA EKU criticality/exclusivity, KeyUsage, parent-signature
+  substitution, and malformed signingTime. Preserve multiple-timestamp rejection
+  until an explicit selection policy has its own tests.
+- [ ] **SEC-09: Define lifetime-signing and time-boundary policy.** Add an
+  expired signer with lifetime-signing EKU and an otherwise valid timestamp;
+  enforce supported semantics or reject the unsupported policy. Extend existing
+  fractional-time fixtures to selected intermediates, notBefore/notAfter, and
+  validation-time boundaries. Keep exact decimal precision and document signer,
+  TSA, trust-anchor, and current-CRL time policies separately.
+- [ ] **SEC-10: Audit CRL applicability and competing evidence.** Cover absent
+  nextUpdate, issuer/AKI mismatch, cRLSign usage, revoked intermediates, incomplete
+  issuer coverage, distribution-point scope, unknown critical extensions,
+  delta/indirect CRLs, and competing or unrelated supplied CRLs. Specify whether
+  an unusable extra CRL rejects a request or is excluded. Never silently treat
+  unknown status as good; pin freshness boundaries and unsupported-policy errors.
+- [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
+  from CRLs authenticated and used for each selected chain. Include affected
+  certificates/CRLs in structured failures. Preserve conservative rejection when
+  a current CRL lists a signer even after its signing time; historical good status
+  requires separate evidence and policy.
+- [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
+  all-required-signatures policy, primary/nested ordering, first-failure
+  precedence, and bundle/child identity and signer binding. Test a valid first
+  signature followed by a bad one and the reverse. Later parsing failures must
+  not mask earlier cryptographic failures during refactoring.
+- [ ] **SEC-13: Complete cryptographic algorithm invariant coverage.** Inventory
+  existing SHA-384/512 and P-384 cases before adding missing key/digest/signature
+  combinations. Cover malformed RSA/ECDSA encodings, weak and excessive key
+  sizes, incompatible OIDs/parameters, and certificate/CRL algorithm mismatches.
+  Keep SHA-1 content opt-in separate from unsupported SHA-1 chains; weak RSA must
+  remain rejected even with `--allow-sha1`.
 
-## P2 — Interoperability and additional features
+## P1 — Clean parse/verify interfaces
 
-12. [ ] **Expand independently produced local fixtures.** Existing Jsign-signed
-    MSI/MSP, CAB, PowerShell/XML, WSH, AppX packages/bundles, upstream SignTool
-    artifacts, and the independent RDP signature are a baseline. Add independent
-    PE, nested-signature, timestamp, and trusted-chain/revocation combinations,
-    including Relic-produced artifacts and narrow bad counterparts. Record tool
-    versions, licensing, hashes, and provenance; distinguish integrity-only
-    checks from trusted verification. Keep normal tests offline. A synthetic
-    fixture's expected result is not proof of Windows acceptance.
-13. [ ] **Record reproducible cross-tool verification differences.** For selected
-    committed fixtures, record independently obtained digest/CMS/timestamp
-    results from pinned Jsign, Relic, and other relevant implementations. Pin
-    roots, time, algorithms, revocation/network settings, and each tool's actual
-    verification boundary. Resolve disagreements against format evidence and
-    explicit rssig policy; do not treat a competitor's `Valid` or exit 0 as a
-    trusted verdict. Replay portable expectations through cases.json and native
-    Cargo tests without requiring competitors or native crypto at test/runtime.
-14. [ ] **Add controlled retrieval and additional revocation mechanisms.** Start
-    with bounded CRL/AIA retrieval, explicit offline behavior, timeouts, cache
-    policy, and pure Rust transport/validation. Bound redirects, response sizes,
-    total requests and total elapsed work for certificate-controlled URLs, with
-    a defined destination policy. Never promote retrieved issuers to trust
-    anchors or silently enable network access. Add OCSP only with responder
-    authorization, freshness, signature, and failure-policy tests. Avoid hidden
-    system verifier calls or native crypto dependencies.
-15. [ ] **Extend supported algorithms/formats as justified.** Consider RSA-PSS,
-    catalog signatures/membership, generic detached Authenticode inputs, and
-    additional formats after the current PE verification path has sufficient
-    coverage. Fail with an explicit unsupported
-    result until each feature is implemented and tested. Relic's catalog/detached
-    support and verifysign's Windows catalog lookup are reference use cases;
-    implement portable verification in Rust rather than delegating to native
-    APIs. Test catalog signer trust and target-file membership separately; a
-    valid catalog signature alone does not authenticate an arbitrary file.
+- [ ] **LIB-01: Next — expose CAB and NAVX parsing on `no_std + alloc`.** Add
+  `parse::Cab` and `parse::Navx` with typed structural errors, borrowed signature
+  bytes, and borrowed digest input. Both readers already borrow bytes and need
+  no filesystem access or decompression. Let verification reuse parsed containers
+  while retaining byte-oriented entry points, framing rules, failure order, and
+  trust policy. Acceptance: existing verification outputs are identical, new
+  behavior has fixture/spec/API coverage, full tests/formatting/Clippy pass, and
+  both parsers build without verifier, CLI, or native-root dependencies.
+- [ ] **LIB-02: Expose structured CMS signer and attribute inspection.** After
+  LIB-01, add borrowed SignerInfo, signer identifier, algorithm, signed/unsigned
+  attribute, and content views. Preserve unknown OIDs, parameters, and original
+  DER. Reuse structural parsing in verification while keeping algorithm and
+  trust policy there. Specify malformed/unsupported-value handling; inspection
+  must never manufacture authenticated verdicts.
+- [ ] **LIB-03: Add bounded nested-signature and timestamp inspection.** Build
+  on LIB-02 to inspect RFC 3161/PKCS#9 and nested CMS without trust configuration.
+  Apply shared recursion/work budgets and distinguish parsed times from verified
+  signing times. Extend inspection domain/schema cases before CLI output changes.
+- [ ] **LIB-04: Extract script and RDP parsing boundaries.** Separate decoding,
+  signature-block framing, and canonical hash input from verification for
+  PowerShell/XML, WSH, and RDP. Keep signed/unsigned RDP coverage explicit and
+  preserve text encodings and exact stored/canonical bytes. Establish which
+  parts can use `core + alloc` and isolate XML-dependent adapters.
+- [ ] **LIB-05: Extract MSI/MSP and AppX structural state.** Separate CFB/ZIP/XML
+  extraction from integrity checks and report construction. AppX package objects
+  should not acquire verification state as a side effect of hashing. Retain MSI
+  extended-metadata, bundle identity, and publisher-binding invariants; keep
+  `std`-dependent adapters explicit.
+- [ ] **LIB-06: Make format selection consistent for library callers.** Assess
+  a public explicit selector and optional filename hint without filesystem paths
+  in the core. Preserve binary-magic precedence, text ambiguity rules, and the
+  existing fallback/error contract. Extend parse CLI formats as their public
+  parser/report contracts become available.
+- [ ] **LIB-07: Clarify verification policy construction.** Evaluate explicit
+  trusted versus integrity-only constructors, revocation selection, and required
+  time while retaining current entry points. Audit confusing or contradictory
+  option combinations. Convenience APIs must never silently disable trust or
+  revocation, read the clock, or load system roots.
+- [ ] **LIB-08: Audit borrowing, errors, and public API stability.** Document
+  ownership and repeated-verification behavior; remove avoidable signature and
+  certificate copies with measurements and preserved validation order. Keep
+  parser errors independent of Serde/verification, specify stable kinds, and
+  evaluate typed root/CRL loading errors. Add migration notes for API changes.
+- [ ] **LIB-09: Evaluate a `no_std` shared verification core.** Inventory actual
+  `std` dependencies in crypto, trust, timestamps, reports, and format dispatch.
+  Move CLI paths/I/O/clocks outside the candidate core and audit RustCrypto/webpki
+  `alloc` features. Demonstrate the supported verification scope on a target
+  without `std`; keep CFB/AppX adapters separately gated where necessary. Do not
+  label parser-only support as full `no_std` verification.
+- [ ] **LIB-10: Reassess shared interfaces and crate extraction after reuse.**
+  Use PE/CAB/NAVX and subsequent consumers to identify necessary abstractions.
+  Evaluate separate parser/verifier/CLI crates against feature isolation, public
+  API clarity, packaging, and maintenance cost. Preserve the facade and document
+  migration; splitting crates is not a prerequisite for current `no_std` support.
 
-## Library extraction
+## P1 — Tests, portable specification, and engineering checks
 
-- [x] Expose untrusted PE/CMS parsers independently from verification within
-  the existing crate. Preserve unknown algorithm identifiers and opaque DER;
-  allow PE verification to reuse a parsed layout without trusting parse results.
-- [ ] Define public parse/verify boundaries for the remaining container formats
-  and structured SignerInfo/content inspection. Move shared error and DER types
-  into a dependency layer usable by parsing alone, then extract parser/verifier
-  crates while preserving the current facade and CLI.
-- [ ] Evaluate `no_std + alloc` for the parser after extraction. Audit dependency
-  features and add standalone parser build checks; keep native roots and CLI
-  dependencies outside it. Current modules still require `std`.
+- [ ] **TEST-01: Maintain a coverage inventory by invariant.** Map supported
+  formats, algorithms, policy modes, trust/timestamp paths, and stable errors to
+  existing cases. Identify missing good/bad pairs and independent producers;
+  copied format cases are not new cryptographic evidence. Add meaningful gaps
+  with exact domain assertions and pinned inputs, time, roots, and CRLs.
+- [ ] **TEST-02: Add local parser and verifier fuzz targets.** Start with DER,
+  PE/CMS, CAB/NAVX, script blocks, and archive/XML framing; seed with committed
+  fixtures. Exercise bounded verification with fixed policy where useful.
+  Minimize failures into committed regression fixtures/spec cases. Keep the
+  fuzzing toolchain optional and separate from ordinary `cargo test --locked`.
+- [ ] **TEST-03: Extend invariant and mutation testing.** Verify that excluded
+  checksum/signature fields and authenticated payload/metadata mutate as
+  documented, and that digest, CMS, timestamp, and trust faults stay isolated.
+  Use generated inputs for structural properties, never to regenerate expected
+  fixture results during ordinary tests or hide target failures behind setup errors.
+- [ ] **TEST-04: Exercise 32-bit behavior and independent consumers.** Current
+  bare-metal checks compile the parser but do not execute it there. Add a
+  practical 32-bit execution path for bounds regressions and tiny external
+  consumer builds that avoid dev-dependency feature unification. Cover minimal,
+  `std`, verifier-only, native-root, and CLI feature combinations and doctests.
+- [ ] **TEST-05: Validate the specification and schemas together.** Check
+  `cases.json` against `cases.schema.json` in the Rust workflow, reconcile schema
+  rules with the Serde loader, and detect invalid references or duplicate IDs.
+  Audit whether public verification/inspection report schemas suffice for another
+  implementation; add missing schema detail before extending output.
+- [ ] **TEST-06: Strengthen fixture-manifest consistency checks.** Beyond current
+  SHA-256 verification, validate byte counts, unique/safe paths, provenance/license
+  fields, case references, and unlisted or missing artifacts. Define intentional
+  exceptions for diagnostic JSON and helper data. Maintenance generation remains
+  explicit and requires review of changed binary artifacts.
+- [ ] **TEST-07: Automate complete-output compatibility comparisons.** Preserve
+  PR #18's in-process comparison approach for refactors: exit codes, complete
+  JSON, stdout, and stderr. Normalize only unavoidable checkout paths, never
+  security-relevant fields. Keep portable partial expectations and add exact
+  snapshots/assertions where they protect schema, ordering, or diagnostic causes.
+- [ ] **TEST-08: Automate dependency and native-code boundary checks.** Inspect
+  resolved normal dependencies/features on Linux/macOS and minimal builds.
+  Reject OpenSSL, ring, aws-lc, native validation, and subprocess crypto; examine
+  build scripts/linkage as well as package names. Allow native root enumeration
+  explicitly. Add dependency advisory/license review without making offline
+  fixture tests require network access.
+- [ ] **TEST-09: Improve CI evidence and regression visibility.** Keep existing
+  Linux/macOS, lint, coverage, and no_std jobs. Surface missing fixture/schema
+  checks and relevant uncovered production branches; distinguish the thin
+  process adapter from in-process engine coverage. Evaluate a coverage regression
+  policy after measuring the baseline, without redundant tests or exclusions
+  that hide production code.
+- [ ] **TEST-10: Measure performance and allocation budgets.** Benchmark parsing,
+  hashing, CMS verification, candidate-chain work, CRLs, and bundles separately
+  on representative sizes and adversarial bounded inputs. Track peak memory and
+  repeated metadata conversion. Consider streaming/caching or batch parallelism
+  with measured benefit, immutable input, bounded work, and deterministic results.
 
-## Deferred — Oracle integration
+## P1 — CLI, reporting, and distribution
 
-- [ ] Windows/SignTool/WinVerifyTrust oracle integration and differential
-  verification are deferred at the user's request. They are not prerequisites
-  for local development. Do not add a Windows runner as part of the work above.
-- [ ] If resumed later, record reference tool/OS versions, root stores,
-  validation time, revocation/network settings, and policy differences. Keep
-  reference tools separate from rssig's verification engine and replay recorded
-  expectations locally.
+- [ ] **PRODUCT-01: Make remaining failure classifications precise.** Audit
+  generic anyhow conversions for unsupported structures, invalid certificates,
+  root/CRL loading, timestamps, and exhausted limits. Preserve stable code/stage,
+  structured context, and causes. Test conversion from every parser error kind
+  and avoid requiring consumers to match prose.
+- [ ] **PRODUCT-02: Audit file/stream edge cases.** Cover non-UTF-8 paths, path
+  serialization failures, directories/unreadable inputs, repeated files, mixed
+  batches, and writer/flush failures through in-process CLI entry points. Prevent
+  panic paths while preserving one JSON document where output is writable;
+  argument/configuration errors remain plain stderr with exit 2.
+- [ ] **PRODUCT-03: Document result and schema evolution.** Define compatibility
+  rules for new fields, enum variants, optional values, raw DER, and schema
+  versions. Make parse-only, integrity-only, trusted, revocation-disabled, and
+  package-hashed-but-not-independently-verified catalog states unambiguous.
+  Keep supplied artifacts distinct from selected evidence.
+- [ ] **PRODUCT-04: Keep public API and policy documentation current.** Add
+  compiling examples for parse-only and explicit trusted verification, feature
+  combinations, and error handling. Update stale source paths in the comparison
+  document; keep format limits, CLI help, README tables, architecture, and tests
+  aligned. External comparisons retain pinned revisions and stated evidence limits.
+- [ ] **PRODUCT-05: Define compiler, target, and release support.** Choose and
+  test an MSRV; distinguish compiled targets/features from runtime-tested ones.
+  Check packaged-crate contents and consumer builds, and document semver/API
+  migration before publishing. Prepare reproducible Linux/macOS artifacts and
+  checksums when distribution is requested; fixture signing keys and read-only
+  reference clones must not enter release artifacts.
+- [ ] **PRODUCT-06: Document security review and reporting boundaries.** Provide
+  vulnerability-reporting and supported-version policies, and identify areas
+  needing independent review before stronger security claims. Keep existing
+  AI-assisted-development and Windows-policy limitations visible; passing tests
+  or high coverage is not an audit or certification.
+
+## P2 — Interoperability and existing-format coverage
+
+- [ ] **INTEROP-01: Expand independently produced fixtures.** Build on existing
+  Jsign MSI/MSP/CAB/NAVX/script/AppX, upstream SignTool, and independent RDP
+  artifacts. Prioritize independent PE, nested CMS, timestamps, and trusted
+  chain/CRL combinations, including Relic where useful. Record producer/version,
+  license, provenance, digest, and narrow bad counterparts. Separate integrity-only
+  evidence from trusted verification and keep normal tests offline.
+- [ ] **INTEROP-02: Record reproducible cross-tool differences.** Pin tools,
+  roots, time, algorithms, revocation/network settings, and each verifier's actual
+  checks. Resolve disagreements against format evidence and explicit rssig policy,
+  then commit portable expectations. A competitor's success exit is not necessarily
+  a trusted verdict; competitors remain maintenance tools.
+- [ ] **FORMAT-01: Extend PE layout evidence before broadening support.** Cover
+  multiple certificate entries, reordered sections, padding, overlays, PE32/PE32+,
+  page sizes, and page hashes. Document deliberately rejected gaps/overlaps and
+  certificate placement. Evaluate unsigned-PE inspection separately, with an
+  explicit API/CLI contract and unchanged unsigned rejection in verification.
+- [ ] **FORMAT-02: Audit MSI/MSP CFB and metadata variants.** Extend independent
+  v3/v4, stream-name/order, FAT/miniFAT, metadata, and legacy/extended-signature
+  coverage. Pin duplicate/aliased signature-stream handling and file-time details.
+  New layouts need bounded traversal and hash evidence; MSP applicability,
+  installation semantics, and patch authorization remain outside verification.
+- [ ] **FORMAT-03: Expand CAB/NAVX envelope interoperability.** Add independent
+  reserve/padding/hash-range and envelope/back-pointer cases. Consider CAB layouts
+  with unambiguous hashing policy and producer evidence; multipart handling needs
+  a separate design. NAVX payloads remain opaque, and signature success does not
+  imply extension validity or installability.
+- [ ] **FORMAT-04: Expand text signature encoding evidence.** Cover BOM/newline,
+  terminator, comment delimiter, Unicode, and duplicate-block behavior across
+  PowerShell/XML and WSH. Pin unsupported legacy encodings and encoded-script
+  behavior before adding decoders. No script execution, XMLDSig substitution,
+  DTD/entity fetching, or script execution-policy claims.
+- [ ] **FORMAT-05: Extend RDP scope mappings only with evidence.** Maintain
+  display-name/key/type mappings and canonicalization tests. Unknown signed scope
+  entries continue to fail; unscoped properties remain explicitly unsigned.
+  More settings/encodings or nested signatures need isolated fixtures and a
+  documented policy; never open fixtures in an RDP client.
+- [ ] **FORMAT-06: Audit AppX edge cases and policy gaps.** Extend
+  ZIP64/descriptors, compression/block boundaries, filename collisions, namespace
+  parsing, publisher DN comparison, and bundle child identity/signature cases.
+  Evaluate Unicode names and additional manifest/bundle profiles individually
+  with producer evidence and aggregate budgets. Keep unsupported external/stub/
+  nested bundles explicit; deployment selection and Windows Store acceptance
+  are not established by package integrity.
+
+## P3 — Additional capabilities requiring separate design
+
+- [ ] **FEATURE-01: Add bounded opt-in CRL/AIA retrieval.** Separate fetching
+  from verification and retain offline defaults. Define destination policy,
+  redirects, timeouts, response sizes, total request/work budgets, cache freshness,
+  and provenance for certificate-controlled URLs. Use pure Rust transport/crypto;
+  fetched issuers are untrusted candidates, never new trust anchors.
+- [ ] **FEATURE-02: Add OCSP with explicit evidence policy.** Require responder
+  authorization, signature/freshness checks, issuer/serial binding, and tested
+  unknown/revoked/error behavior. Define interaction with CRLs, caches, offline
+  operation, and timestamped verification. Network failure must not silently
+  become good revocation status.
+- [ ] **FEATURE-03: Add RSA-PSS where interoperability justifies it.** Specify
+  digest/MGF/salt/trailer parameters and policy for CMS, certificates, CRLs, and
+  timestamps independently. Add good/bad parameter and key fixtures and audit
+  RustCrypto/webpki support; never reinterpret PSS as v1.5.
+- [ ] **FEATURE-04: Add catalog signature and membership verification.** Verify
+  trusted catalog signatures and target membership separately. Design standalone
+  catalogs first, then explicitly wire AppX CodeIntegrity catalogs into reports
+  if supported. Until then retain `signature_verified: false` for package-hashed
+  embedded catalogs.
+- [ ] **FEATURE-05: Design generic detached signature verification.** Specify
+  how a sidecar binds to supplied content, format/SIP selection, CMS profile,
+  algorithms, trust, timestamps, and revocation. Reuse the engine while keeping
+  RDP canonicalization separate. Parsing a `.p7s` alone must never be presented
+  as verification of an unspecified file.
+
+## Deferred and outside the current verification scope
+
+- [ ] **DEFER-01: Windows oracle integration remains deferred at the user's
+  request.** Do not add a Windows/SignTool/WinVerifyTrust runner as part of these
+  tasks. If explicitly resumed, pin tool/OS versions, roots, time, revocation/
+  network configuration, and policy differences; replay captured expectations
+  locally without native verification in the engine.
+- Signing, installation, execution, patch applicability, device/deployment policy,
+  Windows-specific trust/distrust lists, and full Windows policy parity are not
+  implied by this roadmap. Add them only through a separately agreed scope.
 
 ## Completed baseline
 
-- [x] Pure Rust PE image/page hashing, CMS verification, nested signatures,
-  certificate-chain validation, timestamps, and supplied-CRL validation.
-- [x] Serializable verification bundles and typed errors, parsed CN/RDNs, EKUs,
-  certificate chains, timestamps, and CRL artifacts.
-- [x] Local fixture corpus, native in-process CLI tests, provenance/hash manifest, and
-  fixture-first TDD guide and language-independent JSON specification.
-- [x] Explicit unsupported digest/signature OID errors and correct classification
-  of nonzero trailing WIN_CERTIFICATE payloads, with three regression fixtures.
-
-The original 142 fixture cases and subsequent format regressions have native
-Rust tests, alongside CLI interface, parser, crypto, domain, and portable
-specification tests. Explicit maintenance helpers are ignored during
-ordinary tests. Coverage reports measure exercised source lines; they do not
-establish Windows policy equivalence or constitute a security certification.
+- [x] Pure Rust verification for PE, MSI/MSP, CAB, NAVX, PowerShell/XML, WSH,
+  signed RDP settings, and AppX/MSIX packages and embedded bundles, within the
+  limits in [README.md](README.md) and the format documents.
+- [x] Image/package/script/content binding, supported RustCrypto signatures,
+  nested Authenticode signatures, RFC 3161/PKCS#9 timestamps, configured-root
+  paths, and supplied local CRLs; explicit reduced-policy reports.
+- [x] Serializable verification/inspection types, parsed certificate
+  CN/RDNs/EKUs/KeyUsage/validity, selected chains, timestamp signer, CRL artifacts,
+  opaque DER preservation, and typed Problem Details errors with causes.
+- [x] Committed good/bad fixtures with provenance and SHA-256 manifest checks,
+  native in-process CLI tests, and the Serde-loaded portable specification.
+  Ordinary tests never spawn the product binary or regenerate expected data.
+- [x] Linux/macOS tests, formatting, Clippy, coverage artifacts, and specification
+  reports. Optional-feature CI includes a bare-metal parser compile check.
+- [x] PE/CMS parser and verification responsibility separation, independent
+  inspection CLI, and reusable parsed PE verification
+  ([PR #17](https://github.com/goatwu1993/rssig/pull/17)).
+- [x] `no_std + alloc` PE/CMS parsing, typed parser errors, borrowed signer/digest
+  input, and separate verifier/CLI/native-root features
+  ([PR #18](https://github.com/goatwu1993/rssig/pull/18)). Full verification
+  still requires `std`; see [library notes](docs/library.md).
+- [x] Canonical fractional timestamp and opaque CertificateChoices coverage,
+  unsupported algorithm diagnostics, and isolated nonzero certificate payload
+  and PE maximum-header-offset regressions.
