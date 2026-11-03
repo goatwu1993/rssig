@@ -6347,6 +6347,16 @@
       "cases": [
         "parse-unknown-algorithm"
       ]
+    },
+    {
+      "file": "bad-pe-header-offset.exe",
+      "sha256": "69e92c9ba99f9a8b66ee46468b2c9ba80f18fe059874ed97c95d6fdfc2505937",
+      "bytes": 2176,
+      "description": "Derived from good-pe64.exe by setting only e_lfanew at offsets 0x3c..0x40 to 0xffffffff. Reject invalid_pe at pe, without overflowing pointer arithmetic on 32-bit targets. Never execute.",
+      "cases": [
+        "parse-pe-header-offset",
+        "verify-pe-header-offset"
+      ]
     }
   ]
 }

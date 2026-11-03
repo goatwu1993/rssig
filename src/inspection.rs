@@ -68,6 +68,6 @@ fn signed_data(bytes: &[u8]) -> Result<ParsedCmsReport, VerificationError> {
             .iter()
             .map(|der| hex(der))
             .collect(),
-        signer_infos_der: parsed.signer_infos().into_iter().map(hex).collect(),
+        signer_infos_der: parsed.signer_infos().iter().copied().map(hex).collect(),
     })
 }

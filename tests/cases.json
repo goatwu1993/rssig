@@ -22273,6 +22273,59 @@
           "<FILES>"
         ]
       }
+    },
+    {
+      "id": "parse-pe-header-offset",
+      "input": "bad-pe-header-offset.exe",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "stderr": "",
+        "json": {
+          "schema_version": 1,
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "verify-pe-header-offset",
+      "input": "bad-pe-header-offset.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "stderr": "",
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

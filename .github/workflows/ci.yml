@@ -49,6 +49,29 @@ jobs:
       - name: Run Rust tests against committed fixtures
         run: cargo test --locked
 
+  library-features:
+    name: Library features and no_std
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Rust and a target without std
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: thumbv7em-none-eabi
+          components: clippy
+      - name: Check the parser without std or host dependencies
+        run: cargo clippy --locked --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
+      - name: Test parser-only builds
+        run: |
+          cargo test --locked --no-default-features
+          cargo test --locked --no-default-features --features std
+      - name: Test verification without CLI or native roots
+        run: cargo test --locked --no-default-features --features verify
+      - name: Test CLI with explicit roots only
+        run: cargo test --locked --no-default-features --features cli
+
   coverage:
     name: Coverage (Cobertura and HTML)
     runs-on: ubuntu-latest

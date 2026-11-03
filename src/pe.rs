@@ -5,11 +5,11 @@ use anyhow::{Result, ensure};
 
 impl Pe<'_> {
     pub(crate) fn digest(&self, algorithm: Hash) -> Result<Vec<u8>> {
-        let mut content = Vec::with_capacity(self.cert_start);
-        content.extend_from_slice(&self.data[..self.checksum]);
-        content.extend_from_slice(&self.data[self.checksum + 4..self.directory]);
-        content.extend_from_slice(&self.data[self.directory + 8..self.cert_start]);
-        Ok(algorithm.digest(&content))
+        let mut digest = algorithm.hasher();
+        for chunk in self.authenticode_chunks() {
+            digest.update(chunk);
+        }
+        Ok(digest.finalize().to_vec())
     }
 
     pub(crate) fn page_hashes(&self, hash: Hash) -> Result<Vec<u8>> {

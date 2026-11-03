@@ -59,7 +59,14 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
     let mut trust = if integrity_only || no_system_roots {
         TrustStore::default()
     } else {
-        TrustStore::from_system()?
+        #[cfg(feature = "system-roots")]
+        {
+            TrustStore::from_system()?
+        }
+        #[cfg(not(feature = "system-roots"))]
+        anyhow::bail!(
+            "system roots are unavailable in this build; use --no-system-roots with --roots, or --integrity-only"
+        );
     };
     for path in roots {
         trust

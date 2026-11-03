@@ -25,10 +25,16 @@ use anyhow::Result;
 use authenticode::verify_container;
 use container::Container;
 
+/// Explicit policy for verification; the engine never reads the clock or loads roots.
 pub struct VerifyOptions<'a> {
+    /// Configured trust anchors and CRLs. `None` explicitly selects integrity-only
+    /// verification, reported without a trusted-chain claim.
     pub trust: Option<&'a TrustStore>,
+    /// Require supplied CRLs when validating a trust chain.
     pub check_revocation: bool,
+    /// Permit SHA-1 content/signature digests, never SHA-1 certificate/CRL chains.
     pub allow_sha1: bool,
+    /// Caller-supplied validation time in Unix seconds.
     pub now: u64,
 }
 
@@ -183,7 +189,7 @@ fn verify_inner(
             Stage::Powershell,
         )?),
         Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
-        Format::Pe => Container::Pe(Pe::parse(bytes)?),
+        Format::Pe => Container::Pe(Pe::parse(bytes).map_err(VerificationError::from)?),
         Format::Navx => Container::Navx(tagged(
             Navx::parse(bytes),
             ErrorCode::InvalidNavx,
@@ -203,6 +209,19 @@ fn verify_inner(
 ///
 /// The parsed value has private fields and borrows immutable bytes, so it
 /// cannot substitute altered bytes or caller-supplied verification assertions.
+///
+/// ```
+/// use rssig::{parse::Pe, verify::{VerifyOptions, verify_parsed_pe}};
+/// # let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/good-pe64.exe"));
+/// let pe = Pe::parse(bytes)?;
+/// // Explicit integrity-only policy. Supply a TrustStore for trusted verification.
+/// let options = VerifyOptions {
+///     trust: None, check_revocation: false, allow_sha1: false, now: 1800000000,
+/// };
+/// let report = verify_parsed_pe(pe, &options)?;
+/// assert!(!report.signatures[0].chain_trusted);
+/// # Ok::<(), rssig::VerificationError>(())
+/// ```
 pub fn verify_parsed_pe(
     pe: crate::parse::Pe<'_>,
     options: &VerifyOptions<'_>,

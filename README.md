@@ -11,7 +11,9 @@ fixtures, a portable JSON specification, and native Rust tests. It is inspired b
 reference for PE/MSI Authenticode hashing, signatures, and verification behavior.
 [osslsigncode](https://github.com/mtrojnar/osslsigncode) and
 [rcodesign](https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign)
-also inform the project's design discussions. These projects are not runtime
+also inform the project's design discussions. The library boundary follows
+[authenticode-rs](https://github.com/google/authenticode-rs): borrowed PE/CMS
+inspection and digest input are usable without host integrations. These projects are not runtime
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 
@@ -45,6 +47,17 @@ policy equivalence.
 `rssig::verify` performs integrity, timestamp, trust, and revocation checks;
 existing crate-root verification functions remain available.
 
+Use the parser without the standard library or verification dependencies:
+
+```toml
+rssig = { version = "0.1", default-features = false }
+```
+
+This build requires `core + alloc`. For the full verifier with caller-supplied
+roots and CRLs, add `features = ["verify"]`; it requires `std` but does not
+include Clap or native-root enumeration. Add `system-roots` to enable
+`TrustStore::from_system()`. Default features retain the complete CLI.
+
 ```rust
 use rssig::{VerificationBundle, VerificationError};
 use rssig::parse::{Pe, SignedData};
@@ -65,8 +78,14 @@ fn inspect_and_verify(
 }
 ```
 
-This is the first module boundary within the existing crate. It does not yet
-provide separate crates, a `no_std` build, or public parsers for every container.
+Parser failures use `parse::Error` and its typed `ErrorKind`; verification
+failures use `VerificationError`. The `From` conversion lets `?` bridge them
+while preserving the CLI error codes and diagnostics. `Pe::authenticode_chunks()`
+borrows the image bytes in digest order for a caller-supplied hasher.
+`SignedData::signer_infos()` borrows the signer encodings without allocating
+on access. Parsing and hashing alone do not authenticate a signature.
+
+The library remains one crate; public parsers currently cover signed PE and CMS.
 The CLI can inspect these structures without verifying them:
 
 ```sh
@@ -76,7 +95,7 @@ rssig parse --format cms signature.p7s
 
 Inspection JSON explicitly reports `verification_performed: false`. Signed PE
 is the default; standalone CMS requires `--format cms`. This command does not
-accept trust or verification policy flags. Parsing remains `std`-dependent.
+accept trust or verification policy flags. The CLI requires `std`; the parser does not.
 See [the module responsibility map](docs/architecture.md) and
 [the library boundary and compatibility notes](docs/library.md), including
 opaque certificate reporting and fractional timestamp precision.

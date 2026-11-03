@@ -22,6 +22,7 @@ pub struct TrustStore {
 
 impl TrustStore {
     /// Load the platform root store only. No native signature or chain APIs are called.
+    #[cfg(feature = "system-roots")]
     pub fn from_system() -> Result<Self> {
         let native = rustls_native_certs::load_native_certs();
         ensure!(

@@ -1,8 +1,7 @@
-use crate::{
-    der::{self, Node},
-    domain::{ErrorCode, Stage, VerificationError},
-};
+use super::{Error, ErrorKind, error::DecodeError};
+use crate::der::{self, Node};
 use ::der::{Decode, asn1::ObjectIdentifier};
+use alloc::vec::Vec;
 use anyhow::{Context, Result, ensure};
 use x509_cert::Certificate;
 
@@ -24,7 +23,7 @@ impl<'a> AlgorithmIdentifier<'a> {
         );
         Ok(Self {
             node,
-            oid: ObjectIdentifier::from_der(fields[0].full)?,
+            oid: ObjectIdentifier::from_der(fields[0].full).map_err(DecodeError)?,
             parameters: fields.get(1).map(|n| n.full),
         })
     }
@@ -75,17 +74,17 @@ pub struct SignedData<'a> {
     der: &'a [u8],
     pub(crate) version: Node<'a>,
     content_type: ObjectIdentifier,
+    #[cfg(feature = "verify")]
     pub(crate) content_type_bytes: &'a [u8],
     pub(crate) content: Option<Node<'a>>,
     algorithms: Vec<AlgorithmIdentifier<'a>>,
     certificates: Vec<CertificateChoice<'a>>,
     revocations: Vec<&'a [u8]>,
-    pub(crate) signers: Vec<Node<'a>>,
+    signers: Vec<&'a [u8]>,
 }
 impl<'a> SignedData<'a> {
-    pub fn parse(bytes: &'a [u8]) -> std::result::Result<Self, VerificationError> {
-        Self::parse_inner(bytes)
-            .map_err(|e| VerificationError::from_internal(e, ErrorCode::MalformedCms, Stage::Cms))
+    pub fn parse(bytes: &'a [u8]) -> core::result::Result<Self, Error> {
+        Self::parse_inner(bytes).map_err(|e| Error::new(ErrorKind::MalformedCms, e))
     }
 
     pub(crate) fn parse_inner(bytes: &'a [u8]) -> Result<Self> {
@@ -93,7 +92,7 @@ impl<'a> SignedData<'a> {
         ensure!(der::oid(outer[0], SIGNED_DATA), "not PKCS#7 SignedData");
         let sd = der::one(outer[1].expect(0xa0)?.body, 0x30)?.children()?;
         ensure!((4..=6).contains(&sd.len()), "invalid SignedData");
-        ::der::asn1::UintRef::from_der(sd[0].full)?;
+        ::der::asn1::UintRef::from_der(sd[0].full).map_err(DecodeError)?;
         let algorithms = sd[1]
             .expect(0x31)?
             .children()?
@@ -105,7 +104,7 @@ impl<'a> SignedData<'a> {
             (1..=2).contains(&ci.len()),
             "invalid encapsulated content fields"
         );
-        let content_type = ObjectIdentifier::from_der(ci[0].full)?;
+        let content_type = ObjectIdentifier::from_der(ci[0].full).map_err(DecodeError)?;
         let content = if ci.len() == 2 {
             let mut remaining = ci[1].expect(0xa0)?.body;
             let content = der::take(&mut remaining)?;
@@ -143,12 +142,13 @@ impl<'a> SignedData<'a> {
             der: bytes,
             version: sd[0],
             content_type,
+            #[cfg(feature = "verify")]
             content_type_bytes: ci[0].body,
             content,
             algorithms,
             certificates,
             revocations,
-            signers,
+            signers: signers.into_iter().map(|node| node.full).collect(),
         })
     }
 
@@ -175,8 +175,9 @@ impl<'a> SignedData<'a> {
     pub fn revocation_choices_der(&self) -> &[&'a [u8]] {
         &self.revocations
     }
-    pub fn signer_infos(&self) -> Vec<&'a [u8]> {
-        self.signers.iter().map(|n| n.full).collect()
+    /// Borrow raw SignerInfo encodings without allocating on access.
+    pub fn signer_infos(&self) -> &[&'a [u8]] {
+        &self.signers
     }
 }
 
@@ -184,7 +185,11 @@ fn certificate_choice(node: Node<'_>) -> Result<CertificateChoice<'_>> {
     if node.tag == 0x30 {
         return Ok(CertificateChoice {
             node,
-            x509: Some(Certificate::from_der(node.full).context("invalid embedded certificate")?),
+            x509: Some(
+                Certificate::from_der(node.full)
+                    .map_err(DecodeError)
+                    .context("invalid embedded certificate")?,
+            ),
         });
     } else {
         ensure!(
@@ -194,7 +199,7 @@ fn certificate_choice(node: Node<'_>) -> Result<CertificateChoice<'_>> {
         let fields = node.children()?;
         if node.tag == 0xa3 {
             ensure!(fields.len() == 2, "invalid other certificate format");
-            ::der::asn1::ObjectIdentifier::from_der(fields[0].full)?;
+            ::der::asn1::ObjectIdentifier::from_der(fields[0].full).map_err(DecodeError)?;
         } else {
             ensure!(fields.len() == 3, "invalid opaque certificate envelope");
             fields[0].expect(0x30)?;
@@ -203,8 +208,8 @@ fn certificate_choice(node: Node<'_>) -> Result<CertificateChoice<'_>> {
                 (1..=2).contains(&alg.len()),
                 "invalid certificate algorithm"
             );
-            ::der::asn1::ObjectIdentifier::from_der(alg[0].full)?;
-            ::der::asn1::BitStringRef::from_der(fields[2].full)?;
+            ::der::asn1::ObjectIdentifier::from_der(alg[0].full).map_err(DecodeError)?;
+            ::der::asn1::BitStringRef::from_der(fields[2].full).map_err(DecodeError)?;
         }
         validate_opaque(node, 0, &mut 16384)?;
     }

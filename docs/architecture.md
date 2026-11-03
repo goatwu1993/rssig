@@ -1,6 +1,6 @@
 # Code responsibilities
 
-The crate keeps its existing public entry points and JSON contracts. Internal
+The crate keeps its verification entry points and JSON contracts. Internal
 modules are organized around the work they own, rather than a new crate hierarchy.
 
 | Module | Responsibility |
@@ -11,7 +11,7 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `cli/parse.rs` | Inspection arguments and explicit PE/CMS selection, with no verification setup. |
 | `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
 | `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
-| `parse` | Borrowed, untrusted PE/CMS structures; no hashing, signature verification, trust, clocks, or file I/O. |
+| `parse` | `no_std + alloc` PE/CMS structures, typed parsing errors, and borrowed PE digest chunks; no signature verification, trust, clocks, or file I/O. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
 | `verify/container.rs` | Embedded CMS extraction and each container's padding/framing rules. |
 | `verify/integrity.rs` | SIP/content binding, algorithm policy, image/package/script digests, and PE page hashes. Returns digest evidence to the signer pipeline. |
@@ -27,7 +27,9 @@ Parsing is not an authenticated result. The verifier consumes immutable input an
 explicit policy, and embedded certificates remain untrusted chain candidates.
 Inspection has separate domain types and never calls the verifier. Both CLI
 commands share file/stream handling while keeping verification setup out of the
-parse path. The parser remains `std`-dependent; this is not `no_std` support.
+parse path. The parser builds without `std`, and depends only on `anyhow`, `der`,
+and `x509-cert`, all with their default features disabled. The domain layer
+converts parser errors to the existing verification/CLI diagnostics.
 Format classification does not make an input valid: the selected parser enforces
 its structure. Filename hints never override recognized binary magic.
 
@@ -42,5 +44,27 @@ Container-specific parsing and hashing still live together outside PE. AppX's
 internal package object still accumulates component/report state during integrity
 validation. RDP retains its detached-content pipeline and scope policy. These
 are candidates for subsequent extractions, with their format-specific fixtures
-protecting behavior. This change does not introduce a format plugin trait,
-separate workspace crates, dependency changes, or `no_std` support.
+protecting behavior. Full verification still requires `std`, including the CFB
+reader and AppX compression/XML stack. There is no format plugin trait or
+separate workspace crate hierarchy.
+
+## Feature boundary
+
+| Feature | Responsibility |
+| --- | --- |
+| No features | Signed PE/CMS parsing, parser errors, borrowed digest input; `core + alloc`. |
+| `std` | Standard-library support in parser dependencies only. |
+| `verify` | All supported format verifiers, domain reports, RustCrypto/webpki, explicit roots/CRLs; enables `std`. |
+| `system-roots` | Native root enumeration only; enables `verify`. |
+| `cli` | Clap, filesystem/clock/stream adapters, and the binary; enables `verify`. |
+
+Defaults enable `cli` and `system-roots`. A CLI built without `system-roots`
+requires explicit `--no-system-roots` or `--integrity-only`; it never silently
+downgrades trust. Tests and CI build the parser for `thumbv7em-none-eabi`, where
+`std` is unavailable, and exercise verification with host integrations disabled.
+
+The design reference is Google's
+[`authenticode-rs` at 2538267](https://github.com/google/authenticode-rs/tree/25382676bbf4594b5bd69c2c55a5d88932aa27b7).
+Its borrowed structures and independent digest interface informed this boundary.
+rssig retains its own bounded PE layout rules, parser implementation, and full
+trust/revocation verifier; the reference is not a build or runtime dependency.

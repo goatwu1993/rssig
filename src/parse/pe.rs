@@ -1,4 +1,5 @@
-use crate::domain::{ErrorCode, Stage, VerificationError};
+use super::{Error, ErrorKind};
+use alloc::vec::Vec;
 use anyhow::{Result, ensure};
 
 /// A borrowed signed PE layout. All extracted data is untrusted.
@@ -12,29 +13,33 @@ pub struct Pe<'a> {
     pub(crate) directory: usize,
     pub(crate) cert_start: usize,
     pub(crate) cert_end: usize,
+    #[cfg(feature = "verify")]
     pub(crate) headers_end: usize,
+    #[cfg(feature = "verify")]
     pub(crate) sections: Vec<(usize, usize)>,
+    #[cfg(feature = "verify")]
     pub(crate) page_size: usize,
 }
 
 fn u16_at(data: &[u8], at: usize) -> Result<usize> {
     let b = data
-        .get(at..at + 2)
+        .get(at..)
+        .and_then(|bytes| bytes.get(..2))
         .ok_or_else(|| anyhow::anyhow!("truncated PE header"))?;
     Ok(u16::from_le_bytes(b.try_into()?) as usize)
 }
 fn u32_at(data: &[u8], at: usize) -> Result<usize> {
     let b = data
-        .get(at..at + 4)
+        .get(at..)
+        .and_then(|bytes| bytes.get(..4))
         .ok_or_else(|| anyhow::anyhow!("truncated PE header"))?;
     Ok(u32::from_le_bytes(b.try_into()?) as usize)
 }
 
 impl<'a> Pe<'a> {
     /// Parse PE headers and signed-image ranges without hashing or cryptography.
-    pub fn parse(data: &'a [u8]) -> std::result::Result<Self, VerificationError> {
-        Self::parse_inner(data)
-            .map_err(|e| VerificationError::from_internal(e, ErrorCode::InvalidPe, Stage::Pe))
+    pub fn parse(data: &'a [u8]) -> core::result::Result<Self, Error> {
+        Self::parse_inner(data).map_err(|e| Error::new(ErrorKind::InvalidPe, e))
     }
 
     /// Original immutable bytes, including the certificate table.
@@ -42,16 +47,27 @@ impl<'a> Pe<'a> {
         self.data
     }
 
+    /// Borrow the image bytes in Authenticode digest order, without copying.
+    ///
+    /// Excludes the checksum, security directory entry, and certificate table.
+    /// Feed each chunk to a digest implementation of your choice. Computing a
+    /// digest does not authenticate it or establish certificate trust.
+    ///
+    /// Only the bounded, contiguous layouts accepted by [`Self::parse`] are
+    /// supported; this does not implement arbitrary Windows PE hashing policy.
+    pub fn authenticode_chunks(&self) -> [&'a [u8]; 3] {
+        [
+            &self.data[..self.checksum],
+            &self.data[self.checksum + 4..self.directory],
+            &self.data[self.directory + 8..self.cert_start],
+        ]
+    }
+
     /// Extract embedded CMS DER objects, permitting only zero WIN_CERTIFICATE padding.
     /// CMS contents and signatures remain unverified; use `SignedData::parse` to inspect them.
-    pub fn signatures(&self) -> std::result::Result<Vec<&'a [u8]>, VerificationError> {
-        self.signatures_inner().map_err(|e| {
-            VerificationError::from_internal(
-                e,
-                ErrorCode::InvalidCertificateTable,
-                Stage::CertificateTable,
-            )
-        })
+    pub fn signatures(&self) -> core::result::Result<Vec<&'a [u8]>, Error> {
+        self.signatures_inner()
+            .map_err(|e| Error::new(ErrorKind::InvalidCertificateTable, e))
     }
 
     fn signatures_inner(&self) -> Result<Vec<&'a [u8]>> {
@@ -73,36 +89,42 @@ impl<'a> Pe<'a> {
         ensure!(data.get(..2) == Some(b"MZ"), "not a PE file (missing MZ)");
         let pe = u32_at(data, 0x3c)?;
         ensure!(
-            pe >= 64 && data.get(pe..pe + 4) == Some(b"PE\0\0"),
+            pe >= 64 && data.get(pe..).and_then(|bytes| bytes.get(..4)) == Some(b"PE\0\0"),
             "invalid PE signature"
         );
+        // Bound the complete COFF header before doing offset arithmetic. In
+        // particular, e_lfanew is an untrusted u32 even on a 32-bit target.
+        ensure!(data.len() - pe >= 24, "truncated PE header");
         let section_count = u16_at(data, pe + 6)?;
         let opt_len = u16_at(data, pe + 20)?;
         let opt = pe + 24;
-        let (dirs, num_dirs) = match u16_at(data, opt)? {
-            0x10b => (opt + 96, opt + 92),
-            0x20b => (opt + 112, opt + 108),
-            _ => anyhow::bail!("unsupported optional header magic"),
-        };
-        let directory = dirs + 32;
         ensure!(
-            directory + 8 <= opt + opt_len && opt + opt_len <= data.len(),
+            opt_len <= data.len() - opt && opt_len >= 2,
             "truncated optional header"
         );
+        let (dirs_offset, num_dirs_offset) = match u16_at(data, opt)? {
+            0x10b => (96, 92),
+            0x20b => (112, 108),
+            _ => anyhow::bail!("unsupported optional header magic"),
+        };
+        ensure!(dirs_offset + 40 <= opt_len, "truncated optional header");
+        let directory = opt + dirs_offset + 32;
+        let num_dirs = opt + num_dirs_offset;
         ensure!(u32_at(data, num_dirs)? >= 5, "PE has no security directory");
         let headers_end = u32_at(data, opt + 60)?;
         let section_table = opt + opt_len;
         ensure!(
-            section_table + section_count * 40 <= headers_end && headers_end <= data.len(),
+            section_table <= headers_end
+                && headers_end <= data.len()
+                && section_count <= (headers_end - section_table) / 40,
             "invalid SizeOfHeaders"
         );
         let cert_start = u32_at(data, directory)?;
         let cert_size = u32_at(data, directory + 4)?;
         if cert_start == 0 || cert_size == 0 {
-            return Err(VerificationError::new(
-                ErrorCode::Unsigned,
-                Stage::Pe,
-                "PE has no embedded signature",
+            return Err(Error::new(
+                ErrorKind::Unsigned,
+                anyhow::anyhow!("PE has no embedded signature"),
             )
             .into());
         }
@@ -143,11 +165,14 @@ impl<'a> Pe<'a> {
                 "section overlaps certificate table or EOF"
             );
         }
-        let machine = u16_at(data, pe + 4)?;
-        let page_size = if [0x200, 0x184, 0x284].contains(&machine) {
-            8192
-        } else {
-            4096
+        #[cfg(feature = "verify")]
+        let page_size = {
+            let machine = u16_at(data, pe + 4)?;
+            if [0x200, 0x184, 0x284].contains(&machine) {
+                8192
+            } else {
+                4096
+            }
         };
         Ok(Self {
             data,
@@ -155,8 +180,11 @@ impl<'a> Pe<'a> {
             directory,
             cert_start,
             cert_end,
+            #[cfg(feature = "verify")]
             headers_end,
+            #[cfg(feature = "verify")]
             sections,
+            #[cfg(feature = "verify")]
             page_size,
         })
     }
@@ -175,7 +203,10 @@ impl<'a> Pe<'a> {
                 u16_at(self.data, at + 4)? == 0x200 && u16_at(self.data, at + 6)? == 2,
                 "unsupported WIN_CERTIFICATE revision/type"
             );
-            let next = at + ((len + 7) & !7);
+            let next = len
+                .checked_add(7)
+                .and_then(|len| at.checked_add(len & !7))
+                .ok_or_else(|| anyhow::anyhow!("invalid certificate padding"))?;
             ensure!(
                 next <= self.cert_end && self.data[at + len..next].iter().all(|b| *b == 0),
                 "invalid certificate padding"
