@@ -1,5 +1,5 @@
 //! Runs against the same parser with or without the verification/CLI features.
-use rssig::parse::{ErrorKind, Pe, SignedData};
+use rssig::parse::{ErrorKind, Pe, PeTrait, SignedData};
 
 const GOOD: &[u8] = include_bytes!("fixtures/good-pe64.exe");
 
@@ -73,4 +73,19 @@ fn cms_inspection_borrows_signer_encodings_without_allocating_on_access() {
     assert!(signers[0].as_ptr_range().end <= bytes.as_ptr_range().end);
     assert_eq!(cms.certificate_choices().len(), 2);
     assert_eq!(cms.content_type().to_string(), "1.3.6.1.4.1.311.2.1.4");
+}
+
+#[test]
+fn generic_pe_trait_digest_matches_existing_authenticode_chunks() {
+    use sha2::{Digest, Sha256};
+    let pe = Pe::parse(GOOD).unwrap();
+    let mut generic = Sha256::new();
+    rssig::parse::authenticode_digest(&pe, &mut generic).unwrap();
+    let mut chunks = Sha256::new();
+    for chunk in pe.authenticode_chunks() {
+        chunks.update(chunk);
+    }
+    assert_eq!(generic.finalize(), chunks.finalize());
+    assert_eq!(pe.offsets().unwrap().after_header, 512);
+    assert_eq!(pe.sections().next().unwrap(), 512..1024);
 }
