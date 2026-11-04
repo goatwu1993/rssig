@@ -122,7 +122,7 @@ timestamps, and local CRL validation already exist.
   `thumbv7em-none-eabi` no-default-features check pass on macOS; Linux runs in CI.
   Arbitrary PE layouts remain unsupported.
 
-- [ ] **LIB-01: Next — expose CAB and NAVX parsing on `no_std + alloc`.** Add
+- [ ] **LIB-01: In progress — expose CAB and NAVX parsing on `no_std + alloc`.** Add
   `parse::Cab` and `parse::Navx` with typed structural errors, borrowed signature
   bytes, and borrowed digest input. Both readers already borrow bytes and need
   no filesystem access or decompression. Let verification reuse parsed containers
@@ -130,6 +130,9 @@ timestamps, and local CRL validation already exist.
   trust policy. Acceptance: existing verification outputs are identical, new
   behavior has fixture/spec/API coverage, full tests/formatting/Clippy pass, and
   both parsers build without verifier, CLI, or native-root dependencies.
+  Implementation branch: `feat/lib01-cab-navx-parsers`; expose borrowed container
+  views and parsed verification entry points, with fixture-backed API and
+  verification-contract checks before extraction.
 - [ ] **LIB-02: Expose structured CMS signer and attribute inspection.** After
   LIB-01, add borrowed SignerInfo, signer identifier, algorithm, signed/unsigned
   attribute, and content views. Preserve unknown OIDs, parameters, and original
