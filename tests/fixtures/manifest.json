@@ -6366,6 +6366,24 @@
       "cases": [
         "parse-cms-eoc-parameter"
       ]
+    },
+    {
+      "file": "bad-pe-gap-overlay-digest.exe",
+      "sha256": "f877b5ca28664ad13e3fa19c5acf4aa1cb34f1f2a99bfc58df1554aeb93bd50e",
+      "bytes": 2192,
+      "description": "Derived from good-pe64.exe: insert GAPBYTES before the first section and OVERLAY! before the certificate table; adjust PointerToRawData and security-directory offset by 8 and 16. Original CMS unchanged. Supported layout, image_digest_mismatch; SHA-256 of each included byte exactly once: 52dcc6b7526e7ebf531f9493ebba135f41eba0639a9cad7c7518fb6e2f5fc21d",
+      "cases": [
+        "bad-pe-gap-overlay-digest"
+      ]
+    },
+    {
+      "file": "bad-pe-certificate-range.exe",
+      "sha256": "5c9dfe192ea8794244d0d94bc0c66fb580c2cf4b528b03ec08fcf0eb89d009dd",
+      "bytes": 2176,
+      "description": "Derived from good-pe64.exe: increase security-directory certificate offset by 8, preserving size. Range extends 8 bytes beyond EOF; invalid_pe. CMS and other bytes unchanged.",
+      "cases": [
+        "bad-pe-certificate-range"
+      ]
     }
   ]
 }

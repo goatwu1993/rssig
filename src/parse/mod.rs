@@ -27,38 +27,23 @@ pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
 ///
-/// This hashes the bytes selected by the supplied PE view. It does not parse the
-/// embedded CMS, compare the signed digest, authenticate a signer, or establish trust.
+/// Uses the same bounded layout policy as [`Pe`]: nonempty sections may be
+/// supplied in any order, but must not overlap headers, each other, or the
+/// certificate table. Only a gap before the first section is supported. That
+/// gap and any overlay before the certificate table are hashed exactly once.
+/// A present certificate table must be nonempty, eight-byte aligned, and end
+/// at EOF. An absent table permits hashing unsigned images supplied by a view.
+///
+/// All ranges are validated before updating the sink; an error leaves it
+/// unchanged. The view must derive its offsets from the actual PE headers:
+/// this function validates the supplied layout, not the PE encoding itself.
+/// It does not parse CMS, authenticate a signer, or establish trust.
 pub fn authenticode_digest(
     pe: &impl PeTrait,
     digest: &mut impl digest::Update,
 ) -> Result<(), PeOffsetError> {
-    let offsets = pe.offsets()?;
-    let bytes = pe.data();
-    for range in [
-        0..offsets.check_sum,
-        offsets.after_check_sum..offsets.security_data_dir,
-        offsets.after_security_data_dir..offsets.after_header,
-    ] {
-        let chunk = bytes.get(range).ok_or(PeOffsetError)?;
+    for chunk in pe::validated_digest_chunks(pe)? {
         digest.update(chunk);
     }
-    let mut sections = (1..=pe.num_sections())
-        .map(|i| pe.section_data_range(i))
-        .collect::<Result<alloc::vec::Vec<_>, _>>()?;
-    sections.sort_unstable_by_key(|range| range.start);
-    let mut hashed = offsets.after_header;
-    for range in sections {
-        let chunk = bytes.get(range.clone()).ok_or(PeOffsetError)?;
-        digest.update(chunk);
-        hashed = hashed.checked_add(chunk.len()).ok_or(PeOffsetError)?;
-    }
-    let mut trailing = bytes.len().checked_sub(hashed).ok_or(PeOffsetError)?;
-    if let Some(cert) = pe.certificate_table_range()? {
-        let cert_len = cert.end.checked_sub(cert.start).ok_or(PeOffsetError)?;
-        trailing = trailing.checked_sub(cert_len).ok_or(PeOffsetError)?;
-    }
-    let end = hashed.checked_add(trailing).ok_or(PeOffsetError)?;
-    digest.update(bytes.get(hashed..end).ok_or(PeOffsetError)?);
     Ok(())
 }

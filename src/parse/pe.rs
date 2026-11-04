@@ -18,7 +18,7 @@ pub struct PeOffsets {
     pub after_header: usize,
 }
 
-/// A PE range or offset is outside the supplied byte slice or overflows.
+/// A PE range or offset is out of bounds or violates the supported layout policy.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PeOffsetError;
 
@@ -33,8 +33,9 @@ impl core::error::Error for PeOffsetError {}
 /// Borrowed PE byte ranges needed to calculate an Authenticode image digest.
 ///
 /// Implement this for another PE reader to reuse [`super::authenticode_digest`].
-/// The caller is responsible for ensuring the ranges follow the desired PE
-/// hashing policy; the trait does not validate or authenticate the input.
+/// Implementations must report the actual header offsets and file ranges.
+/// [`super::authenticode_digest`] validates them against rssig's bounded layout
+/// policy before hashing; it does not reparse the PE encoding or authenticate it.
 pub trait PeTrait {
     /// Complete immutable PE byte slice.
     fn data(&self) -> &[u8];
@@ -100,11 +101,7 @@ impl<'a> Pe<'a> {
     /// Only the bounded, contiguous layouts accepted by [`Self::parse`] are
     /// supported; this does not implement arbitrary Windows PE hashing policy.
     pub fn authenticode_chunks(&self) -> [&'a [u8]; 3] {
-        [
-            &self.data[..self.checksum],
-            &self.data[self.checksum + 4..self.directory],
-            &self.data[self.directory + 8..self.cert_start],
-        ]
+        digest_chunks(self.data, self.checksum, self.directory, self.cert_start)
     }
 
     /// Extract embedded CMS DER objects, permitting only zero WIN_CERTIFICATE padding.
@@ -292,4 +289,72 @@ impl PeTrait for Pe<'_> {
             after_header: self.headers_end,
         })
     }
+}
+
+// Shared byte selection for parsed images and externally supplied PE views.
+// Call only after validating the exclusions and image end.
+fn digest_chunks(data: &[u8], checksum: usize, directory: usize, end: usize) -> [&[u8]; 3] {
+    [
+        &data[..checksum],
+        &data[checksum + 4..directory],
+        &data[directory + 8..end],
+    ]
+}
+
+pub(super) fn validated_digest_chunks(pe: &impl PeTrait) -> Result<[&[u8]; 3], PeOffsetError> {
+    let bytes = pe.data();
+    let offsets = pe.offsets()?;
+    if offsets.check_sum.checked_add(4) != Some(offsets.after_check_sum)
+        || offsets.security_data_dir.checked_add(8) != Some(offsets.after_security_data_dir)
+        || offsets.after_check_sum > offsets.security_data_dir
+        || offsets.after_security_data_dir > offsets.after_header
+        || offsets.after_header > bytes.len()
+    {
+        return Err(PeOffsetError);
+    }
+    let image_end = match pe.certificate_table_range()? {
+        Some(range) => {
+            if range.start < offsets.after_header
+                || range.start >= range.end
+                || range.end != bytes.len()
+                || range.start % 8 != 0
+                || (range.end - range.start) % 8 != 0
+            {
+                return Err(PeOffsetError);
+            }
+            range.start
+        }
+        None => bytes.len(),
+    };
+    let count = pe.num_sections();
+    // The COFF NumberOfSections field is a u16. Bound work and allocation even
+    // for an external implementation reporting an impossible section count.
+    if count > u16::MAX as usize {
+        return Err(PeOffsetError);
+    }
+    let mut sections = Vec::new();
+    for index in 1..=count {
+        let range = pe.section_data_range(index)?;
+        if range.start > range.end || range.end > image_end {
+            return Err(PeOffsetError);
+        }
+        // Zero-size sections have no raw bytes (and may have pointer zero).
+        if !range.is_empty() {
+            sections.push(range);
+        }
+    }
+    sections.sort_unstable_by_key(|range| range.start);
+    let mut end = offsets.after_header;
+    for (index, range) in sections.iter().enumerate() {
+        if range.start < end || (index != 0 && range.start != end) {
+            return Err(PeOffsetError);
+        }
+        end = range.end;
+    }
+    Ok(digest_chunks(
+        bytes,
+        offsets.check_sum,
+        offsets.security_data_dir,
+        image_end,
+    ))
 }

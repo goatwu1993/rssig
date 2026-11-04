@@ -1,6 +1,6 @@
 # Prioritized roadmap
 
-Maintained against the merged [PR #18](https://github.com/goatwu1993/rssig/pull/18)
+Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
 baseline. **The next scoped implementation is CAB/NAVX parser extraction
 (LIB-01).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
@@ -111,6 +111,16 @@ timestamps, and local CRL validation already exist.
   remain rejected even with `--allow-sha1`.
 
 ## P1 — Clean parse/verify interfaces
+
+- [x] **PE generic digest correctness follow-up (PR #21).** Validate header,
+  section, and EOF certificate-table ranges before updating the digest sink.
+  Verification now calls the generic function and shares byte selection with
+  `Pe::authenticode_chunks`; initial gaps and overlay are hashed once. Covered
+  by committed gap/overlay and certificate-range fixtures, portable cases,
+  named CLI tests, and external-view bounds/unchanged-sink regressions in
+  `tests/parse_core.rs`. Full locked tests, fmt, Clippy, parser-only tests, and
+  `thumbv7em-none-eabi` no-default-features check pass on macOS; Linux runs in CI.
+  Arbitrary PE layouts remain unsupported.
 
 - [ ] **LIB-01: Next — expose CAB and NAVX parsing on `no_std + alloc`.** Add
   `parse::Cab` and `parse::Navx` with typed structural errors, borrowed signature
