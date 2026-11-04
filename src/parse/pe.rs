@@ -18,6 +18,18 @@ pub struct PeOffsets {
     pub after_header: usize,
 }
 
+/// A PE range or offset is outside the supplied byte slice or overflows.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PeOffsetError;
+
+impl core::fmt::Display for PeOffsetError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("invalid PE offset or range")
+    }
+}
+
+impl core::error::Error for PeOffsetError {}
+
 /// Borrowed PE byte ranges needed to calculate an Authenticode image digest.
 ///
 /// Implement this for another PE reader to reuse [`super::authenticode_digest`].
@@ -26,10 +38,14 @@ pub struct PeOffsets {
 pub trait PeTrait {
     /// Complete immutable PE byte slice.
     fn data(&self) -> &[u8];
+    /// Number of PE sections.
+    fn num_sections(&self) -> usize;
+    /// Section raw-data range for a one-based section index.
+    fn section_data_range(&self, index: usize) -> Result<Range<usize>, PeOffsetError>;
+    /// Certificate table file range, if present.
+    fn certificate_table_range(&self) -> Result<Option<Range<usize>>, PeOffsetError>;
     /// Offsets for checksum, security directory, and header exclusions.
-    fn offsets(&self) -> core::result::Result<PeOffsets, Error>;
-    /// Section raw-data ranges in digest order.
-    fn sections(&self) -> impl Iterator<Item = Range<usize>> + '_;
+    fn offsets(&self) -> Result<PeOffsets, PeOffsetError>;
 }
 
 /// A borrowed signed PE layout. All extracted data is untrusted.
@@ -250,7 +266,24 @@ impl PeTrait for Pe<'_> {
         self.data
     }
 
-    fn offsets(&self) -> core::result::Result<PeOffsets, Error> {
+    fn num_sections(&self) -> usize {
+        self.sections.len()
+    }
+
+    fn section_data_range(&self, index: usize) -> Result<Range<usize>, PeOffsetError> {
+        let (start, len) = self
+            .sections
+            .get(index.checked_sub(1).ok_or(PeOffsetError)?)
+            .ok_or(PeOffsetError)?;
+        let end = start.checked_add(*len).ok_or(PeOffsetError)?;
+        Ok(*start..end)
+    }
+
+    fn certificate_table_range(&self) -> Result<Option<Range<usize>>, PeOffsetError> {
+        Ok(Some(self.cert_start..self.cert_end))
+    }
+
+    fn offsets(&self) -> Result<PeOffsets, PeOffsetError> {
         Ok(PeOffsets {
             check_sum: self.checksum,
             after_check_sum: self.checksum + 4,
@@ -258,9 +291,5 @@ impl PeTrait for Pe<'_> {
             after_security_data_dir: self.directory + 8,
             after_header: self.headers_end,
         })
-    }
-
-    fn sections(&self) -> impl Iterator<Item = Range<usize>> + '_ {
-        self.sections.iter().map(|(start, len)| *start..start + len)
     }
 }

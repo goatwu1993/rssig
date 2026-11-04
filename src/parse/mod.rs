@@ -23,7 +23,7 @@ mod pe;
 
 pub use cms::{AlgorithmIdentifier, CertificateChoice, SignedData};
 pub use error::{Error, ErrorKind};
-pub use pe::{Pe, PeOffsets, PeTrait};
+pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
 ///
@@ -32,32 +32,33 @@ pub use pe::{Pe, PeOffsets, PeTrait};
 pub fn authenticode_digest(
     pe: &impl PeTrait,
     digest: &mut impl digest::Update,
-) -> Result<(), Error> {
-    let offsets = pe
-        .offsets()
-        .map_err(|e| Error::new(ErrorKind::InvalidPe, anyhow::Error::new(e)))?;
+) -> Result<(), PeOffsetError> {
+    let offsets = pe.offsets()?;
     let bytes = pe.data();
     for range in [
         0..offsets.check_sum,
         offsets.after_check_sum..offsets.security_data_dir,
         offsets.after_security_data_dir..offsets.after_header,
     ] {
-        let chunk = bytes.get(range).ok_or_else(|| {
-            Error::new(
-                ErrorKind::InvalidPe,
-                anyhow::anyhow!("PE digest range exceeds input"),
-            )
-        })?;
+        let chunk = bytes.get(range).ok_or(PeOffsetError)?;
         digest.update(chunk);
     }
-    for range in pe.sections() {
-        let chunk = bytes.get(range.clone()).ok_or_else(|| {
-            Error::new(
-                ErrorKind::InvalidPe,
-                anyhow::anyhow!("PE section range exceeds input"),
-            )
-        })?;
+    let mut sections = (1..=pe.num_sections())
+        .map(|i| pe.section_data_range(i))
+        .collect::<Result<alloc::vec::Vec<_>, _>>()?;
+    sections.sort_unstable_by_key(|range| range.start);
+    let mut hashed = offsets.after_header;
+    for range in sections {
+        let chunk = bytes.get(range.clone()).ok_or(PeOffsetError)?;
         digest.update(chunk);
+        hashed = hashed.checked_add(chunk.len()).ok_or(PeOffsetError)?;
     }
+    let mut trailing = bytes.len().checked_sub(hashed).ok_or(PeOffsetError)?;
+    if let Some(cert) = pe.certificate_table_range()? {
+        let cert_len = cert.end.checked_sub(cert.start).ok_or(PeOffsetError)?;
+        trailing = trailing.checked_sub(cert_len).ok_or(PeOffsetError)?;
+    }
+    let end = hashed.checked_add(trailing).ok_or(PeOffsetError)?;
+    digest.update(bytes.get(hashed..end).ok_or(PeOffsetError)?);
     Ok(())
 }
