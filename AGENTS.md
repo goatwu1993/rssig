@@ -6,6 +6,12 @@ read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
 project at build or runtime.
 
+## Pull request titles
+
+PR titles must use Conventional Commit format: `feat: Add xxx`,
+`fix: Correct xxx`, or `refactor: Simplify xxx`. Choose the appropriate lowercase
+type and capitalize the first word after the colon and space.
+
 ## Architecture and constraints
 
 - Use pure Rust for PE/MSI/CAB/NAVX/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
