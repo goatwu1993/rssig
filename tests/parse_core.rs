@@ -87,5 +87,53 @@ fn generic_pe_trait_digest_matches_existing_authenticode_chunks() {
     }
     assert_eq!(generic.finalize(), chunks.finalize());
     assert_eq!(pe.offsets().unwrap().after_header, 512);
-    assert_eq!(pe.sections().next().unwrap(), 512..1024);
+    assert_eq!(pe.num_sections(), 1);
+    assert_eq!(pe.section_data_range(1).unwrap(), 512..1024);
+    assert_eq!(pe.certificate_table_range().unwrap(), Some(1024..2176));
+}
+
+#[test]
+fn generic_pe_trait_hashes_gaps_and_overlay_but_excludes_certificate_table() {
+    use sha2::{Digest, Sha256};
+    struct ExternalPe<'a>(&'a [u8]);
+    impl rssig::parse::PeTrait for ExternalPe<'_> {
+        fn data(&self) -> &[u8] {
+            self.0
+        }
+        fn num_sections(&self) -> usize {
+            1
+        }
+        fn section_data_range(
+            &self,
+            index: usize,
+        ) -> Result<std::ops::Range<usize>, rssig::parse::PeOffsetError> {
+            if index == 1 {
+                Ok(28..30)
+            } else {
+                Err(rssig::parse::PeOffsetError)
+            }
+        }
+        fn certificate_table_range(
+            &self,
+        ) -> Result<Option<std::ops::Range<usize>>, rssig::parse::PeOffsetError> {
+            Ok(Some(36..40))
+        }
+        fn offsets(&self) -> Result<rssig::parse::PeOffsets, rssig::parse::PeOffsetError> {
+            Ok(rssig::parse::PeOffsets {
+                check_sum: 4,
+                after_check_sum: 8,
+                security_data_dir: 12,
+                after_security_data_dir: 20,
+                after_header: 24,
+            })
+        }
+    }
+    let bytes: Vec<u8> = (0..40).collect();
+    let mut actual = Sha256::new();
+    rssig::parse::authenticode_digest(&ExternalPe(&bytes), &mut actual).unwrap();
+    let mut expected = Sha256::new();
+    for range in [0..4, 8..12, 20..24, 28..30, 26..36] {
+        expected.update(&bytes[range]);
+    }
+    assert_eq!(actual.finalize(), expected.finalize());
 }
