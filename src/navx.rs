@@ -1,57 +1,22 @@
-//! Bounded NAVX envelope reader. The signature covers the complete header and payload.
-use crate::{
-    crypto::Hash,
-    domain::{ErrorCode, Stage, VerificationError},
-};
-use anyhow::{Result, ensure};
+//! Verification hashing adapter for the public NAVX parser.
+use crate::crypto::Hash;
+pub(crate) use crate::parse::Navx;
+pub(crate) use crate::parse::navx::MAGIC;
 
-pub(crate) const MAGIC: &[u8] = b"NAVX";
-pub(crate) struct Navx<'a> {
-    bytes: &'a [u8],
-    end: usize,
-}
-impl<'a> Navx<'a> {
-    pub(crate) fn parse(bytes: &'a [u8]) -> Result<Self> {
-        ensure!(bytes.len() >= 40, "truncated NAVX header");
-        ensure!(
-            &bytes[..4] == MAGIC && &bytes[36..40] == MAGIC,
-            "invalid NAVX header markers"
-        );
-        let size = u32::from_le_bytes(bytes[28..32].try_into()?) as usize;
-        let end = 40usize
-            .checked_add(size)
-            .ok_or_else(|| anyhow::anyhow!("NAVX content size overflow"))?;
-        ensure!(end <= bytes.len(), "NAVX content extends beyond file");
-        if end == bytes.len() {
-            return Err(VerificationError::new(
-                ErrorCode::Unsigned,
-                Stage::Navx,
-                "NAVX has no embedded signature",
-            )
-            .into());
-        }
-        let block = &bytes[end..];
-        ensure!(block.len() > 12, "truncated NAVX signature block");
-        ensure!(
-            &block[..4] == b"NXSB" && &block[block.len() - 4..] == b"NXSB",
-            "invalid NAVX signature block markers"
-        );
-        let offset =
-            u32::from_le_bytes(block[block.len() - 8..block.len() - 4].try_into()?) as usize;
-        ensure!(offset == end, "NAVX signature block offset mismatch");
-        Ok(Self { bytes, end })
-    }
-    pub(crate) fn signature(&self) -> &'a [u8] {
-        &self.bytes[self.end + 4..self.bytes.len() - 8]
-    }
+impl Navx<'_> {
     pub(crate) fn digest(&self, hash: Hash) -> Vec<u8> {
-        hash.digest(&self.bytes[..self.end])
+        let mut digest = hash.hasher();
+        for chunk in self.authenticode_chunks() {
+            digest.update(chunk);
+        }
+        digest.finalize().to_vec()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::{ErrorCode, Stage};
     fn fixture(name: &str) -> Vec<u8> {
         std::fs::read(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

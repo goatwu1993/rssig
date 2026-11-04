@@ -101,3 +101,159 @@ fn parser_enforces_container_and_der_bounds() {
     trailing.push(0);
     assert!(SignedData::parse(&trailing).is_err());
 }
+
+#[test]
+fn parsed_cab_and_navx_preserve_all_fixture_reports_and_policy() {
+    use rssig::{
+        TrustStore,
+        parse::{Cab, Navx},
+        verify::{verify_parsed_cab, verify_parsed_navx},
+    };
+    let mut trust = TrustStore::default();
+    trust
+        .add_roots(include_bytes!("fixtures/root.der"))
+        .unwrap();
+    trust.add_crl(include_bytes!("fixtures/good.crl")).unwrap();
+    let mut revoked = TrustStore::default();
+    revoked
+        .add_roots(include_bytes!("fixtures/root.der"))
+        .unwrap();
+    revoked
+        .add_crl(include_bytes!("fixtures/revoked.crl"))
+        .unwrap();
+    let empty = TrustStore::default();
+    let policies = [
+        options(),
+        VerifyOptions {
+            trust: Some(&trust),
+            check_revocation: true,
+            ..options()
+        },
+        VerifyOptions {
+            trust: Some(&revoked),
+            check_revocation: true,
+            ..options()
+        },
+        VerifyOptions {
+            trust: Some(&empty),
+            check_revocation: true,
+            ..options()
+        },
+        VerifyOptions {
+            allow_sha1: true,
+            ..options()
+        },
+    ];
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let mut count = 0;
+    for entry in std::fs::read_dir(directory).unwrap() {
+        let path = entry.unwrap().path();
+        let Some(extension) = path.extension().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if !matches!(extension, "cab" | "navx") {
+            continue;
+        }
+        count += 1;
+        let bytes = std::fs::read(&path).unwrap();
+        for policy in &policies {
+            let (parsed, raw) = if extension == "cab" {
+                (
+                    Cab::parse(&bytes)
+                        .map_err(rssig::VerificationError::from)
+                        .and_then(|cab| verify_parsed_cab(cab, policy)),
+                    rssig::verify_cab(&bytes, policy),
+                )
+            } else {
+                (
+                    Navx::parse(&bytes)
+                        .map_err(rssig::VerificationError::from)
+                        .and_then(|navx| verify_parsed_navx(navx, policy)),
+                    rssig::verify_navx(&bytes, policy),
+                )
+            };
+            assert_eq!(
+                serde_json::to_value(parsed).unwrap(),
+                serde_json::to_value(raw).unwrap(),
+                "{}",
+                path.display()
+            );
+        }
+    }
+    assert!(
+        count >= 50,
+        "the complete CAB/NAVX corpus must be exercised"
+    );
+}
+
+#[test]
+fn parsed_cab_and_navx_do_not_bypass_integrity_or_trust_checks() {
+    use rssig::{
+        parse::{Cab, Navx},
+        verify_parsed_cab, verify_parsed_navx,
+    };
+    for (bytes, expected) in [
+        (
+            include_bytes!("fixtures/bad-cab-digest.cab").as_slice(),
+            ErrorCode::CabDigestMismatch,
+        ),
+        (
+            include_bytes!("fixtures/bad-cab-cms-signature.cab").as_slice(),
+            ErrorCode::InvalidSignature,
+        ),
+        (
+            include_bytes!("fixtures/bad-cab-framing-and-digest.cab").as_slice(),
+            ErrorCode::MalformedCms,
+        ),
+    ] {
+        let parsed = Cab::parse(bytes).unwrap();
+        assert_eq!(
+            verify_parsed_cab(parsed, &options()).unwrap_err().code,
+            expected
+        );
+    }
+    for (bytes, expected) in [
+        (
+            include_bytes!("fixtures/bad-navx-digest.navx").as_slice(),
+            ErrorCode::NavxDigestMismatch,
+        ),
+        (
+            include_bytes!("fixtures/bad-navx-cms-signature.navx").as_slice(),
+            ErrorCode::InvalidSignature,
+        ),
+        (
+            include_bytes!("fixtures/bad-navx-framing-and-digest.navx").as_slice(),
+            ErrorCode::MalformedCms,
+        ),
+    ] {
+        let parsed = Navx::parse(bytes).unwrap();
+        assert_eq!(
+            verify_parsed_navx(parsed, &options()).unwrap_err().code,
+            expected
+        );
+    }
+    let empty = rssig::TrustStore::default();
+    let policy = VerifyOptions {
+        trust: Some(&empty),
+        check_revocation: true,
+        ..options()
+    };
+    assert_eq!(
+        verify_parsed_cab(
+            Cab::parse(include_bytes!("fixtures/good.cab")).unwrap(),
+            &policy
+        )
+        .unwrap_err()
+        .code,
+        ErrorCode::UntrustedRoot
+    );
+    assert_eq!(
+        verify_parsed_navx(
+            Navx::parse(include_bytes!("fixtures/good.navx")).unwrap(),
+            &policy
+        )
+        .unwrap_err()
+        .code,
+        ErrorCode::UntrustedRoot
+    );
+}

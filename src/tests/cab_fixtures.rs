@@ -66,6 +66,10 @@ pub(super) fn write(dir: &std::path::Path) {
         signer,
     ));
     write("good.cab", &good);
+    let mut framing_and_digest = good.clone();
+    framing_and_digest[96] ^= 1;
+    *framing_and_digest.last_mut().unwrap() = 1;
+    write("bad-cab-framing-and-digest.cab", &framing_and_digest);
     for (name, at) in [
         ("bad-cab-digest.cab", 96),
         (

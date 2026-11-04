@@ -12,8 +12,8 @@ reference for PE/MSI Authenticode hashing, signatures, and verification behavior
 [osslsigncode](https://github.com/mtrojnar/osslsigncode) and
 [rcodesign](https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign)
 also inform the project's design discussions. The library boundary follows
-[authenticode-rs](https://github.com/google/authenticode-rs): borrowed PE/CMS
-inspection and digest input are usable without host integrations. These projects are not runtime
+[authenticode-rs](https://github.com/google/authenticode-rs): borrowed PE/CAB/NAVX containers, CMS
+inspection, and digest input are usable without host integrations. These projects are not runtime
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 

@@ -312,3 +312,118 @@ fn generic_pe_hashes_sectionless_images() {
         );
     }
 }
+
+#[test]
+fn cab_and_navx_borrow_container_signature_and_digest_bytes() {
+    use rssig::parse::{Cab, Navx};
+    use sha2::{Digest, Sha256};
+    fn borrowed(input: &[u8], slice: &[u8]) {
+        assert!(slice.as_ptr() >= input.as_ptr());
+        assert!(slice.as_ptr_range().end <= input.as_ptr_range().end);
+    }
+    for bytes in [
+        include_bytes!("fixtures/good.cab").as_slice(),
+        include_bytes!("fixtures/cab-independent-jsign.cab").as_slice(),
+        include_bytes!("fixtures/bad-cab-digest.cab").as_slice(),
+        include_bytes!("fixtures/bad-cab-framing-and-digest.cab").as_slice(),
+    ] {
+        let cab = Cab::parse(bytes).unwrap();
+        let end = u32::from_le_bytes(bytes[8..12].try_into().unwrap()) as usize;
+        assert_eq!(cab.as_bytes().as_ptr(), bytes.as_ptr());
+        assert_eq!(cab.signature(), &bytes[end..]);
+        borrowed(bytes, cab.signature());
+        let mut digest = Sha256::new();
+        for chunk in cab.authenticode_chunks() {
+            borrowed(bytes, chunk);
+            digest.update(chunk);
+        }
+        // Independent recipe, including the synthetic four zero bytes.
+        let expected = [&bytes[..4], &bytes[8..34], &[0; 4], &bytes[60..end]].concat();
+        assert_eq!(digest.finalize(), Sha256::digest(expected));
+    }
+    for bytes in [
+        include_bytes!("fixtures/good.navx").as_slice(),
+        include_bytes!("fixtures/navx-independent-jsign.navx").as_slice(),
+        include_bytes!("fixtures/bad-navx-digest.navx").as_slice(),
+        include_bytes!("fixtures/bad-navx-framing-and-digest.navx").as_slice(),
+    ] {
+        let navx = Navx::parse(bytes).unwrap();
+        let end = 40 + u32::from_le_bytes(bytes[28..32].try_into().unwrap()) as usize;
+        assert_eq!(navx.as_bytes().as_ptr(), bytes.as_ptr());
+        assert_eq!(navx.signature(), &bytes[end + 4..bytes.len() - 8]);
+        borrowed(bytes, navx.signature());
+        let [chunk] = navx.authenticode_chunks();
+        borrowed(bytes, chunk);
+        assert_eq!(chunk, &bytes[..end]);
+    }
+}
+
+#[test]
+fn cab_and_navx_have_typed_structural_errors_without_verification() {
+    use rssig::parse::{Cab, Navx};
+    for (error, kind) in [
+        (
+            Cab::parse(include_bytes!("fixtures/bad-cab-offset.cab")).unwrap_err(),
+            ErrorKind::InvalidCab,
+        ),
+        (
+            Cab::parse(include_bytes!("fixtures/unsigned.cab")).unwrap_err(),
+            ErrorKind::UnsignedCab,
+        ),
+        (
+            Cab::parse(include_bytes!("fixtures/unsigned-cab-no-reserve.cab")).unwrap_err(),
+            ErrorKind::UnsignedCab,
+        ),
+        (
+            Navx::parse(include_bytes!("fixtures/bad-navx-offset.navx")).unwrap_err(),
+            ErrorKind::InvalidNavx,
+        ),
+        (
+            Navx::parse(include_bytes!("fixtures/unsigned.navx")).unwrap_err(),
+            ErrorKind::UnsignedNavx,
+        ),
+    ] {
+        assert_eq!(error.kind(), kind);
+        let error: &dyn core::error::Error = &error;
+        assert!(error.source().is_some());
+        assert!(!error.to_string().is_empty());
+    }
+    // CMS interpretation remains separate from bounded container extraction.
+    assert!(Cab::parse(include_bytes!("fixtures/bad-cab-malformed-cms.cab")).is_ok());
+    assert!(Navx::parse(include_bytes!("fixtures/bad-navx-malformed-cms.navx")).is_ok());
+}
+
+#[test]
+fn cab_and_navx_truncations_and_extreme_fields_fail_without_panics() {
+    use rssig::parse::{Cab, Navx};
+    let cab = include_bytes!("fixtures/good.cab");
+    let navx = include_bytes!("fixtures/good.navx");
+    for end in 0..cab.len() {
+        assert!(Cab::parse(&cab[..end]).is_err(), "CAB prefix {end}");
+    }
+    for end in 0..navx.len() {
+        assert!(Navx::parse(&navx[..end]).is_err(), "NAVX prefix {end}");
+    }
+    for at in [8, 16, 44, 48, 60, 68, 72] {
+        let mut bytes = cab.to_vec();
+        bytes[at..at + 4].fill(255);
+        assert_eq!(
+            Cab::parse(&bytes).unwrap_err().kind(),
+            ErrorKind::InvalidCab
+        );
+    }
+    for at in [26, 28, 34, 36, 64, 76, 90, 92] {
+        let mut bytes = cab.to_vec();
+        bytes[at..at + 2].fill(255);
+        assert_eq!(
+            Cab::parse(&bytes).unwrap_err().kind(),
+            ErrorKind::InvalidCab
+        );
+    }
+    let mut bytes = navx.to_vec();
+    bytes[28..32].fill(255);
+    assert_eq!(
+        Navx::parse(&bytes).unwrap_err().kind(),
+        ErrorKind::InvalidNavx
+    );
+}

@@ -6,6 +6,38 @@ and padding. It neither hashes the image nor authenticates its signatures.
 The existing signed-PE layout restrictions still apply: this is not a general
 PE loader or unsigned-image inspection API.
 
+`rssig::parse::Cab` and `rssig::parse::Navx` parse the supported signed container
+layouts without decompression or payload interpretation. `as_bytes()` borrows the
+original file, and `signature()` borrows the opaque embedded signature: CAB
+includes its declared padding; NAVX excludes the NXSB wrapper. Container parsing
+does not decode CMS or validate its padding. Those checks still run immediately
+before signature verification: CAB permits at most seven zero bytes after the
+CMS object, while NAVX permits none. A malformed CMS envelope or a changed payload
+can therefore still be inspected as a structurally valid container.
+
+Both expose `authenticode_chunks()`, an array of borrowed slices in digest order.
+CAB returns four chunks: magic, header bytes 8..34, four validated zero reserve
+bytes at 56..60, and cabinet bytes 60..cbCabinet. Borrowing those zero bytes is
+equivalent to hashing the canonical zero cabinet index and empty structure1
+length. NAVX returns one chunk containing its entire 40-byte header and payload.
+Every chunk borrows the original input; accessing chunks or signatures allocates
+nothing. CAB parsing uses temporary allocations for folder/file bounds checks.
+The existing [CAB](cab.md) and [NAVX](navx.md) layout restrictions still apply.
+
+```rust
+use rssig::parse::Cab;
+use sha2::{Digest, Sha256};
+
+fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig::parse::Error> {
+    let cab = Cab::parse(bytes)?;
+    let mut hash = Sha256::new();
+    for chunk in cab.authenticode_chunks() {
+        hash.update(chunk);
+    }
+    Ok(hash.finalize().to_vec()) // A computed digest, not an integrity/trust verdict.
+}
+```
+
 `rssig::parse::SignedData` parses attached CMS, legacy PKCS#7, and detached CMS
 envelopes. It exposes content type, encoded content, digest algorithm OIDs and
 parameters, certificate choices, embedded revocation choices, and raw
@@ -19,7 +51,9 @@ These types borrow immutable input and have private fields. Parsing does not
 consult a clock, read files, load roots, perform cryptography, or fetch URLs.
 It does not produce trusted/valid flags. Parse failures use `parse::Error`,
 which implements `core::error::Error` and exposes an `ErrorKind` through
-`kind()`: `InvalidPe`, `Unsigned`, `InvalidCertificateTable`, or `MalformedCms`.
+`kind()`: `InvalidPe`, `Unsigned` (PE), `InvalidCertificateTable`, `MalformedCms`,
+`InvalidCab`, `UnsignedCab`, `InvalidNavx`, or `UnsignedNavx`. The format-specific
+unsigned kinds preserve the original verification stage when converted.
 Its source chain retains diagnostic causes without depending on domain reports.
 With `verify` enabled, `VerificationError::from` maps these to the existing
 serialized codes/stages/causes. The CLI JSON contract is unchanged.
@@ -56,8 +90,12 @@ still use allocations; `no_std` does not mean allocation-free.
 and page hashes, CMS signature/content binding, timestamp, certificate trust,
 and configured CRL checks. Inspecting a CMS envelope does not cache a verified
 verdict; verification parses and authenticates the embedded signatures itself.
-The existing `verify`, `verify_pe`, and other format-specific functions retain
-their behavior and crate-root exports. The CLI uses the same verification engine.
+`verify_parsed_cab` and `verify_parsed_navx` similarly consume `parse::Cab` and
+`parse::Navx`, reusing their validated layouts while performing all normal
+framing, digest, CMS, timestamp, and configured trust/revocation checks. These
+functions are exported from both `rssig::verify` and the crate root. The existing
+`verify`, `verify_pe`, `verify_cab`, `verify_navx`, and other format-specific
+functions retain their behavior. The CLI uses the same verification engine.
 
 ## Parse command
 
@@ -193,7 +231,7 @@ or signature succeeds while verification rejects it.
 ## Feature selection and migration from PR #17
 
 ```toml
-# Signed PE/CMS inspection on core + alloc (an allocator is required).
+# Signed PE/CAB/NAVX containers and CMS on core + alloc (an allocator is required).
 rssig = { version = "0.1", default-features = false }
 
 # Alternatively: all verifiers and reports, with explicit roots and CRLs.
@@ -217,4 +255,6 @@ options, and JSON types retain their existing signatures and semantics.
 
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
 without `std`. Full verification still requires `std`; the CFB reader and AppX
-archive/XML path have not been ported. Other container parsers remain internal.
+archive/XML path have not been ported. Container parsers other than PE, CAB, and
+NAVX remain internal. The `parse` CLI still selects only PE or CMS; CAB/NAVX
+inspection is currently a library API.

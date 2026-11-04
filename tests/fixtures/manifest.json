@@ -6384,6 +6384,24 @@
       "cases": [
         "bad-pe-certificate-range"
       ]
+    },
+    {
+      "file": "bad-cab-framing-and-digest.cab",
+      "sha256": "b23f200e1c5b2632f6798169119679ab174a868866dc931329487f72f3fca254",
+      "bytes": 1234,
+      "description": "Derived from good.cab: XOR payload byte 96 with 1; set final CMS padding byte to 1. Container parsing succeeds; verification must reject CMS framing before checking the changed package digest.",
+      "cases": [
+        "cab-framing-before-digest"
+      ]
+    },
+    {
+      "file": "bad-navx-framing-and-digest.navx",
+      "sha256": "ac04205b34879b0b509ae927f1df78304dd0ca856c2b812a8e681ade29e69e28",
+      "bytes": 1226,
+      "description": "Derived from bad-navx-cms-trailing.navx: XOR payload byte 40 with 1. Container parsing succeeds; verification must reject CMS framing before checking the changed package digest.",
+      "cases": [
+        "navx-framing-before-digest"
+      ]
     }
   ]
 }

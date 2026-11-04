@@ -1,7 +1,8 @@
 //! Authenticate parsed containers using explicit time, trust, and revocation policy.
 //!
 //! Parsing alone never establishes integrity or trust. Existing byte-oriented
-//! entry points remain available; [`verify_parsed_pe`] reuses a parsed PE layout.
+//! entry points remain available; [`verify_parsed_pe`], [`verify_parsed_cab`], and
+//! [`verify_parsed_navx`] reuse parsed container layouts.
 
 mod appx;
 mod authenticode;
@@ -190,16 +191,8 @@ fn verify_inner(
         )?),
         Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
         Format::Pe => Container::Pe(Pe::parse(bytes).map_err(VerificationError::from)?),
-        Format::Navx => Container::Navx(tagged(
-            Navx::parse(bytes),
-            ErrorCode::InvalidNavx,
-            Stage::Navx,
-        )?),
-        Format::Cab => Container::Cab(tagged(
-            Cab::parse(bytes),
-            ErrorCode::InvalidCab,
-            Stage::Cab,
-        )?),
+        Format::Navx => Container::Navx(Navx::parse(bytes).map_err(VerificationError::from)?),
+        Format::Cab => Container::Cab(Cab::parse(bytes).map_err(VerificationError::from)?),
     };
     verify_container(bytes, options, format, container)
 }
@@ -227,6 +220,40 @@ pub fn verify_parsed_pe(
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
     verify_container(pe.data, options, Format::Pe, Container::Pe(pe)).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify a parsed CAB without reparsing its container layout.
+///
+/// Checks CMS framing, all hashes, signatures, timestamps, certificate trust,
+/// and configured CRLs using the same policy as [`verify_cab`]. The parsed
+/// value borrows immutable bytes and carries no authenticated assertions.
+pub fn verify_parsed_cab(
+    cab: crate::parse::Cab<'_>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_container(cab.as_bytes(), options, Format::Cab, Container::Cab(cab)).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify a parsed NAVX without reparsing its container layout.
+///
+/// Checks CMS framing, all hashes, signatures, timestamps, certificate trust,
+/// and configured CRLs using the same policy as [`verify_navx`]. The parsed
+/// value borrows immutable bytes and carries no authenticated assertions.
+pub fn verify_parsed_navx(
+    navx: crate::parse::Navx<'_>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_container(
+        navx.as_bytes(),
+        options,
+        Format::Navx,
+        Container::Navx(navx),
+    )
+    .map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }

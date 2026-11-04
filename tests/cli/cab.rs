@@ -667,3 +667,22 @@ fn cab_no_reserve_trailing_fixture_only_appends_one_byte() {
         std::fs::read(dir.join("bad-cab-no-reserve-trailing.cab")).unwrap()
     );
 }
+
+#[test]
+fn cab_framing_failure_precedes_digest_failure() {
+    let output = run_fixture("bad-cab-framing-and-digest.cab", super::support::TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "malformed_cms",
+        "Malformed CMS data",
+        Some("cms"),
+        Some("invalid trailing data in CAB signature"),
+    );
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["details"], serde_json::json!({}));
+    assert_eq!(
+        error["causes"],
+        serde_json::json!(["invalid trailing data in CAB signature"])
+    );
+}

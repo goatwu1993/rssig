@@ -1,9 +1,9 @@
 //! Parse untrusted signature structures without cryptography, trust, clocks, or I/O.
 //!
-//! This initial API covers signed PE containers and attached/detached CMS
+//! This API covers signed PE, CAB, NAVX containers and attached/detached CMS
 //! envelopes. Parsing success is not a verification result. Unknown algorithm
 //! identifiers and opaque certificate choices retain their original DER.
-//! Format policy, hashes, signature checks, timestamps, and certificate trust
+//! Signature algorithm policy, hashes, signature checks, timestamps, and certificate trust
 //! belong to the optional `verify` module. Parsing requires only `core + alloc`.
 //!
 //! ```
@@ -17,12 +17,16 @@
 //! # Ok::<(), rssig::parse::Error>(())
 //! ```
 
+pub(crate) mod cab;
 pub(crate) mod cms;
 mod error;
+pub(crate) mod navx;
 mod pe;
 
+pub use cab::Cab;
 pub use cms::{AlgorithmIdentifier, CertificateChoice, SignedData};
 pub use error::{Error, ErrorKind};
+pub use navx::Navx;
 pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.

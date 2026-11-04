@@ -823,3 +823,22 @@ fn navx_unsigned() {
         None,
     );
 }
+
+#[test]
+fn navx_framing_failure_precedes_digest_failure() {
+    let output = run_fixture("bad-navx-framing-and-digest.navx", super::support::TRUSTED);
+    expect_failure(
+        &output,
+        1,
+        "malformed_cms",
+        "Malformed CMS data",
+        Some("cms"),
+        Some("trailing data in embedded CMS signature"),
+    );
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["details"], serde_json::json!({}));
+    assert_eq!(
+        error["causes"],
+        serde_json::json!(["trailing data in embedded CMS signature"])
+    );
+}

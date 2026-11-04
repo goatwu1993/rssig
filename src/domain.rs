@@ -219,6 +219,10 @@ impl From<crate::parse::Error> for VerificationError {
         let (code, stage) = match error.kind() {
             ErrorKind::InvalidPe => (ErrorCode::InvalidPe, Stage::Pe),
             ErrorKind::Unsigned => (ErrorCode::Unsigned, Stage::Pe),
+            ErrorKind::InvalidCab => (ErrorCode::InvalidCab, Stage::Cab),
+            ErrorKind::UnsignedCab => (ErrorCode::Unsigned, Stage::Cab),
+            ErrorKind::InvalidNavx => (ErrorCode::InvalidNavx, Stage::Navx),
+            ErrorKind::UnsignedNavx => (ErrorCode::Unsigned, Stage::Navx),
             ErrorKind::InvalidCertificateTable => {
                 (ErrorCode::InvalidCertificateTable, Stage::CertificateTable)
             }
