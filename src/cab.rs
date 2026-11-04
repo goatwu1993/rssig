@@ -11,13 +11,15 @@ pub(crate) struct Cab<'a> {
 }
 fn u16_at(bytes: &[u8], at: usize) -> Result<u16> {
     let b = bytes
-        .get(at..at + 2)
+        .get(at..)
+        .and_then(|bytes| bytes.get(..2))
         .ok_or_else(|| anyhow::anyhow!("truncated CAB field"))?;
     Ok(u16::from_le_bytes(b.try_into()?))
 }
 fn u32_at(bytes: &[u8], at: usize) -> Result<usize> {
     let b = bytes
-        .get(at..at + 4)
+        .get(at..)
+        .and_then(|bytes| bytes.get(..4))
         .ok_or_else(|| anyhow::anyhow!("truncated CAB field"))?;
     Ok(u32::from_le_bytes(b.try_into()?) as usize)
 }
@@ -252,5 +254,16 @@ mod tests {
         let json = serde_json::to_value(error).unwrap();
         assert_eq!(json["code"], "invalid_cab");
         assert_eq!(json["stage"], "cab");
+    }
+}
+
+#[cfg(test)]
+mod offset_tests {
+    #[test]
+    fn field_offsets_never_overflow() {
+        for at in [usize::MAX, usize::MAX - 1, usize::MAX - 3] {
+            assert!(super::u16_at(&[], at).is_err());
+            assert!(super::u32_at(&[], at).is_err());
+        }
     }
 }

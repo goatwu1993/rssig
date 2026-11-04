@@ -13,6 +13,7 @@ pub(crate) fn take<'a>(input: &mut &'a [u8]) -> Result<Node<'a>> {
     let original = *input;
     ensure!(original.len() >= 2, "truncated DER header");
     let tag = original[0];
+    ensure!(tag != 0, "end-of-contents is forbidden in DER");
     ensure!(tag & 31 != 31, "high-tag-number DER is unsupported");
     let mut header = 2usize;
     let mut len = original[1] as usize;

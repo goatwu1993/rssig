@@ -318,3 +318,11 @@ fn parse_rejects_maximum_pe_header_offset_with_a_typed_error() {
     let verified: Value = serde_json::from_slice(&stdout).unwrap();
     assert_eq!(verified["results"][0]["error"], *error);
 }
+
+#[test]
+fn parse_rejects_forbidden_der_end_of_contents() {
+    let (exit, json) = invoke(&["bad-cms-eoc-parameter.der"], &["--format", "cms"]);
+    assert_eq!(exit, 1);
+    assert_eq!(json["results"][0]["error"]["code"], "malformed_cms");
+    assert_eq!(json["results"][0]["error"]["stage"], "cms");
+}

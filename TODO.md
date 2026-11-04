@@ -32,12 +32,15 @@ timestamps, and local CRL validation already exist.
 
 ## P0 — Verification correctness and bounded work
 
-- [ ] **SEC-01: Audit arithmetic and structural bounds across every parser.**
+- [x] **SEC-01: Audit arithmetic and structural bounds across every parser.**
   Cover PE/CFB/CAB/NAVX/ZIP offsets, DER lengths, script encodings, RDP framing,
   and XML counts. Exercise truncations, zero/maximum counts, overlapping ranges,
   inconsistent lengths, and 32-bit conversions. Extend PR #18's maximum-offset
   regression; malformed input must return typed errors without panics or
-  unchecked allocations.
+  unchecked allocations. Completed the structural audit and fixes with
+  [bounds evidence and limits](docs/parser-bounds.md), a DER regression fixture,
+  CAB extreme-offset tests, and cross-format header mutation coverage. Aggregate
+  budgets, host reads, fuzzing, and 32-bit execution remain separate tasks.
 - [ ] **SEC-02: Enforce aggregate verification budgets.** Inventory existing
   per-container, per-node, and recursion limits; bound total decoded bytes,
   certificates, signers, reports, nesting, path candidates, and crypto operations
