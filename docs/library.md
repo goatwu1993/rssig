@@ -26,8 +26,27 @@ serialized codes/stages/causes. The CLI JSON contract is unchanged.
 
 `Pe::authenticode_chunks()` returns three borrowed slices in digest order,
 excluding the checksum, security directory, and certificate table. Feed the
-slices to any incremental hasher. The verifier uses the same slices, avoiding
-a whole-image copy. This interface carries no claimed digest or trust verdict.
+slices to any incremental hasher. `authenticode_digest(&view, &mut hasher)`
+accepts an external `PeTrait` implementation and a RustCrypto `digest::Update`
+sink. The verifier calls this function too; both interfaces share byte selection
+without copying the image. This interface carries no claimed digest or trust verdict.
+
+The generic function checks field widths/order, header bounds, section ranges,
+and the certificate table before writing anything to the sink. Invalid layouts
+return `PeOffsetError` with the sink unchanged. Nonempty sections are sorted by
+file offset and must be contiguous with each other, without overlapping headers
+or certificates. A gap before the first section and an overlay after the last
+section are permitted and hashed exactly once, in file order. A present
+certificate table must be nonempty, eight-byte aligned in offset and size, and
+end at EOF. External views can report no certificate table to hash an unsigned
+image; `Pe::parse` still requires an embedded signature. Views must supply offsets
+from the actual PE encoding; range validation does not reparse the headers.
+
+This is rssig's existing bounded layout policy, not arbitrary Windows layout
+support. In particular, generic hashing no longer applies Google's sum-of-section-
+sizes suffix calculation to gapped layouts: that could hash section bytes twice
+and disagree with verification. Gaps between nonempty sections are rejected.
+
 `SignedData::signer_infos()` returns a borrowed slice of DER slices, so reading
 the signer encodings does not allocate. X.509 certificates and parser metadata
 still use allocations; `no_std` does not mean allocation-free.

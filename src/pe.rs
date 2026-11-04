@@ -3,12 +3,18 @@ use crate::crypto::Hash;
 pub(crate) use crate::parse::Pe;
 use anyhow::{Result, ensure};
 
+// Adapt the verifier's runtime-selected RustCrypto hasher to the public sink.
+struct DigestSink<'a>(&'a mut dyn digest::DynDigest);
+impl digest::Update for DigestSink<'_> {
+    fn update(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+}
+
 impl Pe<'_> {
     pub(crate) fn digest(&self, algorithm: Hash) -> Result<Vec<u8>> {
         let mut digest = algorithm.hasher();
-        for chunk in self.authenticode_chunks() {
-            digest.update(chunk);
-        }
+        crate::parse::authenticode_digest(self, &mut DigestSink(digest.as_mut()))?;
         Ok(digest.finalize().to_vec())
     }
 

@@ -986,3 +986,24 @@ fn intermediate_current_crls() {
     assert!(signature.chain_trusted);
     assert!(signature.revocation_checked);
 }
+
+#[test]
+fn pe_gap_overlay_preserves_image_digest_policy() {
+    let output = run_fixture("bad-pe-gap-overlay-digest.exe", TRUSTED);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "image_digest_mismatch");
+    assert_eq!(error["stage"], "image_digest");
+    assert_eq!(
+        error["details"]["digest"]["computed"],
+        "52dcc6b7526e7ebf531f9493ebba135f41eba0639a9cad7c7518fb6e2f5fc21d"
+    );
+}
+
+#[test]
+fn pe_certificate_range_must_end_at_eof() {
+    let output = run_fixture("bad-pe-certificate-range.exe", TRUSTED);
+    assert_eq!(output.exit_code, 1);
+    assert_eq!(output.json["results"][0]["error"]["code"], "invalid_pe");
+    assert_eq!(output.json["results"][0]["error"]["stage"], "pe");
+}

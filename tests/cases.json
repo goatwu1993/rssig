@@ -22352,6 +22352,71 @@
           ]
         }
       }
+    },
+    {
+      "id": "bad-pe-gap-overlay-digest",
+      "input": "bad-pe-gap-overlay-digest.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "image_digest_mismatch",
+                "stage": "image_digest",
+                "details": {
+                  "digest": {
+                    "algorithm": "Sha256",
+                    "computed": "52dcc6b7526e7ebf531f9493ebba135f41eba0639a9cad7c7518fb6e2f5fc21d",
+                    "expected": "dea5b51087a941e1757bc435b116fc1a7dfc9c8343bf4cb27b7fc9431a9dd30f"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-pe-certificate-range",
+      "input": "bad-pe-certificate-range.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_pe",
+                "stage": "pe"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
