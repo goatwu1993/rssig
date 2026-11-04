@@ -63,6 +63,7 @@ base64ct = { version = "1", optional = true, features = ["alloc"] }
 anyhow = { version = "1", default-features = false }
 clap = { version = "4", optional = true, features = ["derive"] }
 der = { version = "0.7", default-features = false, features = ["alloc", "derive", "oid"] }
+digest = { version = "0.10", default-features = false }
 x509-cert = { version = "0.2", default-features = false }
 rustls-native-certs = { version = "0.8", optional = true }
 rustls-pki-types = { version = "1", optional = true, features = ["std"] }

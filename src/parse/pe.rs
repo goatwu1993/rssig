@@ -1,6 +1,36 @@
 use super::{Error, ErrorKind};
 use alloc::vec::Vec;
 use anyhow::{Result, ensure};
+use core::ops::Range;
+
+/// Offsets delimiting the portions included in an Authenticode PE image digest.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PeOffsets {
+    /// Start of the optional-header checksum field.
+    pub check_sum: usize,
+    /// First byte after the four-byte checksum.
+    pub after_check_sum: usize,
+    /// Start of the security data-directory entry.
+    pub security_data_dir: usize,
+    /// First byte after the security data-directory entry.
+    pub after_security_data_dir: usize,
+    /// End of the PE headers.
+    pub after_header: usize,
+}
+
+/// Borrowed PE byte ranges needed to calculate an Authenticode image digest.
+///
+/// Implement this for another PE reader to reuse [`super::authenticode_digest`].
+/// The caller is responsible for ensuring the ranges follow the desired PE
+/// hashing policy; the trait does not validate or authenticate the input.
+pub trait PeTrait {
+    /// Complete immutable PE byte slice.
+    fn data(&self) -> &[u8];
+    /// Offsets for checksum, security directory, and header exclusions.
+    fn offsets(&self) -> core::result::Result<PeOffsets, Error>;
+    /// Section raw-data ranges in digest order.
+    fn sections(&self) -> impl Iterator<Item = Range<usize>> + '_;
+}
 
 /// A borrowed signed PE layout. All extracted data is untrusted.
 ///
@@ -13,9 +43,7 @@ pub struct Pe<'a> {
     pub(crate) directory: usize,
     pub(crate) cert_start: usize,
     pub(crate) cert_end: usize,
-    #[cfg(feature = "verify")]
     pub(crate) headers_end: usize,
-    #[cfg(feature = "verify")]
     pub(crate) sections: Vec<(usize, usize)>,
     #[cfg(feature = "verify")]
     pub(crate) page_size: usize,
@@ -180,9 +208,7 @@ impl<'a> Pe<'a> {
             directory,
             cert_start,
             cert_end,
-            #[cfg(feature = "verify")]
             headers_end,
-            #[cfg(feature = "verify")]
             sections,
             #[cfg(feature = "verify")]
             page_size,
@@ -216,5 +242,25 @@ impl<'a> Pe<'a> {
         }
         ensure!(!result.is_empty(), "empty certificate table");
         Ok(result)
+    }
+}
+
+impl PeTrait for Pe<'_> {
+    fn data(&self) -> &[u8] {
+        self.data
+    }
+
+    fn offsets(&self) -> core::result::Result<PeOffsets, Error> {
+        Ok(PeOffsets {
+            check_sum: self.checksum,
+            after_check_sum: self.checksum + 4,
+            security_data_dir: self.directory,
+            after_security_data_dir: self.directory + 8,
+            after_header: self.headers_end,
+        })
+    }
+
+    fn sections(&self) -> impl Iterator<Item = Range<usize>> + '_ {
+        self.sections.iter().map(|(start, len)| *start..start + len)
     }
 }

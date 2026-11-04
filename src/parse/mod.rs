@@ -23,4 +23,41 @@ mod pe;
 
 pub use cms::{AlgorithmIdentifier, CertificateChoice, SignedData};
 pub use error::{Error, ErrorKind};
-pub use pe::Pe;
+pub use pe::{Pe, PeOffsets, PeTrait};
+
+/// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
+///
+/// This hashes the bytes selected by the supplied PE view. It does not parse the
+/// embedded CMS, compare the signed digest, authenticate a signer, or establish trust.
+pub fn authenticode_digest(
+    pe: &impl PeTrait,
+    digest: &mut impl digest::Update,
+) -> Result<(), Error> {
+    let offsets = pe
+        .offsets()
+        .map_err(|e| Error::new(ErrorKind::InvalidPe, anyhow::Error::new(e)))?;
+    let bytes = pe.data();
+    for range in [
+        0..offsets.check_sum,
+        offsets.after_check_sum..offsets.security_data_dir,
+        offsets.after_security_data_dir..offsets.after_header,
+    ] {
+        let chunk = bytes.get(range).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidPe,
+                anyhow::anyhow!("PE digest range exceeds input"),
+            )
+        })?;
+        digest.update(chunk);
+    }
+    for range in pe.sections() {
+        let chunk = bytes.get(range.clone()).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidPe,
+                anyhow::anyhow!("PE section range exceeds input"),
+            )
+        })?;
+        digest.update(chunk);
+    }
+    Ok(())
+}

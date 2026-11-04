@@ -741,6 +741,7 @@ dependencies = [
  "clap",
  "crc32fast",
  "der",
+ "digest",
  "flate2",
  "p256",
  "p384",
