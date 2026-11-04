@@ -22326,6 +22326,32 @@
           ]
         }
       }
+    },
+    {
+      "id": "parse-cms-eoc-parameter",
+      "input": "bad-cms-eoc-parameter.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "stderr": "",
+        "json": {
+          "command": "parse",
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -6357,6 +6357,15 @@
         "parse-pe-header-offset",
         "verify-pe-header-offset"
       ]
+    },
+    {
+      "file": "bad-cms-eoc-parameter.der",
+      "sha256": "ee0555e18f5e37fd84f46ee3aa1e4d3ebbc7677f41fd11d65afdf5ff842cfb11",
+      "bytes": 1142,
+      "description": "Derived from parse-attached-cms.der: outer digest AlgorithmIdentifier NULL tag changed from 05 to 00 (forbidden DER end-of-contents). Structural rejection; no signature verification or execution.",
+      "cases": [
+        "parse-cms-eoc-parameter"
+      ]
     }
   ]
 }
