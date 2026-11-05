@@ -22551,6 +22551,68 @@
           ]
         }
       }
+    },
+    {
+      "id": "good-long-attribute-oid",
+      "input": "good-long-attribute-oid.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "pe_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-long-attribute-oid",
+      "input": "bad-long-attribute-oid.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms",
+                "message": "CMS signature verification: invalid CMS attribute OID"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -40,7 +40,7 @@ pub enum SignerIdentifier<'a> {
 #[derive(Debug)]
 pub struct Attribute<'a> {
     node: Node<'a>,
-    oid: ObjectIdentifier,
+    oid: Option<ObjectIdentifier>,
     pub(crate) oid_bytes: &'a [u8],
     values: Vec<Content<'a>>,
 }
@@ -48,9 +48,16 @@ impl<'a> Attribute<'a> {
     pub fn as_der(&self) -> &'a [u8] {
         self.node.full
     }
-    pub fn oid(&self) -> ObjectIdentifier {
+    /// Decode OIDs supported by the fixed-size OID adapter. Valid encodings
+    /// outside its length/arc limits remain available through `oid_bytes()`.
+    pub fn oid(&self) -> Option<ObjectIdentifier> {
         self.oid
     }
+    /// Original OID value octets, excluding its DER tag and length.
+    pub fn oid_bytes(&self) -> &'a [u8] {
+        self.oid_bytes
+    }
+
     pub fn values(&self) -> &[Content<'a>] {
         &self.values
     }
@@ -96,7 +103,8 @@ impl<'a> Attributes<'a> {
             );
             let values = f[1].expect(0x31)?.children()?;
             ensure!(!values.is_empty(), "empty CMS attribute");
-            let oid = ObjectIdentifier::from_der(f[0].full).map_err(DecodeError)?;
+            validate_oid(f[0].body)?;
+            let oid = ObjectIdentifier::from_der(f[0].full).ok();
             attributes.push(Attribute {
                 node: attr,
                 oid,
@@ -112,6 +120,20 @@ impl<'a> Attributes<'a> {
     pub fn attributes(&self) -> &[Attribute<'a>] {
         &self.attributes
     }
+}
+
+// Validate canonical base-128 subidentifiers without limiting arc widths or
+// count to the fixed-size ObjectIdentifier adapter. The first subidentifier
+// encodes the first two arcs, with the same framing rules as subsequent arcs.
+fn validate_oid(bytes: &[u8]) -> Result<()> {
+    ensure!(!bytes.is_empty(), "invalid CMS attribute OID");
+    let mut start = true;
+    for &byte in bytes {
+        ensure!(!start || byte != 0x80, "invalid CMS attribute OID");
+        start = byte & 0x80 == 0;
+    }
+    ensure!(start, "invalid CMS attribute OID");
+    Ok(())
 }
 
 // Shared framing only: verifier policy checks and deferred attributes retain

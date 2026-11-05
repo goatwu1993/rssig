@@ -143,10 +143,12 @@ timestamps, and local CRL validation already exist.
   algorithm support and trust remain verifier policy. Added committed paired CMS
   fixtures, portable cases, named CLI checks, and parser-only API/bounds tests;
   API tests first failed on missing exports. All 678 previous specification
-  reports compared exactly equal; the full suite now covers 680 portable cases.
+  reports compared exactly equal; the full suite now covers 682 portable cases.
   Full locked tests, fmt, Clippy, no-default/std/verify/cli feature tests, and
   `thumbv7em-none-eabi` no-default Clippy pass on macOS. Dependencies are unchanged;
   parser-only dependencies exclude verifier/CLI/native roots. Linux runs in CI.
+  Self-review added long/short unknown attribute OID preservation independent of
+  the fixed-size OID adapter, plus a malformed-encoding counterpart.
   Nested signatures/timestamps remain opaque for LIB-03; CLI schema is unchanged.
 - [ ] **LIB-03: Add bounded nested-signature and timestamp inspection.** Build
   on LIB-02 to inspect RFC 3161/PKCS#9 and nested CMS without trust configuration.

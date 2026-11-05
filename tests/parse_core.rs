@@ -465,7 +465,7 @@ fn structured_cms_views_preserve_borrowed_unknown_values() {
             }
         }
         let signed = signer.signed_attributes().unwrap();
-        assert_eq!(signed.attributes()[0].oid().to_string(), "1.2.3.4");
+        assert_eq!(signed.attributes()[0].oid().unwrap().to_string(), "1.2.3.4");
         assert_eq!(signed.attributes()[0].values()[0].value(), b"opaque");
         let unsigned = signer.unsigned_attributes().unwrap();
         assert_eq!(unsigned.attributes()[0].values().len(), 2);
@@ -572,5 +572,29 @@ fn signer_identity_versions_and_optional_attributes_are_structural_only() {
     assert_eq!(
         SignerInfo::parse(&future_version).unwrap().version_der(),
         b"\x02\x01\x7f"
+    );
+}
+
+#[test]
+fn attribute_oid_views_preserve_valid_encodings_beyond_adapter_limits() {
+    use rssig::parse::{Attributes, SignerInfo};
+    let bytes = include_bytes!("fixtures/good-long-attribute-oid.exe");
+    let pe = Pe::parse(bytes).unwrap();
+    let cms = SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+    let signer = SignerInfo::parse(cms.signer_infos()[0]).unwrap();
+    let attr = &signer.unsigned_attributes().unwrap().attributes()[0];
+    assert!(attr.oid().is_none());
+    assert_eq!(attr.oid_bytes().len(), 41);
+    assert_eq!(attr.oid_bytes()[0], 42);
+    assert!(attr.oid_bytes()[1..].iter().all(|b| *b == 1));
+    // The fixed-size adapter also rejects valid short OIDs such as 1.2.
+    let short = Attributes::parse(b"\xa1\x09\x30\x07\x06\x01\x2a\x31\x02\x05\x00").unwrap();
+    assert_eq!(short.attributes()[0].oid_bytes(), &[42]);
+    let bad = include_bytes!("fixtures/bad-long-attribute-oid.exe");
+    let pe = Pe::parse(bad).unwrap();
+    let cms = SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+    assert_eq!(
+        SignerInfo::parse(cms.signer_infos()[0]).unwrap_err().kind(),
+        ErrorKind::MalformedCms
     );
 }

@@ -59,8 +59,12 @@ Identity/version compatibility and certificate matching remain verification poli
 
 `AlgorithmIdentifier::parse` also decodes standalone identifiers. Unknown valid
 OIDs, absent parameters, NULL parameters, and unfamiliar parameter DER are
-preserved. Each `Attribute` exposes its OID, original DER and borrowed `Content`
-values. `Attributes::parse` accepts implicit signed `[0]` and unsigned `[1]` sets,
+preserved. Each `Attribute` exposes `oid_bytes()`, original DER and borrowed `Content`
+values. `oid()` optionally decodes the OID through the fixed-size adapter; valid
+encodings outside its limits (including OIDs longer than 39 bytes) return `None`
+while their original octets remain available. Canonical base-128 OID framing is
+validated independently of those adapter limits. Algorithm/content-type OIDs
+retain their existing fixed-size adapter limits. `Attributes::parse` accepts implicit signed `[0]` and unsigned `[1]` sets,
 preserving their original tags and bytes. Signed attribute order must be canonical;
 both sets reject duplicate OIDs and attributes with empty value sets. Empty
 attribute sets are inspectable, but cannot meet mandatory verification attributes.
