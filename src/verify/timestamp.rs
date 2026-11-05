@@ -7,7 +7,6 @@ use crate::{
     domain::*,
     trust,
 };
-use ::der::Decode;
 use anyhow::{Context, Result, ensure};
 
 pub(crate) fn verify_timestamp(
@@ -160,42 +159,11 @@ pub(crate) fn check_fractional_validity(
 }
 
 fn parse_time(node: Node<'_>) -> Result<(u64, Option<String>)> {
-    match node.tag {
-        0x17 => Ok((
-            ::der::asn1::UtcTime::from_der(node.full)?
-                .to_unix_duration()
-                .as_secs(),
-            None,
-        )),
-        0x18 if node.body.len() > 15 => {
-            let body = node.body;
-            ensure!(
-                body.len() <= 80 && body[14] == b'.' && body.last() == Some(&b'Z'),
-                "noncanonical fractional GeneralizedTime"
-            );
-            let fraction = &body[15..body.len() - 1];
-            ensure!(
-                !fraction.is_empty()
-                    && fraction.iter().all(u8::is_ascii_digit)
-                    && fraction.last() != Some(&b'0'),
-                "noncanonical fractional GeneralizedTime"
-            );
-            let mut whole = vec![0x18, 15];
-            whole.extend_from_slice(&body[..14]);
-            whole.push(b'Z');
-            let seconds = ::der::asn1::GeneralizedTime::from_der(&whole)?
-                .to_unix_duration()
-                .as_secs();
-            Ok((seconds, Some(std::str::from_utf8(fraction)?.into())))
-        }
-        0x18 => Ok((
-            ::der::asn1::GeneralizedTime::from_der(node.full)?
-                .to_unix_duration()
-                .as_secs(),
-            None,
-        )),
-        _ => anyhow::bail!("invalid timestamp time encoding"),
-    }
+    let time = crate::parse::ParsedTime::parse(node.full).map_err(|error| error.inner)?;
+    Ok((
+        time.unix_seconds(),
+        time.fractional_seconds().map(Into::into),
+    ))
 }
 
 #[cfg(test)]

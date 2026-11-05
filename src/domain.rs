@@ -226,7 +226,9 @@ impl From<crate::parse::Error> for VerificationError {
             ErrorKind::InvalidCertificateTable => {
                 (ErrorCode::InvalidCertificateTable, Stage::CertificateTable)
             }
-            ErrorKind::MalformedCms => (ErrorCode::MalformedCms, Stage::Cms),
+            ErrorKind::MalformedCms | ErrorKind::InspectionLimit => {
+                (ErrorCode::MalformedCms, Stage::Cms)
+            }
         };
         Self::from_internal(error.inner, code, stage)
     }
@@ -505,8 +507,11 @@ pub struct ParsedCmsReport {
     pub certificate_choices: Vec<ParsedCertificateChoice>,
     /// Raw, untrusted revocation choices, not validated or configured CRLs.
     pub revocation_choices_der: Vec<String>,
-    /// Raw SignerInfo bodies; nested signatures and timestamps are not interpreted.
+    /// Raw SignerInfo bodies; recursive metadata is separate in `inspection`.
     pub signer_infos_der: Vec<String>,
+    /// Opt-in, bounded, unauthenticated recursive inspection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inspection: Option<ParsedCmsInspection>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -584,4 +589,40 @@ pub struct InformationReport {
 }
 pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Recursive structural metadata; no field establishes a verified signing time.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedCmsInspection {
+    pub signers: Vec<ParsedSignerInspection>,
+    pub tst_info: Option<ParsedTstInfo>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedSignerInspection {
+    pub der: String,
+    pub children: Vec<ParsedChildInspection>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedChildInspection {
+    pub kind: String,
+    pub value_der: String,
+    pub cms: Option<Box<ParsedCmsReport>>,
+    pub countersigner: Option<ParsedSignerInspection>,
+    pub parsed_time: Option<ParsedTimeReport>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedTimeReport {
+    pub der: String,
+    pub unix_seconds: u64,
+    pub fractional_seconds: Option<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ParsedTstInfo {
+    pub der: String,
+    pub policy: String,
+    pub imprint_algorithm: ParsedAlgorithmReport,
+    pub imprint: String,
+    pub serial_number_der: String,
+    pub parsed_time: ParsedTimeReport,
+    pub optional_fields_der: Vec<String>,
 }

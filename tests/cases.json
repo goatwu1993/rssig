@@ -22613,6 +22613,194 @@
           ]
         }
       }
+    },
+    {
+      "id": "parse-recursive-rfc3161",
+      "input": "parse-rfc3161.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "inspection": {
+                    "signers": [
+                      {
+                        "children": [
+                          {
+                            "kind": "rfc3161",
+                            "parsed_time": {
+                              "unix_seconds": 1800000000,
+                              "fractional_seconds": null
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-recursive-countersignature",
+      "input": "parse-countersignature.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "inspection": {
+                    "signers": [
+                      {
+                        "children": [
+                          {
+                            "kind": "pkcs9_countersignature",
+                            "parsed_time": {
+                              "unix_seconds": 1800000000,
+                              "fractional_seconds": null
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-recursive-nested",
+      "input": "parse-nested.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "inspection": {
+                    "signers": [
+                      {
+                        "children": [
+                          {
+                            "kind": "nested"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-recursive-bad-time",
+      "input": "parse-rfc3161-bad-time.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-recursive-depth8",
+      "input": "parse-nested-depth8.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "verification_performed": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-recursive-depth9",
+      "input": "parse-nested-depth9.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms",
+        "--recursive"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

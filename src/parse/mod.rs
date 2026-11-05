@@ -3,7 +3,7 @@
 //! This API covers signed PE, CAB, NAVX containers and attached/detached CMS
 //! envelopes. Parsing success is not a verification result. Unknown algorithm
 //! identifiers and opaque certificate choices retain their original DER.
-//! Signature algorithm policy, hashes, signature checks, timestamps, and certificate trust
+//! Signature algorithm policy, hashes, signature checks, timestamp authentication, and certificate trust
 //! belong to the optional `verify` module. Parsing requires only `core + alloc`.
 //!
 //! ```
@@ -21,6 +21,7 @@ pub(crate) mod cab;
 pub(crate) mod cms;
 mod error;
 pub(crate) mod navx;
+mod nested;
 mod pe;
 pub(crate) mod signer;
 
@@ -28,6 +29,10 @@ pub use cab::Cab;
 pub use cms::{AlgorithmIdentifier, CertificateChoice, SignedData};
 pub use error::{Error, ErrorKind};
 pub use navx::Navx;
+pub use nested::{
+    InspectedChild, InspectedCms, InspectedSigner, InspectionBudget, InspectionKind,
+    InspectionLimits, ParsedTime, TstInfo,
+};
 pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
 pub use signer::{Attribute, Attributes, Content, SignerIdentifier, SignerInfo};
 

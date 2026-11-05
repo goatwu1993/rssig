@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is bounded nested-signature and timestamp inspection
-(LIB-03).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is script and RDP parsing boundaries
+(LIB-04).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -150,10 +150,19 @@ timestamps, and local CRL validation already exist.
   Self-review added long/short unknown attribute OID preservation independent of
   the fixed-size OID adapter, plus a malformed-encoding counterpart.
   Nested signatures/timestamps remain opaque for LIB-03; CLI schema is unchanged.
-- [ ] **LIB-03: Add bounded nested-signature and timestamp inspection.** Build
-  on LIB-02 to inspect RFC 3161/PKCS#9 and nested CMS without trust configuration.
-  Apply shared recursion/work budgets and distinguish parsed times from verified
-  signing times. Extend inspection domain/schema cases before CLI output changes.
+- [x] **LIB-03: Add bounded nested-signature and timestamp inspection.** Added
+  `SignedData::inspect` with borrowed nested CMS, RFC 3161 TSTInfo and PKCS#9
+  countersigner views on `no_std + alloc`. One consumable budget covers siblings,
+  timestamp edges, decoded objects, input bytes, and DER nodes; depth has a hard
+  cap of eight. Parsed time assertions preserve exact fractional digits and DER
+  without authentication or trust claims. The verifier shares time decoding.
+  Opt-in `parse --recursive` adds Serde inspection metadata; ordinary parse and
+  verification policy remain unchanged. Added paired malformed-time and depth
+  fixtures, provenance/digests, six portable cases, named CLI/domain assertions,
+  and borrowing, budget-sharing, truncation, depth, and unauthenticated-input tests.
+  Focused tests first failed on missing APIs/CLI flag. Full locked tests, fmt,
+  Clippy, no-default/std/verify/cli feature tests and bare-metal no-default Clippy
+  pass on macOS. Dependencies are unchanged; Linux validation remains in CI.
 - [ ] **LIB-04: Extract script and RDP parsing boundaries.** Separate decoding,
   signature-block framing, and canonical hash input from verification for
   PowerShell/XML, WSH, and RDP. Keep signed/unsigned RDP coverage explicit and

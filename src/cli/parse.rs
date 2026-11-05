@@ -22,6 +22,9 @@ pub(super) struct Args {
     /// Input structure: signed PE, or standalone DER CMS SignedData.
     #[arg(long, value_enum, default_value = "pe")]
     format: Format,
+    /// Inspect nested signatures and unverified timestamp assertions with bounded work.
+    #[arg(long)]
+    recursive: bool,
 }
 
 pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
@@ -29,8 +32,8 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         "parse",
         args.files,
         |_, bytes| match args.format {
-            Format::Pe => inspection::pe(bytes),
-            Format::Cms => inspection::cms(bytes),
+            Format::Pe => inspection::pe(bytes, args.recursive),
+            Format::Cms => inspection::cms(bytes, args.recursive),
         },
         |file, parse| {
             ParseFileResult::Success(ParseFileSuccess {
