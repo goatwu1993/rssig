@@ -135,7 +135,7 @@ timestamps, and local CRL validation already exist.
   feature tests, and `thumbv7em-none-eabi` no-default Clippy passed on macOS.
   Parser dependency graph has no verifier, CLI, or native-root dependencies;
   dependency versions are unchanged. Linux runtime validation runs in CI.
-- [ ] **LIB-02: Expose structured CMS signer and attribute inspection.** After
+- [ ] **LIB-02: In progress — expose structured CMS signer and attribute inspection.** After
   LIB-01, add borrowed SignerInfo, signer identifier, algorithm, signed/unsigned
   attribute, and content views. Preserve unknown OIDs, parameters, and original
   DER. Reuse structural parsing in verification while keeping algorithm and
