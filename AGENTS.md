@@ -12,6 +12,23 @@ PR titles must use Conventional Commit format: `feat: Add xxx`,
 `fix: Correct xxx`, or `refactor: Simplify xxx`. Choose the appropriate lowercase
 type and capitalize the first word after the colon and space.
 
+## Maintain the README visual guide
+
+- Review the **How rssig works** section in `README.md` for every PR and change.
+  Keep its diagrams and nearby explanations accurate in the same PR whenever
+  behavior, architecture, supported formats, public APIs, feature boundaries,
+  trust policy, output contracts, or the development workflow change.
+- Use the implemented code as the source of truth. Show current behavior only;
+  keep planned work in `TODO.md`. Preserve the distinction between untrusted
+  inspection, integrity verification, and configured trust/revocation checks.
+- Prefer readable, text-maintained Mermaid diagrams that render on GitHub.
+  Use short labels, clear arrows, and a few focused diagrams for visual learners;
+  add a brief plain-text explanation and links to detailed documentation.
+- Check diagram syntax/rendering after edits and record the validation in the
+  PR description. Every PR description must state whether the visual guide was
+  updated or reviewed with no changes needed, and why. Do not make cosmetic
+  diagram edits when the change has no effect on the guide.
+
 ## Architecture and constraints
 
 - Use pure Rust for PE/MSI/CAB/NAVX/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
