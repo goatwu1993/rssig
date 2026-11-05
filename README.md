@@ -17,6 +17,84 @@ inspection, and digest input are usable without host integrations. These project
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 
+## How rssig works
+
+### Follow a file through the two paths
+
+**Inspect** reads the structure and exposes untrusted metadata. **Verify** checks
+integrity and applies the caller's timestamp, trust, and revocation policy.
+
+```mermaid
+flowchart TB
+    input["File bytes"]
+    input --> inspect["Inspect<br/>parse CLI or library"]
+    input --> verify["Verify<br/>verify CLI or library"]
+
+    inspect --> metadata["Read structure<br/>Untrusted metadata"]
+    metadata --> inspection["Inspection report<br/>No verification"]
+
+    verify --> integrity["Digests + signatures<br/>RustCrypto"]
+    integrity --> trust["Timestamp + chain<br/>+ revocation policy"]
+    policy["Policy + time<br/>Roots + local CRLs"] -.-> verify
+    trust --> verdict["Verification report<br/>Integrity + trust"]
+
+    inspection --> output["Results or failures<br/>Rust types / CLI JSON"]
+    verdict --> output
+
+    classDef inspectPath fill:#e8f1ff,stroke:#315b8a,color:#142b45
+    classDef verifyPath fill:#e7f4e8,stroke:#397744,color:#183d20
+    classDef configPath fill:#fff4d6,stroke:#916a16,color:#493508
+    class inspect,metadata,inspection inspectPath
+    class verify,integrity,trust,verdict verifyPath
+    class policy configPath
+```
+
+The blue path is available as a `no_std + alloc` library for PE, CAB, NAVX,
+and CMS, including signer and attribute views. The `parse` CLI currently selects
+PE or CMS and reports raw signer encodings with `verification_performed: false`. The green path requires `std` and
+supports all formats listed below. Verification also checks nested signatures
+and embedded AppX/MSIX packages where applicable.
+
+Trust anchors come from configured roots; embedded certificates are untrusted
+chain candidates. The optional OS integration **only supplies root certificates**.
+Rust verifies signatures and certificate paths. Explicit integrity-only or
+revocation-disabled policies are reflected in the results. Any required check
+that fails produces a typed failure with a code, stage, and diagnostics.
+The CLI emits one JSON document per parse/verify invocation, including per-file
+failures. CLI argument/configuration errors go to
+stderr as plain text; help/version go to stdout as plain text.
+
+The code follows this map: [`src/parse`](src/parse) owns public untrusted views,
+[`src/verify`](src/verify) coordinates verification,
+[`src/crypto.rs`](src/crypto.rs) and [`src/trust.rs`](src/trust.rs) implement
+cryptographic and trust checks, and [`src/domain.rs`](src/domain.rs) defines
+report types. [`src/cli`](src/cli) handles command arguments and file/report
+adapters. See the [architecture map](docs/architecture.md) and
+[library guide](docs/library.md) for details.
+
+### Follow a change through the repository
+
+Behavior changes start with committed fixtures and expectations. Ordinary tests
+read those artifacts and invoke the CLI in-process. Fixtures and provenance live
+in `tests/fixtures/`; portable expectations live in `tests/cases.json`, with named
+Rust checks in `tests/cli/`. Validation includes applicable feature and no_std
+checks.
+
+```mermaid
+flowchart TD
+    fixture["1. Capture behavior<br/>Fixture + spec + test"]
+    fixture --> red["2. Run the test<br/>See the intended failure"]
+    red --> implementation["3. Implement<br/>The smallest fix"]
+    implementation --> checks["4. Validate<br/>Tests + fmt + Clippy"]
+    checks --> guide["5. Review docs<br/>Keep diagrams current"]
+    guide --> pr["6. Review + CI<br/>Linux + macOS"]
+    pr --> merge["7. Merge"]
+```
+
+For documentation-only changes, check the affected text, links, and diagrams.
+Every PR reviews this section; updates ship with the changes they describe.
+The maintenance rule lives in [AGENTS.md](AGENTS.md#maintain-the-readme-visual-guide).
+
 ## Comparison with other tools
 
 This comparison covers **verification only**, based on source snapshots reviewed
@@ -43,7 +121,8 @@ policy equivalence.
 
 ## Rust parsing and verification APIs
 
-`rssig::parse` exposes untrusted PE and CMS structures for inspection.
+`rssig::parse` exposes untrusted PE/CAB/NAVX containers and CMS structures,
+including signer and attribute views, for inspection.
 `rssig::verify` performs integrity, timestamp, trust, and revocation checks;
 existing crate-root verification functions remain available.
 
