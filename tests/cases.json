@@ -22417,6 +22417,74 @@
           ]
         }
       }
+    },
+    {
+      "id": "cab-framing-before-digest",
+      "input": "bad-cab-framing-and-digest.cab",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "message": "invalid trailing data in CAB signature",
+                "details": {},
+                "causes": [
+                  "invalid trailing data in CAB signature"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "navx-framing-before-digest",
+      "input": "bad-navx-framing-and-digest.navx",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "message": "trailing data in embedded CMS signature",
+                "details": {},
+                "causes": [
+                  "trailing data in embedded CMS signature"
+                ]
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

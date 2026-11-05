@@ -4,6 +4,13 @@
 `NAVX` magic. `verify_navx` selects this format explicitly for library callers.
 Binary magic takes precedence over script extensions.
 
+Library inspection is available without default features through
+`parse::Navx`. It exposes borrowed container bytes, signature bytes, and
+`authenticode_chunks()` without authenticating them. With `verify` enabled,
+`verify_parsed_navx` reuses that parsed layout and applies the full verification
+policy. See the [library API](library.md) for structural errors and the distinction
+between container parsing and CMS framing checks.
+
 The supported envelope has a 40-byte header with `NAVX` markers at offsets 0
 and 36 and a little-endian u32 content length at offset 28. The digest covers
 all 40 header bytes and exactly that many payload bytes. Header fields whose

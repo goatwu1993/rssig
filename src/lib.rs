@@ -1,4 +1,4 @@
-//! Untrusted PE/CMS parsing and explicit Authenticode verification.
+//! Untrusted PE/CAB/NAVX/CMS parsing and explicit Authenticode verification.
 //!
 //! Disable default features for a `no_std + alloc` parser. Enable `verify` for
 //! the RustCrypto verifier, `system-roots` for native root enumeration, and
@@ -49,8 +49,9 @@ pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
 #[cfg(feature = "verify")]
 pub use verify::{
-    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_pe,
-    verify_pe, verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
+    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_cab,
+    verify_parsed_navx, verify_parsed_pe, verify_pe, verify_powershell, verify_powershell_xml,
+    verify_rdp, verify_wsh,
 };
 #[cfg(all(test, feature = "verify"))]
 mod tests;

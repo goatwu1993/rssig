@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is CAB/NAVX parser extraction
-(LIB-01).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is structured CMS signer inspection
+(LIB-02).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -122,14 +122,19 @@ timestamps, and local CRL validation already exist.
   `thumbv7em-none-eabi` no-default-features check pass on macOS; Linux runs in CI.
   Arbitrary PE layouts remain unsupported.
 
-- [ ] **LIB-01: Next — expose CAB and NAVX parsing on `no_std + alloc`.** Add
-  `parse::Cab` and `parse::Navx` with typed structural errors, borrowed signature
-  bytes, and borrowed digest input. Both readers already borrow bytes and need
-  no filesystem access or decompression. Let verification reuse parsed containers
-  while retaining byte-oriented entry points, framing rules, failure order, and
-  trust policy. Acceptance: existing verification outputs are identical, new
-  behavior has fixture/spec/API coverage, full tests/formatting/Clippy pass, and
-  both parsers build without verifier, CLI, or native-root dependencies.
+- [x] **LIB-01: Expose CAB and NAVX parsing on `no_std + alloc` ([PR #23](https://github.com/goatwu1993/rssig/pull/23)).**
+  Added `parse::Cab` and `parse::Navx` with typed structural errors, borrowed
+  signature bytes, and borrowed digest chunks. `verify_parsed_cab` and
+  `verify_parsed_navx` reuse the layouts with the existing verification pipeline;
+  byte-oriented entry points, framing rules, failure order, and trust policy
+  remain unchanged. Public API tests first failed on the missing exports.
+  Added paired framing/digest fault fixtures, manifest provenance, portable cases,
+  named CLI checks, parser bounds tests, and corpus-wide parsed/byte API parity
+  across five policies. All 678 specification reports matched exactly before
+  and after extraction. Full locked tests, fmt, Clippy, no-default/std/verify/cli
+  feature tests, and `thumbv7em-none-eabi` no-default Clippy passed on macOS.
+  Parser dependency graph has no verifier, CLI, or native-root dependencies;
+  dependency versions are unchanged. Linux runtime validation runs in CI.
 - [ ] **LIB-02: Expose structured CMS signer and attribute inspection.** After
   LIB-01, add borrowed SignerInfo, signer identifier, algorithm, signed/unsigned
   attribute, and content views. Preserve unknown OIDs, parameters, and original

@@ -124,6 +124,9 @@ pub(super) fn write(dir: &std::path::Path) {
     let mut sig = good[48..good.len() - 8].to_vec();
     sig.push(0);
     write("bad-navx-cms-trailing.navx", &attach(&sig));
+    let mut framing_and_digest = attach(&sig);
+    framing_and_digest[40] ^= 1;
+    write("bad-navx-framing-and-digest.navx", &framing_and_digest);
     write("bad-navx-malformed-cms.navx", &attach(&[0, 0]));
     let mut b = good.clone();
     b.push(0);

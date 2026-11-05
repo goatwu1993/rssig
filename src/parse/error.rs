@@ -8,6 +8,14 @@ pub enum ErrorKind {
     InvalidPe,
     /// The PE has no embedded signature.
     Unsigned,
+    /// Invalid or unsupported CAB layout.
+    InvalidCab,
+    /// The CAB has no embedded signature.
+    UnsignedCab,
+    /// Invalid or unsupported NAVX layout.
+    InvalidNavx,
+    /// The NAVX has no embedded signature.
+    UnsignedNavx,
     /// Invalid WIN_CERTIFICATE framing or padding.
     InvalidCertificateTable,
     /// Invalid CMS/PKCS#7 structure.
