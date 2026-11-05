@@ -20,6 +20,8 @@ pub enum ErrorKind {
     InvalidCertificateTable,
     /// Invalid CMS/PKCS#7 structure.
     MalformedCms,
+    /// Shared recursive inspection depth or work budget exhausted.
+    InspectionLimit,
 }
 
 /// A structural parsing failure, with a typed kind and causal diagnostics.

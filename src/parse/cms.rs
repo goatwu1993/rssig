@@ -78,7 +78,8 @@ impl<'a> CertificateChoice<'a> {
 /// Preserves attached content, algorithms, signer encodings, certificates, and
 /// revocation choices. SignerInfo bodies can be decoded explicitly with
 /// [`super::SignerInfo`]. Nested signatures, timestamps, and
-/// content-specific structures are not recursively interpreted here. Empty
+/// content-specific structures are not recursively interpreted by `parse`; use
+/// [`SignedData::inspect`] for bounded recursive inspection. Empty
 /// signer sets are parseable; verification requires at least one signer.
 #[derive(Debug)]
 pub struct SignedData<'a> {

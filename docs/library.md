@@ -42,7 +42,8 @@ fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig::parse::Error> {
 envelopes. It exposes content type, encoded content, digest algorithm OIDs and
 parameters, certificate choices, embedded revocation choices, and raw
 SignerInfo encodings. It preserves unfamiliar algorithms rather than requiring
-that the verifier support them. Content-specific structures, nested signatures, and timestamps remain opaque.
+that the verifier support them. `parse` leaves content-specific structures, nested signatures, and timestamps opaque.
+`SignedData::inspect` explicitly decodes the supported recursive structures.
 Signer bodies can be inspected explicitly with `SignerInfo::parse`.
 For example, a certificate-only CMS envelope with no signers can be inspected
 but cannot pass verification.
@@ -74,11 +75,43 @@ inspection. Values are not recursively decoded or sorted by this API.
 `SignedData::content()` returns an optional `Content` view with `tag()`, `as_der()`
 and `value()` (tag/length excluded). It retains the CMS OCTET STRING or legacy ANY
 wrapper. Detached CMS returns `None`. The same opaque view represents attribute
-values, including nested signatures and timestamps; recursive inspection belongs
-to LIB-03. The existing `content_der()` and `signer_infos()` APIs retain their
+values, including nested signatures and timestamps; recursive inspection is opt-in through `SignedData::inspect`. The existing `content_der()` and `signer_infos()` APIs retain their
 behavior. In particular, envelope parsing can succeed while explicit structured
-signer parsing fails. The parse CLI continues reporting raw signer DER using the
-existing schema.
+signer parsing fails. The parse CLI reports both raw signer DER and bounded recursive metadata by default.
+
+`SignedData::inspect(bytes, &mut InspectionBudget::default())` returns an
+`InspectedCms` tree containing the envelope, structured `InspectedSigner` values,
+and recognized unsigned-attribute children. `InspectionKind` identifies nested
+Authenticode CMS, RFC 3161 tokens (Microsoft and standard CMS attribute OIDs),
+and PKCS#9 countersignatures. Every value in a recognized attribute is visited;
+multiple timestamps are inspectable even when verification policy rejects them.
+Unknown attributes remain available as opaque values in each `SignerInfo`.
+
+RFC 3161 tokens expose `TstInfo`: original DER, version DER, policy OID, imprint
+algorithm/parameters, imprint bytes, serial DER, `parsed_time`, and optional
+field DER. Optional fields have ordered, unique envelope tags; accuracy, TSA
+names, and extensions retain opaque semantics. Versions, policy OIDs, algorithms,
+and imprint lengths are not checked against verification policy. PKCS#9 children
+contain a countersigner and its optional signed `signingTime` assertion.
+Missing signingTime is inspectable; malformed or multiple signingTime values
+fail. `ParsedTime` exposes original DER, nonnegative Unix seconds, and an optional
+exact fractional digit string (including leading zeroes). UTC/GeneralizedTime
+must use canonical DER; GeneralizedTime fractions have at most 64 digits and
+no trailing zero. TSTInfo requires GeneralizedTime. These assertions are never
+verified signing times: no signature, imprint binding, certificate, clock, trust,
+or revocation checks run. The verifier shares time decoding while retaining
+its own authentication and time-policy checks.
+
+`InspectionBudget` is consumable across siblings, timestamp/countersigner edges,
+and repeated top-level calls. Defaults are depth eight (root zero), 64 decoded
+objects (CMS, signer, or TSTInfo), 16 MiB cumulative input bytes, and 65,536 DER
+preflight nodes. Nested bytes/nodes are charged again when decoded; budgets
+never reset between branches. `InspectionLimits` can adjust work limits, but
+cannot raise depth above eight. Constructed DER framing also has a hard depth
+limit of 96. Unknown constructed values receive bounded framing preflight,
+without interpretation. Exhaustion returns `ErrorKind::InspectionLimit`; no
+partial tree is returned. The library method `SignedData::parse` retains its
+earlier limits and deferred signer decoding; the CLI always uses bounded recursive inspection.
 
 Malformed field counts, tags, integers, OIDs, lengths, or attribute structure
 return `ErrorKind::MalformedCms`. The existing DER reader limits each child list
@@ -94,11 +127,11 @@ consult a clock, read files, load roots, perform cryptography, or fetch URLs.
 It does not produce trusted/valid flags. Parse failures use `parse::Error`,
 which implements `core::error::Error` and exposes an `ErrorKind` through
 `kind()`: `InvalidPe`, `Unsigned` (PE), `InvalidCertificateTable`, `MalformedCms`,
-`InvalidCab`, `UnsignedCab`, `InvalidNavx`, or `UnsignedNavx`. The format-specific
+`InvalidCab`, `UnsignedCab`, `InvalidNavx`, `UnsignedNavx`, or `InspectionLimit`. The format-specific
 unsigned kinds preserve the original verification stage when converted.
 Its source chain retains diagnostic causes without depending on domain reports.
 With `verify` enabled, `VerificationError::from` maps these to the existing
-serialized codes/stages/causes. The CLI JSON contract is unchanged.
+serialized codes/stages/causes. CLI reports always include the recursive `inspection` tree.
 
 `Pe::authenticode_chunks()` returns three borrowed slices in digest order,
 excluding the checksum, security directory, and certificate table. Feed the
@@ -171,7 +204,23 @@ Each signature envelope contains:
 | `digest_algorithms` | Ordered entries with `oid`, original `der`, and `parameters_der` (hex or `null`). Unknown algorithms are preserved. |
 | `certificate_choices` | Ordered entries with the ASN.1 `tag`, original `der`, and `certificate` metadata for X.509 choices; opaque alternatives have `certificate: null`. |
 | `revocation_choices_der` | Raw embedded revocation choices as hex strings; neither loaded into the trust store nor validated. |
-| `signer_infos_der` | Raw SignerInfo encodings as hex strings. Signer bodies, nested signatures, and timestamps are not interpreted recursively. |
+| `signer_infos_der` | Raw SignerInfo encodings as hex strings. |
+| `inspection` | Required structural signer/timestamp tree described below. |
+
+`inspection` contains `signers` and `tst_info` (or `null`).
+Each signer has original `der` and ordered `children`. Each child has `kind`
+(`nested`, `rfc3161`, or `pkcs9_countersignature`), `value_der`, optional `cms`
+(a complete recursive envelope report), optional `countersigner`, and optional
+`parsed_time`. Absent values are `null`. Times contain `der`, `unix_seconds`,
+and `fractional_seconds` (a digit string or `null`), never `signing_time`.
+TSTInfo reports contain `der`, `policy`, `imprint_algorithm`, `imprint`,
+`serial_number_der`, `parsed_time`, and `optional_fields_der`. All DER and
+imprint bytes use lowercase hex. `verification_performed` remains false.
+The CLI shares one default budget across a PE file's top-level signatures;
+each input file has its own budget. Limit failures serialize as `malformed_cms`
+at `cms` stage. Malformed signer bodies or recognized children fail the whole
+file. Library callers can still use `SignedData::parse` to inspect their opaque enclosing
+envelopes. There is no shallow CLI mode or recursion flag.
 
 Certificate metadata uses the existing `CertificateReport` fields, including
 names/RDNs, EKUs, key usage, validity, extensions, DER, and a SHA-256 certificate

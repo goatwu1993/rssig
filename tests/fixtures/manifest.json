@@ -6438,6 +6438,64 @@
       "cases": [
         "bad-long-attribute-oid"
       ]
+    },
+    {
+      "file": "parse-rfc3161.der",
+      "sha256": "7ecbfdaf60e9e5c4aee7656f9f0d5467f17ad61b07eb0c2ca30265f1e446f1b2",
+      "bytes": 2726,
+      "description": "Exact CMS extracted from committed good-rfc3161.exe; untrusted recursive inspection.",
+      "source": "good-rfc3161.exe",
+      "cases": [
+        "parse-recursive-rfc3161"
+      ]
+    },
+    {
+      "file": "parse-countersignature.der",
+      "sha256": "5fab43c0b216eaba84fa9d78a710e48aaeb0e64150363f912d8a38bd0dc0661a",
+      "bytes": 1800,
+      "description": "Exact CMS extracted from committed good-countersignature.exe; untrusted recursive inspection.",
+      "source": "good-countersignature.exe",
+      "cases": [
+        "parse-recursive-countersignature"
+      ]
+    },
+    {
+      "file": "parse-nested.der",
+      "sha256": "50a5a40b9e3e616f36307f9159a3f56b1a5557728fbace19f6cecb3f574f157d",
+      "bytes": 2310,
+      "description": "Exact CMS extracted from committed good-nested.exe; untrusted recursive inspection.",
+      "source": "good-nested.exe",
+      "cases": [
+        "parse-recursive-nested"
+      ]
+    },
+    {
+      "file": "parse-rfc3161-bad-time.der",
+      "sha256": "b9f6d8da2a2e4da11ac94b14235b8a0fafb3b7c11790a0128ed5ce02a33145fb",
+      "bytes": 2726,
+      "description": "Paired RFC3161 CMS: only genTime Z changed to X. Signature intentionally stale; malformed time must fail inspection.",
+      "paired_good": "parse-rfc3161.der",
+      "cases": [
+        "parse-recursive-bad-time"
+      ]
+    },
+    {
+      "file": "parse-nested-depth8.der",
+      "sha256": "62f233305c279b3c6164cce7a69f2f4c09d1d43ad4ccfd4afd9177eafcc47b4b",
+      "bytes": 814,
+      "description": "Deterministic structural CMS tree, nested depth 8; opaque synthetic signature and unknown algorithm, no cryptographic assertion.",
+      "cases": [
+        "parse-recursive-depth8"
+      ]
+    },
+    {
+      "file": "parse-nested-depth9.der",
+      "sha256": "9ef96e4e3d41733c9368a50a5b475a2e6e37de99b0cf097775d56e48d301bb37",
+      "bytes": 911,
+      "description": "Deterministic structural CMS tree, nested depth 9; opaque synthetic signature and unknown algorithm, no cryptographic assertion.",
+      "cases": [
+        "parse-recursive-depth9"
+      ]
     }
   ]
 }

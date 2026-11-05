@@ -209,6 +209,7 @@ fn parse_rejects_verification_flags_and_unknown_formats_as_plain_usage_errors() 
         "--no-revocation",
         "--integrity-only",
         "--allow-sha1",
+        "--recursive",
     ] {
         let mut stdout = Vec::new();
         let mut stderr = Vec::new();
@@ -328,21 +329,31 @@ fn parse_rejects_forbidden_der_end_of_contents() {
 }
 
 #[test]
-fn parse_cms_preserves_opaque_signers_for_structured_inspection() {
-    for name in [
-        "parse-signer-views.der",
-        "parse-signer-bad-signature-tag.der",
-    ] {
-        let (exit, json) = invoke(&[name], &["--format", "cms"]);
-        assert_eq!(exit, 0);
-        assert_eq!(json["results"][0]["verification_performed"], false);
-        let cms = &json["results"][0]["signatures"][0];
-        assert_eq!(cms["content_type"], "1.2.3.7");
-        assert_eq!(cms["content_der"], "040568656c6c6f");
-        assert_eq!(cms["signer_infos_der"].as_array().unwrap().len(), 2);
-        let _: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
-            serde_json::from_value(json).unwrap();
-    }
+fn parse_cms_decodes_signer_bodies_and_rejects_malformed_signature_tags() {
+    let (exit, json) = invoke(&["parse-signer-views.der"], &["--format", "cms"]);
+    assert_eq!(exit, 0);
+    assert_eq!(json["results"][0]["verification_performed"], false);
+    let cms = &json["results"][0]["signatures"][0];
+    assert_eq!(cms["content_type"], "1.2.3.7");
+    assert_eq!(cms["signer_infos_der"].as_array().unwrap().len(), 2);
+    assert_eq!(cms["inspection"]["signers"].as_array().unwrap().len(), 2);
+    let report: rssig::domain::ParsedCmsReport = serde_json::from_value(cms.clone()).unwrap();
+    assert_eq!(report.inspection.signers.len(), 2);
+    let mut missing_inspection = cms.clone();
+    missing_inspection
+        .as_object_mut()
+        .unwrap()
+        .remove("inspection");
+    assert!(serde_json::from_value::<rssig::domain::ParsedCmsReport>(missing_inspection).is_err());
+    let _: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+        serde_json::from_value(json).unwrap();
+    let (exit, json) = invoke(
+        &["parse-signer-bad-signature-tag.der"],
+        &["--format", "cms"],
+    );
+    assert_eq!(exit, 1);
+    assert_eq!(json["results"][0]["error"]["code"], "malformed_cms");
+    assert_eq!(json["results"][0]["error"]["stage"], "cms");
 }
 
 #[test]
@@ -356,5 +367,49 @@ fn verification_preserves_long_unknown_attribute_oids_and_rejects_bad_encoding()
         "Invalid signature",
         Some("cms"),
         Some("invalid CMS attribute OID"),
+    );
+}
+
+#[test]
+fn recursive_parse_reports_unverified_nested_signatures_and_timestamp_times() {
+    for (name, kind) in [
+        ("parse-rfc3161.der", "rfc3161"),
+        ("parse-countersignature.der", "pkcs9_countersignature"),
+        ("parse-nested.der", "nested"),
+    ] {
+        let (exit, json) = invoke(&[name], &["--format", "cms"]);
+        assert_eq!(exit, 0);
+        let result = &json["results"][0];
+        assert_eq!(result["verification_performed"], false);
+        let child = &result["signatures"][0]["inspection"]["signers"][0]["children"][0];
+        assert_eq!(child["kind"], kind);
+        if kind != "nested" {
+            assert!(child["parsed_time"]["unix_seconds"].is_u64());
+            assert!(child.get("signing_time").is_none());
+        }
+        let report: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+            serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(serde_json::to_value(report).unwrap(), json);
+    }
+    let (exit, json) = invoke(&["parse-rfc3161-bad-time.der"], &["--format", "cms"]);
+    assert_eq!(exit, 1);
+    assert_eq!(json["results"][0]["error"]["code"], "malformed_cms");
+}
+
+#[test]
+fn recursive_parse_fails_closed_at_the_default_depth_limit() {
+    let (exit, json) = invoke(&["parse-nested-depth8.der"], &["--format", "cms"]);
+    assert_eq!(exit, 0);
+    assert_eq!(json["results"][0]["verification_performed"], false);
+    let (exit, json) = invoke(&["parse-nested-depth9.der"], &["--format", "cms"]);
+    assert_eq!(exit, 1);
+    let error = &json["results"][0]["error"];
+    assert_eq!(error["code"], "malformed_cms");
+    assert_eq!(error["stage"], "cms");
+    assert!(
+        error["message"]
+            .as_str()
+            .unwrap()
+            .contains("limit exceeded")
     );
 }
