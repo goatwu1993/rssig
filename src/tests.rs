@@ -9,6 +9,7 @@ mod parser_boundaries;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
+mod signer_views;
 mod wsh_fixtures;
 
 use super::*;
@@ -776,6 +777,7 @@ fn regenerate_cli_fixtures() {
     );
     msi_fixtures::write(&dir);
     cab_fixtures::write(&dir);
+    signer_views::write(&dir);
     msp_fixtures::write(&dir);
     navx_fixtures::write(&dir);
     powershell_fixtures::write(&dir);

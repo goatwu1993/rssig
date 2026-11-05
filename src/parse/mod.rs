@@ -22,12 +22,14 @@ pub(crate) mod cms;
 mod error;
 pub(crate) mod navx;
 mod pe;
+pub(crate) mod signer;
 
 pub use cab::Cab;
 pub use cms::{AlgorithmIdentifier, CertificateChoice, SignedData};
 pub use error::{Error, ErrorKind};
 pub use navx::Navx;
 pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
+pub use signer::{Attribute, Attributes, Content, SignerIdentifier, SignerInfo};
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
 ///

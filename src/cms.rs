@@ -37,12 +37,7 @@ pub(crate) struct Signer<'a> {
 }
 
 pub(crate) fn algorithm(node: Node<'_>) -> Result<Hash> {
-    let fields = node.expect(0x30)?.children()?;
-    ensure!(
-        !fields.is_empty() && fields.len() <= 2,
-        "invalid AlgorithmIdentifier"
-    );
-    fields[0].expect(6)?;
+    let fields = crate::parse::cms::algorithm_fields(node, "invalid AlgorithmIdentifier")?;
     if fields.len() == 2 {
         ensure!(
             fields[1].tag == 5 && fields[1].body.is_empty(),
@@ -379,26 +374,17 @@ impl<'a> SignedData<'a> {
 
 pub(crate) type Attributes<'a> = Vec<(Vec<u8>, Vec<Node<'a>>)>;
 fn attributes(node: Node<'_>) -> Result<Attributes<'_>> {
-    let mut result: Attributes<'_> = Vec::new();
-    let children = node.children()?;
-    if node.tag == 0xa0 {
-        ensure!(
-            children.windows(2).all(|w| w[0].full <= w[1].full),
-            "noncanonical signed attribute order"
-        );
-    }
-    for attr in children {
-        let f = der::fields(attr.expect(0x30)?, 2)?;
-        f[0].expect(6)?;
-        ensure!(
-            !result.iter().any(|(oid, _)| oid == f[0].body),
-            "duplicate CMS attribute"
-        );
-        let values = f[1].expect(0x31)?.children()?;
-        ensure!(!values.is_empty(), "empty CMS attribute");
-        result.push((f[0].body.to_vec(), values));
-    }
-    Ok(result)
+    let parsed = crate::parse::Attributes::from_node(node)?;
+    Ok(parsed
+        .attributes()
+        .iter()
+        .map(|attr| {
+            (
+                attr.oid_bytes.to_vec(),
+                attr.values().iter().map(|v| v.node).collect(),
+            )
+        })
+        .collect())
 }
 pub(crate) fn attribute<'a>(attrs: &Attributes<'a>, oid: &[u8]) -> Result<Option<Node<'a>>> {
     if let Some((_, values)) = attrs.iter().find(|(o, _)| o == oid) {
@@ -418,17 +404,13 @@ fn verify_signer_inner<'a>(
     allow_sha1: bool,
     allow_bare: bool,
 ) -> Result<Signer<'a>> {
-    let si = signer.expect(0x30)?.children()?;
+    let si = crate::parse::signer::signer_fields(signer)?;
     let has_attributes = si.get(3).is_some_and(|n| n.tag == 0xa0);
     ensure!(
         has_attributes || allow_bare,
         "SignerInfo must contain authenticated attributes"
     );
-    let fields = if has_attributes { 6 } else { 5 };
-    ensure!(
-        si.len() == fields || si.len() == fields + 1,
-        "invalid SignerInfo fields"
-    );
+    let fields = crate::parse::signer::signer_field_count(&si, has_attributes)?;
     if allow_bare {
         ensure!(
             si[0].expect(2)?.body == [1],
@@ -499,12 +481,8 @@ fn verify_signer_inner<'a>(
         attrs_der[0] = 0x31;
     }
     let algorithm_index = if has_attributes { 4 } else { 3 };
-    let alg = si[algorithm_index].expect(0x30)?.children()?;
-    ensure!(
-        !alg.is_empty() && alg.len() <= 2,
-        "invalid signature algorithm"
-    );
-    alg[0].expect(6)?;
+    let alg =
+        crate::parse::cms::algorithm_fields(si[algorithm_index], "invalid signature algorithm")?;
     if alg.len() == 2 {
         ensure!(
             alg[1].tag == 5 && alg[1].body.is_empty(),

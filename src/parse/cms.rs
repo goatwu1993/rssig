@@ -7,6 +7,13 @@ use x509_cert::Certificate;
 
 pub(crate) const SIGNED_DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 2];
 
+pub(crate) fn algorithm_fields<'a>(node: Node<'a>, diagnostic: &str) -> Result<Vec<Node<'a>>> {
+    let fields = node.expect(0x30)?.children()?;
+    ensure!((1..=2).contains(&fields.len()), "{diagnostic}");
+    fields[0].expect(6)?;
+    Ok(fields)
+}
+
 /// An algorithm identifier, including algorithms the verifier does not support.
 #[derive(Debug)]
 pub struct AlgorithmIdentifier<'a> {
@@ -15,12 +22,15 @@ pub struct AlgorithmIdentifier<'a> {
     parameters: Option<&'a [u8]>,
 }
 impl<'a> AlgorithmIdentifier<'a> {
-    fn parse(node: Node<'a>) -> Result<Self> {
-        let fields = node.expect(0x30)?.children()?;
-        ensure!(
-            (1..=2).contains(&fields.len()),
-            "invalid AlgorithmIdentifier"
-        );
+    /// Decode an algorithm without applying verification support/parameter policy.
+    pub fn parse(bytes: &'a [u8]) -> core::result::Result<Self, Error> {
+        der::one(bytes, 0x30)
+            .and_then(Self::from_node)
+            .map_err(|e| Error::new(ErrorKind::MalformedCms, e))
+    }
+
+    pub(crate) fn from_node(node: Node<'a>) -> Result<Self> {
+        let fields = algorithm_fields(node, "invalid AlgorithmIdentifier")?;
         Ok(Self {
             node,
             oid: ObjectIdentifier::from_der(fields[0].full).map_err(DecodeError)?,
@@ -66,7 +76,8 @@ impl<'a> CertificateChoice<'a> {
 /// An unverified CMS/legacy PKCS#7 SignedData envelope borrowing its input.
 ///
 /// Preserves attached content, algorithms, signer encodings, certificates, and
-/// revocation choices. SignerInfo bodies, nested signatures, timestamps, and
+/// revocation choices. SignerInfo bodies can be decoded explicitly with
+/// [`super::SignerInfo`]. Nested signatures, timestamps, and
 /// content-specific structures are not recursively interpreted here. Empty
 /// signer sets are parseable; verification requires at least one signer.
 #[derive(Debug)]
@@ -97,7 +108,7 @@ impl<'a> SignedData<'a> {
             .expect(0x31)?
             .children()?
             .into_iter()
-            .map(AlgorithmIdentifier::parse)
+            .map(AlgorithmIdentifier::from_node)
             .collect::<Result<_>>()?;
         let ci = sd[2].expect(0x30)?.children()?;
         ensure!(
@@ -164,6 +175,10 @@ impl<'a> SignedData<'a> {
     /// Complete encoded inner value, retaining the CMS OCTET STRING or legacy ANY wrapper.
     pub fn content_der(&self) -> Option<&'a [u8]> {
         self.content.map(|n| n.full)
+    }
+    /// Borrow attached content without interpreting content-specific structures.
+    pub fn content(&self) -> Option<super::Content<'a>> {
+        self.content.map(|node| super::Content { node })
     }
     pub fn digest_algorithms(&self) -> &[AlgorithmIdentifier<'a>] {
         &self.algorithms

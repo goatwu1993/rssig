@@ -42,10 +42,48 @@ fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig::parse::Error> {
 envelopes. It exposes content type, encoded content, digest algorithm OIDs and
 parameters, certificate choices, embedded revocation choices, and raw
 SignerInfo encodings. It preserves unfamiliar algorithms rather than requiring
-that the verifier support them. Content-specific structures, SignerInfo bodies,
-nested signatures, and timestamps are interpreted later by the verifier.
+that the verifier support them. Content-specific structures, nested signatures, and timestamps remain opaque.
+Signer bodies can be inspected explicitly with `SignerInfo::parse`.
 For example, a certificate-only CMS envelope with no signers can be inspected
 but cannot pass verification.
+
+`SignerInfo::parse(cms.signer_infos()[index])` returns a borrowed signer view
+with original `as_der()` and `version_der()`, `identifier()`/`identifier_der()`,
+`digest_algorithm()`, `signature_algorithm()`, signature bytes, and optional
+`signed_attributes()`/`unsigned_attributes()`. `SignerIdentifier` supports
+issuer/serial (original issuer Name SEQUENCE and serial INTEGER DER) and
+subject-key-identifier bytes. The issuer Name is opaque beyond its sequence
+framing. Versions and serials must be canonical nonnegative integers; unfamiliar
+version numbers are preserved without asserting that verification supports them.
+Identity/version compatibility and certificate matching remain verification policy.
+
+`AlgorithmIdentifier::parse` also decodes standalone identifiers. Unknown valid
+OIDs, absent parameters, NULL parameters, and unfamiliar parameter DER are
+preserved. Each `Attribute` exposes its OID, original DER and borrowed `Content`
+values. `Attributes::parse` accepts implicit signed `[0]` and unsigned `[1]` sets,
+preserving their original tags and bytes. Signed attribute order must be canonical;
+both sets reject duplicate OIDs and attributes with empty value sets. Empty
+attribute sets are inspectable, but cannot meet mandatory verification attributes.
+Unsigned attribute order and opaque value semantics are not authenticated by
+inspection. Values are not recursively decoded or sorted by this API.
+
+`SignedData::content()` returns an optional `Content` view with `tag()`, `as_der()`
+and `value()` (tag/length excluded). It retains the CMS OCTET STRING or legacy ANY
+wrapper. Detached CMS returns `None`. The same opaque view represents attribute
+values, including nested signatures and timestamps; recursive inspection belongs
+to LIB-03. The existing `content_der()` and `signer_infos()` APIs retain their
+behavior. In particular, envelope parsing can succeed while explicit structured
+signer parsing fails. The parse CLI continues reporting raw signer DER using the
+existing schema.
+
+Malformed field counts, tags, integers, OIDs, lengths, or attribute structure
+return `ErrorKind::MalformedCms`. The existing DER reader limits each child list
+to 16,384 entries, forbids indefinite lengths and high-tag-number encodings, and
+checks ranges before slicing. View metadata allocates, while DER, signature,
+identifier and content slices borrow the input. Accessors do not allocate.
+Verification reuses algorithm framing, signer framing and attribute decoding at
+the existing stages; algorithm support, digest binding, signature authentication,
+and configured-root trust remain in the verifier.
 
 These types borrow immutable input and have private fields. Parsing does not
 consult a clock, read files, load roots, perform cryptography, or fetch URLs.

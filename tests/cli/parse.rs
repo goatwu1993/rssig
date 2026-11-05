@@ -326,3 +326,21 @@ fn parse_rejects_forbidden_der_end_of_contents() {
     assert_eq!(json["results"][0]["error"]["code"], "malformed_cms");
     assert_eq!(json["results"][0]["error"]["stage"], "cms");
 }
+
+#[test]
+fn parse_cms_preserves_opaque_signers_for_structured_inspection() {
+    for name in [
+        "parse-signer-views.der",
+        "parse-signer-bad-signature-tag.der",
+    ] {
+        let (exit, json) = invoke(&[name], &["--format", "cms"]);
+        assert_eq!(exit, 0);
+        assert_eq!(json["results"][0]["verification_performed"], false);
+        let cms = &json["results"][0]["signatures"][0];
+        assert_eq!(cms["content_type"], "1.2.3.7");
+        assert_eq!(cms["content_der"], "040568656c6c6f");
+        assert_eq!(cms["signer_infos_der"].as_array().unwrap().len(), 2);
+        let _: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+            serde_json::from_value(json).unwrap();
+    }
+}

@@ -22485,6 +22485,72 @@
           ]
         }
       }
+    },
+    {
+      "id": "parse-signer-views",
+      "input": "parse-signer-views.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "cms",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "content_type": "1.2.3.7",
+                  "content_der": "040568656c6c6f",
+                  "signer_infos_der": [
+                    "304a02010130053000020101300d06096086480165030402010500a011300f06032a0304310804066f7061717565300706032a030530000403736967a10e300c06032a030631050401780500",
+                    "304b02010380066b65792d6964300d06096086480165030402010500a011300f06032a0304310804066f7061717565300706032a030530000403736967a10e300c06032a030631050401780500"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-signer-bad-signature-tag",
+      "input": "parse-signer-bad-signature-tag.der",
+      "command": [
+        "parse",
+        "--format",
+        "cms"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "command": "parse",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "cms",
+              "verification_performed": false,
+              "signatures": [
+                {
+                  "content_type": "1.2.3.7",
+                  "content_der": "040568656c6c6f",
+                  "signer_infos_der": [
+                    "304a02010130053000020101300d06096086480165030402010500a011300f06032a0304310804066f7061717565300706032a030530000503736967a10e300c06032a030631050401780500",
+                    "304b02010380066b65792d6964300d06096086480165030402010500a011300f06032a0304310804066f7061717565300706032a030530000403736967a10e300c06032a030631050401780500"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

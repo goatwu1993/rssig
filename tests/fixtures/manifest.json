@@ -6402,6 +6402,24 @@
       "cases": [
         "navx-framing-before-digest"
       ]
+    },
+    {
+      "file": "parse-signer-views.der",
+      "sha256": "f37447a5dce154cec7756f0f2aba2d82710cb160d24b46bcd375adfddb066b3c",
+      "bytes": 212,
+      "description": "Synthetic untrusted CMS with issuer/serial and SKI signers, unknown algorithm parameters, attributes and content. No cryptographic signature.",
+      "cases": [
+        "parse-signer-views"
+      ]
+    },
+    {
+      "file": "parse-signer-bad-signature-tag.der",
+      "sha256": "20301e56436dc2eff8d3f5e2154cfc0a9f45204f29d738af4869ddf0149651fb",
+      "bytes": 212,
+      "description": "Synthetic untrusted CMS with issuer/serial and SKI signers, unknown algorithm parameters, attributes and content. No cryptographic signature. First signature OCTET STRING tag changed to NULL; envelope remains inspectable but structured SignerInfo parsing rejects it.",
+      "cases": [
+        "parse-signer-bad-signature-tag"
+      ]
     }
   ]
 }
