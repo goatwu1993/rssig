@@ -42,7 +42,7 @@
             "items": {
               "type": "string"
             },
-            "description": "CLI argv after rssig. verify authenticates; parse inspects signed PE (default) or standalone DER CMS (--format cms) without verification. --recursive adds bounded nested CMS and unverified RFC3161/PKCS9 timestamp inspection. See docs/library.md for the parse result contract."
+            "description": "CLI argv after rssig. verify authenticates; parse inspects signed PE (default) or standalone DER CMS (--format cms) without verification. parse always performs bounded nested CMS and unverified RFC3161/PKCS9 timestamp inspection; inspection metadata is required on each reported CMS envelope. See docs/library.md for the parse result contract."
           },
           "expect": {
             "type": "object",

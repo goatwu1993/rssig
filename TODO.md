@@ -156,11 +156,12 @@ timestamps, and local CRL validation already exist.
   timestamp edges, decoded objects, input bytes, and DER nodes; depth has a hard
   cap of eight. Parsed time assertions preserve exact fractional digits and DER
   without authentication or trust claims. The verifier shares time decoding.
-  Opt-in `parse --recursive` adds Serde inspection metadata; ordinary parse and
-  verification policy remain unchanged. Added paired malformed-time and depth
-  fixtures, provenance/digests, six portable cases, named CLI/domain assertions,
+  `parse` always includes bounded Serde inspection metadata; verification policy
+  remains unchanged. Added paired malformed-time and depth
+  fixtures, provenance/digests, seven portable cases, named CLI/domain assertions,
   and borrowing, budget-sharing, truncation, depth, and unauthenticated-input tests.
-  Focused tests first failed on missing APIs/CLI flag. Full locked tests, fmt,
+  Focused tests first failed on missing APIs and default recursive inspection.
+  Full locked tests, fmt,
   Clippy, no-default/std/verify/cli feature tests and bare-metal no-default Clippy
   pass on macOS. Dependencies are unchanged; Linux validation remains in CI.
 - [ ] **LIB-04: Extract script and RDP parsing boundaries.** Separate decoding,

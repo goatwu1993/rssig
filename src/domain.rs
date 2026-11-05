@@ -509,9 +509,8 @@ pub struct ParsedCmsReport {
     pub revocation_choices_der: Vec<String>,
     /// Raw SignerInfo bodies; recursive metadata is separate in `inspection`.
     pub signer_infos_der: Vec<String>,
-    /// Opt-in, bounded, unauthenticated recursive inspection.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub inspection: Option<ParsedCmsInspection>,
+    /// Bounded, unauthenticated recursive inspection.
+    pub inspection: ParsedCmsInspection,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

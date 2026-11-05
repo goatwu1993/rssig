@@ -93,7 +93,9 @@ rssig parse application.exe
 rssig parse --format cms signature.p7s
 ```
 
-Inspection JSON explicitly reports `verification_performed: false`. Signed PE
+Inspection always includes bounded nested-signature and timestamp metadata.
+Parsed time assertions remain unverified; JSON explicitly reports
+`verification_performed: false`. Signed PE
 is the default; standalone CMS requires `--format cms`. This command does not
 accept trust or verification policy flags. The CLI requires `std`; the parser does not.
 See [the module responsibility map](docs/architecture.md) and

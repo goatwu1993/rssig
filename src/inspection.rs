@@ -5,7 +5,7 @@ use crate::{
     parse::{InspectedCms, InspectedSigner, InspectionBudget, ParsedTime, Pe, SignedData},
 };
 
-pub(crate) fn pe(bytes: &[u8], recursive: bool) -> Result<ParseReport, VerificationError> {
+pub(crate) fn pe(bytes: &[u8]) -> Result<ParseReport, VerificationError> {
     let pe = Pe::parse(bytes)?;
     let mut budget = InspectionBudget::default();
     Ok(ParseReport {
@@ -14,34 +14,30 @@ pub(crate) fn pe(bytes: &[u8], recursive: bool) -> Result<ParseReport, Verificat
         signatures: pe
             .signatures()?
             .into_iter()
-            .map(|bytes| signed_data(bytes, recursive, &mut budget))
+            .map(|bytes| signed_data(bytes, &mut budget))
             .collect::<Result<_, _>>()?,
     })
 }
 
-pub(crate) fn cms(bytes: &[u8], recursive: bool) -> Result<ParseReport, VerificationError> {
+pub(crate) fn cms(bytes: &[u8]) -> Result<ParseReport, VerificationError> {
     Ok(ParseReport {
         format: "cms".into(),
         verification_performed: false,
-        signatures: vec![signed_data(
-            bytes,
-            recursive,
-            &mut InspectionBudget::default(),
-        )?],
+        signatures: vec![signed_data(bytes, &mut InspectionBudget::default())?],
     })
 }
 
 fn signed_data(
     bytes: &[u8],
-    recursive: bool,
     budget: &mut InspectionBudget,
 ) -> Result<ParsedCmsReport, VerificationError> {
-    if recursive {
-        return inspected(SignedData::inspect(bytes, budget)?);
-    }
-    project(&SignedData::parse(bytes)?)
+    inspected(SignedData::inspect(bytes, budget)?)
 }
-fn project(parsed: &SignedData<'_>) -> Result<ParsedCmsReport, VerificationError> {
+
+fn project(
+    parsed: &SignedData<'_>,
+    inspection: ParsedCmsInspection,
+) -> Result<ParsedCmsReport, VerificationError> {
     let certificate_choices = parsed
         .certificate_choices()
         .iter()
@@ -83,7 +79,7 @@ fn project(parsed: &SignedData<'_>) -> Result<ParsedCmsReport, VerificationError
             .map(|der| hex(der))
             .collect(),
         signer_infos_der: parsed.signer_infos().iter().copied().map(hex).collect(),
-        inspection: None,
+        inspection,
     })
 }
 
@@ -95,8 +91,7 @@ fn parsed_time(time: &ParsedTime<'_>) -> ParsedTimeReport {
     }
 }
 fn inspected(cms: InspectedCms<'_>) -> Result<ParsedCmsReport, VerificationError> {
-    let mut report = project(&cms.signed_data)?;
-    report.inspection = Some(ParsedCmsInspection {
+    let inspection = ParsedCmsInspection {
         signers: cms
             .signers
             .into_iter()
@@ -115,8 +110,8 @@ fn inspected(cms: InspectedCms<'_>) -> Result<ParsedCmsReport, VerificationError
             parsed_time: parsed_time(&info.parsed_time),
             optional_fields_der: info.optional_fields.into_iter().map(hex).collect(),
         }),
-    });
-    Ok(report)
+    };
+    project(&cms.signed_data, inspection)
 }
 fn inspected_signer(
     signer: InspectedSigner<'_>,

@@ -77,7 +77,7 @@ and `value()` (tag/length excluded). It retains the CMS OCTET STRING or legacy A
 wrapper. Detached CMS returns `None`. The same opaque view represents attribute
 values, including nested signatures and timestamps; recursive inspection is opt-in through `SignedData::inspect`. The existing `content_der()` and `signer_infos()` APIs retain their
 behavior. In particular, envelope parsing can succeed while explicit structured
-signer parsing fails. The parse CLI continues reporting raw signer DER; `--recursive` adds structural metadata.
+signer parsing fails. The parse CLI reports both raw signer DER and bounded recursive metadata by default.
 
 `SignedData::inspect(bytes, &mut InspectionBudget::default())` returns an
 `InspectedCms` tree containing the envelope, structured `InspectedSigner` values,
@@ -110,8 +110,8 @@ never reset between branches. `InspectionLimits` can adjust work limits, but
 cannot raise depth above eight. Constructed DER framing also has a hard depth
 limit of 96. Unknown constructed values receive bounded framing preflight,
 without interpretation. Exhaustion returns `ErrorKind::InspectionLimit`; no
-partial tree is returned. Ordinary nonrecursive `parse` retains its earlier
-limits and deferred signer decoding.
+partial tree is returned. The library method `SignedData::parse` retains its
+earlier limits and deferred signer decoding; the CLI always uses bounded recursive inspection.
 
 Malformed field counts, tags, integers, OIDs, lengths, or attribute structure
 return `ErrorKind::MalformedCms`. The existing DER reader limits each child list
@@ -131,7 +131,7 @@ which implements `core::error::Error` and exposes an `ErrorKind` through
 unsigned kinds preserve the original verification stage when converted.
 Its source chain retains diagnostic causes without depending on domain reports.
 With `verify` enabled, `VerificationError::from` maps these to the existing
-serialized codes/stages/causes. Default CLI output is unchanged; opt-in recursive reports add `inspection`.
+serialized codes/stages/causes. CLI reports always include the recursive `inspection` tree.
 
 `Pe::authenticode_chunks()` returns three borrowed slices in digest order,
 excluding the checksum, security directory, and certificate table. Feed the
@@ -178,7 +178,6 @@ functions retain their behavior. The CLI uses the same verification engine.
 rssig parse application.exe library.dll
 rssig parse --format pe application.exe
 rssig parse --format cms signature.p7s
-rssig parse --recursive application.exe
 ```
 
 The default format is signed PE. `--format cms` selects a standalone DER
@@ -206,9 +205,9 @@ Each signature envelope contains:
 | `certificate_choices` | Ordered entries with the ASN.1 `tag`, original `der`, and `certificate` metadata for X.509 choices; opaque alternatives have `certificate: null`. |
 | `revocation_choices_der` | Raw embedded revocation choices as hex strings; neither loaded into the trust store nor validated. |
 | `signer_infos_der` | Raw SignerInfo encodings as hex strings. |
-| `inspection` | Present only with `--recursive`; structural signer/timestamp tree described below. |
+| `inspection` | Required structural signer/timestamp tree described below. |
 
-With `--recursive`, `inspection` contains `signers` and `tst_info` (or `null`).
+`inspection` contains `signers` and `tst_info` (or `null`).
 Each signer has original `der` and ordered `children`. Each child has `kind`
 (`nested`, `rfc3161`, or `pkcs9_countersignature`), `value_der`, optional `cms`
 (a complete recursive envelope report), optional `countersigner`, and optional
@@ -219,8 +218,9 @@ TSTInfo reports contain `der`, `policy`, `imprint_algorithm`, `imprint`,
 imprint bytes use lowercase hex. `verification_performed` remains false.
 The CLI shares one default budget across a PE file's top-level signatures;
 each input file has its own budget. Limit failures serialize as `malformed_cms`
-at `cms` stage. Malformed recognized children fail the whole file; ordinary
-`parse` can still inspect their opaque enclosing envelopes.
+at `cms` stage. Malformed signer bodies or recognized children fail the whole
+file. Library callers can still use `SignedData::parse` to inspect their opaque enclosing
+envelopes. There is no shallow CLI mode or recursion flag.
 
 Certificate metadata uses the existing `CertificateReport` fields, including
 names/RDNs, EKUs, key usage, validity, extensions, DER, and a SHA-256 certificate
