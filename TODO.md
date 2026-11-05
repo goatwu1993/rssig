@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is structured CMS signer inspection
-(LIB-02).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is bounded nested-signature and timestamp inspection
+(LIB-03).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -135,12 +135,21 @@ timestamps, and local CRL validation already exist.
   feature tests, and `thumbv7em-none-eabi` no-default Clippy passed on macOS.
   Parser dependency graph has no verifier, CLI, or native-root dependencies;
   dependency versions are unchanged. Linux runtime validation runs in CI.
-- [ ] **LIB-02: Expose structured CMS signer and attribute inspection.** After
-  LIB-01, add borrowed SignerInfo, signer identifier, algorithm, signed/unsigned
-  attribute, and content views. Preserve unknown OIDs, parameters, and original
-  DER. Reuse structural parsing in verification while keeping algorithm and
-  trust policy there. Specify malformed/unsupported-value handling; inspection
-  must never manufacture authenticated verdicts.
+- [x] **LIB-02: Expose structured CMS signer and attribute inspection ([PR #24](https://github.com/goatwu1993/rssig/pull/24)).**
+  Added borrowed `SignerInfo`, `SignerIdentifier`, `Attribute`, `Attributes`, and
+  `Content` views, standalone algorithm parsing, and `SignedData::content()`.
+  Unknown OIDs/parameters and original DER remain available. Shared algorithm,
+  signer framing and attribute helpers run at the existing verification stages;
+  algorithm support and trust remain verifier policy. Added committed paired CMS
+  fixtures, portable cases, named CLI checks, and parser-only API/bounds tests;
+  API tests first failed on missing exports. All 678 previous specification
+  reports compared exactly equal; the full suite now covers 682 portable cases.
+  Full locked tests, fmt, Clippy, no-default/std/verify/cli feature tests, and
+  `thumbv7em-none-eabi` no-default Clippy pass on macOS. Dependencies are unchanged;
+  parser-only dependencies exclude verifier/CLI/native roots. Linux runs in CI.
+  Self-review added long/short unknown attribute OID preservation independent of
+  the fixed-size OID adapter, plus a malformed-encoding counterpart.
+  Nested signatures/timestamps remain opaque for LIB-03; CLI schema is unchanged.
 - [ ] **LIB-03: Add bounded nested-signature and timestamp inspection.** Build
   on LIB-02 to inspect RFC 3161/PKCS#9 and nested CMS without trust configuration.
   Apply shared recursion/work budgets and distinguish parsed times from verified

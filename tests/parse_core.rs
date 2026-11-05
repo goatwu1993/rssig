@@ -427,3 +427,174 @@ fn cab_and_navx_truncations_and_extreme_fields_fail_without_panics() {
         ErrorKind::InvalidNavx
     );
 }
+
+#[test]
+fn structured_cms_views_preserve_borrowed_unknown_values() {
+    use rssig::parse::{SignerIdentifier, SignerInfo};
+    let bytes = include_bytes!("fixtures/parse-signer-views.der");
+    let cms = SignedData::parse(bytes).unwrap();
+    let content = cms.content().unwrap();
+    assert_eq!(content.tag(), 4);
+    assert_eq!(content.value(), b"hello");
+    assert_eq!(content.as_der(), cms.content_der().unwrap());
+    for (i, raw) in cms.signer_infos().iter().enumerate() {
+        let signer = SignerInfo::parse(raw).unwrap();
+        assert_eq!(signer.as_der().as_ptr(), raw.as_ptr());
+        assert_eq!(
+            signer.digest_algorithm().oid().to_string(),
+            "2.16.840.1.101.3.4.2.1"
+        );
+        assert_eq!(signer.signature_algorithm().oid().to_string(), "1.2.3.5");
+        assert_eq!(
+            signer.signature_algorithm().parameters_der(),
+            Some(b"\x30\x00".as_slice())
+        );
+        assert_eq!(signer.signature(), b"sig");
+        match signer.identifier() {
+            SignerIdentifier::IssuerAndSerialNumber {
+                issuer_der,
+                serial_number_der,
+            } => {
+                assert_eq!(i, 0);
+                assert_eq!(issuer_der, b"\x30\x00");
+                assert_eq!(serial_number_der, b"\x02\x01\x01");
+            }
+            SignerIdentifier::SubjectKeyIdentifier(value) => {
+                assert_eq!(i, 1);
+                assert_eq!(value, b"key-id");
+            }
+        }
+        let signed = signer.signed_attributes().unwrap();
+        assert_eq!(signed.attributes()[0].oid().unwrap().to_string(), "1.2.3.4");
+        assert_eq!(signed.attributes()[0].values()[0].value(), b"opaque");
+        let unsigned = signer.unsigned_attributes().unwrap();
+        assert_eq!(unsigned.attributes()[0].values().len(), 2);
+        for attr in signed.attributes().iter().chain(unsigned.attributes()) {
+            for value in attr.values() {
+                assert!(value.as_der().as_ptr() >= bytes.as_ptr());
+                assert!(value.as_der().as_ptr_range().end <= bytes.as_ptr_range().end);
+            }
+        }
+    }
+    let bad = SignedData::parse(include_bytes!(
+        "fixtures/parse-signer-bad-signature-tag.der"
+    ))
+    .unwrap();
+    assert_eq!(
+        SignerInfo::parse(bad.signer_infos()[0]).unwrap_err().kind(),
+        ErrorKind::MalformedCms
+    );
+}
+
+#[test]
+fn structured_signer_bounds_and_attribute_rules_are_explicit() {
+    use rssig::parse::{AlgorithmIdentifier, Attributes, SignerInfo};
+    let cms = SignedData::parse(include_bytes!("fixtures/parse-signer-views.der")).unwrap();
+    let raw = cms.signer_infos()[0];
+    for end in 0..raw.len() {
+        assert!(SignerInfo::parse(&raw[..end]).is_err(), "prefix {end}");
+    }
+    let signer = SignerInfo::parse(raw).unwrap();
+    let attr = signer.signed_attributes().unwrap().attributes()[0].as_der();
+    let wrap = |tag: u8, body: &[u8]| {
+        let mut v = vec![tag, body.len() as u8];
+        v.extend(body);
+        v
+    };
+    let duplicate = wrap(0xa0, &[attr, attr].concat());
+    assert!(
+        Attributes::parse(&duplicate)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    let mut empty_value = attr.to_vec();
+    empty_value.truncate(7);
+    empty_value[1] = 7;
+    empty_value.extend([0x31, 0]);
+    assert!(Attributes::parse(&wrap(0xa0, &empty_value)).is_err());
+    let mut other = attr.to_vec();
+    other[6] = 8;
+    assert!(Attributes::parse(&wrap(0xa0, &[&other[..], attr].concat())).is_err());
+    assert!(Attributes::parse(&wrap(0xa1, &[&other[..], attr].concat())).is_ok());
+    assert!(Attributes::parse(&wrap(0x31, attr)).is_err());
+    assert!(AlgorithmIdentifier::parse(b"\x30\x00").is_err());
+    assert!(AlgorithmIdentifier::parse(b"\x30\x03\x06\x01\x80").is_err());
+    assert!(AlgorithmIdentifier::parse(b"\x30\x07\x06\x03\x2a\x03\x05\x30\x00").is_ok());
+}
+
+#[test]
+fn structured_signers_inspect_existing_authenticode_without_authentication() {
+    use rssig::parse::SignerInfo;
+    for bytes in [
+        GOOD,
+        include_bytes!("fixtures/bad-cms-signature.exe").as_slice(),
+        include_bytes!("fixtures/unsupported-digest-algorithm.exe").as_slice(),
+        include_bytes!("fixtures/good-rfc3161.exe").as_slice(),
+        include_bytes!("fixtures/good-nested.exe").as_slice(),
+    ] {
+        let pe = Pe::parse(bytes).unwrap();
+        let cms = SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+        for raw in cms.signer_infos() {
+            let signer = SignerInfo::parse(raw).unwrap();
+            assert!(!signer.signature().is_empty());
+            assert_eq!(signer.version_der(), b"\x02\x01\x01");
+        }
+    }
+}
+
+#[test]
+fn signer_identity_versions_and_optional_attributes_are_structural_only() {
+    use rssig::parse::SignerInfo;
+    let cms = SignedData::parse(include_bytes!("fixtures/parse-signer-views.der")).unwrap();
+    let signer = SignerInfo::parse(cms.signer_infos()[0]).unwrap();
+    let make = |version: &[u8], sid: &[u8]| {
+        let body = [
+            version,
+            sid,
+            signer.digest_algorithm().as_der(),
+            signer.signature_algorithm().as_der(),
+            b"\x04\x03sig",
+        ]
+        .concat();
+        let mut bytes = vec![0x30, body.len() as u8];
+        bytes.extend(body);
+        bytes
+    };
+    let bare = make(b"\x02\x01\x01", signer.identifier_der());
+    let parsed = SignerInfo::parse(&bare).unwrap();
+    assert!(parsed.signed_attributes().is_none());
+    assert!(parsed.unsigned_attributes().is_none());
+    assert!(SignerInfo::parse(&make(b"\x02\x01\xff", signer.identifier_der())).is_err());
+    assert!(SignerInfo::parse(&make(b"\x05\x00", signer.identifier_der())).is_err());
+    assert!(SignerInfo::parse(&make(b"\x02\x01\x01", b"\x81\x01x")).is_err());
+    let future_version = make(b"\x02\x01\x7f", signer.identifier_der());
+    assert_eq!(
+        SignerInfo::parse(&future_version).unwrap().version_der(),
+        b"\x02\x01\x7f"
+    );
+}
+
+#[test]
+fn attribute_oid_views_preserve_valid_encodings_beyond_adapter_limits() {
+    use rssig::parse::{Attributes, SignerInfo};
+    let bytes = include_bytes!("fixtures/good-long-attribute-oid.exe");
+    let pe = Pe::parse(bytes).unwrap();
+    let cms = SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+    let signer = SignerInfo::parse(cms.signer_infos()[0]).unwrap();
+    let attr = &signer.unsigned_attributes().unwrap().attributes()[0];
+    assert!(attr.oid().is_none());
+    assert_eq!(attr.oid_bytes().len(), 41);
+    assert_eq!(attr.oid_bytes()[0], 42);
+    assert!(attr.oid_bytes()[1..].iter().all(|b| *b == 1));
+    // The fixed-size adapter also rejects valid short OIDs such as 1.2.
+    let short = Attributes::parse(b"\xa1\x09\x30\x07\x06\x01\x2a\x31\x02\x05\x00").unwrap();
+    assert_eq!(short.attributes()[0].oid_bytes(), &[42]);
+    let bad = include_bytes!("fixtures/bad-long-attribute-oid.exe");
+    let pe = Pe::parse(bad).unwrap();
+    let cms = SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+    assert_eq!(
+        SignerInfo::parse(cms.signer_infos()[0]).unwrap_err().kind(),
+        ErrorKind::MalformedCms
+    );
+}

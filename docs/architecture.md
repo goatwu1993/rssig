@@ -12,6 +12,7 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
 | `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
 | `parse` | `no_std + alloc` PE/CAB/NAVX/CMS structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
+| `parse/signer.rs` | Borrowed untrusted CMS signer, identifier, attribute and content views; shared structural helpers preserve verification check order. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
 | `verify/container.rs` | Embedded CMS extraction and each container's padding/framing rules. |
 | `verify/integrity.rs` | SIP/content binding, algorithm policy, image/package/script digests, and PE page hashes. Returns digest evidence to the signer pipeline. |
