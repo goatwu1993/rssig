@@ -1,7 +1,9 @@
 //! Parse untrusted signature structures without cryptography, trust, clocks, or I/O.
 //!
 //! This API covers signed PE, CAB, NAVX containers and attached/detached CMS
-//! envelopes. Parsing success is not a verification result. Unknown algorithm
+//! envelopes, PowerShell/XML comments, WSH scripts, and scoped RDP settings.
+//! WSF XML validation requires the `xml` feature, which also uses `core + alloc`.
+//! Parsing success is not a verification result. Unknown algorithm
 //! identifiers and opaque certificate choices retain their original DER.
 //! Signature algorithm policy, hashes, signature checks, timestamp authentication, and certificate trust
 //! belong to the optional `verify` module. Parsing requires only `core + alloc`.
@@ -35,6 +37,18 @@ pub use nested::{
 };
 pub use pe::{Pe, PeOffsetError, PeOffsets, PeTrait};
 pub use signer::{Attribute, Attributes, Content, SignerIdentifier, SignerInfo};
+
+pub(crate) mod powershell;
+pub(crate) mod rdp;
+mod text;
+pub(crate) mod wsh;
+pub use powershell::Powershell;
+pub use rdp::{Rdp, RdpSetting, RdpValueType};
+pub use text::TextEncoding;
+pub use wsh::{Kind as WshKind, Wsh};
+
+#[cfg(feature = "xml")]
+mod wsf_xml;
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
 ///

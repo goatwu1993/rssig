@@ -27,3 +27,6 @@ mod navx;
 
 #[path = "cli/parse.rs"]
 mod parse;
+
+#[path = "cli/text_parsing.rs"]
+mod text_parsing;

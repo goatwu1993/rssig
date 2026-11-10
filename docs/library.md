@@ -172,6 +172,55 @@ functions are exported from both `rssig::verify` and the crate root. The existin
 `verify`, `verify_pe`, `verify_cab`, `verify_navx`, and other format-specific
 functions retain their behavior. The CLI uses the same verification engine.
 
+## Script and RDP parsing
+
+`parse::Powershell::parse(bytes)` and `parse_xml(bytes)` decode hash-comment and
+XML-comment signature blocks without interpreting script code, XML content, CMS,
+or trust. `parse::Wsh::parse(bytes, WshKind)` supports VBScript, JScript, and WSF;
+`Wsh::detect(bytes)` identifies comment style from signature markers. Encoded
+VBE/JSE text remains opaque; no script decoder or host runs.
+
+These objects borrow exact original input through `as_bytes()` and expose
+`encoding(): TextEncoding`, decoded `body()`, and decoded `signature()` CMS bytes.
+`TextEncoding` distinguishes UTF-8, UTF-8 BOM, UTF-16LE BOM, and UTF-16BE BOM. The
+signature and body allocate; their accessors borrow existing storage. PowerShell
+retains U+FEFF in the body and hash input; WSH strips its encoding BOM. Stored
+line endings and Unicode code units retain the existing format-specific rules.
+`authenticode_bytes()` allocates canonical UTF-16LE input; `update_digest(&mut
+impl digest::Update)` streams the same bytes without materializing that buffer.
+WSH appends the little-endian `insertion_position()` measured in UTF-16 code
+units. WSF removes only the signature block and retains the closing job tag and
+trailing text in its body. Neither method asserts that the hash matches a signer.
+
+`parse::Rdp::parse(bytes)` exposes original `as_bytes()`, `encoding()`, original
+line endings in `decoded_text()` (BOM excluded), decoded detached `signature()`,
+`signscope()`, `signed_settings()`, `unsigned_settings()`, and borrowed
+`canonical_bytes()`. Each parser `RdpSetting` has a name, `RdpValueType`, and
+stored value. These parser types require no Serde or verification dependencies;
+the verifier projects them into the existing domain types. Canonical input is
+UTF-16LE scoped setting lines in scope order, followed by signscope, CRLF, and a
+NUL code unit. Unscoped settings never enter that input. Scope membership is an
+unauthenticated assertion until verification succeeds; the whole file is never
+claimed signed. Unsupported scopes fail with `UnsupportedRdpScope` and expose
+the original entry through `Error::rdp_scope_entry()`.
+
+All text parsers use `core + alloc`. PowerShell XML comments require no XML
+library. WSF requires the optional `xml` feature for the bounded single-job XML
+and signature-placement adapter; without it, valid WSF input fails with
+`UnsupportedWsfXml` rather than falling back to comment framing. The XML adapter
+also builds without `std` using roxmltree with default features disabled. DTDs
+remain disabled and the existing 100,000-node limit applies. `verify` enables
+`xml` automatically. Base64 decoding now belongs to the parser dependency set;
+no dependency versions or cryptographic providers change.
+
+Malformed text/block errors are `InvalidPowershell`, `InvalidWsh`, or `InvalidRdp`;
+missing signatures use the corresponding `UnsignedPowershell`, `UnsignedWsh`, or
+`UnsignedRdp`. The verifier maps these to its existing codes/stages, preserving
+unsupported-scope details, error order, and diagnostics. The existing documented
+encoding, marker, signature-size, RDP-setting, and WSF-layout limits still apply.
+Verification uses these same parsing and hash-input boundaries. CLI format
+selection and JSON schemas are unchanged; `parse` still selects PE or CMS.
+
 ## Parse command
 
 ```sh
@@ -322,9 +371,10 @@ or signature succeeds while verification rejects it.
 ## Feature selection and migration from PR #17
 
 ```toml
-# Signed PE/CAB/NAVX containers and CMS on core + alloc (an allocator is required).
+# Containers, scripts, RDP and CMS on core + alloc (an allocator is required).
 rssig = { version = "0.1", default-features = false }
 
+# WSF structural inspection without std: add features = ["xml"].
 # Alternatively: all verifiers and reports, with explicit roots and CRLs.
 # rssig = { version = "0.1", default-features = false, features = ["verify"] }
 ```
@@ -346,6 +396,5 @@ options, and JSON types retain their existing signatures and semantics.
 
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
 without `std`. Full verification still requires `std`; the CFB reader and AppX
-archive/XML path have not been ported. Container parsers other than PE, CAB, and
-NAVX remain internal. The `parse` CLI still selects only PE or CMS; CAB/NAVX
+archive/XML path have not been ported. MSI/MSP and AppX structural parsers remain internal. The `parse` CLI still selects only PE or CMS; CAB/NAVX
 inspection is currently a library API.

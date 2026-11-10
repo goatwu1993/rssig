@@ -5,19 +5,46 @@ use crate::{
     domain::*,
     verify::{VerifyOptions, timestamp::verify_timestamp},
 };
-use anyhow::{Context, Result, ensure};
-use base64ct::{Base64, Encoding};
-use std::{collections::BTreeSet, path::Path};
+use anyhow::Result;
+use std::path::Path;
 
-const MAX_FILE: usize = 16 * 1024 * 1024;
-const MAX_SETTINGS: usize = 4096;
-
-pub(crate) struct Rdp {
-    pub signature: Vec<u8>,
-    pub canonical: Vec<u8>,
-    pub coverage: RdpCoverage,
+#[cfg(test)]
+use crate::parse::rdp::{MAX_FILE, MAX_SETTINGS};
+struct Rdp {
+    signature: Vec<u8>,
+    canonical: Vec<u8>,
+    coverage: RdpCoverage,
 }
-
+impl Rdp {
+    fn parse(bytes: &[u8]) -> Result<Self> {
+        let parsed = crate::parse::Rdp::parse(bytes).map_err(VerificationError::from)?;
+        let settings = |values: &[crate::parse::RdpSetting]| {
+            values
+                .iter()
+                .map(|setting| RdpSetting {
+                    name: setting.name.clone(),
+                    value: setting.value.clone(),
+                    value_type: match setting.value_type {
+                        crate::parse::RdpValueType::String => RdpValueType::String,
+                        crate::parse::RdpValueType::Integer => RdpValueType::Integer,
+                        crate::parse::RdpValueType::Binary => RdpValueType::Binary,
+                    },
+                })
+                .collect()
+        };
+        Ok(Self {
+            signature: parsed.signature().to_vec(),
+            canonical: parsed.canonical_bytes().to_vec(),
+            coverage: RdpCoverage {
+                full_file_signed: false,
+                signscope: parsed.signscope().to_vec(),
+                signed_settings: settings(parsed.signed_settings()),
+                unsigned_settings: settings(parsed.unsigned_settings()),
+                canonical_sha256: hex(&Hash::Sha256.digest(parsed.canonical_bytes())),
+            },
+        })
+    }
+}
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|v| v.to_str())
@@ -31,188 +58,6 @@ pub(crate) fn looks_like(bytes: &[u8]) -> bool {
             .iter()
             .any(|s| bytes.windows(s.len()).any(|w| w == *s))
     })
-}
-fn decode(bytes: &[u8]) -> Result<String> {
-    ensure!(bytes.len() <= MAX_FILE, "RDP file exceeds 16 MiB limit");
-    let text = if bytes.starts_with(&[255, 254]) || bytes.starts_with(&[254, 255]) {
-        ensure!(bytes.len().is_multiple_of(2), "odd-length UTF-16 RDP file");
-        let units: Vec<_> = bytes
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .map(|b| {
-                if bytes[0] == 255 {
-                    u16::from_le_bytes(*b)
-                } else {
-                    u16::from_be_bytes(*b)
-                }
-            })
-            .collect();
-        String::from_utf16(&units)?
-    } else {
-        std::str::from_utf8(bytes)?.to_owned()
-    };
-    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
-    ensure!(!text.contains('\0'), "NUL or unsupported RDP encoding");
-    Ok(text.to_owned())
-}
-impl Rdp {
-    pub fn parse(bytes: &[u8]) -> Result<Self> {
-        let text = decode(bytes)?;
-        let normalized = text.replace("\r\n", "\n");
-        ensure!(!normalized.contains('\r'), "lone CR in RDP text");
-        let mut keys = BTreeSet::new();
-        let mut settings = Vec::new();
-        let mut scope = None;
-        let mut signature = None;
-        for line in normalized
-            .strip_suffix('\n')
-            .unwrap_or(&normalized)
-            .split('\n')
-        {
-            ensure!(
-                !line.is_empty() && line.trim() == line,
-                "blank or padded RDP line"
-            );
-            let mut parts = line.splitn(3, ':');
-            let name = parts.next().unwrap();
-            let kind = parts.next().context("missing RDP value type")?;
-            let value = parts.next().context("missing RDP setting value")?;
-            ensure!(
-                !name.is_empty()
-                    && name.trim() == name
-                    && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b' '),
-                "invalid RDP setting name"
-            );
-            let key = name.to_ascii_lowercase();
-            ensure!(keys.insert(key.clone()), "duplicate RDP setting: {name}");
-            ensure!(keys.len() <= MAX_SETTINGS, "too many RDP settings");
-            ensure!(name == key, "noncanonical RDP setting name casing");
-            ensure!(
-                !value.chars().any(char::is_control),
-                "control character in RDP setting"
-            );
-            let value_type = match kind {
-                "s" => RdpValueType::String,
-                "i" => {
-                    value.parse::<i32>().context("invalid RDP integer")?;
-                    RdpValueType::Integer
-                }
-                "b" => {
-                    ensure!(
-                        value.len().is_multiple_of(2)
-                            && value.bytes().all(|c| c.is_ascii_hexdigit()),
-                        "invalid binary RDP setting"
-                    );
-                    RdpValueType::Binary
-                }
-                _ => anyhow::bail!("unsupported RDP value type"),
-            };
-            if key == "signscope" || key == "signature" {
-                ensure!(kind == "s", "RDP signature metadata must have string type");
-                if key == "signscope" {
-                    scope = Some(value);
-                } else {
-                    signature = Some(value);
-                }
-            } else {
-                settings.push((
-                    RdpSetting {
-                        name: key,
-                        value_type,
-                        value: value.into(),
-                    },
-                    line,
-                ));
-            }
-        }
-        let Some(encoded) = signature else {
-            ensure!(scope.is_none(), "RDP scope without signature");
-            return Err(VerificationError::new(
-                ErrorCode::Unsigned,
-                Stage::Rdp,
-                "RDP file has no signature",
-            )
-            .into());
-        };
-        let scope = scope.context("RDP signature without signscope")?;
-        ensure!(!scope.is_empty(), "empty RDP signature scope");
-        let mut used = BTreeSet::new();
-        let mut names = Vec::new();
-        let mut signed_settings = Vec::new();
-        let mut canonical = String::new();
-        for name in scope.split(',') {
-            ensure!(used.insert(name.to_owned()), "duplicate RDP scope entry");
-            let (_, key, kind) = SCOPES.iter().find(|(n, _, _)| *n == name).ok_or_else(|| {
-                VerificationError::new(
-                    ErrorCode::UnsupportedRdpScope,
-                    Stage::Rdp,
-                    "unsupported RDP signature scope entry",
-                )
-                .detail("scope", name)
-            })?;
-            let (setting, line) = settings
-                .iter()
-                .find(|(s, _)| s.name == *key)
-                .with_context(|| format!("missing RDP scoped setting: {name}"))?;
-            let actual = match setting.value_type {
-                RdpValueType::String => "s",
-                RdpValueType::Integer => "i",
-                RdpValueType::Binary => "b",
-            };
-            ensure!(
-                actual == *kind,
-                "RDP scoped setting has incorrect type: {name}"
-            );
-            names.push(name.to_owned());
-            signed_settings.push(setting.clone());
-            canonical.push_str(line);
-            canonical.push_str("\r\n");
-        }
-        ensure!(
-            signed_settings
-                .iter()
-                .any(|s| s.name == "full address" && !s.value.is_empty()),
-            "RDP scope must include a nonempty Full Address"
-        );
-        canonical.push_str("signscope:s:");
-        canonical.push_str(scope);
-        canonical.push_str("\r\n\0");
-        let canonical: Vec<_> = canonical
-            .encode_utf16()
-            .flat_map(u16::to_le_bytes)
-            .collect();
-        let unsigned_settings = settings
-            .into_iter()
-            .filter(|(s, _)| !signed_settings.iter().any(|v| v.name == s.name))
-            .map(|(s, _)| s)
-            .collect();
-        let blob = Base64::decode_vec(encoded)
-            .map_err(|e| anyhow::anyhow!("invalid RDP signature base64: {e}"))?;
-        ensure!(blob.len() >= 12, "truncated RDP signature header");
-        ensure!(
-            blob[..8] == [1, 0, 1, 0, 1, 0, 0, 0],
-            "unsupported RDP signature header"
-        );
-        let len = u32::from_le_bytes(blob[8..12].try_into()?) as usize;
-        ensure!(
-            len > 0 && len == blob.len() - 12,
-            "RDP signature length mismatch or trailing data"
-        );
-        let signature = blob[12..].to_vec();
-        let coverage = RdpCoverage {
-            full_file_signed: false,
-            signscope: names,
-            signed_settings,
-            unsigned_settings,
-            canonical_sha256: hex(&Hash::Sha256.digest(&canonical)),
-        };
-        Ok(Self {
-            signature,
-            canonical,
-            coverage,
-        })
-    }
 }
 fn at<T>(result: Result<T>, code: ErrorCode, stage: Stage) -> Result<T> {
     result.map_err(|e| VerificationError::from_internal(e, code, stage).into())
@@ -348,83 +193,6 @@ fn verify_trust(
         .into()
     }))
 }
-
-// Display-name -> setting key/type, pinned to the independent nfedera signer.
-const SCOPES: &[(&str, &str, &str)] = &[
-    ("Full Address", "full address", "s"),
-    ("Alternate Full Address", "alternate full address", "s"),
-    ("PCB", "pcb", "s"),
-    (
-        "Use Redirection Server Name",
-        "use redirection server name",
-        "i",
-    ),
-    ("Server Port", "server port", "i"),
-    ("Negotiate Security Layer", "negotiate security layer", "i"),
-    ("EnableCredSspSupport", "enablecredsspsupport", "i"),
-    ("DisableConnectionSharing", "disableconnectionsharing", "i"),
-    ("AutoReconnection Enabled", "autoreconnection enabled", "i"),
-    ("GatewayHostname", "gatewayhostname", "s"),
-    ("GatewayUsageMethod", "gatewayusagemethod", "i"),
-    (
-        "GatewayProfileUsageMethod",
-        "gatewayprofileusagemethod",
-        "i",
-    ),
-    ("GatewayCredentialsSource", "gatewaycredentialssource", "i"),
-    ("Support URL", "support url", "s"),
-    ("PromptCredentialOnce", "promptcredentialonce", "i"),
-    (
-        "Require pre-authentication",
-        "require pre-authentication",
-        "i",
-    ),
-    (
-        "Pre-authentication server address",
-        "pre-authentication server address",
-        "s",
-    ),
-    ("Alternate Shell", "alternate shell", "s"),
-    ("Shell Working Directory", "shell working directory", "s"),
-    ("RemoteApplicationProgram", "remoteapplicationprogram", "s"),
-    (
-        "RemoteApplicationExpandWorkingdir",
-        "remoteapplicationexpandworkingdir",
-        "s",
-    ),
-    ("RemoteApplicationMode", "remoteapplicationmode", "i"),
-    ("RemoteApplicationGuid", "remoteapplicationguid", "s"),
-    ("RemoteApplicationName", "remoteapplicationname", "s"),
-    ("RemoteApplicationIcon", "remoteapplicationicon", "s"),
-    ("RemoteApplicationFile", "remoteapplicationfile", "s"),
-    (
-        "RemoteApplicationFileExtensions",
-        "remoteapplicationfileextensions",
-        "s",
-    ),
-    ("RemoteApplicationCmdLine", "remoteapplicationcmdline", "s"),
-    (
-        "RemoteApplicationExpandCmdLine",
-        "remoteapplicationexpandcmdline",
-        "s",
-    ),
-    ("Prompt For Credentials", "prompt for credentials", "i"),
-    ("Authentication Level", "authentication level", "i"),
-    ("AudioMode", "audiomode", "i"),
-    ("RedirectDrives", "redirectdrives", "i"),
-    ("RedirectPrinters", "redirectprinters", "i"),
-    ("RedirectCOMPorts", "redirectcomports", "i"),
-    ("RedirectSmartCards", "redirectsmartcards", "i"),
-    ("RedirectPOSDevices", "redirectposdevices", "i"),
-    ("RedirectClipboard", "redirectclipboard", "i"),
-    ("DevicesToRedirect", "devicestoredirect", "s"),
-    ("DrivesToRedirect", "drivestoredirect", "s"),
-    ("LoadBalanceInfo", "loadbalanceinfo", "s"),
-    ("RedirectDirectX", "redirectdirectx", "i"),
-    ("RDGIsKDCProxy", "rdgiskdcproxy", "i"),
-    ("KDCProxyName", "kdcproxyname", "s"),
-    ("EventLogUploadAddress", "eventloguploadaddress", "s"),
-];
 
 #[cfg(test)]
 mod tests {

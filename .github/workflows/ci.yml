@@ -63,9 +63,12 @@ jobs:
           components: clippy
       - name: Check the parser without std or host dependencies
         run: cargo clippy --locked --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
+      - name: Check the optional XML adapter without std
+        run: cargo clippy --locked --lib --no-default-features --features xml --target thumbv7em-none-eabi -- -D warnings
       - name: Test parser-only builds
         run: |
           cargo test --locked --no-default-features
+          cargo test --locked --no-default-features --features xml
           cargo test --locked --no-default-features --features std
       - name: Test verification without CLI or native roots
         run: cargo test --locked --no-default-features --features verify

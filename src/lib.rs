@@ -1,4 +1,4 @@
-//! Untrusted PE/CAB/NAVX/CMS parsing and explicit Authenticode verification.
+//! Untrusted container, script, RDP and CMS parsing and explicit Authenticode verification.
 //!
 //! Disable default features for a `no_std + alloc` parser. Enable `verify` for
 //! the RustCrypto verifier, `system-roots` for native root enumeration, and

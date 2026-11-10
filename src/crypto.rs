@@ -209,3 +209,11 @@ static EC384: RustCryptoAlgorithm = RustCryptoAlgorithm {
 };
 pub(crate) static ALGORITHMS: &[&dyn SignatureVerificationAlgorithm] =
     &[&RSA256, &RSA384, &RSA512, &EC256, &EC384];
+
+/// Bridge the existing dynamic hasher to the parser's generic Update sink.
+pub(crate) struct DigestSink<'a>(pub &'a mut dyn digest::DynDigest);
+impl digest::Update for DigestSink<'_> {
+    fn update(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+}

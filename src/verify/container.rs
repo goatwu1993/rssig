@@ -11,8 +11,8 @@ pub(super) enum Container<'a> {
     Appx(Box<Appx<'a>>),
     Cab(Cab<'a>),
     Navx(Navx<'a>),
-    Powershell(Powershell),
-    Wsh(Wsh),
+    Powershell(Powershell<'a>),
+    Wsh(Wsh<'a>),
     Msi(Box<Msi<'a>>),
 }
 

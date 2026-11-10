@@ -2018,7 +2018,8 @@
       "bytes": 2135,
       "description": "Inert comment-only script independently signed by jsign 7.6 with the public deterministic RSA-2048 identity exported by export_msi_test_identity. Explicit integrity-only verification; Unicode and mixed body line endings are included in the signed content.",
       "cases": [
-        "powershell-independent-jsign"
+        "powershell-independent-jsign",
+        "lib04-powershell-independent-jsign"
       ],
       "provenance": {
         "kind": "independently_signed",
@@ -2069,7 +2070,8 @@
       "bytes": 2135,
       "description": "Paired with powershell-independent-jsign.ps1: only t in test-only becomes T. Unchanged jsign CMS signature must yield script_digest_mismatch.",
       "cases": [
-        "powershell-independent-tampered"
+        "powershell-independent-tampered",
+        "lib04-powershell-independent-tampered"
       ],
       "provenance": {
         "kind": "mutated_independently_signed",
@@ -2581,7 +2583,8 @@
       "bytes": 3712,
       "description": "Independent nfedera rdpsign output, UTF-16LE BOM, RSA-2048 public test-only identity; signs Full Address,Alternate Full Address,Server Port,RedirectClipboard; desktopwidth is unsigned.",
       "cases": [
-        "rdp-independent-nfedera"
+        "rdp-independent-nfedera",
+        "lib04-rdp-independent-nfedera"
       ],
       "provenance": {
         "kind": "independently_signed",
@@ -2600,7 +2603,8 @@
       "bytes": 3712,
       "description": "Paired with rdp-independent-nfedera.rdp; only the final character of the first scoped host changes from d to e; expected invalid_signature.",
       "cases": [
-        "bad-rdp-independent-setting"
+        "bad-rdp-independent-setting",
+        "lib04-bad-rdp-independent-setting"
       ],
       "provenance": {
         "kind": "mutated_independently_signed",
@@ -2961,7 +2965,8 @@
       "bytes": 2317,
       "description": "Independently jsign 7.6-signed inert XML using public deterministic RSA-2048 test-only identity. Explicit integrity-only verification of psxml-independent-jsign-ascii.ps1xml.",
       "cases": [
-        "psxml-independent-ascii"
+        "psxml-independent-ascii",
+        "lib04-psxml-independent-ascii"
       ],
       "provenance": {
         "tool": "jsign",
@@ -5612,7 +5617,8 @@
       "bytes": 2341,
       "description": "Inert WSH fixture signed independently by jsign 7.6 with the public deterministic RSA-2048 test identity exported by export_msi_test_identity; no runtime signer dependency. Never execute.",
       "cases": [
-        "wsh-wsh-independent-jsign-vbs"
+        "wsh-wsh-independent-jsign-vbs",
+        "lib04-wsh-wsh-independent-jsign-vbs"
       ],
       "provenance": {
         "source": "jsign 7.6 (https://github.com/ebourg/jsign/releases/tag/7.6), wsh-jsign input fixture, public test-only export_msi_test_identity; see docs/wsh.md",
