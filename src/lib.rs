@@ -2,7 +2,8 @@
 //!
 //! Disable default features for a `no_std + alloc` parser. Enable `verify` for
 //! the RustCrypto verifier, `system-roots` for native root enumeration, and
-//! `cli` for the command-line adapter. Defaults retain the complete CLI.
+//! `cli` for the command-line adapter. The `msi` and `appx` features expose
+//! structural adapters requiring `std`, without verification. Defaults retain the complete CLI.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
@@ -49,9 +50,9 @@ pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
 #[cfg(feature = "verify")]
 pub use verify::{
-    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_cab,
-    verify_parsed_navx, verify_parsed_pe, verify_pe, verify_powershell, verify_powershell_xml,
-    verify_rdp, verify_wsh,
+    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_appx,
+    verify_parsed_cab, verify_parsed_msi, verify_parsed_navx, verify_parsed_pe, verify_pe,
+    verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
 };
 #[cfg(all(test, feature = "verify"))]
 mod tests;

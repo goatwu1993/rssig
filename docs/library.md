@@ -38,6 +38,73 @@ fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig::parse::Error> {
 }
 ```
 
+## MSI/MSP and AppX structural adapters
+
+The optional `msi` and `appx` features enable public structural parsers without
+verification, Serde reports, CLI, clocks, roots, or filesystem reads. Both require
+`std`: `msi` uses the Rust CFB adapter; `appx` uses the bounded Rust ZIP/DEFLATE
+and XML adapters. The `verify` feature enables both. These
+features do not change the base `no_std + alloc` parser support.
+
+`parse::Msi` borrows the original CFB bytes and owns the extracted CMS and optional
+extended digest streams. `extended_digest()` distinguishes an absent stream from
+an empty present stream. `update_metadata()` and `update_content()` stream the
+canonical bytes into any RustCrypto `digest::Update` sink, in the existing MSI
+name order, omitting both signature streams. The caller computes and compares
+the extended digest and, for extended signing, prefixes that computed digest to
+the content hash. These methods require `&mut Msi` only for the CFB read cursor;
+they store no computed digests or verification claims. An error can leave the
+caller's sink partially updated; discard it before retrying. MSP uses this same
+parser and does not require an original MSI or perform patch applicability checks.
+
+`parse::Appx` borrows immutable ZIP bytes and owns the extracted opaque CMS.
+`parts()` exposes borrowed ZIP records, offsets, sizes, compression methods and
+compressed bytes. `AppxPart::read(limit)` bounds decoding and checks exact
+DEFLATE termination and CRC. CRC checks detect archive corruption; they do not
+authenticate the package. `digest_inputs()` returns the canonical AXPC, AXCD,
+AXCT, AXBM, and optional AXCI inputs in signed order. AXPC borrows the original
+file bytes; the rewritten unsigned directory and decoded parts are owned.
+Repeated calls produce the same inputs and never populate reports.
+
+Manifest/content-type and block-map parsing is explicit and deferred.
+`identity()`, `content_types()`, `resource_package()` and `bundle_identity()`
+decode the supported XML profiles; `bundle_packages()` returns entries with
+exact borrowed payload ranges and preserves offset/size, CRC, duplicate, orphan,
+and supported-profile checks. None authenticates a signer, binds the Publisher,
+or verifies a child package. `BlockMap::parse(&appx.block_map_bytes()?)` decodes
+bounded XML; `hash_method()` preserves its URI even if verification does not
+support it. File attributes, blocks, hash bytes, and compressed sizes are decoded
+on demand in document order. Successful XML parsing alone does not assert that
+the map covers the ZIP or that any payload hash matches. Compressed boundary
+checks are separately available on `AppxPart` without authenticating block hashes.
+DTDs and external entities remain forbidden.
+
+```rust
+# #[cfg(all(feature = "appx", feature = "verify"))] {
+use rssig::{parse::{Appx, BlockMap}, verify::{verify_parsed_appx, VerifyOptions}};
+# let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/good.msix"));
+let package = Appx::parse(bytes)?;
+let xml = package.block_map_bytes()?;
+let map = BlockMap::parse(&xml)?;
+assert!(!map.files().is_empty()); // Untrusted structure only.
+let options = VerifyOptions {
+    trust: None, check_revocation: false, allow_sha1: false, now: 1800000000,
+};
+let report = verify_parsed_appx(&package, &options)?;
+assert!(!report.signatures[0].chain_trusted);
+# }
+# Ok::<(), rssig::VerificationError>(())
+```
+
+`verify_parsed_msi(&mut msi, options)` and
+`verify_parsed_appx(&appx, options)` recheck integrity, CMS, timestamps, trust,
+and revocation for each call. Byte-oriented verification uses these same
+structures. AppX reports and digest components are per-call results; hashing
+cannot confer verification state on the parsed package. The signer pipeline
+still checks component digests before metadata/block hashes, then CMS, Publisher,
+timestamps and configured trust; bundle identity and child signer binding remain
+mandatory. Catalog reports retain `signature_verified: false`.
+
 `rssig::parse::SignedData` parses attached CMS, legacy PKCS#7, and detached CMS
 envelopes. It exposes content type, encoded content, digest algorithm OIDs and
 parameters, certificate choices, embedded revocation choices, and raw
@@ -375,6 +442,8 @@ or signature succeeds while verification rejects it.
 rssig = { version = "0.1", default-features = false }
 
 # WSF structural inspection without std: add features = ["xml"].
+# MSI/MSP or AppX structural inspection with std, without verification:
+# features = ["msi"] or ["appx"], or both.
 # Alternatively: all verifiers and reports, with explicit roots and CRLs.
 # rssig = { version = "0.1", default-features = false, features = ["verify"] }
 ```
@@ -395,6 +464,6 @@ iteration or `.to_vec()` if an owned list is needed. Verification functions,
 options, and JSON types retain their existing signatures and semantics.
 
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
-without `std`. Full verification still requires `std`; the CFB reader and AppX
-archive/XML path have not been ported. MSI/MSP and AppX structural parsers remain internal. The `parse` CLI still selects only PE or CMS; CAB/NAVX
-inspection is currently a library API.
+without `std`. Full verification still requires `std`. MSI/MSP and AppX structural parsing also
+requires `std` through explicit optional adapters. The `parse` CLI still selects
+only PE or CMS; the other container parsers are library APIs.

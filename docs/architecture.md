@@ -12,6 +12,9 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
 | `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
 | `parse` | `no_std + alloc` PE/CAB/NAVX/CMS/script/RDP structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
+| `parse/msi.rs` | Optional `msi`/`std` CFB structure, extracted signature streams, and generic canonical metadata/content input; no digest comparison or reports. |
+| `parse/appx.rs` / `parse/appx/zip.rs` | Optional `appx`/`std` ZIP/DEFLATE/XML structures, parts, component inputs, identities, bundle entries and lazy block-map views. |
+| `msi` / `appx` | Package integrity policy, digest comparisons and report construction over shared structural parsers. |
 | `parse/signer.rs` | Borrowed untrusted CMS signer, identifier, attribute and content views; shared structural helpers preserve verification check order. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
 | `verify/container.rs` | Embedded CMS extraction and each container's padding/framing rules. |
@@ -29,7 +32,8 @@ explicit policy, and embedded certificates remain untrusted chain candidates.
 Inspection has separate domain types and never calls the verifier. Both CLI
 commands share file/stream handling while keeping verification setup out of the
 parse path. The parser builds without `std`, and depends only on `anyhow`, `der`,
-`digest`, `base64ct`, and `x509-cert`, all with their default features disabled. The domain layer
+`digest`, `base64ct`, and `x509-cert`, all with their default features disabled. The optional `msi` and `appx` adapters
+add CFB/DEFLATE/CRC/XML dependencies, independently of verification. The domain layer
 converts parser errors to the existing verification/CLI diagnostics.
 Format classification does not make an input valid: the selected parser enforces
 its structure. Filename hints never override recognized binary magic.
@@ -44,9 +48,10 @@ or signature failure. The refactor preserves the existing order and diagnostics.
 PE, CAB, and NAVX parsing lives under `parse`, with optional verification-side
 hashing adapters consuming the shared borrowed digest input. PowerShell/XML, WSH, and RDP decoding, block framing, and canonical input also
 live under `parse`; the optional `parse/wsf_xml.rs` adapter validates WSF XML.
-MSI and AppX structural parsing remain internal. AppX's internal package object still
-accumulates component/report state during integrity
-validation. RDP verification retains its detached-content pipeline, trust policy, and
+MSI/MSP and AppX structural parsing lives under `parse` through explicit
+`std` adapters. AppX objects hold immutable structural state; hashing returns
+component evidence and integrity validation returns reports, without mutating
+those objects. Parsed MSI/MSP objects change only their CFB read cursor. RDP verification retains its detached-content pipeline, trust policy, and
 coverage-report projection; its parser has no hashes or verification state.
 Full verification still requires `std`, including the CFB reader and AppX compression/XML stack. There is no format plugin trait or
 separate workspace crate hierarchy.
@@ -58,7 +63,9 @@ separate workspace crate hierarchy.
 | No features | Signed containers, CMS, PowerShell/XML comments, VBScript/JScript and RDP parsing; `core + alloc`. |
 | `xml` | Bounded WSF XML adapter using roxmltree; `core + alloc`, no verifier dependency. |
 | `std` | Standard-library support in parser dependencies only. |
-| `verify` | All supported format verifiers, domain reports, RustCrypto/webpki, explicit roots/CRLs; enables `std` and `xml`. |
+| `msi` | MSI/MSP structural parser and generic canonical hash input; enables `std` and CFB. |
+| `appx` | AppX structural ZIP/DEFLATE/XML parser and canonical component input; enables `std` and `xml`. |
+| `verify` | All supported format verifiers, domain reports, RustCrypto/webpki, explicit roots/CRLs; enables `msi` and `appx`. |
 | `system-roots` | Native root enumeration only; enables `verify`. |
 | `cli` | Clap, filesystem/clock/stream adapters, and the binary; enables `verify`. |
 

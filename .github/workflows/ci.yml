@@ -70,6 +70,11 @@ jobs:
           cargo test --locked --no-default-features
           cargo test --locked --no-default-features --features xml
           cargo test --locked --no-default-features --features std
+      - name: Test structural std adapters without verification
+        run: |
+          cargo test --locked --no-default-features --features msi
+          cargo test --locked --no-default-features --features appx
+          cargo clippy --all-targets --locked --no-default-features --features msi,appx -- -D warnings
       - name: Test verification without CLI or native roots
         run: cargo test --locked --no-default-features --features verify
       - name: Test CLI with explicit roots only

@@ -52,6 +52,9 @@ cargo test --locked --no-default-features
 cargo test --locked --no-default-features --features xml
 cargo clippy --locked --lib --no-default-features --features xml --target thumbv7em-none-eabi -- -D warnings
 cargo test --locked --no-default-features --features std
+cargo test --locked --no-default-features --features msi
+cargo test --locked --no-default-features --features appx
+cargo clippy --all-targets --locked --no-default-features --features msi,appx -- -D warnings
 cargo test --locked --no-default-features --features verify
 cargo test --locked --no-default-features --features cli
 ```

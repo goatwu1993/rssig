@@ -3,10 +3,12 @@
 //! This API covers signed PE, CAB, NAVX containers and attached/detached CMS
 //! envelopes, PowerShell/XML comments, WSH scripts, and scoped RDP settings.
 //! WSF XML validation requires the `xml` feature, which also uses `core + alloc`.
+//! MSI/MSP and AppX adapters are available with `msi` and `appx` respectively;
+//! those explicitly require `std`, without enabling verification or reports.
 //! Parsing success is not a verification result. Unknown algorithm
 //! identifiers and opaque certificate choices retain their original DER.
 //! Signature algorithm policy, hashes, signature checks, timestamp authentication, and certificate trust
-//! belong to the optional `verify` module. Parsing requires only `core + alloc`.
+//! belong to the optional `verify` module. The base parsers require only `core + alloc`.
 //!
 //! ```
 //! use rssig::parse::{Pe, SignedData};
@@ -72,3 +74,15 @@ pub fn authenticode_digest(
     }
     Ok(())
 }
+
+#[cfg(feature = "msi")]
+pub(crate) mod msi;
+#[cfg(feature = "msi")]
+pub use msi::Msi;
+#[cfg(feature = "appx")]
+pub(crate) mod appx;
+#[cfg(feature = "appx")]
+pub use appx::{
+    Appx, AppxDigestInput, AppxIdentity, AppxPart, BlockMap, BlockMapBlock, BlockMapFile,
+    BundlePackage,
+};

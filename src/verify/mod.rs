@@ -2,7 +2,8 @@
 //!
 //! Parsing alone never establishes integrity or trust. Existing byte-oriented
 //! entry points remain available; [`verify_parsed_pe`], [`verify_parsed_cab`], and
-//! [`verify_parsed_navx`] reuse parsed container layouts.
+//! [`verify_parsed_navx`] reuse parsed container layouts. [`verify_parsed_msi`]
+//! and [`verify_parsed_appx`] borrow reusable parsed package objects.
 
 mod appx;
 mod authenticode;
@@ -171,6 +172,8 @@ fn verify_inner(
     options: &VerifyOptions<'_>,
     format: Format,
 ) -> Result<VerificationBundle> {
+    let appx;
+    let mut msi;
     let container = match format {
         Format::Rdp => return crate::rdp::verify(bytes, options),
         Format::Wsh(kind) => Container::Wsh(tagged(
@@ -178,11 +181,10 @@ fn verify_inner(
             ErrorCode::InvalidWsh,
             Stage::Wsh,
         )?),
-        Format::Appx => Container::Appx(Box::new(tagged(
-            Appx::parse(bytes),
-            ErrorCode::InvalidAppx,
-            Stage::Appx,
-        )?)),
+        Format::Appx => {
+            appx = Appx::parse(bytes).map_err(VerificationError::from)?;
+            Container::Appx(&appx)
+        }
         Format::PowershellXml => Container::Powershell(tagged(
             Powershell::parse_xml(bytes),
             ErrorCode::InvalidPowershell,
@@ -193,7 +195,10 @@ fn verify_inner(
             ErrorCode::InvalidPowershell,
             Stage::Powershell,
         )?),
-        Format::Msi => Container::Msi(Box::new(Msi::parse(bytes)?)),
+        Format::Msi => {
+            msi = Msi::parse(bytes).map_err(VerificationError::from)?;
+            Container::Msi(&mut msi)
+        }
         Format::Pe => Container::Pe(Pe::parse(bytes).map_err(VerificationError::from)?),
         Format::Navx => Container::Navx(Navx::parse(bytes).map_err(VerificationError::from)?),
         Format::Cab => Container::Cab(Cab::parse(bytes).map_err(VerificationError::from)?),
@@ -256,6 +261,34 @@ pub fn verify_parsed_navx(
         options,
         Format::Navx,
         Container::Navx(navx),
+    )
+    .map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify a reusable parsed MSI/MSP. Only the CFB read cursor changes;
+/// extended metadata, content, CMS, timestamps, trust and CRLs are rechecked.
+pub fn verify_parsed_msi(
+    msi: &mut crate::parse::Msi<'_>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_container(msi.as_bytes(), options, Format::Msi, Container::Msi(msi)).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
+}
+
+/// Verify an immutable parsed AppX package/bundle. Digest evidence and reports
+/// belong to this call; the parsed package acquires no verification state.
+pub fn verify_parsed_appx(
+    appx: &crate::parse::Appx<'_>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_container(
+        appx.as_bytes(),
+        options,
+        Format::Appx,
+        Container::Appx(appx),
     )
     .map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)

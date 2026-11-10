@@ -22998,6 +22998,176 @@
           ]
         }
       }
+    },
+    {
+      "id": "lib05-msi-extended",
+      "input": "msi-good-pe64.msi",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    },
+                    "extended_key_usage": {
+                      "usages": [
+                        {
+                          "oid": "1.3.6.1.5.5.7.3.3",
+                          "name": "code_signing"
+                        }
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "package_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "6613892dcd2f9bff6155defe44398120c1358c4fc45a6c2d799058a5654239f5",
+                    "computed": "6613892dcd2f9bff6155defe44398120c1358c4fc45a6c2d799058a5654239f5"
+                  },
+                  "extended_digest": {
+                    "algorithm": "Sha256",
+                    "expected": "68512dac13784bb8786e1c30adf8f458d7b30421b0d1d9dcaf845026cb14bc9d",
+                    "computed": "68512dac13784bb8786e1c30adf8f458d7b30421b0d1d9dcaf845026cb14bc9d"
+                  }
+                }
+              ],
+              "format": "msi_authenticode"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib05-msi-empty-extended",
+      "input": "msi-bad-empty-extended.msi",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#extended_digest_mismatch",
+          "title": "MSI extended digest mismatch",
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "extended_digest_mismatch",
+                "stage": "package_digest",
+                "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#extended_digest_mismatch",
+                "title": "MSI extended digest mismatch"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/detail": "MSI extended digest mismatch",
+          "/results/0/error/detail": "MSI extended digest mismatch"
+        }
+      }
+    },
+    {
+      "id": "lib05-appx-publisher",
+      "input": "bad-appx-publisher.msix",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "appx_publisher_mismatch",
+                "stage": "appx",
+                "title": "Package publisher mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib05-bundle-identity",
+      "input": "bad-appxbundle-name.msixbundle",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_appx",
+                "stage": "appx",
+                "title": "Invalid MSIX/AppX package"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

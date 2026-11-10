@@ -5,6 +5,7 @@ use anyhow::Result;
 
 pub(super) struct Integrity {
     pub hash: Hash,
+    pub appx: Option<Box<AppxReport>>,
     pub image_digest: Option<DigestReport>,
     pub package_digest: Option<DigestReport>,
     pub script_digest: Option<DigestReport>,
@@ -13,7 +14,7 @@ pub(super) struct Integrity {
 }
 
 pub(super) fn verify(
-    container: &mut Container<'_>,
+    container: &mut Container<'_, '_>,
     sd: &SignedData<'_>,
     allow_sha1: bool,
 ) -> Result<Integrity> {
@@ -72,13 +73,19 @@ pub(super) fn verify(
         )
         .into());
     }
+    let mut components = Vec::new();
     let (computed, extended_digest) = match container {
         Container::Pe(pe) => (pe.digest(hash)?, None),
-        Container::Msi(msi) => msi.digests(hash)?,
-        Container::Appx(appx) => (
-            tagged(appx.digests(hash), ErrorCode::InvalidAppx, Stage::Appx)?,
-            None,
-        ),
+        Container::Msi(msi) => crate::msi::digests(msi, hash)?,
+        Container::Appx(appx) => {
+            let (computed, evidence) = tagged(
+                crate::appx::digests(appx, hash),
+                ErrorCode::InvalidAppx,
+                Stage::Appx,
+            )?;
+            components = evidence;
+            (computed, None)
+        }
         Container::Cab(cab) => (cab.digest(hash), None),
         Container::Navx(navx) => (navx.digest(hash), None),
         Container::Powershell(script) => (script.digest(hash), None),
@@ -90,8 +97,8 @@ pub(super) fn verify(
         computed: hex(&computed),
     };
     if computed != expected {
-        if let Container::Appx(appx) = container {
-            return Err(appx.mismatch(expected, &computed, hash).into());
+        if is_appx {
+            return Err(crate::appx::mismatch(expected, &computed, hash).into());
         }
         return Err(VerificationError::new(
             if is_script {
@@ -121,9 +128,15 @@ pub(super) fn verify(
         .detail("digest", &image_digest)
         .into());
     }
-    if let Container::Appx(appx) = container {
-        tagged(appx.validate(hash), ErrorCode::InvalidAppx, Stage::Appx)?;
-    }
+    let appx = if let Container::Appx(appx) = container {
+        Some(tagged(
+            crate::appx::validate(appx, hash, components),
+            ErrorCode::InvalidAppx,
+            Stage::Appx,
+        )?)
+    } else {
+        None
+    };
     let mut page_hashes = None;
     if let Container::Pe(pe) = container
         && let Some((hash, expected)) =
@@ -156,6 +169,7 @@ pub(super) fn verify(
     }
     Ok(Integrity {
         hash,
+        appx,
         image_digest: (!is_package && !is_script).then(|| image_digest.clone()),
         package_digest: is_package.then(|| image_digest.clone()),
         script_digest: is_script.then_some(image_digest),

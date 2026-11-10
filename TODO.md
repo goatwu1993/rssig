@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is MSI/MSP and AppX structural state
-(LIB-05).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is consistent library format selection
+(LIB-06).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -181,11 +181,25 @@ timestamps, and local CRL validation already exist.
   and no-default bare-metal Clippy with XML pass on macOS. Dependency versions
   are unchanged; parser graphs have no verifier/CLI/native-root or native-crypto
   dependencies. Linux runtime validation remains in CI.
-- [ ] **LIB-05: Extract MSI/MSP and AppX structural state.** Separate CFB/ZIP/XML
-  extraction from integrity checks and report construction. AppX package objects
-  should not acquire verification state as a side effect of hashing. Retain MSI
-  extended-metadata, bundle identity, and publisher-binding invariants; keep
-  `std`-dependent adapters explicit.
+- [x] **LIB-05: Extract MSI/MSP and AppX structural state.** Added public
+  `parse::Msi`, `Appx`, ZIP part/component input and lazy block-map views behind
+  explicit `msi`/`appx` std adapter features, independent of verification and
+  reports. MSI generic RustCrypto sinks expose canonical metadata/content;
+  extended-digest checks remain in verification. Immutable AppX structures
+  never accumulate digest evidence or reports. Added borrowed reusable
+  `verify_parsed_msi`/`verify_parsed_appx` entry points, retaining extended
+  metadata, publisher binding, bundle identity/child signer policy, check order,
+  and catalog `signature_verified: false`. Reused committed fixtures and
+  provenance, linked four additional portable cases, and added named CLI/domain
+  and parser-only tests for borrowing, repeated hash input, policy reuse,
+  malformed/unsupported data, XML/ZIP/DEFLATE, and SHA-256/384/512. API tests
+  first failed on missing exports; all 695 previous complete specification
+  reports compare exactly equal (699 cases now). Full locked tests, fmt,
+  Clippy, minimal/xml/std/msi/appx/verify/cli tests, adapter-only Clippy and
+  bare-metal minimal/XML Clippy pass on macOS. Dependency versions are unchanged;
+  adapter normal graphs contain no verifier/CLI/native-root or native-crypto
+  dependencies. Linux runtime validation remains in CI. See
+  [library boundaries](docs/library.md#msimsp-and-appx-structural-adapters).
 - [ ] **LIB-06: Make format selection consistent for library callers.** Assess
   a public explicit selector and optional filename hint without filesystem paths
   in the core. Preserve binary-magic precedence, text ambiguity rules, and the
