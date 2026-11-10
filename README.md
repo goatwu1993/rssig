@@ -90,7 +90,7 @@ WSH scripts, and scoped RDP settings. WSF requires the optional `xml` feature.
 MSI/MSP and AppX structural parsers use the optional `msi` and `appx` features,
 which require `std` without enabling verification. They expose canonical hash
 inputs and reusable parsed-package verification; see the [library notes](docs/library.md).
-The CLI can inspect PE and CMS structures without verifying them:
+The CLI can inspect PE, CMS, CAB, and NAVX structures without verifying them:
 
 ```sh
 rssig parse application.exe

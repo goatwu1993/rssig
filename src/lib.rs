@@ -22,7 +22,7 @@ mod der;
 #[cfg(feature = "verify")]
 pub mod domain;
 #[cfg(feature = "verify")]
-mod format;
+pub mod format;
 #[cfg(feature = "cli")]
 mod inspection;
 #[cfg(feature = "verify")]

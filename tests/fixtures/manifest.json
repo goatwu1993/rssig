@@ -1596,7 +1596,8 @@
         "cab-trusted",
         "cab-integrity",
         "cab-revoked",
-        "cab-untrusted"
+        "cab-untrusted",
+        "lib06-parse-cab"
       ]
     },
     {
@@ -6007,7 +6008,8 @@
         "navx-good",
         "navx-integrity",
         "navx-revoked",
-        "navx-untrusted"
+        "navx-untrusted",
+        "lib06-parse-navx"
       ]
     },
     {

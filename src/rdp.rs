@@ -6,6 +6,7 @@ use crate::{
     verify::{VerifyOptions, timestamp::verify_timestamp},
 };
 use anyhow::Result;
+#[cfg(test)]
 use std::path::Path;
 
 #[cfg(test)]
@@ -45,6 +46,7 @@ impl Rdp {
         })
     }
 }
+#[cfg(test)]
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|v| v.to_str())

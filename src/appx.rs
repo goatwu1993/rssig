@@ -6,8 +6,11 @@ use crate::{
     parse::{BlockMap, BundlePackage},
 };
 use anyhow::{Result, ensure};
-use std::{path::Path, str::FromStr};
+#[cfg(test)]
+use std::path::Path;
+use std::str::FromStr;
 use x509_cert::{Certificate, name::Name};
+#[cfg(test)]
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension().and_then(|s| s.to_str()).is_some_and(|s| {
         ["appx", "msix", "appxbundle", "msixbundle"]

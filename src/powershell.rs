@@ -4,7 +4,9 @@ use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::powershell::Powershell;
 #[cfg(test)]
 use crate::parse::powershell::{MAX_SIGNATURE_TEXT, PREFIX, SUFFIX};
+#[cfg(test)]
 use std::path::Path;
+#[cfg(test)]
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension().and_then(|s| s.to_str()).is_some_and(|s| {
         ["ps1", "psm1", "psd1"]
@@ -13,6 +15,7 @@ pub(crate) fn has_extension(path: &Path) -> bool {
     })
 }
 
+#[cfg(test)]
 pub(crate) fn has_xml_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|s| s.to_str())

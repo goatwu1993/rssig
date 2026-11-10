@@ -2,8 +2,10 @@ use crate::crypto::Hash;
 #[cfg(test)]
 use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::wsh::{Kind, Wsh};
+#[cfg(test)]
 use std::path::Path;
 const KINDS: [Kind; 3] = [Kind::VbScript, Kind::JScript, Kind::Wsf];
+#[cfg(test)]
 pub(crate) fn extension(path: &Path) -> Option<Kind> {
     match path.extension()?.to_str()?.to_ascii_lowercase().as_str() {
         "vbs" | "vbe" => Some(Kind::VbScript),

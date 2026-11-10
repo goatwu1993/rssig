@@ -8,9 +8,9 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `cli` | Top-level command dispatch, stdout/stderr, and exit codes. |
 | `cli/batch.rs` | Shared file reads, ordered results, first-failure Problem Details, and JSON envelopes. |
 | `cli/verify.rs` | Verification arguments and configuration: roots, CRLs, validation clock, and explicit policy. |
-| `cli/parse.rs` | Inspection arguments and explicit PE/CMS selection, with no verification setup. |
+| `cli/parse.rs` | Inspection arguments and explicit PE/CMS/CAB/NAVX selection, with no verification setup. |
 | `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
-| `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
+| `format` | Public verifier-feature selector and filename-hint detection without filesystem access. Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
 | `parse` | `no_std + alloc` PE/CAB/NAVX/CMS/script/RDP structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
 | `parse/msi.rs` | Optional `msi`/`std` CFB structure, extracted signature streams, and generic canonical metadata/content input; no digest comparison or reports. |
 | `parse/appx.rs` / `parse/appx/zip.rs` | Optional `appx`/`std` ZIP/DEFLATE/XML structures, parts, component inputs, identities, bundle entries and lazy block-map views. |
