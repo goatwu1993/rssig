@@ -30,3 +30,6 @@ mod parse;
 
 #[path = "cli/text_parsing.rs"]
 mod text_parsing;
+
+#[path = "cli/package_parsing.rs"]
+mod package_parsing;

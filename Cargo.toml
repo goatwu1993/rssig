@@ -10,11 +10,14 @@ default = ["cli", "system-roots"]
 # The parser only needs core + alloc. Host integrations are opt-in for libraries.
 std = ["anyhow/std", "der/std", "x509-cert/std", "roxmltree?/std"]
 xml = ["dep:roxmltree"]
+# Structural host adapters, independent of verification and reports.
+msi = ["std", "dep:cfb"]
+appx = ["std", "xml", "dep:flate2", "dep:crc32fast"]
 verify = [
-    "std", "dep:flate2", "dep:crc32fast", "xml",
+    "msi", "appx",
     "dep:rustls-pki-types", "dep:webpki", "dep:rsa", "dep:sha1", "dep:sha2",
     "dep:p256", "dep:p384", "dep:signature", "dep:serde", "dep:serde_json",
-    "dep:cfb", "x509-cert/pem",
+    "x509-cert/pem",
 ]
 cli = ["verify", "dep:clap"]
 system-roots = ["verify", "dep:rustls-native-certs"]

@@ -87,7 +87,10 @@ on access. Parsing and hashing alone do not authenticate a signature.
 
 The library remains one crate; public parsers cover signed PE/CAB/NAVX, CMS, PowerShell/XML comments,
 WSH scripts, and scoped RDP settings. WSF requires the optional `xml` feature.
-The CLI can inspect these structures without verifying them:
+MSI/MSP and AppX structural parsers use the optional `msi` and `appx` features,
+which require `std` without enabling verification. They expose canonical hash
+inputs and reusable parsed-package verification; see the [library notes](docs/library.md).
+The CLI can inspect PE and CMS structures without verifying them:
 
 ```sh
 rssig parse application.exe
@@ -98,7 +101,7 @@ Inspection always includes bounded nested-signature and timestamp metadata.
 Parsed time assertions remain unverified; JSON explicitly reports
 `verification_performed: false`. Signed PE
 is the default; standalone CMS requires `--format cms`. This command does not
-accept trust or verification policy flags. The CLI requires `std`; the parser does not.
+accept trust or verification policy flags. The CLI requires `std`; the base parser does not.
 See [the module responsibility map](docs/architecture.md) and
 [the library boundary and compatibility notes](docs/library.md), including
 opaque certificate reporting and fractional timestamp precision.

@@ -18,9 +18,10 @@ pub(super) fn verify_container(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
     format: Format,
-    mut container: Container<'_>,
+    mut container: Container<'_, '_>,
 ) -> Result<VerificationBundle> {
     let mut reports = Vec::new();
+    let mut appx_report = None;
     for signature in container.signatures()? {
         verify_signature(
             cms_der(&signature, format)?,
@@ -28,6 +29,7 @@ pub(super) fn verify_container(
             options,
             0,
             &mut reports,
+            &mut appx_report,
         )?;
     }
     let mut verification = VerificationBundle {
@@ -36,10 +38,7 @@ pub(super) fn verify_container(
         file_sha256: hex(&Hash::Sha256.digest(bytes)),
         signatures: reports,
         rdp: None,
-        appx: match &container {
-            Container::Appx(appx) => appx.report.clone(),
-            _ => None,
-        },
+        appx: appx_report,
     };
     if let Container::Appx(appx) = &container
         && appx.is_bundle()
@@ -51,10 +50,11 @@ pub(super) fn verify_container(
 
 fn verify_signature(
     bytes: &[u8],
-    container: &mut Container<'_>,
+    container: &mut Container<'_, '_>,
     options: &VerifyOptions<'_>,
     depth: usize,
     reports: &mut Vec<SignatureReport>,
+    appx_report: &mut Option<Box<AppxReport>>,
 ) -> Result<()> {
     if depth > 8 || reports.len() >= 64 {
         return Err(VerificationError::new(
@@ -70,6 +70,7 @@ fn verify_signature(
         Stage::Cms,
     )?;
     let integrity = integrity::verify(container, &sd, options.allow_sha1)?;
+    *appx_report = integrity.appx;
     for si in &sd.signers {
         let signer = tagged(
             sd.verify(*si, options.allow_sha1)
@@ -77,9 +78,9 @@ fn verify_signature(
             ErrorCode::InvalidSignature,
             Stage::Cms,
         )?;
-        if let Container::Appx(appx) = container {
+        if let Some(report) = appx_report.as_ref() {
             tagged(
-                appx.publisher(&signer.cert),
+                crate::appx::publisher(report, &signer.cert),
                 ErrorCode::AppxPublisherMismatch,
                 Stage::Appx,
             )?;
@@ -140,7 +141,14 @@ fn verify_signature(
         for (oid, values) in &signer.unsigned {
             if oid == cms::NESTED {
                 for value in values {
-                    verify_signature(value.full, container, options, depth + 1, reports)?;
+                    verify_signature(
+                        value.full,
+                        container,
+                        options,
+                        depth + 1,
+                        reports,
+                        appx_report,
+                    )?;
                 }
             }
         }

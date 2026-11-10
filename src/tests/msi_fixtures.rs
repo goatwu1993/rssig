@@ -676,7 +676,7 @@ fn committed_msi_cms_and_trust_faults_have_valid_package_digests() {
         let (hash, expected) = sd.package_digest().unwrap();
         let expected = expected.to_vec();
         assert_eq!(
-            msi.digests(hash).unwrap().0,
+            crate::msi::digests(&mut msi, hash).unwrap().0,
             expected,
             "{name}: package checks must pass before the intended CMS/trust fault"
         );
@@ -761,7 +761,7 @@ fn signtool_fixture_digest_and_sign_padded_serial_are_verified() {
     );
     assert_eq!(error.code, domain::ErrorCode::WeakAlgorithm);
     assert_eq!(error.details["key_bits"], 1024);
-    assert_eq!(msi.digests(hash).unwrap().0, expected);
+    assert_eq!(crate::msi::digests(&mut msi, hash).unwrap().0, expected);
 }
 
 #[test]

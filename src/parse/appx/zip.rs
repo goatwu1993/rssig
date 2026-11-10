@@ -1,5 +1,5 @@
 //! Bounded ZIP reader for signed packages. Never extracts paths to disk.
-use crate::domain::{ErrorCode, Stage, VerificationError};
+use crate::parse::{Error, ErrorKind};
 use anyhow::{Result, ensure};
 use flate2::{Decompress, FlushDecompress, Status};
 use std::collections::BTreeSet;
@@ -25,7 +25,7 @@ fn u64v(b: &[u8], at: usize) -> Result<usize> {
     ))?)
 }
 fn unsupported<T>(message: &str) -> Result<T> {
-    Err(VerificationError::new(ErrorCode::UnsupportedAppx, Stage::Appx, message).into())
+    Err(Error::new(ErrorKind::UnsupportedAppx, anyhow::anyhow!("{message}")).into())
 }
 pub(super) fn safe_name(name: &str) -> bool {
     !name.is_empty()
@@ -60,7 +60,7 @@ fn extra_values(extra: &[u8]) -> Result<Option<&[u8]>> {
     Ok(zip64)
 }
 #[derive(Debug)]
-pub(super) struct Entry<'a> {
+pub(crate) struct Entry<'a> {
     pub name: String,
     pub offset: usize,
     pub lfh_size: usize,

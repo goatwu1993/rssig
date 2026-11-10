@@ -221,6 +221,11 @@ impl From<crate::parse::Error> for VerificationError {
     fn from(error: crate::parse::Error) -> Self {
         use crate::parse::ErrorKind;
         let (code, stage) = match error.kind() {
+            ErrorKind::InvalidMsi => (ErrorCode::InvalidMsi, Stage::Msi),
+            ErrorKind::UnsignedMsi => (ErrorCode::Unsigned, Stage::Msi),
+            ErrorKind::InvalidAppx => (ErrorCode::InvalidAppx, Stage::Appx),
+            ErrorKind::UnsupportedAppx => (ErrorCode::UnsupportedAppx, Stage::Appx),
+            ErrorKind::UnsignedAppx => (ErrorCode::Unsigned, Stage::Appx),
             ErrorKind::InvalidPowershell => (ErrorCode::InvalidPowershell, Stage::Powershell),
             ErrorKind::UnsignedPowershell => (ErrorCode::Unsigned, Stage::Powershell),
             ErrorKind::InvalidWsh | ErrorKind::UnsupportedWsfXml => {

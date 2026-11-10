@@ -4,6 +4,16 @@ use core::{error, fmt};
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum ErrorKind {
+    /// Invalid or unsupported MSI/MSP CFB structure.
+    InvalidMsi,
+    /// No embedded MSI/MSP signature stream.
+    UnsignedMsi,
+    /// Invalid MSIX/AppX archive or package XML.
+    InvalidAppx,
+    /// Unsupported MSIX/AppX archive profile.
+    UnsupportedAppx,
+    /// No embedded MSIX/AppX signature part.
+    UnsignedAppx,
     /// Invalid or unsupported PE layout.
     InvalidPe,
     /// Malformed PowerShell text encoding or hash/XML signature block.

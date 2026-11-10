@@ -528,7 +528,8 @@
         "msi::bad_empty_extended"
       ],
       "cases": [
-        "msi-bad-empty-extended"
+        "msi-bad-empty-extended",
+        "lib05-msi-empty-extended"
       ]
     },
     {
@@ -1149,7 +1150,8 @@
         "msi-pe64",
         "msi-revoked",
         "msi-rfc9457-invalid-arguments",
-        "msi-unknown-root"
+        "msi-unknown-root",
+        "lib05-msi-extended"
       ]
     },
     {
@@ -3267,7 +3269,8 @@
       "bytes": 2923,
       "description": "Synthetic MSIX/AppX fixture from src/tests/appx_fixtures.rs: bad-appx-publisher.msix. Exact intended outcomes are pinned by the listed cases. Public deterministic test-only keys; never install or execute.",
       "cases": [
-        "appx-publisher"
+        "appx-publisher",
+        "lib05-appx-publisher"
       ]
     },
     {
@@ -3637,7 +3640,8 @@
       "bytes": 5998,
       "description": "Synthetic signed bundle from src/tests/appx_fixtures.rs using public deterministic test-only keys. Intentional faults are signed by the outer bundle so failures isolate the named check. Never install or execute.",
       "cases": [
-        "appxbundle-name"
+        "appxbundle-name",
+        "lib05-bundle-identity"
       ]
     },
     {

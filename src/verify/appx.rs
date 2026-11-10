@@ -14,10 +14,11 @@ pub(super) fn verify_bundle(
         .context("bundle has no verified signing certificate")?
         .certificate_sha256
         .clone();
-    let mut package_reports = Vec::with_capacity(appx.bundle_packages().len());
-    for package in appx.bundle_packages() {
+    let packages = appx.bundle_packages().map_err(VerificationError::from)?;
+    let mut package_reports = Vec::with_capacity(packages.len());
+    for package in &packages {
         let nested = tagged(
-            Appx::parse(package.bytes),
+            Appx::parse(package.bytes).map_err(VerificationError::from),
             ErrorCode::InvalidAppx,
             Stage::Appx,
         )?;
@@ -40,12 +41,12 @@ pub(super) fn verify_bundle(
             .as_ref()
             .context("verified bundle package has no AppX report")?;
         if !(package_report.kind == AppxKind::Package
-            && package_report.identity.name == appx.report.as_ref().unwrap().identity.name
+            && package_report.identity.name == verification.appx.as_ref().unwrap().identity.name
             && package_report.identity.version == package.version
             && package_report.identity.resource_id == package.resource_id
             && (package.package_type == "resource")
                 == tagged(
-                    nested.resource_package(),
+                    nested.resource_package().map_err(VerificationError::from),
                     ErrorCode::InvalidAppx,
                     Stage::Appx,
                 )?

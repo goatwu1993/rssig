@@ -6,17 +6,17 @@ use crate::{
 };
 use anyhow::Result;
 
-pub(super) enum Container<'a> {
+pub(super) enum Container<'a, 'p> {
     Pe(Pe<'a>),
-    Appx(Box<Appx<'a>>),
+    Appx(&'p Appx<'a>),
     Cab(Cab<'a>),
     Navx(Navx<'a>),
     Powershell(Powershell<'a>),
     Wsh(Wsh<'a>),
-    Msi(Box<Msi<'a>>),
+    Msi(&'p mut Msi<'a>),
 }
 
-impl Container<'_> {
+impl Container<'_, '_> {
     pub(super) fn signatures(&self) -> Result<Vec<Vec<u8>>> {
         Ok(match self {
             Container::Pe(pe) => tagged(
