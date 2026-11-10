@@ -78,6 +78,11 @@ fn inspect_and_verify(
 }
 ```
 
+Construct policies with `VerifyOptions::trusted(&store, unix_seconds)` (revocation
+required), `trusted_with_revocation` (explicit revocation selection), or
+`integrity_only(unix_seconds)`. Constructors require time, disable SHA-1 by
+default, and never load system roots or read the clock.
+
 Parser failures use `parse::Error` and its typed `ErrorKind`; verification
 failures use `VerificationError`. The `From` conversion lets `?` bridge them
 while preserving the CLI error codes and diagnostics. `Pe::authenticode_chunks()`

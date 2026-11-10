@@ -33,3 +33,6 @@ mod text_parsing;
 
 #[path = "cli/package_parsing.rs"]
 mod package_parsing;
+
+#[path = "cli/policy.rs"]
+mod policy;

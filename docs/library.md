@@ -491,3 +491,34 @@ CMS inspection. Container digest checks and trust are not performed. The default
 remains PE; CMS still requires explicit selection. MSI/AppX and text/RDP CLI
 inspection remain deferred until their format-specific report contracts are
 specified; their structural library APIs remain available.
+
+## Explicit verification policy construction
+
+`VerifyOptions::trusted(&store, unix_seconds)` requires configured-root trust
+and applicable local CRLs by default. Missing or unusable revocation evidence
+fails closed. An empty store remains an empty store; no constructor substitutes
+system roots or switches to integrity-only verification.
+
+`VerifyOptions::trusted_with_revocation(&store, unix_seconds,
+RevocationPolicy::Disabled)` explicitly disables revocation while retaining
+certificate-chain validation. Use `RevocationPolicy::Required` to require CRLs.
+Successful reports reflect this decision in `chain_trusted` and
+`revocation_checked`. Supplied CRLs are not thereby individually authenticated.
+
+`VerifyOptions::integrity_only(unix_seconds)` explicitly selects integrity checks
+without configured-root or revocation claims. Every constructor requires time
+and disables SHA-1 by default. A caller may explicitly set `allow_sha1 = true`
+for legacy content signatures; this never enables SHA-1 certificate/CRL chains.
+Constructors perform no I/O, load no roots, fetch no revocation data, and read no
+clock. The CLI remains responsible for root/CRL loading and its documented
+current-time default, and constructs the same explicit library policies.
+
+Public fields and existing entry points remain source-compatible. For legacy
+struct literals, `trust: None` means integrity-only regardless of
+`check_revocation`; a true flag in that combination is ignored and reports never
+claim revocation was checked. Prefer the integrity-only constructor to express
+that policy without redundant flags. A configured store with revocation disabled
+still validates certificate chains. No implicit `Default` policy is provided.
+CLI integrity-only flags continue to conflict with roots, CRLs, and revocation
+flags. The existing `--no-revocation --crl` combination still loads supplied
+artifacts but does not claim that their revocation evidence was checked.

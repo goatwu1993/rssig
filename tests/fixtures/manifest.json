@@ -144,7 +144,10 @@
         "cli-mixed-results",
         "parse-pe",
         "parse-explicit-pe",
-        "parse-mixed-inputs"
+        "parse-mixed-inputs",
+        "lib07-policy-trusted",
+        "lib07-policy-no-revocation",
+        "lib07-policy-integrity"
       ]
     },
     {
