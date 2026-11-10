@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is verification policy construction
-(LIB-07).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is borrowing, errors, and public API stability
+(LIB-08).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -213,11 +213,19 @@ timestamps, and local CRL validation already exist.
   cases), fmt, default Clippy, verifier-only selector tests, and bare-metal
   parser Clippy pass on macOS. Linux execution remains in CI. Dependencies are
   unchanged. See docs/library.md.
-- [ ] **LIB-07: Clarify verification policy construction.** Evaluate explicit
-  trusted versus integrity-only constructors, revocation selection, and required
-  time while retaining current entry points. Audit confusing or contradictory
-  option combinations. Convenience APIs must never silently disable trust or
-  revocation, read the clock, or load system roots.
+- [x] **LIB-07: Clarify verification policy construction.** Added explicit
+  `VerifyOptions::trusted`, `trusted_with_revocation`, and `integrity_only`
+  constructors with required caller-supplied time and SHA-1 disabled by default.
+  Trusted construction requires local CRLs unless `RevocationPolicy::Disabled`
+  is explicitly selected. Constructors perform no I/O or clock/root loading;
+  CLI policy construction now uses them. Documented legacy struct literals,
+  ignored revocation flags without trust, and CLI flag conflicts. Reused committed
+  fixtures in three portable policy cases, named CLI serialized-field checks,
+  and API tests for absent CRLs, empty roots, policy flags and legacy behavior.
+  API tests first failed on missing constructors. Full locked tests (704 spec
+  cases), formatting, all-target Clippy, verifier-only policy tests and bare-metal
+  parser Clippy pass on macOS. Dependencies are unchanged; Linux execution remains
+  in CI. See docs/library.md.
 - [ ] **LIB-08: Audit borrowing, errors, and public API stability.** Document
   ownership and repeated-verification behavior; remove avoidable signature and
   certificate copies with measurements and preserved validation order. Keep

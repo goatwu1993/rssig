@@ -32,12 +32,57 @@ pub struct VerifyOptions<'a> {
     /// Configured trust anchors and CRLs. `None` explicitly selects integrity-only
     /// verification, reported without a trusted-chain claim.
     pub trust: Option<&'a TrustStore>,
-    /// Require supplied CRLs when validating a trust chain.
+    /// Require supplied CRLs when validating a trust chain. Ignored when `trust`
+    /// is `None`; legacy struct literals retain this behavior.
     pub check_revocation: bool,
     /// Permit SHA-1 content/signature digests, never SHA-1 certificate/CRL chains.
     pub allow_sha1: bool,
     /// Caller-supplied validation time in Unix seconds.
     pub now: u64,
+}
+
+/// Explicit revocation policy for configured-root verification.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RevocationPolicy {
+    /// Require applicable, current local CRLs; unknown status fails closed.
+    Required,
+    /// Explicitly omit revocation checks; reports record `revocation_checked: false`.
+    Disabled,
+}
+
+impl<'a> VerifyOptions<'a> {
+    /// Verify against caller-supplied roots and CRLs at the required Unix time.
+    /// Revocation is required and SHA-1 content digests are disabled.
+    /// An empty store is not replaced with system roots or integrity-only policy.
+    pub fn trusted(trust: &'a TrustStore, now: u64) -> Self {
+        Self::trusted_with_revocation(trust, now, RevocationPolicy::Required)
+    }
+
+    /// Configure trusted verification with an explicit revocation decision.
+    /// This never loads roots, fetches CRLs, or reads the clock.
+    pub fn trusted_with_revocation(
+        trust: &'a TrustStore,
+        now: u64,
+        revocation: RevocationPolicy,
+    ) -> Self {
+        Self {
+            trust: Some(trust),
+            check_revocation: revocation == RevocationPolicy::Required,
+            allow_sha1: false,
+            now,
+        }
+    }
+
+    /// Explicit integrity-only verification at the required Unix time.
+    /// Reports make no trusted-chain or revocation claim. SHA-1 is disabled.
+    pub fn integrity_only(now: u64) -> Self {
+        Self {
+            trust: None,
+            check_revocation: false,
+            allow_sha1: false,
+            now,
+        }
+    }
 }
 
 pub fn verify_pe(

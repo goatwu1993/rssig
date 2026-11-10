@@ -50,9 +50,9 @@ pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::TrustStore;
 #[cfg(feature = "verify")]
 pub use verify::{
-    VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx, verify_parsed_appx,
-    verify_parsed_cab, verify_parsed_msi, verify_parsed_navx, verify_parsed_pe, verify_pe,
-    verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
+    RevocationPolicy, VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx,
+    verify_parsed_appx, verify_parsed_cab, verify_parsed_msi, verify_parsed_navx, verify_parsed_pe,
+    verify_pe, verify_powershell, verify_powershell_xml, verify_rdp, verify_wsh,
 };
 #[cfg(all(test, feature = "verify"))]
 mod tests;

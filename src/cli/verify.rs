@@ -84,12 +84,20 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         Some(at) => at,
         None => SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
     };
-    let options = VerifyOptions {
-        trust: if integrity_only { None } else { Some(&trust) },
-        check_revocation: !no_revocation,
-        allow_sha1,
-        now,
+    let mut options = if integrity_only {
+        VerifyOptions::integrity_only(now)
+    } else {
+        VerifyOptions::trusted_with_revocation(
+            &trust,
+            now,
+            if no_revocation {
+                crate::verify::RevocationPolicy::Disabled
+            } else {
+                crate::verify::RevocationPolicy::Required
+            },
+        )
     };
+    options.allow_sha1 = allow_sha1;
     batch::execute(
         "verify",
         files,
