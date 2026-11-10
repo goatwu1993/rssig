@@ -63,7 +63,31 @@ pub(crate) fn verify_detected(
     path: Option<&std::path::Path>,
     options: &VerifyOptions<'_>,
 ) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_inner(bytes, options, format::detect(bytes, path)?).map_err(|e| {
+    // Preserve extension hints even when the filename stem is not UTF-8.
+    let hint = path
+        .and_then(|p| p.extension())
+        .and_then(|e| e.to_str())
+        .map(|e| format!("input.{e}"));
+    verify_with_hint(bytes, hint.as_deref(), options)
+}
+
+/// Detect using bytes and an optional filename hint, without filesystem access.
+pub fn verify_with_hint(
+    bytes: &[u8],
+    filename: Option<&str>,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_as(bytes, format::detect(bytes, filename)?, options)
+}
+
+/// Select an explicit container format, bypassing detection and filename hints.
+/// The selected parser still validates the input; policy is unchanged.
+pub fn verify_as(
+    bytes: &[u8],
+    format: Format,
+    options: &VerifyOptions<'_>,
+) -> std::result::Result<VerificationBundle, VerificationError> {
+    verify_inner(bytes, options, format).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }

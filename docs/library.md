@@ -466,4 +466,28 @@ options, and JSON types retain their existing signatures and semantics.
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
 without `std`. Full verification still requires `std`. MSI/MSP and AppX structural parsing also
 requires `std` through explicit optional adapters. The `parse` CLI still selects
-only PE or CMS; the other container parsers are library APIs.
+PE, CMS, CAB, or NAVX; the other container parsers are library APIs.
+
+## Format selection
+
+With `verify` enabled, `format::Format` and `format::detect(bytes, filename)`
+expose the verifier's classification rules without filesystem paths or reads.
+The optional hint is a filename string. Binary magic wins over filename hints;
+recognized text/package extensions win over signature markers. WSH mixed-style
+errors remain typed, and unknown bytes retain the historical PE fallback.
+Detection only selects a parser; it does not validate or authenticate input.
+
+`verify::verify_with_hint(bytes, filename, options)` uses those rules with explicit
+verification policy. `verify::verify_as(bytes, format, options)` bypasses detection
+and invokes the selected parser, including explicit WSH comment styles through
+`Format::Wsh(parse::WshKind)`. Existing format-specific entry points remain available.
+These selection APIs currently require `verify`/`std`; parser-only consumers use
+the existing explicit parser constructors.
+
+The inspection CLI additionally accepts `--format cab` and `--format navx`.
+It reports their embedded CMS using the existing unverified inspection contract,
+including nested signatures and timestamps. CAB zero padding is checked before
+CMS inspection. Container digest checks and trust are not performed. The default
+remains PE; CMS still requires explicit selection. MSI/AppX and text/RDP CLI
+inspection remain deferred until their format-specific report contracts are
+specified; their structural library APIs remain available.

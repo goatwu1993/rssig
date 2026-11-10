@@ -140,3 +140,37 @@ fn inspected_signer(
             .collect::<Result<_, VerificationError>>()?,
     })
 }
+
+pub(crate) fn container(
+    bytes: &[u8],
+    format: crate::format::Format,
+) -> Result<ParseReport, VerificationError> {
+    use crate::{
+        format::Format,
+        parse::{Cab, Navx},
+    };
+    let signature = match format {
+        Format::Cab => Cab::parse(bytes)?.signature(),
+        Format::Navx => Navx::parse(bytes)?.signature(),
+        _ => unreachable!("inspection container adapter only selects CAB/NAVX"),
+    };
+    // CAB can contain up to seven trailing zero padding bytes after CMS.
+    let mut rest = signature;
+    let node = crate::der::take(&mut rest)
+        .map_err(|e| VerificationError::from_internal(e, ErrorCode::MalformedCms, Stage::Cms))?;
+    let valid_padding = if format == Format::Cab {
+        rest.len() <= 7 && rest.iter().all(|b| *b == 0)
+    } else {
+        rest.is_empty()
+    };
+    if !valid_padding {
+        return Err(VerificationError::new(
+            ErrorCode::MalformedCms,
+            Stage::Cms,
+            "invalid trailing data in embedded CMS signature",
+        ));
+    }
+    let mut report = cms(node.full)?;
+    report.format = if format == Format::Cab { "cab" } else { "navx" }.into();
+    Ok(report)
+}

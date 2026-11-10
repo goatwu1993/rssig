@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is consistent library format selection
-(LIB-06).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is verification policy construction
+(LIB-07).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -200,11 +200,19 @@ timestamps, and local CRL validation already exist.
   adapter normal graphs contain no verifier/CLI/native-root or native-crypto
   dependencies. Linux runtime validation remains in CI. See
   [library boundaries](docs/library.md#msimsp-and-appx-structural-adapters).
-- [ ] **LIB-06: Make format selection consistent for library callers.** Assess
-  a public explicit selector and optional filename hint without filesystem paths
-  in the core. Preserve binary-magic precedence, text ambiguity rules, and the
-  existing fallback/error contract. Extend parse CLI formats as their public
-  parser/report contracts become available.
+- [x] **LIB-06: Make format selection consistent for library callers.** Exposed
+  `format::Format`, filename-only `format::detect`, `verify_with_hint`, and
+  `verify_as` under the existing verifier feature. The CLI uses the shared
+  detection table, retaining non-UTF-8 stem handling, binary-magic precedence,
+  text ambiguity and historical PE fallback. Added CAB/NAVX inspection using
+  the existing unverified CMS report contract, two portable cases linked to
+  committed fixtures, named CLI/domain assertions, and public selector tests.
+  Focused tests first failed on missing APIs and unsupported CLI selectors.
+  MSI/AppX and text/RDP CLI inspection await format-specific report contracts;
+  parser-only callers retain explicit constructors. Full locked tests (701 spec
+  cases), fmt, default Clippy, verifier-only selector tests, and bare-metal
+  parser Clippy pass on macOS. Linux execution remains in CI. Dependencies are
+  unchanged. See docs/library.md.
 - [ ] **LIB-07: Clarify verification policy construction.** Evaluate explicit
   trusted versus integrity-only constructors, revocation selection, and required
   time while retaining current entry points. Audit confusing or contradictory

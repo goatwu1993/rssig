@@ -413,3 +413,22 @@ fn recursive_parse_fails_closed_at_the_default_depth_limit() {
             .contains("limit exceeded")
     );
 }
+
+#[test]
+fn lib06_inspects_cab_and_navx_without_authentication() {
+    for (name, format) in [("good.cab", "cab"), ("good.navx", "navx")] {
+        let (exit, json) = invoke(&[name], &["--format", format]);
+        assert_eq!(exit, 0);
+        assert_eq!(json["results"][0]["format"], format);
+        assert_eq!(json["results"][0]["verification_performed"], false);
+        assert!(
+            !json["results"][0]["signatures"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        let report: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+            serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(serde_json::to_value(report).unwrap(), json);
+    }
+}

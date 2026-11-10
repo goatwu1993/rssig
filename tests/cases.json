@@ -23168,6 +23168,50 @@
           ]
         }
       }
+    },
+    {
+      "id": "lib06-parse-cab",
+      "input": "good.cab",
+      "command": [
+        "parse",
+        "--format",
+        "cab"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "cab",
+              "verification_performed": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib06-parse-navx",
+      "input": "good.navx",
+      "command": [
+        "parse",
+        "--format",
+        "navx"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "navx",
+              "verification_performed": false
+            }
+          ]
+        }
+      }
     }
   ]
 }

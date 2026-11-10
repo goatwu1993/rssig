@@ -13,13 +13,15 @@ use std::path::PathBuf;
 enum Format {
     Pe,
     Cms,
+    Cab,
+    Navx,
 }
 
 #[derive(clap::Args)]
 pub(super) struct Args {
     #[arg(required = true)]
     files: Vec<PathBuf>,
-    /// Input structure: signed PE, or standalone DER CMS SignedData.
+    /// Input structure: signed PE/CAB/NAVX, or standalone DER CMS SignedData.
     #[arg(long, value_enum, default_value = "pe")]
     format: Format,
 }
@@ -31,6 +33,8 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         |_, bytes| match args.format {
             Format::Pe => inspection::pe(bytes),
             Format::Cms => inspection::cms(bytes),
+            Format::Cab => inspection::container(bytes, crate::format::Format::Cab),
+            Format::Navx => inspection::container(bytes, crate::format::Format::Navx),
         },
         |file, parse| {
             ParseFileResult::Success(ParseFileSuccess {
