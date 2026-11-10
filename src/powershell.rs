@@ -1,23 +1,10 @@
-//! Hash-comment and XML-comment PowerShell Authenticode signatures; scripts are never executed.
-use crate::{
-    crypto::Hash,
-    domain::{ErrorCode, Stage, VerificationError},
-};
-use anyhow::{Result, ensure};
-use base64ct::{Base64, Encoding};
+use crate::crypto::Hash;
+#[cfg(test)]
+use crate::domain::{ErrorCode, Stage};
+pub(crate) use crate::parse::powershell::Powershell;
+#[cfg(test)]
+use crate::parse::powershell::{MAX_SIGNATURE_TEXT, PREFIX, SUFFIX};
 use std::path::Path;
-
-const BEGIN: &str = "# SIG # Begin signature block";
-const END: &str = "# SIG # End signature block";
-const PREFIX: &str = "\r\n# SIG # Begin signature block\r\n";
-const SUFFIX: &str = "# SIG # End signature block\r\n";
-const MAX_SIGNATURE_TEXT: usize = 16 * 1024 * 1024;
-
-pub(crate) struct Powershell {
-    body: String,
-    signature: Vec<u8>,
-}
-
 pub(crate) fn has_extension(path: &Path) -> bool {
     path.extension().and_then(|s| s.to_str()).is_some_and(|s| {
         ["ps1", "psm1", "psd1"]
@@ -46,145 +33,13 @@ fn contains_marker(bytes: &[u8], marker: &str) -> bool {
         .any(|needle| bytes.windows(needle.len()).any(|w| w == *needle))
 }
 
-fn decode(bytes: &[u8]) -> Result<String> {
-    let text = if bytes.starts_with(&[0xff, 0xfe]) || bytes.starts_with(&[0xfe, 0xff]) {
-        ensure!(
-            bytes.len().is_multiple_of(2),
-            "odd-length UTF-16 PowerShell script"
-        );
-        let little = bytes[0] == 0xff;
-        let units: Vec<_> = bytes
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .map(|b| {
-                let pair = [b[0], b[1]];
-                if little {
-                    u16::from_le_bytes(pair)
-                } else {
-                    u16::from_be_bytes(pair)
-                }
-            })
-            .collect();
-        String::from_utf16(&units)?
-    } else {
-        std::str::from_utf8(bytes)?.to_owned()
-    };
-    ensure!(
-        !text.contains('\0'),
-        "NUL or unsupported script encoding (UTF-16 requires a BOM)"
-    );
-    Ok(text)
-}
-
-impl Powershell {
-    pub(crate) fn parse(bytes: &[u8]) -> Result<Self> {
-        Self::parse_style(bytes, false)
-    }
-    pub(crate) fn parse_xml(bytes: &[u8]) -> Result<Self> {
-        Self::parse_style(bytes, true)
-    }
-    fn parse_style(bytes: &[u8], xml: bool) -> Result<Self> {
-        if xml
-            && !bytes.starts_with(&[0xef, 0xbb, 0xbf])
-            && !bytes.starts_with(&[0xff, 0xfe])
-            && !bytes.starts_with(&[0xfe, 0xff])
-        {
-            ensure!(
-                bytes.is_ascii(),
-                "BOM-less PowerShell XML must be ASCII; Unicode requires a BOM"
-            );
-        }
-        let (begin, end, prefix, suffix, comment_start, comment_end, hint) = if xml {
-            (
-                "<!-- SIG # Begin signature block -->",
-                "<!-- SIG # End signature block -->",
-                "\r\n<!-- SIG # Begin signature block -->\r\n",
-                "<!-- SIG # End signature block -->\r\n",
-                "<!-- ",
-                " -->",
-                "SIG #",
-            )
-        } else {
-            (BEGIN, END, PREFIX, SUFFIX, "# ", "", "# SIG #")
-        };
-        let mut text = decode(bytes)?;
-        if !text.contains(hint) {
-            return Err(VerificationError::new(
-                ErrorCode::Unsigned,
-                Stage::Powershell,
-                "PowerShell script has no signature block",
-            )
-            .into());
-        }
-        if xml {
-            ensure!(
-                !text.contains("# SIG #"),
-                "mixed hash/XML signature styles are unsupported"
-            );
-        }
-        ensure!(
-            text.matches(begin).count() == 1 && text.matches(end).count() == 1,
-            "missing or duplicate PowerShell signature markers"
-        );
-        let start = text.find(prefix).ok_or_else(|| {
-            anyhow::anyhow!(
-                "PowerShell signature block requires a preceding CRLF and CRLF marker lines"
-            )
-        })?;
-        let encoded_start = start + prefix.len();
-        let before_end = text.strip_suffix(suffix).ok_or_else(|| {
-            anyhow::anyhow!("PowerShell signature end marker must terminate the file with CRLF")
-        })?;
-        ensure!(
-            encoded_start <= before_end.len(),
-            "reversed PowerShell signature markers"
-        );
-        let encoded = &before_end[encoded_start..];
-        ensure!(
-            !encoded.is_empty() && encoded.len() <= MAX_SIGNATURE_TEXT,
-            "empty or oversized PowerShell signature block"
-        );
-        let lines = encoded
-            .strip_suffix("\r\n")
-            .ok_or_else(|| anyhow::anyhow!("PowerShell signature payload requires CRLF lines"))?;
-        let mut base64 = String::with_capacity(lines.len());
-        for line in lines.split("\r\n") {
-            let value = line
-                .strip_prefix(comment_start)
-                .and_then(|v| v.strip_suffix(comment_end))
-                .ok_or_else(|| {
-                    anyhow::anyhow!("PowerShell signature line has invalid comment delimiters")
-                })?;
-            ensure!(
-                !value.is_empty() && value.len() <= 64 && value.len().is_multiple_of(4),
-                "invalid PowerShell base64 line length"
-            );
-            base64.push_str(value);
-        }
-        let signature = Base64::decode_vec(&base64)
-            .map_err(|e| anyhow::anyhow!("invalid PowerShell signature base64: {e}"))?;
-        ensure!(!signature.is_empty(), "empty PowerShell CMS signature");
-        text.truncate(start);
-        Ok(Self {
-            body: text,
-            signature,
-        })
-    }
-    pub(crate) fn signature(&self) -> &[u8] {
-        &self.signature
-    }
+impl Powershell<'_> {
     pub(crate) fn digest(&self, hash: Hash) -> Vec<u8> {
-        // Include U+FEFF when present; preserve every original body line ending.
-        // Exclude only the inserted CRLF and terminal signature block.
-        let mut h = hash.hasher();
-        for unit in self.body.encode_utf16() {
-            h.update(&unit.to_le_bytes());
-        }
-        h.finalize().to_vec()
+        let mut digest = hash.hasher();
+        self.update_digest(&mut crate::crypto::DigestSink(digest.as_mut()));
+        digest.finalize().to_vec()
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,8 +65,10 @@ mod tests {
                 "bad-powershell-independent-digest.ps1",
             ),
         ] {
-            let good = Powershell::parse(&fixture(good)).unwrap();
-            let bad = Powershell::parse(&fixture(bad)).unwrap();
+            let good_bytes = fixture(good);
+            let good = Powershell::parse(&good_bytes).unwrap();
+            let bad_bytes = fixture(bad);
+            let bad = Powershell::parse(&bad_bytes).unwrap();
             assert_eq!(good.signature(), bad.signature());
             let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
             sd.verify(sd.signers[0], false).unwrap();
@@ -219,7 +76,8 @@ mod tests {
             assert_eq!(good.digest(hash), expected);
             assert_ne!(bad.digest(hash), expected);
         }
-        let bad = Powershell::parse(&fixture("bad-powershell-cms-signature.ps1")).unwrap();
+        let bad_bytes = fixture("bad-powershell-cms-signature.ps1");
+        let bad = Powershell::parse(&bad_bytes).unwrap();
         let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
         let (hash, expected) = sd.script_digest().unwrap();
         assert_eq!(bad.digest(hash), expected);
@@ -233,7 +91,8 @@ mod tests {
             "bad-powershell-sip-reserved.ps1",
             "bad-powershell-sip-type.ps1",
         ] {
-            let script = Powershell::parse(&fixture(name)).unwrap();
+            let script_bytes = fixture(name);
+            let script = Powershell::parse(&script_bytes).unwrap();
             let sd = crate::cms::SignedData::parse(script.signature()).unwrap();
             sd.verify(sd.signers[0], false).unwrap();
             assert!(sd.script_digest().is_err());
@@ -367,8 +226,10 @@ mod xml_tests {
                 "bad-psxml-independent-digest.ps1xml",
             ),
         ] {
-            let good = Powershell::parse_xml(&fixture(good)).unwrap();
-            let bad = Powershell::parse_xml(&fixture(bad)).unwrap();
+            let good_bytes = fixture(good);
+            let good = Powershell::parse_xml(&good_bytes).unwrap();
+            let bad_bytes = fixture(bad);
+            let bad = Powershell::parse_xml(&bad_bytes).unwrap();
             assert_eq!(good.signature(), bad.signature());
             let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
             sd.verify(sd.signers[0], false).unwrap();
@@ -376,7 +237,8 @@ mod xml_tests {
             assert_eq!(good.digest(hash), expected);
             assert_ne!(bad.digest(hash), expected);
         }
-        let bad = Powershell::parse_xml(&fixture("bad-psxml-cms-signature.ps1xml")).unwrap();
+        let bad_bytes = fixture("bad-psxml-cms-signature.ps1xml");
+        let bad = Powershell::parse_xml(&bad_bytes).unwrap();
         let sd = crate::cms::SignedData::parse(bad.signature()).unwrap();
         let (hash, expected) = sd.script_digest().unwrap();
         assert_eq!(bad.digest(hash), expected);

@@ -158,8 +158,12 @@ pub(crate) fn verify_wsh_as(
     })
 }
 
-fn tagged<T>(result: Result<T>, code: ErrorCode, stage: Stage) -> Result<T> {
-    result.map_err(|e| VerificationError::from_internal(e, code, stage).into())
+fn tagged<T, E: Into<anyhow::Error>>(
+    result: std::result::Result<T, E>,
+    code: ErrorCode,
+    stage: Stage,
+) -> Result<T> {
+    result.map_err(|e| VerificationError::from_internal(e.into(), code, stage).into())
 }
 
 fn verify_inner(

@@ -6,6 +6,22 @@ use core::{error, fmt};
 pub enum ErrorKind {
     /// Invalid or unsupported PE layout.
     InvalidPe,
+    /// Malformed PowerShell text encoding or hash/XML signature block.
+    InvalidPowershell,
+    /// The PowerShell text has no signature block.
+    UnsignedPowershell,
+    /// Malformed or mismatched WSH text/signature framing.
+    InvalidWsh,
+    /// The WSH text has no signature block.
+    UnsignedWsh,
+    /// WSF XML validation requires the optional xml feature.
+    UnsupportedWsfXml,
+    /// Malformed RDP text, settings, scope, or signature blob.
+    InvalidRdp,
+    /// The RDP text has no signature.
+    UnsignedRdp,
+    /// An RDP signscope entry is outside the supported scope table.
+    UnsupportedRdpScope,
     /// The PE has no embedded signature.
     Unsigned,
     /// Invalid or unsupported CAB layout.
@@ -39,6 +55,13 @@ impl Error {
             Ok(error) => error,
             Err(inner) => Self { kind, inner },
         }
+    }
+
+    /// The unsupported RDP signscope entry, when that caused this error.
+    pub fn rdp_scope_entry(&self) -> Option<&str> {
+        self.inner
+            .downcast_ref::<super::rdp::UnsupportedScope>()
+            .map(|e| e.entry.as_str())
     }
 
     /// Stable classification; callers should not match diagnostic prose.

@@ -194,6 +194,10 @@ impl VerificationError {
     }
     /// Preserve explicitly typed causes across internal anyhow contexts.
     pub fn from_internal(error: anyhow::Error, code: ErrorCode, stage: Stage) -> Self {
+        let error = match error.downcast::<crate::parse::Error>() {
+            Ok(error) => return error.into(),
+            Err(error) => error,
+        };
         if let Some(typed) = error.chain().find_map(|e| e.downcast_ref::<Self>()) {
             let mut typed = typed.clone();
             typed.causes = error.chain().map(ToString::to_string).collect();
@@ -217,6 +221,15 @@ impl From<crate::parse::Error> for VerificationError {
     fn from(error: crate::parse::Error) -> Self {
         use crate::parse::ErrorKind;
         let (code, stage) = match error.kind() {
+            ErrorKind::InvalidPowershell => (ErrorCode::InvalidPowershell, Stage::Powershell),
+            ErrorKind::UnsignedPowershell => (ErrorCode::Unsigned, Stage::Powershell),
+            ErrorKind::InvalidWsh | ErrorKind::UnsupportedWsfXml => {
+                (ErrorCode::InvalidWsh, Stage::Wsh)
+            }
+            ErrorKind::UnsignedWsh => (ErrorCode::Unsigned, Stage::Wsh),
+            ErrorKind::InvalidRdp => (ErrorCode::InvalidRdp, Stage::Rdp),
+            ErrorKind::UnsignedRdp => (ErrorCode::Unsigned, Stage::Rdp),
+            ErrorKind::UnsupportedRdpScope => (ErrorCode::UnsupportedRdpScope, Stage::Rdp),
             ErrorKind::InvalidPe => (ErrorCode::InvalidPe, Stage::Pe),
             ErrorKind::Unsigned => (ErrorCode::Unsigned, Stage::Pe),
             ErrorKind::InvalidCab => (ErrorCode::InvalidCab, Stage::Cab),
@@ -230,7 +243,12 @@ impl From<crate::parse::Error> for VerificationError {
                 (ErrorCode::MalformedCms, Stage::Cms)
             }
         };
-        Self::from_internal(error.inner, code, stage)
+        let scope = error.rdp_scope_entry().map(ToOwned::to_owned);
+        let mut result = Self::from_internal(error.inner, code, stage);
+        if let Some(scope) = scope {
+            result = result.detail("scope", scope);
+        }
+        result
     }
 }
 

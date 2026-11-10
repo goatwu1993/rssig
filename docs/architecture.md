@@ -11,7 +11,7 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `cli/parse.rs` | Inspection arguments and explicit PE/CMS selection, with no verification setup. |
 | `inspection` | Converts untrusted parser values into inspection reports, preserving raw DER. |
 | `format` | Input classification: binary magic, then optional filename hints, then text signature markers. Unknown input retains the historical PE fallback. |
-| `parse` | `no_std + alloc` PE/CAB/NAVX/CMS structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
+| `parse` | `no_std + alloc` PE/CAB/NAVX/CMS/script/RDP structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
 | `parse/signer.rs` | Borrowed untrusted CMS signer, identifier, attribute and content views; shared structural helpers preserve verification check order. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
 | `verify/container.rs` | Embedded CMS extraction and each container's padding/framing rules. |
@@ -29,7 +29,7 @@ explicit policy, and embedded certificates remain untrusted chain candidates.
 Inspection has separate domain types and never calls the verifier. Both CLI
 commands share file/stream handling while keeping verification setup out of the
 parse path. The parser builds without `std`, and depends only on `anyhow`, `der`,
-`digest`, and `x509-cert`, all with their default features disabled. The domain layer
+`digest`, `base64ct`, and `x509-cert`, all with their default features disabled. The domain layer
 converts parser errors to the existing verification/CLI diagnostics.
 Format classification does not make an input valid: the selected parser enforces
 its structure. Filename hints never override recognized binary magic.
@@ -42,22 +42,23 @@ or signature failure. The refactor preserves the existing order and diagnostics.
 ## Remaining boundaries
 
 PE, CAB, and NAVX parsing lives under `parse`, with optional verification-side
-hashing adapters consuming the shared borrowed digest input. Other container
-parsers still combine parsing and hashing. AppX's internal package object still
+hashing adapters consuming the shared borrowed digest input. PowerShell/XML, WSH, and RDP decoding, block framing, and canonical input also
+live under `parse`; the optional `parse/wsf_xml.rs` adapter validates WSF XML.
+MSI and AppX structural parsing remain internal. AppX's internal package object still
 accumulates component/report state during integrity
-validation. RDP retains its detached-content pipeline and scope policy. These
-are candidates for subsequent extractions, with their format-specific fixtures
-protecting behavior. Full verification still requires `std`, including the CFB
-reader and AppX compression/XML stack. There is no format plugin trait or
+validation. RDP verification retains its detached-content pipeline, trust policy, and
+coverage-report projection; its parser has no hashes or verification state.
+Full verification still requires `std`, including the CFB reader and AppX compression/XML stack. There is no format plugin trait or
 separate workspace crate hierarchy.
 
 ## Feature boundary
 
 | Feature | Responsibility |
 | --- | --- |
-| No features | Signed PE/CAB/NAVX containers and CMS parsing, parser errors, borrowed digest input; `core + alloc`. |
+| No features | Signed containers, CMS, PowerShell/XML comments, VBScript/JScript and RDP parsing; `core + alloc`. |
+| `xml` | Bounded WSF XML adapter using roxmltree; `core + alloc`, no verifier dependency. |
 | `std` | Standard-library support in parser dependencies only. |
-| `verify` | All supported format verifiers, domain reports, RustCrypto/webpki, explicit roots/CRLs; enables `std`. |
+| `verify` | All supported format verifiers, domain reports, RustCrypto/webpki, explicit roots/CRLs; enables `std` and `xml`. |
 | `system-roots` | Native root enumeration only; enables `verify`. |
 | `cli` | Clap, filesystem/clock/stream adapters, and the binary; enables `verify`. |
 

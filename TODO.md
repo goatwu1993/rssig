@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is script and RDP parsing boundaries
-(LIB-04).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is MSI/MSP and AppX structural state
+(LIB-05).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -164,11 +164,23 @@ timestamps, and local CRL validation already exist.
   Full locked tests, fmt,
   Clippy, no-default/std/verify/cli feature tests and bare-metal no-default Clippy
   pass on macOS. Dependencies are unchanged; Linux validation remains in CI.
-- [ ] **LIB-04: Extract script and RDP parsing boundaries.** Separate decoding,
-  signature-block framing, and canonical hash input from verification for
-  PowerShell/XML, WSH, and RDP. Keep signed/unsigned RDP coverage explicit and
-  preserve text encodings and exact stored/canonical bytes. Establish which
-  parts can use `core + alloc` and isolate XML-dependent adapters.
+- [x] **LIB-04: Extract script and RDP parsing boundaries.** Added public
+  `parse::Powershell`, `Wsh`/`WshKind`, `Rdp`, `TextEncoding`, and parser-only RDP
+  settings/value types. Models borrow exact stored bytes, expose decoded bodies,
+  signatures and canonical hash inputs, and keep RDP scope membership explicit
+  without authentication claims. Verifiers consume these same parsers and stream
+  script hash input through generic RustCrypto sinks. WSF XML validation is an
+  isolated optional `xml` adapter that also builds on `no_std + alloc`; without
+  that feature WSF fails closed. PowerShell XML comments need no XML library.
+  Reused committed independent script/RDP fixtures and their narrow mutations,
+  linked six additional portable cases in the manifest, and added named CLI and
+  parser-only tests for bytes, BOMs, Unicode, offsets, scope coverage, truncations,
+  typed errors and XML gating. API tests first failed on missing exports. All
+  689 previous specification reports compared exactly equal; the suite now has
+  695 cases. Full locked tests, fmt, Clippy, no-default/xml/std/verify/cli tests,
+  and no-default bare-metal Clippy with XML pass on macOS. Dependency versions
+  are unchanged; parser graphs have no verifier/CLI/native-root or native-crypto
+  dependencies. Linux runtime validation remains in CI.
 - [ ] **LIB-05: Extract MSI/MSP and AppX structural state.** Separate CFB/ZIP/XML
   extraction from integrity checks and report construction. AppX package objects
   should not acquire verification state as a side effect of hashing. Retain MSI

@@ -22801,6 +22801,203 @@
           "unexpected argument '--recursive'"
         ]
       }
+    },
+    {
+      "id": "lib04-powershell-independent-jsign",
+      "input": "powershell-independent-jsign.ps1",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_authenticode",
+              "signatures": [
+                {
+                  "digest_algorithm": "Sha256",
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib04-powershell-independent-tampered",
+      "input": "bad-powershell-independent-digest.ps1",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "script_digest_mismatch",
+                "stage": "script_digest",
+                "title": "Script digest mismatch"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib04-wsh-wsh-independent-jsign-vbs",
+      "input": "wsh-independent-jsign.vbs",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "vbscript_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib04-rdp-independent-nfedera",
+      "input": "rdp-independent-nfedera.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "rdp_signed_settings",
+              "rdp": {
+                "full_file_signed": false
+              },
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib04-bad-rdp-independent-setting",
+      "input": "bad-rdp-independent-setting.rdp",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "lib04-psxml-independent-ascii",
+      "input": "psxml-independent-jsign-ascii.ps1xml",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "format": "powershell_xml_authenticode",
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "script_digest": {
+                    "algorithm": "Sha256"
+                  },
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig independent MSI test signer"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

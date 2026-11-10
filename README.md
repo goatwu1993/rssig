@@ -85,7 +85,8 @@ borrows the image bytes in digest order for a caller-supplied hasher.
 `SignedData::signer_infos()` borrows the signer encodings without allocating
 on access. Parsing and hashing alone do not authenticate a signature.
 
-The library remains one crate; public parsers currently cover signed PE and CMS.
+The library remains one crate; public parsers cover signed PE/CAB/NAVX, CMS, PowerShell/XML comments,
+WSH scripts, and scoped RDP settings. WSF requires the optional `xml` feature.
 The CLI can inspect these structures without verifying them:
 
 ```sh
