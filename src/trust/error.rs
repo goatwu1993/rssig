@@ -1,5 +1,6 @@
 //! Map path-validation errors at the webpki adapter boundary.
 use crate::domain::{ErrorCode, Stage, VerificationError};
+use alloc::format;
 use serde_json::{Value, json};
 
 pub(crate) fn webpki_error(error: webpki::Error) -> VerificationError {
@@ -75,8 +76,8 @@ impl core::fmt::Display for TrustLoadError {
         self.inner.fmt(f)
     }
 }
-impl std::error::Error for TrustLoadError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl core::error::Error for TrustLoadError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         Some(self.inner.as_ref())
     }
 }

@@ -2,21 +2,25 @@
 //!
 //! Parsing alone never establishes integrity or trust. Existing byte-oriented
 //! entry points remain available; [`verify_parsed_pe`], [`verify_parsed_cab`], and
-//! [`verify_parsed_navx`] reuse parsed container layouts. [`verify_parsed_msi`]
-//! and [`verify_parsed_appx`] borrow reusable parsed package objects.
+//! [`verify_parsed_navx`] reuse parsed container layouts. `verify_parsed_msi`
+//! and `verify_parsed_appx` borrow reusable parsed package objects.
 
+#[cfg(feature = "appx")]
 mod appx;
 mod authenticode;
 mod container;
 mod integrity;
 pub(crate) mod timestamp;
 
+#[cfg(feature = "appx")]
+use crate::appx::Appx;
+#[cfg(feature = "msi")]
+use crate::msi::Msi;
+
 use crate::domain::*;
 use crate::{
-    appx::Appx,
     cab::Cab,
     format::{self, Format},
-    msi::Msi,
     navx::Navx,
     pe::Pe,
     powershell::Powershell,
@@ -88,7 +92,7 @@ impl<'a> VerifyOptions<'a> {
 pub fn verify_pe(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Pe).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -98,22 +102,8 @@ pub fn verify_pe(
 pub fn verify(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_detected(bytes, None, options)
-}
-
-/// Filename hints select ambiguous text formats; binary magic always wins.
-pub(crate) fn verify_detected(
-    bytes: &[u8],
-    path: Option<&std::path::Path>,
-    options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
-    // Preserve extension hints even when the filename stem is not UTF-8.
-    let hint = path
-        .and_then(|p| p.extension())
-        .and_then(|e| e.to_str())
-        .map(|e| format!("input.{e}"));
-    verify_with_hint(bytes, hint.as_deref(), options)
+) -> core::result::Result<VerificationBundle, VerificationError> {
+    verify_with_hint(bytes, None, options)
 }
 
 /// Detect using bytes and an optional filename hint, without filesystem access.
@@ -121,7 +111,7 @@ pub fn verify_with_hint(
     bytes: &[u8],
     filename: Option<&str>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_as(bytes, format::detect(bytes, filename)?, options)
 }
 
@@ -131,7 +121,7 @@ pub fn verify_as(
     bytes: &[u8],
     format: Format,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, format).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -141,10 +131,11 @@ pub fn verify_as(
 ///
 /// Both use the MSI SIP and report `msi_authenticode`. An MSP is verified on its
 /// own; this does not check applicability to an installation or apply the patch.
+#[cfg(feature = "msi")]
 pub fn verify_msi(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Msi).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -154,7 +145,7 @@ pub fn verify_msi(
 pub fn verify_navx(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Navx).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -163,7 +154,7 @@ pub fn verify_navx(
 pub fn verify_cab(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Cab).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -173,7 +164,7 @@ pub fn verify_cab(
 pub fn verify_powershell(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Powershell).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -183,7 +174,7 @@ pub fn verify_powershell(
 pub fn verify_powershell_xml(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::PowershellXml).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -193,17 +184,18 @@ pub fn verify_powershell_xml(
 pub fn verify_rdp(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     crate::rdp::verify(bytes, options).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
 
 /// Verify an embedded-signature MSIX/AppX package or bundle and its embedded packages.
+#[cfg(feature = "appx")]
 pub fn verify_appx(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Appx).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -213,7 +205,7 @@ pub fn verify_appx(
 pub fn verify_wsh(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     let kind = crate::wsh::detect(bytes)
         .map_err(|e| VerificationError::from_internal(e, ErrorCode::InvalidWsh, Stage::Wsh))?;
     verify_wsh_as(bytes, kind, options)
@@ -222,14 +214,14 @@ pub(crate) fn verify_wsh_as(
     bytes: &[u8],
     kind: Kind,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_inner(bytes, options, Format::Wsh(kind)).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
 
 fn tagged<T, E: Into<anyhow::Error>>(
-    result: std::result::Result<T, E>,
+    result: core::result::Result<T, E>,
     code: ErrorCode,
     stage: Stage,
 ) -> Result<T> {
@@ -241,7 +233,9 @@ fn verify_inner(
     options: &VerifyOptions<'_>,
     format: Format,
 ) -> Result<VerificationBundle> {
+    #[cfg(feature = "appx")]
     let appx;
+    #[cfg(feature = "msi")]
     let mut msi;
     let container = match format {
         Format::Rdp => return crate::rdp::verify(bytes, options),
@@ -250,6 +244,7 @@ fn verify_inner(
             ErrorCode::InvalidWsh,
             Stage::Wsh,
         )?),
+        #[cfg(feature = "appx")]
         Format::Appx => {
             appx = Appx::parse(bytes).map_err(VerificationError::from)?;
             Container::Appx(&appx)
@@ -264,11 +259,33 @@ fn verify_inner(
             ErrorCode::InvalidPowershell,
             Stage::Powershell,
         )?),
+        #[cfg(feature = "msi")]
         Format::Msi => {
             msi = Msi::parse(bytes).map_err(VerificationError::from)?;
             Container::Msi(&mut msi)
         }
-        Format::Pe => Container::Pe(Pe::parse(bytes).map_err(VerificationError::from)?),
+        #[cfg(not(feature = "appx"))]
+        Format::Appx => {
+            return Err(VerificationError::new(
+                ErrorCode::Configuration,
+                Stage::Configuration,
+                "appx verification feature is disabled",
+            )
+            .into());
+        }
+        #[cfg(not(feature = "msi"))]
+        Format::Msi => {
+            return Err(VerificationError::new(
+                ErrorCode::Configuration,
+                Stage::Configuration,
+                "msi verification feature is disabled",
+            )
+            .into());
+        }
+        Format::Pe => Container::Pe(
+            Pe::parse(bytes).map_err(VerificationError::from)?,
+            core::marker::PhantomData,
+        ),
         Format::Navx => Container::Navx(Navx::parse(bytes).map_err(VerificationError::from)?),
         Format::Cab => Container::Cab(Cab::parse(bytes).map_err(VerificationError::from)?),
     };
@@ -296,8 +313,14 @@ fn verify_inner(
 pub fn verify_parsed_pe(
     pe: crate::parse::Pe<'_>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
-    verify_container(pe.data, options, Format::Pe, Container::Pe(pe)).map_err(|e| {
+) -> core::result::Result<VerificationBundle, VerificationError> {
+    verify_container(
+        pe.data,
+        options,
+        Format::Pe,
+        Container::Pe(pe, core::marker::PhantomData),
+    )
+    .map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
 }
@@ -310,7 +333,7 @@ pub fn verify_parsed_pe(
 pub fn verify_parsed_cab(
     cab: crate::parse::Cab<'_>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_container(cab.as_bytes(), options, Format::Cab, Container::Cab(cab)).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -324,7 +347,7 @@ pub fn verify_parsed_cab(
 pub fn verify_parsed_navx(
     navx: crate::parse::Navx<'_>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_container(
         navx.as_bytes(),
         options,
@@ -338,10 +361,11 @@ pub fn verify_parsed_navx(
 
 /// Verify a reusable parsed MSI/MSP. Only the CFB read cursor changes;
 /// extended metadata, content, CMS, timestamps, trust and CRLs are rechecked.
+#[cfg(feature = "msi")]
 pub fn verify_parsed_msi(
     msi: &mut crate::parse::Msi<'_>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_container(msi.as_bytes(), options, Format::Msi, Container::Msi(msi)).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })
@@ -349,10 +373,11 @@ pub fn verify_parsed_msi(
 
 /// Verify an immutable parsed AppX package/bundle. Digest evidence and reports
 /// belong to this call; the parsed package acquires no verification state.
+#[cfg(feature = "appx")]
 pub fn verify_parsed_appx(
     appx: &crate::parse::Appx<'_>,
     options: &VerifyOptions<'_>,
-) -> std::result::Result<VerificationBundle, VerificationError> {
+) -> core::result::Result<VerificationBundle, VerificationError> {
     verify_container(
         appx.as_bytes(),
         options,

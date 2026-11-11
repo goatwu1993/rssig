@@ -1,7 +1,7 @@
 //! Verification policy and reports over the shared MSI/MSP structural adapter.
 use crate::crypto::DigestSink;
 pub(crate) use crate::parse::Msi;
-pub(crate) use crate::parse::msi::MAGIC;
+
 use crate::{crypto::Hash, domain::*};
 use anyhow::Result;
 

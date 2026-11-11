@@ -12,6 +12,7 @@ use crate::{
     format::Format,
     trust,
 };
+use alloc::{boxed::Box, format, vec::Vec};
 use anyhow::{Context, Result};
 
 pub(super) fn verify_container(
@@ -32,6 +33,7 @@ pub(super) fn verify_container(
             &mut appx_report,
         )?;
     }
+    #[allow(unused_mut)]
     let mut verification = VerificationBundle {
         format: format.report_name().into(),
         validation_time: options.now,
@@ -40,6 +42,7 @@ pub(super) fn verify_container(
         rdp: None,
         appx: appx_report,
     };
+    #[cfg(feature = "appx")]
     if let Container::Appx(appx) = &container
         && appx.is_bundle()
     {
@@ -78,6 +81,7 @@ fn verify_signature(
             ErrorCode::InvalidSignature,
             Stage::Cms,
         )?;
+        #[cfg(feature = "appx")]
         if let Some(report) = appx_report.as_ref() {
             tagged(
                 crate::appx::publisher(report, signer.cert),

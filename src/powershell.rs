@@ -4,6 +4,9 @@ use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::powershell::Powershell;
 #[cfg(test)]
 use crate::parse::powershell::{MAX_SIGNATURE_TEXT, PREFIX, SUFFIX};
+use alloc::vec::Vec;
+#[cfg(test)]
+use alloc::{format, string::ToString};
 #[cfg(test)]
 use std::path::Path;
 #[cfg(test)]

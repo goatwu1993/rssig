@@ -1,5 +1,6 @@
 //! RustCrypto implementations used by both CMS and webpki path/CRL validation.
 use crate::domain::{ErrorCode, Stage, VerificationError, hex};
+use alloc::{boxed::Box, string::ToString, vec::Vec};
 use anyhow::Result;
 use rsa::pkcs8::DecodePublicKey;
 use rustls_pki_types::{AlgorithmIdentifier, InvalidSignature, SignatureVerificationAlgorithm};
@@ -65,7 +66,7 @@ pub(crate) fn verify_spki(
             )
             .into());
         }
-        let key = rsa::RsaPublicKey::from_public_key_der(spki)?;
+        let key = rsa::RsaPublicKey::from_public_key_der(spki).map_err(crate::compat_error)?;
         use rsa::traits::PublicKeyParts;
         if key.n().bits() < 2048 {
             return Err(VerificationError::new(
@@ -77,25 +78,37 @@ pub(crate) fn verify_spki(
             .detail("minimum_key_bits", 2048)
             .into());
         }
-        let sig = rsa::pkcs1v15::Signature::try_from(sig)?;
+        let sig = rsa::pkcs1v15::Signature::try_from(sig).map_err(crate::compat_error)?;
         match hash {
-            Hash::Sha1 => rsa::pkcs1v15::VerifyingKey::<sha1::Sha1>::new(key).verify(msg, &sig)?,
-            Hash::Sha256 => {
-                rsa::pkcs1v15::VerifyingKey::<sha2::Sha256>::new(key).verify(msg, &sig)?
-            }
-            Hash::Sha384 => {
-                rsa::pkcs1v15::VerifyingKey::<sha2::Sha384>::new(key).verify(msg, &sig)?
-            }
-            Hash::Sha512 => {
-                rsa::pkcs1v15::VerifyingKey::<sha2::Sha512>::new(key).verify(msg, &sig)?
-            }
+            Hash::Sha1 => rsa::pkcs1v15::VerifyingKey::<sha1::Sha1>::new(key)
+                .verify(msg, &sig)
+                .map_err(crate::compat_error)?,
+            Hash::Sha256 => rsa::pkcs1v15::VerifyingKey::<sha2::Sha256>::new(key)
+                .verify(msg, &sig)
+                .map_err(crate::compat_error)?,
+            Hash::Sha384 => rsa::pkcs1v15::VerifyingKey::<sha2::Sha384>::new(key)
+                .verify(msg, &sig)
+                .map_err(crate::compat_error)?,
+            Hash::Sha512 => rsa::pkcs1v15::VerifyingKey::<sha2::Sha512>::new(key)
+                .verify(msg, &sig)
+                .map_err(crate::compat_error)?,
         }
     } else if algorithm == [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 2] && hash == Hash::Sha256 {
-        p256::ecdsa::VerifyingKey::from_public_key_der(spki)?
-            .verify(msg, &p256::ecdsa::Signature::from_der(sig)?)?;
+        p256::ecdsa::VerifyingKey::from_public_key_der(spki)
+            .map_err(crate::compat_error)?
+            .verify(
+                msg,
+                &p256::ecdsa::Signature::from_der(sig).map_err(crate::compat_error)?,
+            )
+            .map_err(crate::compat_error)?;
     } else if algorithm == [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 3] && hash == Hash::Sha384 {
-        p384::ecdsa::VerifyingKey::from_public_key_der(spki)?
-            .verify(msg, &p384::ecdsa::Signature::from_der(sig)?)?;
+        p384::ecdsa::VerifyingKey::from_public_key_der(spki)
+            .map_err(crate::compat_error)?
+            .verify(
+                msg,
+                &p384::ecdsa::Signature::from_der(sig).map_err(crate::compat_error)?,
+            )
+            .map_err(crate::compat_error)?;
     } else {
         return Err(unsupported_algorithm(algorithm, "unsupported signature algorithm").into());
     }
@@ -132,7 +145,7 @@ impl SignatureVerificationAlgorithm for RustCryptoAlgorithm {
         key: &[u8],
         msg: &[u8],
         sig: &[u8],
-    ) -> std::result::Result<(), InvalidSignature> {
+    ) -> core::result::Result<(), InvalidSignature> {
         let result = match self.kind {
             0 => {
                 use rsa::pkcs1::DecodeRsaPublicKey;

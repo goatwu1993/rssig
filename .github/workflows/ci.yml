@@ -65,6 +65,10 @@ jobs:
         run: cargo clippy --locked --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
       - name: Check the optional XML adapter without std
         run: cargo clippy --locked --lib --no-default-features --features xml --target thumbv7em-none-eabi -- -D warnings
+      - name: Check the shared verifier without std or dev-dependency feature unification
+        run: cargo clippy --locked --lib --no-default-features --features verify-core --target thumbv7em-none-eabi -- -D warnings
+      - name: Test shared verification with explicit roots and CRLs
+        run: cargo test --locked --no-default-features --features verify-core
       - name: Test parser-only builds
         run: |
           cargo test --locked --no-default-features

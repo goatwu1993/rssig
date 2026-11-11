@@ -1,3 +1,4 @@
+use alloc::{string::ToString, vec, vec::Vec};
 mod error;
 use crate::crypto::ALGORITHMS;
 use crate::domain::{
@@ -6,10 +7,10 @@ use crate::domain::{
 };
 use ::der::{Decode, Encode};
 use anyhow::{Context, Result, ensure};
+use core::time::Duration;
 use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorKind};
 use rustls_pki_types::{CertificateDer, UnixTime};
-use std::time::Duration;
 use x509_cert::{Certificate, crl::CertificateList};
 
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
@@ -23,18 +24,18 @@ pub struct TrustStore {
 
 impl TrustStore {
     /// Typed counterpart to `add_roots`; loading does not validate trust policy.
-    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> std::result::Result<(), TrustLoadError> {
+    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {
         self.add_roots(bytes)
             .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Roots, inner))
     }
     /// Typed counterpart to `add_crl`; loading never authenticates a CRL.
-    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> std::result::Result<(), TrustLoadError> {
+    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {
         self.add_crl(bytes)
             .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Crl, inner))
     }
     /// Typed counterpart to native root enumeration, with identical partial-load policy.
     #[cfg(feature = "system-roots")]
-    pub fn from_system_typed() -> std::result::Result<Self, TrustLoadError> {
+    pub fn from_system_typed() -> core::result::Result<Self, TrustLoadError> {
         Self::from_system()
             .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::SystemRoots, inner))
     }
@@ -56,11 +57,13 @@ impl TrustStore {
     /// Add explicit DER or PEM roots. They are trust anchors, not intermediates.
     pub fn add_roots(&mut self, bytes: &[u8]) -> Result<()> {
         if bytes.starts_with(b"-----BEGIN") {
-            for cert in Certificate::load_pem_chain(bytes)? {
-                self.roots.push(CertificateDer::from(cert.to_der()?));
+            for cert in Certificate::load_pem_chain(bytes).map_err(crate::compat_error)? {
+                self.roots.push(CertificateDer::from(
+                    cert.to_der().map_err(crate::compat_error)?,
+                ));
             }
         } else {
-            Certificate::from_der(bytes)?;
+            Certificate::from_der(bytes).map_err(crate::compat_error)?;
             self.roots.push(CertificateDer::from(bytes.to_vec()));
         }
         Ok(())
@@ -70,11 +73,11 @@ impl TrustStore {
             let (label, decoded) = ::der::pem::decode_vec(bytes)
                 .map_err(|e| anyhow::anyhow!("invalid CRL PEM: {e}"))?;
             ensure!(label == "X509 CRL", "expected X509 CRL PEM label");
-            CertificateList::from_der(&decoded)?
+            CertificateList::from_der(&decoded).map_err(crate::compat_error)?
         } else {
-            CertificateList::from_der(bytes)?
+            CertificateList::from_der(bytes).map_err(crate::compat_error)?
         };
-        self.crls.push(crl.to_der()?);
+        self.crls.push(crl.to_der().map_err(crate::compat_error)?);
         Ok(())
     }
     pub(crate) fn verify(
@@ -97,7 +100,10 @@ impl TrustStore {
         // KeyUsage digitalSignature is not enforced by webpki's TLS-oriented
         // leaf processing, so enforce it explicitly for CMS signers.
         use x509_cert::ext::pkix::{ExtendedKeyUsage, KeyUsage};
-        if let Some((_, ku)) = leaf.tbs_certificate.get::<KeyUsage>()?
+        if let Some((_, ku)) = leaf
+            .tbs_certificate
+            .get::<KeyUsage>()
+            .map_err(crate::compat_error)?
             && !ku.digital_signature()
         {
             return Err(VerificationError::new(
@@ -109,16 +115,17 @@ impl TrustStore {
             .into());
         }
         if eku == TIME_STAMPING {
-            let (critical, usage) =
-                leaf.tbs_certificate
-                    .get::<ExtendedKeyUsage>()?
-                    .ok_or_else(|| {
-                        VerificationError::new(
-                            ErrorCode::InvalidEku,
-                            Stage::Timestamp,
-                            "TSA certificate needs timeStamping EKU",
-                        )
-                    })?;
+            let (critical, usage) = leaf
+                .tbs_certificate
+                .get::<ExtendedKeyUsage>()
+                .map_err(crate::compat_error)?
+                .ok_or_else(|| {
+                    VerificationError::new(
+                        ErrorCode::InvalidEku,
+                        Stage::Timestamp,
+                        "TSA certificate needs timeStamping EKU",
+                    )
+                })?;
             if !(critical && usage.0.len() == 1 && usage.0[0].as_bytes() == TIME_STAMPING) {
                 return Err(VerificationError::new(
                     ErrorCode::InvalidEku,
@@ -131,7 +138,8 @@ impl TrustStore {
         } else {
             let (_, usage) = leaf
                 .tbs_certificate
-                .get::<ExtendedKeyUsage>()?
+                .get::<ExtendedKeyUsage>()
+                .map_err(crate::compat_error)?
                 .ok_or_else(|| {
                     VerificationError::new(
                         ErrorCode::InvalidEku,
@@ -150,7 +158,7 @@ impl TrustStore {
             }
         }
         let leaf_report = CertificateReport::parse(leaf)?;
-        let leaf = CertificateDer::from(leaf.to_der()?);
+        let leaf = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
         let leaf = webpki::EndEntityCert::try_from(&leaf)
             .map_err(|e| anyhow::anyhow!("invalid signer certificate: {e:?}"))?;
         let roots: Vec<_> = self
@@ -162,14 +170,15 @@ impl TrustStore {
         let intermediates: Vec<_> = certificates
             .iter()
             .map(|c| c.to_der().map(CertificateDer::from))
-            .collect::<std::result::Result<_, _>>()?;
+            .collect::<core::result::Result<_, _>>()
+            .map_err(crate::compat_error)?;
         let mut parsed_crls = Vec::new();
         if revocation {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
             }
             for bytes in &self.crls {
-                let crl = CertificateList::from_der(bytes)?;
+                let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
                 let tbs = crl.tbs_cert_list;
                 if tbs.this_update.to_unix_duration().as_secs() > now {
                     return Err(VerificationError::new(
@@ -217,7 +226,7 @@ impl TrustStore {
         } else {
             None
         };
-        let invalid_ca_usage = std::cell::Cell::new(false);
+        let invalid_ca_usage = core::cell::Cell::new(false);
         let check_ca_usage = |path: &webpki::VerifiedPath<'_>| {
             for intermediate in path.intermediate_certificates() {
                 let cert = Certificate::from_der(intermediate.der().as_ref())
@@ -266,24 +275,26 @@ impl TrustStore {
             })?;
         let mut chain = vec![leaf_report];
         for intermediate in path.intermediate_certificates() {
-            chain.push(CertificateReport::parse(&Certificate::from_der(
-                intermediate.der().as_ref(),
-            )?)?);
+            chain.push(CertificateReport::parse(
+                &Certificate::from_der(intermediate.der().as_ref()).map_err(crate::compat_error)?,
+            )?);
         }
         for root in &self.roots {
             if let Ok(anchor) = webpki::anchor_from_trusted_cert(root)
                 && anchor.subject == path.anchor().subject
                 && anchor.subject_public_key_info == path.anchor().subject_public_key_info
             {
-                chain.push(CertificateReport::parse(&Certificate::from_der(
-                    root.as_ref(),
-                )?)?);
+                chain.push(CertificateReport::parse(
+                    &Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?,
+                )?);
                 break;
             }
         }
         Ok(TrustReport {
             validation_time: at,
-            required_eku: OidReport::new(::der::asn1::ObjectIdentifier::from_bytes(eku)?),
+            required_eku: OidReport::new(
+                ::der::asn1::ObjectIdentifier::from_bytes(eku).map_err(crate::compat_error)?,
+            ),
             chain,
             revocation: RevocationReport {
                 status: if revocation_enabled {

@@ -629,7 +629,7 @@ impl<'a> Appx<'a> {
         Ok(())
     }
 
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn payload_parts<'p>(
         &'p self,
         packages: &[BundlePackage<'_>],
@@ -755,7 +755,7 @@ impl<'doc, 'xml> BlockMapFile<'doc, 'xml> {
                 .collect()
         }))
     }
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn check_part(&self, e: &zip::Entry<'_>) -> Result<Vec<BlockMapBlock<'doc, 'xml>>> {
         self.header()?;
         let name = attr(self.node, "Name")?;
@@ -815,7 +815,7 @@ impl BlockMapBlock<'_, '_> {
                 .transpose()
         })())
     }
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn check_compression(&self, method: u16) -> Result<Option<usize>> {
         if method == 0 {
             ensure!(
@@ -831,7 +831,7 @@ impl BlockMapBlock<'_, '_> {
     }
 }
 
-#[cfg(feature = "verify")]
+#[cfg(feature = "verify-core")]
 pub(crate) fn check_compressed_blocks(e: &zip::Entry<'_>, sizes: &[usize]) -> Result<()> {
     compressed_blocks(e, sizes)
 }

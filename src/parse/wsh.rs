@@ -27,7 +27,7 @@ impl Kind {
             Self::Wsf => ("<signature>", "</signature>", "** SIG ** "),
         }
     }
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn format(self) -> &'static str {
         match self {
             Self::VbScript => "vbscript_authenticode",
@@ -35,7 +35,7 @@ impl Kind {
             Self::Wsf => "wsf_authenticode",
         }
     }
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn uuid(self) -> [u8; 16] {
         match self {
             Self::VbScript => [

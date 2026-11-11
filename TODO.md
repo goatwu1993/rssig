@@ -243,12 +243,17 @@ timestamps, and local CRL validation already exist.
   bare-metal minimal/XML Clippy pass on macOS. Dependencies are unchanged;
   normal default/parser graphs retain the pure-Rust crypto boundary. Linux
   runtime validation remains for CI. See [library notes](docs/library.md#ownership-reuse-and-api-stability-lib-08).
-- [ ] **LIB-09: Evaluate a `no_std` shared verification core.** Inventory actual
-  `std` dependencies in crypto, trust, timestamps, reports, and format dispatch.
-  Move CLI paths/I/O/clocks outside the candidate core and audit RustCrypto/webpki
-  `alloc` features. Demonstrate the supported verification scope on a target
-  without `std`; keep CFB/AppX adapters separately gated where necessary. Do not
-  label parser-only support as full `no_std` verification.
+- [x] **LIB-09: Evaluate a `no_std` shared verification core.** Added additive
+  `verify-core` with alloc-only RustCrypto/webpki, CMS/trust/CRLs, timestamps,
+  reports and PE/CAB/NAVX/script/RDP dispatch. Existing `verify` keeps MSI/AppX
+  and std; those adapters remain separately gated. CLI path handling stays in
+  the CLI. Reused committed good/bad fixtures, added a portable policy case,
+  named CLI check and core tests. Focused test first failed on the absent feature.
+  Bare-metal Clippy and host core tests exercise more than parser-only support;
+  full locked tests (706 spec cases), fmt and all-target Clippy pass on macOS.
+  Linux execution remains in CI; no device execution or Windows policy
+  equivalence is claimed. See
+  [inventory and limits](docs/library.md#shared-verification-without-std-lib-09).
 - [ ] **LIB-10: Reassess shared interfaces and crate extraction after reuse.**
   Use PE/CAB/NAVX and subsequent consumers to identify necessary abstractions.
   Evaluate separate parser/verifier/CLI crates against feature isolation, public

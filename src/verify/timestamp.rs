@@ -7,6 +7,9 @@ use crate::{
     domain::*,
     trust,
 };
+#[cfg(test)]
+use alloc::{format, vec};
+use alloc::{string::String, vec::Vec};
 use anyhow::{Context, Result, ensure};
 
 pub(crate) fn verify_timestamp(

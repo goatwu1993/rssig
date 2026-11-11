@@ -2,6 +2,7 @@
 use crate::crypto::Hash;
 pub(crate) use crate::parse::Cab;
 pub(crate) use crate::parse::cab::MAGIC;
+use alloc::vec::Vec;
 
 impl Cab<'_> {
     pub(crate) fn digest(&self, hash: Hash) -> Vec<u8> {

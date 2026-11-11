@@ -1,6 +1,7 @@
 //! Verify every embedded bundle package and bind its identity and signer.
 use super::{VerifyOptions, tagged, verify_inner};
 use crate::{appx::Appx, domain::*, format::Format};
+use alloc::{boxed::Box, vec::Vec};
 use anyhow::{Context, Result};
 
 pub(super) fn verify_bundle(

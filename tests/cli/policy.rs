@@ -30,3 +30,16 @@ fn lib08_repeated_verification_has_identical_serialized_evidence() {
         true
     );
 }
+#[test]
+fn lib09_core_policy_matches_cli_serialized_result() {
+    let output = run_fixture("good-pe64.exe", TRUSTED);
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["chain_trusted"],
+        true
+    );
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["revocation_checked"],
+        true
+    );
+}

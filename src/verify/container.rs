@@ -1,19 +1,27 @@
 //! Supported Authenticode containers and their embedded CMS framing rules.
+#[cfg(feature = "appx")]
+use crate::appx::Appx;
+#[cfg(feature = "msi")]
+use crate::msi::Msi;
+
 use super::tagged;
 use crate::{
-    appx::Appx, cab::Cab, der, domain::*, format::Format, msi::Msi, navx::Navx, pe::Pe,
-    powershell::Powershell, wsh::Wsh,
+    cab::Cab, der, domain::*, format::Format, navx::Navx, pe::Pe, powershell::Powershell, wsh::Wsh,
 };
+use alloc::borrow::Cow;
+use alloc::{vec, vec::Vec};
 use anyhow::Result;
-use std::borrow::Cow;
 
 pub(super) enum Container<'a, 'p> {
-    Pe(Pe<'a>),
+    // Carry the verification borrow lifetime even without package adapters.
+    Pe(Pe<'a>, core::marker::PhantomData<&'p ()>),
+    #[cfg(feature = "appx")]
     Appx(&'p Appx<'a>),
     Cab(Cab<'a>),
     Navx(Navx<'a>),
     Powershell(Powershell<'a>),
     Wsh(Wsh<'a>),
+    #[cfg(feature = "msi")]
     Msi(&'p mut Msi<'a>),
 }
 
@@ -23,7 +31,7 @@ where
 {
     pub(super) fn signatures(&self) -> Result<Vec<Cow<'p, [u8]>>> {
         Ok(match self {
-            Container::Pe(pe) => tagged(
+            Container::Pe(pe, _) => tagged(
                 pe.certificates(),
                 ErrorCode::InvalidCertificateTable,
                 Stage::CertificateTable,
@@ -31,7 +39,9 @@ where
             .into_iter()
             .map(Cow::Borrowed)
             .collect(),
+            #[cfg(feature = "msi")]
             Container::Msi(msi) => vec![Cow::Owned(msi.signature().to_vec())],
+            #[cfg(feature = "appx")]
             Container::Appx(appx) => vec![Cow::Borrowed(appx.signature())],
             Container::Navx(navx) => vec![Cow::Borrowed(navx.signature())],
             Container::Cab(cab) => vec![Cow::Borrowed(cab.signature())],
@@ -88,7 +98,7 @@ pub(super) fn cms_der(certificate: &[u8], format: Format) -> Result<&[u8]> {
     Ok(node.full)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "appx"))]
 mod borrowing_tests {
     use super::*;
 
@@ -102,7 +112,11 @@ mod borrowing_tests {
         let navx_pointer = navx.signature().as_ptr();
         let pe_pointer = pe.certificates().unwrap()[0].as_ptr();
         for (name, container, expected) in [
-            ("pe", Container::Pe(pe), Some(pe_pointer)),
+            (
+                "pe",
+                Container::Pe(pe, core::marker::PhantomData),
+                Some(pe_pointer),
+            ),
             ("cab", Container::Cab(cab), Some(cab_pointer)),
             ("navx", Container::Navx(navx), Some(navx_pointer)),
             (

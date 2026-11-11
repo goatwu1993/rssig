@@ -1,6 +1,9 @@
 //! Bind Authenticode content to container bytes before authenticating signers.
 use super::{container::Container, tagged};
 use crate::{cms::SignedData, crypto::Hash, domain::*};
+#[cfg(feature = "appx")]
+use alloc::vec::Vec;
+use alloc::{boxed::Box, format};
 use anyhow::Result;
 
 pub(super) struct Integrity {
@@ -18,10 +21,16 @@ pub(super) fn verify(
     sd: &SignedData<'_>,
     allow_sha1: bool,
 ) -> Result<Integrity> {
+    #[cfg(not(feature = "msi"))]
+    let is_msi = false;
+    #[cfg(feature = "msi")]
     let is_msi = matches!(container, Container::Msi(_));
     let is_navx = matches!(container, Container::Navx(_));
     let is_cab = matches!(container, Container::Cab(_));
     let is_script = matches!(container, Container::Powershell(_) | Container::Wsh(_));
+    #[cfg(not(feature = "appx"))]
+    let is_appx = false;
+    #[cfg(feature = "appx")]
     let is_appx = matches!(container, Container::Appx(_));
     let is_package = is_msi || is_cab || is_appx || is_navx;
     let stage = if is_script {
@@ -31,11 +40,13 @@ pub(super) fn verify(
     } else {
         Stage::ImageDigest
     };
-    let (hash, expected, appx_kind) = if let Container::Appx(appx) = container {
-        let (hash, expected, signed_bundle) =
-            tagged(sd.appx_digest(), ErrorCode::MalformedCms, Stage::Cms)?;
-        (hash, expected, Some((signed_bundle, appx.is_bundle())))
-    } else {
+    let mut digest = || -> Result<_> {
+        #[cfg(feature = "appx")]
+        if let Container::Appx(appx) = container {
+            let (hash, expected, signed_bundle) =
+                tagged(sd.appx_digest(), ErrorCode::MalformedCms, Stage::Cms)?;
+            return Ok((hash, expected, Some((signed_bundle, appx.is_bundle()))));
+        }
         let (hash, expected) = tagged(
             if let Container::Wsh(script) = container {
                 sd.wsh_digest(script.kind)
@@ -53,8 +64,9 @@ pub(super) fn verify(
             ErrorCode::MalformedCms,
             Stage::Cms,
         )?;
-        (hash, expected, None)
+        Ok((hash, expected, None::<(bool, bool)>))
     };
+    let (hash, expected, appx_kind) = digest()?;
     if let Some((signed_bundle, package_is_bundle)) = appx_kind
         && signed_bundle != package_is_bundle
     {
@@ -73,10 +85,13 @@ pub(super) fn verify(
         )
         .into());
     }
+    #[cfg(feature = "appx")]
     let mut components = Vec::new();
     let (computed, extended_digest) = match container {
-        Container::Pe(pe) => (pe.digest(hash)?, None),
+        Container::Pe(pe, _) => (pe.digest(hash)?, None),
+        #[cfg(feature = "msi")]
         Container::Msi(msi) => crate::msi::digests(msi, hash)?,
+        #[cfg(feature = "appx")]
         Container::Appx(appx) => {
             let (computed, evidence) = tagged(
                 crate::appx::digests(appx, hash),
@@ -97,6 +112,7 @@ pub(super) fn verify(
         computed: hex(&computed),
     };
     if computed != expected {
+        #[cfg(feature = "appx")]
         if is_appx {
             return Err(crate::appx::mismatch(expected, &computed, hash).into());
         }
@@ -128,6 +144,9 @@ pub(super) fn verify(
         .detail("digest", &image_digest)
         .into());
     }
+    #[cfg(not(feature = "appx"))]
+    let appx = None;
+    #[cfg(feature = "appx")]
     let appx = if let Container::Appx(appx) = container {
         Some(tagged(
             crate::appx::validate(appx, hash, components),
@@ -138,7 +157,7 @@ pub(super) fn verify(
         None
     };
     let mut page_hashes = None;
-    if let Container::Pe(pe) = container
+    if let Container::Pe(pe, _) = container
         && let Some((hash, expected)) =
             tagged(sd.page_hashes(), ErrorCode::MalformedCms, Stage::PageHashes)?
     {

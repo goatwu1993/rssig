@@ -68,7 +68,7 @@ impl<'a> CertificateChoice<'a> {
     pub fn as_der(&self) -> &'a [u8] {
         self.node.full
     }
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn into_x509(self) -> Option<Certificate> {
         self.x509
     }
@@ -91,7 +91,7 @@ pub struct SignedData<'a> {
     der: &'a [u8],
     pub(crate) version: Node<'a>,
     content_type: ObjectIdentifier,
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) content_type_bytes: &'a [u8],
     pub(crate) content: Option<Node<'a>>,
     algorithms: Vec<AlgorithmIdentifier<'a>>,
@@ -100,7 +100,7 @@ pub struct SignedData<'a> {
     signers: Vec<&'a [u8]>,
 }
 impl<'a> SignedData<'a> {
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) fn into_certificate_choices(self) -> Vec<CertificateChoice<'a>> {
         self.certificates
     }
@@ -164,7 +164,7 @@ impl<'a> SignedData<'a> {
             der: bytes,
             version: sd[0],
             content_type,
-            #[cfg(feature = "verify")]
+            #[cfg(feature = "verify-core")]
             content_type_bytes: ci[0].body,
             content,
             algorithms,

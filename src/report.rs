@@ -1,6 +1,13 @@
 //! Convert decoded certificate/CRL metadata into the public JSON domain.
 use crate::{crypto::Hash, domain::*};
 use ::der::{Decode, Encode, Tagged};
+use alloc::{
+    borrow::ToOwned,
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use x509_cert::{Certificate, crl::CertificateList, name::Name};
 
 impl DistinguishedName {
@@ -24,7 +31,9 @@ impl DistinguishedName {
                     | ::der::Tag::PrintableString
                     | ::der::Tag::Ia5String
                     | ::der::Tag::VisibleString
-                    | ::der::Tag::NumericString => std::str::from_utf8(raw).ok().map(str::to_owned),
+                    | ::der::Tag::NumericString => {
+                        core::str::from_utf8(raw).ok().map(str::to_owned)
+                    }
                     ::der::Tag::BmpString if raw.len() % 2 == 0 => String::from_utf16(
                         &raw.as_chunks::<2>()
                             .0
@@ -94,41 +103,46 @@ impl CertificateReport {
     pub(crate) fn parse(cert: &Certificate) -> anyhow::Result<Self> {
         use x509_cert::ext::pkix::{BasicConstraints, ExtendedKeyUsage, KeyUsage};
         let tbs = &cert.tbs_certificate;
-        let der = cert.to_der()?;
+        let der = cert.to_der().map_err(crate::compat_error)?;
         let extended_key_usage = tbs
-            .get::<ExtendedKeyUsage>()?
+            .get::<ExtendedKeyUsage>()
+            .map_err(crate::compat_error)?
             .map(|(critical, eku)| EkuReport {
                 critical,
                 usages: eku.0.iter().map(OidReport::new).collect(),
             });
-        let key_usage = tbs.get::<KeyUsage>()?.map(|(critical, ku)| {
-            let values = [
-                ("digital_signature", ku.digital_signature()),
-                ("content_commitment", ku.non_repudiation()),
-                ("key_encipherment", ku.key_encipherment()),
-                ("data_encipherment", ku.data_encipherment()),
-                ("key_agreement", ku.key_agreement()),
-                ("key_cert_sign", ku.key_cert_sign()),
-                ("crl_sign", ku.crl_sign()),
-                ("encipher_only", ku.encipher_only()),
-                ("decipher_only", ku.decipher_only()),
-            ];
-            KeyUsageReport {
-                critical,
-                usages: values
-                    .into_iter()
-                    .filter(|(_, enabled)| *enabled)
-                    .map(|(name, _)| name.to_owned())
-                    .collect(),
-            }
-        });
-        let basic_constraints =
-            tbs.get::<BasicConstraints>()?
-                .map(|(critical, bc)| BasicConstraintsReport {
-                    critical,
-                    ca: bc.ca,
-                    path_length: bc.path_len_constraint,
+        let key_usage =
+            tbs.get::<KeyUsage>()
+                .map_err(crate::compat_error)?
+                .map(|(critical, ku)| {
+                    let values = [
+                        ("digital_signature", ku.digital_signature()),
+                        ("content_commitment", ku.non_repudiation()),
+                        ("key_encipherment", ku.key_encipherment()),
+                        ("data_encipherment", ku.data_encipherment()),
+                        ("key_agreement", ku.key_agreement()),
+                        ("key_cert_sign", ku.key_cert_sign()),
+                        ("crl_sign", ku.crl_sign()),
+                        ("encipher_only", ku.encipher_only()),
+                        ("decipher_only", ku.decipher_only()),
+                    ];
+                    KeyUsageReport {
+                        critical,
+                        usages: values
+                            .into_iter()
+                            .filter(|(_, enabled)| *enabled)
+                            .map(|(name, _)| name.to_owned())
+                            .collect(),
+                    }
                 });
+        let basic_constraints = tbs
+            .get::<BasicConstraints>()
+            .map_err(crate::compat_error)?
+            .map(|(critical, bc)| BasicConstraintsReport {
+                critical,
+                ca: bc.ca,
+                path_length: bc.path_len_constraint,
+            });
         Ok(Self {
             sha256: hex(&Hash::Sha256.digest(&der)),
             der_hex: hex(&der),
@@ -159,7 +173,7 @@ fn extensions(ext: &[x509_cert::ext::Extension]) -> Vec<ExtensionReport> {
 
 impl CrlReport {
     pub(crate) fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let crl = CertificateList::from_der(bytes)?;
+        let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
         let tbs = crl.tbs_cert_list;
         Ok(Self {
             sha256: hex(&Hash::Sha256.digest(bytes)),

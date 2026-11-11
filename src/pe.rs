@@ -1,6 +1,7 @@
 //! Hashing lives on the verification side of the PE parsing boundary.
 use crate::crypto::Hash;
 pub(crate) use crate::parse::Pe;
+use alloc::{vec, vec::Vec};
 use anyhow::{Result, ensure};
 
 // Adapt the verifier's runtime-selected RustCrypto hasher to the public sink.
