@@ -254,11 +254,14 @@ timestamps, and local CRL validation already exist.
   Linux execution remains in CI; no device execution or Windows policy
   equivalence is claimed. See
   [inventory and limits](docs/library.md#shared-verification-without-std-lib-09).
-- [ ] **LIB-10: Reassess shared interfaces and crate extraction after reuse.**
-  Use PE/CAB/NAVX and subsequent consumers to identify necessary abstractions.
-  Evaluate separate parser/verifier/CLI crates against feature isolation, public
-  API clarity, packaging, and maintenance cost. Preserve the facade and document
-  migration; splitting crates is not a prerequisite for current `no_std` support.
+- [x] **LIB-10: Reassess shared interfaces and crate extraction after reuse.**
+  Reviewed PE/CAB/NAVX, CMS, scripts, RDP and host adapter consumers. Retained
+  concrete parser APIs, RustCrypto sinks, private container dispatch and the
+  feature-separated package/facade. Documented parser/verifier/CLI and per-format
+  crate alternatives, additive feature limits, extraction coupling, packaging,
+  reconsideration triggers and future source-compatible migration requirements.
+  No runtime or public API changes. See the
+  [architecture decision](docs/library-architecture.md).
 
 ## P1 — Tests, portable specification, and engineering checks
 
