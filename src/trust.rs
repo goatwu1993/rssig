@@ -7,6 +7,7 @@ use crate::domain::{
 use ::der::{Decode, Encode};
 use anyhow::{Context, Result, ensure};
 use error::webpki_error;
+pub use error::{TrustLoadError, TrustLoadErrorKind};
 use rustls_pki_types::{CertificateDer, UnixTime};
 use std::time::Duration;
 use x509_cert::{Certificate, crl::CertificateList};
@@ -21,6 +22,23 @@ pub struct TrustStore {
 }
 
 impl TrustStore {
+    /// Typed counterpart to `add_roots`; loading does not validate trust policy.
+    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> std::result::Result<(), TrustLoadError> {
+        self.add_roots(bytes)
+            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Roots, inner))
+    }
+    /// Typed counterpart to `add_crl`; loading never authenticates a CRL.
+    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> std::result::Result<(), TrustLoadError> {
+        self.add_crl(bytes)
+            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Crl, inner))
+    }
+    /// Typed counterpart to native root enumeration, with identical partial-load policy.
+    #[cfg(feature = "system-roots")]
+    pub fn from_system_typed() -> std::result::Result<Self, TrustLoadError> {
+        Self::from_system()
+            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::SystemRoots, inner))
+    }
+
     /// Load the platform root store only. No native signature or chain APIs are called.
     #[cfg(feature = "system-roots")]
     pub fn from_system() -> Result<Self> {

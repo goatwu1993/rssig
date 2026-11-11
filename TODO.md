@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is borrowing, errors, and public API stability
-(LIB-08).** Confirmed correctness regressions take priority over planned
+baseline. **The next scoped implementation is evaluating a `no_std` shared verification
+core (LIB-09).** Confirmed correctness regressions take priority over planned
 refactoring. New algorithms, formats, and network access require their own
 evidence and policy decisions; this list does not promise every Windows behavior.
 
@@ -226,11 +226,23 @@ timestamps, and local CRL validation already exist.
   cases), formatting, all-target Clippy, verifier-only policy tests and bare-metal
   parser Clippy pass on macOS. Dependencies are unchanged; Linux execution remains
   in CI. See docs/library.md.
-- [ ] **LIB-08: Audit borrowing, errors, and public API stability.** Document
-  ownership and repeated-verification behavior; remove avoidable signature and
-  certificate copies with measurements and preserved validation order. Keep
-  parser errors independent of Serde/verification, specify stable kinds, and
-  evaluate typed root/CRL loading errors. Add migration notes for API changes.
+- [x] **LIB-08: Audit borrowing, errors, and public API stability.** Documented
+  ownership, consuming/reusable parsed entry points, repeated verification after
+  policy failures, stable parser error kinds, and source-compatible migration.
+  The dispatcher borrows PE/CAB/NAVX/AppX CMS buffers; measured signature payload
+  copying drops from 1142/1136/1169/1293 bytes to zero on committed good fixtures.
+  CMS adapters move decoded certificate storage and signers borrow selected
+  certificates, guarded by pointer-identity tests. Added optional typed root/CRL/
+  native-root loading methods without changing legacy signatures or policy;
+  remaining copies and loading-policy limits are explicit in docs/library.md.
+  Reused committed fixtures/provenance, added a repeated-file portable case and
+  named CLI/domain checks. Signer borrowing first failed its pointer assertion;
+  loader API tests first failed on missing exports. All 704 prior complete
+  specification reports compare exactly equal (705 cases now). Full locked
+  tests, fmt, all-target Clippy, minimal/xml/std/msi/appx/verify/cli tests and
+  bare-metal minimal/XML Clippy pass on macOS. Dependencies are unchanged;
+  normal default/parser graphs retain the pure-Rust crypto boundary. Linux
+  runtime validation remains for CI. See [library notes](docs/library.md#ownership-reuse-and-api-stability-lib-08).
 - [ ] **LIB-09: Evaluate a `no_std` shared verification core.** Inventory actual
   `std` dependencies in crypto, trust, timestamps, reports, and format dispatch.
   Move CLI paths/I/O/clocks outside the candidate core and audit RustCrypto/webpki

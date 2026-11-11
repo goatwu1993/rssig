@@ -68,6 +68,11 @@ impl<'a> CertificateChoice<'a> {
     pub fn as_der(&self) -> &'a [u8] {
         self.node.full
     }
+    #[cfg(feature = "verify")]
+    pub(crate) fn into_x509(self) -> Option<Certificate> {
+        self.x509
+    }
+
     pub fn x509(&self) -> Option<&Certificate> {
         self.x509.as_ref()
     }
@@ -95,6 +100,11 @@ pub struct SignedData<'a> {
     signers: Vec<&'a [u8]>,
 }
 impl<'a> SignedData<'a> {
+    #[cfg(feature = "verify")]
+    pub(crate) fn into_certificate_choices(self) -> Vec<CertificateChoice<'a>> {
+        self.certificates
+    }
+
     pub fn parse(bytes: &'a [u8]) -> core::result::Result<Self, Error> {
         Self::parse_inner(bytes).map_err(|e| Error::new(ErrorKind::MalformedCms, e))
     }

@@ -28,9 +28,9 @@ pub(crate) struct SignedData<'a> {
     pub signers: Vec<Node<'a>>,
     digest_algorithms: Vec<Hash>,
 }
-pub(crate) struct Signer<'a> {
+pub(crate) struct Signer<'a, 'c> {
     pub hash: Hash,
-    pub cert: Certificate,
+    pub cert: &'c Certificate,
     pub signature: &'a [u8],
     pub unsigned: Vec<(Vec<u8>, Vec<Node<'a>>)>,
     pub signed: Vec<(Vec<u8>, Vec<Node<'a>>)>,
@@ -65,22 +65,23 @@ impl<'a> SignedData<'a> {
             content = der::one(content.body, 0x30)?;
         }
         ensure!(!parsed.signer_infos().is_empty(), "invalid signer count");
-        let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
+        let signers = parsed
+            .signer_infos()
+            .iter()
+            .map(|bytes| der::one(bytes, 0x30))
+            .collect::<Result<_>>()?;
+        let (certs, unverified_certificate_choices) = certificate_candidates(parsed);
         Ok(Self {
             content,
             content_type,
             certs,
             unverified_certificate_choices,
-            signers: parsed
-                .signer_infos()
-                .iter()
-                .map(|bytes| der::one(bytes, 0x30))
-                .collect::<Result<_>>()?,
+            signers,
             digest_algorithms,
         })
     }
 
-    pub fn verify(&self, signer: Node<'a>, allow_sha1: bool) -> Result<Signer<'a>> {
+    pub fn verify(&self, signer: Node<'a>, allow_sha1: bool) -> Result<Signer<'a, '_>> {
         // Authenticode hashes the contents of the sequence, RFC 3161 hashes its full encoding.
         let content = if self.content_type == INDIRECT {
             self.content.body
@@ -96,7 +97,7 @@ impl<'a> SignedData<'a> {
         content: &[u8],
         content_type: Option<&[u8]>,
         allow_sha1: bool,
-    ) -> Result<Signer<'a>> {
+    ) -> Result<Signer<'a, '_>> {
         verify_signer_inner(
             &self.certs,
             &self.digest_algorithms,
@@ -395,15 +396,15 @@ pub(crate) fn attribute<'a>(attrs: &Attributes<'a>, oid: &[u8]) -> Result<Option
     }
 }
 
-fn verify_signer_inner<'a>(
-    certificates: &[Certificate],
+fn verify_signer_inner<'a, 'c>(
+    certificates: &'c [Certificate],
     digest_algorithms: &[Hash],
     signer: Node<'a>,
     content: &[u8],
     content_type: Option<&[u8]>,
     allow_sha1: bool,
     allow_bare: bool,
-) -> Result<Signer<'a>> {
+) -> Result<Signer<'a, 'c>> {
     let si = crate::parse::signer::signer_fields(signer)?;
     let has_attributes = si.get(3).is_some_and(|n| n.tag == 0xa0);
     ensure!(
@@ -445,8 +446,7 @@ fn verify_signer_inner<'a>(
             cert.tbs_certificate.issuer.to_der().ok().as_deref() == Some(sid[0].full)
                 && cert.tbs_certificate.serial_number.to_der().ok().as_deref() == Some(sid[1].full)
         })
-        .context("signer certificate missing")?
-        .clone();
+        .context("signer certificate missing")?;
     let signed = if has_attributes {
         attributes(si[3].expect(0xa0)?)?
     } else {
@@ -511,12 +511,12 @@ fn verify_signer_inner<'a>(
     })
 }
 
-pub(crate) fn verify_countersigner<'a>(
-    certificates: &[Certificate],
+pub(crate) fn verify_countersigner<'a, 'c>(
+    certificates: &'c [Certificate],
     signer: Node<'a>,
     content: &[u8],
     allow_sha1: bool,
-) -> Result<Signer<'a>> {
+) -> Result<Signer<'a, 'c>> {
     verify_signer_inner(certificates, &[], signer, content, None, allow_sha1, false)
 }
 
@@ -552,20 +552,26 @@ impl<'a> DetachedData<'a> {
             !parsed.signer_infos().is_empty(),
             "invalid detached signer count"
         );
-        let (certs, unverified_certificate_choices) = certificate_candidates(&parsed);
+        let signers = parsed
+            .signer_infos()
+            .iter()
+            .map(|bytes| der::one(bytes, 0x30))
+            .collect::<Result<_>>()?;
+        let (certs, unverified_certificate_choices) = certificate_candidates(parsed);
         Ok(Self {
             certs,
             unverified_certificate_choices,
-            signers: parsed
-                .signer_infos()
-                .iter()
-                .map(|bytes| der::one(bytes, 0x30))
-                .collect::<Result<_>>()?,
+            signers,
             digest_algorithms,
         })
     }
 
-    pub fn verify(&self, signer: Node<'a>, content: &[u8], allow_sha1: bool) -> Result<Signer<'a>> {
+    pub fn verify(
+        &self,
+        signer: Node<'a>,
+        content: &[u8],
+        allow_sha1: bool,
+    ) -> Result<Signer<'a, '_>> {
         verify_signer_inner(
             &self.certs,
             &self.digest_algorithms,
@@ -579,24 +585,65 @@ impl<'a> DetachedData<'a> {
 }
 
 fn certificate_candidates(
-    parsed: &crate::parse::SignedData<'_>,
+    parsed: crate::parse::SignedData<'_>,
 ) -> (
     Vec<Certificate>,
     Vec<crate::domain::UnverifiedCertificateChoice>,
 ) {
-    let certs = parsed
-        .certificate_choices()
-        .iter()
-        .filter_map(|c| c.x509().cloned())
-        .collect();
-    let opaque = parsed
-        .certificate_choices()
-        .iter()
-        .filter(|c| c.x509().is_none())
-        .map(|c| crate::domain::UnverifiedCertificateChoice {
-            tag: c.tag(),
-            der: crate::domain::hex(c.as_der()),
-        })
-        .collect();
+    let mut certs = Vec::new();
+    let mut opaque = Vec::new();
+    for choice in parsed.into_certificate_choices() {
+        let tag = choice.tag();
+        let der = choice.as_der();
+        if let Some(cert) = choice.into_x509() {
+            certs.push(cert);
+        } else {
+            opaque.push(crate::domain::UnverifiedCertificateChoice {
+                tag,
+                der: crate::domain::hex(der),
+            });
+        }
+    }
     (certs, opaque)
+}
+
+#[cfg(test)]
+mod borrowing_tests {
+    use super::*;
+
+    #[test]
+    fn lib08_certificate_candidates_move_decoded_storage() {
+        let pe =
+            crate::parse::Pe::parse(include_bytes!("../tests/fixtures/good-pe64.exe")).unwrap();
+        let mut rest = pe.signatures().unwrap()[0];
+        let bytes = crate::der::take(&mut rest).unwrap().full;
+        let parsed = crate::parse::SignedData::parse(bytes).unwrap();
+        let before: Vec<_> = parsed
+            .certificate_choices()
+            .iter()
+            .filter_map(|c| c.x509())
+            .map(|c| c.tbs_certificate.subject.0.as_ptr())
+            .collect();
+        let (certs, _) = certificate_candidates(parsed);
+        assert!(!certs.is_empty());
+        assert_eq!(
+            before,
+            certs
+                .iter()
+                .map(|c| c.tbs_certificate.subject.0.as_ptr())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn lib08_signer_borrows_selected_certificate() {
+        let bytes = include_bytes!("../tests/fixtures/good-pe64.exe");
+        let pe = crate::parse::Pe::parse(bytes).unwrap();
+        let signatures = pe.signatures().unwrap();
+        let mut rest = signatures[0];
+        let cms = crate::der::take(&mut rest).unwrap().full;
+        let sd = SignedData::parse(cms).unwrap();
+        let signer = sd.verify(sd.signers[0], false).unwrap();
+        assert!(sd.certs.iter().any(|cert| core::ptr::eq(cert, signer.cert)));
+    }
 }

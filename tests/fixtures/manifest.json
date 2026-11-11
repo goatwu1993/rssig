@@ -147,7 +147,8 @@
         "parse-mixed-inputs",
         "lib07-policy-trusted",
         "lib07-policy-no-revocation",
-        "lib07-policy-integrity"
+        "lib07-policy-integrity",
+        "lib08-repeated-verification"
       ]
     },
     {

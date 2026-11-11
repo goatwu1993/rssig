@@ -5,6 +5,7 @@ use crate::{
     powershell::Powershell, wsh::Wsh,
 };
 use anyhow::Result;
+use std::borrow::Cow;
 
 pub(super) enum Container<'a, 'p> {
     Pe(Pe<'a>),
@@ -16,23 +17,26 @@ pub(super) enum Container<'a, 'p> {
     Msi(&'p mut Msi<'a>),
 }
 
-impl Container<'_, '_> {
-    pub(super) fn signatures(&self) -> Result<Vec<Vec<u8>>> {
+impl<'a, 'p> Container<'a, 'p>
+where
+    'a: 'p,
+{
+    pub(super) fn signatures(&self) -> Result<Vec<Cow<'p, [u8]>>> {
         Ok(match self {
             Container::Pe(pe) => tagged(
                 pe.certificates(),
                 ErrorCode::InvalidCertificateTable,
                 Stage::CertificateTable,
             )?
-            .iter()
-            .map(|c| c.to_vec())
+            .into_iter()
+            .map(Cow::Borrowed)
             .collect(),
-            Container::Msi(msi) => vec![msi.signature().to_vec()],
-            Container::Appx(appx) => vec![appx.signature().to_vec()],
-            Container::Navx(navx) => vec![navx.signature().to_vec()],
-            Container::Cab(cab) => vec![cab.signature().to_vec()],
-            Container::Powershell(script) => vec![script.signature().to_vec()],
-            Container::Wsh(script) => vec![script.signature().to_vec()],
+            Container::Msi(msi) => vec![Cow::Owned(msi.signature().to_vec())],
+            Container::Appx(appx) => vec![Cow::Borrowed(appx.signature())],
+            Container::Navx(navx) => vec![Cow::Borrowed(navx.signature())],
+            Container::Cab(cab) => vec![Cow::Borrowed(cab.signature())],
+            Container::Powershell(script) => vec![Cow::Owned(script.signature().to_vec())],
+            Container::Wsh(script) => vec![Cow::Owned(script.signature().to_vec())],
         })
     }
 }
@@ -82,4 +86,43 @@ pub(super) fn cms_der(certificate: &[u8], format: Format) -> Result<&[u8]> {
         .into());
     }
     Ok(node.full)
+}
+
+#[cfg(test)]
+mod borrowing_tests {
+    use super::*;
+
+    #[test]
+    fn lib08_signature_copy_measurements() {
+        let pe = Pe::parse(include_bytes!("../../tests/fixtures/good-pe64.exe")).unwrap();
+        let cab = Cab::parse(include_bytes!("../../tests/fixtures/good.cab")).unwrap();
+        let navx = Navx::parse(include_bytes!("../../tests/fixtures/good.navx")).unwrap();
+        let appx = Appx::parse(include_bytes!("../../tests/fixtures/good.msix")).unwrap();
+        let cab_pointer = cab.signature().as_ptr();
+        let navx_pointer = navx.signature().as_ptr();
+        let pe_pointer = pe.certificates().unwrap()[0].as_ptr();
+        for (name, container, expected) in [
+            ("pe", Container::Pe(pe), Some(pe_pointer)),
+            ("cab", Container::Cab(cab), Some(cab_pointer)),
+            ("navx", Container::Navx(navx), Some(navx_pointer)),
+            (
+                "appx",
+                Container::Appx(&appx),
+                Some(appx.signature().as_ptr()),
+            ),
+        ] {
+            let signatures = container.signatures().unwrap();
+            let previous_copied: usize = signatures.iter().map(|s| s.len()).sum();
+            let copied: usize = signatures
+                .iter()
+                .filter(|s| matches!(s, Cow::Owned(_)))
+                .map(|s| s.len())
+                .sum();
+            assert_eq!(copied, 0);
+            if let Some(expected) = expected {
+                assert_eq!(signatures[0].as_ptr(), expected);
+            }
+            println!("{name}: signature payload bytes copied {previous_copied} -> {copied}");
+        }
+    }
 }

@@ -96,7 +96,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
             Some(at(
                 verify_trust(
                     store,
-                    &signer.cert,
+                    signer.cert,
                     &sd.certs,
                     timestamp.unwrap_or(options.now),
                     options,
@@ -107,7 +107,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
         } else {
             None
         };
-        let certificate = CertificateReport::parse(&signer.cert)?;
+        let certificate = CertificateReport::parse(signer.cert)?;
         if let Some(timestamp) = &timestamp_verification {
             crate::verify::timestamp::check_fractional_validity(
                 trust.as_ref(),

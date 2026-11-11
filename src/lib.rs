@@ -47,7 +47,7 @@ mod wsh;
 #[cfg(feature = "verify")]
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 #[cfg(feature = "verify")]
-pub use trust::TrustStore;
+pub use trust::{TrustLoadError, TrustLoadErrorKind, TrustStore};
 #[cfg(feature = "verify")]
 pub use verify::{
     RevocationPolicy, VerifyOptions, verify, verify_appx, verify_cab, verify_msi, verify_navx,

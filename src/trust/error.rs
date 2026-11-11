@@ -46,3 +46,37 @@ pub(crate) fn webpki_error(error: webpki::Error) -> VerificationError {
     }
     result
 }
+
+/// Stable input category for a trust-store loading failure, not a trust verdict.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum TrustLoadErrorKind {
+    Roots,
+    Crl,
+    SystemRoots,
+}
+
+/// Loading diagnostics with a typed category and the original causal chain.
+#[derive(Debug)]
+pub struct TrustLoadError {
+    kind: TrustLoadErrorKind,
+    inner: anyhow::Error,
+}
+impl TrustLoadError {
+    pub(crate) fn new(kind: TrustLoadErrorKind, inner: anyhow::Error) -> Self {
+        Self { kind, inner }
+    }
+    pub fn kind(&self) -> TrustLoadErrorKind {
+        self.kind
+    }
+}
+impl core::fmt::Display for TrustLoadError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.inner.fmt(f)
+    }
+}
+impl std::error::Error for TrustLoadError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.inner.as_ref())
+    }
+}
