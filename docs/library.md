@@ -699,3 +699,11 @@ This is bare-metal compilation plus host execution, not execution on a device.
 An embedding application must provide an allocator and panic/runtime integration;
 resource use and execution on a constrained device have not been measured.
 MSI/AppX verification and native roots are not claimed to work without `std`.
+
+## Shared interfaces and packaging (LIB-10)
+
+The [architecture reassessment](library-architecture.md) retains the single
+feature-separated package and existing facade after reviewing all current format
+consumers. It records the shared interfaces, alternatives, concrete extraction
+coupling, and compatibility requirements for a future split. No caller migration
+or crate split is required for current `no_std` parsing or verification.
