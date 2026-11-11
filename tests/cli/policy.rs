@@ -14,3 +14,19 @@ fn lib07_policy_modes_are_explicit_in_serialized_results() {
         assert_eq!(result["signatures"][0]["revocation_checked"], revocation);
     }
 }
+#[test]
+fn lib08_repeated_verification_has_identical_serialized_evidence() {
+    let first = run_fixture("good-pe64.exe", TRUSTED);
+    let second = run_fixture("good-pe64.exe", TRUSTED);
+    expect_success(&first);
+    expect_success(&second);
+    assert_eq!(first.json, second.json);
+    assert_eq!(
+        first.json["results"][0]["signatures"][0]["chain_trusted"],
+        true
+    );
+    assert_eq!(
+        first.json["results"][0]["signatures"][0]["revocation_checked"],
+        true
+    );
+}

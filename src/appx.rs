@@ -288,7 +288,7 @@ mod tests {
         let (hash, expected, _) = sd.appx_digest().unwrap();
         assert_eq!(digests(&package, hash).unwrap().0, expected);
         let report = validate(&package, hash, digests(&package, hash).unwrap().1).unwrap();
-        let error = publisher(&report, &signer.cert).unwrap_err();
+        let error = publisher(&report, signer.cert).unwrap_err();
         assert_eq!(
             error.downcast_ref::<VerificationError>().unwrap().code,
             ErrorCode::AppxPublisherMismatch
@@ -304,7 +304,7 @@ mod tests {
         let (hash, expected, _) = sd.appx_digest().unwrap();
         assert_eq!(digests(&package, hash).unwrap().0, expected);
         let report = validate(&package, hash, digests(&package, hash).unwrap().1).unwrap();
-        publisher(&report, &signer.cert).unwrap();
+        publisher(&report, signer.cert).unwrap();
         assert_eq!(report.block_map.files_verified, 5);
         assert_eq!(report.block_map.blocks_verified, 5);
         assert_eq!(

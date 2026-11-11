@@ -80,7 +80,7 @@ fn verify_signature(
         )?;
         if let Some(report) = appx_report.as_ref() {
             tagged(
-                crate::appx::publisher(report, &signer.cert),
+                crate::appx::publisher(report, signer.cert),
                 ErrorCode::AppxPublisherMismatch,
                 Stage::Appx,
             )?;
@@ -94,7 +94,7 @@ fn verify_signature(
         let trust_report = if let Some(trust) = options.trust {
             Some(tagged(
                 trust.verify(
-                    &signer.cert,
+                    signer.cert,
                     &sd.certs,
                     trust::CODE_SIGNING,
                     timestamp.unwrap_or(options.now),
@@ -107,7 +107,7 @@ fn verify_signature(
         } else {
             None
         };
-        let certificate = CertificateReport::parse(&signer.cert)?;
+        let certificate = CertificateReport::parse(signer.cert)?;
         if let Some(timestamp) = &timestamp_verification {
             check_fractional_validity(
                 trust_report.as_ref(),

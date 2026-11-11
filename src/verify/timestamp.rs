@@ -11,7 +11,7 @@ use anyhow::{Context, Result, ensure};
 
 pub(crate) fn verify_timestamp(
     certificates: &[x509_cert::Certificate],
-    signer: &cms::Signer<'_>,
+    signer: &cms::Signer<'_, '_>,
     options: &VerifyOptions<'_>,
 ) -> Result<Option<TimestampReport>> {
     let mut timestamp = None;
@@ -62,7 +62,7 @@ pub(crate) fn verify_timestamp(
             let tsa = token.verify(token.signers[0], options.allow_sha1)?;
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
-                    &tsa.cert,
+                    tsa.cert,
                     &token.certs,
                     trust::TIME_STAMPING,
                     at,
@@ -73,12 +73,13 @@ pub(crate) fn verify_timestamp(
                 None
             };
             check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
+            let certificate = CertificateReport::parse(tsa.cert)?;
             timestamp = Some(TimestampReport {
                 fractional_seconds,
                 kind: "rfc3161".into(),
                 unverified_certificate_choices: token.unverified_certificate_choices,
                 signing_time: at,
-                certificate: CertificateReport::parse(&tsa.cert)?,
+                certificate,
                 trust: trust_report,
             });
         } else if oid.as_slice() == cms::COUNTERSIGN {
@@ -108,7 +109,7 @@ pub(crate) fn verify_timestamp(
             }
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
-                    &tsa.cert,
+                    tsa.cert,
                     certificates,
                     trust::TIME_STAMPING,
                     at,
@@ -124,7 +125,7 @@ pub(crate) fn verify_timestamp(
                 kind: "pkcs9_countersignature".into(),
                 unverified_certificate_choices: Vec::new(),
                 signing_time: at,
-                certificate: CertificateReport::parse(&tsa.cert)?,
+                certificate: CertificateReport::parse(tsa.cert)?,
                 trust: trust_report,
             });
         }

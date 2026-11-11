@@ -522,3 +522,114 @@ still validates certificate chains. No implicit `Default` policy is provided.
 CLI integrity-only flags continue to conflict with roots, CRLs, and revocation
 flags. The existing `--no-revocation --crl` combination still loads supplied
 artifacts but does not claim that their revocation evidence was checked.
+
+## Ownership, reuse, and API stability (LIB-08)
+
+Input bytes must remain alive and immutable for the lifetime of a parser view.
+No parser or verifier retains a reference after its returned view/report is
+released. Verification reports own their data and can outlive the input,
+parsed value, options, and trust store. Parsing is not necessarily allocation-free:
+
+| View | Borrowed storage | Owned storage |
+| --- | --- | --- |
+| PE/CAB/NAVX | Original file, embedded CMS and digest chunks | Validated ranges and temporary bounds metadata |
+| CMS/SignerInfo/attributes/recursive inspection | Original DER, signatures, content, attribute values and opaque choices | Index vectors, decoded X.509 certificates, inspection metadata |
+| PowerShell/WSH | Original stored file | Decoded body and Base64-decoded CMS; canonical byte helpers allocate, digest sinks stream |
+| RDP | Original stored file | Decoded text, settings, decoded CMS and canonical signed input |
+| MSI/MSP | Original CFB file | Extracted signature/extended streams and CFB cursor state |
+| AppX | Original ZIP file and compressed part ranges | Extracted CMS, decoded parts/XML, rewritten directory and component inputs |
+
+`verify_parsed_pe`, `verify_parsed_cab`, and `verify_parsed_navx` consume their
+parsed values. Reparse the same immutable input for another call. They do not
+cache trusted state. `verify_parsed_msi(&mut package, ...)` and
+`verify_parsed_appx(&package, ...)` reuse the parsed adapter. MSI's mutable
+borrow serves its read cursor; repeated hashing restarts stream reads. Neither
+adapter caches verification results. A failed policy check does not prevent
+subsequent verification under another explicit policy. Every verification call
+checks hashes, CMS, timestamps and the configured trust/revocation policy anew;
+reuse does not bypass validation. Caller-supplied digest sinks must still be
+discarded after a streaming error as described above. Options borrow the trust
+store; ordinary Rust borrowing prevents changing it during verification.
+
+The container dispatcher now borrows PE/CAB/NAVX/AppX signature buffers while
+hashing and verification run. CMS adapters move decoded X.509 objects out of the
+parser rather than cloning them, and each verified signer borrows its selected
+certificate. Candidate order and first-match selection are unchanged; embedded
+certificates remain untrusted candidates. Certificate-table framing still runs
+before iteration and each CMS envelope is checked immediately before its own
+integrity/signature pipeline, preserving existing failure precedence.
+
+Run `cargo test --locked --lib lib08_signature_copy_measurements -- --nocapture`
+to reproduce the following copy-volume measurement on committed fixtures:
+
+| Fixture | Signature payload bytes copied by dispatcher before | After |
+| --- | ---: | ---: |
+| `good-pe64.exe` | 1142 | 0 |
+| `good.cab` | 1136 | 0 |
+| `good.navx` | 1169 | 0 |
+| `good.msix` | 1293 | 0 |
+
+The check sums returned signature lengths for the old `to_vec` path and the
+owned buffers for the current path, and asserts original pointer identity.
+It measures eliminated payload copying, not total heap use or throughput.
+Pointer-identity tests also guard certificate transfer and signer borrowing.
+MSI and decoded script signatures still copy once in this dispatcher because
+its hashing path borrows the container mutably. RFC 3161 still clones parent
+certificate candidates into the token's ordered candidate pool. Signed
+attributes still require an owned SET-tagged encoding for signature validation;
+webpki conversion and owned certificate/report projections also allocate.
+Removing those costs requires separate interface changes and measurements.
+
+### Error contracts
+
+`parse::Error` implements `core::error::Error`, exposes `kind()` and preserves
+causal diagnostics through `source()`. It requires neither Serde, verification,
+nor `std`. Match `ErrorKind`, never `Display`, debug formatting, or dependency
+error strings. Existing classifications retain their meanings:
+
+- `InvalidPe`, `InvalidMsi`, `InvalidCab`, `InvalidNavx`, `InvalidAppx`,
+  `InvalidPowershell`, `InvalidWsh`, `InvalidRdp`: structural/encoding failures
+  within the supported parser profile.
+- `Unsigned` (PE), `UnsignedMsi`, `UnsignedCab`, `UnsignedNavx`, `UnsignedAppx`,
+  `UnsignedPowershell`, `UnsignedWsh`, `UnsignedRdp`: missing signature.
+- `InvalidCertificateTable`: PE signature-table framing/padding.
+- `MalformedCms`: CMS/DER/signer/attribute/time structure.
+- `UnsupportedAppx`, `UnsupportedWsfXml`, `UnsupportedRdpScope`: explicit
+  unsupported profile, adapter feature, or scope. RDP exposes the offending
+  scope through `rdp_scope_entry()`.
+- `InspectionLimit`: recursive inspection budget exhaustion.
+
+`ErrorKind` is non-exhaustive; retain a fallback arm for future variants.
+Diagnostic prose and causal depth are not stable machine interfaces. Parser
+errors are not JSON verification errors; the verifier maps them at its existing
+stage boundaries into `domain::VerificationError` with stable code, stage,
+details and causes. No JSON schema fields or policy claims change in LIB-08.
+
+Trust loading now offers `add_roots_typed`, `add_crl_typed`, and (with
+`system-roots`) `from_system_typed`. They return `TrustLoadError`, whose
+non-exhaustive `TrustLoadErrorKind` identifies `Roots`, `Crl`, or `SystemRoots`
+and whose source retains the original loading failure. These categories describe
+input loading, not certificate validation or revocation status. No filesystem
+I/O is added to explicit loaders. Successfully loading a CRL never authenticates
+it. Successful DER roots and CRLs are owned by the store; caller buffers can be
+dropped. Existing valid entries survive a subsequent invalid DER load.
+
+Typed methods deliberately preserve legacy loading policy: native enumeration
+can accept nonempty roots despite partial native errors, anchors unsupported by
+webpki are excluded during path conversion, PEM chain decoding uses the current
+X.509 adapter, and CRLs are decoded/re-encoded before storage. Typed loading is
+not stricter root selection, per-anchor exclusion reporting, or evidence of
+atomicity for every possible PEM bundle. Those policy audits remain SEC-07.
+
+### Migration notes
+
+All existing parser, verifier, options and `TrustStore` entry points retain their
+public signatures. Existing `add_roots`, `add_crl` and `from_system` continue to
+return `anyhow::Result` with unchanged diagnostics. Callers wanting typed loading
+categories can switch to the corresponding `_typed` method and match `kind()`
+with a fallback arm; `?` still converts the error into `anyhow` if desired.
+There is no required migration and no new dependency or native crypto provider.
+These pre-1.0 APIs may evolve in future releases; future breaking changes must
+include migration notes. Do not depend on private adapter layout, exact
+allocation counts beyond the documented measurement, enum numeric values, or
+human-readable error strings.
