@@ -214,6 +214,13 @@ fn verify_trust(
             ) {
                 Ok(report) => return Ok(report),
                 Err(e) => {
+                    if e.chain().any(|cause| {
+                        cause
+                            .downcast_ref::<VerificationError>()
+                            .is_some_and(|error| error.code == ErrorCode::ResourceLimitExceeded)
+                    }) {
+                        return Err(e);
+                    }
                     if failure.is_none() {
                         failure = Some(e)
                     }
@@ -244,6 +251,39 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn sec02_rdp_eku_retry_propagates_later_budget_exhaustion() {
+        let bytes = fixture("good-rdp-multiple-ekus.rdp");
+        let store = crate::TrustStore::default();
+        let options = VerifyOptions::trusted_with_revocation(
+            &store,
+            1800000000,
+            crate::verify::RevocationPolicy::Disabled,
+        );
+        let ordinary = verify_budget(&bytes, &options, &Budget::default()).unwrap_err();
+        let ordinary =
+            VerificationError::from_internal(ordinary, ErrorCode::InternalError, Stage::Cms);
+        assert_eq!(ordinary.code, ErrorCode::UntrustedRoot);
+
+        // Leave exactly one webpki search reservation. The first accepted EKU
+        // fails for lack of anchors; the second must propagate budget exhaustion.
+        let budget = Budget::default();
+        budget.path_work.charge(12_600_000).unwrap();
+        let error = verify_budget(&bytes, &options, &budget).unwrap_err();
+        let error = VerificationError::from_internal(error, ErrorCode::InternalError, Stage::Cms);
+        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(error.stage, Stage::Cms);
+        let json = serde_json::to_value(error).unwrap();
+        assert_eq!(json["code"], "resource_limit_exceeded");
+        assert_eq!(
+            json["details"],
+            serde_json::json!({
+                "resource": "path_work", "limit": 12_800_000,
+                "used": 12_800_000, "requested": 200_000,
+            })
+        );
+    }
+
     #[test]
     fn signed_and_unsigned_mutations_have_distinct_cryptographic_effects() {
         for (good, bad, unsigned) in [

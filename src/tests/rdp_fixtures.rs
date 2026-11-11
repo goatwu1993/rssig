@@ -183,6 +183,7 @@ fn changed_cert(eku: Option<&str>, key_usage: bool) -> Certificate {
     cert
 }
 pub(super) fn write(dir: &std::path::Path) {
+    write_eku_retry_fixture(dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let id = identity();
     let hash = crypto::Hash::Sha256;
@@ -452,4 +453,40 @@ pub(super) fn write(dir: &std::path::Path) {
         .collect();
     b.pop();
     write("bad-rdp-odd-utf16.rdp", &b);
+}
+
+fn write_eku_retry_fixture(dir: &std::path::Path) {
+    let mut cert = changed_cert(Some("1.3.6.1.5.5.7.3.3"), true);
+    let extension = cert
+        .tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|e| e.extn_id.to_string() == "2.5.29.37")
+        .unwrap();
+    extension.extn_value = ::der::asn1::OctetString::new(seq(&[
+        oid(&[43, 6, 1, 5, 5, 7, 3, 3]),
+        oid(&[43, 6, 1, 5, 5, 7, 3, 1]),
+    ]))
+    .unwrap();
+    let signature: Signature = identity()
+        .root_key
+        .sign(&cert.tbs_certificate.to_der().unwrap());
+    cert.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let bytes = frame(&envelope(
+        &cert,
+        crypto::Hash::Sha256,
+        &ec_signer(&cert, false),
+        &[],
+    ));
+    std::fs::write(dir.join("good-rdp-multiple-ekus.rdp"), bytes).unwrap();
+}
+
+#[test]
+#[ignore = "explicit fixture maintenance only"]
+fn regenerate_rdp_eku_retry_fixture() {
+    write_eku_retry_fixture(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
+    );
 }

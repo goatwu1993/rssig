@@ -74,7 +74,10 @@ The 63-signers-plus-two case was observed returning success with 65 reports befo
 the fix. Named CLI tests assert successful boundaries, typed serialized failures
 and absence of partial reports. Focused unit tests exercise overflow, each work
 counter, inherited timestamp/nested/RDP budgets, bundle sharing, and crypto/path
-exhaustion. Existing failure expectations remain unchanged.
+exhaustion. An inert multi-EKU RDP fixture also covers a failed first EKU
+followed by budget exhaustion on a retry: exhaustion propagates immediately with
+its original typed resource details. Ordinary EKU failures still retain the first
+policy error. Existing failure expectations remain unchanged.
 
 Host file/root/CRL reads, caller-owned input memory, CLI batch/report buffering,
 and nonregular/changing files remain SEC-03. This is not a wall-clock deadline,

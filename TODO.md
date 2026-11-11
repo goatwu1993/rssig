@@ -51,6 +51,8 @@ timestamps, and local CRL validation already exist.
   valid 64/65-signer and 65-entry fixtures plus depth-eight/depth-nine malformed
   children, portable cases, named CLI/domain assertions and counter/sharing tests.
   The 63-plus-two-signer regression first returned success with 65 reports.
+  A multi-EKU RDP regression also pins immediate propagation of a later retry
+  budget failure, preserving ordinary first-policy-error behavior.
   Full locked tests, fmt, Clippy, parser-only and verify-core/verify/cli feature
   tests, structural-adapter Clippy and bare-metal verify-core Clippy pass on
   macOS. Dependencies are unchanged; Linux runtime validation remains in CI.

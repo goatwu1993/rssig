@@ -6582,6 +6582,21 @@
       "cases": [
         "sec02-depth-9-malformed"
       ]
+    },
+    {
+      "file": "good-rdp-multiple-ekus.rdp",
+      "sha256": "01619003da614cde76d3a52e6565c61d8f17b644f148bd059456633310894a9f",
+      "bytes": 1506,
+      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; exercises RDP policy retries and shared-budget error propagation.",
+      "provenance": {
+        "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
+        "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Existing deterministic test root/key and RDP body; replace the leaf EKU extension and re-sign with the public test-only root key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "rdp-multiple-ekus"
+      ]
     }
   ]
 }

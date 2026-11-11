@@ -1433,3 +1433,26 @@ fn rdp_powershell_comment() {
     assert_eq!(output.success().format, "powershell_authenticode");
     assert!(output.json["results"][0].get("rdp").is_none());
 }
+
+#[test]
+fn rdp_multiple_accepted_ekus_preserves_certificate_metadata() {
+    let output = run_fixture("good-rdp-multiple-ekus.rdp", TRUSTED);
+    expect_rdp_success(&output);
+    let eku = output.success().signatures[0]
+        .certificate
+        .extended_key_usage
+        .as_ref()
+        .unwrap();
+    assert_eq!(
+        eku.usages
+            .iter()
+            .map(|u| u.oid.as_str())
+            .collect::<Vec<_>>(),
+        ["1.3.6.1.5.5.7.3.3", "1.3.6.1.5.5.7.3.1"]
+    );
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["certificate"]["extended_key_usage"]["usages"]
+            [1]["oid"],
+        "1.3.6.1.5.5.7.3.1"
+    );
+}
