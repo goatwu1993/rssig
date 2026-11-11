@@ -101,7 +101,14 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
     batch::execute(
         "verify",
         files,
-        |path, bytes| crate::verify::verify_detected(bytes, Some(path), &options),
+        |path, bytes| {
+            // Preserve extension hints even when the filename stem is not UTF-8.
+            let hint = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| format!("input.{e}"));
+            crate::verify::verify_with_hint(bytes, hint.as_deref(), &options)
+        },
         |file, verification| {
             FileResult::Success(FileSuccess {
                 file,

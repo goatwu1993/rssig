@@ -62,7 +62,7 @@ pub struct Pe<'a> {
     pub(crate) cert_end: usize,
     pub(crate) headers_end: usize,
     pub(crate) sections: Vec<(usize, usize)>,
-    #[cfg(feature = "verify")]
+    #[cfg(feature = "verify-core")]
     pub(crate) page_size: usize,
 }
 
@@ -206,7 +206,7 @@ impl<'a> Pe<'a> {
                 "section overlaps certificate table or EOF"
             );
         }
-        #[cfg(feature = "verify")]
+        #[cfg(feature = "verify-core")]
         let page_size = {
             let machine = u16_at(data, pe + 4)?;
             if [0x200, 0x184, 0x284].contains(&machine) {
@@ -223,7 +223,7 @@ impl<'a> Pe<'a> {
             cert_end,
             headers_end,
             sections,
-            #[cfg(feature = "verify")]
+            #[cfg(feature = "verify-core")]
             page_size,
         })
     }

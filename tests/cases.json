@@ -23348,6 +23348,73 @@
         "good-pe64.exe",
         "good-pe64.exe"
       ]
+    },
+    {
+      "id": "lib09-core-trusted-pe",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "schema_version": 1,
+          "command": "verify",
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "digest_algorithm": "Sha256",
+                  "certificate": {
+                    "subject": {
+                      "common_names": [
+                        "rssig test publisher"
+                      ]
+                    },
+                    "extended_key_usage": {
+                      "usages": [
+                        {
+                          "oid": "1.3.6.1.5.5.7.3.3",
+                          "name": "code_signing"
+                        }
+                      ]
+                    }
+                  },
+                  "trust": {
+                    "chain": [
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test publisher"
+                          ]
+                        }
+                      },
+                      {
+                        "subject": {
+                          "common_names": [
+                            "rssig test root"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -8,13 +8,14 @@ license = "Apache-2.0"
 [features]
 default = ["cli", "system-roots"]
 # The parser only needs core + alloc. Host integrations are opt-in for libraries.
-std = ["anyhow/std", "der/std", "x509-cert/std", "roxmltree?/std"]
+std = ["anyhow/std", "der/std", "x509-cert/std", "roxmltree?/std", "serde?/std", "serde_json?/std", "signature?/std"]
 xml = ["dep:roxmltree"]
 # Structural host adapters, independent of verification and reports.
 msi = ["std", "dep:cfb"]
 appx = ["std", "xml", "dep:flate2", "dep:crc32fast"]
-verify = [
-    "msi", "appx",
+verify = ["verify-core", "msi", "appx"]
+verify-core = [
+    "xml",
     "dep:rustls-pki-types", "dep:webpki", "dep:rsa", "dep:sha1", "dep:sha2",
     "dep:p256", "dep:p384", "dep:signature", "dep:serde", "dep:serde_json",
     "x509-cert/pem",
@@ -70,19 +71,21 @@ der = { version = "0.7", default-features = false, features = ["alloc", "derive"
 digest = { version = "0.10", default-features = false }
 x509-cert = { version = "0.2", default-features = false }
 rustls-native-certs = { version = "0.8", optional = true }
-rustls-pki-types = { version = "1", optional = true, features = ["std"] }
-webpki = { package = "rustls-webpki", version = "0.103", optional = true, default-features = false, features = ["std"] }
-rsa = { version = "0.9", optional = true, features = ["sha2"] }
-sha1 = { version = "0.10", optional = true, features = ["oid"] }
-sha2 = { version = "0.10", optional = true, features = ["oid"] }
-p256 = { version = "0.13", optional = true, features = ["ecdsa"] }
-p384 = { version = "0.13", optional = true, features = ["ecdsa"] }
+rustls-pki-types = { version = "1", optional = true, default-features = false, features = ["alloc"] }
+webpki = { package = "rustls-webpki", version = "0.103", optional = true, default-features = false, features = ["alloc"] }
+rsa = { version = "0.9", optional = true, default-features = false, features = ["sha2", "u64_digit"] }
+sha1 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
+sha2 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
+p256 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
+p384 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
 signature = { version = "2", optional = true }
-serde = { version = "1", optional = true, features = ["derive"] }
-serde_json = { version = "1", optional = true }
+serde = { version = "1", optional = true, default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", optional = true, default-features = false, features = ["alloc"] }
 cfb = { version = "0.15", optional = true, default-features = false }
 
 [dev-dependencies]
+rsa = { version = "0.9", features = ["pem"] }
+p256 = { version = "0.13", features = ["ecdsa", "pem"] }
 rand = "0.8"
 sha2 = { version = "0.10", features = ["oid"] }
 x509-cert = { version = "0.2", features = ["builder"] }

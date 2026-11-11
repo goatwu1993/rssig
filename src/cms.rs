@@ -4,11 +4,12 @@ use crate::{
     der::{self, Node},
 };
 use ::der::Encode;
+use alloc::vec::Vec;
 use anyhow::{Context, Result, ensure};
 use x509_cert::Certificate;
 
 pub(crate) const DATA: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 7, 1];
-#[cfg(test)]
+#[cfg(all(test, feature = "verify"))]
 pub(crate) use crate::parse::cms::SIGNED_DATA;
 pub(crate) const INDIRECT: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 4];
 const PE_IMAGE: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 15];
@@ -234,6 +235,7 @@ impl<'a> SignedData<'a> {
         self.indirect_digest()
     }
 
+    #[cfg(feature = "appx")]
     pub fn appx_digest(&self) -> Result<(Hash, &'a [u8], bool)> {
         ensure!(
             self.content_type == INDIRECT,
@@ -491,7 +493,11 @@ fn verify_signer_inner<'a, 'c>(
     }
     let signature = si[algorithm_index + 1].expect(4)?.body;
     crypto::verify_spki(
-        &cert.tbs_certificate.subject_public_key_info.to_der()?,
+        &cert
+            .tbs_certificate
+            .subject_public_key_info
+            .to_der()
+            .map_err(crate::compat_error)?,
         hash,
         alg[0].body,
         if has_attributes { &attrs_der } else { content },

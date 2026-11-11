@@ -5,6 +5,12 @@ use crate::{
     domain::*,
     verify::{VerifyOptions, timestamp::verify_timestamp},
 };
+use alloc::{format, vec::Vec};
+#[cfg(test)]
+use alloc::{
+    string::{String, ToString},
+    vec,
+};
 use anyhow::Result;
 #[cfg(test)]
 use std::path::Path;
@@ -161,7 +167,10 @@ fn verify_trust(
         &[43, 6, 1, 5, 5, 7, 3, 1],
         &[43, 6, 1, 4, 1, 130, 55, 54, 1, 2],
     ];
-    let usage = leaf.tbs_certificate.get::<ExtendedKeyUsage>()?;
+    let usage = leaf
+        .tbs_certificate
+        .get::<ExtendedKeyUsage>()
+        .map_err(crate::compat_error)?;
     let mut failure = None;
     for eku in USAGES {
         if usage

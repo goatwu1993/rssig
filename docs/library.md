@@ -464,7 +464,8 @@ iteration or `.to_vec()` if an owned list is needed. Verification functions,
 options, and JSON types retain their existing signatures and semantics.
 
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
-without `std`. Full verification still requires `std`. MSI/MSP and AppX structural parsing also
+without `std`. Shared cryptographic verification is available without `std` via
+`verify-core` (see LIB-09 below). MSI/MSP and AppX structural parsing still
 requires `std` through explicit optional adapters. The `parse` CLI still selects
 PE, CMS, CAB, or NAVX; the other container parsers are library APIs.
 
@@ -481,7 +482,7 @@ Detection only selects a parser; it does not validate or authenticate input.
 verification policy. `verify::verify_as(bytes, format, options)` bypasses detection
 and invokes the selected parser, including explicit WSH comment styles through
 `Format::Wsh(parse::WshKind)`. Existing format-specific entry points remain available.
-These selection APIs currently require `verify`/`std`; parser-only consumers use
+These selection APIs require `verify-core` (also enabled by `verify`); parser-only consumers use
 the existing explicit parser constructors.
 
 The inspection CLI additionally accepts `--format cab` and `--format navx`.
@@ -633,3 +634,68 @@ These pre-1.0 APIs may evolve in future releases; future breaking changes must
 include migration notes. Do not depend on private adapter layout, exact
 allocation counts beyond the documented measurement, enum numeric values, or
 human-readable error strings.
+
+
+## Shared verification without std (LIB-09)
+
+Use `rssig = { version = "0.1", default-features = false, features = ["verify-core"] }`
+for shared verification with `core + alloc`. Existing `verify` users retain every
+format and `std`; default CLI and native-root behavior is unchanged. Add `msi`
+or `appx` to `verify-core` independently to enable those host adapters.
+
+The core verifies PE, CAB, NAVX, PowerShell hash/XML comments, WSH (including
+WSF XML), and RDP. It includes CMS signatures, nested signatures, PE page hashes,
+RSA PKCS#1 v1.5, P-256/P-384, SHA-256/384/512, opt-in SHA-1 content digests,
+RFC 3161 and PKCS#9 timestamps, configured certificate paths, and local CRLs.
+The existing algorithm, format and policy limits remain in force. This is
+verification, not parser-only support, and does not claim Windows policy parity.
+
+Call `TrustStore::add_roots`/`add_crl` with DER/PEM bytes and construct
+`VerifyOptions::trusted(&store, unix_seconds)`. These APIs never read files,
+load platform roots, fetch revocation data, or read a clock. An empty root store
+and unknown revocation status still fail closed. Integrity-only verification
+remains an explicit policy and reports `chain_trusted: false`.
+
+### Dependency and std inventory
+
+| Area | Core boundary |
+| --- | --- |
+| Crypto/CMS | RustCrypto hashes, RSA, ECDSA, DER/X.509; owned data uses `alloc`. No RNG or OS entropy is needed for verification. |
+| Trust/CRLs | webpki and rustls-pki-types use `alloc` with defaults disabled. The RustCrypto algorithm adapter remains the only crypto backend. `Duration` and `Cell` come from `core`. |
+| Timestamps | Pure DER parsing, digest/signature checks and caller-supplied Unix seconds. No clock or time-zone integration. |
+| Reports/errors | Serde and serde_json use `alloc`; strings, vectors, maps and boxes come from `alloc`. File/path report wrappers require `std`. Domain codes, stages and JSON fields are unchanged. |
+| Dispatch | Bytes and optional UTF-8 filename hints require no filesystem. CLI path-extension handling lives in `src/cli/verify.rs`. Disabled MSI/AppX dispatch returns `configuration` at `configuration`, never a successful integrity report. |
+| MSI/AppX | CFB cursor I/O and ZIP/DEFLATE package adapters remain behind `msi`/`appx`, each enabling `std`. |
+| Host | CLI filesystem I/O and clocks, path-based command reports, and optional native-root enumeration stay outside the alloc-only feature graph. |
+
+RSA defaults are disabled; only SHA-2 and integer representation support are
+selected. ECDSA enables `ecdsa`, `alloc`, and `pkcs8`, without default ECDH/PEM
+features. Hash defaults are disabled. PEM certificate decoding uses alloc-only
+X.509/DER support. Fixture builders explicitly enable RSA/P-256 PEM through
+dev-dependencies; they are not part of the core target graph. The resolved lock
+file removes unused HKDF. Neither normal nor bare-metal dependency graphs contain
+OpenSSL, ring, aws-lc, or native certificate validation.
+
+Pinned RustCrypto DER/SPKI/signature error versions implement `Error` only under
+`std`. The internal compatibility boundary keeps their original causal errors
+on host builds and their Display messages on alloc-only builds. Public typed
+verification errors, stages, details and outer causal context remain available;
+dependency-specific nested causes are not promised identical across features.
+
+### Evidence and limits
+
+`cargo clippy --locked --lib --no-default-features --features verify-core --target
+thumbv7em-none-eabi -- -D warnings` compiles the verifier on a target without
+`std`, without host/dev-dependency feature unification. CI runs this alongside
+`cargo test --locked --no-default-features --features verify-core`, which executes
+the shared code on the host using committed inert artifacts, fixed time, explicit
+roots and local CRLs. `tests/verification_core.rs` checks supported containers,
+both timestamp types, trusted and revoked chains, image/timestamp tampering,
+serialized trust/revocation flags, and disabled package dispatch. The portable
+`lib09-core-trusted-pe` case and named CLI test check the same public policy.
+Existing fixture bytes and manifest provenance are reused unchanged.
+
+This is bare-metal compilation plus host execution, not execution on a device.
+An embedding application must provide an allocator and panic/runtime integration;
+resource use and execution on a constrained device have not been measured.
+MSI/AppX verification and native roots are not claimed to work without `std`.

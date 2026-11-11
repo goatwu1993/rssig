@@ -35,7 +35,7 @@ impl Format {
 }
 
 fn binary(bytes: &[u8]) -> Option<Format> {
-    if bytes.starts_with(crate::msi::MAGIC) {
+    if bytes.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
         Some(Format::Msi)
     } else if bytes.starts_with(crate::navx::MAGIC) {
         Some(Format::Navx)
@@ -105,7 +105,7 @@ mod tests {
     fn binary_magic_outranks_every_text_and_package_filename_hint() {
         for (bytes, expected) in [
             (b"MZ".as_slice(), Format::Pe),
-            (crate::msi::MAGIC, Format::Msi),
+            (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", Format::Msi),
             (crate::cab::MAGIC, Format::Cab),
             (crate::navx::MAGIC, Format::Navx),
             (b"PK\x03\x04".as_slice(), Format::Appx),

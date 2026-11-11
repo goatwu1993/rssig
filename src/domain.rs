@@ -1,7 +1,16 @@
 //! Serializable public results. Machine consumers match codes, never error prose.
+use alloc::collections::BTreeMap;
+use alloc::{
+    borrow::ToOwned,
+    boxed::Box,
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+use core::fmt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::BTreeMap, fmt};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -213,7 +222,7 @@ impl fmt::Display for VerificationError {
         f.write_str(&self.message)
     }
 }
-impl std::error::Error for VerificationError {}
+impl core::error::Error for VerificationError {}
 
 // Keep report policy at the verification boundary; the parser has no dependency
 // on domain types or serialization. Preserve the existing CLI error contract.
@@ -499,12 +508,13 @@ pub struct VerificationBundle {
     pub appx: Option<Box<AppxReport>>,
 }
 // Preserve convenient library indexing while returning a named domain bundle.
-impl std::ops::Deref for VerificationBundle {
+impl core::ops::Deref for VerificationBundle {
     type Target = [SignatureReport];
     fn deref(&self) -> &Self::Target {
         &self.signatures
     }
 }
+#[cfg(feature = "std")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FileSuccess {
     pub file: std::path::PathBuf,
@@ -551,6 +561,7 @@ pub struct ParsedCertificateChoice {
     pub certificate: Option<CertificateReport>,
 }
 
+#[cfg(feature = "std")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ParseFileSuccess {
     pub file: std::path::PathBuf,
@@ -559,12 +570,14 @@ pub struct ParseFileSuccess {
     pub parse: ParseReport,
 }
 
+#[cfg(feature = "std")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FileFailure {
     pub file: std::path::PathBuf,
     pub ok: bool,
     pub error: VerificationError,
 }
+#[cfg(feature = "std")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum FileResult {
@@ -572,6 +585,7 @@ pub enum FileResult {
     Failure(FileFailure),
 }
 /// Per-file inspection outcome, separate from authenticated verification results.
+#[cfg(feature = "std")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ParseFileResult {

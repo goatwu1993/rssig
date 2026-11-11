@@ -2,6 +2,7 @@
 use crate::crypto::Hash;
 pub(crate) use crate::parse::Navx;
 pub(crate) use crate::parse::navx::MAGIC;
+use alloc::vec::Vec;
 
 impl Navx<'_> {
     pub(crate) fn digest(&self, hash: Hash) -> Vec<u8> {

@@ -2,6 +2,9 @@ use crate::crypto::Hash;
 #[cfg(test)]
 use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::wsh::{Kind, Wsh};
+use alloc::vec::Vec;
+#[cfg(test)]
+use alloc::{format, string::ToString, vec};
 #[cfg(test)]
 use std::path::Path;
 const KINDS: [Kind; 3] = [Kind::VbScript, Kind::JScript, Kind::Wsf];
