@@ -64,6 +64,7 @@ unverified metadata and does not establish a trusted publisher. See the
 | <a id="invalid_pe"></a>`invalid_pe` | Invalid PE image | 422 | Supply a complete supported PE image. |
 | <a id="unsigned"></a>`unsigned` | Missing embedded signature | 422 | Supply a supported PE, MSI, CAB, PowerShell script, or RDP file with an embedded Authenticode signature. |
 | <a id="invalid_certificate_table"></a>`invalid_certificate_table` | Invalid certificate table | 422 | Replace the damaged or unsupported certificate table with a valid signed artifact. |
+| <a id="resource_limit_exceeded"></a>`resource_limit_exceeded` | Verification resource limit exceeded | 422 | Aggregate verification work exhausted; inspect `details.resource`, `limit`, `used`, and `requested`. No partial verdict is returned. See [verification budgets](verification-budgets.md). |
 | <a id="malformed_cms"></a>`malformed_cms` | Malformed CMS data | 422 | Supply a well-formed supported CMS signature. |
 | <a id="unsupported_algorithm"></a>`unsupported_algorithm` | Unsupported algorithm | 422 | Use a supported digest and signature algorithm. |
 | <a id="weak_algorithm"></a>`weak_algorithm` | Weak algorithm disallowed | 422 | Re-sign with SHA-256 or stronger; allow SHA-1 only through the explicit legacy policy. |

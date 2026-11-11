@@ -8,6 +8,7 @@
 #[cfg(feature = "appx")]
 mod appx;
 mod authenticode;
+pub(crate) mod budget;
 mod container;
 mod integrity;
 pub(crate) mod timestamp;
@@ -29,6 +30,7 @@ use crate::{
 };
 use anyhow::Result;
 use authenticode::verify_container;
+use budget::Budget;
 use container::Container;
 
 /// Explicit policy for verification; the engine never reads the clock or loads roots.
@@ -233,12 +235,22 @@ fn verify_inner(
     options: &VerifyOptions<'_>,
     format: Format,
 ) -> Result<VerificationBundle> {
+    verify_inner_budget(bytes, options, format, &Budget::default())
+}
+
+fn verify_inner_budget(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    format: Format,
+    budget: &Budget,
+) -> Result<VerificationBundle> {
+    budget.container(bytes)?;
     #[cfg(feature = "appx")]
     let appx;
     #[cfg(feature = "msi")]
     let mut msi;
     let container = match format {
-        Format::Rdp => return crate::rdp::verify(bytes, options),
+        Format::Rdp => return crate::rdp::verify_budget(bytes, options, budget),
         Format::Wsh(kind) => Container::Wsh(tagged(
             Wsh::parse(bytes, kind),
             ErrorCode::InvalidWsh,
@@ -246,6 +258,9 @@ fn verify_inner(
         )?),
         #[cfg(feature = "appx")]
         Format::Appx => {
+            budget.appx(bytes).map_err(|e| {
+                VerificationError::from_internal(e, ErrorCode::InvalidAppx, Stage::Appx)
+            })?;
             appx = Appx::parse(bytes).map_err(VerificationError::from)?;
             Container::Appx(&appx)
         }
@@ -289,7 +304,7 @@ fn verify_inner(
         Format::Navx => Container::Navx(Navx::parse(bytes).map_err(VerificationError::from)?),
         Format::Cab => Container::Cab(Cab::parse(bytes).map_err(VerificationError::from)?),
     };
-    verify_container(bytes, options, format, container)
+    authenticode::verify_container_budget(bytes, options, format, container, budget)
 }
 
 /// Verify a parsed PE without reparsing its headers. All hashes, CMS signatures,

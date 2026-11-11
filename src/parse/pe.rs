@@ -229,6 +229,13 @@ impl<'a> Pe<'a> {
     }
 
     pub(crate) fn certificates(&self) -> Result<Vec<&'a [u8]>> {
+        self.certificates_bounded(|| Ok(()))
+    }
+
+    pub(crate) fn certificates_bounded(
+        &self,
+        mut charge: impl FnMut() -> Result<()>,
+    ) -> Result<Vec<&'a [u8]>> {
         let mut result = Vec::new();
         let mut at = self.cert_start;
         while at < self.cert_end {
@@ -250,6 +257,7 @@ impl<'a> Pe<'a> {
                 next <= self.cert_end && self.data[at + len..next].iter().all(|b| *b == 0),
                 "invalid certificate padding"
             );
+            charge()?;
             result.push(&self.data[at + 8..at + len]);
             at = next;
         }

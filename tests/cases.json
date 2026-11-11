@@ -23415,6 +23415,161 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec02-wide-64",
+      "input": "sec02-wide-64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec02-wide-65",
+      "input": "sec02-wide-65.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "cms",
+                "details": {
+                  "resource": "reports",
+                  "limit": 64,
+                  "used": 64,
+                  "requested": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec02-entries-65",
+      "input": "sec02-entries-65.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "cms",
+                "details": {
+                  "resource": "certificate_entries",
+                  "limit": 64,
+                  "used": 64,
+                  "requested": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec02-depth-8",
+      "input": "sec02-depth-8.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec02-depth-9-malformed",
+      "input": "sec02-depth-9-malformed.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms",
+                "details": {
+                  "resource": "nesting",
+                  "limit": 8,
+                  "used": 8,
+                  "requested": 1
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

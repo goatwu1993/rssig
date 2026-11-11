@@ -36,3 +36,6 @@ mod package_parsing;
 
 #[path = "cli/policy.rs"]
 mod policy;
+
+#[path = "cli/budgets.rs"]
+mod budgets;

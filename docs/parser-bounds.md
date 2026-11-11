@@ -1,8 +1,8 @@
 # Parser bounds audit (SEC-01)
 
 This audit covers local structural arithmetic and allocation bounds on 32-bit and
-64-bit targets. It does not establish exhaustive input safety. Aggregate crypto
-work, host file-read budgets, and fuzzing remain SEC-02, SEC-03, and TEST-02.
+64-bit targets. It does not establish exhaustive input safety. Aggregate verification work is covered by [SEC-02 budgets](verification-budgets.md).
+Host file-read budgets and fuzzing remain SEC-03 and TEST-02.
 
 | Boundary | Bounds and evidence |
 | --- | --- |

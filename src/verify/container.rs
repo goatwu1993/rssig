@@ -29,10 +29,17 @@ impl<'a, 'p> Container<'a, 'p>
 where
     'a: 'p,
 {
+    #[cfg(test)]
     pub(super) fn signatures(&self) -> Result<Vec<Cow<'p, [u8]>>> {
+        self.signatures_budget(&super::budget::Budget::default())
+    }
+    pub(super) fn signatures_budget(
+        &self,
+        budget: &super::budget::Budget,
+    ) -> Result<Vec<Cow<'p, [u8]>>> {
         Ok(match self {
             Container::Pe(pe, _) => tagged(
-                pe.certificates(),
+                pe.certificates_bounded(|| budget.certificate_entries.charge(1)),
                 ErrorCode::InvalidCertificateTable,
                 Stage::CertificateTable,
             )?
