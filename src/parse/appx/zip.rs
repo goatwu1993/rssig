@@ -104,7 +104,7 @@ impl Entry<'_> {
         Ok(data)
     }
 }
-pub(super) struct Zip<'a> {
+pub(crate) struct Zip<'a> {
     pub entries: Vec<Entry<'a>>,
     footer: &'a [u8],
     zip64: bool,

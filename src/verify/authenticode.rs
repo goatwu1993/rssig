@@ -1,6 +1,7 @@
 //! Authenticode signer orchestration: integrity, CMS, timestamp, trust, report.
 use super::{
     VerifyOptions,
+    budget::Budget,
     container::{Container, cms_der},
     integrity, tagged,
     timestamp::{check_fractional_validity, verify_timestamp},
@@ -19,11 +20,27 @@ pub(super) fn verify_container(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
     format: Format,
+    container: Container<'_, '_>,
+) -> Result<VerificationBundle> {
+    let budget = Budget::default();
+    budget.container(bytes)?;
+    #[cfg(feature = "appx")]
+    if matches!(container, Container::Appx(_)) {
+        budget.appx(bytes)?;
+    }
+    verify_container_budget(bytes, options, format, container, &budget)
+}
+
+pub(super) fn verify_container_budget(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    format: Format,
     mut container: Container<'_, '_>,
+    budget: &Budget,
 ) -> Result<VerificationBundle> {
     let mut reports = Vec::new();
     let mut appx_report = None;
-    for signature in container.signatures()? {
+    for signature in container.signatures_budget(budget)? {
         verify_signature(
             cms_der(&signature, format)?,
             &mut container,
@@ -31,8 +48,11 @@ pub(super) fn verify_container(
             0,
             &mut reports,
             &mut appx_report,
+            budget,
+            bytes.len(),
         )?;
     }
+    budget.hash_bytes.charge(bytes.len())?;
     #[allow(unused_mut)]
     let mut verification = VerificationBundle {
         format: format.report_name().into(),
@@ -46,11 +66,12 @@ pub(super) fn verify_container(
     if let Container::Appx(appx) = &container
         && appx.is_bundle()
     {
-        super::appx::verify_bundle(appx, &mut verification, options)?;
+        super::appx::verify_bundle(appx, &mut verification, options, budget)?;
     }
     Ok(verification)
 }
 
+#[allow(clippy::too_many_arguments)] // Explicit shared budget and original input length across recursion.
 fn verify_signature(
     bytes: &[u8],
     container: &mut Container<'_, '_>,
@@ -58,23 +79,36 @@ fn verify_signature(
     depth: usize,
     reports: &mut Vec<SignatureReport>,
     appx_report: &mut Option<Box<AppxReport>>,
+    budget: &Budget,
+    container_bytes: usize,
 ) -> Result<()> {
-    if depth > 8 || reports.len() >= 64 {
-        return Err(VerificationError::new(
-            ErrorCode::MalformedCms,
-            Stage::Cms,
-            "too many nested signatures",
-        )
-        .into());
-    }
+    budget.depth(depth)?;
+    tagged(budget.cms(bytes), ErrorCode::MalformedCms, Stage::Cms)?;
     let sd = tagged(
         SignedData::parse(bytes),
         ErrorCode::MalformedCms,
         Stage::Cms,
     )?;
+    for _ in 0..4 {
+        budget.hash_bytes.charge(container_bytes)?;
+    }
+    #[cfg(feature = "appx")]
+    if let Container::Appx(appx) = container {
+        budget.appx_hash(appx.as_bytes())?;
+        budget.appx(appx.as_bytes())?;
+    }
     let integrity = integrity::verify(container, &sd, options.allow_sha1)?;
     *appx_report = integrity.appx;
     for si in &sd.signers {
+        budget.report(sd.certs.len() + 1)?;
+        budget.certificate_bytes(&sd.certs)?;
+        for choice in &sd.unverified_certificate_choices {
+            budget.decoded_bytes.charge(choice.der.len())?;
+        }
+        budget.signer()?;
+        budget.hash_bytes.charge(sd.content.full.len())?;
+        budget.hash_bytes.charge(si.full.len())?;
+        budget.crypto.charge(1)?;
         let signer = tagged(
             sd.verify(*si, options.allow_sha1)
                 .context("CMS signature verification"),
@@ -90,7 +124,7 @@ fn verify_signature(
             )?;
         }
         let timestamp_verification = tagged(
-            verify_timestamp(&sd.certs, &signer, options),
+            verify_timestamp(&sd.certs, &signer, options, budget),
             ErrorCode::InvalidTimestamp,
             Stage::Timestamp,
         )?;
@@ -104,6 +138,7 @@ fn verify_signature(
                     timestamp.unwrap_or(options.now),
                     options.now,
                     options.check_revocation,
+                    budget,
                 ),
                 ErrorCode::CertificateChainInvalid,
                 Stage::CertificateChain,
@@ -152,6 +187,8 @@ fn verify_signature(
                         depth + 1,
                         reports,
                         appx_report,
+                        budget,
+                        container_bytes,
                     )?;
                 }
             }

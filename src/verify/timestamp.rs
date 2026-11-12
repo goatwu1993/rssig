@@ -1,5 +1,5 @@
 //! Timestamp binding, TSA trust, and exact fractional-time policy.
-use super::VerifyOptions;
+use super::{VerifyOptions, budget::Budget};
 use crate::{
     cms::{self, SignedData},
     crypto::Hash,
@@ -16,6 +16,7 @@ pub(crate) fn verify_timestamp(
     certificates: &[x509_cert::Certificate],
     signer: &cms::Signer<'_, '_>,
     options: &VerifyOptions<'_>,
+    budget: &Budget,
 ) -> Result<Option<TimestampReport>> {
     let mut timestamp = None;
     for (oid, values) in &signer.unsigned {
@@ -24,7 +25,10 @@ pub(crate) fn verify_timestamp(
                 values.len() == 1 && timestamp.is_none(),
                 "multiple timestamps are unsupported"
             );
+            budget.cms(values[0].full)?;
             let mut token = SignedData::parse(values[0].full)?;
+            budget.certificates.charge(certificates.len())?;
+            budget.certificate_bytes(certificates)?;
             token.certs.extend(certificates.iter().cloned());
             ensure!(
                 token.content_type == cms::TST_INFO && token.signers.len() == 1,
@@ -39,6 +43,7 @@ pub(crate) fn verify_timestamp(
                 "SHA-1 timestamp requires --allow-sha1"
             );
             let expected = imprint[1].expect(4)?.body;
+            budget.hash_bytes.charge(signer.signature.len())?;
             let computed = hash.digest(signer.signature);
             if expected != computed {
                 return Err(VerificationError::new(
@@ -62,6 +67,11 @@ pub(crate) fn verify_timestamp(
                 .detail("validation_time", options.now)
                 .into());
             }
+            budget.signer()?;
+            budget.crypto.charge(1)?;
+            budget.report(1)?;
+            budget.hash_bytes.charge(token.content.full.len())?;
+            budget.hash_bytes.charge(token.signers[0].full.len())?;
             let tsa = token.verify(token.signers[0], options.allow_sha1)?;
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
@@ -71,11 +81,13 @@ pub(crate) fn verify_timestamp(
                     at,
                     options.now,
                     options.check_revocation,
+                    budget,
                 )?)
             } else {
                 None
             };
             check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
+            budget.certificate_bytes(core::slice::from_ref(tsa.cert))?;
             let certificate = CertificateReport::parse(tsa.cert)?;
             timestamp = Some(TimestampReport {
                 fractional_seconds,
@@ -90,6 +102,12 @@ pub(crate) fn verify_timestamp(
                 values.len() == 1 && timestamp.is_none(),
                 "multiple timestamps are unsupported"
             );
+            budget.cms_bytes.charge(values[0].full.len())?;
+            budget.signer()?;
+            budget.crypto.charge(1)?;
+            budget.report(1)?;
+            budget.hash_bytes.charge(signer.signature.len())?;
+            budget.hash_bytes.charge(values[0].full.len())?;
             let tsa = cms::verify_countersigner(
                 certificates,
                 values[0],
@@ -118,11 +136,13 @@ pub(crate) fn verify_timestamp(
                     at,
                     options.now,
                     options.check_revocation,
+                    budget,
                 )?)
             } else {
                 None
             };
             check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
+            budget.certificate_bytes(core::slice::from_ref(tsa.cert))?;
             timestamp = Some(TimestampReport {
                 fractional_seconds,
                 kind: "pkcs9_countersignature".into(),

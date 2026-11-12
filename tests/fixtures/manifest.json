@@ -6512,6 +6512,91 @@
       "cases": [
         "parse-recursive-depth9"
       ]
+    },
+    {
+      "file": "sec02-wide-64.exe",
+      "sha256": "001970e0ec65d721da82ddcd3e61e73b8d5a10fc56454c5ad4a18c640ae8680b",
+      "bytes": 15848,
+      "description": "64 identical valid SignerInfos in one CMS envelope; boundary success.",
+      "provenance": {
+        "source": "good-pe64.exe",
+        "method": "Deterministically repeat existing signed SignerInfo DER or WIN_CERTIFICATE entries; re-encode enclosing DER lengths and excluded PE security-directory size only. No private keys or signing tools used.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "sec02-wide-64"
+      ]
+    },
+    {
+      "file": "sec02-wide-65.exe",
+      "sha256": "3874bc0c57f9cebc140d6db068483b49dd2be5a5c11740a72fa6a343a8cfe044",
+      "bytes": 17000,
+      "description": "63 valid signers followed by a second WIN_CERTIFICATE containing two valid signers; aggregate reports exhausted before signer 65.",
+      "provenance": {
+        "source": "good-pe64.exe",
+        "method": "Deterministically repeat existing signed SignerInfo DER or WIN_CERTIFICATE entries; re-encode enclosing DER lengths and excluded PE security-directory size only. No private keys or signing tools used.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "sec02-wide-65"
+      ]
+    },
+    {
+      "file": "sec02-entries-65.exe",
+      "sha256": "89cb48ef6cf42e2bc6b3c4dc728d4d794e7cb534a31df750734497fc9e51f5a3",
+      "bytes": 75904,
+      "description": "65 valid certificate-table entries; certificate-entry collection budget exhausted before allocating entry 65.",
+      "provenance": {
+        "source": "good-pe64.exe",
+        "method": "Deterministically repeat existing signed SignerInfo DER or WIN_CERTIFICATE entries; re-encode enclosing DER lengths and excluded PE security-directory size only. No private keys or signing tools used.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "sec02-entries-65"
+      ]
+    },
+    {
+      "file": "sec02-depth-8.exe",
+      "sha256": "a9272a12da49e0a4168d8a971b44813342315dc8925f28c3b4bbda416704c6b2",
+      "bytes": 11520,
+      "description": "Valid original PE/CMS signature at each depth, with unsigned nested attributes added. Good reaches depth eight; bad adds a malformed DER child at depth nine, rejected before decoding.",
+      "provenance": {
+        "source": "good-pe64.exe",
+        "method": "Deterministic DER nesting of original signed content and SignerInfo; unsigned attributes and excluded PE security-directory size only.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "sec02-depth-8"
+      ]
+    },
+    {
+      "file": "sec02-depth-9-malformed.exe",
+      "sha256": "67339d594dbe485d1b6e9333737f85f3ab564ae981643a5891bc16013840e2c7",
+      "bytes": 11544,
+      "description": "Valid original PE/CMS signature at each depth, with unsigned nested attributes added. Good reaches depth eight; bad adds a malformed DER child at depth nine, rejected before decoding.",
+      "provenance": {
+        "source": "good-pe64.exe",
+        "method": "Deterministic DER nesting of original signed content and SignerInfo; unsigned attributes and excluded PE security-directory size only.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "sec02-depth-9-malformed"
+      ]
+    },
+    {
+      "file": "good-rdp-multiple-ekus.rdp",
+      "sha256": "01619003da614cde76d3a52e6565c61d8f17b644f148bd059456633310894a9f",
+      "bytes": 1506,
+      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; exercises RDP policy retries and shared-budget error propagation.",
+      "provenance": {
+        "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
+        "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Existing deterministic test root/key and RDP body; replace the leaf EKU extension and re-sign with the public test-only root key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "rdp-multiple-ekus"
+      ]
     }
   ]
 }

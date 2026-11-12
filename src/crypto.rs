@@ -230,3 +230,32 @@ impl digest::Update for DigestSink<'_> {
         self.0.update(bytes);
     }
 }
+
+/// Per-request wrapper: webpki may retry paths, but every certificate/CRL
+/// primitive consumes the same budget as CMS and timestamp signatures.
+#[derive(Debug)]
+pub(crate) struct BudgetedAlgorithm<'a> {
+    pub(crate) algorithm: &'a dyn SignatureVerificationAlgorithm,
+    pub(crate) budget: &'a crate::verify::budget::Budget,
+}
+impl SignatureVerificationAlgorithm for BudgetedAlgorithm<'_> {
+    fn public_key_alg_id(&self) -> AlgorithmIdentifier {
+        self.algorithm.public_key_alg_id()
+    }
+    fn signature_alg_id(&self) -> AlgorithmIdentifier {
+        self.algorithm.signature_alg_id()
+    }
+    fn verify_signature(
+        &self,
+        key: &[u8],
+        msg: &[u8],
+        sig: &[u8],
+    ) -> core::result::Result<(), InvalidSignature> {
+        self.budget.crypto.charge(1).map_err(|_| InvalidSignature)?;
+        self.budget
+            .hash_bytes
+            .charge(msg.len())
+            .map_err(|_| InvalidSignature)?;
+        self.algorithm.verify_signature(key, msg, sig)
+    }
+}

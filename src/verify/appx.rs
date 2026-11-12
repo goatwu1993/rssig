@@ -1,5 +1,8 @@
 //! Verify every embedded bundle package and bind its identity and signer.
-use super::{VerifyOptions, tagged, verify_inner};
+use super::{
+    VerifyOptions, authenticode::verify_container_budget, budget::Budget, container::Container,
+    tagged,
+};
 use crate::{appx::Appx, domain::*, format::Format};
 use alloc::{boxed::Box, vec::Vec};
 use anyhow::{Context, Result};
@@ -8,6 +11,7 @@ pub(super) fn verify_bundle(
     appx: &Appx<'_>,
     verification: &mut VerificationBundle,
     options: &VerifyOptions<'_>,
+    budget: &Budget,
 ) -> Result<()> {
     let bundle_signer = verification
         .signatures
@@ -18,6 +22,13 @@ pub(super) fn verify_bundle(
     let packages = appx.bundle_packages().map_err(VerificationError::from)?;
     let mut package_reports = Vec::with_capacity(packages.len());
     for package in &packages {
+        // Charge before the preliminary child parse as well as its verification.
+        budget.container(package.bytes)?;
+        tagged(
+            budget.appx(package.bytes),
+            ErrorCode::InvalidAppx,
+            Stage::Appx,
+        )?;
         let nested = tagged(
             Appx::parse(package.bytes).map_err(VerificationError::from),
             ErrorCode::InvalidAppx,
@@ -32,11 +43,17 @@ pub(super) fn verify_bundle(
             .detail("file_name", &package.file_name)
             .into());
         }
-        let package_verification =
-            verify_inner(package.bytes, options, Format::Appx).map_err(|error| {
-                VerificationError::from_internal(error, ErrorCode::InvalidAppx, Stage::Appx)
-                    .detail("bundle_package", &package.file_name)
-            })?;
+        let package_verification = verify_container_budget(
+            package.bytes,
+            options,
+            Format::Appx,
+            Container::Appx(&nested),
+            budget,
+        )
+        .map_err(|error| {
+            VerificationError::from_internal(error, ErrorCode::InvalidAppx, Stage::Appx)
+                .detail("bundle_package", &package.file_name)
+        })?;
         let package_report = package_verification
             .appx
             .as_ref()

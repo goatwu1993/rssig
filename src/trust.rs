@@ -1,10 +1,11 @@
 use alloc::{string::ToString, vec, vec::Vec};
 mod error;
-use crate::crypto::ALGORITHMS;
+use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
 use crate::domain::{
     CertificateReport, CrlReport, ErrorCode, OidReport, RevocationReport, RevocationStatus, Stage,
     TrustReport, VerificationError,
 };
+use crate::verify::budget::Budget;
 use ::der::{Decode, Encode};
 use anyhow::{Context, Result, ensure};
 use core::time::Duration;
@@ -80,6 +81,7 @@ impl TrustStore {
         self.crls.push(crl.to_der().map_err(crate::compat_error)?);
         Ok(())
     }
+    #[allow(clippy::too_many_arguments)] // Time, revocation and work policy are explicit.
     pub(crate) fn verify(
         &self,
         leaf: &Certificate,
@@ -88,7 +90,15 @@ impl TrustStore {
         at: u64,
         now: u64,
         revocation: bool,
+        budget: &Budget,
     ) -> Result<TrustReport> {
+        // webpki exposes no caller-owned search budget. Reserve its entire
+        // 200,000-call path-search allowance before starting each invocation.
+        budget.path_work.charge(200_000)?;
+        budget.certificate_bytes(certificates)?;
+        budget
+            .report_certificates
+            .charge(certificates.len() + self.roots.len())?;
         if self.roots.is_empty() {
             return Err(VerificationError::new(
                 ErrorCode::UntrustedRoot,
@@ -161,6 +171,18 @@ impl TrustStore {
         let leaf = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
         let leaf = webpki::EndEntityCert::try_from(&leaf)
             .map_err(|e| anyhow::anyhow!("invalid signer certificate: {e:?}"))?;
+        for root in &self.roots {
+            for _ in 0..8 {
+                budget.hash_bytes.charge(root.as_ref().len())?;
+                budget.decoded_bytes.charge(root.as_ref().len())?;
+            }
+        }
+        for crl in &self.crls {
+            for _ in 0..8 {
+                budget.hash_bytes.charge(crl.len())?;
+                budget.decoded_bytes.charge(crl.len())?;
+            }
+        }
         let roots: Vec<_> = self
             .roots
             .iter()
@@ -229,6 +251,12 @@ impl TrustStore {
         let invalid_ca_usage = core::cell::Cell::new(false);
         let check_ca_usage = |path: &webpki::VerifiedPath<'_>| {
             for intermediate in path.intermediate_certificates() {
+                for _ in 0..8 {
+                    budget
+                        .decoded_bytes
+                        .charge(intermediate.der().as_ref().len())
+                        .map_err(|_| webpki::Error::BadDer)?;
+                }
                 let cert = Certificate::from_der(intermediate.der().as_ref())
                     .map_err(|_| webpki::Error::BadDer)?;
                 if let Some((_, ku)) = cert
@@ -245,34 +273,47 @@ impl TrustStore {
         };
         // An absent EKU in a CA is unrestricted. The leaf is required to have
         // the requested EKU above; any CA EKU that is present must permit it.
-        let path = leaf
-            .verify_for_usage(
-                ALGORITHMS,
-                &roots,
-                &intermediates,
-                UnixTime::since_unix_epoch(Duration::from_secs(at)),
-                webpki::KeyUsage::required_if_present(eku),
-                revocation,
-                Some(&check_ca_usage),
-            )
-            .map_err(|e| {
-                let mut error = if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
-                    VerificationError::new(
-                        ErrorCode::InvalidKeyUsage,
-                        Stage::CertificateChain,
-                        "intermediate certificate KeyUsage lacks keyCertSign",
-                    )
-                } else {
-                    webpki_error(e)
-                };
-                error = error.detail("certificate", &leaf_report).detail(
-                    "required_eku",
-                    ::der::asn1::ObjectIdentifier::from_bytes(eku)
-                        .map(|o| o.to_string())
-                        .unwrap_or_default(),
-                );
-                error
-            })?;
+        let algorithms: Vec<_> = ALGORITHMS
+            .iter()
+            .map(|algorithm| BudgetedAlgorithm {
+                algorithm: *algorithm,
+                budget,
+            })
+            .collect();
+        let algorithm_refs: Vec<&dyn rustls_pki_types::SignatureVerificationAlgorithm> = algorithms
+            .iter()
+            .map(|a| a as &dyn rustls_pki_types::SignatureVerificationAlgorithm)
+            .collect();
+        let path = leaf.verify_for_usage(
+            &algorithm_refs,
+            &roots,
+            &intermediates,
+            UnixTime::since_unix_epoch(Duration::from_secs(at)),
+            webpki::KeyUsage::required_if_present(eku),
+            revocation,
+            Some(&check_ca_usage),
+        );
+        budget.crypto.check()?;
+        budget.hash_bytes.check()?;
+        budget.decoded_bytes.check()?;
+        let path = path.map_err(|e| {
+            let mut error = if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
+                VerificationError::new(
+                    ErrorCode::InvalidKeyUsage,
+                    Stage::CertificateChain,
+                    "intermediate certificate KeyUsage lacks keyCertSign",
+                )
+            } else {
+                webpki_error(e)
+            };
+            error = error.detail("certificate", &leaf_report).detail(
+                "required_eku",
+                ::der::asn1::ObjectIdentifier::from_bytes(eku)
+                    .map(|o| o.to_string())
+                    .unwrap_or_default(),
+            );
+            error
+        })?;
         let mut chain = vec![leaf_report];
         for intermediate in path.intermediate_certificates() {
             chain.push(CertificateReport::parse(

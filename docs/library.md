@@ -707,3 +707,7 @@ feature-separated package and existing facade after reviewing all current format
 consumers. It records the shared interfaces, alternatives, concrete extraction
 coupling, and compatibility requirements for a future split. No caller migration
 or crate split is required for current `no_std` parsing or verification.
+
+Verification calls, including parsed-container APIs, share fixed [aggregate work
+budgets](verification-budgets.md) across signers, timestamps and bundle children.
+Budget exhaustion returns a typed failure without a partial success verdict.

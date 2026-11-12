@@ -3,7 +3,7 @@ use crate::{
     cms::{self, DetachedData},
     crypto::Hash,
     domain::*,
-    verify::{VerifyOptions, timestamp::verify_timestamp},
+    verify::{VerifyOptions, budget::Budget, timestamp::verify_timestamp},
 };
 use alloc::{format, vec::Vec};
 #[cfg(test)]
@@ -71,7 +71,21 @@ fn at<T>(result: Result<T>, code: ErrorCode, stage: Stage) -> Result<T> {
     result.map_err(|e| VerificationError::from_internal(e, code, stage).into())
 }
 pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<VerificationBundle> {
+    let budget = Budget::default();
+    budget.container(bytes)?;
+    verify_budget(bytes, options, &budget)
+}
+pub(crate) fn verify_budget(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    budget: &Budget,
+) -> Result<VerificationBundle> {
     let rdp = at(Rdp::parse(bytes), ErrorCode::InvalidRdp, Stage::Rdp)?;
+    at(
+        budget.cms(&rdp.signature),
+        ErrorCode::MalformedCms,
+        Stage::Cms,
+    )?;
     let sd = at(
         DetachedData::parse(&rdp.signature),
         ErrorCode::MalformedCms,
@@ -79,6 +93,15 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
     )?;
     let mut signatures = Vec::new();
     for si in &sd.signers {
+        budget.report(sd.certs.len() + 1)?;
+        budget.certificate_bytes(&sd.certs)?;
+        for choice in &sd.unverified_certificate_choices {
+            budget.decoded_bytes.charge(choice.der.len())?;
+        }
+        budget.signer()?;
+        budget.hash_bytes.charge(si.full.len())?;
+        budget.crypto.charge(1)?;
+        budget.hash_bytes.charge(rdp.canonical.len())?;
         let signer = at(
             sd.verify(*si, &rdp.canonical, options.allow_sha1),
             ErrorCode::InvalidSignature,
@@ -93,7 +116,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
             .into());
         }
         let timestamp_verification = at(
-            verify_timestamp(&sd.certs, &signer, options),
+            verify_timestamp(&sd.certs, &signer, options, budget),
             ErrorCode::InvalidTimestamp,
             Stage::Timestamp,
         )?;
@@ -106,6 +129,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
                     &sd.certs,
                     timestamp.unwrap_or(options.now),
                     options,
+                    budget,
                 ),
                 ErrorCode::CertificateChainInvalid,
                 Stage::CertificateChain,
@@ -145,6 +169,7 @@ pub(crate) fn verify(bytes: &[u8], options: &VerifyOptions<'_>) -> Result<Verifi
             timestamp_verification,
         });
     }
+    budget.hash_bytes.charge(bytes.len())?;
     Ok(VerificationBundle {
         format: "rdp_signed_settings".into(),
         validation_time: options.now,
@@ -160,6 +185,7 @@ fn verify_trust(
     certificates: &[x509_cert::Certificate],
     at: u64,
     options: &VerifyOptions<'_>,
+    budget: &Budget,
 ) -> Result<TrustReport> {
     use x509_cert::ext::pkix::ExtendedKeyUsage;
     const USAGES: &[&[u8]] = &[
@@ -184,9 +210,17 @@ fn verify_trust(
                 at,
                 options.now,
                 options.check_revocation,
+                budget,
             ) {
                 Ok(report) => return Ok(report),
                 Err(e) => {
+                    if e.chain().any(|cause| {
+                        cause
+                            .downcast_ref::<VerificationError>()
+                            .is_some_and(|error| error.code == ErrorCode::ResourceLimitExceeded)
+                    }) {
+                        return Err(e);
+                    }
                     if failure.is_none() {
                         failure = Some(e)
                     }
@@ -217,6 +251,39 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn sec02_rdp_eku_retry_propagates_later_budget_exhaustion() {
+        let bytes = fixture("good-rdp-multiple-ekus.rdp");
+        let store = crate::TrustStore::default();
+        let options = VerifyOptions::trusted_with_revocation(
+            &store,
+            1800000000,
+            crate::verify::RevocationPolicy::Disabled,
+        );
+        let ordinary = verify_budget(&bytes, &options, &Budget::default()).unwrap_err();
+        let ordinary =
+            VerificationError::from_internal(ordinary, ErrorCode::InternalError, Stage::Cms);
+        assert_eq!(ordinary.code, ErrorCode::UntrustedRoot);
+
+        // Leave exactly one webpki search reservation. The first accepted EKU
+        // fails for lack of anchors; the second must propagate budget exhaustion.
+        let budget = Budget::default();
+        budget.path_work.charge(12_600_000).unwrap();
+        let error = verify_budget(&bytes, &options, &budget).unwrap_err();
+        let error = VerificationError::from_internal(error, ErrorCode::InternalError, Stage::Cms);
+        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(error.stage, Stage::Cms);
+        let json = serde_json::to_value(error).unwrap();
+        assert_eq!(json["code"], "resource_limit_exceeded");
+        assert_eq!(
+            json["details"],
+            serde_json::json!({
+                "resource": "path_work", "limit": 12_800_000,
+                "used": 12_800_000, "requested": 200_000,
+            })
+        );
+    }
+
     #[test]
     fn signed_and_unsigned_mutations_have_distinct_cryptographic_effects() {
         for (good, bad, unsigned) in [

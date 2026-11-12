@@ -41,13 +41,23 @@ timestamps, and local CRL validation already exist.
   [bounds evidence and limits](docs/parser-bounds.md), a DER regression fixture,
   CAB extreme-offset tests, and cross-format header mutation coverage. Aggregate
   budgets, host reads, fuzzing, and 32-bit execution remain separate tasks.
-- [ ] **SEC-02: Enforce aggregate verification budgets.** Inventory existing
-  per-container, per-node, and recursion limits; bound total decoded bytes,
-  certificates, signers, reports, nesting, path candidates, and crypto operations
-  across certificate-table entries, timestamps, nested signatures, and bundle
-  children. Check before each unit of work, including every SignerInfo. Test wide
-  valid structures and deep malformed ones, with predictable failures and no
-  partial success verdict.
+- [x] **SEC-02: Enforce aggregate verification budgets.** Added one consumable
+  per-file budget across certificate-table entries, every signer, nested CMS,
+  timestamps, RDP and embedded bundle children. Limits cover decoded/hash bytes,
+  certificate candidates and report copies, reports, nesting, path search and
+  RustCrypto signature operations; exhaustion returns typed details with no
+  partial success. [Inventory, limits and evidence](docs/verification-budgets.md)
+  document conservative reservations and webpki's per-search bounds. Committed
+  valid 64/65-signer and 65-entry fixtures plus depth-eight/depth-nine malformed
+  children, portable cases, named CLI/domain assertions and counter/sharing tests.
+  The 63-plus-two-signer regression first returned success with 65 reports.
+  A multi-EKU RDP regression also pins immediate propagation of a later retry
+  budget failure, preserving ordinary first-policy-error behavior. Callback
+  exhaustion retains the first failed charge’s exact usage and requested amount.
+  Full locked tests, fmt, Clippy, parser-only and verify-core/verify/cli feature
+  tests, structural-adapter Clippy and bare-metal verify-core Clippy pass on
+  macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
+  Host reads and CLI batch/report buffering remain SEC-03.
 - [ ] **SEC-03: Bound host input and report memory.** The CLI reads entire files
   before format-specific validation. Define input/root/CRL and batch/report
   budgets; enforce read limits without relying only on metadata. Cover oversized
