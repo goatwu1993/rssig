@@ -246,3 +246,6 @@ roots for controlled publisher policies. See `AGENTS.md` for supported algorithm
 and additional compatibility limits. GitHub Actions runs formatting, Clippy,
 and Rust tests on Linux and macOS. A coverage job publishes Cobertura XML and
 openable HTML reports. External signing tools are not required for CI.
+
+CLI input, trust-file, batch, and retained-report growth is bounded. See
+[host limits](docs/host-limits.md) for defaults and options to lower them.

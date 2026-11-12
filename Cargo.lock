@@ -733,6 +733,7 @@ dependencies = [
  "der",
  "digest",
  "flate2",
+ "libc",
  "p256",
  "p384",
  "rand",

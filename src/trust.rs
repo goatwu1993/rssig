@@ -24,6 +24,25 @@ pub struct TrustStore {
 }
 
 impl TrustStore {
+    #[cfg(feature = "cli")]
+    pub(crate) fn check_host_limits(&self) -> Result<()> {
+        ensure!(
+            self.roots.len() <= 4096 && self.crls.len() <= 64,
+            "too many loaded roots or CRLs"
+        );
+        let mut remaining = 32 * 1024 * 1024usize;
+        for bytes in self
+            .roots
+            .iter()
+            .map(|v| v.as_ref())
+            .chain(self.crls.iter().map(|v| v.as_slice()))
+        {
+            remaining = remaining
+                .checked_sub(bytes.len())
+                .context("loaded roots/CRLs exceed 32 MiB")?;
+        }
+        Ok(())
+    }
     /// Typed counterpart to `add_roots`; loading does not validate trust policy.
     pub fn add_roots_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {
         self.add_roots(bytes)

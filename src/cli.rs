@@ -1,5 +1,6 @@
 //! Clap-based, in-process CLI entry point and stream/exit-code contract.
 mod batch;
+mod limits;
 mod parse;
 mod verify;
 
