@@ -57,7 +57,7 @@
                 "maximum": 255
               },
               "json": {
-                "description": "Partial expected serialized domain document. Aggregate verification failures use resource_limit_exceeded at cms with resource, limit, used and requested details; legacy nesting exhaustion retains malformed_cms. See docs/verification-budgets.md."
+                "description": "Partial expected serialized domain document. Aggregate verification failures use resource_limit_exceeded at cms with resource, limit, used and requested details; legacy nesting exhaustion retains malformed_cms. Host input/report exhaustion uses the same code at input stage; see docs/host-limits.md. See docs/verification-budgets.md."
               },
               "contains": {
                 "type": "object",

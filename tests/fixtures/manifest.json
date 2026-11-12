@@ -148,7 +148,12 @@
         "lib07-policy-trusted",
         "lib07-policy-no-revocation",
         "lib07-policy-integrity",
-        "lib08-repeated-verification"
+        "lib08-repeated-verification",
+        "sec03-input",
+        "sec03-report",
+        "sec03-batch-input",
+        "sec03-parse-input",
+        "sec03-batch-count"
       ]
     },
     {

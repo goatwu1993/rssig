@@ -81,6 +81,7 @@ followed by budget exhaustion on a retry: exhaustion propagates immediately with
 its original typed resource details. Ordinary EKU failures still retain the first
 policy error. Existing failure expectations remain unchanged.
 
-Host file/root/CRL reads, caller-owned input memory, CLI batch/report buffering,
-and nonregular/changing files remain SEC-03. This is not a wall-clock deadline,
+CLI file/root/CRL reads, batch/report buffering, and nonregular/changing inputs
+are covered by [SEC-03 host limits](host-limits.md). Library callers own their
+input and returned report memory. This is not a wall-clock deadline,
 fuzzing audit, Windows policy equivalence, or independent interoperability proof.

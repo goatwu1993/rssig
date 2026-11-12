@@ -20,7 +20,7 @@ verify-core = [
     "dep:p256", "dep:p384", "dep:signature", "dep:serde", "dep:serde_json",
     "x509-cert/pem",
 ]
-cli = ["verify", "dep:clap"]
+cli = ["verify", "dep:clap", "dep:libc"]
 system-roots = ["verify", "dep:rustls-native-certs"]
 
 [[bin]]
@@ -61,6 +61,7 @@ todo = "deny"
 unimplemented = "deny"
 
 [dependencies]
+libc = { version = "0.2", optional = true, default-features = false }
 flate2 = { version = "1", optional = true, default-features = false, features = ["rust_backend"] }
 crc32fast = { version = "1", optional = true }
 roxmltree = { version = "0.21", optional = true, default-features = false, features = ["positions"] }

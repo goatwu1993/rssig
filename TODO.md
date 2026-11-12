@@ -57,12 +57,20 @@ timestamps, and local CRL validation already exist.
   Full locked tests, fmt, Clippy, parser-only and verify-core/verify/cli feature
   tests, structural-adapter Clippy and bare-metal verify-core Clippy pass on
   macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
-  Host reads and CLI batch/report buffering remain SEC-03.
-- [ ] **SEC-03: Bound host input and report memory.** The CLI reads entire files
-  before format-specific validation. Define input/root/CRL and batch/report
-  budgets; enforce read limits without relying only on metadata. Cover oversized
-  and changing files and nonregular inputs. Preserve one JSON document, ordered
-  per-file failures, and explicit handling of limit exhaustion.
+  Host reads and CLI batch/report buffering are covered by SEC-03.
+- [x] **SEC-03: Bound host input and report memory.** Added bounded streaming
+  reads for CLI inputs and root/CRL files, per-file and batch byte/report limits,
+  path/count limits, and regular-file checks after nonblocking opens. Successful
+  reports are counted before retention; bounded failure reserves preserve one
+  JSON document and ordered per-file outcomes. [Host limits](docs/host-limits.md)
+  document defaults, lowering options, native-root enumeration boundaries and
+  conservative failed-read reservations. Portable cases reuse committed fixtures;
+  named CLI and unit tests cover oversized sparse files, growing/short streams,
+  nonregular inputs, exact EOF, batch exhaustion and oversized failure evidence.
+  Full locked tests, fmt, Clippy, CLI-without-system-roots tests and bare-metal
+  verify-core Clippy pass on macOS. Dependency review found only a direct optional
+  CLI edge to the already-locked libc version for O_NONBLOCK; no native crypto.
+  Linux runtime validation remains in CI. Automatic CRL/AIA fetching is FEATURE-01.
 - [ ] **SEC-04: Audit CMS structure and signature binding.** Check
   SignedData/SignerInfo versions, supported signer identifiers, canonical
   INTEGER/SET encodings, duplicate/empty attributes, digest-set membership,

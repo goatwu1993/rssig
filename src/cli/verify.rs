@@ -15,6 +15,8 @@ use std::{
 pub(super) struct Args {
     #[arg(required = true)]
     files: Vec<PathBuf>,
+    #[command(flatten)]
+    limits: super::limits::Limits,
     /// Verify cryptography and image integrity without claiming certificate trust.
     #[arg(long, conflicts_with_all = ["roots", "no_system_roots", "crl", "no_revocation"])]
     integrity_only: bool,
@@ -43,6 +45,7 @@ pub(super) struct Args {
 pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
     let Args {
         files,
+        limits,
         integrity_only,
         roots,
         no_system_roots,
@@ -52,6 +55,14 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         at,
         json: _,
     } = args;
+    limits.validate(&files)?;
+    super::limits::validate_paths(&roots, 64)?;
+    super::limits::validate_paths(&crl, 64)?;
+    ensure!(
+        roots.len() + crl.len() <= 64,
+        "at most 64 root/CRL files are allowed"
+    );
+    let mut trust_remaining = super::limits::TRUST_TOTAL;
     ensure!(
         integrity_only || no_revocation || !crl.is_empty(),
         "supply --crl for revocation checks, or explicitly choose --no-revocation / --integrity-only"
@@ -68,17 +79,24 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
             "system roots are unavailable in this build; use --no-system-roots with --roots, or --integrity-only"
         );
     };
+    trust.check_host_limits()?;
     for path in roots {
         trust
             .add_roots(
-                &std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?,
+                &super::limits::read_trust(&path, &mut trust_remaining)
+                    .with_context(|| format!("reading {}", path.display()))?,
             )
             .with_context(|| format!("loading roots from {}", path.display()))?;
+        trust.check_host_limits()?;
     }
     for path in &crl {
         trust
-            .add_crl(&std::fs::read(path).with_context(|| format!("reading {}", path.display()))?)
+            .add_crl(
+                &super::limits::read_trust(path, &mut trust_remaining)
+                    .with_context(|| format!("reading {}", path.display()))?,
+            )
             .with_context(|| format!("loading CRL from {}", path.display()))?;
+        trust.check_host_limits()?;
     }
     let now = match at {
         Some(at) => at,
@@ -101,6 +119,7 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
     batch::execute(
         "verify",
         files,
+        &limits,
         |path, bytes| {
             // Preserve extension hints even when the filename stem is not UTF-8.
             let hint = path

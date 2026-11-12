@@ -39,3 +39,6 @@ mod policy;
 
 #[path = "cli/budgets.rs"]
 mod budgets;
+
+#[path = "cli/host_limits.rs"]
+mod host_limits;

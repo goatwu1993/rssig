@@ -23614,6 +23614,284 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec03-input",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000",
+        "--max-input-bytes",
+        "100"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "input",
+                "details": {
+                  "resource": "input_bytes",
+                  "limit": 100
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec03-report",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000",
+        "--max-report-bytes",
+        "100"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "input",
+                "details": {
+                  "resource": "report_bytes",
+                  "limit": 100
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec03-batch-input",
+      "inputs": [
+        "good-pe64.exe",
+        "good-pe64.exe"
+      ],
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000",
+        "--max-total-input-bytes",
+        "2176"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": true
+            },
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "input",
+                "details": {
+                  "resource": "total_input_bytes",
+                  "limit": 2176,
+                  "used": 2176,
+                  "requested": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec03-parse-input",
+      "input": "good-pe64.exe",
+      "command": [
+        "parse",
+        "--max-input-bytes",
+        "100"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "input",
+                "details": {
+                  "resource": "input_bytes",
+                  "limit": 100,
+                  "used": 100,
+                  "requested": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec03-batch-count",
+      "inputs": [
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe",
+        "good-pe64.exe"
+      ],
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "at most 128 file paths"
+        ]
+      }
     }
   ]
 }
