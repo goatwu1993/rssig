@@ -47,7 +47,9 @@ A dependency update must re-audit those constants. A per-request RustCrypto
 adapter charges each actual certificate/CRL signature attempt against the same
 crypto counter as CMS. An exhausted adapter records that fact and returns the
 typed budget error after webpki returns, even if webpki translates it into an
-ordinary signature/path failure or finds another path.
+ordinary signature/path failure or finds another path. Each counter retains the
+first rejected charge’s original usage and requested amount, so later callbacks
+cannot alter the structured exhaustion evidence.
 
 Existing local structural caps remain in force: DER children are bounded, CMS
 has at most 64 SignerInfos per envelope, opaque certificate DER recursion is

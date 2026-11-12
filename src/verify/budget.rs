@@ -1,14 +1,17 @@
 //! Per-verification consumable work limits. Never reset for siblings or children.
 use crate::{der, domain::*};
 use anyhow::Result;
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Debug)]
 pub(crate) struct Counter {
     name: &'static str,
     limit: usize,
     used: AtomicUsize,
-    exhausted: AtomicBool,
+    // 0: no failure, 1: snapshot being written, 2: snapshot published.
+    failure_state: AtomicUsize,
+    failed_used: AtomicUsize,
+    failed_requested: AtomicUsize,
 }
 impl Counter {
     const fn new(name: &'static str, limit: usize) -> Self {
@@ -16,7 +19,9 @@ impl Counter {
             name,
             limit,
             used: AtomicUsize::new(0),
-            exhausted: AtomicBool::new(false),
+            failure_state: AtomicUsize::new(0),
+            failed_used: AtomicUsize::new(0),
+            failed_requested: AtomicUsize::new(0),
         }
     }
     pub(crate) fn charge(&self, requested: usize) -> Result<()> {
@@ -26,7 +31,15 @@ impl Counter {
                 .checked_add(requested)
                 .filter(|next| *next <= self.limit)
             else {
-                self.exhausted.store(true, Ordering::Relaxed);
+                if self
+                    .failure_state
+                    .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
+                    .is_ok()
+                {
+                    self.failed_used.store(used, Ordering::Relaxed);
+                    self.failed_requested.store(requested, Ordering::Relaxed);
+                    self.failure_state.store(2, Ordering::Release);
+                }
                 return Err(self.error(used, requested).into());
             };
             match self
@@ -51,10 +64,20 @@ impl Counter {
         .detail("requested", requested)
     }
     pub(crate) fn check(&self) -> Result<()> {
-        if self.exhausted.load(Ordering::Relaxed) {
-            return Err(self.error(self.used.load(Ordering::Relaxed), 1).into());
+        loop {
+            match self.failure_state.load(Ordering::Acquire) {
+                0 => return Ok(()),
+                1 => core::hint::spin_loop(),
+                _ => {
+                    return Err(self
+                        .error(
+                            self.failed_used.load(Ordering::Relaxed),
+                            self.failed_requested.load(Ordering::Relaxed),
+                        )
+                        .into());
+                }
+            }
         }
-        Ok(())
     }
 }
 
@@ -186,6 +209,35 @@ mod tests {
         verify::{VerifyOptions, verify_inner_budget},
     };
     use alloc::string::ToString;
+
+    #[test]
+    fn sec02_callback_preserves_first_failed_charge_details() {
+        use rustls_pki_types::SignatureVerificationAlgorithm;
+        let budget = Budget {
+            hash_bytes: Counter::new("hash_bytes", 1500),
+            ..Budget::default()
+        };
+        budget.hash_bytes.charge(1000).unwrap();
+        let adapter = crate::crypto::BudgetedAlgorithm {
+            algorithm: crate::crypto::ALGORITHMS[0],
+            budget: &budget,
+        };
+        assert!(adapter.verify_signature(&[], &[0; 1000], &[]).is_err());
+        // A later callback may consume remaining allowance or fail differently.
+        budget.hash_bytes.charge(100).unwrap();
+        assert!(budget.hash_bytes.charge(2000).is_err());
+        let error = budget.hash_bytes.check().unwrap_err();
+        let error = error.downcast_ref::<VerificationError>().unwrap();
+        let json = serde_json::to_value(error).unwrap();
+        assert_eq!(json["code"], "resource_limit_exceeded");
+        assert_eq!(json["stage"], "cms");
+        assert_eq!(
+            json["details"],
+            serde_json::json!({
+                "resource": "hash_bytes", "limit": 1500, "used": 1000, "requested": 1000,
+            })
+        );
+    }
 
     #[test]
     fn sec02_counters_reject_overflow_and_preserve_consumed_units() {
