@@ -3,7 +3,7 @@ use crate::{
     crypto::{self, Hash},
     der::{self, Node},
 };
-use ::der::Encode;
+use ::der::{Decode, Encode};
 use alloc::vec::Vec;
 use anyhow::{Context, Result, ensure};
 use x509_cert::Certificate;
@@ -51,6 +51,25 @@ pub(crate) fn algorithm(node: Node<'_>) -> Result<Hash> {
 impl<'a> SignedData<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self> {
         let parsed = crate::parse::SignedData::parse_inner(bytes)?;
+        // Retain legacy PKCS#7 v1 envelopes, including existing timestamp and
+        // opaque certificate-choice fixtures. CMS envelopes use the version
+        // implied by their content and certificate/revocation choices.
+        let cms_version = if parsed.certificate_choices().iter().any(|c| c.tag() == 0xa3)
+            || parsed
+                .revocation_choices_der()
+                .iter()
+                .any(|c| c.first() == Some(&0xa1))
+        {
+            5
+        } else if parsed.certificate_choices().iter().any(|c| c.tag() == 0xa2) {
+            4
+        } else {
+            3
+        };
+        ensure!(
+            parsed.version.body == [1] || parsed.version.body == [cms_version],
+            "unsupported attached SignedData version"
+        );
         let digest_algorithms = parsed
             .digest_algorithms()
             .iter()
@@ -414,15 +433,12 @@ fn verify_signer_inner<'a, 'c>(
         "SignerInfo must contain authenticated attributes"
     );
     let fields = crate::parse::signer::signer_field_count(&si, has_attributes)?;
-    if allow_bare {
-        ensure!(
-            si[0].expect(2)?.body == [1],
-            "unsupported detached signer version"
-        );
-    }
-    si[0].expect(2)?;
+    ensure!(
+        si[0].expect(2)?.body == [1],
+        "unsupported issuer-and-serial SignerInfo version"
+    );
     let sid = der::fields(si[1].expect(0x30)?, 2)?;
-    sid[1].expect(2)?;
+    ::der::asn1::UintRef::from_der(sid[1].full).map_err(crate::compat_error)?;
     let hash = algorithm(si[2])?;
     if allow_bare && !allow_sha1 && hash == Hash::Sha1 {
         return Err(VerificationError::new(
@@ -485,6 +501,11 @@ fn verify_signer_inner<'a, 'c>(
     let algorithm_index = if has_attributes { 4 } else { 3 };
     let alg =
         crate::parse::cms::algorithm_fields(si[algorithm_index], "invalid signature algorithm")?;
+    if alg[0].body == [42, 134, 72, 206, 61, 4, 3, 2]
+        || alg[0].body == [42, 134, 72, 206, 61, 4, 3, 3]
+    {
+        ensure!(alg.len() == 1, "ECDSA signature parameters must be absent");
+    }
     if alg.len() == 2 {
         ensure!(
             alg[1].tag == 5 && alg[1].body.is_empty(),
