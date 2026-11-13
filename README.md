@@ -26,7 +26,7 @@ necessarily establish a trusted publisher.
 
 | Tool / library | Verification implementation | Scope and differences |
 | --- | --- | --- |
-| **rssig** | Pure Rust with RustCrypto and webpki; OS used only for roots | Windows artifacts on macOS/Linux: PE, MSI/MSP, CAB, NAVX, PowerShell/XML, WSH, RDP, and AppX/MSIX packages/bundles. Checks CMS, configured-root trust, signer/TSA EKUs, timestamps, and supplied CRLs. JSON reports explicit integrity-only or revocation-disabled modes. No automatic AIA/CRL retrieval, OCSP, or standalone catalogs. |
+| **rssig** | Pure Rust with RustCrypto and webpki; OS used only for roots | Windows artifacts on macOS/Linux: PE, MSI/MSP, CAB, NAVX, PowerShell/XML, WSH, RDP, and AppX/MSIX packages/bundles. Checks CMS, configured-root trust, signer/TSA EKUs, timestamps, and supplied CRLs. JSON reports explicit integrity-only or revocation-disabled modes. Opt-in bounded HTTP CRL retrieval; no AIA retrieval, OCSP, or standalone catalogs. |
 | [authenticode-rs / authenticode-tool](https://github.com/google/authenticode-rs) | Rust `no_std` parsing/hashing library; inspection CLI | PE digest computation, signature parsing, and certificate extraction. No CMS public-key verification, trusted-chain validation, or timestamp/revocation verification workflow. Hosted under Google, but explicitly not an official Google project. |
 | [authenticode-parser 0.5.0](https://docs.rs/authenticode-parser/0.5.0/authenticode_parser/) | Rust bindings to Avast's C/OpenSSL engine | PE digest, CMS, nested-signature, and timestamp cryptographic checks. Chains are reconstructed without validating trust; `Valid` does not mean trusted. `parse()` leaves file-digest comparison to the caller; `parse_pe()` includes it. |
 | [cross-authenticode](https://github.com/secana/cross-authenticode) | Rust PE library | `verify()` compares the computed PE digest with the embedded digest. It does not verify CMS public-key signatures, certificate trust, timestamps, or revocation. |
@@ -150,6 +150,9 @@ cargo build --release --locked
 # System roots and explicit current CRLs for every issuer in the chain.
 rssig verify application.exe --crl issuer.crl --crl root-issuer.crl
 
+# Discover and retrieve direct CRLs over bounded public HTTP (opt-in).
+rssig verify application.exe --fetch-crls
+
 # Explicit test/private roots, with revocation disabled and reported as such.
 rssig verify application.exe --no-system-roots --roots roots.pem --no-revocation
 
@@ -239,8 +242,8 @@ See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
 
 This is an initial verifier, not a Windows trust-policy replacement. It requires
-embedded certificates and supplied CRLs; automatic CRL/AIA downloads and OCSP
-are not implemented. System root sets can differ from Windows publisher roots,
+embedded certificates and either supplied CRLs or explicit `--fetch-crls`;
+AIA downloads and OCSP are not implemented. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
 roots for controlled publisher policies. See `AGENTS.md` for supported algorithms
 and additional compatibility limits. GitHub Actions runs formatting, Clippy,
@@ -249,3 +252,7 @@ openable HTML reports. External signing tools are not required for CI.
 
 CLI input, trust-file, batch, and retained-report growth is bounded. See
 [host limits](docs/host-limits.md) for defaults and options to lower them.
+
+Opt-in [CRL retrieval](docs/crl-retrieval.md) discovers distribution points after
+signature/trust checks and authenticates fetched evidence in the Rust verifier.
+The initial built-in transport supports bounded public HTTP, not HTTPS or LDAP.

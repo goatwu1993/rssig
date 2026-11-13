@@ -711,3 +711,8 @@ or crate split is required for current `no_std` parsing or verification.
 Verification calls, including parsed-container APIs, share fixed [aggregate work
 budgets](verification-budgets.md) across signers, timestamps and bundle children.
 Budget exhaustion returns a typed failure without a partial success verdict.
+
+The optional `crl-fetch` feature adds `retrieval::CrlSource`, distribution-point
+discovery, and `verify_with_crl_source`. The CLI includes it and opts in through
+`--fetch-crls`; existing verify APIs remain offline. See [provider and network
+policy](crl-retrieval.md).

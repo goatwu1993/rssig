@@ -79,3 +79,8 @@ The design reference is Google's
 Its borrowed structures and independent digest interface informed this boundary.
 rssig retains its own bounded PE layout rules, parser implementation, and full
 trust/revocation verifier; the reference is not a build or runtime dependency.
+
+`retrieval` is an optional std host adapter above the shared verifier. It injects
+untrusted CRL bytes through `CrlSource`; URL/HTTP transport and bounded DNS/socket
+I/O stay outside `verify-core`. Two verification passes share the engine budget,
+and only the final revocation-checked result is returned. See [CRL retrieval](crl-retrieval.md).

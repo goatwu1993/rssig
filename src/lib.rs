@@ -41,6 +41,8 @@ mod powershell;
 mod rdp;
 #[cfg(feature = "verify-core")]
 mod report;
+#[cfg(feature = "crl-fetch")]
+pub mod retrieval;
 #[cfg(feature = "verify-core")]
 mod trust;
 #[cfg(feature = "verify-core")]

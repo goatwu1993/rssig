@@ -30,9 +30,12 @@ enum Command {
     Parse(parse::Args),
 }
 
-fn execute(command: Command) -> Result<(Value, u8)> {
+fn execute(
+    command: Command,
+    source: Option<&mut dyn crate::retrieval::CrlSource>,
+) -> Result<(Value, u8)> {
     match command {
-        Command::Verify(args) => verify::execute(args),
+        Command::Verify(args) => verify::execute(args, source),
         Command::Parse(args) => parse::execute(args),
     }
 }
@@ -57,7 +60,7 @@ where
     T: Into<OsString> + Clone,
     W: Write,
 {
-    dispatch(arguments).write(output)
+    dispatch(arguments, None).write(output)
 }
 
 /// Execute with separate output sinks, without exiting the calling process.
@@ -72,7 +75,29 @@ where
     O: Write,
     E: Write,
 {
-    let output = dispatch(arguments);
+    let output = dispatch(arguments, None);
+    if matches!(output, Output::Text { stderr: true, .. }) {
+        output.write(stderr)
+    } else {
+        output.write(stdout)
+    }
+}
+
+/// Execute with an injected CRL source. The source is used only with --fetch-crls;
+/// deterministic tests and offline applications can supply bounded artifacts.
+pub fn run_with_crl_source<I, T, O, E>(
+    arguments: I,
+    stdout: O,
+    stderr: E,
+    source: &mut dyn crate::retrieval::CrlSource,
+) -> io::Result<u8>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+    O: Write,
+    E: Write,
+{
+    let output = dispatch(arguments, Some(source));
     if matches!(output, Output::Text { stderr: true, .. }) {
         output.write(stderr)
     } else {
@@ -107,7 +132,7 @@ impl Output {
     }
 }
 
-fn dispatch<I, T>(arguments: I) -> Output
+fn dispatch<I, T>(arguments: I, source: Option<&mut dyn crate::retrieval::CrlSource>) -> Output
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -122,7 +147,7 @@ where
             };
         }
     };
-    match execute(cli.command) {
+    match execute(cli.command, source) {
         Ok((value, exit)) => Output::Json(value, exit),
         Err(error) => Output::Text {
             text: format!("error: {error:#}\n"),

@@ -171,6 +171,7 @@ pub(crate) fn verify_budget(
     }
     budget.hash_bytes.charge(bytes.len())?;
     Ok(VerificationBundle {
+        crl_retrieval: None,
         format: "rdp_signed_settings".into(),
         validation_time: options.now,
         file_sha256: hex(&Hash::Sha256.digest(bytes)),

@@ -81,6 +81,8 @@ jobs:
           cargo clippy --all-targets --locked --no-default-features --features msi,appx -- -D warnings
       - name: Test verification without CLI or native roots
         run: cargo test --locked --no-default-features --features verify
+      - name: Test opt-in CRL retrieval without CLI or native roots
+        run: cargo test --locked --no-default-features --features crl-fetch
       - name: Test CLI with explicit roots only
         run: cargo test --locked --no-default-features --features cli
 

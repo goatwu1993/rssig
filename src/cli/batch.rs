@@ -10,7 +10,7 @@ pub(super) fn execute<T, S: Serialize>(
     command: &str,
     files: Vec<PathBuf>,
     limits: &super::limits::Limits,
-    operation: impl Fn(&Path, &[u8]) -> std::result::Result<T, VerificationError>,
+    mut operation: impl FnMut(&Path, &[u8]) -> std::result::Result<T, VerificationError>,
     success_report: impl Fn(PathBuf, T) -> S,
     failure_report: impl Fn(FileFailure) -> S,
 ) -> Result<(Value, u8)> {

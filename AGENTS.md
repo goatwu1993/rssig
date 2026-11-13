@@ -168,7 +168,8 @@ signature-verified; JSON must report this explicitly.
 `verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_navx`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
-freshness, and revocation across the chain. Automatic CRL/AIA fetching, OCSP,
+freshness, and revocation across the chain. Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
+`CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 Revocation of a timestamped signer is handled conservatively: an entry on a

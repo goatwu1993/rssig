@@ -418,11 +418,19 @@ timestamps, and local CRL validation already exist.
 
 ## P3 — Additional capabilities requiring separate design
 
-- [ ] **FEATURE-01: Add bounded opt-in CRL/AIA retrieval.** Separate fetching
-  from verification and retain offline defaults. Define destination policy,
-  redirects, timeouts, response sizes, total request/work budgets, cache freshness,
-  and provenance for certificate-controlled URLs. Use pure Rust transport/crypto;
-  fetched issuers are untrusted candidates, never new trust anchors.
+- [x] **FEATURE-01: Add bounded opt-in CRL retrieval.** Added certificate CRL
+  discovery, an injected `CrlSource`, and CLI `--fetch-crls` with bounded HTTP
+  retrieval. Authenticate signatures and configured-root paths before fetching,
+  then require full revocation validation with shared work budgets. Offline
+  defaults remain unchanged; report response provenance without claiming each
+  artifact verified. Destination checks, redirects, deadlines, response sizes
+  and aggregate limits are documented in `docs/crl-retrieval.md`. Tests use
+  committed fixtures and injected responses, never external network services.
+- [ ] **FEATURE-01-AIA: Add bounded AIA issuer retrieval.** Extend the retrieval
+  boundary to missing intermediate certificates, always as untrusted candidates,
+  never new trust anchors. Define pre-trust destination discovery, loop/work
+  limits and provenance. HTTPS transport and persistent caching also remain
+  separate follow-ups requiring policy and dependency review.
 - [ ] **FEATURE-02: Add OCSP with explicit evidence policy.** Require responder
   authorization, signature/freshness checks, issuer/serial binding, and tested
   unknown/revoked/error behavior. Define interaction with CRLs, caches, offline

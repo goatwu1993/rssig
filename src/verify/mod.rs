@@ -238,7 +238,7 @@ fn verify_inner(
     verify_inner_budget(bytes, options, format, &Budget::default())
 }
 
-fn verify_inner_budget(
+pub(crate) fn verify_inner_budget(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
     format: Format,
