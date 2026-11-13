@@ -17,7 +17,7 @@ use x509_cert::{Certificate, crl::CertificateList};
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
 pub(crate) const TIME_STAMPING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 8];
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct TrustStore {
     roots: Vec<CertificateDer<'static>>,
     crls: Vec<Vec<u8>>,
@@ -42,6 +42,32 @@ impl TrustStore {
                 .context("loaded roots/CRLs exceed 32 MiB")?;
         }
         Ok(())
+    }
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn has_crl_for(&self, cert: &Certificate, budget: &Budget) -> Result<bool> {
+        for bytes in &self.crls {
+            for _ in 0..8 {
+                budget.decoded_bytes.charge(bytes.len())?;
+            }
+            if CertificateList::from_der(bytes)
+                .map_err(crate::compat_error)?
+                .tbs_cert_list
+                .issuer
+                == cert.tbs_certificate.issuer
+            {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn retrieval_crl_count(&self) -> usize {
+        self.crls.len()
+    }
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn retrieval_bytes(&self) -> usize {
+        self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
+            + self.crls.iter().map(Vec::len).sum::<usize>()
     }
     /// Typed counterpart to `add_roots`; loading does not validate trust policy.
     pub fn add_roots_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {

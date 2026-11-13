@@ -42,3 +42,6 @@ mod budgets;
 
 #[path = "cli/host_limits.rs"]
 mod host_limits;
+
+#[path = "cli/crl_fetch.rs"]
+mod crl_fetch;

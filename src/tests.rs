@@ -1,6 +1,7 @@
 mod appx_fixtures;
 mod cab_fixtures;
 mod certificate_choices;
+mod crl_fetch_fixtures;
 mod fixture_faults;
 mod msi_fixtures;
 mod msp_fixtures;
@@ -652,6 +653,7 @@ fn regenerate_cli_fixtures() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     std::fs::create_dir_all(&dir).unwrap();
     fixture_faults::write(&dir);
+    crl_fetch_fixtures::write(&dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let good = make_pe(true, false, false);
     let mutate_oid = |needle: &[u8]| {

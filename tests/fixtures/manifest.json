@@ -86,13 +86,19 @@
       "file": "expired.crl",
       "sha256": "d393ea1236ca507f909f316b8f7e5929d0c438ba30f1c010f48d0549b7556162",
       "bytes": 184,
-      "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time."
+      "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
+      "cases": [
+        "crl-fetch-injected-expired"
+      ]
     },
     {
       "file": "forged.crl",
       "sha256": "1ff08ad2626514f7884e1e1e8465f1173af83c602e83c9f35506c24c9b347434",
       "bytes": 183,
-      "description": "Current CRL with a modified signature byte."
+      "description": "Current CRL with a modified signature byte.",
+      "cases": [
+        "crl-fetch-injected-forged"
+      ]
     },
     {
       "file": "good-countersignature.exe",
@@ -166,7 +172,10 @@
       "file": "good.crl",
       "sha256": "8f8808824ea23e422ee22b86737d4626847d7d56226fa5990307fe079500e796",
       "bytes": 183,
-      "description": "Authentic current root-issued CRL with no revoked serials."
+      "description": "Authentic current root-issued CRL with no revoked serials.",
+      "cases": [
+        "crl-fetch-injected-good"
+      ]
     },
     {
       "file": "not-pe.bin",
@@ -183,7 +192,10 @@
       "file": "revoked.crl",
       "sha256": "00f343914863f661f501ad230d2e91fc304c8e1fc4348674b67e8fef3bdc9031",
       "bytes": 208,
-      "description": "Authentic current root-issued CRL listing the test publisher serial."
+      "description": "Authentic current root-issued CRL listing the test publisher serial.",
+      "cases": [
+        "crl-fetch-injected-revoked"
+      ]
     },
     {
       "file": "root.der",
@@ -6601,6 +6613,53 @@
       },
       "cases": [
         "rdp-multiple-ekus"
+      ]
+    },
+    {
+      "file": "good-crl-discovery.exe",
+      "sha256": "4499e2e725acb96da92356699c377dd5a2479a022bb5d1f53073b80283f5a44a",
+      "bytes": 2232,
+      "description": "Deterministic test-only PE with signed leaf CRLDistributionPoints. Good uses reserved example.invalid; private-URL counterpart uses loopback; image counterpart changes only byte 700. Never execute.",
+      "provenance": {
+        "generator": "src/tests/crl_fetch_fixtures.rs",
+        "command": "cargo test --locked regenerate_crl_discovery_fixtures -- --ignored",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "crl-discovery-local",
+        "crl-fetch-injected-expired",
+        "crl-fetch-injected-forged",
+        "crl-fetch-injected-good",
+        "crl-fetch-injected-revoked",
+        "crl-fetch-injected-unavailable"
+      ]
+    },
+    {
+      "file": "bad-crl-private-url.exe",
+      "sha256": "ceee94a3485b1e0319ca57c6c905538aab2a61ef10ed9baaf7a74d67dcd4f4ac",
+      "bytes": 2224,
+      "description": "Deterministic test-only PE with signed leaf CRLDistributionPoints. Good uses reserved example.invalid; private-URL counterpart uses loopback; image counterpart changes only byte 700. Never execute.",
+      "provenance": {
+        "generator": "src/tests/crl_fetch_fixtures.rs",
+        "command": "cargo test --locked regenerate_crl_discovery_fixtures -- --ignored",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "crl-fetch-private"
+      ]
+    },
+    {
+      "file": "bad-crl-discovery-image.exe",
+      "sha256": "36f9571b1f0ea7787de26101e7f333a76e7fa478a0be647e1cd3494a0cc71522",
+      "bytes": 2232,
+      "description": "Deterministic test-only PE with signed leaf CRLDistributionPoints. Good uses reserved example.invalid; private-URL counterpart uses loopback; image counterpart changes only byte 700. Never execute.",
+      "provenance": {
+        "generator": "src/tests/crl_fetch_fixtures.rs",
+        "command": "cargo test --locked regenerate_crl_discovery_fixtures -- --ignored",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "crl-fetch-integrity-first"
       ]
     }
   ]

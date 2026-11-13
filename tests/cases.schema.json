@@ -111,6 +111,13 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "crl_responses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Offline injected CRL source: map requested URL to a fixture-relative DER/PEM response file. Unmapped requests fail; no live network is used."
           }
         },
         "not": {

@@ -55,6 +55,7 @@ pub(super) fn verify_container_budget(
     budget.hash_bytes.charge(bytes.len())?;
     #[allow(unused_mut)]
     let mut verification = VerificationBundle {
+        crl_retrieval: None,
         format: format.report_name().into(),
         validation_time: options.now,
         file_sha256: hex(&Hash::Sha256.digest(bytes)),

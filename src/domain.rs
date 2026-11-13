@@ -56,6 +56,8 @@ pub enum ErrorCode {
     CrlNotYetValid,
     InvalidCrlSignature,
     RevocationUnknown,
+    CrlFetchFailed,
+    CrlFetchDenied,
     InvalidCrl,
     InvalidCertificate,
     CertificateChainInvalid,
@@ -160,6 +162,8 @@ impl ErrorCode {
             Self::CrlExpired => "CRL expired",
             Self::CrlNotYetValid => "CRL not yet valid",
             Self::InvalidCrlSignature => "Invalid CRL signature",
+            Self::CrlFetchFailed => "CRL retrieval failed",
+            Self::CrlFetchDenied => "CRL retrieval denied",
             Self::RevocationUnknown => "Revocation status unknown",
             Self::InvalidCrl => "Invalid CRL",
             Self::InvalidCertificate => "Invalid certificate",
@@ -499,7 +503,21 @@ pub struct AppxReport {
     pub bundle_packages: Option<Vec<AppxBundlePackageReport>>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrlRetrievalArtifact {
+    pub url: String,
+    pub final_url: String,
+    pub sha256: String,
+    pub bytes: usize,
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct CrlRetrievalReport {
+    /// Retrieved artifacts are untrusted evidence; this is not per-CRL verification status.
+    pub artifacts: Vec<CrlRetrievalArtifact>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crl_retrieval: Option<CrlRetrievalReport>,
     pub format: String,
     pub validation_time: u64,
     pub file_sha256: String,

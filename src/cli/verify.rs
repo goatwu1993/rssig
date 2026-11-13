@@ -18,7 +18,7 @@ pub(super) struct Args {
     #[command(flatten)]
     limits: super::limits::Limits,
     /// Verify cryptography and image integrity without claiming certificate trust.
-    #[arg(long, conflicts_with_all = ["roots", "no_system_roots", "crl", "no_revocation"])]
+    #[arg(long, conflicts_with_all = ["roots", "no_system_roots", "crl", "no_revocation", "fetch_crls"])]
     integrity_only: bool,
     /// Additional trusted roots (PEM bundle or DER certificate); repeatable.
     #[arg(long)]
@@ -28,6 +28,9 @@ pub(super) struct Args {
     /// Complete, current CRLs (PEM or DER); repeat for every issuer in each chain.
     #[arg(long)]
     crl: Vec<PathBuf>,
+    /// Discover and retrieve direct CRLs over bounded public HTTP (opt-in).
+    #[arg(long, conflicts_with_all = ["integrity_only", "no_revocation"])]
+    fetch_crls: bool,
     /// Explicitly disable revocation checking (reported in output).
     #[arg(long)]
     no_revocation: bool,
@@ -42,7 +45,10 @@ pub(super) struct Args {
     json: bool,
 }
 
-pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
+pub(super) fn execute(
+    args: Args,
+    source: Option<&mut dyn crate::retrieval::CrlSource>,
+) -> Result<(Value, u8)> {
     let Args {
         files,
         limits,
@@ -50,6 +56,7 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         roots,
         no_system_roots,
         crl,
+        fetch_crls,
         no_revocation,
         allow_sha1,
         at,
@@ -64,8 +71,8 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
     );
     let mut trust_remaining = super::limits::TRUST_TOTAL;
     ensure!(
-        integrity_only || no_revocation || !crl.is_empty(),
-        "supply --crl for revocation checks, or explicitly choose --no-revocation / --integrity-only"
+        integrity_only || no_revocation || !crl.is_empty() || fetch_crls,
+        "supply --crl or --fetch-crls for revocation checks, or explicitly choose --no-revocation / --integrity-only"
     );
     let mut trust = if integrity_only || no_system_roots {
         TrustStore::default()
@@ -116,6 +123,8 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         )
     };
     options.allow_sha1 = allow_sha1;
+    let mut http = crate::retrieval::HttpCrlSource::new();
+    let source = source.unwrap_or(&mut http);
     batch::execute(
         "verify",
         files,
@@ -126,7 +135,11 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| format!("input.{e}"));
-            crate::verify::verify_with_hint(bytes, hint.as_deref(), &options)
+            if fetch_crls {
+                crate::retrieval::verify_with_crl_source(bytes, hint.as_deref(), &options, source)
+            } else {
+                crate::verify::verify_with_hint(bytes, hint.as_deref(), &options)
+            }
         },
         |file, verification| {
             FileResult::Success(FileSuccess {

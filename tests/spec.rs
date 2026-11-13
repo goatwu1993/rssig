@@ -20,6 +20,7 @@ struct Suite {
 struct Case {
     id: String,
     input: Option<String>,
+    crl_responses: Option<BTreeMap<String, String>>,
     inputs: Option<Vec<String>>,
     command: Vec<String>,
     expect: Expectation,
@@ -163,7 +164,52 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     let command = argv(case, parent, fixtures, fixture_prefix);
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
-    let exit_code = cli::run_with_writers(&command, &mut stdout, &mut stderr).unwrap();
+    struct Source<'a> {
+        responses: &'a BTreeMap<String, String>,
+        fixtures: &'a Path,
+    }
+    impl rssig::retrieval::CrlSource for Source<'_> {
+        fn fetch(
+            &mut self,
+            url: &str,
+            max_bytes: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            let name = self.responses.get(url).ok_or_else(|| {
+                rssig::VerificationError::new(
+                    rssig::domain::ErrorCode::CrlFetchFailed,
+                    rssig::domain::Stage::Revocation,
+                    "no injected CRL response",
+                )
+            })?;
+            let path = Path::new(name);
+            assert!(
+                path.is_relative()
+                    && !path
+                        .components()
+                        .any(|c| matches!(c, std::path::Component::ParentDir))
+            );
+            let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
+            assert!(bytes.len() <= max_bytes);
+            Ok(rssig::retrieval::FetchedCrl {
+                bytes,
+                final_url: url.into(),
+            })
+        }
+    }
+    let exit_code = if let Some(responses) = &case.crl_responses {
+        cli::run_with_crl_source(
+            &command,
+            &mut stdout,
+            &mut stderr,
+            &mut Source {
+                responses,
+                fixtures,
+            },
+        )
+        .unwrap()
+    } else {
+        cli::run_with_writers(&command, &mut stdout, &mut stderr).unwrap()
+    };
     let output = serde_json::from_slice::<Value>(&stdout);
     let mut failures = Vec::new();
     if let Some(expected) = &case.expect.json {

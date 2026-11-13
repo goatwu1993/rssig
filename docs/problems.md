@@ -84,6 +84,8 @@ unverified metadata and does not establish a trusted publisher. See the
 | <a id="crl_expired"></a>`crl_expired` | CRL expired | 422 | Supply a fresh, locally available CRL for the applicable issuer. |
 | <a id="crl_not_yet_valid"></a>`crl_not_yet_valid` | CRL not yet valid | 422 | Check the validation time and supply a CRL already valid at that time. |
 | <a id="invalid_crl_signature"></a>`invalid_crl_signature` | Invalid CRL signature | 422 | Supply a CRL signed by the correct issuer. |
+| <a id="crl_fetch_failed"></a>`crl_fetch_failed` | CRL retrieval failed | 422 | Opt-in retrieval failed; inspect URL and retrieval provenance. Missing evidence fails closed. |
+| <a id="crl_fetch_denied"></a>`crl_fetch_denied` | CRL retrieval denied | 422 | URL, destination, distribution-point shape or HTTP framing is outside the supported retrieval policy. See [CRL retrieval](crl-retrieval.md). |
 | <a id="revocation_unknown"></a>`revocation_unknown` | Revocation status unknown | 422 | Supply the required current CRLs for the complete chain. |
 | <a id="invalid_crl"></a>`invalid_crl` | Invalid CRL | 422 | Supply a well-formed supported CRL. |
 | <a id="invalid_certificate"></a>`invalid_certificate` | Invalid certificate | 422 | Supply a well-formed supported certificate. |
