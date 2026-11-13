@@ -11,6 +11,7 @@ mod parser_boundaries;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
+mod signer_selection;
 mod signer_views;
 mod wsh_fixtures;
 
@@ -656,6 +657,7 @@ fn regenerate_cli_fixtures() {
     fixture_faults::write(&dir);
     crl_fetch_fixtures::write(&dir);
     cms_audit::write(&dir);
+    signer_selection::write(&dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let good = make_pe(true, false, false);
     let mutate_oid = |needle: &[u8]| {

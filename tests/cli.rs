@@ -48,3 +48,6 @@ mod crl_fetch;
 
 #[path = "cli/cms_audit.rs"]
 mod cms_audit;
+
+#[path = "cli/signer_selection.rs"]
+mod signer_selection;

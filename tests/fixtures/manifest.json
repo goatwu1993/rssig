@@ -6706,6 +6706,69 @@
       "cases": [
         "good-sec04-cms"
       ]
+    },
+    {
+      "file": "bad-sec05-key-first.exe",
+      "sha256": "59da83fffd29af924253bda75f3f439bc239671ca9dbd9cbd923581be0bc8730",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec05-key-first"
+      ]
+    },
+    {
+      "file": "bad-sec05-key-last.exe",
+      "sha256": "d15e1566ab3afc3095c7a98510b14641985cb5c18907e83ce6adf0db77c89002",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec05-key-last"
+      ]
+    },
+    {
+      "file": "bad-sec05-missing.exe",
+      "sha256": "c64b9deebfb17d1a56b265ed94c45c74b0ce6cfd0df567ab1ab437228d90d74e",
+      "bytes": 1760,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec05-missing"
+      ]
+    },
+    {
+      "file": "bad-sec05-policy-first.exe",
+      "sha256": "e0eaccb26dba41f87cee753eacb264894079c7b7cd3f9214386f96616140adf7",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec05-policy-first"
+      ]
+    },
+    {
+      "file": "bad-sec05-policy-last.exe",
+      "sha256": "629ecc9923710a80777578e0f8a588ed0db780b996b3c2b383371bd53473618f",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec05-policy-last"
+      ]
+    },
+    {
+      "file": "good-sec05-duplicate.exe",
+      "sha256": "b574e653c01a4bfdc85caaba96689b1319de474e587371106b4eb73c0e8136bc",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "good-sec05-duplicate"
+      ]
+    },
+    {
+      "file": "good-sec05-reordered.exe",
+      "sha256": "5740378c26f4bc0e4f338decd872ccf548405a0f835b59d2ebfa3a96aa148ae9",
+      "bytes": 2600,
+      "description": "SEC-05 candidate selection: identical CMS signer/content with duplicate, conflicting or missing certificates. Conflicts are root-signed deterministic public test certificates. Generator src/tests/signer_selection.rs; Apache-2.0.",
+      "cases": [
+        "good-sec05-reordered"
+      ]
     }
   ]
 }

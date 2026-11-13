@@ -458,13 +458,45 @@ fn verify_signer_inner<'a, 'c>(
             "signer digest absent from SignedData digestAlgorithms"
         );
     }
-    let cert = certificates
-        .iter()
-        .find(|cert| {
-            cert.tbs_certificate.issuer.to_der().ok().as_deref() == Some(sid[0].full)
-                && cert.tbs_certificate.serial_number.to_der().ok().as_deref() == Some(sid[1].full)
-        })
-        .context("signer certificate missing")?;
+    // Identity matching is independent of signature validity and trust policy.
+    // Identical decoded DER certificates are harmless duplicates; any distinct
+    // matching certificate is ambiguous, including one carrying the same key.
+    let mut selected: Option<&Certificate> = None;
+    let mut matching_certificates = 0usize;
+    let mut ambiguous = false;
+    for candidate in certificates {
+        if candidate
+            .tbs_certificate
+            .issuer
+            .to_der()
+            .map_err(crate::compat_error)?
+            != sid[0].full
+            || candidate
+                .tbs_certificate
+                .serial_number
+                .to_der()
+                .map_err(crate::compat_error)?
+                != sid[1].full
+        {
+            continue;
+        }
+        matching_certificates += 1;
+        if let Some(first) = selected {
+            ambiguous |= candidate != first;
+        } else {
+            selected = Some(candidate);
+        }
+    }
+    if ambiguous {
+        return Err(VerificationError::new(
+            ErrorCode::AmbiguousSignerCertificate,
+            Stage::Cms,
+            "distinct certificates match the signer issuer and serial",
+        )
+        .detail("matching_certificates", matching_certificates)
+        .into());
+    }
+    let cert = selected.context("signer certificate missing")?;
     let signed = if has_attributes {
         attributes(si[3].expect(0xa0)?)?
     } else {

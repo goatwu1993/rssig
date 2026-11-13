@@ -70,6 +70,7 @@ unverified metadata and does not establish a trusted publisher. See the
 | <a id="weak_algorithm"></a>`weak_algorithm` | Weak algorithm disallowed | 422 | Re-sign with SHA-256 or stronger; allow SHA-1 only through the explicit legacy policy. |
 | <a id="image_digest_mismatch"></a>`image_digest_mismatch` | PE image digest mismatch | 422 | The computed PE digest differs from the digest covered by the signature. Obtain the original signed image or re-sign the changed image. |
 | <a id="page_hash_mismatch"></a>`page_hash_mismatch` | Page hash mismatch | 422 | The image page hashes differ from the signed values. Obtain the original image or re-sign it. |
+| <a id="ambiguous_signer_certificate"></a>`ambiguous_signer_certificate` | Ambiguous signer certificate | 422 | Distinct embedded certificates match the signer issuer and serial. `details.matching_certificates` counts all matching entries, including duplicates. Supply an unambiguous signed artifact. |
 | <a id="invalid_signature"></a>`invalid_signature` | Invalid signature | 422 | The cryptographic signature is invalid. Obtain a correctly signed artifact. |
 | <a id="content_digest_mismatch"></a>`content_digest_mismatch` | Content digest mismatch | 422 | CMS content differs from its signed digest. Obtain an intact signature. |
 | <a id="invalid_timestamp"></a>`invalid_timestamp` | Invalid timestamp | 422 | Supply a valid supported timestamp. |
