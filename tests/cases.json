@@ -24142,6 +24142,147 @@
           ]
         }
       }
+    },
+    {
+      "id": "bad-sec04-ecdsa-parameters",
+      "input": "bad-sec04-ecdsa-parameters.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec04-signeddata-version",
+      "input": "bad-sec04-signeddata-version.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "malformed_cms",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec04-signer-version",
+      "input": "bad-sec04-signer-version.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec04-value-order",
+      "input": "bad-sec04-value-order.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec04-cms",
+      "input": "good-sec04-cms.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
     }
   ]
 }

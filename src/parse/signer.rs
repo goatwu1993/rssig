@@ -103,6 +103,12 @@ impl<'a> Attributes<'a> {
             );
             let values = f[1].expect(0x31)?.children()?;
             ensure!(!values.is_empty(), "empty CMS attribute");
+            if node.tag == 0xa0 {
+                ensure!(
+                    values.windows(2).all(|w| w[0].full <= w[1].full),
+                    "noncanonical signed attribute value order"
+                );
+            }
             validate_oid(f[0].body)?;
             let oid = ObjectIdentifier::from_der(f[0].full).ok();
             attributes.push(Attribute {

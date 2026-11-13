@@ -6661,6 +6661,51 @@
       "cases": [
         "crl-fetch-integrity-first"
       ]
+    },
+    {
+      "file": "bad-sec04-ecdsa-parameters.exe",
+      "sha256": "44625078f447728a029710d5fbf96beeda24cce90f4927ba33a9a14159966c5b",
+      "bytes": 2192,
+      "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec04-ecdsa-parameters"
+      ]
+    },
+    {
+      "file": "bad-sec04-signeddata-version.exe",
+      "sha256": "cb956456fb098acb170b974d0bacbcf3f318f5d31b5371eeb921d85049e6087a",
+      "bytes": 2192,
+      "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec04-signeddata-version"
+      ]
+    },
+    {
+      "file": "bad-sec04-signer-version.exe",
+      "sha256": "90707f4139ea850b93da2c854d3fa5e8dc22df4ac63aa4676cb362e1b56f1c82",
+      "bytes": 2192,
+      "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec04-signer-version"
+      ]
+    },
+    {
+      "file": "bad-sec04-value-order.exe",
+      "sha256": "eebd361a9d9f1d6207996dc357ceea5bd0daffc6694d9757654c60281ac5014c",
+      "bytes": 2192,
+      "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "cases": [
+        "bad-sec04-value-order"
+      ]
+    },
+    {
+      "file": "good-sec04-cms.exe",
+      "sha256": "94ecfaac08be8d121707b29b9ebf286a695a612da26a75d8ec766acd82cfde9f",
+      "bytes": 2192,
+      "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "cases": [
+        "good-sec04-cms"
+      ]
     }
   ]
 }

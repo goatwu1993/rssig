@@ -71,12 +71,15 @@ timestamps, and local CRL validation already exist.
   verify-core Clippy pass on macOS. Dependency review found only a direct optional
   CLI edge to the already-locked libc version for O_NONBLOCK; no native crypto.
   Linux runtime validation remains in CI. Automatic CRL/AIA fetching is FEATURE-01.
-- [ ] **SEC-04: Audit CMS structure and signature binding.** Check
+- [x] **SEC-04: Audit CMS structure and signature binding.** Checked
   SignedData/SignerInfo versions, supported signer identifiers, canonical
   INTEGER/SET encodings, duplicate/empty attributes, digest-set membership,
   algorithm parameters, and contentType/messageDigest binding. Preserve exact
   signed bytes; never normalize malformed signed encodings into valid ones.
   Keep RDP direct-signature allowances out of Authenticode/countersignatures.
+  Added version, signed-value ordering and ECDSA-parameter rejection, paired
+  fixtures and signature-math assertions. `docs/cms-security.md` records the
+  audit and explicit legacy/opaque-encoding compatibility boundaries.
 - [ ] **SEC-05: Define ambiguous signer-certificate handling.** Cover duplicate
   certificates, identical issuer/serial identifiers with different keys, missing
   signer certificates, and reordered candidate sets. Ensure candidate selection

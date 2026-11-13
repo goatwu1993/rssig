@@ -45,3 +45,6 @@ mod host_limits;
 
 #[path = "cli/crl_fetch.rs"]
 mod crl_fetch;
+
+#[path = "cli/cms_audit.rs"]
+mod cms_audit;
