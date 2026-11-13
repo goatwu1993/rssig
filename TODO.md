@@ -80,11 +80,15 @@ timestamps, and local CRL validation already exist.
   Added version, signed-value ordering and ECDSA-parameter rejection, paired
   fixtures and signature-math assertions. `docs/cms-security.md` records the
   audit and explicit legacy/opaque-encoding compatibility boundaries.
-- [ ] **SEC-05: Define ambiguous signer-certificate handling.** Cover duplicate
+- [x] **SEC-05: Define ambiguous signer-certificate handling.** Cover duplicate
   certificates, identical issuer/serial identifiers with different keys, missing
   signer certificates, and reordered candidate sets. Ensure candidate selection
   cannot accidentally trust embedded certificates or depend on a permissive
-  first match. Document deterministic rejection or candidate-search behavior.
+  first match. Identical certificates are accepted as duplicate candidates;
+  distinct matches fail with `ambiguous_signer_certificate` before crypto/trust
+  selection. Paired/reordered fixtures cover different keys, same-key identity
+  conflicts and missing signers. Shared-path tests cover RFC3161, countersigners
+  and direct RDP signatures. Policy: `docs/cms-security.md`.
 - [ ] **SEC-06: Expand certificate-path policy coverage.** Inventory current
   leaf/intermediate EKU and KeyUsage tests, then cover BasicConstraints, path
   length, name constraints, unknown critical extensions, alternative/cross-signed

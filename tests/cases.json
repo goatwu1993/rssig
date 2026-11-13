@@ -24283,6 +24283,213 @@
           ]
         }
       }
+    },
+    {
+      "id": "bad-sec05-key-first",
+      "input": "bad-sec05-key-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "ambiguous_signer_certificate",
+                "stage": "cms",
+                "details": {
+                  "matching_certificates": 2
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec05-key-last",
+      "input": "bad-sec05-key-last.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "ambiguous_signer_certificate",
+                "stage": "cms",
+                "details": {
+                  "matching_certificates": 2
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec05-missing",
+      "input": "bad-sec05-missing.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec05-policy-first",
+      "input": "bad-sec05-policy-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "ambiguous_signer_certificate",
+                "stage": "cms",
+                "details": {
+                  "matching_certificates": 2
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec05-policy-last",
+      "input": "bad-sec05-policy-last.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "ambiguous_signer_certificate",
+                "stage": "cms",
+                "details": {
+                  "matching_certificates": 2
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec05-duplicate",
+      "input": "good-sec05-duplicate.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec05-reordered",
+      "input": "good-sec05-reordered.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
     }
   ]
 }
