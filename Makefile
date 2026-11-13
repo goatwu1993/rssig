@@ -14,6 +14,10 @@ endif
 test:
 	$(CARGO) test --locked
 
+.PHONY: format
+format:
+	$(CARGO) fmt
+
 .PHONY: lint
 lint:
 	$(CARGO) fmt --check
