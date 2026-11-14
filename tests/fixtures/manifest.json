@@ -6631,7 +6631,10 @@
         "crl-fetch-injected-forged",
         "crl-fetch-injected-good",
         "crl-fetch-injected-revoked",
-        "crl-fetch-injected-unavailable"
+        "crl-fetch-injected-unavailable",
+        "crl-offline-provider-unused",
+        "crl-local-provider-unused",
+        "crl-stale-local-provider-unused"
       ]
     },
     {

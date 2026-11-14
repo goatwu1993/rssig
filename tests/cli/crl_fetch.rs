@@ -93,3 +93,61 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
         }
     }
 }
+
+#[test]
+fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
+    struct NoCalls;
+    impl rssig::retrieval::CrlSource for NoCalls {
+        fn fetch(
+            &mut self,
+            _: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            panic!("supplied CRL or offline mode must not call the provider");
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let root = base.join("root.der");
+    let input = base.join("good-crl-discovery.exe");
+    for (fetch, crl, expected) in [
+        (false, "good.crl", 0),
+        (true, "good.crl", 0),
+        (true, "expired.crl", 1),
+    ] {
+        let crl = base.join(crl);
+        let mut args = vec![
+            "rssig",
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            root.to_str().unwrap(),
+            "--crl",
+            crl.to_str().unwrap(),
+            "--time",
+            "1800000000",
+        ];
+        if fetch {
+            args.push("--fetch-crls");
+        }
+        args.push(input.to_str().unwrap());
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        assert_eq!(
+            rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut NoCalls).unwrap(),
+            expected
+        );
+        assert!(err.is_empty());
+        let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let result = &report["results"][0];
+        if expected == 0 {
+            assert_eq!(result["signatures"][0]["revocation_checked"], true);
+            if fetch {
+                assert_eq!(result["crl_retrieval"]["artifacts"], serde_json::json!([]));
+            } else {
+                assert!(result.get("crl_retrieval").is_none());
+            }
+        } else {
+            assert_eq!(result["error"]["code"], "crl_expired");
+            assert_eq!(result["error"]["stage"], "revocation");
+        }
+    }
+}
