@@ -1,7 +1,7 @@
 # Coverage by invariant (TEST-01)
 
 The maintained evidence index is [`tests/coverage-inventory.json`](../tests/coverage-inventory.json).
-Its 28 invariant groups link representative declarative case IDs to specific
+Its invariant groups link representative declarative case IDs to specific
 claims. Its error map lists every current `ErrorCode`, representative cases that
 assert that serialized code, or an explicit gap. Its independent-case index
 links producer evidence and mutation counterparts through the fixture manifest.
@@ -29,7 +29,7 @@ invariant remains a human responsibility.
 | MSIX/AppX packages/bundles | `appx-package`, `appx-bundle`; CLI AppX suites cover block maps, Publisher binding and children | CodeIntegrity catalogs are hashed, not independently signature-verified. No deployment-policy claim. |
 | Digests and keys | `sha2`, `sha1-policy`, `key-algorithms`; `src/crypto.rs` and signing fixtures | SHA-384/512 content tests do not establish P-384 signature coverage. Inventory needs a systematic RSA-size/P-256/P-384 and digest/key mismatch matrix (SEC-13). |
 | CMS/signers | `cms-binding`, `cms-structure`, `signer-selection`; SEC-04/05 native signature-math and shared-path tests | See `cms-security.md` for version/opaque-value exceptions. |
-| Trust paths | `trust-root`, `trust-policy`, `trust-validity`; `src/trust.rs` tests | BasicConstraints, path length, name constraints, unknown critical extensions, cross-signing, cycles and same-subject different-key issuers need a dedicated inventory and paired assertions (SEC-06). |
+| Trust paths | `trust-root`, `trust-policy`, `trust-validity`, `trust-path-constraints`, `trust-path-selection`, `trust-anchor-profile`; SEC-06 named CLI and signature-math tests | Paired constraints, selected chains, cross-signing, wrong-key issuers and cycles are pinned. See [path policy](certificate-path-policy.md) for webpki profile, anchor treatment and remaining name-form/rollover limits. |
 | Timestamps | `timestamp`; `src/verify/timestamp.rs` parsing tests | Multiplicity, full TSTInfo structure and independent producer diversity remain SEC-08/INTEROP work. |
 | Revocation | `revocation`; local signed good/revoked/stale/forged CRLs | Competing evidence/applicability and per-chain CRLs actually used remain SEC-10/11. No OCSP, delta or indirect CRL support. |
 | Reduced-policy modes | `policy-modes`; `tests/cli/policy.rs` | Success in integrity-only mode cannot be counted as trusted-chain evidence. |
@@ -69,7 +69,7 @@ producer. No Windows oracle is run. Independent PE, Relic-produced pairs, and
 broader timestamp/chain/CRL producer combinations remain gaps; consult the
 INTEROP backlog before adding redistributable artifacts.
 
-## Gap closed in this change
+## CRL request evidence (TEST-01)
 
 The existing CRL cases proved output validation but their portable expectations
 could not assert provider invocation. `expect.crl_requests` now specifies exact

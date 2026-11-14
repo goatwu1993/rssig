@@ -24604,6 +24604,1893 @@
         }
       },
       "crl_responses": {}
+    },
+    {
+      "id": "good-sec06-basic",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-ca-false",
+      "input": "bad-sec06-ca-false.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "EndEntityUsedAsCa"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-ca-missing-bc",
+      "input": "bad-sec06-ca-missing-bc.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "EndEntityUsedAsCa"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-leaf-ca",
+      "input": "bad-sec06-leaf-ca.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "CaUsedAsEndEntity"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-ca-critical",
+      "input": "bad-sec06-ca-critical.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnsupportedCriticalExtension"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-leaf-critical",
+      "input": "bad-sec06-leaf-critical.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnsupportedCriticalExtension"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-pathlen",
+      "input": "bad-sec06-pathlen.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "PathLenConstraintViolated"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-name-outside",
+      "input": "bad-sec06-name-outside.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "NameConstraintViolation"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-name-excluded",
+      "input": "bad-sec06-name-excluded.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "NameConstraintViolation"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-wrong-key",
+      "input": "bad-sec06-wrong-key.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "InvalidSignatureForPublicKey"
+        }
+      }
+    },
+    {
+      "id": "good-sec06-leaf-no-bc",
+      "input": "good-sec06-leaf-no-bc.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "be55aa8d42359158b7442232ef0bdc489b40fabfac7b5f7f7ed3025d59327d97"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-leaf-no-ku",
+      "input": "good-sec06-leaf-no-ku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "d4fba6c4bba52be0ce76dd121e9fe73b8b5a01294a71f68b6faa91bb6f9894b5"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-leaf-noncritical",
+      "input": "good-sec06-leaf-noncritical.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "8f8cd13f07000ceaf80d9d718a2c5aad98d70e0ec28d6e2f9dbf6f8ca4118ad9"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-ca-noncritical",
+      "input": "good-sec06-ca-noncritical.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "7f5d32e7168beee01dc6203ff08d5dba8b0eb6db436090181b4332790ef2911c"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-ca-no-ku",
+      "input": "good-sec06-ca-no-ku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "19ceb28b89d179e0bfda3884976369782d848daf3a86492edd24b429a4d0a281"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-ca-good-eku",
+      "input": "good-sec06-ca-good-eku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "6213cc5bb34381575e1567886030324d11d1eed6e62ac0ad384a9bdb85626cd8"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-ca-eku",
+      "input": "bad-sec06-ca-eku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_eku",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "RequiredEkuNotFoundContext"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-leaf-no-eku",
+      "input": "bad-sec06-leaf-no-eku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_eku",
+                "stage": "certificate"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lacks required EKU"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-ca-ku",
+      "input": "bad-sec06-ca-ku.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lacks keyCertSign"
+        }
+      }
+    },
+    {
+      "id": "good-sec06-pathlen",
+      "input": "good-sec06-pathlen.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "6a572512a93a54dde0f6dc4be257ee26aeeab5613661fb625e12f4bdd5bd731d"
+                      },
+                      {
+                        "sha256": "107f152b465a61b437f68773ef102807d4cce7f85a87c0f5e8a6c73546a2da65"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-name-good",
+      "input": "good-sec06-name-good.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "2b1033c557c346f35157cca0a88bfc402bc71ec919d4de4b350bb2e5bdbaa32d"
+                      },
+                      {
+                        "sha256": "bc6c6576cf5f9b55f92a29b2390392cf67904a837207c1dbd85c4040ff7a38f2"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-wrong-key-first",
+      "input": "good-sec06-wrong-key-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-wrong-key-last",
+      "input": "good-sec06-wrong-key-last.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-cross-first",
+      "input": "good-sec06-cross-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-cross-last",
+      "input": "good-sec06-cross-last.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-cycle-escape",
+      "input": "good-sec06-cycle-escape.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-cycle-escape-reversed",
+      "input": "good-sec06-cycle-escape-reversed.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-ca-ku-first",
+      "input": "good-sec06-ca-ku-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-ca-ku-last",
+      "input": "good-sec06-ca-ku-last.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-cross-untrusted",
+      "input": "bad-sec06-cross-untrusted.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnknownIssuer"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-cycle",
+      "input": "bad-sec06-cycle.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnknownIssuer"
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-cycle-reversed",
+      "input": "bad-sec06-cycle-reversed.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "UnknownIssuer"
+        }
+      }
+    },
+    {
+      "id": "good-sec06-cross-other-root",
+      "input": "good-sec06-cross-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "2c5247a68292af69f006664227e21ac7cb8ce3065d323ea2fb94e615dfe7e8be"
+                      },
+                      {
+                        "sha256": "30b29d397a5b706309be9fbcc6df9c39667d358df19603be24554116c518ad05"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-root-expired",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root-expired.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "6046e5b3cf820ab132f65da39c6153fdb73ee73e33c204de6db74bcdb2dd2319"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-root-profile",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root-profile.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "8b47c207dcee8d410d427a618ae114dd047736ba540105e4d6d76600be634cd2"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "good-sec06-root-name",
+      "input": "good-sec06-root-name.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root-constrained.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "2b1033c557c346f35157cca0a88bfc402bc71ec919d4de4b350bb2e5bdbaa32d"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "89978bd8d1aacb06c9f4b202859d5eea4d8c3c5b78622dbfeaf7ec465848cfdd"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bad-sec06-root-name",
+      "input": "good-sec06-root-name.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root-denied.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "NameConstraintViolation"
+        }
+      }
+    },
+    {
+      "id": "good-sec06-root-selection",
+      "input": "good-sec06-root-name.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-roots-alternative.pem",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec06-upper.crl",
+        "--crl",
+        "fixtures/sec06-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "2b1033c557c346f35157cca0a88bfc402bc71ec919d4de4b350bb2e5bdbaa32d"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "89978bd8d1aacb06c9f4b202859d5eea4d8c3c5b78622dbfeaf7ec465848cfdd"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

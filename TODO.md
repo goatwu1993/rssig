@@ -1,10 +1,12 @@
 # Prioritized roadmap
 
-Maintained against the merged [PR #21](https://github.com/goatwu1993/rssig/pull/21)
-baseline. **The next scoped implementation is evaluating a `no_std` shared verification
-core (LIB-09).** Confirmed correctness regressions take priority over planned
-refactoring. New algorithms, formats, and network access require their own
-evidence and policy decisions; this list does not promise every Windows behavior.
+Maintained alongside implementation and its recorded completion evidence.
+Certificate-path policy coverage (SEC-06) is complete; the next prioritized
+security task is root/CRL loading diagnostics (SEC-07). This coverage also
+supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
+Confirmed correctness regressions take priority over planned refactoring.
+New algorithms, formats, and network access require their own evidence and
+policy decisions; this list does not promise every Windows behavior.
 
 Unchecked audit items identify work to investigate or validate, not confirmed
 vulnerabilities. Inventory existing implementation and tests before adding
@@ -89,12 +91,19 @@ timestamps, and local CRL validation already exist.
   selection. Paired/reordered fixtures cover different keys, same-key identity
   conflicts and missing signers. Shared-path tests cover RFC3161, countersigners
   and direct RDP signatures. Policy: `docs/cms-security.md`.
-- [ ] **SEC-06: Expand certificate-path policy coverage.** Inventory current
-  leaf/intermediate EKU and KeyUsage tests, then cover BasicConstraints, path
-  length, name constraints, unknown critical extensions, alternative/cross-signed
-  paths, cycles, and same-subject/different-key issuers. Assert selected chains
-  and typed failures. Document webpki's applicable profile and trust-anchor
-  validity/constraint treatment without claiming complete Windows policy.
+- [x] **SEC-06: Expand certificate-path policy coverage.** Added 38 portable
+  cases and named in-process CLI tests for BasicConstraints, path length,
+  permitted/excluded DNS constraints, unknown critical extensions, leaf/CA
+  EKU and KeyUsage, cross-signing, same-subject/different-key issuers and cycles.
+  Exact selected-chain hashes/DER and typed failures are pinned with explicit
+  roots, time and local CRLs. Signature-math checks isolate path-policy faults.
+  The initial selected-anchor regression reported a same-subject/key root whose
+  name constraints rejected the path; reporting now matches name constraints
+  too. [Policy inventory and limits](docs/certificate-path-policy.md) document
+  webpki's profile and configured-anchor validity/constraint treatment. Full
+  locked tests, fmt, Clippy, verify-core and CLI-without-system-roots tests, and
+  bare-metal verify-core Clippy pass on macOS. Dependencies are unchanged; Linux
+  execution remains in CI. No Windows policy equivalence is claimed.
 - [ ] **SEC-07: Make root/CRL loading diagnostics explicit.** Audit unsupported
   anchors skipped during conversion, mixed valid/invalid PEM bundles, duplicates,
   empty stores, and partial native-root loading failures. Decide whether each

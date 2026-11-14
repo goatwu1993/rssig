@@ -54,3 +54,6 @@ mod signer_selection;
 
 #[path = "cli/coverage_inventory.rs"]
 mod coverage_inventory;
+
+#[path = "cli/path_policy.rs"]
+mod path_policy;

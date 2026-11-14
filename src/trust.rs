@@ -369,6 +369,9 @@ impl TrustStore {
             if let Ok(anchor) = webpki::anchor_from_trusted_cert(root)
                 && anchor.subject == path.anchor().subject
                 && anchor.subject_public_key_info == path.anchor().subject_public_key_info
+                // Equal subject/key pairs may carry different anchor constraints.
+                // Report a certificate representing the anchor actually selected.
+                && anchor.name_constraints == path.anchor().name_constraints
             {
                 chain.push(CertificateReport::parse(
                     &Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?,
