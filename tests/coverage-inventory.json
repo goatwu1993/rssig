@@ -192,7 +192,13 @@
         "ca-key-usage",
         "bad-signer-eku",
         "bad-signer-key-usage",
-        "wrong-tsa-eku"
+        "wrong-tsa-eku",
+        "good-sec06-ca-good-eku",
+        "bad-sec06-ca-eku",
+        "bad-sec06-leaf-no-eku",
+        "bad-sec06-ca-ku",
+        "good-sec06-leaf-no-ku",
+        "good-sec06-ca-no-ku"
       ]
     },
     {
@@ -276,6 +282,56 @@
         "sec03-batch-input",
         "sec03-parse-input",
         "sec03-batch-count"
+      ]
+    },
+    {
+      "id": "trust-path-constraints",
+      "claim": "BasicConstraints, path length, DNS permitted/excluded subtrees and unknown critical extensions",
+      "cases": [
+        "good-sec06-basic",
+        "bad-sec06-ca-false",
+        "bad-sec06-ca-missing-bc",
+        "bad-sec06-leaf-ca",
+        "good-sec06-leaf-no-bc",
+        "good-sec06-pathlen",
+        "bad-sec06-pathlen",
+        "good-sec06-name-good",
+        "bad-sec06-name-outside",
+        "bad-sec06-name-excluded",
+        "good-sec06-leaf-noncritical",
+        "bad-sec06-leaf-critical",
+        "good-sec06-ca-noncritical",
+        "bad-sec06-ca-critical"
+      ]
+    },
+    {
+      "id": "trust-path-selection",
+      "claim": "Exact selected chains with wrong-key issuers, callback rejection, cross-signing and cycles in either order",
+      "cases": [
+        "good-sec06-ca-ku-first",
+        "good-sec06-ca-ku-last",
+        "bad-sec06-wrong-key",
+        "good-sec06-wrong-key-first",
+        "good-sec06-wrong-key-last",
+        "bad-sec06-cross-untrusted",
+        "good-sec06-cross-first",
+        "good-sec06-cross-last",
+        "good-sec06-cross-other-root",
+        "bad-sec06-cycle",
+        "bad-sec06-cycle-reversed",
+        "good-sec06-cycle-escape",
+        "good-sec06-cycle-escape-reversed"
+      ]
+    },
+    {
+      "id": "trust-anchor-profile",
+      "claim": "Configured anchor validity/profile treatment, DNS constraints and selected-anchor reporting",
+      "cases": [
+        "good-sec06-root-expired",
+        "good-sec06-root-profile",
+        "good-sec06-root-name",
+        "bad-sec06-root-name",
+        "good-sec06-root-selection"
       ]
     }
   ],
@@ -544,7 +600,9 @@
       "cases": [
         "unknown-root",
         "msi-unknown-root",
-        "cab-untrusted"
+        "cab-untrusted",
+        "bad-sec06-cycle",
+        "bad-sec06-cross-untrusted"
       ],
       "gap": ""
     },
@@ -552,7 +610,9 @@
       "cases": [
         "wrong-tsa-eku",
         "bad-signer-eku",
-        "msi-wrong-tsa-eku"
+        "msi-wrong-tsa-eku",
+        "bad-sec06-ca-eku",
+        "bad-sec06-leaf-no-eku"
       ],
       "gap": ""
     },
@@ -560,7 +620,8 @@
       "cases": [
         "ca-key-usage",
         "bad-signer-key-usage",
-        "msi-ca-key-usage"
+        "msi-ca-key-usage",
+        "bad-sec06-ca-ku"
       ],
       "gap": ""
     },
@@ -623,7 +684,13 @@
       "cases": [
         "bad-certificate-signature",
         "bad-intermediate-signature",
-        "msi-bad-certificate-signature"
+        "msi-bad-certificate-signature",
+        "bad-sec06-ca-false",
+        "bad-sec06-pathlen",
+        "bad-sec06-name-outside",
+        "bad-sec06-ca-critical",
+        "bad-sec06-leaf-critical",
+        "bad-sec06-wrong-key"
       ],
       "gap": ""
     },
