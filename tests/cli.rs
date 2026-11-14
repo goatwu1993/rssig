@@ -51,3 +51,6 @@ mod cms_audit;
 
 #[path = "cli/signer_selection.rs"]
 mod signer_selection;
+
+#[path = "cli/coverage_inventory.rs"]
+mod coverage_inventory;

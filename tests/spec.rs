@@ -28,6 +28,7 @@ struct Case {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Expectation {
+    crl_requests: Option<Vec<String>>,
     exit_code: u8,
     json: Option<Value>,
     stdout: Option<String>,
@@ -57,6 +58,12 @@ impl Suite {
         let mut ids = HashSet::new();
         for case in &self.cases {
             let expect = &case.expect;
+            if expect.crl_requests.is_some() && case.crl_responses.is_none() {
+                return Err(format!(
+                    "crl_requests requires an injected source: {}",
+                    case.id
+                ));
+            }
             let modes = usize::from(expect.json.is_some())
                 + usize::from(!expect.stdout_contains.is_empty())
                 + usize::from(!expect.stderr_contains.is_empty());
@@ -167,6 +174,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
         fixtures: &'a Path,
+        requests: &'a mut Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source<'_> {
         fn fetch(
@@ -174,6 +182,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             url: &str,
             max_bytes: usize,
         ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.requests.push(url.to_owned());
             let name = self.responses.get(url).ok_or_else(|| {
                 rssig::VerificationError::new(
                     rssig::domain::ErrorCode::CrlFetchFailed,
@@ -196,6 +205,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             })
         }
     }
+    let mut requests = Vec::new();
     let exit_code = if let Some(responses) = &case.crl_responses {
         cli::run_with_crl_source(
             &command,
@@ -204,6 +214,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut Source {
                 responses,
                 fixtures,
+                requests: &mut requests,
             },
         )
         .unwrap()
@@ -212,6 +223,14 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     };
     let output = serde_json::from_slice::<Value>(&stdout);
     let mut failures = Vec::new();
+    if let Some(expected) = &case.expect.crl_requests {
+        compare(
+            &serde_json::json!(expected),
+            &serde_json::json!(requests),
+            "/crl_requests",
+            &mut failures,
+        );
+    }
     if let Some(expected) = &case.expect.json {
         match &output {
             Ok(output) => compare(expected, output, "", &mut failures),
@@ -359,4 +378,31 @@ fn specification_rejects_duplicate_case_ids() {
     )
     .unwrap();
     assert!(suite.validate().unwrap_err().contains("duplicate"));
+}
+
+#[test]
+fn specification_detects_incorrect_provider_request_expectations() {
+    let parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let mut suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
+    let case = suite
+        .cases
+        .iter_mut()
+        .find(|c| c.id == "crl-fetch-injected-good")
+        .unwrap();
+    case.expect.crl_requests = Some(Vec::new());
+    let result = execute(
+        case,
+        &parent,
+        &parent.join(&suite.fixtures),
+        Path::new(&suite.fixtures),
+    );
+    assert_eq!(result.exit_code, 0);
+    assert!(result.failures.iter().any(|f| f.contains("/crl_requests")));
+    case.crl_responses = None;
+    assert!(
+        suite
+            .validate()
+            .unwrap_err()
+            .contains("requires an injected source")
+    );
 }

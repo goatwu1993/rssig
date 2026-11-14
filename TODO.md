@@ -290,11 +290,15 @@ timestamps, and local CRL validation already exist.
 
 ## P1 — Tests, portable specification, and engineering checks
 
-- [ ] **TEST-01: Maintain a coverage inventory by invariant.** Map supported
+- [x] **TEST-01: Maintain a coverage inventory by invariant.** Map supported
   formats, algorithms, policy modes, trust/timestamp paths, and stable errors to
   existing cases. Identify missing good/bad pairs and independent producers;
   copied format cases are not new cryptographic evidence. Add meaningful gaps
   with exact domain assertions and pinned inputs, time, roots, and CRLs.
+  Added `tests/coverage-inventory.json`, validated case/error references and
+  `docs/coverage-inventory.md` with explicit path-policy/algorithm/producer gaps.
+  Closed CRL provider-call coverage gaps with exact portable request traces
+  and offline/supplied-good/supplied-stale cases using existing fixtures.
 - [ ] **TEST-02: Add local parser and verifier fuzz targets.** Start with DER,
   PE/CMS, CAB/NAVX, script blocks, and archive/XML framing; seed with committed
   fixtures. Exercise bounded verification with fixed policy where useful.

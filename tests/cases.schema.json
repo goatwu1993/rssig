@@ -84,6 +84,13 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "crl_requests": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Exact ordered URLs requested from the injected CRL source, including failed requests. Requires crl_responses; an empty array asserts no provider calls."
               }
             },
             "oneOf": [

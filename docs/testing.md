@@ -217,3 +217,14 @@ The manifest pins the bytes, SHA-256, provenance, and intended outcomes of the
 fixtures. `cases` links identify declarative cases; optional `tests` links point
 to additional native regressions. Neither fixture generation nor expected-output
 regeneration is part of ordinary tests or coverage.
+
+## Invariant inventory
+
+See [coverage by invariant](coverage-inventory.md) and the maintained
+`tests/coverage-inventory.json` case/error/producer index. Cargo tests validate
+its references; it records open gaps separately from existing evidence.
+
+Retrieval cases can provide `crl_responses` (URL to fixture filename) and
+`expect.crl_requests` (exact ordered URL array, including failed requests).
+An empty request array asserts no calls. The request expectation requires an
+injected response map and never triggers real network requests itself.

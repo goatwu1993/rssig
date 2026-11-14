@@ -24018,7 +24018,10 @@
               ]
             }
           ]
-        }
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
       }
     },
     {
@@ -24049,7 +24052,10 @@
               }
             }
           ]
-        }
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
       }
     },
     {
@@ -24080,7 +24086,10 @@
               }
             }
           ]
-        }
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
       }
     },
     {
@@ -24111,7 +24120,10 @@
               }
             }
           ]
-        }
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
       }
     },
     {
@@ -24140,7 +24152,10 @@
               }
             }
           ]
-        }
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
       }
     },
     {
@@ -24490,6 +24505,105 @@
           ]
         }
       }
+    },
+    {
+      "id": "crl-offline-provider-unused",
+      "input": "good-crl-discovery.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
+    },
+    {
+      "id": "crl-local-provider-unused",
+      "input": "good-crl-discovery.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
+    },
+    {
+      "id": "crl-stale-local-provider-unused",
+      "input": "good-crl-discovery.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      },
+      "crl_responses": {}
     }
   ]
 }
