@@ -237,3 +237,51 @@ fn recursive_cms_and_tst_info_reject_all_truncated_prefixes() {
         assert!(TstInfo::parse(&info.as_der()[..end]).is_err());
     }
 }
+
+#[test]
+fn tst_info_accuracy_bounds_and_truncations() {
+    use rssig::parse::TstInfo;
+    fn info(accuracy: &[u8]) -> Vec<u8> {
+        let mut fields = vec![2, 1, 1, 6, 3, 42, 3, 4];
+        fields.extend(der(
+            0x30,
+            &[
+                0x30, 13, 6, 9, 96, 134, 72, 1, 101, 3, 4, 2, 1, 5, 0, 4, 1, 0,
+            ],
+        ));
+        fields.extend([2, 1, 0]);
+        fields.extend(der(0x18, b"20270115080000Z"));
+        fields.extend(der(0x30, accuracy));
+        der(0x30, &fields)
+    }
+    for accuracy in [
+        &[][..],
+        &[2, 1, 0],
+        &[0x80, 1, 1],
+        &[0x81, 2, 3, 231],
+        &[2, 1, 1, 0x80, 2, 0, 128, 0x81, 2, 3, 231],
+    ] {
+        let bytes = info(accuracy);
+        TstInfo::parse(&bytes).unwrap();
+        for end in 0..bytes.len() {
+            assert!(TstInfo::parse(&bytes[..end]).is_err());
+        }
+    }
+    for accuracy in [
+        &[0x80, 0][..],
+        &[0x80, 1, 0],
+        &[0x80, 1, 255],
+        &[0x80, 2, 0, 1],
+        &[0x80, 2, 3, 232],
+        &[0x81, 3, 1, 0, 0],
+        &[0x80, 1, 1, 0x80, 1, 1],
+        &[0x81, 1, 1, 2, 1, 0],
+        &[2, 1, 255],
+        &[5, 0],
+    ] {
+        assert_eq!(
+            TstInfo::parse(&info(accuracy)).unwrap_err().kind(),
+            ErrorKind::MalformedCms
+        );
+    }
+}

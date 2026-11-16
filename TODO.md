@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained alongside implementation and its recorded completion evidence.
-Root/CRL loading diagnostics (SEC-07) are complete; the next prioritized
-security task is timestamp structure and multiplicity (SEC-08). This coverage also
+Timestamp structure and multiplicity (SEC-08) are complete; the next prioritized
+security task is lifetime-signing and time-boundary policy (SEC-09). This coverage also
 supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
 Confirmed correctness regressions take priority over planned refactoring.
 New algorithms, formats, and network access require their own evidence and
@@ -116,12 +116,17 @@ timestamps, and local CRL validation already exist.
   Full locked tests (799 cases), formatting, Clippy and documented feature/target
   checks pass on macOS. Dependencies are unchanged; Linux runtime validation
   remains in CI. CRL selection/evidence remain SEC-10/SEC-11.
-- [ ] **SEC-08: Complete timestamp structure and multiplicity tests.** Validate
-  the whole supported TSTInfo shape, including version, policy/serial fields,
-  optional-field ordering, and unknown fields. Cover duplicate/mixed RFC 3161
-  and PKCS#9 timestamps, TSA EKU criticality/exclusivity, KeyUsage, parent-signature
-  substitution, and malformed signingTime. Preserve multiple-timestamp rejection
-  until an explicit selection policy has its own tests.
+- [x] **SEC-08: Complete timestamp structure and multiplicity tests.** Shared
+  TSTInfo parsing now validates mandatory fields, canonical optional ordering and
+  accuracy bounds; verification requires version 1 and rejects unsupported tsa
+  identity/extensions explicitly. Added 35 committed fixtures/portable cases and
+  named CLI tests for structure, duplicate/mixed timestamps, TSA critical and
+  exclusive EKU/KeyUsage, parent substitution and malformed signingTime.
+  Independent signature-math/image/issuer checks isolate the intended faults;
+  parser tests cover accuracy bounds and truncation. Focused tests first accepted
+  malformed correctly signed tokens. Multiple timestamps remain unsupported;
+  existing CMS duplicate-attribute failure precedence is preserved. See
+  [profile, limits and evidence](docs/timestamp-policy.md).
 - [ ] **SEC-09: Define lifetime-signing and time-boundary policy.** Add an
   expired signer with lifetime-signing EKU and an otherwise valid timestamp;
   enforce supported semantics or reject the unsupported policy. Extend existing

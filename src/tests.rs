@@ -14,6 +14,7 @@ mod psxml_fixtures;
 mod rdp_fixtures;
 mod signer_selection;
 mod signer_views;
+mod timestamp_structure;
 mod trust_loading;
 mod wsh_fixtures;
 
@@ -656,6 +657,7 @@ fn rsa_pkcs1_signature_and_chain_use_rustcrypto() {
 fn regenerate_cli_fixtures() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     std::fs::create_dir_all(&dir).unwrap();
+    timestamp_structure::write(&dir);
     fixture_faults::write(&dir);
     crl_fetch_fixtures::write(&dir);
     cms_audit::write(&dir);

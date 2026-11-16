@@ -60,3 +60,6 @@ mod path_policy;
 
 #[path = "cli/trust_loading.rs"]
 mod trust_loading;
+
+#[path = "cli/timestamp_structure.rs"]
+mod timestamp_structure;

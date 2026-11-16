@@ -8173,6 +8173,423 @@
       "cases": [
         "sec07-fetch-65-crls"
       ]
+    },
+    {
+      "file": "sec08-version.exe",
+      "sha256": "f89cefb94c6f7571edf86cde7e983c447e97b7911aee7863d7f67a196b6fbcc8",
+      "bytes": 3760,
+      "description": "SEC-08: version. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-version"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-policy.exe",
+      "sha256": "819e52e83e58f31b3bf14f5e145f646a46551d6ce58827a0d774f848b8c80fc3",
+      "bytes": 3760,
+      "description": "SEC-08: policy. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-policy"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-serial-negative.exe",
+      "sha256": "952b11f07d14792ec212071a188d75a5b17a8b63c6724a15ff77fc680ac24fd1",
+      "bytes": 3760,
+      "description": "SEC-08: serial-negative. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-serial-negative"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-serial-nonminimal.exe",
+      "sha256": "9ebfc2df14a1a09cdace8b2ed6a324e55b996347e11ebb2ec2c813e25b2e3230",
+      "bytes": 3760,
+      "description": "SEC-08: serial-nonminimal. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-serial-nonminimal"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-time-tag.exe",
+      "sha256": "ebf75bcb52dd64ec3d1f5675d6f89ad7b0e04b44a8ead263a7d91564b40dea70",
+      "bytes": 3760,
+      "description": "SEC-08: time-tag. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-time-tag"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-unknown.exe",
+      "sha256": "8a7ff04984e19eddfd7642e6bbcd33e952a99677951020220fcff31f392dee3e",
+      "bytes": 3760,
+      "description": "SEC-08: unknown. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-unknown"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-order.exe",
+      "sha256": "3c7657782b92653da17ee2d5d2ccbe909990837d2cac5ccdb63d4b3f3ead2d31",
+      "bytes": 3768,
+      "description": "SEC-08: order. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-order"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-duplicate-optional.exe",
+      "sha256": "fb509ca5eb08352a6a3b43294858ac9f9bfa6f3a7126c0f67cefe43d6e54fcb7",
+      "bytes": 3768,
+      "description": "SEC-08: duplicate-optional. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-duplicate-optional"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-ordering-false.exe",
+      "sha256": "0e531e8a2363e259a39b46893943c8ba4a2a6ad870c6fbba77dc84a4d3f90777",
+      "bytes": 3760,
+      "description": "SEC-08: ordering-false. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-ordering-false"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-nonce-negative.exe",
+      "sha256": "3da542ea38a4dd2580c626a5ea01df3f4e42afa69fca4e7022ca8c1042f9d292",
+      "bytes": 3768,
+      "description": "SEC-08: nonce-negative. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-nonce-negative"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-accuracy-range.exe",
+      "sha256": "053742983f27b0a52049ecd31781e50c46f36169d52108f19920bc2a262dccc8",
+      "bytes": 3768,
+      "description": "SEC-08: accuracy-range. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-accuracy-range"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-accuracy-order.exe",
+      "sha256": "27f05a0ff0f112d302031293eb11b682ceafee03b7da5462b7b9df578d7cb017",
+      "bytes": 3768,
+      "description": "SEC-08: accuracy-order. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-accuracy-order"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-accuracy-unknown.exe",
+      "sha256": "5ac3994cd2183a4e4fb931e70760a1373df23d7b972b0793db6a7c238157d60f",
+      "bytes": 3768,
+      "description": "SEC-08: accuracy-unknown. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-accuracy-unknown"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-tsa.exe",
+      "sha256": "25a0ee1d7b470457acb1dd1b21e3e5b7dd65bd4a1776ca79e2c59d6476d7113c",
+      "bytes": 3784,
+      "description": "SEC-08: tsa. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-tsa"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-extensions.exe",
+      "sha256": "1e8d19b5503901051f415a4d0f19f9173e4a67ecbba1136993bd55893badb1a0",
+      "bytes": 3776,
+      "description": "SEC-08: extensions. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-extensions"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-duplicate-rfc.exe",
+      "sha256": "4a9c37103e7734ce126d402f6afe545f167ff902c4538103a4e21aaf84c3a99e",
+      "bytes": 4928,
+      "description": "SEC-08: duplicate-rfc. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_signature at cms.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-duplicate-rfc"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-duplicate-counter.exe",
+      "sha256": "f5080b7a8b4f091a4230ab18c8bd07ebdb352b0d983dba422e6e66ca893c3f5f",
+      "bytes": 3072,
+      "description": "SEC-08: duplicate-counter. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_signature at cms.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-duplicate-counter"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-mixed.exe",
+      "sha256": "bf78b095a10d6281d9ad5317c10b8aa6127c5f0fbb4cdd4f4412e05730017aac",
+      "bytes": 4000,
+      "description": "SEC-08: mixed. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-mixed"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-mixed-reverse.exe",
+      "sha256": "7ce0990abc67b342976f0aaedecc0e225c23a626d06f9e21895fc375c0736d2a",
+      "bytes": 4000,
+      "description": "SEC-08: mixed-reverse. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-mixed-reverse"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-aliases.exe",
+      "sha256": "941193824fac96604752ec3fe6783cd144cd756b48cef9d44541b9b3c66ea4d7",
+      "bytes": 4928,
+      "description": "SEC-08: aliases. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-aliases"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-multi-value.exe",
+      "sha256": "40102d38f68ee87a25673112a69c23b766957cb7b90332d1f461c0a83eec72e3",
+      "bytes": 4904,
+      "description": "SEC-08: multi-value. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-multi-value"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-eku-noncritical.exe",
+      "sha256": "956a3028782771a3e7a56c0702da9705d37b5545f01d2c56c638bf5ce777b154",
+      "bytes": 3752,
+      "description": "SEC-08: eku-noncritical. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-eku-noncritical"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-eku-mixed.exe",
+      "sha256": "0302def880b576794559181d8fe9f98028330c21ce24ded1f3a414408e3f036f",
+      "bytes": 3784,
+      "description": "SEC-08: eku-mixed. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-eku-mixed"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-eku-missing.exe",
+      "sha256": "18c94a5ca47b74a58e7e8fb8a2d72b1ac2c799056a6ef9435d8362223553e0ca",
+      "bytes": 3712,
+      "description": "SEC-08: eku-missing. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-eku-missing"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-key-usage.exe",
+      "sha256": "173d233ae423dd248d9fd63c9ce82d2fbf8baa82d14b38c6825160d1619f2193",
+      "bytes": 3760,
+      "description": "SEC-08: key-usage. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_key_usage at certificate.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-key-usage"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-substitution.exe",
+      "sha256": "93bd1aa355e145a2682847b41d5899fc06096f272a08b275c9167250ec5b4c8b",
+      "bytes": 3760,
+      "description": "SEC-08: substitution. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected timestamp_imprint_mismatch at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-substitution"
+      ],
+      "paired_good": "sec08-good.exe"
+    },
+    {
+      "file": "sec08-counter-substitution.exe",
+      "sha256": "e6e59c1db67b9ce3bc85c07ae9000f39f4d3c9aa8119a9f807c6a5275879764d",
+      "bytes": 2832,
+      "description": "SEC-08: counter-substitution. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected content_digest_mismatch at cms.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-counter-substitution"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-signing-time.exe",
+      "sha256": "4c27d10b1461aeddd9c7b10c095ad539039d9f69582e27a34ce607e39e96a3d1",
+      "bytes": 2832,
+      "description": "SEC-08: signing-time. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-signing-time"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-counter-eku-noncritical.exe",
+      "sha256": "15d16fd3a6efa07e93e8e669837ac5ac14ae265a3fd6b905c2c2e2e42a75e4f8",
+      "bytes": 2832,
+      "description": "SEC-08: counter-eku-noncritical. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-counter-eku-noncritical"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-counter-eku-mixed.exe",
+      "sha256": "3e222039cfe684d75760c84482c0c7a2d33548ae30895a445ca63076bacef0c5",
+      "bytes": 2848,
+      "description": "SEC-08: counter-eku-mixed. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-counter-eku-mixed"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-counter-eku-missing.exe",
+      "sha256": "bf7c5ba9a99fc71a9c90ed099af7228360af45d2e8861c5a19390b1475bd54c8",
+      "bytes": 2808,
+      "description": "SEC-08: counter-eku-missing. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_eku at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-counter-eku-missing"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-counter-key-usage.exe",
+      "sha256": "b3839d88160fa7f91125ac4a83b4f657467a71c2e1776afb02c7b5ca3712d42f",
+      "bytes": 2840,
+      "description": "SEC-08: counter-key-usage. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_key_usage at certificate.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-counter-key-usage"
+      ],
+      "paired_good": "sec08-good-counter.exe"
+    },
+    {
+      "file": "sec08-good.exe",
+      "sha256": "5e7a2e5696619a50e2262033879dfe7e6e0bf17bf3753d8ac4501200fc639276",
+      "bytes": 3760,
+      "description": "SEC-08: good. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected trusted success.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-good"
+      ]
+    },
+    {
+      "file": "sec08-good-optional.exe",
+      "sha256": "18029100cbab367201d39a36a99e0f5119877b07ea93e8a1d6147a107b3a5a9f",
+      "bytes": 3776,
+      "description": "SEC-08: good-optional. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected trusted success.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-good-optional"
+      ]
+    },
+    {
+      "file": "sec08-good-counter.exe",
+      "sha256": "fc7b895932121217cf31f7854b71ce244c665be06b1b97f4b8175fad2f162dad",
+      "bytes": 2832,
+      "description": "SEC-08: good-counter. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected trusted success.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_sec08_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec08-good-counter"
+      ]
     }
   ]
 }
