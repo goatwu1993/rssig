@@ -20,6 +20,8 @@ The four options accept positive decimal byte counts up to their hard ceilings.
 A count/path/option violation is a configuration error: plain stderr, exit 2,
 and no JSON on stdout. Root/CRL loading failures use the same configuration
 contract. Input-read and report-limit failures are per-file JSON failures (exit 1).
+The [root/CRL loading policy](trust-loading.md) rejects malformed bundles and
+partial native enumeration atomically and deduplicates exact DER artifacts.
 
 On macOS/Linux, files open with `O_NONBLOCK`; the opened descriptor must identify
 a regular file before any read. This rejects directories, devices, sockets, and

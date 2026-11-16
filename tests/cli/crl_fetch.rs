@@ -151,3 +151,85 @@ fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
         }
     }
 }
+
+#[test]
+fn sec07_fetched_bundles_enforce_retained_crl_limit() {
+    struct Source {
+        bytes: Vec<u8>,
+        calls: usize,
+    }
+    impl rssig::retrieval::CrlSource for Source {
+        fn fetch(
+            &mut self,
+            url: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.calls += 1;
+            Ok(rssig::retrieval::FetchedCrl {
+                bytes: self.bytes.clone(),
+                final_url: url.into(),
+            })
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    for (count, supplied) in [(64, false), (65, false), (64, true)] {
+        let mut source = Source {
+            bytes: std::fs::read(base.join(format!("sec07-fetch-{count}-crls.pem"))).unwrap(),
+            calls: 0,
+        };
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let root = base.join("root.der");
+        let input = base.join("good-crl-discovery.exe");
+        let local = base.join("good-intermediate.crl");
+        let mut args = vec![
+            "rssig",
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            root.to_str().unwrap(),
+            "--time",
+            "1800000000",
+            "--fetch-crls",
+            input.to_str().unwrap(),
+        ];
+        if supplied {
+            args.extend(["--crl", local.to_str().unwrap()]);
+        }
+        let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+        assert!(err.is_empty());
+        assert_eq!(source.calls, 1);
+        let json: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let result = &json["results"][0];
+        assert_eq!(
+            code,
+            u8::from(count + usize::from(supplied) > 64),
+            "{count} CRLs must respect the artifact limit"
+        );
+        if count == 64 && !supplied {
+            assert_eq!(result["signatures"][0]["revocation_checked"], true);
+            let crls = result["signatures"][0]["trust"]["revocation"]["crls"]
+                .as_array()
+                .unwrap();
+            assert_eq!(crls.len(), 64);
+            let unique: std::collections::HashSet<_> =
+                crls.iter().map(|c| c["sha256"].as_str().unwrap()).collect();
+            assert_eq!(unique.len(), 64);
+        } else {
+            assert!(result.get("signatures").is_none());
+            assert_eq!(result["error"]["code"], "resource_limit_exceeded");
+            assert_eq!(result["error"]["stage"], "revocation");
+            let details = &result["error"]["details"];
+            assert_eq!(details["resource"], "retrieval_crl_artifacts");
+            assert_eq!(details["limit"], 64);
+            assert_eq!(details["used"], usize::from(supplied));
+            assert_eq!(details["requested"], count);
+            assert_eq!(
+                details["crl_retrieval"]["artifacts"]
+                    .as_array()
+                    .unwrap()
+                    .len(),
+                1
+            );
+        }
+    }
+}

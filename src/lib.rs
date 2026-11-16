@@ -52,7 +52,7 @@ mod wsh;
 #[cfg(feature = "verify-core")]
 pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 #[cfg(feature = "verify-core")]
-pub use trust::{TrustLoadError, TrustLoadErrorKind, TrustStore};
+pub use trust::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind, TrustStore};
 #[cfg(feature = "verify-core")]
 pub use verify::{
     RevocationPolicy, VerifyOptions, verify, verify_cab, verify_navx, verify_parsed_cab,

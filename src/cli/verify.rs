@@ -25,7 +25,7 @@ pub(super) struct Args {
     roots: Vec<PathBuf>,
     #[arg(long)]
     no_system_roots: bool,
-    /// Complete, current CRLs (PEM or DER); repeat for every issuer in each chain.
+    /// Complete, current CRLs (PEM bundle or DER); cover every issuer in each chain.
     #[arg(long)]
     crl: Vec<PathBuf>,
     /// Discover and retrieve direct CRLs over bounded public HTTP (opt-in).

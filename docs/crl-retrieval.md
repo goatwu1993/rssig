@@ -71,6 +71,13 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
 | Wire bytes | At most 32 MiB of response headers and bodies per HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
+
+PEM responses can contain multiple CRLs. After each response is loaded, the
+combined retained count is checked after exact-DER deduplication and before
+final verification. An oversized bundle fails with `resource_limit_exceeded`,
+resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
+`requested` counts distinct CRLs added by that response. The failure retains
+download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
 | Time | 30-second source lifetime starting with its first fetch; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |

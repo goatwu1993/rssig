@@ -1,5 +1,6 @@
 use alloc::{string::ToString, vec, vec::Vec};
 mod error;
+mod loading;
 use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
 use crate::domain::{
     CertificateReport, CrlReport, ErrorCode, OidReport, RevocationReport, RevocationStatus, Stage,
@@ -7,10 +8,12 @@ use crate::domain::{
 };
 use crate::verify::budget::Budget;
 use ::der::{Decode, Encode};
-use anyhow::{Context, Result, ensure};
+#[cfg(feature = "cli")]
+use anyhow::ensure;
+use anyhow::{Context, Result};
 use core::time::Duration;
 use error::webpki_error;
-pub use error::{TrustLoadError, TrustLoadErrorKind};
+pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
 use rustls_pki_types::{CertificateDer, UnixTime};
 use x509_cert::{Certificate, crl::CertificateList};
 
@@ -68,63 +71,6 @@ impl TrustStore {
     pub(crate) fn retrieval_bytes(&self) -> usize {
         self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
             + self.crls.iter().map(Vec::len).sum::<usize>()
-    }
-    /// Typed counterpart to `add_roots`; loading does not validate trust policy.
-    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {
-        self.add_roots(bytes)
-            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Roots, inner))
-    }
-    /// Typed counterpart to `add_crl`; loading never authenticates a CRL.
-    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> core::result::Result<(), TrustLoadError> {
-        self.add_crl(bytes)
-            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::Crl, inner))
-    }
-    /// Typed counterpart to native root enumeration, with identical partial-load policy.
-    #[cfg(feature = "system-roots")]
-    pub fn from_system_typed() -> core::result::Result<Self, TrustLoadError> {
-        Self::from_system()
-            .map_err(|inner| TrustLoadError::new(TrustLoadErrorKind::SystemRoots, inner))
-    }
-
-    /// Load the platform root store only. No native signature or chain APIs are called.
-    #[cfg(feature = "system-roots")]
-    pub fn from_system() -> Result<Self> {
-        let native = rustls_native_certs::load_native_certs();
-        ensure!(
-            !native.certs.is_empty(),
-            "no system roots loaded: {:?}",
-            native.errors
-        );
-        Ok(Self {
-            roots: native.certs,
-            crls: Vec::new(),
-        })
-    }
-    /// Add explicit DER or PEM roots. They are trust anchors, not intermediates.
-    pub fn add_roots(&mut self, bytes: &[u8]) -> Result<()> {
-        if bytes.starts_with(b"-----BEGIN") {
-            for cert in Certificate::load_pem_chain(bytes).map_err(crate::compat_error)? {
-                self.roots.push(CertificateDer::from(
-                    cert.to_der().map_err(crate::compat_error)?,
-                ));
-            }
-        } else {
-            Certificate::from_der(bytes).map_err(crate::compat_error)?;
-            self.roots.push(CertificateDer::from(bytes.to_vec()));
-        }
-        Ok(())
-    }
-    pub fn add_crl(&mut self, bytes: &[u8]) -> Result<()> {
-        let crl = if bytes.starts_with(b"-----BEGIN") {
-            let (label, decoded) = ::der::pem::decode_vec(bytes)
-                .map_err(|e| anyhow::anyhow!("invalid CRL PEM: {e}"))?;
-            ensure!(label == "X509 CRL", "expected X509 CRL PEM label");
-            CertificateList::from_der(&decoded).map_err(crate::compat_error)?
-        } else {
-            CertificateList::from_der(bytes).map_err(crate::compat_error)?
-        };
-        self.crls.push(crl.to_der().map_err(crate::compat_error)?);
-        Ok(())
     }
     #[allow(clippy::too_many_arguments)] // Time, revocation and work policy are explicit.
     pub(crate) fn verify(
@@ -231,9 +177,11 @@ impl TrustStore {
         let roots: Vec<_> = self
             .roots
             .iter()
-            .filter_map(|c| webpki::anchor_from_trusted_cert(c).ok())
-            .collect();
-        ensure!(!roots.is_empty(), "no supported trust anchors");
+            .map(|c| {
+                webpki::anchor_from_trusted_cert(c)
+                    .map_err(|e| anyhow::anyhow!("unsupported configured trust anchor: {e:?}"))
+            })
+            .collect::<Result<_>>()?;
         let intermediates: Vec<_> = certificates
             .iter()
             .map(|c| c.to_der().map(CertificateDer::from))

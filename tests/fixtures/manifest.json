@@ -7901,6 +7901,278 @@
       "cases": [
         "good-sec06-pathlen"
       ]
+    },
+    {
+      "file": "sec07-root-unsupported.der",
+      "sha256": "ff642fd5fdbf6205727d1f86046a64e856b9aa12faad80f1f5ebca59c928d7af",
+      "bytes": 362,
+      "description": "root.der with only the explicit version changed from v3 to v2; X.509 decodable but unsupported by anchor conversion. Self-signature is intentionally unchanged and not checked for configured anchors.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-root-unsupported-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-good.pem",
+      "sha256": "8990d5a79484f5d76ea9e3aeaf4456bd923b7fa3e66f1b470b6ecf409da8ac5c",
+      "bytes": 546,
+      "description": "root.der PEM encoding; baseline for narrow PEM mutations.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-good-crl",
+        "sec07-good"
+      ]
+    },
+    {
+      "file": "sec07-roots-duplicate.pem",
+      "sha256": "fc7637f123628e9fbfaf53bd05917e883d3395a4f746adae8b9c1d4bc733a18e",
+      "bytes": 1092,
+      "description": "Two identical root.der PEM blocks; load once.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-duplicates"
+      ]
+    },
+    {
+      "file": "sec07-roots-unsupported.pem",
+      "sha256": "5f950d16816c9d166ea72d0096409f2f382c1d6e2f43dc1ce57fb0d66bb5f6b1",
+      "bytes": 1092,
+      "description": "Good root followed by unsupported v2 root; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-unsupported-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-invalid.pem",
+      "sha256": "a720f742a72fc8c1b965e2547eed0bc93550e2c0bbeb11f32024c1117116432f",
+      "bytes": 605,
+      "description": "Good root followed by malformed certificate DER; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-invalid-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-invalid-first.pem",
+      "sha256": "24bfe7157eb4f5188ba844a10a05ce129e068e71810a7aaa8395857bedaf2e65",
+      "bytes": 605,
+      "description": "Malformed certificate before good root; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-invalid-first-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-trailing.pem",
+      "sha256": "82a951c88e8eeb9143b95983b85a58ff7e72e5908735146f62e372757a14e71b",
+      "bytes": 547,
+      "description": "Good PEM followed by one non-whitespace byte; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-trailing-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-truncated.pem",
+      "sha256": "2e3f275164014c6591405288c52685892f0174959ddfbcb3169819d0fb8fb0dd",
+      "bytes": 1064,
+      "description": "Good PEM followed by unterminated block; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-roots-truncated-roots"
+      ]
+    },
+    {
+      "file": "sec07-roots-whitespace.pem",
+      "sha256": "0ab4be3cb954a9da39d7ad3db31ca0d586fc8b1a515d32da6a18a6b2958fd461",
+      "bytes": 554,
+      "description": "ASCII whitespace around a valid root PEM block; accept.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-whitespace"
+      ]
+    },
+    {
+      "file": "sec07-crls-good.pem",
+      "sha256": "246a118e2adab3a24dbcd45dc0484cfe80977d9521b9725abe35f49c2d61869b",
+      "bytes": 296,
+      "description": "good.crl PEM encoding; baseline for narrow mutations.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-crls-good-roots",
+        "sec07-good"
+      ]
+    },
+    {
+      "file": "sec07-crls-duplicate.pem",
+      "sha256": "40599ad95f459092b6ca5fe1cdcd956d5b80d4c812dd78217743cb5c6e09eeb3",
+      "bytes": 592,
+      "description": "Two identical good.crl PEM blocks; load once, without authenticating.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-duplicates"
+      ]
+    },
+    {
+      "file": "sec07-crls-invalid.pem",
+      "sha256": "a00e0ca4dfe0986732abfc49a1d379fa3485f61aa8d56b8a0661f5ac1a05f86d",
+      "bytes": 349,
+      "description": "Good CRL followed by malformed CRL DER; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-crls-invalid-crl"
+      ]
+    },
+    {
+      "file": "sec07-crls-invalid-first.pem",
+      "sha256": "e1c8442fd934a572fc249b19b4426d32ddada0d0b69df2e9d32c083a33562313",
+      "bytes": 349,
+      "description": "Malformed CRL before good CRL; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-crls-invalid-first-crl"
+      ]
+    },
+    {
+      "file": "sec07-crls-trailing.pem",
+      "sha256": "4a4a327e3c254b342d6f514a5cea20d168803022cea2d6b8af2ce8365017a48f",
+      "bytes": 297,
+      "description": "Good CRL followed by non-whitespace; reject entire load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-crls-trailing-crl"
+      ]
+    },
+    {
+      "file": "sec07-crls-forged.pem",
+      "sha256": "c8de2d2bc2b2d1b85933533905f9bde13586e62fafb2b656f28cb77adfa5c9d1",
+      "bytes": 296,
+      "description": "PEM of forged.crl; structurally loadable, signature validation must fail.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-forged-crl"
+      ]
+    },
+    {
+      "file": "sec07-empty.pem",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "description": "Empty explicit input; reject load.",
+      "provenance": {
+        "kind": "synthetic",
+        "source": "Repository root.der/good.crl/forged.crl; deterministic PEM wrapping and narrow byte mutations, no external signing tools.",
+        "license": "Apache-2.0",
+        "generator": "src/tests/trust_loading.rs::write via regenerate_cli_fixtures"
+      },
+      "cases": [
+        "sec07-empty-roots",
+        "sec07-empty-crl"
+      ]
+    },
+    {
+      "file": "sec07-fetch-64-crls.pem",
+      "sha256": "5085c54bd9314f5f60edde5020e4b7482cb0928b6be4eebca095baca45124f11",
+      "bytes": 19108,
+      "description": "64 distinct, correctly signed current CRLs using the deterministic test root; sequential CRL numbers isolate fetched artifact limit. 64 accepted; 65 rejected.",
+      "provenance": {
+        "generator": "src/tests/crl_fetch_fixtures.rs::write",
+        "license": "Apache-2.0",
+        "kind": "synthetic"
+      },
+      "cases": [
+        "sec07-fetch-64-crls",
+        "sec07-fetch-supplied-plus-bundle"
+      ]
+    },
+    {
+      "file": "sec07-fetch-65-crls.pem",
+      "sha256": "cf0a5698d582baa2360febfd0a637468df0fd1a7057b6bdcea199397709064ec",
+      "bytes": 19408,
+      "description": "65 distinct, correctly signed current CRLs using the deterministic test root; sequential CRL numbers isolate fetched artifact limit. 64 accepted; 65 rejected.",
+      "provenance": {
+        "generator": "src/tests/crl_fetch_fixtures.rs::write",
+        "license": "Apache-2.0",
+        "kind": "synthetic"
+      },
+      "cases": [
+        "sec07-fetch-65-crls"
+      ]
     }
   ]
 }

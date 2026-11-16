@@ -256,12 +256,24 @@ pub fn verify_with_crl_source(
                     sha256: hex(&crate::crypto::Hash::Sha256.digest(&fetched.bytes)),
                     bytes: fetched.bytes.len(),
                 });
+                let prior_crls = store.retrieval_crl_count();
                 store.add_crl(&fetched.bytes).map_err(|e| {
                     error(
                         ErrorCode::InvalidCrl,
                         format!("decoding retrieved CRL: {e:#}"),
                     )
                 })?;
+                // A PEM response may contain multiple distinct CRLs. Bound the
+                // retained store after deduplication, before final verification.
+                let loaded_crls = store.retrieval_crl_count();
+                if loaded_crls > 64 {
+                    return Err(limit(
+                        "retrieval_crl_artifacts",
+                        64,
+                        prior_crls,
+                        loaded_crls - prior_crls,
+                    ));
+                }
             }
         }
         let final_options = VerifyOptions {

@@ -1,5 +1,27 @@
 use super::*;
+use ::der::Decode;
 pub(super) fn write(dir: &std::path::Path) {
+    // Distinct, correctly signed CRLs isolate the retained-artifact boundary.
+    let mut bundle = String::new();
+    let id = identity();
+    for number in 1..=65u8 {
+        let mut list = x509_cert::crl::CertificateList::from_der(&crl(false, false)).unwrap();
+        list.tbs_cert_list.crl_extensions.as_mut().unwrap()[0].extn_value =
+            ::der::asn1::OctetString::new([2, 1, number]).unwrap();
+        let signature: Signature = id.root_key.sign(&list.tbs_cert_list.to_der().unwrap());
+        list.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+        bundle.push_str(
+            &::der::pem::encode_string(
+                "X509 CRL",
+                ::der::pem::LineEnding::LF,
+                &list.to_der().unwrap(),
+            )
+            .unwrap(),
+        );
+        if number >= 64 {
+            std::fs::write(dir.join(format!("sec07-fetch-{number}-crls.pem")), &bundle).unwrap();
+        }
+    }
     for (name, url) in [
         (
             "good-crl-discovery.exe",

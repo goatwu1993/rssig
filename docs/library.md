@@ -615,21 +615,25 @@ I/O is added to explicit loaders. Successfully loading a CRL never authenticates
 it. Successful DER roots and CRLs are owned by the store; caller buffers can be
 dropped. Existing valid entries survive a subsequent invalid DER load.
 
-Typed methods deliberately preserve legacy loading policy: native enumeration
-can accept nonempty roots despite partial native errors, anchors unsupported by
-webpki are excluded during path conversion, PEM chain decoding uses the current
-X.509 adapter, and CRLs are decoded/re-encoded before storage. Typed loading is
-not stricter root selection, per-anchor exclusion reporting, or evidence of
-atomicity for every possible PEM bundle. Those policy audits remain SEC-07.
+Both typed and legacy methods now use the [SEC-07 atomic loading policy](trust-loading.md).
+Every explicit DER/PEM load is atomic, rejects empty/malformed input and
+unsupported anchor conversion, preserves exact DER, and deduplicates identical
+artifacts. Root and CRL PEM bundles are supported. Native enumeration errors,
+including partial results, reject the whole load. `TrustLoadError::code()` exposes
+`TrustLoadErrorCode::{EmptyInput,InvalidEncoding,UnsupportedAnchor,NativeEnumeration}`;
+`entry_index()` identifies the one-based failing entry when applicable.
+Loading still never authenticates roots or CRLs or implies a verification verdict.
 
 ### Migration notes
 
 All existing parser, verifier, options and `TrustStore` entry points retain their
 public signatures. Existing `add_roots`, `add_crl` and `from_system` continue to
-return `anyhow::Result` with unchanged diagnostics. Callers wanting typed loading
-categories can switch to the corresponding `_typed` method and match `kind()`
-with a fallback arm; `?` still converts the error into `anyhow` if desired.
-There is no required migration and no new dependency or native crypto provider.
+return `anyhow::Result`, wrapping the same typed error. Callers wanting typed loading
+diagnostics can switch to the corresponding `_typed` method and match `kind()`
+and `code()` with fallback arms; `?` still converts the error into `anyhow` if desired.
+SEC-07 deliberately tightens silent exclusion/partial-load behavior; correct a
+rejected input or explicitly configure a controlled store. No signatures change,
+and no dependency or native crypto provider is added.
 These pre-1.0 APIs may evolve in future releases; future breaking changes must
 include migration notes. Do not depend on private adapter layout, exact
 allocation counts beyond the documented measurement, enum numeric values, or
