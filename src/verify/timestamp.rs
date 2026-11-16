@@ -34,8 +34,18 @@ pub(crate) fn verify_timestamp(
                 token.content_type == cms::TST_INFO && token.signers.len() == 1,
                 "invalid RFC3161 token"
             );
+            let parsed =
+                crate::parse::TstInfo::parse(token.content.full).map_err(|error| error.inner)?;
+            ensure!(
+                parsed.version_der == [2, 1, 1],
+                "unsupported TSTInfo version"
+            );
+            // These fields need a separate identity/extension policy before support.
+            for field in &parsed.optional_fields {
+                ensure!(field[0] != 0xa0, "TSTInfo tsa identity is unsupported");
+                ensure!(field[0] != 0xa1, "TSTInfo extensions are unsupported");
+            }
             let info = token.content.children()?;
-            ensure!(info.len() >= 5, "truncated TSTInfo");
             let imprint = der::fields(info[2].expect(0x30)?, 2)?;
             let hash = cms::algorithm(imprint[0])?;
             ensure!(
@@ -55,7 +65,9 @@ pub(crate) fn verify_timestamp(
                 .detail("computed", hex(&computed))
                 .into());
             }
-            let (at, fractional_seconds) = parse_time(info[4])?;
+            let at = parsed.parsed_time.unix_seconds();
+            let fractional_seconds: Option<String> =
+                parsed.parsed_time.fractional_seconds().map(Into::into);
             if at > options.now || (at == options.now && fractional_seconds.is_some()) {
                 return Err(VerificationError::new(
                     ErrorCode::TimestampInFuture,

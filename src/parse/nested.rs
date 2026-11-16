@@ -153,6 +153,34 @@ impl<'a> ParsedTime<'a> {
     }
 }
 
+// Accuracy uses implicit positive INTEGERs for millis/micros, each 1..=999.
+fn validate_accuracy(node: Node<'_>) -> Result<()> {
+    let mut last = 0;
+    for field in node.children()? {
+        let rank = match field.tag {
+            2 => 1,
+            0x80 => 2,
+            0x81 => 3,
+            _ => anyhow::bail!("invalid TSTInfo accuracy field"),
+        };
+        ensure!(rank > last, "invalid TSTInfo accuracy field order");
+        last = rank;
+        if rank == 1 {
+            UintRef::from_der(field.full).map_err(DecodeError)?;
+        } else {
+            let b = field.body;
+            ensure!(
+                !b.is_empty() && b[0] & 128 == 0 && !(b.len() > 1 && b[0] == 0 && b[1] & 128 == 0),
+                "invalid TSTInfo accuracy integer"
+            );
+            ensure!(b.len() <= 2, "TSTInfo accuracy out of range");
+            let value = b.iter().fold(0u16, |v, b| (v << 8) | u16::from(*b));
+            ensure!((1..=999).contains(&value), "TSTInfo accuracy out of range");
+        }
+    }
+    Ok(())
+}
+
 /// RFC3161 TSTInfo fields. Unknown policy/algorithms are preserved without policy checks.
 #[derive(Debug)]
 pub struct TstInfo<'a> {
@@ -198,6 +226,7 @@ impl<'a> TstInfo<'a> {
                 2 => {
                     UintRef::from_der(n.full).map_err(DecodeError)?;
                 }
+                0x30 => validate_accuracy(*n)?,
                 _ => {
                     n.children()?;
                 }

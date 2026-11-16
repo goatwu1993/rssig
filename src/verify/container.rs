@@ -29,7 +29,7 @@ impl<'a, 'p> Container<'a, 'p>
 where
     'a: 'p,
 {
-    #[cfg(test)]
+    #[cfg(all(test, feature = "appx"))]
     pub(super) fn signatures(&self) -> Result<Vec<Cow<'p, [u8]>>> {
         self.signatures_budget(&super::budget::Budget::default())
     }
