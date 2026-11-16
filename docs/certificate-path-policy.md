@@ -90,8 +90,9 @@ interoperability evidence.
   path length), KU and EKU are **not** checked as path-certificate policy.
   The expired-root and combined CA=false/pathLen=0/restrictive-KU/EKU root cases
   pin this distinction. Name constraints **are** applied. The anchor conversion
-  also ignores unfamiliar critical extensions; root loading diagnostics and
-  excluded/unsupported anchors remain SEC-07.
+  also ignores unfamiliar critical extensions. [Root loading](trust-loading.md)
+  rejects unsupported anchor extraction atomically instead of silently excluding
+  anchors; extraction still does not enforce additional root policy.
 - Paths are tried against configured anchors and supplied untrusted candidate
   certificates. The first acceptable path is reported; no universal shortest,
   newest, or strongest path preference is promised. The order-pair tests have

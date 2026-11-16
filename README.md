@@ -245,7 +245,10 @@ This is an initial verifier, not a Windows trust-policy replacement. It requires
 embedded certificates and either supplied CRLs or explicit `--fetch-crls`;
 AIA downloads and OCSP are not implemented. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
-roots for controlled publisher policies. See `AGENTS.md` for supported algorithms
+roots for controlled publisher policies. [Root/CRL loading](docs/trust-loading.md)
+is atomic: unsupported anchors, malformed bundles and partial native enumeration
+reject configuration; exact DER duplicates are deduplicated. Loading a CRL does
+not authenticate it. See `AGENTS.md` for supported algorithms
 and additional compatibility limits. GitHub Actions runs formatting, Clippy,
 and Rust tests on Linux and macOS. A coverage job publishes Cobertura XML and
 openable HTML reports. External signing tools are not required for CI.

@@ -14,6 +14,7 @@ mod psxml_fixtures;
 mod rdp_fixtures;
 mod signer_selection;
 mod signer_views;
+mod trust_loading;
 mod wsh_fixtures;
 
 use super::*;
@@ -793,6 +794,7 @@ fn regenerate_cli_fixtures() {
     rdp_fixtures::write(&dir);
     appx_fixtures::write(&dir);
     wsh_fixtures::write(&dir);
+    trust_loading::write(&dir);
 }
 
 fn intermediate_pe(bad_key_usage: bool) -> Vec<u8> {

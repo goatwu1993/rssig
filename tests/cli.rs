@@ -57,3 +57,6 @@ mod coverage_inventory;
 
 #[path = "cli/path_policy.rs"]
 mod path_policy;
+
+#[path = "cli/trust_loading.rs"]
+mod trust_loading;

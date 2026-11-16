@@ -57,23 +57,56 @@ pub enum TrustLoadErrorKind {
     SystemRoots,
 }
 
+/// Stable loading failure reason. None of these codes is a trust verdict.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum TrustLoadErrorCode {
+    EmptyInput,
+    InvalidEncoding,
+    UnsupportedAnchor,
+    NativeEnumeration,
+}
+
 /// Loading diagnostics with a typed category and the original causal chain.
 #[derive(Debug)]
 pub struct TrustLoadError {
     kind: TrustLoadErrorKind,
+    code: TrustLoadErrorCode,
+    entry_index: Option<usize>,
     inner: anyhow::Error,
 }
 impl TrustLoadError {
-    pub(crate) fn new(kind: TrustLoadErrorKind, inner: anyhow::Error) -> Self {
-        Self { kind, inner }
+    pub(crate) fn new(
+        kind: TrustLoadErrorKind,
+        code: TrustLoadErrorCode,
+        entry_index: Option<usize>,
+        inner: anyhow::Error,
+    ) -> Self {
+        let inner = match entry_index {
+            Some(index) => inner.context(alloc::format!("trust input entry {index}")),
+            None => inner,
+        };
+        Self {
+            kind,
+            code,
+            entry_index,
+            inner,
+        }
     }
     pub fn kind(&self) -> TrustLoadErrorKind {
         self.kind
     }
+    pub fn code(&self) -> TrustLoadErrorCode {
+        self.code
+    }
+    /// One-based DER object / PEM block / native certificate position, if applicable.
+    pub fn entry_index(&self) -> Option<usize> {
+        self.entry_index
+    }
 }
 impl core::fmt::Display for TrustLoadError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.inner.fmt(f)
+        write!(f, "{:#}", self.inner)
     }
 }
 impl core::error::Error for TrustLoadError {

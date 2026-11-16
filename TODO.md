@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained alongside implementation and its recorded completion evidence.
-Certificate-path policy coverage (SEC-06) is complete; the next prioritized
-security task is root/CRL loading diagnostics (SEC-07). This coverage also
+Root/CRL loading diagnostics (SEC-07) are complete; the next prioritized
+security task is timestamp structure and multiplicity (SEC-08). This coverage also
 supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
 Confirmed correctness regressions take priority over planned refactoring.
 New algorithms, formats, and network access require their own evidence and
@@ -104,11 +104,18 @@ timestamps, and local CRL validation already exist.
   locked tests, fmt, Clippy, verify-core and CLI-without-system-roots tests, and
   bare-metal verify-core Clippy pass on macOS. Dependencies are unchanged; Linux
   execution remains in CI. No Windows policy equivalence is claimed.
-- [ ] **SEC-07: Make root/CRL loading diagnostics explicit.** Audit unsupported
-  anchors skipped during conversion, mixed valid/invalid PEM bundles, duplicates,
-  empty stores, and partial native-root loading failures. Decide whether each
-  load is atomic and how exclusions are surfaced. Loading artifacts must never
-  imply that a signature or supplied CRL was verified.
+- [x] **SEC-07: Make root/CRL loading diagnostics explicit.** Atomic DER/PEM
+  loading rejects malformed input, unsupported anchors and partial native-root
+  enumeration with typed codes, entry positions and causal diagnostics. Exact
+  DER duplicates are deduplicated; distinct constrained anchors are retained.
+  Fetched bundles enforce the combined 64-CRL limit before final verification.
+  Added 18 fixtures and 21 portable cases covering mixed bundles, empty stores,
+  duplicates, native loading failures and retrieval limits. Loaded CRLs remain
+  supplied artifacts without individual authentication claims. See
+  [loading policy, migration and validation evidence](docs/trust-loading.md).
+  Full locked tests (799 cases), formatting, Clippy and documented feature/target
+  checks pass on macOS. Dependencies are unchanged; Linux runtime validation
+  remains in CI. CRL selection/evidence remain SEC-10/SEC-11.
 - [ ] **SEC-08: Complete timestamp structure and multiplicity tests.** Validate
   the whole supported TSTInfo shape, including version, policy/serial fields,
   optional-field ordering, and unknown fields. Cover duplicate/mixed RFC 3161

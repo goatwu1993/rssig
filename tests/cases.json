@@ -26491,6 +26491,774 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec07-root-unsupported-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-root-unsupported.der"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "unsupported trust anchor"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-unsupported-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-roots-unsupported.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "unsupported trust anchor"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-invalid-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-roots-invalid.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 2"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-invalid-first-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-roots-invalid-first.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 1"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-trailing-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-roots-trailing.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 2"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-truncated-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-roots-truncated.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 2"
+        ]
+      }
+    },
+    {
+      "id": "sec07-crls-invalid-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-crls-invalid.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 2"
+        ]
+      }
+    },
+    {
+      "id": "sec07-crls-invalid-first-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-crls-invalid-first.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 1"
+        ]
+      }
+    },
+    {
+      "id": "sec07-crls-trailing-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-crls-trailing.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "entry 2"
+        ]
+      }
+    },
+    {
+      "id": "sec07-empty-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-empty.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "empty trust input"
+        ]
+      }
+    },
+    {
+      "id": "sec07-empty-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-empty.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "empty trust input"
+        ]
+      }
+    },
+    {
+      "id": "sec07-crls-good-roots",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--roots",
+        "fixtures/sec07-crls-good.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "expected CERTIFICATE PEM label"
+        ]
+      }
+    },
+    {
+      "id": "sec07-roots-good-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-roots-good.pem"
+      ],
+      "expect": {
+        "exit_code": 2,
+        "stdout": "",
+        "stderr_contains": [
+          "expected X509 CRL PEM label"
+        ]
+      }
+    },
+    {
+      "id": "sec07-good",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/sec07-roots-good.pem",
+        "--crl",
+        "fixtures/sec07-crls-good.pem"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "crls": [
+                        {
+                          "role": "supplied"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec07-duplicates",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/sec07-roots-duplicate.pem",
+        "--crl",
+        "fixtures/sec07-crls-duplicate.pem"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "crls": [
+                        {
+                          "role": "supplied"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec07-whitespace",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/sec07-roots-whitespace.pem",
+        "--crl",
+        "fixtures/good.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "crls": [
+                        {
+                          "role": "supplied"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec07-forged-crl",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec07-crls-forged.pem"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl_signature",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec07-empty-store",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec07-fetch-64-crls",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "sec07-fetch-64-crls.pem"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "crls": [
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        },
+                        {
+                          "role": "supplied"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "sec07-fetch-65-crls",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "sec07-fetch-65-crls.pem"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "revocation",
+                "details": {
+                  "resource": "retrieval_crl_artifacts",
+                  "limit": 64,
+                  "used": 0,
+                  "requested": 65
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "sec07-fetch-supplied-plus-bundle",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "sec07-fetch-64-crls.pem"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls",
+        "--crl",
+        "fixtures/good-intermediate.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "resource_limit_exceeded",
+                "stage": "revocation",
+                "details": {
+                  "resource": "retrieval_crl_artifacts",
+                  "limit": 64,
+                  "used": 1,
+                  "requested": 64
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
     }
   ]
 }
