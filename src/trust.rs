@@ -1,4 +1,4 @@
-use alloc::{string::ToString, vec, vec::Vec};
+use alloc::{format, string::ToString, vec, vec::Vec};
 mod error;
 mod loading;
 use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
@@ -19,6 +19,8 @@ use x509_cert::{Certificate, crl::CertificateList};
 
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
 pub(crate) const TIME_STAMPING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 8];
+/// Microsoft lifetime signing, 1.3.6.1.4.1.311.10.3.13.
+const LIFETIME_SIGNING: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 10, 3, 13];
 
 #[derive(Clone, Default)]
 pub struct TrustStore {
@@ -78,7 +80,7 @@ impl TrustStore {
         leaf: &Certificate,
         certificates: &[Certificate],
         eku: &'static [u8],
-        at: u64,
+        signing_time: Option<u64>,
         now: u64,
         revocation: bool,
         budget: &Budget,
@@ -115,7 +117,7 @@ impl TrustStore {
             .detail("certificate", CertificateReport::parse(leaf)?)
             .into());
         }
-        if eku == TIME_STAMPING {
+        let lifetime_signing = if eku == TIME_STAMPING {
             let (critical, usage) = leaf
                 .tbs_certificate
                 .get::<ExtendedKeyUsage>()
@@ -136,6 +138,7 @@ impl TrustStore {
                 .detail("certificate", CertificateReport::parse(leaf)?)
                 .into());
             }
+            false
         } else {
             let (_, usage) = leaf
                 .tbs_certificate
@@ -157,6 +160,36 @@ impl TrustStore {
                 .detail("certificate", CertificateReport::parse(leaf)?)
                 .into());
             }
+            usage.0.iter().any(|id| id.as_bytes() == LIFETIME_SIGNING)
+        };
+        // A lifetime-signing signer is not extended by its timestamp: the chain
+        // must be valid at the validation time, as well as at the signing time.
+        let validation_time = match signing_time {
+            Some(at) if !lifetime_signing => at,
+            _ => now,
+        };
+        let lifetime_signed_at = signing_time.filter(|_| lifetime_signing);
+        let eku_oid =
+            ::der::asn1::ObjectIdentifier::from_bytes(eku).map_err(crate::compat_error)?;
+        let not_valid_at_signing = |cert: &Certificate, at: u64| {
+            let error = VerificationError::new(
+                ErrorCode::CertificateNotYetValid,
+                Stage::CertificateChain,
+                "lifetime-signing certificate was not valid at the signing time",
+            )
+            .detail("lifetime_signing", true)
+            .detail("signing_time", at)
+            .detail("validation_time", now)
+            .detail("not_before", not_before(cert).as_secs())
+            .detail("required_eku", eku_oid.to_string());
+            // Keep the signing-time reason even if the report cannot be built.
+            match CertificateReport::parse(cert) {
+                Ok(report) => error.detail("certificate", report),
+                Err(cause) => error.detail("certificate_report_error", format!("{cause:#}")),
+            }
+        };
+        if let Some(at) = issued_after(leaf, lifetime_signed_at) {
+            return Err(not_valid_at_signing(leaf, at).into());
         }
         let leaf_report = CertificateReport::parse(leaf)?;
         let leaf = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
@@ -241,8 +274,12 @@ impl TrustStore {
         } else {
             None
         };
+        // Rejecting a candidate path here is non-fatal: webpki tries other
+        // issuers and reports the most specific rejection by its error rank.
         let invalid_ca_usage = core::cell::Cell::new(false);
-        let check_ca_usage = |path: &webpki::VerifiedPath<'_>| {
+        let issued_after_signing = core::cell::OnceCell::new();
+        let check_path_policy = |path: &webpki::VerifiedPath<'_>| {
+            let mut lacks_cert_sign = false;
             for intermediate in path.intermediate_certificates() {
                 for _ in 0..8 {
                     budget
@@ -252,15 +289,35 @@ impl TrustStore {
                 }
                 let cert = Certificate::from_der(intermediate.der().as_ref())
                     .map_err(|_| webpki::Error::BadDer)?;
+                if let Some(at) = issued_after(&cert, lifetime_signed_at) {
+                    // Ranked like webpki's own validity errors. Keep the first
+                    // rejection, which webpki also keeps among equal ranks.
+                    let error = webpki::Error::CertNotValidYet {
+                        time: UnixTime::since_unix_epoch(Duration::from_secs(at)),
+                        not_before: UnixTime::since_unix_epoch(not_before(&cert)),
+                    };
+                    let _ = issued_after_signing.set(cert);
+                    return Err(error);
+                }
                 if let Some((_, ku)) = cert
                     .tbs_certificate
                     .get::<KeyUsage>()
                     .map_err(|_| webpki::Error::BadDer)?
                     && !ku.key_cert_sign()
                 {
-                    invalid_ca_usage.set(true);
-                    return Err(webpki::Error::UnknownIssuer);
+                    // With a lifetime signing time, finish the signing-time
+                    // checks first so they outrank a missing keyCertSign
+                    // wherever each defect sits in the path.
+                    if lifetime_signed_at.is_none() {
+                        invalid_ca_usage.set(true);
+                        return Err(webpki::Error::UnknownIssuer);
+                    }
+                    lacks_cert_sign = true;
                 }
+            }
+            if lacks_cert_sign {
+                invalid_ca_usage.set(true);
+                return Err(webpki::Error::UnknownIssuer);
             }
             Ok(())
         };
@@ -281,15 +338,32 @@ impl TrustStore {
             &algorithm_refs,
             &roots,
             &intermediates,
-            UnixTime::since_unix_epoch(Duration::from_secs(at)),
+            UnixTime::since_unix_epoch(Duration::from_secs(validation_time)),
             webpki::KeyUsage::required_if_present(eku),
             revocation,
-            Some(&check_ca_usage),
+            Some(&check_path_policy),
         );
         budget.crypto.check()?;
         budget.hash_bytes.check()?;
         budget.decoded_bytes.check()?;
         let path = path.map_err(|e| {
+            // Only the callback reports a validity error at the signing time;
+            // webpki's own checks use the (later) validation time. Also require
+            // the stored certificate to be the one behind the surviving error.
+            if let (
+                webpki::Error::CertNotValidYet {
+                    time,
+                    not_before: rejected,
+                },
+                Some(at),
+                Some(cert),
+            ) = (&e, lifetime_signed_at, issued_after_signing.get())
+                && time.as_secs() == at
+                && rejected.as_secs() == not_before(cert).as_secs()
+            {
+                // Every candidate path failed; report the issuer that postdates signing.
+                return not_valid_at_signing(cert, at);
+            }
             let mut error = if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
                 VerificationError::new(
                     ErrorCode::InvalidKeyUsage,
@@ -299,12 +373,15 @@ impl TrustStore {
             } else {
                 webpki_error(e)
             };
-            error = error.detail("certificate", &leaf_report).detail(
-                "required_eku",
-                ::der::asn1::ObjectIdentifier::from_bytes(eku)
-                    .map(|o| o.to_string())
-                    .unwrap_or_default(),
-            );
+            error = error
+                .detail("certificate", &leaf_report)
+                .detail("required_eku", eku_oid.to_string());
+            if lifetime_signing {
+                error = error.detail("lifetime_signing", true);
+            }
+            if let Some(at) = lifetime_signed_at {
+                error = error.detail("signing_time", at);
+            }
             error
         })?;
         let mut chain = vec![leaf_report];
@@ -328,10 +405,9 @@ impl TrustStore {
             }
         }
         Ok(TrustReport {
-            validation_time: at,
-            required_eku: OidReport::new(
-                ::der::asn1::ObjectIdentifier::from_bytes(eku).map_err(crate::compat_error)?,
-            ),
+            validation_time,
+            lifetime_signing,
+            required_eku: OidReport::new(eku_oid),
             chain,
             revocation: RevocationReport {
                 status: if revocation_enabled {
@@ -351,4 +427,13 @@ impl TrustStore {
             },
         })
     }
+}
+
+fn not_before(cert: &Certificate) -> Duration {
+    cert.tbs_certificate.validity.not_before.to_unix_duration()
+}
+
+/// The lifetime signing time, when `cert` was issued after it.
+fn issued_after(cert: &Certificate, signed_at: Option<u64>) -> Option<u64> {
+    signed_at.filter(|at| not_before(cert).as_secs() > *at)
 }

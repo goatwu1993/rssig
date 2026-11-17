@@ -1,8 +1,8 @@
 # Prioritized roadmap
 
 Maintained alongside implementation and its recorded completion evidence.
-Timestamp structure and multiplicity (SEC-08) are complete; the next prioritized
-security task is lifetime-signing and time-boundary policy (SEC-09). This coverage also
+Lifetime-signing and time-boundary policy (SEC-09) is complete; the next prioritized
+security task is CRL applicability and competing evidence (SEC-10). This coverage also
 supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
 Confirmed correctness regressions take priority over planned refactoring.
 New algorithms, formats, and network access require their own evidence and
@@ -127,12 +127,29 @@ timestamps, and local CRL validation already exist.
   malformed correctly signed tokens. Multiple timestamps remain unsupported;
   existing CMS duplicate-attribute failure precedence is preserved. See
   [profile, limits and evidence](docs/timestamp-policy.md).
-- [ ] **SEC-09: Define lifetime-signing and time-boundary policy.** Add an
-  expired signer with lifetime-signing EKU and an otherwise valid timestamp;
-  enforce supported semantics or reject the unsupported policy. Extend existing
-  fractional-time fixtures to selected intermediates, notBefore/notAfter, and
-  validation-time boundaries. Keep exact decimal precision and document signer,
-  TSA, trust-anchor, and current-CRL time policies separately.
+- [x] **SEC-09: Define lifetime-signing and time-boundary policy
+  ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).** A leaf with the
+  lifetime-signing EKU is validated at the validation time instead of its
+  timestamp, and must also be valid (leaf and intermediates notBefore) at the
+  signing time; the intermediate check runs during path building so a
+  rolled-over issuer valid at both times is still selected.
+  `TrustReport.lifetime_signing` reports this. Certificate-path failures add
+  `lifetime_signing` (and, when timestamped, `signing_time`) details; CRL
+  loading and freshness errors do not. The rule lives in the shared trust path
+  (all formats, nested signatures and RDP). Added 32 deterministic signed
+  fixtures and 3 CRLs, 47 portable cases and 37 named CLI tests: paired expired
+  signer with and without the EKU (RFC 3161 and PKCS#9; PE, nested PE and RDP),
+  rolled-over/late intermediates and keyCertSign precedence (across and within
+  paths), revocation through an intermediate, the inclusive signing-time
+  boundary, lifetime notAfter/notBefore,
+  leaf/intermediate whole-second and fractional notAfter/notBefore, and
+  untimestamped/timestamp validation-time boundaries. Before the change, the lifetime fixtures were
+  accepted at the timestamp time. Non-lifetime boundaries already matched and
+  are pinned. Signer, TSA, anchor and CRL time policies:
+  [time policy](docs/time-policy.md). Full locked tests, fmt, Clippy,
+  verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
+  macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
+  Review items decided against or deferred are recorded in SEC-14.
 - [ ] **SEC-10: Audit CRL applicability and competing evidence.** Cover absent
   nextUpdate, issuer/AKI mismatch, cRLSign usage, revoked intermediates, incomplete
   issuer coverage, distribution-point scope, unknown critical extensions,
@@ -155,6 +172,73 @@ timestamps, and local CRL validation already exist.
   sizes, incompatible OIDs/parameters, and certificate/CRL algorithm mismatches.
   Keep SHA-1 content opt-in separate from unsupported SHA-1 chains; weak RSA must
   remain rejected even with `--allow-sha1`.
+- [ ] **SEC-14: Lifetime-signing review decisions and deferred follow-ups.**
+  Recorded from PR #43 reviews; none permits an invalid signature to verify.
+  Kept as policy (change only with a new policy decision and paired fixtures):
+  - Trust anchors: configured anchors remain keys. Their validity is not checked
+    at the validation time or at a lifetime signing time, so a lifetime path
+    through a root re-issued after the signing time is accepted.
+  - Error precedence: the leaf lifetime notBefore check runs before path
+    building (like webpki's leaf validity check), so it precedes
+    untrusted_root/unknown-issuer and unknown revocation status of the signer
+    path. Store-wide CRL freshness errors are still reported first, by the TSA
+    check. A rejected issuer issued after signing ranks as a webpki validity
+    error, so it can hide a revoked or wrongly signed issuer on another
+    candidate path (pinned by `sec09-lifetime-rollover-revoked-issuer`); the
+    signature is still rejected. Equal-rank failures report the first
+    encountered.
+  - CRL/revocation: revocation is evaluated only at the validation time, and a
+    revocation failure on a path is reported before the signing-time check of
+    that path. Historical (signing-time) revocation status is not modeled.
+  - Diagnostics: `details.certificate` names the chain certificate that failed
+    the signing-time or fractional-expiry check (an intermediate when it is the
+    cause), matching the existing fractional-expiry convention, not always the
+    signer leaf. Errors from webpki's own validity checks instead name the leaf
+    in `details.certificate` while `not_before`/`not_after` belong to the
+    certificate that failed, lifetime or not. This includes a lifetime
+    intermediate issued after a timestamp that equals the validation time.
+  - Unsigned timestamps: the signing-time check (and the non-lifetime
+    timestamp-before-notBefore rejection) is a consistency check. Removing the
+    unsigned timestamp leaves an untimestamped signature validated at the
+    validation time only.
+  - KeyUsage precedence (pre-existing, SEC-06): the keyCertSign rejection flag
+    is shared across candidate paths, so once any candidate lacked keyCertSign a
+    final unknown-issuer failure from another path is reported as
+    invalid_key_usage. Fails closed; a per-path reason needs separate work.
+  - Schema: `TrustReport.lifetime_signing` defaults to `false` when reading
+    reports written before SEC-09, so an older report cannot distinguish "not
+    lifetime-signed" from "not evaluated". `validation_time` shows which time
+    was used; `Option<bool>` would be a schema change.
+  - Error details: on "not valid at the signing time", `validation_time` is the
+    validation time (when the certificate may be valid) and `signing_time` is
+    the instant that failed, unlike other validity errors where
+    `validation_time` is the failing instant. CRL presence/freshness errors for
+    a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
+    evidence is SEC-10/11. Both are schema decisions.
+  Open follow-ups:
+  - Untested fallback: when the certificate report for a late lifetime
+    certificate cannot be built, the error carries a free-text
+    `certificate_report_error` detail instead of `certificate`. No fixture
+    reaches it; it needs a certificate that parses but cannot be reported, or
+    a typed detail.
+  - Format coverage: lifetime-signing fixtures cover PE (primary and nested)
+    and RDP. MSI, CAB, script and AppX signers use the same trust call without
+    a lifetime fixture.
+  - Fractional expiry (pre-existing): `check_fractional_validity` runs after
+    path selection. With a fractional timestamp and two same-subject/key
+    issuers, webpki can select the one whose notAfter equals the timestamp's
+    whole second, and the signature is then rejected as certificate_expired
+    although the other issuer is valid. Move the check into path building, as
+    the lifetime signing-time check does, for every timestamped signer and TSA;
+    add a paired rollover fixture.
+  - Budget: RDP `verify_trust` repeats the full path search, including the
+    lifetime leaf check and a 200,000-unit path-work reservation, for each
+    accepted leaf EKU. Stop after an EKU-independent failure without changing
+    first-policy-error reporting, and pin the budget effect.
+  - Test maintenance: share RFC 3161/PKCS#9 token builders across
+    `src/tests.rs`, SEC-08/09 and RDP fixture modules without changing committed
+    bytes; keep per-task regeneration commands (as SEC-08 does) consistent with
+    `regenerate_cli_fixtures`.
 
 ## P1 — Clean parse/verify interfaces
 

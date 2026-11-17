@@ -8590,6 +8590,427 @@
       "cases": [
         "sec08-good-counter"
       ]
+    },
+    {
+      "file": "sec09-expired-timestamped.exe",
+      "sha256": "677b59d145c14375aa9913417b98b66b90b7da41d637723f86d7d7cb6013891a",
+      "bytes": 3768,
+      "description": "SEC-09: Signer expired before validation time; RFC 3161 timestamp inside its validity. Deterministic public test keys; image unchanged. Expected trusted success validated at the timestamp time.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-expired-timestamped",
+        "sec09-expired-timestamped-at-validation-time",
+        "sec09-expired-timestamped-future"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-expired.exe",
+      "sha256": "ed50dfad8b31980592eb02e960359ad5b17e3f071747c756512e16c2ffaf6dc3",
+      "bytes": 3784,
+      "description": "SEC-09: Same expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-expired"
+      ],
+      "paired_good": "sec09-expired-timestamped.exe"
+    },
+    {
+      "file": "sec09-counter-expired-timestamped.exe",
+      "sha256": "113cd7962b1c603d28a94083c5aa22fe9f3be6765452bed893ac481d01f0f8f9",
+      "bytes": 2856,
+      "description": "SEC-09: Signer expired before validation time; PKCS#9 countersignature inside its validity. Deterministic public test keys; image unchanged. Expected trusted success validated at the timestamp time.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-counter-expired-timestamped"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-counter-expired.exe",
+      "sha256": "0c0be414a53f64c3a129a2cf4bda7a66a66ce715543998f7ef8313d098bfb856",
+      "bytes": 2864,
+      "description": "SEC-09: Same expired signer and PKCS#9 countersignature, plus lifetime-signing EKU. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-counter-expired"
+      ],
+      "paired_good": "sec09-counter-expired-timestamped.exe"
+    },
+    {
+      "file": "sec09-lifetime-valid.exe",
+      "sha256": "d2bed667a3d6a364368f018d09353c60a8b7f7c39acf3b41a74b379a828fcb74",
+      "bytes": 3776,
+      "description": "SEC-09: Lifetime-signing signer whose notAfter equals the pinned validation time; RFC 3161 timestamp. Deterministic public test keys; image unchanged. Expected trusted success validated at the validation time; certificate_expired one second later.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-valid",
+        "sec09-lifetime-valid-after-expiry"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-before-not-before.exe",
+      "sha256": "37eba1f7e6ace64919cce582c47dd89f2ad3d7f2bda34830755b66a45cfc50ec",
+      "bytes": 3792,
+      "description": "SEC-09: Lifetime-signing signer whose notBefore follows the RFC 3161 timestamp; sec09-timestamp-before-not-before.exe is the same without the EKU. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-before-not-before",
+        "sec09-lifetime-before-not-before-crl-expired"
+      ]
+    },
+    {
+      "file": "sec09-timestamp-before-not-before.exe",
+      "sha256": "09d505494db30a4abad0d860bb1d6315af8c1e57e1120b1892bdbbe6965309ff",
+      "bytes": 3776,
+      "description": "SEC-09: Signer whose notBefore follows the RFC 3161 timestamp, without lifetime signing. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-timestamp-before-not-before",
+        "sec09-timestamp-before-not-before-crl-expired"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-untimestamped.exe",
+      "sha256": "d23f278802f29c358d09b6c323c1605499be06c0452ab9adf16f84fe109f41df",
+      "bytes": 2200,
+      "description": "SEC-09: Lifetime-signing signer without a timestamp. Deterministic public test keys; image unchanged. Expected trusted success reporting lifetime_signing; certificate_expired without signing_time after notAfter.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-untimestamped",
+        "sec09-lifetime-untimestamped-expired"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-intermediate-rollover.exe",
+      "sha256": "8ea17e333062109ec9ee850364314ca5daf8a6cce91c9094d6a7b771b7dc8bf6",
+      "bytes": 4600,
+      "description": "SEC-09: Lifetime-signing signer with two same-subject/key intermediates; the first embedded is issued after the RFC 3161 time. Deterministic public test keys; image unchanged. Expected success through the second intermediate with revocation disabled.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-rollover",
+        "sec09-lifetime-rollover-revocation",
+        "sec09-lifetime-rollover-revocation-unknown",
+        "sec09-lifetime-rollover-revoked-leaf",
+        "sec09-lifetime-rollover-revoked-issuer"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-intermediate-late.exe",
+      "sha256": "37cb5c382ec2c0c588a1f4706306c6894e6da536f0fe02e87f1107d23b15dfe8",
+      "bytes": 4200,
+      "description": "SEC-09: Same signer with only the intermediate issued after the RFC 3161 time. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-late",
+        "sec09-lifetime-late-revocation",
+        "sec09-lifetime-late-revoked-leaf"
+      ],
+      "paired_good": "sec09-lifetime-intermediate-rollover.exe"
+    },
+    {
+      "file": "sec09-leaf-not-after-exact.exe",
+      "sha256": "cb4d85b10f26140fa94e538640129107f3162f23ed860574ecb5cb6e04aaea4c",
+      "bytes": 3768,
+      "description": "SEC-09: RFC 3161 time equals signer notAfter at whole seconds. Deterministic public test keys; image unchanged. Expected trusted success.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-leaf-not-after-exact"
+      ]
+    },
+    {
+      "file": "sec09-leaf-not-after-fraction.exe",
+      "sha256": "3b0e0eb7a5c66b53bbb504a9348fc8a590d0df93ddab8b1b01d147b0d574b950",
+      "bytes": 3776,
+      "description": "SEC-09: RFC 3161 time is signer notAfter plus .5 seconds. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-leaf-not-after-fraction"
+      ],
+      "paired_good": "sec09-leaf-not-after-exact.exe"
+    },
+    {
+      "file": "sec09-leaf-not-before-fraction-inside.exe",
+      "sha256": "97baed290ce47382a0e14ba4d3bbc7b9b2f18586edab7d4eec0abc0773e844f0",
+      "bytes": 3784,
+      "description": "SEC-09: RFC 3161 time is signer notBefore plus .5 seconds. Deterministic public test keys; image unchanged. Expected trusted success.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-leaf-not-before-fraction-inside"
+      ]
+    },
+    {
+      "file": "sec09-leaf-not-before-fraction-early.exe",
+      "sha256": "818e0fc0e457774775d20c0fed9c3be7f0ab5f3e546a1aee948ae29e005fd745",
+      "bytes": 3784,
+      "description": "SEC-09: RFC 3161 time is .5 seconds before signer notBefore. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-leaf-not-before-fraction-early"
+      ],
+      "paired_good": "sec09-leaf-not-before-fraction-inside.exe"
+    },
+    {
+      "file": "sec09-intermediate-not-after-exact.exe",
+      "sha256": "41feb341cd89d93c620e502a6ad4c8b76d829ee26a934681156fe6697d8a567e",
+      "bytes": 4192,
+      "description": "SEC-09: Root-issued intermediate; RFC 3161 time equals intermediate notAfter. Deterministic public test keys; image unchanged. Expected success with revocation disabled.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-intermediate-not-after-exact"
+      ]
+    },
+    {
+      "file": "sec09-intermediate-not-after-fraction.exe",
+      "sha256": "4fa93658b3090843b468de5ccba385a2dcda6ab5c07b13674f7b90081bdec985",
+      "bytes": 4192,
+      "description": "SEC-09: RFC 3161 time is intermediate notAfter plus .5 seconds. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-intermediate-not-after-fraction"
+      ],
+      "paired_good": "sec09-intermediate-not-after-exact.exe"
+    },
+    {
+      "file": "sec09-intermediate-expired.exe",
+      "sha256": "23a86a6e969bfa821ac13c1547a9e808bc485e3678dd361890142ca01020c386",
+      "bytes": 4176,
+      "description": "SEC-09: RFC 3161 time is one second after intermediate notAfter. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-intermediate-expired"
+      ],
+      "paired_good": "sec09-intermediate-not-after-exact.exe"
+    },
+    {
+      "file": "sec09-intermediate-not-before-fraction-inside.exe",
+      "sha256": "237653f975567e122649d975acb75a43edf3a94150ed8a8d7dec0279d73a9df1",
+      "bytes": 4200,
+      "description": "SEC-09: RFC 3161 time is intermediate notBefore plus .5 seconds. Deterministic public test keys; image unchanged. Expected success with revocation disabled.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-intermediate-not-before-fraction-inside"
+      ]
+    },
+    {
+      "file": "sec09-intermediate-not-before-fraction-early.exe",
+      "sha256": "408dd3b3d2f85cebbfc274caa68a258529342e463b8a54d7da4fe16b548984ef",
+      "bytes": 4200,
+      "description": "SEC-09: RFC 3161 time is .5 seconds before intermediate notBefore. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-intermediate-not-before-fraction-early"
+      ],
+      "paired_good": "sec09-intermediate-not-before-fraction-inside.exe"
+    },
+    {
+      "file": "sec09-untimestamped.exe",
+      "sha256": "6e057d59c1a23b716e05de51772a95489b5dd168643ef7c14006f7ed29d1496d",
+      "bytes": 2176,
+      "description": "SEC-09: Untimestamped signer valid for 100 seconds either side of 1800000000. Deterministic public test keys; image unchanged. Expected success at both inclusive bounds; not-yet-valid/expired one second outside.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-untimestamped-before-not-before",
+        "sec09-untimestamped-at-not-before",
+        "sec09-untimestamped-at-not-after",
+        "sec09-untimestamped-after-not-after"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-intermediate-late-ca-usage.exe",
+      "sha256": "2fe4740ce7bf4639d258e9b343d726f4e7f71f524eb09f4de72b54984cc8067f",
+      "bytes": 4600,
+      "description": "SEC-09: Lifetime-signing signer with two same-subject/key intermediates: first issued after the RFC 3161 time, second valid at signing but lacking keyCertSign. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-late-ca-usage"
+      ],
+      "paired_good": "sec09-lifetime-intermediate-rollover.exe"
+    },
+    {
+      "file": "sec09-lifetime-intermediate-ca-usage-late.exe",
+      "sha256": "f762f74f73b3485c3e044bbaf36248decd675b859735036c8f3cc67b58d2c4d8",
+      "bytes": 4608,
+      "description": "SEC-09: Same as sec09-lifetime-intermediate-late-ca-usage with the intermediates embedded in reverse order. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-ca-usage-late"
+      ],
+      "paired_good": "sec09-lifetime-intermediate-rollover.exe"
+    },
+    {
+      "file": "sec09-lifetime-chain-ca-usage-late.exe",
+      "sha256": "75a41d3634aad0115bacaddf965bdf97b113639cd8cfccce8d530d3ffab275f1",
+      "bytes": 4616,
+      "description": "SEC-09: Lifetime-signing signer on one path leaf <- intermediate 0 (lacks keyCertSign) <- intermediate 1 (issued after the RFC 3161 time) <- root. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-chain-ca-usage-late"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-chain-late-ca-usage.exe",
+      "sha256": "718aa31ca41474588eb813d4ad00080431ddae8a3ca71386b6c6f337302297ff",
+      "bytes": 4608,
+      "description": "SEC-09: Same defects on one path with their positions swapped: intermediate 0 issued after the RFC 3161 time, intermediate 1 lacking keyCertSign. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-chain-late-ca-usage"
+      ]
+    },
+    {
+      "file": "sec09-nested-expired-timestamped.exe",
+      "sha256": "dd3d7be736e79dc6fc4fe85af3220cd9be768001599a65300649e935c4805bf5",
+      "bytes": 4944,
+      "description": "SEC-09: Ordinary publisher primary signature with a nested signature by a signer expired before validation time; RFC 3161 timestamp inside its validity. Expected trusted success, nested signer validated at the timestamp time. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-nested-expired-timestamped"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-nested-expired.exe",
+      "sha256": "d42fa6da72528cda923f7083911c5e84c3ad4cc74034e01f915e24bcbb1e509b",
+      "bytes": 4960,
+      "description": "SEC-09: Same nested expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Expected certificate_expired at certificate_chain. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-nested-expired"
+      ],
+      "paired_good": "sec09-nested-expired-timestamped.exe"
+    },
+    {
+      "file": "sec09-rdp-expired-timestamped.rdp",
+      "sha256": "dc6eb9b35cc50a656a0a4ca6c5094f6294ad08b0a3006a42025ae3aac2f8ff84",
+      "bytes": 3622,
+      "description": "SEC-09: Inert RDP settings with a direct signature by a signer expired before validation time; RFC 3161 timestamp inside its validity. Never open in an RDP client. Expected trusted success validated at the timestamp time. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-rdp-expired-timestamped"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-rdp-expired.rdp",
+      "sha256": "0b58cb9aab6342ecb3822f2e2be352f82bfae2c70ef1ea49d74ad5ee0f6d91f5",
+      "bytes": 3638,
+      "description": "SEC-09: Same RDP settings, expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Never open in an RDP client. Expected certificate_expired at certificate_chain. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-rdp-expired"
+      ],
+      "paired_good": "sec09-rdp-expired-timestamped.rdp"
+    },
+    {
+      "file": "sec09-intermediate.crl",
+      "sha256": "e1e9472a2358b5c12d18117ad6c4c43547bb2fc9692b178423fd64bb800cc5ea",
+      "bytes": 187,
+      "description": "SEC-09: Empty, correctly signed CRL from the rolled-over SEC-09 intermediate, valid at 1800000000; supporting revocation evidence, not an individual verification claim. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-rollover-revocation",
+        "sec09-lifetime-late-revocation",
+        "sec09-lifetime-rollover-revoked-issuer",
+        "sec09-lifetime-intermediate-not-before-exact",
+        "sec09-lifetime-intermediate-not-before-early"
+      ]
+    },
+    {
+      "file": "sec09-intermediate-revoked-leaf.crl",
+      "sha256": "5c8c2bd5a0f0b6c22e562e762e3a9d9840aca09e0bd09df6efbdcc21acc2705a",
+      "bytes": 212,
+      "description": "SEC-09: Correctly signed CRL from the rolled-over SEC-09 intermediate revoking the SEC-09 leaf serial 902, valid at 1800000000. Expected certificate_revoked at revocation. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-late-revoked-leaf",
+        "sec09-lifetime-rollover-revoked-leaf"
+      ],
+      "paired_good": "sec09-intermediate.crl"
+    },
+    {
+      "file": "sec09-root-revoked-intermediate.crl",
+      "sha256": "3e248f58cf520772c67d35b98ea4901955a7ce3651b77e179dc86a4b2eef5330",
+      "bytes": 209,
+      "description": "SEC-09: Correctly signed test-root CRL revoking only SEC-09 intermediate serial 911 (the rollover issuer valid at signing), valid at 1800000000. Covers the TSA as good. Deterministic public test keys.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-rollover-revoked-issuer"
+      ],
+      "paired_good": "good.crl"
+    },
+    {
+      "file": "sec09-lifetime-leaf-not-before-exact.exe",
+      "sha256": "efd6cf784b4781a0221ae8d9f14529707df08108d997fa0fcc4db7beea57f536",
+      "bytes": 3792,
+      "description": "SEC-09: Lifetime-signing signer whose notBefore equals the RFC 3161 time. Expected trusted success validated at the validation time. Deterministic public test keys; image unchanged.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-leaf-not-before-exact"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-leaf-not-before-early.exe",
+      "sha256": "2a3680de82a5977b78aaf1d4342b9b7979b171725ea37313d6cc284a83aff729",
+      "bytes": 3792,
+      "description": "SEC-09: Lifetime-signing signer whose notBefore is one second after the RFC 3161 time. Expected certificate_not_yet_valid at certificate_chain. Deterministic public test keys; image unchanged.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-leaf-not-before-early"
+      ],
+      "paired_good": "sec09-lifetime-leaf-not-before-exact.exe"
+    },
+    {
+      "file": "sec09-lifetime-intermediate-not-before-exact.exe",
+      "sha256": "8207dc34e5ac2413d0c521e647372ba3d16cc36a8375958aa19225368bf53301",
+      "bytes": 4208,
+      "description": "SEC-09: Lifetime-signing signer whose intermediate notBefore equals the RFC 3161 time. Expected trusted success with CRLs from the root and the intermediate. Deterministic public test keys; image unchanged.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-not-before-exact"
+      ]
+    },
+    {
+      "file": "sec09-lifetime-intermediate-not-before-early.exe",
+      "sha256": "46fd4b0489ec021ce05deb09261a2eca4259c719c3040d9fd09e8e986d00b311",
+      "bytes": 4208,
+      "description": "SEC-09: Lifetime-signing signer whose intermediate notBefore is one second after the RFC 3161 time. Expected certificate_not_yet_valid at certificate_chain naming the intermediate. Deterministic public test keys; image unchanged.",
+      "generator": "src/tests/time_policy.rs::regenerate_sec09_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec09-lifetime-intermediate-not-before-early"
+      ],
+      "paired_good": "sec09-lifetime-intermediate-not-before-exact.exe"
     }
   ]
 }
