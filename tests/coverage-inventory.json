@@ -720,7 +720,8 @@
       "cases": [
         "expired-crl",
         "msi-expired-crl",
-        "powershell-expired-crl"
+        "powershell-expired-crl",
+        "sec10-root-aki-issuer-serial-crl-name-matched"
       ],
       "gap": ""
     },
@@ -766,7 +767,9 @@
         "sec10-root-delta-crl-unsupported",
         "sec10-root-indirect-crl-unsupported",
         "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported"
       ],
       "gap": ""
     },

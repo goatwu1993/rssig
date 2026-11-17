@@ -170,8 +170,17 @@ timestamps, and local CRL validation already exist.
   covers intermediate issuers only: webpki 0.103 does not track trust-anchor
   KeyUsage, so a root lacking cRLSign still issues usable CRLs (consistent with
   SEC-14's anchors-as-keys policy; decide and pin it).
-  Still open: root cRLSign policy, AKI authorityCertIssuer/serial forms, distribution-point scope
-  and incomplete issuer coverage.
+  An AKI with only authorityCertIssuer/serial is matched by issuer name
+  (`sec10-root-aki-issuer-serial-crl-name-matched`). An IDP carrying only a
+  user/CA scope flag is rejected by webpki 0.103 as `issuing_distribution_point`
+  (`sec10-root-idp-*-crl-unsupported`). Incomplete issuer coverage is pinned by
+  `sec09-lifetime-rollover-revocation-unknown`.
+  Still open (policy decisions): whether a root lacking cRLSign may issue usable
+  CRLs, and named distribution-point scope. webpki treats a CRL whose IDP names
+  a distribution point as authoritative for any certificate without a CRL
+  distribution points extension (rustls/webpki#228), so a partitioned CRL can
+  clear a certificate that another partition revokes. Decide whether to reject
+  such CRLs or require a matching certificate distribution point, then pin it.
   Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
@@ -291,8 +300,8 @@ timestamps, and local CRL validation already exist.
   evidence) or an explicit, JSON-reported opt-in to skip known-unsupported
   CRLs. Never skip silently.
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
-  in PR #46. The `crl_version` and `issuing_distribution_point` reasons have no
-  fixtures, and other webpki rejections fall into the open-ended
+  in PR #46. The `crl_version` reason has no fixture, and other webpki
+  rejections fall into the open-ended
   `unsupported_or_malformed` catch-all. The `invalid_crl` message embeds
   webpki's error name, which can change on upgrade (consumers must use
   `details.reason`). A malformed CRL from an unrelated issuer still fails at

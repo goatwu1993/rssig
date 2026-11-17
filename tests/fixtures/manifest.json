@@ -123,7 +123,10 @@
         "sec10-root-indirect-crl-unsupported",
         "sec10-root-unknown-noncritical-extension-crl-accepted",
         "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-aki-issuer-serial-crl-name-matched"
       ]
     },
     {
@@ -210,7 +213,10 @@
         "sec10-root-indirect-crl-unsupported",
         "sec10-root-unknown-noncritical-extension-crl-accepted",
         "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-aki-issuer-serial-crl-name-matched"
       ]
     },
     {
@@ -9254,6 +9260,39 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-ca-crl-sign-fallback"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-user-certs.crl",
+      "sha256": "6394862da5aebe44a300e21967529a48c6fc5e308cd72e01e29c1f1cfafbe3e3",
+      "bytes": 201,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsUserCerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-idp-user-certs-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-ca-certs.crl",
+      "sha256": "de65fe111bfce855326508021d1c63fa282009470a7e325d844c8c0bed83ce2c",
+      "bytes": 200,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsCACerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-idp-ca-certs-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-aki-issuer-serial-expired.crl",
+      "sha256": "9308da68ce875a3d193c43edec123bd86f968855a521275cd94651ced7b8a188",
+      "bytes": 230,
+      "description": "SEC-10: Correctly signed, expired CRL from the test root whose authorityKeyIdentifier has authorityCertIssuer and authorityCertSerialNumber but no keyIdentifier, so it is matched by issuer name and fails closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-aki-issuer-serial-crl-name-matched"
       ]
     }
   ]

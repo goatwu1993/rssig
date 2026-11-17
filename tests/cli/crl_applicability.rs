@@ -160,6 +160,11 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
             "sec10-root-entry-critical-extension.crl",
             "unknown_critical_extension",
         ),
+        (
+            "sec10-root-idp-user-certs.crl",
+            "issuing_distribution_point",
+        ),
+        ("sec10-root-idp-ca-certs.crl", "issuing_distribution_point"),
         ("sec10-root-delta.crl", "delta_crl"),
         ("sec10-root-delta-expired.crl", "delta_crl"),
         ("sec10-root-indirect.crl", "indirect_crl"),
@@ -232,4 +237,19 @@ fn sec10_path_building_falls_back_to_the_issuer_with_crl_sign() {
     let chain =
         |output: &Output| output.json["results"][0]["signatures"][0]["trust"]["chain"].clone();
     assert_eq!(chain(&fallback), chain(&usable));
+}
+
+#[test]
+fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
+    // authorityCertIssuer/serial alone cannot exclude a CRL: the stale CRL
+    // from the chain issuer's name still fails closed.
+    let output = run_with("sec10-root-aki-issuer-serial-expired.crl");
+    expect_failure(
+        &output,
+        1,
+        "crl_expired",
+        "CRL expired",
+        Some("revocation"),
+        None,
+    );
 }

@@ -115,6 +115,16 @@ fn aki_value(id: &[u8]) -> Vec<u8> {
     .unwrap()
 }
 
+/// AuthorityKeyIdentifier [1] authorityCertIssuer (directoryName) and
+/// [2] authorityCertSerialNumber, without [0] keyIdentifier.
+fn aki_issuer_serial() -> Vec<u8> {
+    let name = Name::from_str("CN=rssig test root")
+        .unwrap()
+        .to_der()
+        .unwrap();
+    seq(&[tlv(0xa1, &tlv(0xa4, &name)), tlv(0x82, &[1])])
+}
+
 fn ski(cert: &Certificate) -> Vec<u8> {
     use ::der::Decode;
     let ext = cert
@@ -238,6 +248,28 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         (
             "sec10-root-indirect.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x84, 1, 0xff]),
+        ),
+        // issuingDistributionPoint with only a scope flag and no distribution point:
+        // webpki 0.103 rejects it at load, so it fails closed.
+        (
+            "sec10-root-idp-user-certs.crl",
+            crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]),
+        ),
+        (
+            "sec10-root-idp-ca-certs.crl",
+            crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x82, 1, 0xff]),
+        ),
+        // AKI with authorityCertIssuer and serial but no keyIdentifier: matched by
+        // name only, so the stale CRL fails closed.
+        (
+            "sec10-root-aki-issuer-serial-expired.crl",
+            crl_with_aki(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                Some(aki_issuer_serial()),
+            ),
         ),
         (
             "sec10-root-no-next-update.crl",
