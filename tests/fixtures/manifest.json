@@ -115,7 +115,8 @@
         "sec10-only-unrelated-crl-is-unknown",
         "sec10-root-name-other-aki-crl-excluded",
         "sec10-root-aki-crl-still-rejected",
-        "sec10-root-crl-malformed-aki"
+        "sec10-root-crl-malformed-aki",
+        "sec10-root-signed-other-aki-crl-still-rejected"
       ]
     },
     {
@@ -194,7 +195,8 @@
         "sec10-root-expired-crl-still-rejected",
         "sec10-root-name-other-aki-crl-excluded",
         "sec10-root-aki-crl-still-rejected",
-        "sec10-root-crl-malformed-aki"
+        "sec10-root-crl-malformed-aki",
+        "sec10-root-signed-other-aki-crl-still-rejected"
       ]
     },
     {
@@ -9079,9 +9081,9 @@
     },
     {
       "file": "sec10-root-name-other-aki-expired.crl",
-      "sha256": "62cbebecd066aab7f3a139511f8b97311c785a17a32536abea844307b078d70f",
-      "bytes": 217,
-      "description": "SEC-10: Correctly signed, expired CRL under the test root's name whose authorityKeyIdentifier names a different key. Deterministic public test keys.",
+      "sha256": "5224adf3a441b618d2cdb86ddc5ce6b284713146d1f92d6cc603756c00eb6830",
+      "bytes": 218,
+      "description": "SEC-10: Correctly signed, expired CRL under the test root's name, signed by a different key that its authorityKeyIdentifier names (a rolled-over issuer). Deterministic public test keys.",
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
@@ -9108,6 +9110,17 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-crl-malformed-aki"
+      ]
+    },
+    {
+      "file": "sec10-root-signed-other-aki-expired.crl",
+      "sha256": "62cbebecd066aab7f3a139511f8b97311c785a17a32536abea844307b078d70f",
+      "bytes": 217,
+      "description": "SEC-10: Expired CRL signed by the test root's own key whose authorityKeyIdentifier names a different key. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-signed-other-aki-crl-still-rejected"
       ]
     }
   ]

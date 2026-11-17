@@ -160,7 +160,8 @@ timestamps, and local CRL validation already exist.
   when its issuer matches a configured root or embedded candidate certificate;
   others are excluded, and a missing nextUpdate is a typed `invalid_crl`
   (`sec10-*` cases and `tests/cli/crl_applicability.rs`). A CRL whose AKI
-  keyIdentifier matches no name-matching candidate's SKI is likewise excluded.
+  keyIdentifier matches no name-matching candidate's SKI is likewise excluded
+  unless its signature verifies under a name-matching candidate key.
   Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope, unknown critical
   extensions, delta/indirect CRLs, and incomplete issuer coverage.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts

@@ -13,7 +13,7 @@ documented time:
 | TSA chain | Timestamp `signing_time` | The TSA EKU must be exclusively timeStamping, so lifetime signing never applies to it. |
 | Timestamp itself | Validation time | `signing_time` equal to the validation time is accepted; any nonzero fraction in that second, or a later second, is `timestamp_in_future`. |
 | Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [path policy](certificate-path-policy.md). Checking them at a lifetime signing time is SEC-14. |
-| CRLs | Validation time | thisUpdate must not follow it; nextUpdate must follow it. A current CRL listing a certificate rejects it even after a valid timestamp. A CRL whose issuer names no configured root or embedded candidate certificate, or whose authorityKeyIdentifier keyIdentifier differs from that of every name-matching candidate with a subject key identifier, is excluded before these checks; a stale CRL from a chain issuer rejects the request (`crl_not_yet_valid`, `crl_expired`), and one without nextUpdate is `invalid_crl`. Remaining applicability work is SEC-10. |
+| CRLs | Validation time | thisUpdate must not follow it; nextUpdate must follow it. A current CRL listing a certificate rejects it even after a valid timestamp. A CRL whose issuer names no configured root or embedded candidate certificate, or whose authorityKeyIdentifier keyIdentifier differs from that of every name-matching candidate with a subject key identifier and whose signature does not verify under any name-matching candidate key, is excluded before these checks; a stale CRL from a chain issuer rejects the request (`crl_not_yet_valid`, `crl_expired`), and one without nextUpdate is `invalid_crl`. Remaining applicability work is SEC-10. |
 
 ## Lifetime signing
 

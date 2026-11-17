@@ -235,7 +235,9 @@ impl TrustStore {
             // authority key, the same subject key. Such CRLs are excluded
             // rather than rejecting the request; a CRL from a chain issuer
             // must be usable or fail closed. A candidate without a subject key
-            // identifier cannot disprove a match.
+            // identifier cannot disprove a match, and a differing key
+            // identifier excludes a CRL only if the CRL's signature also fails
+            // under every name-matching candidate key.
             let mut issuers = Vec::new();
             for root in &self.roots {
                 let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
@@ -246,6 +248,7 @@ impl TrustStore {
             }
             for bytes in &self.crls {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
+                let signed = crl.tbs_cert_list.to_der().map_err(crate::compat_error)?;
                 let tbs = crl.tbs_cert_list;
                 let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
                 let authority_key = match tbs
@@ -268,13 +271,20 @@ impl TrustStore {
                             .key_identifier
                     }
                 };
-                let applies = issuers.iter().any(|(name, key)| {
-                    *name == issuer
-                        && match (&authority_key, key) {
-                            (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
-                            _ => true,
-                        }
-                });
+                let named: Vec<_> = issuers.iter().filter(|i| i.name == issuer).collect();
+                let applies = named.iter().any(|i| match (&authority_key, &i.key_id) {
+                    (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
+                    _ => true,
+                }) || (authority_key.is_some()
+                    && named.iter().any(|i| {
+                        signed_by(
+                            &i.spki,
+                            &crl.signature_algorithm.oid,
+                            &signed,
+                            &crl.signature,
+                        )
+                        .unwrap_or(true)
+                    }));
                 if !applies {
                     continue;
                 }
@@ -499,14 +509,20 @@ fn issued_after(cert: &Certificate, signed_at: Option<u64>) -> Option<u64> {
     signed_at.filter(|at| not_before(cert).as_secs() > *at)
 }
 
-/// Subject name DER and, when present, the subject key identifier bytes.
-fn issuer_identity(cert: &Certificate) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
+struct IssuerIdentity {
+    name: Vec<u8>,
+    key_id: Option<Vec<u8>>,
+    spki: Vec<u8>,
+}
+
+/// Subject name DER, the subject key identifier bytes when present, and the SPKI DER.
+fn issuer_identity(cert: &Certificate) -> Result<IssuerIdentity> {
     let name = cert
         .tbs_certificate
         .subject
         .to_der()
         .map_err(crate::compat_error)?;
-    let key = cert
+    let key_id = cert
         .tbs_certificate
         .extensions
         .iter()
@@ -514,5 +530,32 @@ fn issuer_identity(cert: &Certificate) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
         .find(|e| e.extn_id == SubjectKeyIdentifier::OID)
         .and_then(|e| SubjectKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
         .map(|ski| ski.0.as_bytes().to_vec());
-    Ok((name, key))
+    let spki = cert
+        .tbs_certificate
+        .subject_public_key_info
+        .to_der()
+        .map_err(crate::compat_error)?;
+    Ok(IssuerIdentity { name, key_id, spki })
+}
+
+/// Whether the CRL signature verifies under `spki`. `None` when the signature
+/// algorithm is not one we can map to a digest: the caller must then treat
+/// the CRL as applicable rather than exclude it.
+fn signed_by(
+    spki: &[u8],
+    algorithm: &::der::asn1::ObjectIdentifier,
+    message: &[u8],
+    signature: &::der::asn1::BitString,
+) -> Option<bool> {
+    let oid = algorithm.as_bytes();
+    let hash = match oid {
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 2]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 11] => crate::crypto::Hash::Sha256,
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 3]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 12] => crate::crypto::Hash::Sha384,
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 4]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 13] => crate::crypto::Hash::Sha512,
+        _ => return None,
+    };
+    Some(crate::crypto::verify_spki(spki, hash, oid, message, signature.as_bytes()?).is_ok())
 }

@@ -30351,6 +30351,40 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-root-signed-other-aki-crl-still-rejected",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-root-signed-other-aki-expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1800000000
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

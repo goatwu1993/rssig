@@ -85,9 +85,22 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
-        // The root's name and key, but an authorityKeyIdentifier naming another key.
+        // The root's name, but signed by another key that its authorityKeyIdentifier
+        // names: a CRL of a rolled-over issuer, not of the chain's root.
         (
             "sec10-root-name-other-aki-expired.crl",
+            crl_with_aki(
+                root,
+                &other_key,
+                NOW - 200,
+                Some(NOW - 1),
+                Some(aki_value(&[0xaa; 20])),
+            ),
+        ),
+        // Signed by the root's own key, but with a mismatched authorityKeyIdentifier:
+        // a valid signature from a chain issuer is never excluded.
+        (
+            "sec10-root-signed-other-aki-expired.crl",
             crl_with_aki(
                 root,
                 root_key,

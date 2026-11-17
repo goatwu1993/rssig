@@ -126,3 +126,18 @@ fn sec10_malformed_authority_key_identifier_fails_closed() {
         Some("authorityKeyIdentifier"),
     );
 }
+
+#[test]
+fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
+    // Signed by the root's own key, so a differing authorityKeyIdentifier
+    // cannot make it irrelevant: the stale CRL still fails closed.
+    let output = run_with("sec10-root-signed-other-aki-expired.crl");
+    expect_failure(
+        &output,
+        1,
+        "crl_expired",
+        "CRL expired",
+        Some("revocation"),
+        None,
+    );
+}
