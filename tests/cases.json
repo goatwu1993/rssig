@@ -30230,6 +30230,35 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-only-unrelated-crl-is-unknown",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec10-unrelated-expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

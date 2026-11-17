@@ -68,3 +68,28 @@ fn sec10_chain_issuer_stale_crl_still_fails_closed() {
         1_800_000_000u64
     );
 }
+
+#[test]
+fn sec10_only_unrelated_crls_leave_revocation_unknown() {
+    let output = run_fixture(
+        "good-countersignature.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            "fixtures/sec10-unrelated-expired.crl",
+            "--time",
+            T,
+        ],
+    );
+    expect_failure(
+        &output,
+        1,
+        "revocation_unknown",
+        "Revocation status unknown",
+        Some("revocation"),
+        None,
+    );
+}

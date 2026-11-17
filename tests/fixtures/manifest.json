@@ -111,7 +111,8 @@
         "sec10-unrelated-expired-crl-excluded",
         "sec10-unrelated-not-yet-valid-crl-excluded",
         "sec10-unrelated-no-next-update-crl-excluded",
-        "sec10-root-expired-crl-still-rejected"
+        "sec10-root-expired-crl-still-rejected",
+        "sec10-only-unrelated-crl-is-unknown"
       ]
     },
     {
@@ -9044,7 +9045,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-unrelated-expired-crl-excluded"
+        "sec10-unrelated-expired-crl-excluded",
+        "sec10-only-unrelated-crl-is-unknown"
       ]
     },
     {

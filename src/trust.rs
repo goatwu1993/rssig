@@ -289,6 +289,14 @@ impl TrustStore {
                 ));
             }
         }
+        if revocation && parsed_crls.is_empty() {
+            return Err(VerificationError::new(
+                ErrorCode::RevocationUnknown,
+                Stage::Revocation,
+                "no supplied CRL applies to the certificate chain",
+            )
+            .into());
+        }
         let crl_refs: Vec<_> = parsed_crls.iter().collect();
         let revocation_enabled = revocation;
         let revocation = if revocation {
