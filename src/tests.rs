@@ -2,6 +2,7 @@ mod appx_fixtures;
 mod cab_fixtures;
 mod certificate_choices;
 mod cms_audit;
+mod crl_applicability;
 mod crl_fetch_fixtures;
 mod fixture_faults;
 mod msi_fixtures;
