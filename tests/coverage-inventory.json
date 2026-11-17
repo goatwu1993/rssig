@@ -739,8 +739,11 @@
       "gap": ""
     },
     "revocation_unknown": {
-      "cases": [],
-      "gap": "No declarative verification assertion. Audit reachability and native-only/command diagnostics before adding an artifact case."
+      "cases": [
+        "sec09-lifetime-rollover-revocation-unknown",
+        "sec10-only-unrelated-crl-is-unknown"
+      ],
+      "gap": ""
     },
     "crl_fetch_failed": {
       "cases": [
@@ -755,8 +758,16 @@
       "gap": ""
     },
     "invalid_crl": {
-      "cases": [],
-      "gap": "No declarative verification assertion. Audit reachability and native-only/command diagnostics before adding an artifact case."
+      "cases": [
+        "sec10-root-crl-no-next-update",
+        "sec10-root-crl-malformed-aki",
+        "sec10-root-unknown-critical-extension-crl-unsupported",
+        "sec10-root-delta-crl-unsupported",
+        "sec10-root-indirect-crl-unsupported",
+        "sec10-root-entry-critical-extension-crl-unsupported",
+        "sec10-root-delta-expired-crl-reports-feature"
+      ],
+      "gap": ""
     },
     "invalid_certificate": {
       "cases": [],

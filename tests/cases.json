@@ -30109,7 +30109,10 @@
               "ok": false,
               "error": {
                 "code": "invalid_crl",
-                "stage": "revocation"
+                "stage": "revocation",
+                "details": {
+                  "reason": "missing_next_update"
+                }
               }
             }
           ]
@@ -30345,7 +30348,10 @@
               "ok": false,
               "error": {
                 "code": "invalid_crl",
-                "stage": "revocation"
+                "stage": "revocation",
+                "details": {
+                  "reason": "malformed_authority_key_identifier"
+                }
               }
             }
           ]

@@ -272,6 +272,11 @@ timestamps, and local CRL validation already exist.
   `Budget` and uses its own signature-OID-to-digest table instead of the
   central algorithm mapping. Cache root identities on the `TrustStore`, charge
   probe verifications to the budget, and reuse one algorithm mapping.
+  Since PR #46, each applicable CRL is decoded three times per verification
+  (x509-cert, webpki borrowed, webpki owned), and the owned form allocates one
+  map entry per revoked certificate that is not charged beyond the existing
+  8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
+  budget effect for large CRLs.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another

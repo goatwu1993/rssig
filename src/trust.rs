@@ -276,6 +276,7 @@ impl TrustStore {
                                     Stage::Revocation,
                                     "CRL authorityKeyIdentifier is malformed",
                                 )
+                                .detail("reason", "malformed_authority_key_identifier")
                                 .detail("crl", CrlReport::parse(bytes).ok())
                             })?
                             .key_identifier
@@ -303,6 +304,7 @@ impl TrustStore {
                         Stage::Revocation,
                         "CRL lacks nextUpdate",
                     )
+                    .detail("reason", "missing_next_update")
                     .detail("crl", CrlReport::parse(bytes)?)
                     .into());
                 };
