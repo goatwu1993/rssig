@@ -30615,6 +30615,133 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-ca-no-crl-sign",
+      "input": "sec10-ca-no-crl-sign.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-ca-crl-sign",
+      "input": "sec10-ca-crl-sign.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    },
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "7836ced255c0cdead16a268f56fd0a6a9948fd1074f18e4949c2be6e4a017974"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-ca-crl-sign-fallback",
+      "input": "sec10-ca-crl-sign-fallback.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    },
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "7836ced255c0cdead16a268f56fd0a6a9948fd1074f18e4949c2be6e4a017974"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

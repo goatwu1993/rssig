@@ -703,7 +703,8 @@
         "ca-key-usage",
         "bad-signer-key-usage",
         "msi-ca-key-usage",
-        "bad-sec06-ca-ku"
+        "bad-sec06-ca-ku",
+        "sec10-ca-no-crl-sign"
       ],
       "gap": ""
     },

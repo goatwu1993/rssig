@@ -163,8 +163,14 @@ timestamps, and local CRL validation already exist.
   keyIdentifier matches no name-matching candidate's SKI is likewise excluded
   unless its signature verifies under a name-matching candidate key.
   Applicable CRLs with an unknown critical extension, delta or indirect form fail
-  closed as `invalid_crl` with `details.reason`.
-  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope
+  closed as `invalid_crl` with `details.reason`. A CRL from an issuer whose
+  KeyUsage lacks cRLSign is rejected as `invalid_key_usage` at `revocation`
+  (`sec10-ca-no-crl-sign`, paired with `sec10-ca-crl-sign`), and path building
+  falls back to a candidate with cRLSign (`sec10-ca-crl-sign-fallback`). This
+  covers intermediate issuers only: webpki 0.103 does not track trust-anchor
+  KeyUsage, so a root lacking cRLSign still issues usable CRLs (consistent with
+  SEC-14's anchors-as-keys policy; decide and pin it).
+  Still open: root cRLSign policy, AKI authorityCertIssuer/serial forms, distribution-point scope
   and incomplete issuer coverage.
   Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
@@ -293,6 +299,9 @@ timestamps, and local CRL validation already exist.
   `CertificateList` decoding before the applicability filter, unlike other
   unrelated CRLs. No fixture has a non-canonical TBS encoding to pin that the
   signature probe uses the original TBS bytes.
+  For a CRL issuer without cRLSign, `details.certificate` names the leaf being
+  checked rather than the issuer whose KeyUsage fails; add the issuer (or a
+  `reason`) before consumers depend on the current detail.
 - [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain
