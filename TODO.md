@@ -175,12 +175,18 @@ timestamps, and local CRL validation already exist.
   user/CA scope flag is rejected by webpki 0.103 as `issuing_distribution_point`
   (`sec10-root-idp-*-crl-unsupported`). Incomplete issuer coverage is pinned by
   `sec09-lifetime-rollover-revocation-unknown`.
-  Still open (policy decisions): whether a root lacking cRLSign may issue usable
-  CRLs, and named distribution-point scope. webpki treats a CRL whose IDP names
-  a distribution point as authoritative for any certificate without a CRL
-  distribution points extension (rustls/webpki#228), so a partitioned CRL can
-  clear a certificate that another partition revokes. Decide whether to reject
-  such CRLs or require a matching certificate distribution point, then pin it.
+  Policy decisions (PR #48): configured anchors stay keys, so a root whose
+  KeyUsage lacks cRLSign still issues usable CRLs (`sec10-root-no-crl-sign-accepted`;
+  webpki 0.103 does not track anchor KeyUsage). A CRL whose IDP names a
+  distribution point fails closed as `invalid_crl` (`distribution_point_scope`)
+  when a certificate it would cover lists no CRL distribution points, because
+  webpki then treats it as authoritative (`authoritative_for`). A revocation in
+  any applicable, authenticated CRL wins regardless of `--crl` order: webpki
+  consults only the first authoritative CRL per certificate, so the path
+  callback checks every one (`sec10-competing-crls-*`).
+  Remaining: when the certificate does list distribution points, webpki's name
+  matching is relied on without a fixture, and an IDP with a scope flag plus a
+  named point is not pinned.
   Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
@@ -300,7 +306,10 @@ timestamps, and local CRL validation already exist.
   evidence) or an explicit, JSON-reported opt-in to skip known-unsupported
   CRLs. Never skip silently.
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
-  in PR #46. The `crl_version` reason has no fixture, and other webpki
+  in PR #46. Only `issuing_distribution_point` and the feature reasons used by
+  SEC-10 cases are pinned; `crl_version`, `malformed_extensions`,
+  `revocation_reasons_partitioning`, `revocation_reason`, `invalid_crl_number`
+  and `unsupported_or_malformed` have no fixture, and other webpki
   rejections fall into the open-ended
   `unsupported_or_malformed` catch-all. The `invalid_crl` message embeds
   webpki's error name, which can change on upgrade (consumers must use

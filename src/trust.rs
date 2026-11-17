@@ -197,6 +197,7 @@ impl TrustStore {
             return Err(not_valid_at_signing(leaf, at).into());
         }
         let leaf_report = CertificateReport::parse(leaf)?;
+        let signer = leaf;
         let leaf = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
         let leaf = webpki::EndEntityCert::try_from(&leaf)
             .map_err(|e| anyhow::anyhow!("invalid signer certificate: {e:?}"))?;
@@ -226,6 +227,9 @@ impl TrustStore {
             .collect::<core::result::Result<_, _>>()
             .map_err(crate::compat_error)?;
         let mut parsed_crls = Vec::new();
+        // Revoked serials per issuer name, from every applicable CRL whose
+        // signature verifies under a name-matching candidate key.
+        let mut revoked_serials: Vec<(Vec<u8>, Vec<Vec<u8>>)> = Vec::new();
         if revocation {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
@@ -298,6 +302,27 @@ impl TrustStore {
                 if !applies {
                     continue;
                 }
+                // webpki treats a CRL scoped to a named distribution point as
+                // authoritative for a certificate that lists no distribution
+                // points, so such a partition could clear a certificate it does
+                // not cover. Fail closed instead.
+                if names_distribution_point(&tbs)
+                    && core::iter::once(signer)
+                        .chain(certificates)
+                        .filter(|c| {
+                            c.tbs_certificate.issuer.to_der().ok().as_deref() == Some(&issuer)
+                        })
+                        .any(|c| !has_extension(c, "2.5.29.31"))
+                {
+                    return Err(VerificationError::new(
+                        ErrorCode::InvalidCrl,
+                        Stage::Revocation,
+                        "CRL is scoped to a distribution point that a covered certificate does not list",
+                    )
+                    .detail("reason", "distribution_point_scope")
+                    .detail("crl", CrlReport::parse(bytes).ok())
+                    .into());
+                }
                 let Some(next_update) = tbs.next_update else {
                     return Err(VerificationError::new(
                         ErrorCode::InvalidCrl,
@@ -344,6 +369,26 @@ impl TrustStore {
                     .detail("validation_time", now)
                     .into());
                 }
+                // webpki consults only the first authoritative CRL per
+                // certificate, so a revocation listed by a later CRL for the
+                // same issuer would be missed. The path callback checks them all.
+                if named.iter().any(|i| {
+                    signed_by(
+                        &i.spki,
+                        &crl.signature_algorithm.oid,
+                        signed,
+                        &crl.signature,
+                    )
+                    .unwrap_or(true)
+                }) {
+                    let serials = tbs
+                        .revoked_certificates
+                        .iter()
+                        .flatten()
+                        .map(|r| r.serial_number.as_bytes().to_vec())
+                        .collect();
+                    revoked_serials.push((issuer.clone(), serials));
+                }
                 parsed_crls.push(webpki::CertRevocationList::from(usable));
             }
         }
@@ -375,6 +420,7 @@ impl TrustStore {
         let issued_after_signing = core::cell::OnceCell::new();
         let check_path_policy = |path: &webpki::VerifiedPath<'_>| {
             let mut lacks_cert_sign = false;
+            let mut path_certificates = vec![signer.clone()];
             for intermediate in path.intermediate_certificates() {
                 for _ in 0..8 {
                     budget
@@ -384,6 +430,7 @@ impl TrustStore {
                 }
                 let cert = Certificate::from_der(intermediate.der().as_ref())
                     .map_err(|_| webpki::Error::BadDer)?;
+                path_certificates.push(cert.clone());
                 if let Some(at) = issued_after(&cert, lifetime_signed_at) {
                     // Ranked like webpki's own validity errors. Keep the first
                     // rejection, which webpki also keeps among equal ranks.
@@ -413,6 +460,20 @@ impl TrustStore {
             if lacks_cert_sign {
                 invalid_ca_usage.set(true);
                 return Err(webpki::Error::UnknownIssuer);
+            }
+            for cert in &path_certificates {
+                let issuer = cert
+                    .tbs_certificate
+                    .issuer
+                    .to_der()
+                    .map_err(|_| webpki::Error::BadDer)?;
+                let serial = cert.tbs_certificate.serial_number.as_bytes();
+                if revoked_serials
+                    .iter()
+                    .any(|(name, serials)| *name == issuer && serials.iter().any(|s| s == serial))
+                {
+                    return Err(webpki::Error::CertRevoked);
+                }
             }
             Ok(())
         };
@@ -599,4 +660,25 @@ fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
         W::InvalidCrlNumber => "invalid_crl_number",
         _ => "unsupported_or_malformed",
     }
+}
+
+fn has_extension(cert: &Certificate, oid: &str) -> bool {
+    cert.tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .any(|e| e.extn_id.to_string() == oid)
+}
+
+/// Whether the CRL's issuingDistributionPoint carries a [0] distributionPoint.
+fn names_distribution_point(tbs: &x509_cert::crl::TbsCertList) -> bool {
+    tbs.crl_extensions
+        .iter()
+        .flatten()
+        .filter(|e| e.extn_id.to_string() == "2.5.29.28")
+        .any(|e| {
+            crate::der::one(e.extn_value.as_bytes(), 0x30)
+                .and_then(|idp| idp.children())
+                .map_or(true, |fields| fields.iter().any(|f| f.tag == 0xa0))
+        })
 }

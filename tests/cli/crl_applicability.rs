@@ -253,3 +253,78 @@ fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
         None,
     );
 }
+
+#[test]
+fn sec10_named_distribution_point_crl_without_matching_certificate_point_fails_closed() {
+    // The signer lists no CRL distribution points, so a CRL scoped to a named
+    // point may be a partition that does not cover it.
+    let output = run_with("sec10-root-idp-named-point.crl");
+    expect_failure(
+        &output,
+        1,
+        "invalid_crl",
+        "Invalid CRL",
+        Some("revocation"),
+        None,
+    );
+    let details = &output.json["results"][0]["error"]["details"];
+    assert_eq!(details["reason"], "distribution_point_scope");
+}
+
+fn run_sec06_root(root: &str) -> Output {
+    run_fixture(
+        "good-sec06-basic.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            &format!("fixtures/{root}"),
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-root.crl",
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+        ],
+    )
+}
+
+#[test]
+fn sec10_crl_from_a_root_without_crl_sign_is_used() {
+    // Configured anchors are keys: their KeyUsage does not restrict CRL signing.
+    let output = run_sec06_root("sec10-root-no-crl-sign.der");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+}
+
+#[test]
+fn sec10_revocation_in_any_applicable_crl_wins_regardless_of_order() {
+    for crls in [["good.crl", "revoked.crl"], ["revoked.crl", "good.crl"]] {
+        let output = run_fixture(
+            "good-countersignature.exe",
+            &[
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                "fixtures/root.der",
+                "--crl",
+                &format!("fixtures/{}", crls[0]),
+                "--crl",
+                &format!("fixtures/{}", crls[1]),
+                "--time",
+                T,
+            ],
+        );
+        expect_failure(
+            &output,
+            1,
+            "certificate_revoked",
+            "Certificate revoked",
+            Some("revocation"),
+            None,
+        );
+    }
+}

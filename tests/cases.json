@@ -30844,6 +30844,139 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-root-idp-named-point-crl-rejected",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-root-idp-named-point.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "distribution_point_scope"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-root-no-crl-sign-accepted",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec10-root-no-crl-sign.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-competing-crls-good-first-revoked",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-competing-crls-revoked-first-revoked",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/revoked.crl",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
