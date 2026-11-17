@@ -18,6 +18,59 @@ fn crl_with_aki(
     next_update: Option<u64>,
     aki: Option<Vec<u8>>,
 ) -> Vec<u8> {
+    crl_full(issuer, key, this_update, next_update, aki, vec![], None)
+}
+
+/// A fresh root CRL carrying one extra extension.
+fn crl_with_extension(oid: &str, critical: bool, value: &[u8]) -> Vec<u8> {
+    let extension = x509_cert::ext::Extension {
+        extn_id: ::der::asn1::ObjectIdentifier::new_unwrap(oid),
+        critical,
+        extn_value: ::der::asn1::OctetString::new(value).unwrap(),
+    };
+    crl_full(
+        "CN=rssig test root",
+        &identity().root_key,
+        NOW - 100,
+        Some(NOW + 1000),
+        None,
+        vec![extension],
+        None,
+    )
+}
+
+/// A fresh root CRL revoking an unrelated serial through an entry that carries
+/// an unknown critical extension.
+fn crl_with_entry_extension() -> Vec<u8> {
+    let entry = x509_cert::crl::RevokedCert {
+        serial_number: SerialNumber::from(999u32),
+        revocation_date: tm(NOW - 50),
+        crl_entry_extensions: Some(vec![x509_cert::ext::Extension {
+            extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("1.2.3.4"),
+            critical: true,
+            extn_value: ::der::asn1::OctetString::new([5, 0]).unwrap(),
+        }]),
+    };
+    crl_full(
+        "CN=rssig test root",
+        &identity().root_key,
+        NOW - 100,
+        Some(NOW + 1000),
+        None,
+        vec![],
+        Some(vec![entry]),
+    )
+}
+
+fn crl_full(
+    issuer: &str,
+    key: &SigningKey,
+    this_update: u64,
+    next_update: Option<u64>,
+    aki: Option<Vec<u8>>,
+    extra: Vec<x509_cert::ext::Extension>,
+    revoked: Option<Vec<x509_cert::crl::RevokedCert>>,
+) -> Vec<u8> {
     let algorithm = identity().root.signature_algorithm.clone();
     let tbs = TbsCertList {
         version: Version::V2,
@@ -25,7 +78,7 @@ fn crl_with_aki(
         issuer: Name::from_str(issuer).unwrap(),
         this_update: tm(this_update),
         next_update: next_update.map(tm),
-        revoked_certificates: None,
+        revoked_certificates: revoked,
         crl_extensions: Some(
             aki.map(|value| x509_cert::ext::Extension {
                 extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.35"),
@@ -38,6 +91,7 @@ fn crl_with_aki(
                 critical: false,
                 extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
             }])
+            .chain(extra)
             .collect(),
         ),
     };
@@ -142,6 +196,48 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(NOW + 1000),
                 Some(vec![0x30, 0x05, 0x80]),
             ),
+        ),
+        // Unsupported CRL features from the chain's issuer must fail closed.
+        (
+            "sec10-root-unknown-critical-extension.crl",
+            crl_with_extension("1.2.3.4", true, &[5, 0]),
+        ),
+        // The same unknown extension, non-critical: ignorable, so accepted.
+        (
+            "sec10-root-unknown-noncritical-extension.crl",
+            crl_with_extension("1.2.3.4", false, &[5, 0]),
+        ),
+        // webpki reads entries lazily; this must still fail closed as invalid_crl.
+        (
+            "sec10-root-entry-critical-extension.crl",
+            crl_with_entry_extension(),
+        ),
+        // deltaCRLIndicator: BaseCRLNumber 1.
+        (
+            "sec10-root-delta.crl",
+            crl_with_extension("2.5.29.27", true, &[2, 1, 1]),
+        ),
+        // Expired as well: the unsupported feature is reported, not freshness.
+        (
+            "sec10-root-delta-expired.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                None,
+                vec![x509_cert::ext::Extension {
+                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.27"),
+                    critical: true,
+                    extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
+                }],
+                None,
+            ),
+        ),
+        // issuingDistributionPoint with indirectCRL TRUE.
+        (
+            "sec10-root-indirect.crl",
+            crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x84, 1, 0xff]),
         ),
         (
             "sec10-root-no-next-update.crl",

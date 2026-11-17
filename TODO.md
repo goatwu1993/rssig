@@ -162,8 +162,11 @@ timestamps, and local CRL validation already exist.
   (`sec10-*` cases and `tests/cli/crl_applicability.rs`). A CRL whose AKI
   keyIdentifier matches no name-matching candidate's SKI is likewise excluded
   unless its signature verifies under a name-matching candidate key.
-  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope, unknown critical
-  extensions, delta/indirect CRLs, and incomplete issuer coverage.
+  Applicable CRLs with an unknown critical extension, delta or indirect form fail
+  closed as `invalid_crl` with `details.reason`.
+  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope
+  and incomplete issuer coverage.
+  Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when
@@ -247,6 +250,54 @@ timestamps, and local CRL validation already exist.
     `src/tests.rs`, SEC-08/09 and RDP fixture modules without changing committed
     bytes; keep per-task regeneration commands (as SEC-08 does) consistent with
     `regenerate_cli_fixtures`.
+- [ ] **SEC-15: Select CRLs against the selected chain, not every candidate.**
+  Deliberately skipped in PRs #44 to #46. CRL applicability currently matches
+  each CRL's issuer name (and AKI) against every configured root and every
+  embedded candidate certificate, not the path webpki selects. An untrusted
+  embedded certificate can therefore make a stale CRL count as applicable and
+  reject the request (fail closed). A CRL is also not tied to the specific
+  certificate that issues it. Move applicability into path building, or
+  re-check it against the selected chain, with paired fixtures.
+- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Deliberately skipped in
+  PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
+  so one SKI-less candidate makes the AKI check vacuous for that name. A
+  candidate whose SKI fails to parse is treated as having none. Issuer names
+  compare as exact DER, so an issuer encoded differently (PrintableString vs
+  UTF8String) is excluded with no diagnostic. Decide whether these should
+  exclude, reject or be reported, and pin each with fixtures.
+- [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately
+  skipped in PRs #44 and #45. Every verification re-parses all configured
+  roots to collect issuer names, outside `budget.decoded_bytes`. The
+  mismatched-AKI signature probe runs public-key verifications outside the
+  `Budget` and uses its own signature-OID-to-digest table instead of the
+  central algorithm mapping. Cache root identities on the `TrustStore`, charge
+  probe verifications to the budget, and reuse one algorithm mapping.
+  Since PR #46, each applicable CRL is decoded three times per verification
+  (x509-cert, webpki borrowed, webpki owned), and the owned form allocates one
+  map entry per revoked certificate that is not charged beyond the existing
+  8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
+  budget effect for large CRLs.
+- [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
+  kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
+  indirect, unknown critical extension) rejects the request even when another
+  supplied CRL covers the same issuer, so a normal full-plus-delta CRL
+  deployment fails. Options: real delta-CRL support (with FEATURE-level
+  evidence) or an explicit, JSON-reported opt-in to skip known-unsupported
+  CRLs. Never skip silently.
+- [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
+  in PR #46. The `crl_version` and `issuing_distribution_point` reasons have no
+  fixtures, and other webpki rejections fall into the open-ended
+  `unsupported_or_malformed` catch-all. The `invalid_crl` message embeds
+  webpki's error name, which can change on upgrade (consumers must use
+  `details.reason`). A malformed CRL from an unrelated issuer still fails at
+  `CertificateList` decoding before the applicability filter, unlike other
+  unrelated CRLs. No fixture has a non-canonical TBS encoding to pin that the
+  signature probe uses the original TBS bytes.
+- [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
+  Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
+  is returned before path building, so it hides untrusted_root and other chain
+  errors. This extends the existing empty-CRL-set precedence. Revisit together
+  with SEC-14's error-precedence notes if consumers need the chain error first.
 
 ## P1 — Clean parse/verify interfaces
 

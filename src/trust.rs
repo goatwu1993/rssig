@@ -276,6 +276,7 @@ impl TrustStore {
                                     Stage::Revocation,
                                     "CRL authorityKeyIdentifier is malformed",
                                 )
+                                .detail("reason", "malformed_authority_key_identifier")
                                 .detail("crl", CrlReport::parse(bytes).ok())
                             })?
                             .key_identifier
@@ -297,6 +298,32 @@ impl TrustStore {
                 if !applies {
                     continue;
                 }
+                let Some(next_update) = tbs.next_update else {
+                    return Err(VerificationError::new(
+                        ErrorCode::InvalidCrl,
+                        Stage::Revocation,
+                        "CRL lacks nextUpdate",
+                    )
+                    .detail("reason", "missing_next_update")
+                    .detail("crl", CrlReport::parse(bytes)?)
+                    .into());
+                };
+                // Parse every entry now: webpki otherwise reads entries lazily,
+                // so an unsupported entry could fail later as a chain error, or
+                // never be read when another CRL for the same issuer is found
+                // first. Feature support is reported before freshness, which a
+                // refreshed CRL could not fix, as is a missing nextUpdate above.
+                let usable = webpki::BorrowedCertRevocationList::from_der(bytes)
+                    .and_then(|crl| crl.to_owned())
+                    .map_err(|e| {
+                        VerificationError::new(
+                            ErrorCode::InvalidCrl,
+                            Stage::Revocation,
+                            format!("unsupported or malformed CRL: {e:?}"),
+                        )
+                        .detail("reason", crl_rejection_reason(&e))
+                        .detail("crl", CrlReport::parse(bytes).ok())
+                    })?;
                 if tbs.this_update.to_unix_duration().as_secs() > now {
                     return Err(VerificationError::new(
                         ErrorCode::CrlNotYetValid,
@@ -307,15 +334,6 @@ impl TrustStore {
                     .detail("validation_time", now)
                     .into());
                 }
-                let Some(next_update) = tbs.next_update else {
-                    return Err(VerificationError::new(
-                        ErrorCode::InvalidCrl,
-                        Stage::Revocation,
-                        "CRL lacks nextUpdate",
-                    )
-                    .detail("crl", CrlReport::parse(bytes)?)
-                    .into());
-                };
                 if next_update.to_unix_duration().as_secs() <= now {
                     return Err(VerificationError::new(
                         ErrorCode::CrlExpired,
@@ -326,10 +344,7 @@ impl TrustStore {
                     .detail("validation_time", now)
                     .into());
                 }
-                parsed_crls.push(webpki::CertRevocationList::from(
-                    webpki::BorrowedCertRevocationList::from_der(bytes)
-                        .map_err(|e| anyhow::anyhow!("unsupported CRL: {e:?}"))?,
-                ));
+                parsed_crls.push(webpki::CertRevocationList::from(usable));
             }
         }
         if revocation && parsed_crls.is_empty() {
@@ -567,4 +582,21 @@ fn signed_by(
         _ => return None,
     };
     Some(crate::crypto::verify_spki(spki, hash, oid, message, signature.as_bytes()?).is_ok())
+}
+
+/// Stable machine-readable reason for a CRL that webpki cannot use.
+fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
+    use webpki::Error as W;
+    match error {
+        W::UnsupportedCriticalExtension => "unknown_critical_extension",
+        W::UnsupportedDeltaCrl => "delta_crl",
+        W::UnsupportedIndirectCrl => "indirect_crl",
+        W::UnsupportedCrlIssuingDistributionPoint => "issuing_distribution_point",
+        W::UnsupportedCrlVersion => "crl_version",
+        W::MalformedExtensions => "malformed_extensions",
+        W::UnsupportedRevocationReasonsPartitioning => "revocation_reasons_partitioning",
+        W::UnsupportedRevocationReason => "revocation_reason",
+        W::InvalidCrlNumber => "invalid_crl_number",
+        _ => "unsupported_or_malformed",
+    }
 }

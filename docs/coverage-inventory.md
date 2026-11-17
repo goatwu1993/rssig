@@ -43,7 +43,7 @@ The JSON `errors` map is the authoritative case index. Cases must assert the
 actual serialized code; an input name or matching diagnostic text is insufficient.
 Current gaps are explicit:
 
-- `revocation_unknown`, `invalid_crl`, `invalid_certificate`: no declarative code
+- `invalid_certificate`: no declarative code
   assertions. Add narrowly isolated reachable verification cases; malformed CLI
   trust-file configuration errors do not substitute for engine failures.
 - `invalid_arguments`, `configuration`: CLI configuration/argument diagnostics
