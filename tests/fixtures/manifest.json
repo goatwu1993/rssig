@@ -88,7 +88,8 @@
       "bytes": 184,
       "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
       "cases": [
-        "crl-fetch-injected-expired"
+        "crl-fetch-injected-expired",
+        "sec10-root-expired-crl-still-rejected"
       ]
     },
     {
@@ -104,7 +105,14 @@
       "file": "good-countersignature.exe",
       "sha256": "fc7b895932121217cf31f7854b71ce244c665be06b1b97f4b8175fad2f162dad",
       "bytes": 2832,
-      "description": "PKCS#9 countersignature binding a signed signingTime to the publisher signature."
+      "description": "PKCS#9 countersignature binding a signed signingTime to the publisher signature.",
+      "cases": [
+        "sec10-root-crl-no-next-update",
+        "sec10-unrelated-expired-crl-excluded",
+        "sec10-unrelated-not-yet-valid-crl-excluded",
+        "sec10-unrelated-no-next-update-crl-excluded",
+        "sec10-root-expired-crl-still-rejected"
+      ]
     },
     {
       "file": "good-intermediate.exe",
@@ -174,7 +182,12 @@
       "bytes": 183,
       "description": "Authentic current root-issued CRL with no revoked serials.",
       "cases": [
-        "crl-fetch-injected-good"
+        "crl-fetch-injected-good",
+        "sec10-root-crl-no-next-update",
+        "sec10-unrelated-expired-crl-excluded",
+        "sec10-unrelated-not-yet-valid-crl-excluded",
+        "sec10-unrelated-no-next-update-crl-excluded",
+        "sec10-root-expired-crl-still-rejected"
       ]
     },
     {
@@ -9011,6 +9024,50 @@
         "sec09-lifetime-intermediate-not-before-early"
       ],
       "paired_good": "sec09-lifetime-intermediate-not-before-exact.exe"
+    },
+    {
+      "file": "sec10-root-no-next-update.crl",
+      "sha256": "b18bf50e2256110b49cdea57a855b1df21ca98f56d8bf0bd91ea85b9e7aef38e",
+      "bytes": 167,
+      "description": "SEC-10: Correctly signed, empty CRL from the test root that omits nextUpdate; supplied artifact, not an individual verification claim. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-crl-no-next-update"
+      ]
+    },
+    {
+      "file": "sec10-unrelated-expired.crl",
+      "sha256": "341293836f1a01319a8ce1efbbda81194cd9a16528199258cfecc76656dc31ad",
+      "bytes": 187,
+      "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose nextUpdate precedes 1800000000. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-unrelated-expired-crl-excluded"
+      ]
+    },
+    {
+      "file": "sec10-unrelated-not-yet-valid.crl",
+      "sha256": "806ffdd3812b7b6f2bee64d7fbabc99c7a892e15d1d213af13450de7eee99e61",
+      "bytes": 188,
+      "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose thisUpdate follows 1800000000. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-unrelated-not-yet-valid-crl-excluded"
+      ]
+    },
+    {
+      "file": "sec10-unrelated-no-next-update.crl",
+      "sha256": "da3aeadca7f205c8e6e12cc72093ba5e6b0c4be3420d52ff0978098faa77feba",
+      "bytes": 170,
+      "description": "SEC-10: Correctly signed CRL from an issuer outside the chain that omits nextUpdate. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-unrelated-no-next-update-crl-excluded"
+      ]
     }
   ]
 }

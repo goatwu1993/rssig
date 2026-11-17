@@ -30084,6 +30084,152 @@
           "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
         }
       }
+    },
+    {
+      "id": "sec10-root-crl-no-next-update",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-root-no-next-update.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-unrelated-expired-crl-excluded",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-unrelated-expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-unrelated-not-yet-valid-crl-excluded",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-unrelated-not-yet-valid.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-unrelated-no-next-update-crl-excluded",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-unrelated-no-next-update.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-root-expired-crl-still-rejected",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1800000000
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

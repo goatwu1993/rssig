@@ -64,5 +64,8 @@ mod trust_loading;
 #[path = "cli/timestamp_structure.rs"]
 mod timestamp_structure;
 
+#[path = "cli/crl_applicability.rs"]
+mod crl_applicability;
+
 #[path = "cli/time_policy.rs"]
 mod time_policy;

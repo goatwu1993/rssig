@@ -156,6 +156,12 @@ timestamps, and local CRL validation already exist.
   delta/indirect CRLs, and competing or unrelated supplied CRLs. Specify whether
   an unusable extra CRL rejects a request or is excluded. Never silently treat
   unknown status as good; pin freshness boundaries and unsupported-policy errors.
+  First slice done: a supplied CRL is checked for freshness and structure only
+  when its issuer matches a configured root or embedded candidate certificate;
+  others are excluded, and a missing nextUpdate is a typed `invalid_crl`
+  (`sec10-*` cases and `tests/cli/crl_applicability.rs`). Still open: AKI
+  mismatch, cRLSign usage, distribution-point scope, unknown critical
+  extensions, delta/indirect CRLs, and incomplete issuer coverage.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when

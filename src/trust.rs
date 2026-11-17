@@ -225,9 +225,35 @@ impl TrustStore {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
             }
+            // A CRL whose issuer names no root or candidate certificate cannot
+            // apply to this chain. It is excluded rather than rejecting the
+            // request; a CRL from a chain issuer must be usable or fail closed.
+            let mut issuers = Vec::new();
+            for root in &self.roots {
+                let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
+                issuers.push(
+                    root.tbs_certificate
+                        .subject
+                        .to_der()
+                        .map_err(crate::compat_error)?,
+                );
+            }
+            for certificate in certificates {
+                issuers.push(
+                    certificate
+                        .tbs_certificate
+                        .subject
+                        .to_der()
+                        .map_err(crate::compat_error)?,
+                );
+            }
             for bytes in &self.crls {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
                 let tbs = crl.tbs_cert_list;
+                let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
+                if !issuers.contains(&issuer) {
+                    continue;
+                }
                 if tbs.this_update.to_unix_duration().as_secs() > now {
                     return Err(VerificationError::new(
                         ErrorCode::CrlNotYetValid,
@@ -238,13 +264,16 @@ impl TrustStore {
                     .detail("validation_time", now)
                     .into());
                 }
-                if tbs
-                    .next_update
-                    .context("CRL lacks nextUpdate")?
-                    .to_unix_duration()
-                    .as_secs()
-                    <= now
-                {
+                let Some(next_update) = tbs.next_update else {
+                    return Err(VerificationError::new(
+                        ErrorCode::InvalidCrl,
+                        Stage::Revocation,
+                        "CRL lacks nextUpdate",
+                    )
+                    .detail("crl", CrlReport::parse(bytes)?)
+                    .into());
+                };
+                if next_update.to_unix_duration().as_secs() <= now {
                     return Err(VerificationError::new(
                         ErrorCode::CrlExpired,
                         Stage::Revocation,
