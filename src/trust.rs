@@ -248,9 +248,19 @@ impl TrustStore {
             }
             for bytes in &self.crls {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
-                let signed = crl.tbs_cert_list.to_der().map_err(crate::compat_error)?;
+                // Verify over the CRL's original TBS bytes, never a re-encoding.
+                let signed = crate::der::one(bytes, 0x30)
+                    .and_then(|outer| outer.children())
+                    .map_err(crate::compat_error)?
+                    .first()
+                    .map(|tbs| tbs.full)
+                    .context("CRL lacks tbsCertList")?;
                 let tbs = crl.tbs_cert_list;
                 let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
+                let named: Vec<_> = issuers.iter().filter(|i| i.name == issuer).collect();
+                if named.is_empty() {
+                    continue;
+                }
                 let authority_key = match tbs
                     .crl_extensions
                     .iter()
@@ -271,7 +281,6 @@ impl TrustStore {
                             .key_identifier
                     }
                 };
-                let named: Vec<_> = issuers.iter().filter(|i| i.name == issuer).collect();
                 let applies = named.iter().any(|i| match (&authority_key, &i.key_id) {
                     (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
                     _ => true,
@@ -280,7 +289,7 @@ impl TrustStore {
                         signed_by(
                             &i.spki,
                             &crl.signature_algorithm.oid,
-                            &signed,
+                            signed,
                             &crl.signature,
                         )
                         .unwrap_or(true)

@@ -116,7 +116,8 @@
         "sec10-root-name-other-aki-crl-excluded",
         "sec10-root-aki-crl-still-rejected",
         "sec10-root-crl-malformed-aki",
-        "sec10-root-signed-other-aki-crl-still-rejected"
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-unrelated-malformed-aki-crl-excluded"
       ]
     },
     {
@@ -196,7 +197,8 @@
         "sec10-root-name-other-aki-crl-excluded",
         "sec10-root-aki-crl-still-rejected",
         "sec10-root-crl-malformed-aki",
-        "sec10-root-signed-other-aki-crl-still-rejected"
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-unrelated-malformed-aki-crl-excluded"
       ]
     },
     {
@@ -9121,6 +9123,17 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-signed-other-aki-crl-still-rejected"
+      ]
+    },
+    {
+      "file": "sec10-unrelated-malformed-aki.crl",
+      "sha256": "7345feee7c3d869960f72ba94332325d4f4c2868b70c2128ef2099b4ac01fc02",
+      "bytes": 200,
+      "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose authorityKeyIdentifier extension value is not a valid SEQUENCE. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-unrelated-malformed-aki-crl-excluded"
       ]
     }
   ]

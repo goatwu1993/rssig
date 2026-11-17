@@ -132,6 +132,17 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(vec![0x30, 0x05, 0x80]),
             ),
         ),
+        // An unrelated issuer's CRL is excluded before its extensions are read.
+        (
+            "sec10-unrelated-malformed-aki.crl",
+            crl_with_aki(
+                other,
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(vec![0x30, 0x05, 0x80]),
+            ),
+        ),
         (
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),

@@ -141,3 +141,8 @@ fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
         None,
     );
 }
+
+#[test]
+fn sec10_unrelated_crl_with_malformed_aki_is_excluded() {
+    expect_success(&run_with("sec10-unrelated-malformed-aki.crl"));
+}
