@@ -15,7 +15,11 @@ use core::time::Duration;
 use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
 use rustls_pki_types::{CertificateDer, UnixTime};
-use x509_cert::{Certificate, crl::CertificateList};
+use x509_cert::{
+    Certificate,
+    crl::CertificateList,
+    ext::pkix::{AuthorityKeyIdentifier, SubjectKeyIdentifier},
+};
 
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
 pub(crate) const TIME_STAMPING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 8];
@@ -225,33 +229,39 @@ impl TrustStore {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
             }
-            // A CRL whose issuer names no root or candidate certificate cannot
-            // apply to this chain. It is excluded rather than rejecting the
-            // request; a CRL from a chain issuer must be usable or fail closed.
+            // A CRL cannot apply to this chain unless a root or candidate
+            // certificate has its issuer name and, when the CRL names an
+            // authority key, the same subject key. Such CRLs are excluded
+            // rather than rejecting the request; a CRL from a chain issuer
+            // must be usable or fail closed. A candidate without a subject key
+            // identifier cannot disprove a match.
             let mut issuers = Vec::new();
             for root in &self.roots {
                 let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
-                issuers.push(
-                    root.tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
+                issuers.push(issuer_identity(&root)?);
             }
             for certificate in certificates {
-                issuers.push(
-                    certificate
-                        .tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
+                issuers.push(issuer_identity(certificate)?);
             }
             for bytes in &self.crls {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
                 let tbs = crl.tbs_cert_list;
                 let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
-                if !issuers.contains(&issuer) {
+                let authority_key = tbs
+                    .crl_extensions
+                    .iter()
+                    .flatten()
+                    .find(|e| e.extn_id.to_string() == "2.5.29.35")
+                    .and_then(|e| AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
+                    .and_then(|aki| aki.key_identifier);
+                let applies = issuers.iter().any(|(name, key)| {
+                    *name == issuer
+                        && match (&authority_key, key) {
+                            (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
+                            _ => true,
+                        }
+                });
+                if !applies {
                     continue;
                 }
                 if tbs.this_update.to_unix_duration().as_secs() > now {
@@ -473,4 +483,22 @@ fn not_before(cert: &Certificate) -> Duration {
 /// The lifetime signing time, when `cert` was issued after it.
 fn issued_after(cert: &Certificate, signed_at: Option<u64>) -> Option<u64> {
     signed_at.filter(|at| not_before(cert).as_secs() > *at)
+}
+
+/// Subject name DER and, when present, the subject key identifier bytes.
+fn issuer_identity(cert: &Certificate) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
+    let name = cert
+        .tbs_certificate
+        .subject
+        .to_der()
+        .map_err(crate::compat_error)?;
+    let key = cert
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .and_then(|e| SubjectKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
+        .map(|ski| ski.0.as_bytes().to_vec());
+    Ok((name, key))
 }

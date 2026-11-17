@@ -159,8 +159,9 @@ timestamps, and local CRL validation already exist.
   First slice done: a supplied CRL is checked for freshness and structure only
   when its issuer matches a configured root or embedded candidate certificate;
   others are excluded, and a missing nextUpdate is a typed `invalid_crl`
-  (`sec10-*` cases and `tests/cli/crl_applicability.rs`). Still open: AKI
-  mismatch, cRLSign usage, distribution-point scope, unknown critical
+  (`sec10-*` cases and `tests/cli/crl_applicability.rs`). A CRL whose AKI
+  keyIdentifier matches no name-matching candidate's SKI is likewise excluded.
+  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope, unknown critical
   extensions, delta/indirect CRLs, and incomplete issuer coverage.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected

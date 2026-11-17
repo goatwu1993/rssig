@@ -7,6 +7,17 @@ use x509_cert::{
 };
 
 fn crl(issuer: &str, key: &SigningKey, this_update: u64, next_update: Option<u64>) -> Vec<u8> {
+    crl_with_aki(issuer, key, this_update, next_update, None)
+}
+
+/// `aki` is a keyIdentifier-only authorityKeyIdentifier extension value.
+fn crl_with_aki(
+    issuer: &str,
+    key: &SigningKey,
+    this_update: u64,
+    next_update: Option<u64>,
+    aki: Option<&[u8]>,
+) -> Vec<u8> {
     let algorithm = identity().root.signature_algorithm.clone();
     let tbs = TbsCertList {
         version: Version::V2,
@@ -15,11 +26,24 @@ fn crl(issuer: &str, key: &SigningKey, this_update: u64, next_update: Option<u64
         this_update: tm(this_update),
         next_update: next_update.map(tm),
         revoked_certificates: None,
-        crl_extensions: Some(vec![x509_cert::ext::Extension {
-            extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.20"),
-            critical: false,
-            extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
-        }]),
+        crl_extensions: Some(
+            aki.map(|id| {
+                let mut value = vec![0x30, id.len() as u8 + 2, 0x80, id.len() as u8];
+                value.extend_from_slice(id);
+                x509_cert::ext::Extension {
+                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.35"),
+                    critical: false,
+                    extn_value: ::der::asn1::OctetString::new(value).unwrap(),
+                }
+            })
+            .into_iter()
+            .chain([x509_cert::ext::Extension {
+                extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.20"),
+                critical: false,
+                extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
+            }])
+            .collect(),
+        ),
     };
     let sig: Signature = key.sign(&tbs.to_der().unwrap());
     CertificateList {
@@ -31,12 +55,40 @@ fn crl(issuer: &str, key: &SigningKey, this_update: u64, next_update: Option<u64
     .unwrap()
 }
 
+fn ski(cert: &Certificate) -> Vec<u8> {
+    use ::der::Decode;
+    let ext = cert
+        .tbs_certificate
+        .extensions
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .unwrap();
+    x509_cert::ext::pkix::SubjectKeyIdentifier::from_der(ext.extn_value.as_bytes())
+        .unwrap()
+        .0
+        .as_bytes()
+        .to_vec()
+}
+
 pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root = "CN=rssig test root";
     let other = "CN=unrelated test root";
     let other_key = SigningKey::from_bytes((&[13u8; 32]).into()).unwrap();
     let root_key = &identity().root_key;
+    let root_ski = ski(&identity().root);
     vec![
+        // The root's name and key, but an authorityKeyIdentifier naming another key.
+        (
+            "sec10-root-name-other-aki-expired.crl",
+            crl_with_aki(root, root_key, NOW - 200, Some(NOW - 1), Some(&[0xaa; 20])),
+        ),
+        // Same, but carrying the root's own key identifier.
+        (
+            "sec10-root-aki-expired.crl",
+            crl_with_aki(root, root_key, NOW - 200, Some(NOW - 1), Some(&root_ski)),
+        ),
         (
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
