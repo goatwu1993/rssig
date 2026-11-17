@@ -123,7 +123,13 @@
         "sec10-root-indirect-crl-unsupported",
         "sec10-root-unknown-noncritical-extension-crl-accepted",
         "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-aki-issuer-serial-crl-name-matched",
+        "sec10-root-idp-named-point-crl-rejected",
+        "sec10-competing-crls-good-first-revoked",
+        "sec10-competing-crls-revoked-first-revoked"
       ]
     },
     {
@@ -210,7 +216,13 @@
         "sec10-root-indirect-crl-unsupported",
         "sec10-root-unknown-noncritical-extension-crl-accepted",
         "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-aki-issuer-serial-crl-name-matched",
+        "sec10-root-idp-named-point-crl-rejected",
+        "sec10-competing-crls-good-first-revoked",
+        "sec10-competing-crls-revoked-first-revoked"
       ]
     },
     {
@@ -230,7 +242,9 @@
       "bytes": 208,
       "description": "Authentic current root-issued CRL listing the test publisher serial.",
       "cases": [
-        "crl-fetch-injected-revoked"
+        "crl-fetch-injected-revoked",
+        "sec10-competing-crls-good-first-revoked",
+        "sec10-competing-crls-revoked-first-revoked"
       ]
     },
     {
@@ -7064,7 +7078,8 @@
       "cases": [
         "good-sec06-basic",
         "good-sec06-root-expired",
-        "good-sec06-root-profile"
+        "good-sec06-root-profile",
+        "sec10-root-no-crl-sign-accepted"
       ]
     },
     {
@@ -7493,7 +7508,8 @@
         "good-sec06-root-selection",
         "sec10-ca-no-crl-sign",
         "sec10-ca-crl-sign",
-        "sec10-ca-crl-sign-fallback"
+        "sec10-ca-crl-sign-fallback",
+        "sec10-root-no-crl-sign-accepted"
       ]
     },
     {
@@ -7809,7 +7825,8 @@
         "good-sec06-root-selection",
         "sec10-ca-no-crl-sign",
         "sec10-ca-crl-sign",
-        "sec10-ca-crl-sign-fallback"
+        "sec10-ca-crl-sign-fallback",
+        "sec10-root-no-crl-sign-accepted"
       ]
     },
     {
@@ -9254,6 +9271,61 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-ca-crl-sign-fallback"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-user-certs.crl",
+      "sha256": "6394862da5aebe44a300e21967529a48c6fc5e308cd72e01e29c1f1cfafbe3e3",
+      "bytes": 201,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsUserCerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-idp-user-certs-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-ca-certs.crl",
+      "sha256": "de65fe111bfce855326508021d1c63fa282009470a7e325d844c8c0bed83ce2c",
+      "bytes": 200,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsCACerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-idp-ca-certs-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-aki-issuer-serial-expired.crl",
+      "sha256": "9308da68ce875a3d193c43edec123bd86f968855a521275cd94651ced7b8a188",
+      "bytes": 230,
+      "description": "SEC-10: Correctly signed, expired CRL from the test root whose authorityKeyIdentifier has authorityCertIssuer and authorityCertSerialNumber but no keyIdentifier, so it is matched by issuer name and fails closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-aki-issuer-serial-crl-name-matched"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-named-point.crl",
+      "sha256": "67c80b98999922010fb9c756d1b8096980e27d895e6a3cdb9d0aeb02dd53a837",
+      "bytes": 232,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root whose issuingDistributionPoint names a distribution point (http://crl.invalid/root.crl) that no test certificate lists; it may be a partition that does not cover them, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-idp-named-point-crl-rejected"
+      ]
+    },
+    {
+      "file": "sec10-root-no-crl-sign.der",
+      "sha256": "fb83f8902d84788e4a13c83e25f2974b28fec21a6288d1ee3a377e34a5e381f0",
+      "bytes": 386,
+      "description": "SEC-10: Trust anchor with the SEC-06 root's name and key whose critical KeyUsage has keyCertSign but not cRLSign. Configured anchors are keys, so CRLs it signs remain usable. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-no-crl-sign-accepted"
       ]
     }
   ]

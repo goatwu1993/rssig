@@ -284,6 +284,16 @@ pub(super) fn write(dir: &std::path::Path) {
     }
     // The candidate without cRLSign comes first; path building must fall back.
     write_pe(dir, "sec10-ca-crl-sign-fallback", &leaf, &usages);
+    // SEC-10: the same root key and name as a configured anchor whose KeyUsage
+    // lacks cRLSign; anchors are keys, so sec06-root.crl is still usable.
+    let mut anchor = root.clone();
+    extension(&mut anchor, "2.5.29.15", true, Some(tlv(3, &[2, 0x04])));
+    sign(&mut anchor, &root_key);
+    std::fs::write(
+        dir.join("sec10-root-no-crl-sign.der"),
+        anchor.to_der().unwrap(),
+    )
+    .unwrap();
     for label in [
         "leaf-ca",
         "leaf-no-bc",

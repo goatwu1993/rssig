@@ -160,6 +160,11 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
             "sec10-root-entry-critical-extension.crl",
             "unknown_critical_extension",
         ),
+        (
+            "sec10-root-idp-user-certs.crl",
+            "issuing_distribution_point",
+        ),
+        ("sec10-root-idp-ca-certs.crl", "issuing_distribution_point"),
         ("sec10-root-delta.crl", "delta_crl"),
         ("sec10-root-delta-expired.crl", "delta_crl"),
         ("sec10-root-indirect.crl", "indirect_crl"),
@@ -232,4 +237,94 @@ fn sec10_path_building_falls_back_to_the_issuer_with_crl_sign() {
     let chain =
         |output: &Output| output.json["results"][0]["signatures"][0]["trust"]["chain"].clone();
     assert_eq!(chain(&fallback), chain(&usable));
+}
+
+#[test]
+fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
+    // authorityCertIssuer/serial alone cannot exclude a CRL: the stale CRL
+    // from the chain issuer's name still fails closed.
+    let output = run_with("sec10-root-aki-issuer-serial-expired.crl");
+    expect_failure(
+        &output,
+        1,
+        "crl_expired",
+        "CRL expired",
+        Some("revocation"),
+        None,
+    );
+}
+
+#[test]
+fn sec10_named_distribution_point_crl_without_matching_certificate_point_fails_closed() {
+    // The signer lists no CRL distribution points, so a CRL scoped to a named
+    // point may be a partition that does not cover it.
+    let output = run_with("sec10-root-idp-named-point.crl");
+    expect_failure(
+        &output,
+        1,
+        "invalid_crl",
+        "Invalid CRL",
+        Some("revocation"),
+        None,
+    );
+    let details = &output.json["results"][0]["error"]["details"];
+    assert_eq!(details["reason"], "distribution_point_scope");
+}
+
+fn run_sec06_root(root: &str) -> Output {
+    run_fixture(
+        "good-sec06-basic.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            &format!("fixtures/{root}"),
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-root.crl",
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+        ],
+    )
+}
+
+#[test]
+fn sec10_crl_from_a_root_without_crl_sign_is_used() {
+    // Configured anchors are keys: their KeyUsage does not restrict CRL signing.
+    let output = run_sec06_root("sec10-root-no-crl-sign.der");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+}
+
+#[test]
+fn sec10_revocation_in_any_applicable_crl_wins_regardless_of_order() {
+    for crls in [["good.crl", "revoked.crl"], ["revoked.crl", "good.crl"]] {
+        let output = run_fixture(
+            "good-countersignature.exe",
+            &[
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                "fixtures/root.der",
+                "--crl",
+                &format!("fixtures/{}", crls[0]),
+                "--crl",
+                &format!("fixtures/{}", crls[1]),
+                "--time",
+                T,
+            ],
+        );
+        expect_failure(
+            &output,
+            1,
+            "certificate_revoked",
+            "Certificate revoked",
+            Some("revocation"),
+            None,
+        );
+    }
 }
