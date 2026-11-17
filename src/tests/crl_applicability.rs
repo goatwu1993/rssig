@@ -10,13 +10,13 @@ fn crl(issuer: &str, key: &SigningKey, this_update: u64, next_update: Option<u64
     crl_with_aki(issuer, key, this_update, next_update, None)
 }
 
-/// `aki` is a keyIdentifier-only authorityKeyIdentifier extension value.
+/// `aki` is the raw DER extnValue of an authorityKeyIdentifier extension.
 fn crl_with_aki(
     issuer: &str,
     key: &SigningKey,
     this_update: u64,
     next_update: Option<u64>,
-    aki: Option<&[u8]>,
+    aki: Option<Vec<u8>>,
 ) -> Vec<u8> {
     let algorithm = identity().root.signature_algorithm.clone();
     let tbs = TbsCertList {
@@ -27,14 +27,10 @@ fn crl_with_aki(
         next_update: next_update.map(tm),
         revoked_certificates: None,
         crl_extensions: Some(
-            aki.map(|id| {
-                let mut value = vec![0x30, id.len() as u8 + 2, 0x80, id.len() as u8];
-                value.extend_from_slice(id);
-                x509_cert::ext::Extension {
-                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.35"),
-                    critical: false,
-                    extn_value: ::der::asn1::OctetString::new(value).unwrap(),
-                }
+            aki.map(|value| x509_cert::ext::Extension {
+                extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.35"),
+                critical: false,
+                extn_value: ::der::asn1::OctetString::new(value).unwrap(),
             })
             .into_iter()
             .chain([x509_cert::ext::Extension {
@@ -50,6 +46,16 @@ fn crl_with_aki(
         tbs_cert_list: tbs,
         signature_algorithm: algorithm,
         signature: BitString::from_bytes(sig.to_der().as_bytes()).unwrap(),
+    }
+    .to_der()
+    .unwrap()
+}
+
+fn aki_value(id: &[u8]) -> Vec<u8> {
+    x509_cert::ext::pkix::AuthorityKeyIdentifier {
+        key_identifier: Some(::der::asn1::OctetString::new(id).unwrap()),
+        authority_cert_issuer: None,
+        authority_cert_serial_number: None,
     }
     .to_der()
     .unwrap()
@@ -82,12 +88,36 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // The root's name and key, but an authorityKeyIdentifier naming another key.
         (
             "sec10-root-name-other-aki-expired.crl",
-            crl_with_aki(root, root_key, NOW - 200, Some(NOW - 1), Some(&[0xaa; 20])),
+            crl_with_aki(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                Some(aki_value(&[0xaa; 20])),
+            ),
         ),
         // Same, but carrying the root's own key identifier.
         (
             "sec10-root-aki-expired.crl",
-            crl_with_aki(root, root_key, NOW - 200, Some(NOW - 1), Some(&root_ski)),
+            crl_with_aki(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                Some(aki_value(&root_ski)),
+            ),
+        ),
+        // An authorityKeyIdentifier that is not a SEQUENCE: fail closed, do not
+        // fall back to name-only matching.
+        (
+            "sec10-root-malformed-aki.crl",
+            crl_with_aki(
+                root,
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(vec![0x30, 0x05, 0x80]),
+            ),
         ),
         (
             "sec10-root-no-next-update.crl",

@@ -113,3 +113,16 @@ fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
         None,
     );
 }
+
+#[test]
+fn sec10_malformed_authority_key_identifier_fails_closed() {
+    let output = run_with("sec10-root-malformed-aki.crl");
+    expect_failure(
+        &output,
+        1,
+        "invalid_crl",
+        "Invalid CRL",
+        Some("revocation"),
+        Some("authorityKeyIdentifier"),
+    );
+}

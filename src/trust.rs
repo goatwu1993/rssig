@@ -7,6 +7,7 @@ use crate::domain::{
     TrustReport, VerificationError,
 };
 use crate::verify::budget::Budget;
+use ::der::oid::AssociatedOid;
 use ::der::{Decode, Encode};
 #[cfg(feature = "cli")]
 use anyhow::ensure;
@@ -247,13 +248,26 @@ impl TrustStore {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
                 let tbs = crl.tbs_cert_list;
                 let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
-                let authority_key = tbs
+                let authority_key = match tbs
                     .crl_extensions
                     .iter()
                     .flatten()
-                    .find(|e| e.extn_id.to_string() == "2.5.29.35")
-                    .and_then(|e| AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
-                    .and_then(|aki| aki.key_identifier);
+                    .find(|e| e.extn_id == AuthorityKeyIdentifier::OID)
+                {
+                    None => None,
+                    Some(e) => {
+                        AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes())
+                            .map_err(|_| {
+                                VerificationError::new(
+                                    ErrorCode::InvalidCrl,
+                                    Stage::Revocation,
+                                    "CRL authorityKeyIdentifier is malformed",
+                                )
+                                .detail("crl", CrlReport::parse(bytes).ok())
+                            })?
+                            .key_identifier
+                    }
+                };
                 let applies = issuers.iter().any(|(name, key)| {
                     *name == issuer
                         && match (&authority_key, key) {
@@ -497,7 +511,7 @@ fn issuer_identity(cert: &Certificate) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
         .extensions
         .iter()
         .flatten()
-        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .find(|e| e.extn_id == SubjectKeyIdentifier::OID)
         .and_then(|e| SubjectKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
         .map(|ski| ski.0.as_bytes().to_vec());
     Ok((name, key))
