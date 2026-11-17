@@ -404,8 +404,13 @@ paths are checked at the whole second (including notBefore), then the selected
 leaf and intermediates are checked against the fractional expiry boundary.
 A timestamp even slightly after notAfter is rejected for both the TSA and the
 publisher chain. Configured trust anchors retain the existing webpki validity
-policy. `TrustReport.validation_time` records the whole-second part; consult
-the timestamp's `fractional_seconds` for its full precision.
+policy. For a timestamped signer without lifetime signing, and for TSA reports,
+`TrustReport.validation_time` is the timestamp's whole-second part; consult the
+timestamp's `fractional_seconds` for its full precision.
+
+A signer with the lifetime-signing EKU is validated at `VerifyOptions.now`
+rather than the timestamp, and `TrustReport.lifetime_signing` is `true`. See
+[time policy](time-policy.md) for every time boundary.
 
 ## Regression evidence
 

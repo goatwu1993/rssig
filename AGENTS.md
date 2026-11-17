@@ -174,5 +174,7 @@ catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 Revocation of a timestamped signer is handled conservatively: an entry on a
 current CRL rejects it even if its revocation date is after the signing time.
+Signers with the lifetime-signing EKU are validated at the validation time, not
+the timestamp; see `docs/time-policy.md`.
 
 NAVX embedded signatures use the shared verification engine; see `docs/navx.md` for envelope, SIP, hashing, and interoperability limits.

@@ -136,7 +136,7 @@ fn verify_signature(
                     signer.cert,
                     &sd.certs,
                     trust::CODE_SIGNING,
-                    timestamp.unwrap_or(options.now),
+                    timestamp,
                     options.now,
                     options.check_revocation,
                     budget,

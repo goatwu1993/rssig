@@ -274,7 +274,8 @@ public-key hashes. This differs from rssig's configured-root-only model.
 `CertificateVerifier` can enable revocation, but the inspected signer and TSA
 rules do not enable it. `TimestampRule` explicitly handles lifetime-signing EKU
 and prioritizes legacy timestamps over RFC 3161. rssig instead rejects multiple
-timestamps and has no explicit lifetime-signing branch in `verify_timestamp()`.
+timestamps and validates lifetime-signing signers at the validation time in its
+shared trust path; see [time policy](time-policy.md).
 These are concrete policy differences worth documenting and testing.
 
 ### Relic: a broader verification reference with different defaults
@@ -315,8 +316,8 @@ Jsign or Relic. Important limits remain:
 - Certificate policy needs more alternative-chain, constraint, and critical
   extension coverage. A TLS-oriented path library requires explicit Authenticode
   policy decisions; current code adds leaf and intermediate KeyUsage checks.
-- Timestamp multiplicity, lifetime signing, time encodings, and historical
-  revocation need clearer policy coverage. Current CRLs conservatively reject a
+- Timestamp multiplicity, lifetime signing and time encodings are pinned
+  (SEC-08/09); historical revocation needs clearer policy coverage. Current CRLs conservatively reject a
   revoked signer even when the recorded revocation date follows signing.
 - No automatic AIA/CRL fetching, OCSP, RSA-PSS, standalone catalog verification,
   or generic detached Authenticode input. Some PE layouts, script encodings,
@@ -340,8 +341,8 @@ expansion of this existing corpus rather than treating it as absent.
 2. Expand independent PE, nested-signature, timestamp, and revocation fixtures
    from Jsign/Relic. Record expected policy differences rather than assuming
    either tool is an oracle. Preserve offline, fixture-first Cargo tests.
-3. Make lifetime-signing, duplicate timestamp, and historical revocation policy
-   explicit. Improve reporting of which supplied CRLs actually validated paths.
+3. Make historical revocation policy explicit (lifetime-signing and duplicate
+   timestamp policy are documented). Improve reporting of which supplied CRLs actually validated paths.
 4. Add controlled retrieval, OCSP, RSA-PSS, catalog signatures/membership, or
    detached inputs only when each has evidence-backed demand and test coverage.
 

@@ -51,7 +51,7 @@ apply to both timestamp kinds. Integrity-only mode authenticates the signature
 and parent binding but explicitly omits certificate-path, EKU/KeyUsage and
 revocation policy. Embedded TSA certificates remain untrusted candidates;
 configured roots and current local CRLs determine trust. Certificate/time
-boundary and lifetime-signing policy work remains SEC-09.
+boundaries and lifetime signing are documented in [time policy](time-policy.md).
 
 ## Evidence and maintenance
 

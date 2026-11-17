@@ -243,7 +243,11 @@ Cobertura XML, and HTML reports.
 
 This is an initial verifier, not a Windows trust-policy replacement. It requires
 embedded certificates and either supplied CRLs or explicit `--fetch-crls`;
-AIA downloads and OCSP are not implemented. System root sets can differ from Windows publisher roots,
+AIA downloads and OCSP are not implemented. Signers with the lifetime-signing EKU
+are validated at the validation time rather than their timestamp; configured root
+validity and historical revocation are not evaluated at the signing time. See
+[time policy](docs/time-policy.md) and SEC-14 in the [roadmap](TODO.md) for the
+recorded policy decisions and deferred follow-ups. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
 roots for controlled publisher policies. [Root/CRL loading](docs/trust-loading.md)
 is atomic: unsupported anchors, malformed bundles and partial native enumeration

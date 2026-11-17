@@ -123,14 +123,7 @@ pub(crate) fn verify_budget(
         let timestamp = timestamp_verification.as_ref().map(|t| t.signing_time);
         let trust = if let Some(store) = options.trust {
             Some(at(
-                verify_trust(
-                    store,
-                    signer.cert,
-                    &sd.certs,
-                    timestamp.unwrap_or(options.now),
-                    options,
-                    budget,
-                ),
+                verify_trust(store, signer.cert, &sd.certs, timestamp, options, budget),
                 ErrorCode::CertificateChainInvalid,
                 Stage::CertificateChain,
             )?)
@@ -184,7 +177,7 @@ fn verify_trust(
     store: &crate::TrustStore,
     leaf: &x509_cert::Certificate,
     certificates: &[x509_cert::Certificate],
-    at: u64,
+    signing_time: Option<u64>,
     options: &VerifyOptions<'_>,
     budget: &Budget,
 ) -> Result<TrustReport> {
@@ -208,7 +201,7 @@ fn verify_trust(
                 leaf,
                 certificates,
                 eku,
-                at,
+                signing_time,
                 options.now,
                 options.check_revocation,
                 budget,

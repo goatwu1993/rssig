@@ -28307,6 +28307,1783 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec09-expired-timestamped",
+      "input": "sec09-expired-timestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1799995000,
+                    "lifetime_signing": false
+                  },
+                  "timestamp_verification": {
+                    "signing_time": 1799995000,
+                    "trust": {
+                      "validation_time": 1799995000,
+                      "lifetime_signing": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-expired-timestamped-at-validation-time",
+      "input": "sec09-expired-timestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1799995000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1799995000,
+                    "lifetime_signing": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-expired-timestamped-future",
+      "input": "sec09-expired-timestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1799994999"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "timestamp_in_future",
+                "stage": "timestamp",
+                "details": {
+                  "signing_time": 1799995000,
+                  "validation_time": 1799994999
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-expired",
+      "input": "sec09-lifetime-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_after": 1799999000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-counter-expired",
+      "input": "sec09-lifetime-counter-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_after": 1799999000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-valid",
+      "input": "sec09-lifetime-valid.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true,
+                    "revocation": {
+                      "status": "good"
+                    }
+                  },
+                  "timestamp_verification": {
+                    "signing_time": 1799995000,
+                    "trust": {
+                      "validation_time": 1799995000,
+                      "lifetime_signing": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-valid-after-expiry",
+      "input": "sec09-lifetime-valid.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000001"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000001,
+                  "not_after": 1800000000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-before-not-before",
+      "input": "sec09-lifetime-before-not-before.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_before": 1799996000,
+                  "required_eku": "1.3.6.1.5.5.7.3.3"
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-timestamp-before-not-before",
+      "input": "sec09-timestamp-before-not-before.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799995000,
+                  "not_before": 1799996000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-untimestamped",
+      "input": "sec09-lifetime-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": null,
+                  "timestamp_verification": null,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-leaf-not-after-exact",
+      "input": "sec09-leaf-not-after-exact.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-leaf-not-after-fraction",
+      "input": "sec09-leaf-not-after-fraction.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998000,
+                  "fractional_seconds": "5",
+                  "certificate": {
+                    "not_after": 1799998000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
+        }
+      }
+    },
+    {
+      "id": "sec09-leaf-not-before-fraction-inside",
+      "input": "sec09-leaf-not-before-fraction-inside.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799997000,
+                  "trust": {
+                    "validation_time": 1799997000,
+                    "lifetime_signing": false
+                  },
+                  "timestamp_verification": {
+                    "signing_time": 1799997000,
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-leaf-not-before-fraction-early",
+      "input": "sec09-leaf-not-before-fraction-early.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799996999,
+                  "not_before": 1799997000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-intermediate-not-after-exact",
+      "input": "sec09-intermediate-not-after-exact.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false,
+                    "revocation": {
+                      "status": "not_checked"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-intermediate-not-after-fraction",
+      "input": "sec09-intermediate-not-after-fraction.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998000,
+                  "fractional_seconds": "5",
+                  "certificate": {
+                    "not_after": 1799998000,
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
+        }
+      }
+    },
+    {
+      "id": "sec09-intermediate-expired",
+      "input": "sec09-intermediate-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998001,
+                  "not_after": 1799998000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-intermediate-not-before-fraction-inside",
+      "input": "sec09-intermediate-not-before-fraction-inside.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799997000,
+                  "trust": {
+                    "validation_time": 1799997000,
+                    "lifetime_signing": false
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-intermediate-not-before-fraction-early",
+      "input": "sec09-intermediate-not-before-fraction-early.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799996999,
+                  "not_before": 1799997000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-untimestamped-before-not-before",
+      "input": "sec09-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1799999899"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799999899,
+                  "not_before": 1799999900
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-untimestamped-at-not-before",
+      "input": "sec09-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1799999900"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": null,
+                  "trust": {
+                    "validation_time": 1799999900,
+                    "lifetime_signing": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-untimestamped-at-not-after",
+      "input": "sec09-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000100"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": null,
+                  "trust": {
+                    "validation_time": 1800000100,
+                    "lifetime_signing": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-untimestamped-after-not-after",
+      "input": "sec09-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000101"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1800000101,
+                  "not_after": 1800000100
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-counter-expired-timestamped",
+      "input": "sec09-counter-expired-timestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1799995000,
+                    "lifetime_signing": false
+                  },
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "signing_time": 1799995000
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-untimestamped-expired",
+      "input": "sec09-lifetime-untimestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800009001"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "validation_time": 1800009001,
+                  "not_after": 1800009000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-late",
+      "input": "sec09-lifetime-intermediate-late.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_before": 1799996000,
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-rollover",
+      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_before": 1799991000
+                      },
+                      {}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-late-ca-usage",
+      "input": "sec09-lifetime-intermediate-late-ca-usage.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "required_eku": "1.3.6.1.5.5.7.3.3",
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    },
+                    "not_before": 1799996000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-ca-usage-late",
+      "input": "sec09-lifetime-intermediate-ca-usage-late.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "required_eku": "1.3.6.1.5.5.7.3.3",
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    },
+                    "not_before": 1799996000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-chain-ca-usage-late",
+      "input": "sec09-lifetime-chain-ca-usage-late.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "required_eku": "1.3.6.1.5.5.7.3.3",
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate 1"
+                    },
+                    "not_before": 1799996000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-chain-late-ca-usage",
+      "input": "sec09-lifetime-chain-late-ca-usage.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "required_eku": "1.3.6.1.5.5.7.3.3",
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate 0"
+                    },
+                    "not_before": 1799996000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-rdp-expired-timestamped",
+      "input": "sec09-rdp-expired-timestamped.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "nested_depth": 0,
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1799995000,
+                    "lifetime_signing": false
+                  },
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "signing_time": 1799995000
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-rdp-expired",
+      "input": "sec09-lifetime-rdp-expired.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_after": 1799999000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-nested-expired-timestamped",
+      "input": "sec09-nested-expired-timestamped.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "nested_depth": 0,
+                  "timestamp": null,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": false
+                  }
+                },
+                {
+                  "nested_depth": 1,
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1799995000,
+                    "lifetime_signing": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-nested-expired",
+      "input": "sec09-lifetime-nested-expired.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_after": 1799999000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-rollover-revocation",
+      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "revocation_checked": true,
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true,
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    },
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_before": 1799991000
+                      },
+                      {}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-rollover-revocation-unknown",
+      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-late-revocation",
+      "input": "sec09-lifetime-intermediate-late.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-late-revoked-leaf",
+      "input": "sec09-lifetime-intermediate-late.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate-revoked-leaf.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-rollover-revoked-leaf",
+      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate-revoked-leaf.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-rollover-revoked-issuer",
+      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/sec09-root-revoked-intermediate.crl",
+        "--crl",
+        "fixtures/sec09-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "not_before": 1799996000,
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    },
+                    "not_before": 1799996000
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-before-not-before-crl-expired",
+      "input": "sec09-lifetime-before-not-before.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1800000000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-timestamp-before-not-before-crl-expired",
+      "input": "sec09-timestamp-before-not-before.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/expired.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1800000000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-leaf-not-before-exact",
+      "input": "sec09-lifetime-leaf-not-before-exact.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true,
+                    "chain": [
+                      {
+                        "not_before": 1799995000
+                      },
+                      {}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-leaf-not-before-early",
+      "input": "sec09-lifetime-leaf-not-before-early.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_before": 1799995001,
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 lifetime-leaf-not-before-early"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-not-before-exact",
+      "input": "sec09-lifetime-intermediate-not-before-exact.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799995000,
+                  "trust": {
+                    "validation_time": 1800000000,
+                    "lifetime_signing": true,
+                    "revocation": {
+                      "status": "good"
+                    },
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_before": 1799995000
+                      },
+                      {}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec09-lifetime-intermediate-not-before-early",
+      "input": "sec09-lifetime-intermediate-not-before-early.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec09-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_not_yet_valid",
+                "stage": "certificate_chain",
+                "details": {
+                  "lifetime_signing": true,
+                  "signing_time": 1799995000,
+                  "validation_time": 1800000000,
+                  "not_before": 1799995001,
+                  "certificate": {
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    },
+                    "not_before": 1799995001
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
     }
   ]
 }

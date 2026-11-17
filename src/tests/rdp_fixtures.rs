@@ -19,7 +19,7 @@ fn alg(hash: crypto::Hash) -> Vec<u8> {
     };
     seq(&[oid(&value), vec![5, 0]])
 }
-fn fields(bytes: &[u8]) -> Vec<Vec<u8>> {
+pub(super) fn fields(bytes: &[u8]) -> Vec<Vec<u8>> {
     der::one(bytes, 0x30)
         .unwrap()
         .children()
@@ -28,7 +28,7 @@ fn fields(bytes: &[u8]) -> Vec<Vec<u8>> {
         .map(|n| n.full.to_vec())
         .collect()
 }
-fn envelope(
+pub(super) fn envelope(
     certificate: &Certificate,
     hash: crypto::Hash,
     signer: &[u8],
@@ -53,7 +53,7 @@ fn envelope(
         ),
     ])
 }
-fn signer(
+pub(super) fn signer(
     cert: &Certificate,
     hash: crypto::Hash,
     attributes: bool,
@@ -101,7 +101,7 @@ fn ec_signer(cert: &Certificate, attributes: bool) -> Vec<u8> {
         false,
     )
 }
-fn frame(cms: &[u8]) -> String {
+pub(super) fn frame(cms: &[u8]) -> String {
     let mut blob = vec![1, 0, 1, 0, 1, 0, 0, 0];
     blob.extend((cms.len() as u32).to_le_bytes());
     blob.extend(cms);
