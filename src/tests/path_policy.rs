@@ -502,7 +502,13 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
     let mut count = 0;
     for artifact in manifest["artifacts"].as_array().unwrap() {
         let filename = artifact["file"].as_str().unwrap();
-        let sec06 = filename.contains("-sec06-") || filename.starts_with("sec10-ca-");
+        // SEC-10 cRLSign variants are built here on the SEC-06 chain.
+        let sec10 = [
+            "sec10-ca-no-crl-sign.exe",
+            "sec10-ca-crl-sign.exe",
+            "sec10-ca-crl-sign-fallback.exe",
+        ];
+        let sec06 = filename.contains("-sec06-") || sec10.contains(&filename);
         if !sec06 || !filename.ends_with(".exe") {
             continue;
         }
