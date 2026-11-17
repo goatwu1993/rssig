@@ -121,7 +121,9 @@
         "sec10-root-unknown-critical-extension-crl-unsupported",
         "sec10-root-delta-crl-unsupported",
         "sec10-root-indirect-crl-unsupported",
-        "sec10-root-unknown-noncritical-extension-crl-accepted"
+        "sec10-root-unknown-noncritical-extension-crl-accepted",
+        "sec10-root-entry-critical-extension-crl-unsupported",
+        "sec10-root-delta-expired-crl-reports-feature"
       ]
     },
     {
@@ -206,7 +208,9 @@
         "sec10-root-unknown-critical-extension-crl-unsupported",
         "sec10-root-delta-crl-unsupported",
         "sec10-root-indirect-crl-unsupported",
-        "sec10-root-unknown-noncritical-extension-crl-accepted"
+        "sec10-root-unknown-noncritical-extension-crl-accepted",
+        "sec10-root-entry-critical-extension-crl-unsupported",
+        "sec10-root-delta-expired-crl-reports-feature"
       ]
     },
     {
@@ -9186,6 +9190,28 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-unknown-noncritical-extension-crl-accepted"
+      ]
+    },
+    {
+      "file": "sec10-root-entry-critical-extension.crl",
+      "sha256": "8feaf092f3bd3f513967788ce2cf20f6becffbab43ece69f72c7aedd993f8051",
+      "bytes": 227,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root revoking an unrelated serial (999) through an entry with an unrecognized critical entry extension (1.2.3.4); unsupported, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-entry-critical-extension-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-delta-expired.crl",
+      "sha256": "6c4eaa154750fbd861952e3e69df73f21c65c6e0f3b4878062eec925e2d93514",
+      "bytes": 198,
+      "description": "SEC-10: Correctly signed, expired delta CRL (critical deltaCRLIndicator) from the test root; the unsupported feature is reported before freshness. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-delta-expired-crl-reports-feature"
       ]
     }
   ]

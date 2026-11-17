@@ -154,7 +154,12 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
             "sec10-root-unknown-critical-extension.crl",
             "unknown_critical_extension",
         ),
+        (
+            "sec10-root-entry-critical-extension.crl",
+            "unknown_critical_extension",
+        ),
         ("sec10-root-delta.crl", "delta_crl"),
+        ("sec10-root-delta-expired.crl", "delta_crl"),
         ("sec10-root-indirect.crl", "indirect_crl"),
     ] {
         let output = run_with(file);
