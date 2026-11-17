@@ -267,6 +267,14 @@ pub(super) fn write(dir: &std::path::Path) {
             &[changed],
         );
     }
+    // SEC-10: the issuer signs certificates and the CRL with the same key; only
+    // its KeyUsage decides whether that CRL may be used.
+    for (label, bits) in [("ca-no-crl-sign", [2u8, 0x04]), ("ca-crl-sign", [1, 0x06])] {
+        let mut changed = ca.clone();
+        extension(&mut changed, "2.5.29.15", true, Some(tlv(3, &bits)));
+        sign(&mut changed, &root_key);
+        write_pe(dir, &format!("sec10-{label}"), &leaf, &[changed]);
+    }
     for label in [
         "leaf-ca",
         "leaf-no-bc",

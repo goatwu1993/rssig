@@ -181,3 +181,43 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
 fn sec10_unknown_noncritical_crl_extension_is_ignored() {
     expect_success(&run_with("sec10-root-unknown-noncritical-extension.crl"));
 }
+
+fn run_sec06(input: &str) -> Output {
+    run_fixture(
+        input,
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-root.crl",
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+        ],
+    )
+}
+
+#[test]
+fn sec10_crl_from_an_issuer_without_crl_sign_is_rejected() {
+    let output = run_sec06("sec10-ca-no-crl-sign.exe");
+    expect_failure(
+        &output,
+        1,
+        "invalid_key_usage",
+        "Invalid key usage",
+        Some("revocation"),
+        None,
+    );
+}
+
+#[test]
+fn sec10_crl_from_an_issuer_with_crl_sign_is_used() {
+    let output = run_sec06("sec10-ca-crl-sign.exe");
+    expect_success(&output);
+    let trust = &output.json["results"][0]["signatures"][0]["trust"];
+    assert_eq!(trust["revocation"]["status"], "good");
+    assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+}
