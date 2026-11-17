@@ -166,9 +166,13 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
             Some("revocation"),
             None,
         );
-        assert_eq!(
-            output.json["results"][0]["error"]["details"]["reason"], reason,
-            "{file}"
-        );
+        let details = &output.json["results"][0]["error"]["details"];
+        assert_eq!(details["reason"], reason, "{file}");
+        assert!(details["crl"]["der_hex"].is_string(), "{file}");
     }
+}
+
+#[test]
+fn sec10_unknown_noncritical_crl_extension_is_ignored() {
+    expect_success(&run_with("sec10-root-unknown-noncritical-extension.crl"));
 }

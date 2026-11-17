@@ -120,7 +120,8 @@
         "sec10-unrelated-malformed-aki-crl-excluded",
         "sec10-root-unknown-critical-extension-crl-unsupported",
         "sec10-root-delta-crl-unsupported",
-        "sec10-root-indirect-crl-unsupported"
+        "sec10-root-indirect-crl-unsupported",
+        "sec10-root-unknown-noncritical-extension-crl-accepted"
       ]
     },
     {
@@ -204,7 +205,8 @@
         "sec10-unrelated-malformed-aki-crl-excluded",
         "sec10-root-unknown-critical-extension-crl-unsupported",
         "sec10-root-delta-crl-unsupported",
-        "sec10-root-indirect-crl-unsupported"
+        "sec10-root-indirect-crl-unsupported",
+        "sec10-root-unknown-noncritical-extension-crl-accepted"
       ]
     },
     {
@@ -9173,6 +9175,17 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-indirect-crl-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-root-unknown-noncritical-extension.crl",
+      "sha256": "ddfbaed4ae56a113145499f2c8caf8deb1a188b6c2ab80da6a5112548332dc28",
+      "bytes": 196,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an unrecognized non-critical extension (1.2.3.4); paired good case for sec10-root-unknown-critical-extension.crl. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-root-unknown-noncritical-extension-crl-accepted"
       ]
     }
   ]

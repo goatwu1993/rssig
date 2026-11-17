@@ -177,6 +177,11 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-unknown-critical-extension.crl",
             crl_with_extension("1.2.3.4", true, &[5, 0]),
         ),
+        // The same unknown extension, non-critical: ignorable, so accepted.
+        (
+            "sec10-root-unknown-noncritical-extension.crl",
+            crl_with_extension("1.2.3.4", false, &[5, 0]),
+        ),
         // deltaCRLIndicator: BaseCRLNumber 1.
         (
             "sec10-root-delta.crl",
