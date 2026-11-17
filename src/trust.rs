@@ -7,6 +7,7 @@ use crate::domain::{
     TrustReport, VerificationError,
 };
 use crate::verify::budget::Budget;
+use ::der::oid::AssociatedOid;
 use ::der::{Decode, Encode};
 #[cfg(feature = "cli")]
 use anyhow::ensure;
@@ -15,7 +16,11 @@ use core::time::Duration;
 use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
 use rustls_pki_types::{CertificateDer, UnixTime};
-use x509_cert::{Certificate, crl::CertificateList};
+use x509_cert::{
+    Certificate,
+    crl::CertificateList,
+    ext::pkix::{AuthorityKeyIdentifier, SubjectKeyIdentifier},
+};
 
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
 pub(crate) const TIME_STAMPING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 8];
@@ -225,33 +230,71 @@ impl TrustStore {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
             }
-            // A CRL whose issuer names no root or candidate certificate cannot
-            // apply to this chain. It is excluded rather than rejecting the
-            // request; a CRL from a chain issuer must be usable or fail closed.
+            // A CRL cannot apply to this chain unless a root or candidate
+            // certificate has its issuer name and, when the CRL names an
+            // authority key, the same subject key. Such CRLs are excluded
+            // rather than rejecting the request; a CRL from a chain issuer
+            // must be usable or fail closed. A candidate without a subject key
+            // identifier cannot disprove a match, and a differing key
+            // identifier excludes a CRL only if the CRL's signature also fails
+            // under every name-matching candidate key.
             let mut issuers = Vec::new();
             for root in &self.roots {
                 let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
-                issuers.push(
-                    root.tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
+                issuers.push(issuer_identity(&root)?);
             }
             for certificate in certificates {
-                issuers.push(
-                    certificate
-                        .tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
+                issuers.push(issuer_identity(certificate)?);
             }
             for bytes in &self.crls {
                 let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
+                // Verify over the CRL's original TBS bytes, never a re-encoding.
+                let signed = crate::der::one(bytes, 0x30)
+                    .and_then(|outer| outer.children())
+                    .map_err(crate::compat_error)?
+                    .first()
+                    .map(|tbs| tbs.full)
+                    .context("CRL lacks tbsCertList")?;
                 let tbs = crl.tbs_cert_list;
                 let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
-                if !issuers.contains(&issuer) {
+                let named: Vec<_> = issuers.iter().filter(|i| i.name == issuer).collect();
+                if named.is_empty() {
+                    continue;
+                }
+                let authority_key = match tbs
+                    .crl_extensions
+                    .iter()
+                    .flatten()
+                    .find(|e| e.extn_id == AuthorityKeyIdentifier::OID)
+                {
+                    None => None,
+                    Some(e) => {
+                        AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes())
+                            .map_err(|_| {
+                                VerificationError::new(
+                                    ErrorCode::InvalidCrl,
+                                    Stage::Revocation,
+                                    "CRL authorityKeyIdentifier is malformed",
+                                )
+                                .detail("crl", CrlReport::parse(bytes).ok())
+                            })?
+                            .key_identifier
+                    }
+                };
+                let applies = named.iter().any(|i| match (&authority_key, &i.key_id) {
+                    (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
+                    _ => true,
+                }) || (authority_key.is_some()
+                    && named.iter().any(|i| {
+                        signed_by(
+                            &i.spki,
+                            &crl.signature_algorithm.oid,
+                            signed,
+                            &crl.signature,
+                        )
+                        .unwrap_or(true)
+                    }));
+                if !applies {
                     continue;
                 }
                 if tbs.this_update.to_unix_duration().as_secs() > now {
@@ -473,4 +516,55 @@ fn not_before(cert: &Certificate) -> Duration {
 /// The lifetime signing time, when `cert` was issued after it.
 fn issued_after(cert: &Certificate, signed_at: Option<u64>) -> Option<u64> {
     signed_at.filter(|at| not_before(cert).as_secs() > *at)
+}
+
+struct IssuerIdentity {
+    name: Vec<u8>,
+    key_id: Option<Vec<u8>>,
+    spki: Vec<u8>,
+}
+
+/// Subject name DER, the subject key identifier bytes when present, and the SPKI DER.
+fn issuer_identity(cert: &Certificate) -> Result<IssuerIdentity> {
+    let name = cert
+        .tbs_certificate
+        .subject
+        .to_der()
+        .map_err(crate::compat_error)?;
+    let key_id = cert
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id == SubjectKeyIdentifier::OID)
+        .and_then(|e| SubjectKeyIdentifier::from_der(e.extn_value.as_bytes()).ok())
+        .map(|ski| ski.0.as_bytes().to_vec());
+    let spki = cert
+        .tbs_certificate
+        .subject_public_key_info
+        .to_der()
+        .map_err(crate::compat_error)?;
+    Ok(IssuerIdentity { name, key_id, spki })
+}
+
+/// Whether the CRL signature verifies under `spki`. `None` when the signature
+/// algorithm is not one we can map to a digest: the caller must then treat
+/// the CRL as applicable rather than exclude it.
+fn signed_by(
+    spki: &[u8],
+    algorithm: &::der::asn1::ObjectIdentifier,
+    message: &[u8],
+    signature: &::der::asn1::BitString,
+) -> Option<bool> {
+    let oid = algorithm.as_bytes();
+    let hash = match oid {
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 2]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 11] => crate::crypto::Hash::Sha256,
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 3]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 12] => crate::crypto::Hash::Sha384,
+        [0x2a, 0x86, 0x48, 0xce, 0x3d, 4, 3, 4]
+        | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 13] => crate::crypto::Hash::Sha512,
+        _ => return None,
+    };
+    Some(crate::crypto::verify_spki(spki, hash, oid, message, signature.as_bytes()?).is_ok())
 }

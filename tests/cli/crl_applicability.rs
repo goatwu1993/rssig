@@ -93,3 +93,56 @@ fn sec10_only_unrelated_crls_leave_revocation_unknown() {
         None,
     );
 }
+
+#[test]
+fn sec10_crl_naming_another_authority_key_is_excluded() {
+    // Same issuer name as the root, but its authorityKeyIdentifier names a
+    // different key, so it cannot be the CRL of the chain's issuer.
+    expect_success(&run_with("sec10-root-name-other-aki-expired.crl"));
+}
+
+#[test]
+fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
+    let output = run_with("sec10-root-aki-expired.crl");
+    expect_failure(
+        &output,
+        1,
+        "crl_expired",
+        "CRL expired",
+        Some("revocation"),
+        None,
+    );
+}
+
+#[test]
+fn sec10_malformed_authority_key_identifier_fails_closed() {
+    let output = run_with("sec10-root-malformed-aki.crl");
+    expect_failure(
+        &output,
+        1,
+        "invalid_crl",
+        "Invalid CRL",
+        Some("revocation"),
+        Some("authorityKeyIdentifier"),
+    );
+}
+
+#[test]
+fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
+    // Signed by the root's own key, so a differing authorityKeyIdentifier
+    // cannot make it irrelevant: the stale CRL still fails closed.
+    let output = run_with("sec10-root-signed-other-aki-expired.crl");
+    expect_failure(
+        &output,
+        1,
+        "crl_expired",
+        "CRL expired",
+        Some("revocation"),
+        None,
+    );
+}
+
+#[test]
+fn sec10_unrelated_crl_with_malformed_aki_is_excluded() {
+    expect_success(&run_with("sec10-unrelated-malformed-aki.crl"));
+}
