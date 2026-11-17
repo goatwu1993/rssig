@@ -1,5 +1,7 @@
 //! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
 //! a CRL from a chain issuer that is stale or structurally invalid fails closed.
+//! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
+//! KeyUsage.
 
 use super::support::*;
 
@@ -220,4 +222,14 @@ fn sec10_crl_from_an_issuer_with_crl_sign_is_used() {
     let trust = &output.json["results"][0]["signatures"][0]["trust"];
     assert_eq!(trust["revocation"]["status"], "good");
     assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn sec10_path_building_falls_back_to_the_issuer_with_crl_sign() {
+    let fallback = run_sec06("sec10-ca-crl-sign-fallback.exe");
+    let usable = run_sec06("sec10-ca-crl-sign.exe");
+    expect_success(&fallback);
+    let chain =
+        |output: &Output| output.json["results"][0]["signatures"][0]["trust"]["chain"].clone();
+    assert_eq!(chain(&fallback), chain(&usable));
 }

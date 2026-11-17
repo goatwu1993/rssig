@@ -165,8 +165,12 @@ timestamps, and local CRL validation already exist.
   Applicable CRLs with an unknown critical extension, delta or indirect form fail
   closed as `invalid_crl` with `details.reason`. A CRL from an issuer whose
   KeyUsage lacks cRLSign is rejected as `invalid_key_usage` at `revocation`
-  (`sec10-ca-no-crl-sign`, paired with `sec10-ca-crl-sign`).
-  Still open: AKI authorityCertIssuer/serial forms, distribution-point scope
+  (`sec10-ca-no-crl-sign`, paired with `sec10-ca-crl-sign`), and path building
+  falls back to a candidate with cRLSign (`sec10-ca-crl-sign-fallback`). This
+  covers intermediate issuers only: webpki 0.103 does not track trust-anchor
+  KeyUsage, so a root lacking cRLSign still issues usable CRLs (consistent with
+  SEC-14's anchors-as-keys policy; decide and pin it).
+  Still open: root cRLSign policy, AKI authorityCertIssuer/serial forms, distribution-point scope
   and incomplete issuer coverage.
   Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts

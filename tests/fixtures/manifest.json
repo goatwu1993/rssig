@@ -7492,7 +7492,8 @@
         "bad-sec06-root-name",
         "good-sec06-root-selection",
         "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign"
+        "sec10-ca-crl-sign",
+        "sec10-ca-crl-sign-fallback"
       ]
     },
     {
@@ -7807,7 +7808,8 @@
         "bad-sec06-root-name",
         "good-sec06-root-selection",
         "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign"
+        "sec10-ca-crl-sign",
+        "sec10-ca-crl-sign-fallback"
       ]
     },
     {
@@ -7856,7 +7858,8 @@
         "bad-sec06-cycle",
         "bad-sec06-cycle-reversed",
         "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign"
+        "sec10-ca-crl-sign",
+        "sec10-ca-crl-sign-fallback"
       ]
     },
     {
@@ -9240,6 +9243,17 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-ca-crl-sign"
+      ]
+    },
+    {
+      "file": "sec10-ca-crl-sign-fallback.exe",
+      "sha256": "d5f94de933b84101b3e6f29c2a37f25b1bdf6d16ce23c64c23de1dfc3c1081ab",
+      "bytes": 2592,
+      "description": "SEC-10: Inert PE embedding both issuer candidates, the one without cRLSign first; path building must fall back to the candidate with cRLSign. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-ca-crl-sign-fallback"
       ]
     }
   ]

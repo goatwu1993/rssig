@@ -269,12 +269,21 @@ pub(super) fn write(dir: &std::path::Path) {
     }
     // SEC-10: the issuer signs certificates and the CRL with the same key; only
     // its KeyUsage decides whether that CRL may be used.
+    let mut usages = Vec::new();
     for (label, bits) in [("ca-no-crl-sign", [2u8, 0x04]), ("ca-crl-sign", [1, 0x06])] {
         let mut changed = ca.clone();
         extension(&mut changed, "2.5.29.15", true, Some(tlv(3, &bits)));
         sign(&mut changed, &root_key);
-        write_pe(dir, &format!("sec10-{label}"), &leaf, &[changed]);
+        write_pe(
+            dir,
+            &format!("sec10-{label}"),
+            &leaf,
+            core::slice::from_ref(&changed),
+        );
+        usages.push(changed);
     }
+    // The candidate without cRLSign comes first; path building must fall back.
+    write_pe(dir, "sec10-ca-crl-sign-fallback", &leaf, &usages);
     for label in [
         "leaf-ca",
         "leaf-no-bc",
@@ -493,7 +502,8 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
     let mut count = 0;
     for artifact in manifest["artifacts"].as_array().unwrap() {
         let filename = artifact["file"].as_str().unwrap();
-        if !filename.contains("-sec06-") || !filename.ends_with(".exe") {
+        let sec06 = filename.contains("-sec06-") || filename.starts_with("sec10-ca-");
+        if !sec06 || !filename.ends_with(".exe") {
             continue;
         }
         count += 1;
@@ -525,5 +535,5 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 33);
+    assert_eq!(count, 36);
 }
