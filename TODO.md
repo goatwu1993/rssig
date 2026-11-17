@@ -162,8 +162,10 @@ timestamps, and local CRL validation already exist.
   (`sec10-*` cases and `tests/cli/crl_applicability.rs`). A CRL whose AKI
   keyIdentifier matches no name-matching candidate's SKI is likewise excluded
   unless its signature verifies under a name-matching candidate key.
-  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope, unknown critical
-  extensions, delta/indirect CRLs, and incomplete issuer coverage.
+  Applicable CRLs with an unknown critical extension, delta or indirect form fail
+  closed as `invalid_crl` with `details.reason`.
+  Still open: AKI authorityCertIssuer/serial forms, cRLSign usage, distribution-point scope
+  and incomplete issuer coverage.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when

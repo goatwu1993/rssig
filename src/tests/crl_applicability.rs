@@ -18,6 +18,34 @@ fn crl_with_aki(
     next_update: Option<u64>,
     aki: Option<Vec<u8>>,
 ) -> Vec<u8> {
+    crl_full(issuer, key, this_update, next_update, aki, vec![])
+}
+
+/// A fresh root CRL carrying one extra extension.
+fn crl_with_extension(oid: &str, critical: bool, value: &[u8]) -> Vec<u8> {
+    let extension = x509_cert::ext::Extension {
+        extn_id: ::der::asn1::ObjectIdentifier::new_unwrap(oid),
+        critical,
+        extn_value: ::der::asn1::OctetString::new(value).unwrap(),
+    };
+    crl_full(
+        "CN=rssig test root",
+        &identity().root_key,
+        NOW - 100,
+        Some(NOW + 1000),
+        None,
+        vec![extension],
+    )
+}
+
+fn crl_full(
+    issuer: &str,
+    key: &SigningKey,
+    this_update: u64,
+    next_update: Option<u64>,
+    aki: Option<Vec<u8>>,
+    extra: Vec<x509_cert::ext::Extension>,
+) -> Vec<u8> {
     let algorithm = identity().root.signature_algorithm.clone();
     let tbs = TbsCertList {
         version: Version::V2,
@@ -38,6 +66,7 @@ fn crl_with_aki(
                 critical: false,
                 extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
             }])
+            .chain(extra)
             .collect(),
         ),
     };
@@ -142,6 +171,21 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(NOW + 1000),
                 Some(vec![0x30, 0x05, 0x80]),
             ),
+        ),
+        // Unsupported CRL features from the chain's issuer must fail closed.
+        (
+            "sec10-root-unknown-critical-extension.crl",
+            crl_with_extension("1.2.3.4", true, &[5, 0]),
+        ),
+        // deltaCRLIndicator: BaseCRLNumber 1.
+        (
+            "sec10-root-delta.crl",
+            crl_with_extension("2.5.29.27", true, &[2, 1, 1]),
+        ),
+        // issuingDistributionPoint with indirectCRL TRUE.
+        (
+            "sec10-root-indirect.crl",
+            crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x84, 1, 0xff]),
         ),
         (
             "sec10-root-no-next-update.crl",

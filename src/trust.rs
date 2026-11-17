@@ -327,8 +327,15 @@ impl TrustStore {
                     .into());
                 }
                 parsed_crls.push(webpki::CertRevocationList::from(
-                    webpki::BorrowedCertRevocationList::from_der(bytes)
-                        .map_err(|e| anyhow::anyhow!("unsupported CRL: {e:?}"))?,
+                    webpki::BorrowedCertRevocationList::from_der(bytes).map_err(|e| {
+                        VerificationError::new(
+                            ErrorCode::InvalidCrl,
+                            Stage::Revocation,
+                            format!("unsupported or malformed CRL: {e:?}"),
+                        )
+                        .detail("reason", crl_rejection_reason(&e))
+                        .detail("crl", CrlReport::parse(bytes).ok())
+                    })?,
                 ));
             }
         }
@@ -567,4 +574,18 @@ fn signed_by(
         _ => return None,
     };
     Some(crate::crypto::verify_spki(spki, hash, oid, message, signature.as_bytes()?).is_ok())
+}
+
+/// Stable machine-readable reason for a CRL that webpki cannot use.
+fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
+    use webpki::Error as W;
+    match error {
+        W::UnsupportedCriticalExtension => "unknown_critical_extension",
+        W::UnsupportedDeltaCrl => "delta_crl",
+        W::UnsupportedIndirectCrl => "indirect_crl",
+        W::UnsupportedCrlIssuingDistributionPoint => "issuing_distribution_point",
+        W::UnsupportedCrlVersion => "crl_version",
+        W::MalformedExtensions => "malformed_extensions",
+        _ => "unsupported_or_malformed",
+    }
 }

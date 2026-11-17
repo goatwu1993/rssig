@@ -146,3 +146,29 @@ fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
 fn sec10_unrelated_crl_with_malformed_aki_is_excluded() {
     expect_success(&run_with("sec10-unrelated-malformed-aki.crl"));
 }
+
+#[test]
+fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
+    for (file, reason) in [
+        (
+            "sec10-root-unknown-critical-extension.crl",
+            "unknown_critical_extension",
+        ),
+        ("sec10-root-delta.crl", "delta_crl"),
+        ("sec10-root-indirect.crl", "indirect_crl"),
+    ] {
+        let output = run_with(file);
+        expect_failure(
+            &output,
+            1,
+            "invalid_crl",
+            "Invalid CRL",
+            Some("revocation"),
+            None,
+        );
+        assert_eq!(
+            output.json["results"][0]["error"]["details"]["reason"], reason,
+            "{file}"
+        );
+    }
+}
