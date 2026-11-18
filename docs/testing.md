@@ -218,6 +218,41 @@ fixtures. `cases` links identify declarative cases; optional `tests` links point
 to additional native regressions. Neither fixture generation nor expected-output
 regeneration is part of ordinary tests or coverage.
 
+### Manifest consistency
+
+`tests/manifest.rs` checks the manifest against the committed fixtures, the case
+specification, and the tests and generators it names. It runs in
+`cargo test --locked`, reads files only, and never regenerates a fixture.
+
+| Rule | Requirement |
+| --- | --- |
+| Schema | Only known fields with the expected types; `schema_version` is 1. A misspelled field fails instead of being ignored. |
+| Paths | `file` is one plain name (ASCII letters, digits, `.`, `_`, `-`, not starting with `.`) directly in `tests/fixtures/`, and is listed once. |
+| Presence | Every listed file exists; every file in the directory is listed; the directory has no subdirectories. |
+| Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
+| Description | Nonblank. |
+| Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`; no recorded provenance or license value is blank. |
+| Generators | Each `generator` names an existing Rust source file and, after `::`, a function declared in it. |
+| Case links | Each ID in `cases` is defined in `tests/cases.json` and listed once. |
+| Case inputs | Every fixture a case reads (`input`, `inputs`, CRL response bodies, `fixtures/...` arguments) is listed. |
+| Test links | Each `tests` entry is `module::function` declared in `tests/cli/<module>.rs`. |
+| Pairs | `paired_good` names another listed artifact. |
+
+Intentional exceptions are constants in that file:
+
+- `manifest.json` is the only unlisted file. Diagnostic JSON and helper data
+  such as `cli-missing-files.json` are ordinary listed artifacts.
+- `missing.exe`, `missing-root.der`, `missing.crl`, and
+  `missing-parse-input.exe` are inputs that cases name because they do not
+  exist. Each must stay absent and remain used by a case.
+
+Artifacts without provenance of their own inherit the manifest-level default
+(repository-generated, Apache-2.0). Two relationships are deliberately not
+enforced: an artifact may list a case that reaches it only indirectly (for
+example an issuer certificate embedded in the signed input), and an artifact
+need not list every case that reads it. Each rule has a test that breaks a copy
+of the committed data and requires exactly that rule to fail.
+
 ## Invariant inventory
 
 See [coverage by invariant](coverage-inventory.md) and the maintained

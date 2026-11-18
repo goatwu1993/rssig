@@ -46,6 +46,10 @@ name = "fixtures"
 required-features = ["verify"]
 
 [[test]]
+name = "manifest"
+required-features = ["verify"]
+
+[[test]]
 name = "parse"
 required-features = ["verify"]
 
