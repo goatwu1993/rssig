@@ -229,14 +229,13 @@ timestamps, and local CRL validation already exist.
   - [x] **Unsupported-policy errors.** Every applicable CRL that cannot be
     used is `invalid_crl` with a `details.reason` listed in
     [problems](docs/problems.md). Limit: reasons without a fixture are SEC-19.
-  - [ ] **Freshness boundaries.** Stale CRLs are pinned
-    (`sec10-root-expired-crl-still-rejected`, `expired-crl`,
-    `bad-crl-not-yet-valid`), but no case sets the validation time exactly on
-    a CRL's thisUpdate or nextUpdate. Observed by hand with `good.crl`:
-    nextUpdate equal to the validation time is `crl_expired`, one second
-    earlier is accepted. The thisUpdate edge is unobserved; the code rejects
-    only a thisUpdate later than the validation time. Add cases on an
-    untimestamped signer for both edges of both fields.
+  - [x] **Freshness boundaries.** A CRL is usable from its thisUpdate
+    (inclusive) until one second before its nextUpdate: a validation time one
+    second before thisUpdate is `crl_not_yet_valid`, and one equal to
+    nextUpdate is `crl_expired`. Pinned on an untimestamped signer.
+    `sec10-crl-this-update-one-second-ahead`, `sec10-crl-this-update-exact`,
+    `sec10-crl-next-update-one-second-left`, `sec10-crl-next-update-exact`.
+    Whole seconds only; CRL times carry no fractions.
   - [ ] **`--fetch-crls` coverage.** `has_crl_for` treats any supplied CRL
     with the certificate's issuer name as coverage, so a CRL that is not
     authoritative for the certificate suppresses fetching its listed
@@ -274,8 +273,9 @@ timestamps, and local CRL validation already exist.
   - The intended failing run was not observed for
     `sec10-root-crl-malformed-aki` (fix written before the fixture) or
     `sec10-root-delta-expired-crl-reports-feature` (case added after the
-    reorder). The distribution-point, cRLSign, revoked-intermediate and
-    AKI issuer/serial cases pinned behavior that already held.
+    reorder). The distribution-point, cRLSign, revoked-intermediate, AKI
+    issuer/serial and freshness-boundary cases pinned behavior that already
+    held.
   - Validated on macOS locally and on Linux in CI. No Windows comparison
     (DEFER-01).
   Known limitations of the behavior above, each tracked in its own item:

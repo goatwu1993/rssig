@@ -185,7 +185,11 @@
         "sec03-report",
         "sec03-batch-input",
         "sec03-parse-input",
-        "sec03-batch-count"
+        "sec03-batch-count",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -222,7 +226,11 @@
         "sec10-root-aki-issuer-serial-crl-name-matched",
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -251,7 +259,13 @@
       "file": "root.der",
       "sha256": "240a0d897e8088d327bf395e4b083d3ef395189a3e001e6f367a01b91cbae844",
       "bytes": 362,
-      "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store."
+      "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store.",
+      "cases": [
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
+      ]
     },
     {
       "file": "unrelated-root.der",

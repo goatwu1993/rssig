@@ -377,7 +377,11 @@
         "sec10-root-idp-user-certs-crl-unsupported",
         "sec10-root-idp-ca-certs-crl-unsupported",
         "sec10-root-aki-issuer-serial-crl-name-matched",
-        "sec10-root-no-crl-sign-accepted"
+        "sec10-root-no-crl-sign-accepted",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -794,14 +798,16 @@
         "sec10-root-aki-issuer-serial-crl-name-matched",
         "sec10-root-expired-crl-still-rejected",
         "sec10-root-aki-crl-still-rejected",
-        "sec10-root-signed-other-aki-crl-still-rejected"
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-crl-next-update-exact"
       ],
       "gap": ""
     },
     "crl_not_yet_valid": {
       "cases": [
         "bad-crl-not-yet-valid",
-        "msi-bad-crl-not-yet-valid"
+        "msi-bad-crl-not-yet-valid",
+        "sec10-crl-this-update-one-second-ahead"
       ],
       "gap": ""
     },

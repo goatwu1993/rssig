@@ -32292,6 +32292,152 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-crl-this-update-one-second-ahead",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1799999899"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_not_yet_valid",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1799999899,
+                  "crl": {
+                    "this_update": 1799999900,
+                    "next_update": 1800001000
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-this-update-exact",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1799999900"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": null,
+                  "trust": {
+                    "validation_time": 1799999900,
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-next-update-one-second-left",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000999"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": null,
+                  "trust": {
+                    "validation_time": 1800000999,
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-next-update-exact",
+      "input": "good-pe64.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800001000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "validation_time": 1800001000,
+                  "crl": {
+                    "this_update": 1799999900,
+                    "next_update": 1800001000
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
