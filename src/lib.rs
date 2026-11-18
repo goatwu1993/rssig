@@ -28,6 +28,8 @@ pub mod domain;
 pub mod format;
 #[cfg(feature = "cli")]
 mod inspection;
+#[cfg(feature = "verify-core")]
+pub mod log;
 #[cfg(all(feature = "verify-core", feature = "msi"))]
 mod msi;
 #[cfg(feature = "verify-core")]
@@ -55,7 +57,7 @@ pub use domain::{SignatureReport, VerificationBundle, VerificationError};
 pub use trust::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind, TrustStore};
 #[cfg(feature = "verify-core")]
 pub use verify::{
-    RevocationPolicy, VerifyOptions, verify, verify_cab, verify_navx, verify_parsed_cab,
+    RevocationPolicy, Verifier, VerifyOptions, verify, verify_cab, verify_navx, verify_parsed_cab,
     verify_parsed_navx, verify_parsed_pe, verify_pe, verify_powershell, verify_powershell_xml,
     verify_rdp, verify_wsh,
 };

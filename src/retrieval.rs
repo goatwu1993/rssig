@@ -122,6 +122,33 @@ pub fn verify_with_crl_source(
     options: &VerifyOptions<'_>,
     source: &mut dyn CrlSource,
 ) -> Result<VerificationBundle, VerificationError> {
+    retrieve(bytes, filename, options, source, &Budget::default())
+}
+
+impl crate::verify::Verifier<'_> {
+    /// [`verify_with_crl_source`] with this verifier's logger, which also
+    /// receives each CRL request and response size.
+    pub fn verify_with_crl_source(
+        &self,
+        bytes: &[u8],
+        filename: Option<&str>,
+        source: &mut dyn CrlSource,
+    ) -> Result<VerificationBundle, VerificationError> {
+        let (options, logger) = self.parts();
+        let budget = Budget::with_logger(logger);
+        crate::verify::logged(&budget, options, || {
+            Ok(retrieve(bytes, filename, options, source, &budget)?)
+        })
+    }
+}
+
+fn retrieve(
+    bytes: &[u8],
+    filename: Option<&str>,
+    options: &VerifyOptions<'_>,
+    source: &mut dyn CrlSource,
+    budget: &Budget,
+) -> Result<VerificationBundle, VerificationError> {
     let base = options.trust.ok_or_else(|| {
         error(
             ErrorCode::Configuration,
@@ -135,12 +162,16 @@ pub fn verify_with_crl_source(
         ));
     }
     let format = crate::format::detect(bytes, filename)?;
-    let budget = Budget::default();
+    let log = &budget.log;
+    log.debug(
+        Stage::Revocation,
+        format_args!("CRL retrieval: verifying without revocation to discover distribution points"),
+    );
     let preliminary = VerifyOptions {
         check_revocation: false,
         ..*options
     };
-    let pending = verify_inner_budget(bytes, &preliminary, format, &budget).map_err(|e| {
+    let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })?;
     let mut certificates = Vec::new();
@@ -186,7 +217,7 @@ pub fn verify_with_crl_source(
                 .collect::<Vec<_>>();
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            if store.has_crl_for(&cert, &budget).map_err(|e| {
+            if store.has_crl_for(&cert, budget).map_err(|e| {
                 VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
             })? {
                 continue;
@@ -229,7 +260,19 @@ pub fn verify_with_crl_source(
                         1,
                     ));
                 }
+                log.info(
+                    Stage::Revocation,
+                    format_args!("requesting CRL {url:?} (at most {cap} bytes)"),
+                );
                 let fetched = source.fetch(&url, cap).map_err(|e| e.detail("url", &url))?;
+                log.debug(
+                    Stage::Revocation,
+                    format_args!(
+                        "CRL source returned {} bytes from {:?}; not yet authenticated",
+                        fetched.bytes.len(),
+                        fetched.final_url
+                    ),
+                );
                 if fetched.bytes.len() > cap {
                     return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
                 }
@@ -276,11 +319,18 @@ pub fn verify_with_crl_source(
                 }
             }
         }
+        log.debug(
+            Stage::Revocation,
+            format_args!(
+                "CRL retrieval: verifying again with required revocation and {} retrieved artifact(s)",
+                report.artifacts.len()
+            ),
+        );
         let final_options = VerifyOptions {
             trust: Some(&store),
             ..*options
         };
-        verify_inner_budget(bytes, &final_options, format, &budget).map_err(|e| {
+        verify_inner_budget(bytes, &final_options, format, budget).map_err(|e| {
             VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
         })
     })();

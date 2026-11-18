@@ -110,6 +110,8 @@ accept trust or verification policy flags. The CLI requires `std`; the base pars
 See [the module responsibility map](docs/architecture.md) and
 [the library boundary and compatibility notes](docs/library.md), including
 opaque certificate reporting and fractional timestamp precision.
+Embedders can receive verification diagnostics through an [injected
+logger](docs/logging.md); the engine and the `rssig` binary log nothing by default.
 
 ## Windows file formats
 
