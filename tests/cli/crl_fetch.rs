@@ -402,7 +402,7 @@ fn sec10_fetch_follows_the_verification_result() {
         Option<(&'static str, &'static str)>,
     );
     #[rustfmt::skip]
-    let rows: [Row; 5] = [
+    let rows: [Row; 6] = [
         // A CRL with the issuer's name from another key is excluded by verification,
         // so it does not stand in for the listed point.
         ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
@@ -417,6 +417,10 @@ fn sec10_fetch_follows_the_verification_result() {
         // A name-matching CRL that is not authoritative for the signer: its point is
         // requested second, after the certainly missing one did not settle the status.
         ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec10-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "sec10-issuer-idp-match.crl")], &[CA_POINT, LEAF_POINT], None),
+        // The signer is covered and its issuer is not; both issuers are named, so both
+        // points are requested in the second step. The signer's request fails, which
+        // yields no evidence but does not abort: verification decides, and succeeds.
+        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "sec10-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[LEAF_POINT, CA_POINT], None),
     ];
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
@@ -463,15 +467,20 @@ fn sec10_fetch_follows_the_verification_result() {
             assert_eq!(code, 0, "{label}: {result}");
             let revocation = &result["signatures"][0]["trust"]["revocation"];
             assert_eq!(revocation["status"], "good", "{label}");
+            // Only answered requests become artifacts.
+            let answered: Vec<_> = requests
+                .iter()
+                .filter(|url| responses.iter().any(|(known, _)| known == *url))
+                .collect();
             let artifacts = result["crl_retrieval"]["artifacts"].as_array().unwrap();
-            assert_eq!(artifacts.len(), requests.len(), "{label}");
-            for (artifact, request) in artifacts.iter().zip(requests) {
-                assert_eq!(artifact["url"], *request, "{label}");
+            assert_eq!(artifacts.len(), answered.len(), "{label}");
+            for (artifact, request) in artifacts.iter().zip(&answered) {
+                assert_eq!(artifact["url"], **request, "{label}");
             }
             // Supplied CRLs stay loaded beside the fetched ones.
             assert_eq!(
                 revocation["crls"].as_array().unwrap().len(),
-                supplied.len() + requests.len(),
+                supplied.len() + answered.len(),
                 "{label}"
             );
         }

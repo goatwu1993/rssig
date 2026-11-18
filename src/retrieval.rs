@@ -1,6 +1,7 @@
 //! Opt-in CRL discovery and injected artifact retrieval. No fetched artifact is a trust anchor.
 mod http;
 use crate::{
+    TrustStore,
     domain::*,
     verify::{VerifyOptions, budget::Budget, verify_inner_budget},
 };
@@ -150,6 +151,137 @@ impl crate::verify::Verifier<'_> {
     }
 }
 
+/// Retrieval state for one verification: the store that grows with fetched
+/// CRLs and the provenance report.
+struct Retrieval<'s, 'b, 'l> {
+    base: &'s TrustStore,
+    store: TrustStore,
+    report: CrlRetrievalReport,
+    downloaded: usize,
+    fetched_urls: BTreeSet<String>,
+    budget: &'b Budget<'l>,
+}
+
+fn crl_internal(e: anyhow::Error) -> VerificationError {
+    VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
+}
+
+impl Retrieval<'_, '_, '_> {
+    /// Request every listed point of `cert`. A point that cannot be
+    /// discovered, is denied by transport policy, or whose request fails
+    /// yields no evidence and is recorded in `skipped`: whether that matters
+    /// is decided by the next verification, which still requires evidence for
+    /// every certificate. Work and size limits, and undecodable responses, are
+    /// final. Returns whether anything was added.
+    fn fetch(
+        &mut self,
+        cert: &Certificate,
+        source: &mut dyn CrlSource,
+        skipped: &mut Option<VerificationError>,
+    ) -> Result<bool, VerificationError> {
+        let log = &self.budget.log;
+        let mut added = false;
+        let urls = match crl_distribution_points(cert) {
+            Ok(urls) => urls,
+            Err(e) => {
+                skipped.get_or_insert(e);
+                return Ok(false);
+            }
+        };
+        for raw in urls {
+            let url = match http::checked_url(&raw) {
+                Ok(url) => url.to_string(),
+                Err(e) => {
+                    skipped.get_or_insert(e);
+                    continue;
+                }
+            };
+            if !self.fetched_urls.insert(url.clone()) {
+                continue;
+            }
+            if self.report.artifacts.len() >= MAX_REQUESTS {
+                return Err(limit(
+                    "crl_requests",
+                    MAX_REQUESTS,
+                    self.report.artifacts.len(),
+                    1,
+                ));
+            }
+            if self.store.retrieval_crl_count() >= 64 {
+                return Err(limit(
+                    "retrieval_crl_artifacts",
+                    64,
+                    self.store.retrieval_crl_count(),
+                    1,
+                ));
+            }
+            let used = self.base.retrieval_bytes() + self.downloaded;
+            let cap = MAX_CRL_BYTES.min(MAX_TOTAL_BYTES.saturating_sub(used));
+            if cap == 0 {
+                return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
+            }
+            log.info(
+                Stage::Revocation,
+                format_args!("requesting CRL {url:?} (at most {cap} bytes)"),
+            );
+            let fetched = match source.fetch(&url, cap) {
+                Ok(fetched) => fetched,
+                Err(e) => {
+                    skipped.get_or_insert(e.detail("url", &url));
+                    continue;
+                }
+            };
+            log.debug(
+                Stage::Revocation,
+                format_args!(
+                    "CRL source returned {} bytes from {:?}; not yet authenticated",
+                    fetched.bytes.len(),
+                    fetched.final_url
+                ),
+            );
+            if fetched.bytes.len() > cap {
+                return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
+            }
+            if let Err(e) = http::checked_url(&fetched.final_url) {
+                skipped.get_or_insert(e.detail("url", &url));
+                continue;
+            }
+            for _ in 0..8 {
+                self.budget
+                    .decoded_bytes
+                    .charge(fetched.bytes.len())
+                    .map_err(crl_internal)?;
+            }
+            self.budget
+                .hash_bytes
+                .charge(fetched.bytes.len())
+                .map_err(crl_internal)?;
+            self.downloaded += fetched.bytes.len();
+            self.report.artifacts.push(CrlRetrievalArtifact {
+                url,
+                final_url: fetched.final_url,
+                sha256: hex(&crate::crypto::Hash::Sha256.digest(&fetched.bytes)),
+                bytes: fetched.bytes.len(),
+            });
+            let prior = self.store.retrieval_crl_count();
+            self.store.add_crl(&fetched.bytes).map_err(|e| {
+                error(
+                    ErrorCode::InvalidCrl,
+                    format!("decoding retrieved CRL: {e:#}"),
+                )
+            })?;
+            // A PEM response may contain multiple distinct CRLs. Bound the
+            // retained store after deduplication, before verification.
+            let loaded = self.store.retrieval_crl_count();
+            if loaded > 64 {
+                return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
+            }
+            added = true;
+        }
+        Ok(added)
+    }
+}
+
 fn retrieve(
     bytes: &[u8],
     filename: Option<&str>,
@@ -173,53 +305,42 @@ fn retrieve(
     let log = &budget.log;
     let internal =
         |e| VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate);
-    // With supplied CRLs the verifier decides whether anything is missing:
-    // a good result needs no request and any failure but unknown status is
-    // final. Without any, the status is already known to be unknown.
-    let mut unknown = None;
-    if base.retrieval_crl_count() > 0 {
-        match verify_inner_budget(bytes, options, format, budget).map_err(internal) {
-            Ok(mut verified) => {
-                verified.crl_retrieval = Some(CrlRetrievalReport::default());
-                return Ok(verified);
-            }
-            Err(e) if e.code != ErrorCode::RevocationUnknown => {
-                return Err(e.detail("crl_retrieval", CrlRetrievalReport::default()));
-            }
-            Err(e) => unknown = Some(e),
-        }
-    }
-    log.debug(
-        Stage::Revocation,
-        format_args!("CRL retrieval: verifying without revocation to discover distribution points"),
-    );
-    let preliminary = VerifyOptions {
-        check_revocation: false,
-        ..*options
+    let mut state = Retrieval {
+        base,
+        store: base.clone(),
+        report: CrlRetrievalReport::default(),
+        downloaded: 0,
+        fetched_urls: BTreeSet::new(),
+        budget,
     };
-    let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(internal)?;
-    let mut selected = Vec::new();
-    collect(&pending, &mut selected);
-    let mut store = base.clone();
-    let mut report = CrlRetrievalReport::default();
-    let mut downloaded = 0usize;
     let result = (|| {
-        if store.retrieval_bytes() > MAX_TOTAL_BYTES {
+        if base.retrieval_bytes() > MAX_TOTAL_BYTES {
             return Err(limit(
                 "retrieval_trust_bytes",
                 MAX_TOTAL_BYTES,
                 0,
-                store.retrieval_bytes(),
+                base.retrieval_bytes(),
             ));
         }
+        log.debug(
+            Stage::Revocation,
+            format_args!(
+                "CRL retrieval: verifying without revocation to discover distribution points"
+            ),
+        );
+        let preliminary = VerifyOptions {
+            check_revocation: false,
+            ..*options
+        };
+        let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(internal)?;
+        let mut selected = Vec::new();
+        collect(&pending, &mut selected);
         // A certificate whose issuer no supplied CRL even names certainly
         // lacks evidence, so its points are requested first. The others are
-        // requested only if the status is still unknown after that: the
-        // verifier does not say which certificate lacked evidence, and a
+        // requested only if verification then still reports unknown status:
+        // the verifier does not say which certificate lacked evidence, and a
         // name-matching CRL may or may not be authoritative for it.
-        let named = base.crl_issuers(budget).map_err(|e| {
-            VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
-        })?;
+        let named = base.crl_issuers(budget).map_err(crl_internal)?;
         let mut seen = BTreeSet::new();
         let mut stages = [Vec::new(), Vec::new()];
         for cert in selected {
@@ -243,129 +364,37 @@ fn retrieve(
                 .collect::<Vec<_>>();
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            let later = named.contains(&cert.tbs_certificate.issuer);
-            stages[usize::from(later)].push(cert);
+            let named_issuer = named.contains(&cert.tbs_certificate.issuer);
+            stages[usize::from(named_issuer)].push(cert);
         }
-        let mut fetched_urls = BTreeSet::new();
-        for certificates in stages {
-            let before = report.artifacts.len();
-            for cert in certificates {
-                for raw in crl_distribution_points(&cert)? {
-                    let url = http::checked_url(&raw)?.to_string();
-                    if !fetched_urls.insert(url.clone()) {
-                        continue;
-                    }
-                    if report.artifacts.len() >= MAX_REQUESTS {
-                        return Err(limit(
-                            "crl_requests",
-                            MAX_REQUESTS,
-                            report.artifacts.len(),
-                            1,
-                        ));
-                    }
-                    if store.retrieval_crl_count() >= 64 {
-                        return Err(limit(
-                            "retrieval_crl_artifacts",
-                            64,
-                            store.retrieval_crl_count(),
-                            1,
-                        ));
-                    }
-                    let available =
-                        MAX_TOTAL_BYTES.saturating_sub(base.retrieval_bytes() + downloaded);
-                    let cap = MAX_CRL_BYTES.min(available);
-                    if cap == 0 {
-                        return Err(limit(
-                            "retrieval_trust_bytes",
-                            MAX_TOTAL_BYTES,
-                            base.retrieval_bytes() + downloaded,
-                            1,
-                        ));
-                    }
-                    log.info(
-                        Stage::Revocation,
-                        format_args!("requesting CRL {url:?} (at most {cap} bytes)"),
-                    );
-                    let fetched = source.fetch(&url, cap).map_err(|e| e.detail("url", &url))?;
-                    log.debug(
-                        Stage::Revocation,
-                        format_args!(
-                            "CRL source returned {} bytes from {:?}; not yet authenticated",
-                            fetched.bytes.len(),
-                            fetched.final_url
-                        ),
-                    );
-                    if fetched.bytes.len() > cap {
-                        return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
-                    }
-                    http::checked_url(&fetched.final_url)?;
-                    for _ in 0..8 {
-                        budget
-                            .decoded_bytes
-                            .charge(fetched.bytes.len())
-                            .map_err(|e| {
-                                VerificationError::from_internal(
-                                    e,
-                                    ErrorCode::InvalidCrl,
-                                    Stage::Revocation,
-                                )
-                            })?;
-                    }
-                    budget.hash_bytes.charge(fetched.bytes.len()).map_err(|e| {
-                        VerificationError::from_internal(
-                            e,
-                            ErrorCode::InvalidCrl,
-                            Stage::Revocation,
-                        )
-                    })?;
-                    downloaded += fetched.bytes.len();
-                    report.artifacts.push(CrlRetrievalArtifact {
-                        url,
-                        final_url: fetched.final_url,
-                        sha256: hex(&crate::crypto::Hash::Sha256.digest(&fetched.bytes)),
-                        bytes: fetched.bytes.len(),
-                    });
-                    let prior_crls = store.retrieval_crl_count();
-                    store.add_crl(&fetched.bytes).map_err(|e| {
-                        error(
-                            ErrorCode::InvalidCrl,
-                            format!("decoding retrieved CRL: {e:#}"),
-                        )
-                    })?;
-                    // A PEM response may contain multiple distinct CRLs. Bound the
-                    // retained store after deduplication, before final verification.
-                    let loaded_crls = store.retrieval_crl_count();
-                    if loaded_crls > 64 {
-                        return Err(limit(
-                            "retrieval_crl_artifacts",
-                            64,
-                            prior_crls,
-                            loaded_crls - prior_crls,
-                        ));
-                    }
-                }
-            }
-            if report.artifacts.len() == before {
-                continue;
-            }
-            log.debug(
-              Stage::Revocation,
-              format_args!(
-                  "CRL retrieval: verifying with required revocation and {} retrieved artifact(s)",
-                  report.artifacts.len()
-              ),
-          );
-            let with_fetched = VerifyOptions {
-                trust: Some(&store),
-                ..*options
-            };
-            match verify_inner_budget(bytes, &with_fetched, format, budget).map_err(internal) {
-                Err(e) if e.code == ErrorCode::RevocationUnknown => unknown = Some(e),
+        let mut skipped = None;
+        let mut verdict = None;
+        let [uncovered, named_only] = stages;
+        let mut added = false;
+        for cert in &uncovered {
+            added |= state.fetch(cert, source, &mut skipped)?;
+        }
+        // Verify with revocation required: after the first step's fetches,
+        // or with the supplied CRLs alone. A good result or any failure but
+        // unknown status is final. With no CRL at all the status is unknown.
+        if added || state.store.retrieval_crl_count() > 0 {
+            match verify_with(bytes, options, &state.store, format, budget) {
+                Err(e) if e.code == ErrorCode::RevocationUnknown => verdict = Some(e),
                 result => return result,
             }
         }
-        // Nothing listed could be fetched, or what was fetched did not settle it.
-        Err(unknown.take().unwrap_or_else(|| {
+        let mut added = false;
+        for cert in &named_only {
+            added |= state.fetch(cert, source, &mut skipped)?;
+        }
+        if added {
+            match verify_with(bytes, options, &state.store, format, budget) {
+                Err(e) if e.code == ErrorCode::RevocationUnknown => verdict = Some(e),
+                result => return result,
+            }
+        }
+        // Still unknown. A skipped point says why more specifically.
+        Err(skipped.or(verdict).unwrap_or_else(|| {
             error(
                 ErrorCode::RevocationUnknown,
                 "no CRL was supplied and no selected certificate lists a CRL distribution point",
@@ -374,11 +403,35 @@ fn retrieve(
     })();
     match result {
         Ok(mut verified) => {
-            verified.crl_retrieval = Some(report);
+            verified.crl_retrieval = Some(state.report);
             Ok(verified)
         }
-        Err(e) => Err(e.detail("crl_retrieval", report)),
+        Err(e) => Err(e.detail("crl_retrieval", state.report)),
     }
+}
+
+/// One verification with revocation required against `store`.
+fn verify_with(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    store: &TrustStore,
+    format: crate::format::Format,
+    budget: &Budget,
+) -> Result<VerificationBundle, VerificationError> {
+    budget.log.debug(
+        Stage::Revocation,
+        format_args!(
+            "CRL retrieval: verifying with required revocation and {} loaded CRL(s)",
+            store.retrieval_crl_count()
+        ),
+    );
+    let options = VerifyOptions {
+        trust: Some(store),
+        ..*options
+    };
+    verify_inner_budget(bytes, &options, format, budget).map_err(|e| {
+        VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+    })
 }
 
 #[cfg(test)]

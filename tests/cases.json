@@ -33202,6 +33202,63 @@
           "http://crl.invalid/sec10-a.crl"
         ]
       }
+    },
+    {
+      "id": "sec10-fetch-covered-point-failure-skipped",
+      "input": "sec10-chain-crl-dp.exe",
+      "crl_responses": {
+        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-root-idp-user.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.invalid/sec10-issuer.crl",
+                    "final_url": "http://crl.invalid/sec10-issuer.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
+                    "bytes": 180
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl",
+          "http://crl.invalid/sec10-issuer.crl"
+        ]
+      }
     }
   ]
 }

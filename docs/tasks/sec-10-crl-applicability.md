@@ -108,7 +108,8 @@ One box per item in the scope above.
   `sec10-fetch-ca-user-scope-idp-fetches-listed-point`,
   `sec10-fetch-excluded-name-match-fetches-listed-point`,
   `sec10-fetch-covered-signer-point-not-requested`,
-  `sec10-fetch-name-matched-signer-point-requested-second`, and the
+  `sec10-fetch-name-matched-signer-point-requested-second`,
+  `sec10-fetch-covered-point-failure-skipped`, and the
   `sec10-fetch-*-not-fetched` controls; named tests in
   `tests/cli/crl_fetch.rs`.
   A supplied CRL that verification rejects is reported as it is offline and
@@ -178,13 +179,14 @@ Change these only with a new decision and paired fixtures.
   intended reason each.
 - `--fetch-crls` requests points in two steps (certificates whose issuer no
   supplied CRL names, then the rest), pinned on `sec10-chain-crl-dp.exe` by
-  `sec10-fetch-covered-signer-point-not-requested` and
-  `sec10-fetch-name-matched-signer-point-requested-second`; the first failed
-  before the two-step change. In the second step a certificate that a supplied
-  CRL does cover can still be fetched for when another name-matched
-  certificate is the one lacking evidence; no fixture has that shape. Nor is a
-  certificate mixing a plain URI point with an unsupported one pinned, which
-  discovery denies (SEC-17).
+  `sec10-fetch-covered-signer-point-not-requested`,
+  `sec10-fetch-name-matched-signer-point-requested-second` and
+  `sec10-fetch-covered-point-failure-skipped`; the first and last failed
+  before the change that introduced them. In the second step a certificate
+  that a supplied CRL does cover can still be fetched for; a failed request is
+  skipped, but a fetched CRL that is stale or unusable still fails the run
+  closed. No fixture has that shape. A certificate mixing a plain URI point
+  with an unsupported one yields no evidence at all (SEC-17).
 - Validated on macOS locally and on Linux in CI. No Windows comparison
   (DEFER-01).
 

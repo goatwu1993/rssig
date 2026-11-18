@@ -291,19 +291,15 @@ timestamps, and local CRL validation already exist.
   budget effect for large CRLs.
   `--fetch-crls` no longer restates the authority rule: retrieval follows the
   verifier's result (see [CRL retrieval](docs/crl-retrieval.md)), which removed
-  the per-certificate CRL decoding added in PR #55. What remains: a run whose
-  supplied CRLs leave the status unknown verifies up to four times against one
-  budget, and no case exhausts it on that path. Points are requested in two
-  steps (certificates whose issuer no supplied CRL names, then the rest); in
-  the second step a certificate that a supplied CRL already covers can still
-  be fetched for, and then an unreachable, denied or stale point of its fails
-  the run, because the verifier does not report which certificate lacked
-  evidence. A certificate with no listed point and no supplied CRL does not
-  stop the run before other certificates' points are requested. Discovery
-  (`crl_distribution_points`) fails on the first point with reasons, a
-  cRLIssuer or a non-URI name, so a certificate that also lists a plain URI
-  point is `crl_fetch_denied` and that URI is never requested. No fixture has
-  these shapes.
+  the per-certificate CRL decoding added in PR #55. What remains: a run
+  verifies two or three times against one budget, and no case exhausts it on
+  that path. In the second retrieval step a certificate that a supplied CRL
+  already covers can still be fetched for; a failed request is skipped, but a
+  fetched CRL that is stale or unusable fails the run closed, because the
+  verifier does not report which certificate lacked evidence. Discovery
+  (`crl_distribution_points`) gives up on a certificate at its first point with
+  reasons, a cRLIssuer or a non-URI name, so a plain URI point beside it is
+  never requested. No fixture has these shapes.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another

@@ -425,7 +425,8 @@
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {

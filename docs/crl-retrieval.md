@@ -11,37 +11,40 @@ rssig verify application.exe --fetch-crls --no-system-roots --roots roots.pem
 `--fetch-crls` is explicit and conflicts with `--integrity-only` and
 `--no-revocation`. Existing verification entry points and ordinary CLI invocations
 remain offline. Local `--crl` files can be combined with retrieval. Retrieval
-follows the verifier's own result: the input is verified with the supplied CRLs
-and required revocation, and distribution points are fetched only when that
-result is `revocation_unknown`. A good result needs no request. Any other
-failure (a stale, forged, unusable or revoking local CRL) is returned as it
-would be without `--fetch-crls`; a bad local artifact is not silently replaced
-or ignored, and nothing is fetched for a verification that cannot succeed. No
-CRL applicability rule is restated for retrieval, so a supplied CRL suppresses
-a fetch exactly when verification accepts it as evidence (`sec10-fetch-*`).
-When the result is `revocation_unknown`, points are requested in two steps.
-First those of selected certificates whose issuer no supplied CRL even names:
-such a certificate certainly lacks evidence. Verification is repeated, and only
-if the status is still unknown are the points of the remaining certificates
-requested, because a CRL that names the issuer may or may not be authoritative
-and the verifier does not say which certificate lacked evidence. A certificate
-covered by a supplied CRL is therefore not fetched for while another chain
-lacks one (`sec10-fetch-covered-signer-point-not-requested`), but it is in the
-second step if a name-matching CRL elsewhere was not enough
-(`sec10-fetch-name-matched-signer-point-requested-second`). Supplied CRLs stay
-loaded beside the fetched ones.
+never decides whether a CRL applies; verification does. No CRL applicability
+rule is restated for retrieval.
 
-With supplied CRLs the implementation first verifies with revocation required;
-a good result or any failure but unknown status ends there, in one pass. Else
-it verifies all signatures and candidate trust paths with revocation omitted
-internally and discovers distribution points on selected leaf, intermediate
-and timestamp certificates, including bundle children; configured anchors are
-excluded. It retrieves CRLs in the two steps above and verifies with
-revocation required after each step that fetched something. Success is only
-ever the result of a pass with revocation required. A run needs one pass when
-supplied CRLs settle it, two when none are supplied, and up to four when
-supplied CRLs leave the status unknown. All passes share SEC-02 work allowances,
-so retrieval mode consumes additional
+1. Verify signatures and candidate trust paths with revocation omitted, and
+   collect the selected leaf, intermediate and timestamp certificates,
+   including bundle children; configured anchors are excluded. Integrity and
+   trust failures end the run here, before any request.
+2. Request the listed points of selected certificates whose issuer no supplied
+   CRL even names: such a certificate certainly lacks evidence.
+3. Verify with revocation required, against the supplied and any fetched CRLs
+   (skipped when there is no CRL at all). A good result, or any failure but
+   `revocation_unknown`, is final: a stale, forged, unusable or revoking local
+   CRL is reported as it is without `--fetch-crls`, not replaced or ignored.
+4. If the status is still unknown, request the listed points of the remaining
+   certificates, whose issuer a supplied CRL names but which may not be
+   authoritative for them, and verify again.
+
+A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
+denied by transport policy, or whose request fails yields no evidence; it does
+not end the run, because the next verification still requires evidence for
+every selected certificate. If the status stays unknown, the first such failure
+is returned (`crl_fetch_denied`, `crl_fetch_failed`, ...) instead of the bare
+`revocation_unknown`. Work and size limits and undecodable responses end the
+run. A certificate that a supplied CRL covers is not fetched for while another
+chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
+in step 4 if a name-matching CRL elsewhere was not enough
+(`sec10-fetch-name-matched-signer-point-requested-second`), and a failure of
+that request does not matter if verification then succeeds
+(`sec10-fetch-covered-point-failure-skipped`). Supplied CRLs stay loaded beside
+the fetched ones.
+
+Success is only ever the result of a pass with revocation required. A run
+verifies two times, or three when step 4 fetches something. All passes share
+SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
 search would prefer a different path. Missing embedded intermediates still fail;
@@ -49,9 +52,11 @@ AIA issuer fetching is a separate follow-up.
 
 Distribution points follow the [RFC 5280 CRLDistributionPoints structure](https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.13).
 This initial profile accepts full URI names for direct, complete CRLs. Relative
-names, reason partitions, indirect CRL issuers and non-URI names are rejected
-when discovery is required. All declared URIs must satisfy transport policy;
-unsupported alternatives are not silently skipped. Successfully retrieving an
+names, reason partitions, indirect CRL issuers and non-URI names are not
+discovered: a certificate with such a point yields no fetched evidence, and if
+that leaves the status unknown the run fails with `crl_fetch_denied`. One such
+point makes the whole certificate's points undiscovered, including a plain URI
+beside it. Successfully retrieving an
 artifact never implies that its signature or revocation status is valid.
 
 ## Provider boundary

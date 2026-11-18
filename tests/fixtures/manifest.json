@@ -7552,7 +7552,8 @@
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-ca-ca-scope-idp-not-fetched",
         "sec10-chain-crl-dp-full-crls",
-        "sec10-fetch-covered-signer-point-not-requested"
+        "sec10-fetch-covered-signer-point-not-requested",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {
@@ -7915,7 +7916,8 @@
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {
@@ -8017,7 +8019,8 @@
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {
@@ -9672,7 +9675,8 @@
       "cases": [
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {
@@ -9769,7 +9773,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point"
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-covered-point-failure-skipped"
       ]
     },
     {
