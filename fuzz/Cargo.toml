@@ -75,3 +75,17 @@ path = "fuzz_targets/verify_text.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "verify_trusted"
+path = "fuzz_targets/verify_trusted.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "trust_loading"
+path = "fuzz_targets/trust_loading.rs"
+test = false
+doc = false
+bench = false

@@ -19,7 +19,7 @@ format:
 	$(CARGO) fmt
 
 .PHONY: lint
-lint:
+lint: fuzz-lint
 	$(CARGO) fmt --check
 	$(CARGO) clippy --all-targets --locked -- -D warnings
 
@@ -44,27 +44,52 @@ check-coverage-tools:
 build:
 	@$(CARGO) build --locked
 
-# Fuzzing is optional and separate from `make test`: it needs a nightly
-# toolchain and cargo-fuzz. See docs/fuzzing.md.
+# Fuzzing is optional and separate from `make test`: it needs rustup, a nightly
+# toolchain and cargo-fuzz. See docs/fuzzing.md. fuzz/targets.txt is the single
+# target list; CI runs these same targets.
 FUZZ_SECONDS ?= 30
-FUZZ_TARGETS := parse_cms parse_pe parse_cab_navx parse_msi parse_appx parse_text verify_binary verify_text
 FUZZ_FLAGS ?= -max_len=131072 -timeout=10 -rss_limit_mb=2048
+# `rustup run` works whichever cargo is first on PATH, including Homebrew's.
+FUZZ_CARGO ?= rustup run nightly cargo
+# Name the host target: a prebuilt (musl) cargo-fuzz otherwise defaults to a
+# musl target, which the address sanitizer cannot use.
+FUZZ_HOST ?= $(shell rustup run nightly rustc -vV 2>/dev/null | sed -n 's/^host: //p')
+FUZZ_TARGETS ?= $(shell sed -e 's/\#.*//' -e '/^[[:space:]]*$$/d' fuzz/targets.txt | cut -d' ' -f1)
+
+.PHONY: fuzz-check
+fuzz-check:
+	./fuzz/check.sh
+
+.PHONY: fuzz-lint
+fuzz-lint: fuzz-check
+	$(CARGO) fmt --check --manifest-path fuzz/Cargo.toml
+	$(CARGO) clippy --manifest-path fuzz/Cargo.toml --locked -- -D warnings
 
 .PHONY: fuzz-seed
 fuzz-seed:
 	./fuzz/seed-corpus.sh
 
+# Run every target even after a failure, then report all that failed.
 .PHONY: fuzz
 fuzz: check-fuzz-tools fuzz-seed
-	@set -e; for target in $(FUZZ_TARGETS); do \
+	@failed=; for target in $(FUZZ_TARGETS); do \
 		echo "== $$target ($(FUZZ_SECONDS)s)"; \
-		$(CARGO) +nightly fuzz run $$target -- -max_total_time=$(FUZZ_SECONDS) $(FUZZ_FLAGS); \
+		$(FUZZ_CARGO) fuzz run --target $(FUZZ_HOST) $$target -- \
+			-max_total_time=$(FUZZ_SECONDS) $(FUZZ_FLAGS) || failed="$$failed $$target"; \
+	done; \
+	if [ -n "$$failed" ]; then echo "fuzz targets failed:$$failed"; exit 1; fi
+
+# Shrink each local corpus to the inputs that still add coverage.
+.PHONY: fuzz-cmin
+fuzz-cmin: check-fuzz-tools
+	@set -e; for target in $(FUZZ_TARGETS); do \
+		$(FUZZ_CARGO) fuzz cmin --target $(FUZZ_HOST) $$target -- $(FUZZ_FLAGS); \
 	done
 
 .PHONY: check-fuzz-tools
 check-fuzz-tools:
-	@$(CARGO) +nightly fuzz --version >/dev/null 2>&1 || { \
-		echo "Fuzzing requires a nightly toolchain and cargo-fuzz. Install with:"; \
+	@$(FUZZ_CARGO) fuzz --version >/dev/null 2>&1 || { \
+		echo "Fuzzing requires rustup, a nightly toolchain and cargo-fuzz. Install with:"; \
 		echo "  rustup toolchain install nightly --profile minimal"; \
 		echo "  cargo install cargo-fuzz --version 0.13.2 --locked"; \
 		exit 1; \
