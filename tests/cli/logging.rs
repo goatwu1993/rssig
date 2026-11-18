@@ -105,12 +105,13 @@ fn cli_logger_is_not_used_for_argument_errors_or_parse() {
 fn cli_logger_and_crl_source_combine_and_log_each_request() {
     struct Source(Vec<u8>);
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            Ok(rssig::retrieval::CrlResponse::new(self.0.clone()).with_final_url(url))
+            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
+                Ok(rssig::retrieval::SourcedCrl::new(self.0.clone()))
+            }))
         }
     }
     let (input, root) = (fixture("good-crl-discovery.exe"), fixture("root.der"));

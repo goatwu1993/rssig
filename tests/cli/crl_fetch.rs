@@ -42,14 +42,15 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
         calls: usize,
     }
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            assert_eq!(url, "http://crl.example.invalid/test.crl");
-            self.calls += 1;
-            Ok(rssig::retrieval::CrlResponse::new(self.bytes.clone()).with_final_url(url))
+            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
+                assert_eq!(url, "http://crl.example.invalid/test.crl");
+                self.calls += 1;
+                Ok(rssig::retrieval::SourcedCrl::new(self.bytes.clone()))
+            }))
         }
     }
     for (crl, expected) in [
@@ -108,12 +109,13 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
 fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
     struct NoCalls;
     impl rssig::retrieval::CrlSource for NoCalls {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let _ = request;
-            panic!("supplied CRL or offline mode must not call the provider");
+            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
+                panic!("supplied CRL or offline mode must not call the provider");
+            }))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -169,13 +171,14 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
         calls: usize,
     }
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            self.calls += 1;
-            Ok(rssig::retrieval::CrlResponse::new(self.bytes.clone()).with_final_url(url))
+            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
+                self.calls += 1;
+                Ok(rssig::retrieval::SourcedCrl::new(self.bytes.clone()))
+            }))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -252,16 +255,16 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         requests: Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            self.requests.push(url.into());
-            Ok(rssig::retrieval::CrlResponse::new(
-                self.response.clone().expect("unexpected provider call"),
-            )
-            .with_final_url(url))
+            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
+                self.requests.push(url.into());
+                Ok(rssig::retrieval::SourcedCrl::new(
+                    self.response.clone().expect("unexpected provider call"),
+                ))
+            }))
         }
     }
     const LEAF: &str = "sec10-leaf-crl-dp.exe";
@@ -374,23 +377,24 @@ fn sec10_fetch_follows_the_verification_result() {
         requests: Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            self.requests.push(url.into());
-            let (_, bytes) = self
-                .responses
-                .iter()
-                .find(|(known, _)| *known == url)
-                .ok_or_else(|| {
-                    rssig::retrieval::CrlSourceError::new(
-                        rssig::domain::CrlSourceErrorKind::Failed,
-                        "no response for this URL",
-                    )
-                })?;
-            Ok(rssig::retrieval::CrlResponse::new(bytes.clone()).with_final_url(url))
+            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
+                self.requests.push(url.into());
+                let (_, bytes) = self
+                    .responses
+                    .iter()
+                    .find(|(known, _)| *known == url)
+                    .ok_or_else(|| {
+                        rssig::retrieval::CrlSourceError::new(
+                            rssig::domain::CrlSourceErrorKind::Failed,
+                            "no response for this URL",
+                        )
+                    })?;
+                Ok(rssig::retrieval::SourcedCrl::new(bytes.clone()))
+            }))
         }
     }
     const EXAMPLE_POINT: &str = "http://crl.example.invalid/test.crl";
@@ -511,16 +515,17 @@ fn sec10_fetch_follows_the_verification_result() {
 fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
     struct Unreachable(Vec<String>);
     impl rssig::retrieval::CrlSource for Unreachable {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            self.0.push(url.into());
-            Err(rssig::retrieval::CrlSourceError::new(
-                rssig::domain::CrlSourceErrorKind::Failed,
-                "unreachable",
-            ))
+            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
+                self.0.push(url.into());
+                Err(rssig::retrieval::CrlSourceError::new(
+                    rssig::domain::CrlSourceErrorKind::Failed,
+                    "unreachable",
+                ))
+            }))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -568,22 +573,22 @@ fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
 fn sec10_fetch_second_step_skips_a_bad_response() {
     struct Source(Vec<String>);
     impl rssig::retrieval::CrlSource for Source {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            self.0.push(url.into());
-            let file = if url.ends_with("sec10-a.crl") {
-                "sec06-root.der" // a certificate, not a CRL
-            } else {
-                "sec06-root.crl"
-            };
-            let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-            Ok(
-                rssig::retrieval::CrlResponse::new(std::fs::read(base.join(file)).unwrap())
-                    .with_final_url(url),
-            )
+            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
+                self.0.push(url.into());
+                let file = if url.ends_with("sec10-a.crl") {
+                    "sec06-root.der" // a certificate, not a CRL
+                } else {
+                    "sec06-root.crl"
+                };
+                let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+                Ok(rssig::retrieval::SourcedCrl::new(
+                    std::fs::read(base.join(file)).unwrap(),
+                ))
+            }))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");

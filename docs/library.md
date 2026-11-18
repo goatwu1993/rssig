@@ -639,6 +639,35 @@ and `code()` with fallback arms; `?` still converts the error into `anyhow` if d
 SEC-07 deliberately tightens silent exclusion/partial-load behavior; correct a
 rejected input or explicitly configure a controlled store. No signatures change,
 and no dependency or native crypto provider is added.
+#### CRL sources (`--fetch-crls`, `crl-fetch` feature)
+
+`CrlSource` is now asked once per certificate rather than once per URL, and
+returns restricted errors. Old to new:
+
+| Before | Now |
+|---|---|
+| `fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError>` | `fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError>` |
+| one call per listed URL | one call per certificate; `request.distribution_points` lists its URIs |
+| `FetchedCrl { bytes, final_url }` | `SourcedCrl::new(bytes).with_url(url).with_final_url(target)` inside `CrlResponse` |
+| any `VerificationError` code | `CrlSourceError::new(kind, message)` with `CrlSourceErrorKind::{Denied, Failed, Abort, Unknown}` |
+| the engine refused non-HTTP and private URLs | the source decides; `HttpCrlSource` keeps that policy |
+
+A per-URL source migrates by wrapping its old body:
+
+```rust
+fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+    Ok(fetch_each(request, |url, max_bytes| {
+        let bytes = my_download(url, max_bytes)
+            .map_err(|e| CrlSourceError::new(CrlSourceErrorKind::Failed, e.to_string()))?;
+        Ok(SourcedCrl::new(bytes))
+    }))
+}
+```
+
+Results: missing evidence is `revocation_unknown` (with each problem in
+`crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;
+`crl_fetch_denied` and `crl_fetch_failed` are no longer results.
+
 These pre-1.0 APIs may evolve in future releases; future breaking changes must
 include migration notes. Do not depend on private adapter layout, exact
 allocation counts beyond the documented measurement, enum numeric values, or

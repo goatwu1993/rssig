@@ -12,7 +12,8 @@ use std::sync::LazyLock;
 use libfuzzer_sys::fuzz_target;
 use rssig::TrustStore;
 use rssig::retrieval::{
-    CrlRequest, CrlResponse, CrlSource, CrlSourceError, CrlSourceErrorKind, verify_with_crl_source,
+    CrlRequest, CrlResponse, CrlSource, CrlSourceError, CrlSourceErrorKind, SourcedCrl, fetch_each,
+    verify_with_crl_source,
 };
 use rssig::verify::VerifyOptions;
 
@@ -43,19 +44,21 @@ static SEC06: LazyLock<TrustStore> = LazyLock::new(|| {
 /// every kind, `Abort` included, is reached.
 struct Answer<'a>(&'a [u8]);
 impl CrlSource for Answer<'_> {
-    fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-        let url = request.url.as_str();
-        let max_bytes = request.max_bytes;
-        if self.0.is_empty() {
-            let kinds = [
-                CrlSourceErrorKind::Denied,
-                CrlSourceErrorKind::Failed,
-                CrlSourceErrorKind::Abort,
-                CrlSourceErrorKind::Unknown,
-            ];
-            return Err(CrlSourceError::new(kinds[url.len() % 4], "fuzz"));
-        }
-        Ok(CrlResponse::new(self.0[..self.0.len().min(max_bytes)].to_vec()).with_final_url(url))
+    fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+        Ok(fetch_each(request, |url, max_bytes| {
+            if self.0.is_empty() {
+                let kinds = [
+                    CrlSourceErrorKind::Denied,
+                    CrlSourceErrorKind::Failed,
+                    CrlSourceErrorKind::Abort,
+                    CrlSourceErrorKind::Unknown,
+                ];
+                return Err(CrlSourceError::new(kinds[url.len() % 4], "fuzz"));
+            }
+            Ok(SourcedCrl::new(
+                self.0[..self.0.len().min(max_bytes)].to_vec(),
+            ))
+        }))
     }
 }
 

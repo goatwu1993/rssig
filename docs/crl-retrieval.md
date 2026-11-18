@@ -18,14 +18,15 @@ rule is restated for retrieval.
    collect the selected leaf, intermediate and timestamp certificates,
    including bundle children; configured anchors are excluded. Integrity and
    trust failures end the run here, before any request.
-2. Request the listed points of selected certificates whose issuer no supplied
-   CRL even names: such a certificate certainly lacks evidence.
+2. Ask the source for CRLs for each selected certificate whose issuer no
+   supplied CRL even names: such a certificate certainly lacks evidence. The
+   source is asked once per certificate, as OpenSSL's `get_crl` is, and given
+   the certificate, its issuer name and its listed URIs.
 3. Verify with revocation required, against the supplied and any fetched CRLs
    (skipped when there is no CRL at all). A good result, or any failure but
    `revocation_unknown`, is final: a stale, forged, unusable or revoking local
    CRL is reported as it is without `--fetch-crls`, not replaced or ignored.
-4. If the status is still unknown, request the listed points of the remaining
-   certificates, whose issuer a supplied CRL names but which may not be
+4. If the status is still unknown, ask about the remaining certificates, whose issuer a supplied CRL names but which may not be
    authoritative for them, and verify again. This step runs even when a step-2
    certificate is still uncovered, since a response here can carry its
    issuer's CRL too (`sec10-fetch-uncovered-first-step-still-tries-second`).
@@ -35,14 +36,15 @@ rule is restated for retrieval.
 
 Two kinds of error, and nothing in between:
 
-- **The engine's own limits end the run**: requests (16 per verification,
-  answered or not), retained CRLs, combined bytes, URLs per certificate and
-  URL length, and the SEC-02 work budget.
+- **The engine's own limits end the run**: requests to the source (16 per
+  verification, one per certificate), retained CRLs, combined bytes, URLs per
+  certificate and URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
-  the response is not a CRL or is larger than
-  the source was allowed to return (not loaded), or the source reports
+  the URI has control characters, whitespace or credentials (never passed to
+  the source or recorded; input hygiene, not transport policy), the response
+  is not a CRL or is larger than allowed (not loaded), or the source reports
   `denied`, `failed` or `unknown` (see below).
 - **The source reporting `abort` stops retrieval**: nothing further is
   requested, and the run verifies with what it already has.
@@ -115,21 +117,30 @@ The parser and `verify-core` remain usable without network dependencies or std.
 - `crl_distribution_points(&Certificate)` decodes URI discovery metadata and
   fails at the first unsupported point; retrieval itself skips such points one
   by one.
-- `CrlSource` is the single interface through which the engine obtains CRLs.
-  `fetch(&CrlRequest)` receives a listed URI exactly as the certificate lists
-  it and `max_bytes`, and returns a `CrlResponse` (untrusted bytes, and the
-  final URL when a redirect changed it) or a `CrlSourceError` with one of the
-  four kinds above (`CrlSourceErrorKind`), a message and optional details. It
-  never returns a trust verdict. The engine applies no transport rule: every
-  listed URI, of any scheme, is passed to the source, which alone decides what
-  it may request and how (HTTP, HTTPS, LDAP, a proxy, a cache or offline
-  artifacts), and refuses the rest as `denied`. A custom source therefore owns
-  its own destination safety. Implementations must bound their own I/O,
-  allocation and latency; the engine independently rejects oversized
-  responses. `CrlRequest`, `CrlResponse`, `CrlSourceError` and
+- `CrlSource` is the single interface through which the engine obtains CRLs,
+  asked once per certificate: `crls(&CrlRequest)` receives the certificate
+  (DER), its issuer name (DER, the key for a store of CRLs by issuer, like
+  OpenSSL's `lookup_crls`), its supported listed URIs in order (a hint:
+  without URIs already asked about in this verification, deduplicated after
+  normalization) and a byte budget for the whole response. It returns a
+  `CrlResponse` of zero or more `SourcedCrl` bodies (bytes, and optionally the
+  URL and redirect target they came from) plus per-URL `failures`, or a
+  `CrlSourceError` for the whole request. Every error carries one of the four
+  kinds above (`CrlSourceErrorKind`), a message, an optional URL and optional
+  details. A source never returns a trust verdict.
+- The engine applies no transport rule: every listed URI, of any scheme, is
+  passed to the source, which alone decides where it may look and how (HTTP,
+  HTTPS, LDAP, a proxy, a cache, a directory of CRLs by issuer), and refuses
+  the rest as `denied`. A custom source therefore owns its own destination
+  safety. Implementations must bound their own I/O, allocation and latency;
+  the engine independently checks every size.
+- `fetch_each(&request, |url, max_bytes| ...)` builds a response for a source
+  that works URL by URL: it asks for each listed URI in order, with the bytes
+  still allowed, and stops at the first `abort`. `HttpCrlSource` uses it.
+- `CrlRequest`, `CrlResponse`, `SourcedCrl`, `CrlSourceError` and
   `CrlSourceErrorKind` are `#[non_exhaustive]`, so fields and kinds can be
-  added without breaking sources; build responses and errors with their
-  constructors.
+  added without breaking sources; build them with their constructors
+  (`CrlRequest::new` lets a wrapping source delegate to another).
 - `verify_with_crl_source(bytes, filename, options, source)` performs the complete
   flow above. It requires configured trust and required revocation. It clones
   the supplied store; fetched certificates never become roots, and the caller's
@@ -152,7 +163,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 16 distinct artifact requests per verification, answered or not, and 16 HTTP hops per HTTP source (redirects included) |
+| Requests | At most 16 requests to the source per verification (one per certificate), and and 16 HTTP hops per HTTP source (redirects included) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
@@ -184,7 +195,9 @@ not a replacement for an application's network routing/firewall policy.
 ## Results and evidence
 
 Successful retrieval-mode bundles include optional `crl_retrieval.artifacts`:
-requested `url`, provider `final_url`, response `sha256`, and response `bytes`.
+the `certificate_sha256` the source was asked about, the `url` it names, if
+any, the `final_url` (`url` unless a redirect changed it), the response
+`sha256`, and `bytes`.
 The list can be empty when supplied artifacts cover every selected issuer.
 These are retrieval provenance fields, not individual CRL verification verdicts.
 Existing CRL reports retain `role: "supplied"`; full chain revocation remains
@@ -204,7 +217,9 @@ success reports. Host input and retained-output limits still apply.
 Committed fixtures have deterministic test-only keys and reserved URLs. Portable
 `crl_responses` case mappings and the injected CLI API supply local response
 fixtures, keeping Cargo tests offline. Tests authenticate good/revoked/forged/
-expired artifacts, reject private destinations before provider calls, require
+expired artifacts, check that the engine passes every listed URI to the
+source and that the built-in source refuses private destinations and other
+schemes before any network access, require
 signature/trust checks before retrieval, exercise timestamp/bundle/intermediate
 paths, and check HTTP framing, response/header bounds and deadline policy using
 in-memory inputs. No fixture is executed, installed, or used to contact a live

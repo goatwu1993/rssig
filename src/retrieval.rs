@@ -21,49 +21,104 @@ pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
 
-/// The single interface through which the engine obtains CRLs. A source
-/// returns untrusted bytes, never a trust or revocation verdict: the engine
-/// authenticates every CRL and applies no transport rule of its own. Which
-/// URLs may be requested, and how (HTTP, HTTPS, LDAP, a proxy, a cache), is
-/// the source's decision; [`HttpCrlSource`] is the built-in one. A source must
-/// bound its own I/O and allocation by [`CrlRequest::max_bytes`] and finish
-/// in finite time; the engine still checks the response length.
+/// The single interface through which the engine obtains CRLs, asked once per
+/// certificate, like OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by
+/// issuer name). A source returns untrusted bytes, never a trust or revocation
+/// verdict: the engine authenticates every CRL and applies no transport rule
+/// of its own. Where CRLs come from, and how (HTTP, HTTPS, LDAP, a proxy, a
+/// cache, a local directory keyed by issuer), is the source's decision;
+/// [`HttpCrlSource`] is the built-in one, and [`fetch_each`] adapts any
+/// per-URL fetch. A source must bound its own I/O and allocation by
+/// [`CrlRequest::max_bytes`] and finish in finite time; the engine still
+/// checks every size.
 ///
-/// A request that produces no CRL returns a [`CrlSourceError`] of one of
-/// four kinds ([`CrlSourceErrorKind`]). `Denied`, `Failed` and `Unknown` mean
-/// only that this URL produced nothing: the engine records it and goes on.
-/// `Abort` means the source can do no more work; the engine requests nothing
+/// A source reports what produced no CRL with a [`CrlSourceError`] of one of
+/// four kinds ([`CrlSourceErrorKind`]): per URL inside a [`CrlResponse`], or
+/// for the whole request as `Err`. `Denied`, `Failed` and `Unknown` mean only
+/// that nothing came from there: the engine records it and goes on. `Abort`,
+/// anywhere, means the source can do no more work; the engine asks nothing
 /// further and verifies with what it has. See `docs/crl-retrieval.md`.
 pub trait CrlSource {
-    fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError>;
+    fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError>;
 }
 
-/// One CRL request. Built only by the engine, so fields can be added without
-/// breaking sources.
-#[derive(Clone, Debug)]
+/// What the engine needs CRLs for: one selected certificate.
+#[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
-pub struct CrlRequest {
-    /// A distribution-point URI exactly as the certificate lists it.
-    pub url: String,
-    /// The most bytes the response may have.
+pub struct CrlRequest<'a> {
+    /// The certificate, DER.
+    pub certificate: &'a [u8],
+    /// Its issuer Name, DER as encoded in the certificate: the key a store of
+    /// CRLs by issuer looks up.
+    pub issuer: &'a [u8],
+    /// Its supported cRLDistributionPoints URIs, in listed order, without
+    /// those already asked about in this verification. A hint: a source may
+    /// use them, ignore them, or find CRLs elsewhere.
+    pub distribution_points: &'a [String],
+    /// The most bytes the whole response may have.
     pub max_bytes: usize,
 }
+impl<'a> CrlRequest<'a> {
+    /// For sources that delegate to another source.
+    pub fn new(
+        certificate: &'a [u8],
+        issuer: &'a [u8],
+        distribution_points: &'a [String],
+        max_bytes: usize,
+    ) -> Self {
+        Self {
+            certificate,
+            issuer,
+            distribution_points,
+            max_bytes,
+        }
+    }
+}
 
-/// The bytes a source obtained for a request.
-#[derive(Clone, Debug)]
+/// CRLs a source found for a request, and what produced nothing.
+#[derive(Clone, Debug, Default)]
 #[non_exhaustive]
 pub struct CrlResponse {
-    pub bytes: Vec<u8>,
-    /// Where the bytes came from, if not the requested URL (a redirect).
-    /// Recorded as provenance only.
-    pub final_url: Option<String>,
+    pub crls: Vec<SourcedCrl>,
+    /// Per-URL problems; the engine records each. An `Abort` here stops
+    /// retrieval like an `Err` of that kind.
+    pub failures: Vec<CrlSourceError>,
 }
 impl CrlResponse {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn with_crl(mut self, crl: SourcedCrl) -> Self {
+        self.crls.push(crl);
+        self
+    }
+    pub fn with_failure(mut self, failure: CrlSourceError) -> Self {
+        self.failures.push(failure);
+        self
+    }
+}
+
+/// One response body: DER or PEM, possibly several CRLs.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct SourcedCrl {
+    pub bytes: Vec<u8>,
+    /// Where it was obtained, if from a URL. Provenance only.
+    pub url: Option<String>,
+    /// Where it actually came from, when a redirect changed `url`.
+    pub final_url: Option<String>,
+}
+impl SourcedCrl {
     pub fn new(bytes: Vec<u8>) -> Self {
         Self {
             bytes,
+            url: None,
             final_url: None,
         }
+    }
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
     }
     pub fn with_final_url(mut self, final_url: impl Into<String>) -> Self {
         self.final_url = Some(final_url.into());
@@ -71,14 +126,15 @@ impl CrlResponse {
     }
 }
 
-/// Why a [`CrlSource`] request produced no CRL: one of the restricted
-/// [`CrlSourceErrorKind`]s, a message and optional details, all reported in
-/// the failure entry.
+/// Why something a [`CrlSource`] tried produced no CRL: one of the
+/// restricted [`CrlSourceErrorKind`]s, a message, the URL when there is one,
+/// and optional details, all reported in the failure entry.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct CrlSourceError {
     pub kind: CrlSourceErrorKind,
     pub message: String,
+    pub url: Option<String>,
     /// Optional structured context, reported with the failure.
     pub details: std::collections::BTreeMap<String, serde_json::Value>,
 }
@@ -87,8 +143,13 @@ impl CrlSourceError {
         Self {
             kind,
             message: message.into(),
+            url: None,
             details: Default::default(),
         }
+    }
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
     }
     pub fn detail(mut self, key: impl Into<String>, value: impl serde::Serialize) -> Self {
         self.details.insert(
@@ -103,6 +164,52 @@ impl CrlSourceError {
         error.details.extend(self.details);
         error
     }
+}
+
+/// Builds a [`CrlResponse`] for a source that works URL by URL: calls `fetch`
+/// for each of the request's distribution points in order, with the bytes
+/// still allowed (at most [`MAX_CRL_BYTES`] each), and stops at the first
+/// `Abort`. Each answer becomes a [`SourcedCrl`] or a failure with its URL.
+pub fn fetch_each(
+    request: &CrlRequest<'_>,
+    mut fetch: impl FnMut(&str, usize) -> Result<SourcedCrl, CrlSourceError>,
+) -> CrlResponse {
+    let mut response = CrlResponse::new();
+    let mut remaining = request.max_bytes;
+    for url in request.distribution_points {
+        if remaining == 0 {
+            break;
+        }
+        match fetch(url, remaining.min(MAX_CRL_BYTES)) {
+            Ok(mut crl) => {
+                remaining = remaining.saturating_sub(crl.bytes.len());
+                crl.url.get_or_insert_with(|| url.clone());
+                response.crls.push(crl);
+            }
+            Err(mut e) => {
+                e.url.get_or_insert_with(|| url.clone());
+                let abort = e.kind == CrlSourceErrorKind::Abort;
+                response.failures.push(e);
+                if abort {
+                    break;
+                }
+            }
+        }
+    }
+    response
+}
+
+/// A dedup key for a URI: its parsed, normalized form when it parses.
+fn url_key(raw: &str) -> String {
+    url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
+}
+
+/// Whether a URI is fit to pass to a source and record: no control
+/// characters or whitespace, and no user name or password. This is input
+/// hygiene, not transport policy.
+fn hygienic_url(raw: &str) -> bool {
+    !raw.chars().any(|c| c.is_control() || c.is_whitespace())
+        && url::Url::parse(raw).map_or(true, |u| u.username().is_empty() && u.password().is_none())
 }
 
 pub(crate) fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
@@ -256,11 +363,13 @@ struct Retrieval<'s, 'b, 'l> {
     store: TrustStore,
     report: CrlRetrievalReport,
     downloaded: usize,
-    /// Requested URLs, with the failure of those that yielded no evidence.
-    requested: BTreeMap<String, Option<(VerificationError, Option<CrlSourceErrorKind>)>>,
-    /// Requests made, answered or not; bounded by `MAX_REQUESTS`.
+    /// URIs already passed to the source in this verification (by
+    /// normalized key), with the failure reported for each, if any.
+    asked: BTreeMap<String, Option<(VerificationError, Option<CrlSourceErrorKind>)>>,
+    /// Requests made to the source, one per certificate; bounded by
+    /// `MAX_REQUESTS`.
     requests: usize,
-    /// The source reported `Abort`: nothing further is requested.
+    /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
     budget: &'b Budget<'l>,
 }
@@ -276,45 +385,39 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             store: base.clone(),
             report: CrlRetrievalReport::default(),
             downloaded: 0,
-            requested: BTreeMap::new(),
+            asked: BTreeMap::new(),
             requests: 0,
             aborted: false,
             budget,
         }
     }
 
-    /// Record a point that yielded no evidence. Every error about one
-    /// listed point ends here, whatever its code, including any error the
-    /// source returns: the source is the caller's, so its errors mean only
-    /// that this URL produced nothing. The next verification still requires
-    /// evidence for every certificate, so this never accepts anything. Only
-    /// the engine's own limits end the run; they never reach here.
-    fn skip(&mut self, certificate: &str, url: Option<&str>, e: VerificationError) {
-        self.skip_kind(certificate, url, e, None);
-    }
-
-    fn skip_kind(
+    /// Record something that yielded no evidence. This never accepts
+    /// anything: the next verification still requires evidence for every
+    /// certificate. Only the engine's own limits end the run.
+    fn skip(
         &mut self,
         certificate: &str,
         url: Option<&str>,
         e: VerificationError,
         kind: Option<CrlSourceErrorKind>,
     ) {
+        let url = url.filter(|u| hygienic_url(u));
         let e = match url {
             Some(url) => e.detail("url", url),
             None => e,
         };
         self.budget.log.info(
             Stage::Revocation,
-            format_args!("CRL point yielded no evidence: {:?}", e.message),
+            format_args!("CRL evidence missing: {:?}", e.message),
         );
         self.record(certificate, url, &e, kind);
-        if let Some(entry) = url.and_then(|url| self.requested.get_mut(url)) {
+        if let Some(entry) = url.and_then(|url| self.asked.get_mut(&url_key(url))) {
             *entry = Some((e, kind));
         }
     }
 
-    /// One failure entry per certificate and URL. A point without a URL is
+    /// One failure entry per certificate and URL. A failure without a URL is
     /// reached once per certificate (certificates are deduplicated), so each
     /// is listed.
     fn record(
@@ -346,21 +449,35 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         });
     }
 
-    /// Request every listed point of `cert`. A point that yields no evidence
-    /// is recorded in the report's failures (see [`Self::skip`]); whether that
-    /// matters is decided by the next verification. The engine's own limits
-    /// (requests, retained CRLs, combined bytes, URLs per certificate and URL
-    /// length) end the run; a response over its size cap is no evidence. A URL already requested is not
-    /// requested again; if it failed, the failure is recorded for this
-    /// certificate too. Returns whether anything was added.
-    fn fetch(
+    fn source_failure(&mut self, certificate: &str, e: CrlSourceError) {
+        let kind = e.kind;
+        let url = e.url.clone();
+        self.skip(certificate, url.as_deref(), e.into_error(), Some(kind));
+        if kind == CrlSourceErrorKind::Abort {
+            self.aborted = true;
+            self.budget.log.info(
+                Stage::Revocation,
+                format_args!("CRL source aborted retrieval"),
+            );
+        }
+    }
+
+    /// Ask the source for CRLs for one certificate. Its listed URIs are read
+    /// here, never fetched: unsupported points and malformed URIs are
+    /// recorded, URIs already asked about in this verification are left out
+    /// (a failure reported for one is recorded for this certificate too), and
+    /// the rest go to the source as a hint. Returns whether a new CRL was
+    /// added. The engine's own limits end the run.
+    fn request(
         &mut self,
         sha256: &str,
+        der: &[u8],
         cert: &Certificate,
         source: &mut dyn CrlSource,
     ) -> Result<bool, VerificationError> {
-        let log = self.budget.log;
-        let mut added = false;
+        if self.aborted {
+            return Ok(false);
+        }
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // The engine's own per-certificate URL limits end the run.
@@ -368,123 +485,137 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             // A malformed extension: webpki skips it offline, so it is no
             // evidence here, not a rejection.
             Err(e) => {
-                self.skip(sha256, None, e);
-                return Ok(false);
+                self.skip(sha256, None, e, None);
+                Vec::new()
             }
         };
+        let mut points = Vec::new();
         for listed in listed {
             let raw = match listed {
                 Ok(raw) => raw,
                 Err(e) => {
-                    self.skip(sha256, None, e);
+                    self.skip(sha256, None, e, None);
                     continue;
                 }
             };
-            // No transport rule here: which URLs may be requested, and how,
-            // is the source's decision.
-            let url = raw;
-            if let Some(previous) = self.requested.get(&url) {
-                if let Some((e, kind)) = previous.clone() {
-                    self.record(sha256, Some(&url), &e, kind);
-                }
-                continue;
-            }
-            if self.aborted {
-                return Ok(added);
-            }
-            if self.requests >= MAX_REQUESTS {
-                return Err(limit("crl_requests", MAX_REQUESTS, self.requests, 1));
-            }
-            if self.store.retrieval_crl_count() >= 64 {
-                return Err(limit(
-                    "retrieval_crl_artifacts",
-                    64,
-                    self.store.retrieval_crl_count(),
-                    1,
-                ));
-            }
-            let used = self.base.retrieval_bytes() + self.downloaded;
-            let cap = MAX_CRL_BYTES.min(MAX_TOTAL_BYTES.saturating_sub(used));
-            if cap == 0 {
-                return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
-            }
-            self.requests += 1;
-            self.requested.insert(url.clone(), None);
-            log.info(
-                Stage::Revocation,
-                format_args!("requesting CRL {url:?} (at most {cap} bytes)"),
-            );
-            let request = CrlRequest {
-                url: url.clone(),
-                max_bytes: cap,
-            };
-            let fetched = match source.fetch(&request) {
-                Ok(fetched) => fetched,
-                Err(e) => {
-                    let kind = e.kind;
-                    self.skip_kind(sha256, Some(&url), e.into_error(), Some(kind));
-                    if kind == CrlSourceErrorKind::Abort {
-                        self.aborted = true;
-                        log.info(
-                            Stage::Revocation,
-                            format_args!("CRL source aborted retrieval"),
-                        );
-                        return Ok(added);
-                    }
-                    continue;
-                }
-            };
-            log.debug(
-                Stage::Revocation,
-                format_args!(
-                    "CRL source returned {} bytes from {:?}; not yet authenticated",
-                    fetched.bytes.len(),
-                    fetched.final_url
-                ),
-            );
-            // A source that returns more than it was allowed is not trusted
-            // with that response; the bytes are not loaded.
-            if fetched.bytes.len() > cap {
-                let e = limit("crl_response_bytes", cap, 0, fetched.bytes.len());
-                self.skip(sha256, Some(&url), e);
-                continue;
-            }
-            for _ in 0..8 {
-                self.budget
-                    .decoded_bytes
-                    .charge(fetched.bytes.len())
-                    .map_err(crl_internal)?;
-            }
-            self.budget
-                .hash_bytes
-                .charge(fetched.bytes.len())
-                .map_err(crl_internal)?;
-            self.downloaded += fetched.bytes.len();
-            self.report.artifacts.push(CrlRetrievalArtifact {
-                final_url: fetched.final_url.unwrap_or_else(|| url.clone()),
-                url: url.clone(),
-                sha256: hex(&crate::crypto::Hash::Sha256.digest(&fetched.bytes)),
-                bytes: fetched.bytes.len(),
-            });
-            let prior = self.store.retrieval_crl_count();
-            if let Err(e) = self.store.add_crl(&fetched.bytes) {
+            if !hygienic_url(&raw) {
                 let e = error(
-                    ErrorCode::InvalidCrl,
-                    format!("decoding retrieved CRL: {e:#}"),
+                    ErrorCode::CrlFetchDenied,
+                    "distribution point URI has control characters, whitespace or credentials",
                 );
-                self.skip(sha256, Some(&url), e);
+                self.skip(sha256, None, e, None);
                 continue;
             }
-            // A PEM response may contain multiple distinct CRLs. Bound the
-            // retained store after deduplication, before verification.
-            let loaded = self.store.retrieval_crl_count();
-            if loaded > 64 {
-                return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
+            match self.asked.get(&url_key(&raw)) {
+                Some(Some((e, kind))) => {
+                    let (e, kind) = (e.clone(), *kind);
+                    self.record(sha256, Some(&raw), &e, kind);
+                }
+                Some(None) => {}
+                None => {
+                    self.asked.insert(url_key(&raw), None);
+                    points.push(raw);
+                }
             }
-            // A response identical to a loaded CRL adds nothing to verify.
-            added |= loaded > prior;
+        }
+        if self.requests >= MAX_REQUESTS {
+            return Err(limit("crl_requests", MAX_REQUESTS, self.requests, 1));
+        }
+        if self.store.retrieval_crl_count() >= 64 {
+            return Err(limit(
+                "retrieval_crl_artifacts",
+                64,
+                self.store.retrieval_crl_count(),
+                1,
+            ));
+        }
+        let used = self.base.retrieval_bytes() + self.downloaded;
+        let max_bytes = MAX_TOTAL_BYTES.saturating_sub(used);
+        if max_bytes == 0 {
+            return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
+        }
+        let issuer = crate::der::tbs_issuer(der, 0xa0, 2).unwrap_or_default();
+        let request = CrlRequest::new(der, issuer, &points, max_bytes);
+        self.requests += 1;
+        self.budget.log.info(
+            Stage::Revocation,
+            format_args!(
+                "asking the CRL source for certificate {sha256}, listed points {points:?}"
+            ),
+        );
+        let response = match source.crls(&request) {
+            Ok(response) => response,
+            Err(e) => {
+                self.source_failure(sha256, e);
+                return Ok(false);
+            }
+        };
+        for failure in response.failures {
+            self.source_failure(sha256, failure);
+        }
+        let mut added = false;
+        let mut total = 0usize;
+        for crl in response.crls {
+            added |= self.load(sha256, crl, &mut total, max_bytes)?;
         }
         Ok(added)
+    }
+
+    /// Check, account for and load one returned body. A body over its size
+    /// caps, or that is not a CRL, is no evidence and is not loaded.
+    fn load(
+        &mut self,
+        sha256: &str,
+        crl: SourcedCrl,
+        total: &mut usize,
+        max_bytes: usize,
+    ) -> Result<bool, VerificationError> {
+        let url = crl.url.filter(|u| hygienic_url(u));
+        let final_url = crl.final_url.filter(|u| hygienic_url(u));
+        let len = crl.bytes.len();
+        self.budget.log.debug(
+            Stage::Revocation,
+            format_args!("CRL source returned {len} bytes from {url:?}; not yet authenticated"),
+        );
+        *total = total.saturating_add(len);
+        if len > MAX_CRL_BYTES || *total > max_bytes {
+            let cap = MAX_CRL_BYTES.min(max_bytes);
+            let e = limit("crl_response_bytes", cap, 0, len);
+            self.skip(sha256, url.as_deref(), e, None);
+            return Ok(false);
+        }
+        for _ in 0..8 {
+            self.budget
+                .decoded_bytes
+                .charge(len)
+                .map_err(crl_internal)?;
+        }
+        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
+        self.downloaded += len;
+        self.report.artifacts.push(CrlRetrievalArtifact {
+            certificate_sha256: Some(sha256.into()),
+            final_url: final_url.or_else(|| url.clone()),
+            url: url.clone(),
+            sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
+            bytes: len,
+        });
+        let prior = self.store.retrieval_crl_count();
+        if let Err(e) = self.store.add_crl(&crl.bytes) {
+            let e = error(
+                ErrorCode::InvalidCrl,
+                format!("decoding retrieved CRL: {e:#}"),
+            );
+            self.skip(sha256, url.as_deref(), e, None);
+            return Ok(false);
+        }
+        // A PEM response may contain multiple distinct CRLs. Bound the
+        // retained store after deduplication, before verification.
+        let loaded = self.store.retrieval_crl_count();
+        if loaded > 64 {
+            return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
+        }
+        // A body identical to a loaded CRL adds nothing to verify.
+        Ok(loaded > prior)
     }
 }
 
@@ -565,7 +696,7 @@ fn retrieve(
                 .is_some_and(|issuer| named.iter().any(|n| n == issuer));
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert));
+            stages[usize::from(named_issuer)].push((&cert_report.sha256, der, cert));
         }
         // Step 1 fetches for certificates no supplied CRL names, step 2 for
         // the rest. Verification follows each step that has any CRL to use
@@ -574,11 +705,11 @@ fn retrieve(
         let mut verdict = None;
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
-            for (sha256, cert) in certificates {
+            for (sha256, der, cert) in certificates {
                 if state.aborted {
                     break;
                 }
-                added |= state.fetch(sha256, cert, source)?;
+                added |= state.request(sha256, der, cert, source)?;
             }
             let verify = if step == 0 {
                 state.store.retrieval_crl_count() > 0
@@ -649,9 +780,10 @@ mod tests {
     use crate::{TrustStore, verify::RevocationPolicy};
     struct Never;
     impl CrlSource for Never {
-        fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-            let _ = request;
-            panic!("unexpected provider call")
+        fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            Ok(fetch_each(request, |_url, _max_bytes| {
+                panic!("unexpected provider call")
+            }))
         }
     }
     fn store() -> TrustStore {
@@ -759,10 +891,10 @@ mod tests {
     fn provider_overflow_is_rejected_without_loading_or_trusting_the_artifact() {
         struct Huge;
         impl CrlSource for Huge {
-            fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-                let url = request.url.as_str();
-                let cap = request.max_bytes;
-                Ok(CrlResponse::new(vec![0; cap + 1]).with_final_url(url))
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(fetch_each(request, |_url, cap| {
+                    Ok(SourcedCrl::new(vec![0; cap + 1]))
+                }))
             }
         }
         let store = store();
@@ -825,82 +957,70 @@ mod tests {
             .extn_value = ::der::asn1::OctetString::new(tlv(0x30, &points)).unwrap();
         cert
     }
-    #[test]
-    fn failed_requests_count_toward_the_request_cap() {
-        struct Failing(usize);
-        impl CrlSource for Failing {
-            fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-                let _ = request;
-                self.0 += 1;
-                Err(CrlSourceError::new(
-                    CrlSourceErrorKind::Failed,
-                    "unreachable",
-                ))
+    /// Ask the source about `cert` through the engine's per-certificate path.
+    fn ask(
+        state: &mut Retrieval<'_, '_, '_>,
+        sha256: &str,
+        cert: &Certificate,
+        source: &mut dyn CrlSource,
+    ) -> Result<bool, VerificationError> {
+        use ::der::Encode;
+        let der = cert.to_der().unwrap();
+        state.request(sha256, &der, cert, source)
+    }
+    /// Records what the source was asked, and answers every listed URI with
+    /// the next kind in turn.
+    struct Kinds {
+        kinds: Vec<CrlSourceErrorKind>,
+        calls: usize,
+        urls: Vec<String>,
+        issuers: Vec<Vec<u8>>,
+    }
+    impl Kinds {
+        fn new(kinds: Vec<CrlSourceErrorKind>) -> Self {
+            Self {
+                kinds,
+                calls: 0,
+                urls: Vec::new(),
+                issuers: Vec::new(),
             }
         }
+    }
+    impl CrlSource for Kinds {
+        fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            self.calls += 1;
+            self.issuers.push(request.issuer.to_vec());
+            Ok(fetch_each(request, |url, _| {
+                self.urls.push(url.into());
+                let kind = self.kinds[(self.urls.len() - 1) % self.kinds.len()];
+                Err(CrlSourceError::new(kind, "no CRL").detail("hint", "test"))
+            }))
+        }
+    }
+    #[test]
+    fn the_source_is_asked_once_per_certificate_up_to_the_cap() {
+        use CrlSourceErrorKind::*;
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
-        let mut source = Failing(0);
-        assert!(
-            !state
-                .fetch("a", &signer_with_points("a", 10), &mut source)
-                .unwrap()
-        );
-        assert_eq!(state.report.failures.len(), 10);
-        let error = state
-            .fetch("b", &signer_with_points("b", 10), &mut source)
-            .unwrap_err();
+        let mut source = Kinds::new(vec![Failed]);
+        for i in 0..MAX_REQUESTS {
+            let cert = signer_with_points(&format!("c{i}"), 1);
+            assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut source).unwrap());
+        }
+        let error = ask(
+            &mut state,
+            "last",
+            &signer_with_points("last", 1),
+            &mut source,
+        )
+        .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
-        assert_eq!(source.0, MAX_REQUESTS);
+        assert_eq!(source.calls, MAX_REQUESTS);
     }
     #[test]
-    fn every_point_error_is_recorded_once_per_certificate_and_url() {
-        let store = store();
-        let budget = Budget::default();
-        let mut state = Retrieval::new(&store, &budget);
-        let url = Some("http://x.invalid/a");
-        state.skip("a", None, error(ErrorCode::InvalidCertificate, "malformed"));
-        state.skip("a", url, limit("crl_network_bytes", 1, 1, 1));
-        state.skip("a", url, error(ErrorCode::CrlFetchFailed, "again"));
-        state.skip("b", url, error(ErrorCode::CrlFetchFailed, "unreachable"));
-        let entries: Vec<_> = state
-            .report
-            .failures
-            .iter()
-            .map(|f| (f.certificate_sha256.as_str(), f.url.as_deref(), f.code))
-            .collect();
-        assert_eq!(
-            entries,
-            [
-                ("a", None, ErrorCode::InvalidCertificate),
-                ("a", url, ErrorCode::ResourceLimitExceeded),
-                ("b", url, ErrorCode::CrlFetchFailed),
-            ]
-        );
-        // A URL that was never requested is not tracked as one.
-        assert!(state.requested.is_empty());
-    }
-    /// Answers each request with the next kind in turn, counting requests.
-    struct Kinds(Vec<CrlSourceErrorKind>, usize);
-    impl CrlSource for Kinds {
-        fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-            let _ = request;
-            let kind = self.0[self.1 % self.0.len()];
-            self.1 += 1;
-            Err(CrlSourceError::new(kind, "no CRL").detail("hint", "test"))
-        }
-    }
-    #[test]
-    fn the_engine_asks_the_source_for_any_scheme() {
-        struct Record(Vec<String>);
-        impl CrlSource for Record {
-            fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
-                self.0.push(request.url.clone());
-                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "test"))
-            }
-        }
+    fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
@@ -909,13 +1029,68 @@ mod tests {
             "ldap://crl.example.invalid/cn=a".to_string(),
             "http://127.0.0.1/a.crl".to_string(),
         ];
-        let mut source = Record(Vec::new());
-        state
-            .fetch("s", &signer_with_uris(&uris), &mut source)
-            .unwrap();
-        // No transport rule in the engine: every listed URI reaches the source,
-        // which alone decides what it may request.
-        assert_eq!(source.0, uris);
+        let cert = signer_with_uris(&uris);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Denied]);
+        ask(&mut state, "s", &cert, &mut source).unwrap();
+        // No transport rule in the engine: every listed URI, of any scheme,
+        // reaches the source, which alone decides what it may request.
+        assert_eq!(source.urls, uris);
+        use ::der::Encode;
+        assert_eq!(
+            source.issuers,
+            [cert.tbs_certificate.issuer.to_der().unwrap()]
+        );
+        // A refusal costs the engine one request for the certificate, not
+        // one per URI.
+        assert_eq!(state.requests, 1);
+    }
+    #[test]
+    fn uris_are_deduplicated_per_verification_and_screened_for_hygiene() {
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let spellings = [
+            "HTTP://CRL.Example.invalid/a.crl".to_string(),
+            "http://crl.example.invalid:80/a.crl".to_string(),
+            "http://user:secret@crl.example.invalid/b.crl".to_string(),
+            "http://crl.example.invalid/c\u{7}.crl".to_string(),
+        ];
+        ask(&mut state, "a", &signer_with_uris(&spellings), &mut source).unwrap();
+        // Two spellings of one URL are asked once; credentials and control
+        // characters never reach the source or the report.
+        assert_eq!(source.urls, ["HTTP://CRL.Example.invalid/a.crl"]);
+        // A second certificate listing the same URL is not asked again, and
+        // the earlier failure is recorded for it too.
+        ask(
+            &mut state,
+            "b",
+            &signer_with_uris(&["http://crl.example.invalid/a.crl".into()]),
+            &mut source,
+        )
+        .unwrap();
+        assert_eq!(source.urls.len(), 1);
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.certificate_sha256.as_str(), f.url.is_some(), f.code))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                ("a", false, ErrorCode::CrlFetchDenied),
+                ("a", false, ErrorCode::CrlFetchDenied),
+                ("a", true, ErrorCode::CrlFetchFailed),
+                ("b", true, ErrorCode::CrlFetchFailed),
+            ]
+        );
+        assert!(
+            serde_json::to_string(&state.report)
+                .unwrap()
+                .find("secret")
+                .is_none()
+        );
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {
@@ -923,10 +1098,9 @@ mod tests {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
-        let mut source = Kinds(vec![Denied, Failed, Unknown], 0);
-        let cert = signer_with_points("k", 3);
-        assert!(!state.fetch("k", &cert, &mut source).unwrap());
-        assert_eq!(source.1, 3);
+        let mut source = Kinds::new(vec![Denied, Failed, Unknown]);
+        assert!(!ask(&mut state, "k", &signer_with_points("k", 3), &mut source).unwrap());
+        assert_eq!(source.urls.len(), 3);
         assert!(!state.aborted);
         let seen: Vec<_> = state
             .report
@@ -949,18 +1123,11 @@ mod tests {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
-        let mut source = Kinds(vec![Failed, Abort], 0);
-        assert!(
-            !state
-                .fetch("a", &signer_with_points("a", 4), &mut source)
-                .unwrap()
-        );
-        assert!(
-            !state
-                .fetch("b", &signer_with_points("b", 4), &mut source)
-                .unwrap()
-        );
-        assert_eq!(source.1, 2, "nothing is requested after Abort");
+        let mut source = Kinds::new(vec![Failed, Abort]);
+        assert!(!ask(&mut state, "a", &signer_with_points("a", 4), &mut source).unwrap());
+        assert!(!ask(&mut state, "b", &signer_with_points("b", 4), &mut source).unwrap());
+        assert_eq!(source.urls.len(), 2, "nothing is fetched after Abort");
+        assert_eq!(source.calls, 1, "nothing is asked after Abort");
         assert!(state.aborted);
         assert_eq!(state.report.failures.len(), 2);
         assert_eq!(state.report.failures[1].code, ErrorCode::CrlFetchAborted);
@@ -977,7 +1144,7 @@ mod tests {
             (Unknown, ErrorCode::RevocationUnknown),
             (Abort, ErrorCode::CrlFetchAborted),
         ] {
-            let error = verify_with_crl_source(input, None, &options, &mut Kinds(vec![kind], 0))
+            let error = verify_with_crl_source(input, None, &options, &mut Kinds::new(vec![kind]))
                 .unwrap_err();
             assert_eq!(error.code, code, "{kind:?}");
             let failure = &error.details["crl_retrieval"]["failures"][0];

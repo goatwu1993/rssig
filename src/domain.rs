@@ -513,8 +513,15 @@ pub struct AppxReport {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrlRetrievalArtifact {
-    pub url: String,
-    pub final_url: String,
+    /// The certificate the source was asked about.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certificate_sha256: Option<String>,
+    /// Where the source obtained it, when from a URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Where it actually came from: `url` unless a redirect changed it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub final_url: Option<String>,
     pub sha256: String,
     pub bytes: usize,
 }

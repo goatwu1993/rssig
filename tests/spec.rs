@@ -151,31 +151,31 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
         requests: &'a mut Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source<'_> {
-        fn fetch(
+        fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest,
+            request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            let url = request.url.as_str();
-            let max_bytes = request.max_bytes;
-            use rssig::domain::CrlSourceErrorKind;
-            use rssig::retrieval::CrlSourceError;
-            self.requests.push(url.to_owned());
-            if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
-                return Err(CrlSourceError::new(*kind, "injected CRL fetch error"));
-            }
-            let name = self.responses.get(url).ok_or_else(|| {
-                CrlSourceError::new(CrlSourceErrorKind::Failed, "no injected CRL response")
-            })?;
-            let path = Path::new(name);
-            assert!(
-                path.is_relative()
-                    && !path
-                        .components()
-                        .any(|c| matches!(c, std::path::Component::ParentDir))
-            );
-            let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
-            assert!(bytes.len() <= max_bytes);
-            Ok(rssig::retrieval::CrlResponse::new(bytes))
+            Ok(rssig::retrieval::fetch_each(request, |url, max_bytes| {
+                use rssig::domain::CrlSourceErrorKind;
+                use rssig::retrieval::CrlSourceError;
+                self.requests.push(url.to_owned());
+                if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
+                    return Err(CrlSourceError::new(*kind, "injected CRL fetch error"));
+                }
+                let name = self.responses.get(url).ok_or_else(|| {
+                    CrlSourceError::new(CrlSourceErrorKind::Failed, "no injected CRL response")
+                })?;
+                let path = Path::new(name);
+                assert!(
+                    path.is_relative()
+                        && !path
+                            .components()
+                            .any(|c| matches!(c, std::path::Component::ParentDir))
+                );
+                let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
+                assert!(bytes.len() <= max_bytes);
+                Ok(rssig::retrieval::SourcedCrl::new(bytes))
+            }))
         }
     }
     let mut requests = Vec::new();

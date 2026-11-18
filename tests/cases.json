@@ -23950,7 +23950,8 @@
                     "artifacts": [],
                     "failures": [
                       {
-                        "code": "crl_fetch_denied"
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
                       }
                     ]
                   }
@@ -33766,6 +33767,139 @@
         "crl_requests": [
           "http://crl.invalid/sec10-a.crl"
         ]
+      }
+    },
+    {
+      "id": "sec10-leaf-crl-dp-https-full-crl",
+      "input": "sec10-leaf-crl-dp-https.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-source-is-asked-for-any-scheme",
+      "input": "sec10-leaf-crl-dp-https.exe",
+      "crl_responses": {
+        "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "https://crl.invalid/sec10-a.crl",
+                    "final_url": "https://crl.invalid/sec10-a.crl",
+                    "sha256": "ff4b0fde7497af4be99fa0a2df9bb049e112ba9b08ddd07c5767d1dc3e51b3b9",
+                    "bytes": 182
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "https://crl.invalid/sec10-a.crl"
+        ]
+      }
+    },
+    {
+      "id": "sec10-fetch-builtin-source-denies-https",
+      "input": "sec10-leaf-crl-dp-https.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "https://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
       }
     }
   ]

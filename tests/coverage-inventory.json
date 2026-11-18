@@ -383,7 +383,8 @@
         "sec10-crl-next-update-one-second-left",
         "sec10-crl-next-update-exact",
         "sec10-chain-crl-dp-full-crls",
-        "sec10-leaf-crl-dp-mixed-full-crl"
+        "sec10-leaf-crl-dp-mixed-full-crl",
+        "sec10-leaf-crl-dp-https-full-crl"
       ]
     },
     {
@@ -435,7 +436,9 @@
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
         "crl-fetch-source-abort-is-reported",
-        "sec10-fetch-source-abort-stops-requests"
+        "sec10-fetch-source-abort-stops-requests",
+        "sec10-fetch-source-is-asked-for-any-scheme",
+        "sec10-fetch-builtin-source-denies-https"
       ]
     },
     {

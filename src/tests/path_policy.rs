@@ -99,6 +99,12 @@ fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
             126,
             seq(&[seq(&[full_name(&[uri(LISTED_POINT)]), crl_issuer])]),
         ),
+        // An https URI: the engine passes it to the source, which decides.
+        (
+            "https",
+            128,
+            seq(&[seq(&[full_name(&[uri("https://crl.invalid/sec10-a.crl")])])]),
+        ),
         // A reason-partitioned point, then the listed URI as a plain point.
         (
             "mixed",
