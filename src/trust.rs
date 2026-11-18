@@ -53,21 +53,26 @@ impl TrustStore {
         }
         Ok(())
     }
-    /// Issuer names of the supplied CRLs, each CRL decoded once. A name match
-    /// is necessary for a CRL to apply to a certificate, never sufficient.
+    /// Issuer name DER of each supplied CRL, read from the top-level
+    /// tbsCertList fields without decoding the CRL; only those bytes are
+    /// charged. A name match is necessary for a CRL to apply to a
+    /// certificate, never sufficient.
     #[cfg(feature = "crl-fetch")]
-    pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<x509_cert::name::Name>> {
+    pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<Vec<u8>>> {
         let mut issuers = Vec::new();
         for bytes in &self.crls {
-            for _ in 0..8 {
-                budget.decoded_bytes.charge(bytes.len())?;
-            }
-            issuers.push(
-                CertificateList::from_der(bytes)
-                    .map_err(crate::compat_error)?
-                    .tbs_cert_list
-                    .issuer,
-            );
+            let fields = crate::der::one(bytes, 0x30)?.children()?;
+            let tbs = fields.first().context("CRL lacks tbsCertList")?;
+            let tbs = tbs.expect(0x30)?.children()?;
+            // Optional version INTEGER, then signature AlgorithmIdentifier.
+            let at = if tbs.first().is_some_and(|f| f.tag == 0x02) {
+                2
+            } else {
+                1
+            };
+            let issuer = tbs.get(at).context("CRL lacks an issuer")?.expect(0x30)?;
+            budget.decoded_bytes.charge(issuer.full.len())?;
+            issuers.push(issuer.full.to_vec());
         }
         Ok(issuers)
     }

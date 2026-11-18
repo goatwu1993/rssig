@@ -29,12 +29,15 @@ rule is restated for retrieval.
    authoritative for them, and verify again.
 
 A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
-denied by transport policy, or whose request fails yields no evidence; it does
-not end the run, because the next verification still requires evidence for
-every selected certificate. If the status stays unknown, the first such failure
-is returned (`crl_fetch_denied`, `crl_fetch_failed`, ...) instead of the bare
-`revocation_unknown`. Work and size limits and undecodable responses end the
-run. A certificate that a supplied CRL covers is not fetched for while another
+denied by transport policy, or whose request fails yields no evidence; these
+are exactly the `crl_fetch_denied` and `crl_fetch_failed` errors. They do not
+end the run, because the next verification still requires evidence for every
+selected certificate. If the status stays unknown, the first such failure is
+returned instead of the bare `revocation_unknown`; it may belong to a
+certificate that did not lack evidence. Every other error ends the run: work
+and size limits (including a limit reported by the source), a malformed
+cRLDistributionPoints extension, and an undecodable response. Every request
+counts toward the request limit, answered or not. A certificate that a supplied CRL covers is not fetched for while another
 chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
 in step 4 if a name-matching CRL elsewhere was not enough
 (`sec10-fetch-name-matched-signer-point-requested-second`), and a failure of
@@ -43,7 +46,8 @@ that request does not matter if verification then succeeds
 the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
-verifies two times, or three when step 4 fetches something. All passes share
+verifies once (step 1 only) when there is no CRL at all and step 2 fetches
+nothing, twice when step 4 fetches nothing, and three times when it does. All passes share
 SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
@@ -91,7 +95,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 16 distinct artifact fetches per verification and 16 HTTP hops per HTTP source (redirects included) |
+| Requests | At most 16 distinct artifact requests per verification, answered or not, and 16 HTTP hops per HTTP source (redirects included) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
