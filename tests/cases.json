@@ -31387,7 +31387,7 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-revoked",
+      "id": "sec10-crl-dp-other-idp-revoked-unknown",
       "input": "sec10-leaf-crl-dp.exe",
       "command": [
         "verify",
@@ -31409,7 +31409,7 @@
             {
               "ok": false,
               "error": {
-                "code": "certificate_revoked",
+                "code": "revocation_unknown",
                 "stage": "revocation"
               }
             }

@@ -190,14 +190,12 @@ timestamps, and local CRL validation already exist.
   the status `revocation_unknown`; the matching partition is selected in either
   `--crl` order; a serial listed by another authenticated partition of the same
   issuer still rejects; and a full CRL without an IDP covers the certificate.
-  A signer listed by any authenticated CRL of its issuer is
-  `certificate_revoked` even when no supplied CRL is authoritative for it
-  (`sec10-crl-dp-other-idp-revoked`): webpki's unknown status is replaced when
-  the signer is listed. URIs are compared byte-exactly
-  (`sec10-crl-dp-case-variant-idp-unknown`).
-  Remaining asymmetry: an intermediate listed only by a non-authoritative
-  partition, with no authoritative CRL for it, stays `revocation_unknown`,
-  because the failing path is not known after webpki rejects it.
+  A listed serial counts only on a path where every certificate has an
+  authoritative CRL: a partition that is not authoritative for the signer and
+  lists it, supplied alone, is `revocation_unknown`
+  (`sec10-crl-dp-other-idp-revoked-unknown`). URIs are compared byte-exactly
+  (`sec10-crl-dp-case-variant-idp-unknown`). Reporting such a listing as
+  `certificate_revoked` needs the evidence binding in SEC-21 first.
   `--fetch-crls` gap: `has_crl_for` treats any supplied CRL with the
   certificate's issuer name as coverage, so a partition that is not
   authoritative for the certificate suppresses fetching its listed
@@ -345,6 +343,25 @@ timestamps, and local CRL validation already exist.
   is returned before path building, so it hides untrusted_root and other chain
   errors. This extends the existing empty-CRL-set precedence. Revisit together
   with SEC-14's error-precedence notes if consumers need the chain error first.
+- [ ] **SEC-21: Bind listed-serial revocation to the verified path.** From PR
+  #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
+  callback matches a listing by issuer name and serial only. It accepts a CRL
+  whose signature verified under any name-matching candidate key, or whose
+  signature algorithm `signed_by` cannot map (`unwrap_or(true)`), and it does
+  not require the issuer's cRLSign. With two same-name issuers (key rollover),
+  the old key's CRL can therefore reject a signer issued under the new key; a
+  valid signature fails closed as `certificate_revoked` on evidence webpki
+  would not accept from an authoritative CRL. Count a listing only when the
+  CRL verifies under the issuer key the path uses and that issuer may sign
+  CRLs (anchors exempt, per SEC-06), and decide whether an applicable CRL with
+  an unmappable signature algorithm is `invalid_crl`. With that binding, on
+  webpki's unknown status re-run path building without webpki revocation and
+  apply the same check to every path certificate, so a signer or intermediate
+  listed only by a non-authoritative CRL reports `certificate_revoked`
+  (PR #49 tried this for the signer alone by rewriting the final error and
+  reverted it). Identify the listing CRL in `details` instead of reusing
+  webpki's `CertRevoked` message. Paired fixtures: same-name rollover issuers,
+  an issuer without cRLSign, an unmappable algorithm.
 
 ## P1 — Clean parse/verify interfaces
 

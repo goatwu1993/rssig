@@ -355,13 +355,14 @@ fn sec10_crl_scoped_to_another_distribution_point_leaves_status_unknown() {
 }
 
 #[test]
-fn sec10_signer_listed_by_a_non_authoritative_partition_is_revoked() {
-    // No authoritative CRL is supplied, but an authenticated CRL of the
-    // signer's issuer lists it: revoked, not merely unknown.
+fn sec10_listing_by_a_non_authoritative_partition_alone_leaves_status_unknown() {
+    // A listed serial counts only on a path where every certificate has an
+    // authoritative CRL. A partition that is not authoritative for the signer
+    // is not enough evidence on its own to call it revoked.
     revocation_failure(
         &run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]),
-        "certificate_revoked",
-        "Certificate revoked",
+        "revocation_unknown",
+        "Revocation status unknown",
     );
 }
 
@@ -375,8 +376,8 @@ fn sec10_matching_partition_is_selected_whatever_the_crl_order() {
 
 #[test]
 fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
-    // With an authoritative CRL present, a serial listed by any authenticated
-    // CRL of the same issuer is revoked, even in a non-authoritative partition.
+    // On a path whose certificates all have an authoritative CRL, a serial
+    // listed by another applicable CRL of the same issuer name also rejects.
     for crls in [
         [
             "sec10-issuer-idp-match.crl",

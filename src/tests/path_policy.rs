@@ -18,6 +18,13 @@ const PARTITIONS: [(&str, &str, bool); 5] = [
     ("case", CASE_POINT, false),
 ];
 
+/// cRLDistributionPoints with exactly one DistributionPoint naming
+/// `LISTED_POINT`. A DistributionPoint that has only a fullName encodes like an
+/// issuingDistributionPoint that has only a fullName.
+fn listed_points() -> Vec<u8> {
+    seq(&[crl_applicability::idp_named_point(LISTED_POINT)])
+}
+
 fn key(byte: u8) -> SigningKey {
     SigningKey::from_bytes((&[byte; 32]).into()).unwrap()
 }
@@ -319,8 +326,7 @@ pub(super) fn write(dir: &std::path::Path) {
         &ca_key,
         false,
     );
-    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, LISTED_POINT.as_bytes())));
-    extension(&mut scoped, "2.5.29.31", false, Some(seq(&[seq(&[point])])));
+    extension(&mut scoped, "2.5.29.31", false, Some(listed_points()));
     sign(&mut scoped, &ca_key);
     write_pe(
         dir,
@@ -638,9 +644,7 @@ fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
         .flatten()
         .find(|e| e.extn_id.to_string() == "2.5.29.31")
         .unwrap();
-    // Exactly one DistributionPoint: [0] distributionPoint, [0] fullName, one URI.
-    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, LISTED_POINT.as_bytes())));
-    assert_eq!(listed.extn_value.as_bytes(), seq(&[seq(&[point])]));
+    assert_eq!(listed.extn_value.as_bytes(), listed_points());
     assert_eq!(
         leaf.tbs_certificate.serial_number,
         SerialNumber::from(SCOPED_LEAF_SERIAL)

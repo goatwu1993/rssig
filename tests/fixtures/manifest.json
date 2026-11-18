@@ -7840,7 +7840,7 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
@@ -7902,7 +7902,7 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
@@ -9372,7 +9372,7 @@
         "sec10-crl-dp-full-crl",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
@@ -9427,7 +9427,7 @@
       "cases": [
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-other-idp-revoked"
+        "sec10-crl-dp-other-idp-revoked-unknown"
       ]
     },
     {

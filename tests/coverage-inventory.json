@@ -334,7 +334,7 @@
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
@@ -736,8 +736,7 @@
         "sec10-competing-crls-revoked-first-revoked",
         "sec10-crl-dp-matching-idp-revoked",
         "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-other-idp-revoked"
+        "sec10-crl-dp-other-partition-revoked-first"
       ],
       "gap": ""
     },
@@ -770,7 +769,8 @@
         "sec09-lifetime-rollover-revocation-unknown",
         "sec10-only-unrelated-crl-is-unknown",
         "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-other-idp-revoked-unknown"
       ],
       "gap": ""
     },
