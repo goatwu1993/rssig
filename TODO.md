@@ -190,13 +190,14 @@ timestamps, and local CRL validation already exist.
   the status `revocation_unknown`; the matching partition is selected in either
   `--crl` order; a serial listed by another authenticated partition of the same
   issuer still rejects; and a full CRL without an IDP covers the certificate.
-  Open decision: a non-authoritative partition that lists the signer, supplied
-  with no authoritative CRL, is rejected as `revocation_unknown` because webpki
-  reports unknown status before the path callback sees the listed serial. It is
-  `cases.json` pins only the rejection and stage
-  (`sec10-crl-dp-other-idp-revoked-rejected`), not the code; decide whether it
-  should report `certificate_revoked` like the case where an authoritative CRL
-  is present.
+  A signer listed by any authenticated CRL of its issuer is
+  `certificate_revoked` even when no supplied CRL is authoritative for it
+  (`sec10-crl-dp-other-idp-revoked`): webpki's unknown status is replaced when
+  the signer is listed. URIs are compared byte-exactly
+  (`sec10-crl-dp-case-variant-idp-unknown`).
+  Remaining asymmetry: an intermediate listed only by a non-authoritative
+  partition, with no authoritative CRL for it, stays `revocation_unknown`,
+  because the failing path is not known after webpki rejects it.
   `--fetch-crls` gap: `has_crl_for` treats any supplied CRL with the
   certificate's issuer name as coverage, so a partition that is not
   authoritative for the certificate suppresses fetching its listed

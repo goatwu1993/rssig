@@ -7840,7 +7840,8 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked-rejected"
+        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
     {
@@ -7901,7 +7902,8 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked-rejected"
+        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
     {
@@ -9370,7 +9372,8 @@
         "sec10-crl-dp-full-crl",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-crl-dp-other-idp-revoked-rejected"
+        "sec10-crl-dp-other-idp-revoked",
+        "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
     {
@@ -9424,7 +9427,18 @@
       "cases": [
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-other-idp-revoked-rejected"
+        "sec10-crl-dp-other-idp-revoked"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-case.crl",
+      "sha256": "2ff1d4c6d45a4f0414f5f9886273d3b5453a2ab22ebc919c891c3ebd640b8229",
+      "bytes": 234,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names HTTP://CRL.INVALID/sec10-a.crl, the signer's listed point with scheme and host in upper case; URIs are compared byte-exactly, so it is not authoritative. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-case-variant-idp-unknown"
       ]
     }
   ]

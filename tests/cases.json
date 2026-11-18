@@ -31387,7 +31387,7 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-revoked-rejected",
+      "id": "sec10-crl-dp-other-idp-revoked",
       "input": "sec10-leaf-crl-dp.exe",
       "command": [
         "verify",
@@ -31409,6 +31409,38 @@
             {
               "ok": false,
               "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-case-variant-idp-unknown",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-case.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
                 "stage": "revocation"
               }
             }

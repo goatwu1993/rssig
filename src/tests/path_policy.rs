@@ -8,11 +8,14 @@ use x509_cert::ext::{Extension, pkix::BasicConstraints};
 const LISTED_POINT: &str = "http://crl.invalid/sec10-a.crl";
 const OTHER_POINT: &str = "http://crl.invalid/sec10-b.crl";
 const SCOPED_LEAF_SERIAL: u32 = 121;
-const PARTITIONS: [(&str, &str, bool); 4] = [
+/// The listed point with its scheme and host in upper case: a different URI.
+const CASE_POINT: &str = "HTTP://CRL.INVALID/sec10-a.crl";
+const PARTITIONS: [(&str, &str, bool); 5] = [
     ("match", LISTED_POINT, false),
     ("match-revoked", LISTED_POINT, true),
     ("other", OTHER_POINT, false),
     ("other-revoked", OTHER_POINT, true),
+    ("case", CASE_POINT, false),
 ];
 
 fn key(byte: u8) -> SigningKey {
@@ -341,7 +344,7 @@ pub(super) fn write(dir: &std::path::Path) {
         std::fs::write(
             dir.join(format!("sec10-issuer-idp-{label}.crl")),
             crl_applicability::crl_full(
-                "CN=SEC-06 issuer",
+                &ca.tbs_certificate.subject.to_string(),
                 &ca_key,
                 NOW - 100,
                 Some(NOW + 1000),

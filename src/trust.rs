@@ -520,6 +520,21 @@ impl TrustStore {
                 // Every candidate path failed; report the issuer that postdates signing.
                 return not_valid_at_signing(cert, at);
             }
+            // webpki reports unknown status, before the path callback runs,
+            // when no CRL is authoritative for a certificate. The signer is on
+            // every path, so if an authenticated CRL of its issuer lists it, it
+            // is revoked rather than unknown.
+            let e = if e == webpki::Error::UnknownRevocationStatus
+                && signer.tbs_certificate.issuer.to_der().is_ok_and(|issuer| {
+                    let serial = signer.tbs_certificate.serial_number.as_bytes();
+                    revoked_serials.iter().any(|(name, serials)| {
+                        *name == issuer && serials.iter().any(|s| s == serial)
+                    })
+                }) {
+                webpki::Error::CertRevoked
+            } else {
+                e
+            };
             let mut error = if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
                 VerificationError::new(
                     ErrorCode::InvalidKeyUsage,

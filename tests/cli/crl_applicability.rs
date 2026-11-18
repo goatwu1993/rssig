@@ -344,26 +344,24 @@ fn sec10_crl_scoped_to_the_listed_distribution_point_is_authoritative() {
 
 #[test]
 fn sec10_crl_scoped_to_another_distribution_point_leaves_status_unknown() {
-    revocation_failure(
-        &run_crl_dp(&["sec10-issuer-idp-other.crl"]),
-        "revocation_unknown",
-        "Revocation status unknown",
-    );
+    // The second URI differs from the listed point only in letter case.
+    for crl in ["sec10-issuer-idp-other.crl", "sec10-issuer-idp-case.crl"] {
+        revocation_failure(
+            &run_crl_dp(&[crl]),
+            "revocation_unknown",
+            "Revocation status unknown",
+        );
+    }
 }
 
 #[test]
-fn sec10_non_authoritative_partition_listing_the_signer_fails_closed() {
-    // No authoritative CRL is supplied. Which revocation code is reported is
-    // an open decision (TODO SEC-10); only the rejection is pinned, as in the
-    // portable case `sec10-crl-dp-other-idp-revoked-rejected`.
-    let output = run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]);
-    assert_eq!(output.exit_code, 1);
-    let error = &output.json["results"][0]["error"];
-    assert_eq!(error["stage"], "revocation");
-    let code = error["code"].as_str().unwrap();
-    assert!(
-        ["revocation_unknown", "certificate_revoked"].contains(&code),
-        "{code}"
+fn sec10_signer_listed_by_a_non_authoritative_partition_is_revoked() {
+    // No authoritative CRL is supplied, but an authenticated CRL of the
+    // signer's issuer lists it: revoked, not merely unknown.
+    revocation_failure(
+        &run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]),
+        "certificate_revoked",
+        "Certificate revoked",
     );
 }
 
