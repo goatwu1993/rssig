@@ -23944,7 +23944,17 @@
             {
               "ok": false,
               "error": {
-                "code": "crl_fetch_denied"
+                "code": "revocation_unknown",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "code": "crl_fetch_denied"
+                      }
+                    ]
+                  }
+                }
               }
             }
           ]
@@ -24147,8 +24157,19 @@
             {
               "ok": false,
               "error": {
-                "code": "crl_fetch_failed",
-                "stage": "revocation"
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
               }
             }
           ]

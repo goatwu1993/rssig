@@ -1,9 +1,15 @@
 use super::support::*;
 #[test]
 fn crl_fetch_rejects_private_destinations_and_checks_integrity_first() {
-    for (file, code) in [
-        ("bad-crl-private-url.exe", "crl_fetch_denied"),
-        ("bad-crl-discovery-image.exe", "image_digest_mismatch"),
+    // A denied private destination is no evidence: the status is unknown and
+    // the denial is recorded. A bad image fails before any discovery.
+    for (file, code, denied) in [
+        ("bad-crl-private-url.exe", "revocation_unknown", true),
+        (
+            "bad-crl-discovery-image.exe",
+            "image_digest_mismatch",
+            false,
+        ),
     ] {
         let out = run_fixture(
             file,
@@ -18,7 +24,14 @@ fn crl_fetch_rejects_private_destinations_and_checks_integrity_first() {
             ],
         );
         assert_eq!(out.exit_code, 1);
-        assert_eq!(out.json["results"][0]["error"]["code"], code);
+        let error = &out.json["results"][0]["error"];
+        assert_eq!(error["code"], code);
+        let failures = &error["details"]["crl_retrieval"]["failures"];
+        if denied {
+            assert_eq!(failures[0]["code"], "crl_fetch_denied");
+        } else {
+            assert!(failures.is_null());
+        }
     }
 }
 

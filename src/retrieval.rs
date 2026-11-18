@@ -186,9 +186,6 @@ struct Retrieval<'s, 'b, 'l> {
     requested: BTreeMap<String, Option<VerificationError>>,
     /// Requests made, answered or not; bounded by `MAX_REQUESTS`.
     requests: usize,
-    /// The first point that yielded no evidence, reported if no verification
-    /// with revocation required ran.
-    skipped: Option<VerificationError>,
     budget: &'b Budget<'l>,
 }
 
@@ -205,46 +202,29 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             downloaded: 0,
             requested: BTreeMap::new(),
             requests: 0,
-            skipped: None,
             budget,
         }
     }
 
-    /// Record a point that yielded no evidence and return `Ok`, or return the
-    /// error as final. `crl_fetch_denied` and `crl_fetch_failed` are always
-    /// recorded. In the speculative second step any other error from
-    /// discovery, the source or decoding a response is recorded too, since
-    /// that certificate may already be covered, except
-    /// `resource_limit_exceeded`, which always ends the run.
-    fn skip(
-        &mut self,
-        certificate: &str,
-        url: Option<&str>,
-        e: VerificationError,
-        speculative: bool,
-    ) -> Result<(), VerificationError> {
+    /// Record a point that yielded no evidence. Every error about one
+    /// listed point ends here, whatever its code, including any error the
+    /// source returns: the source is the caller's, so its errors mean only
+    /// that this URL produced nothing. The next verification still requires
+    /// evidence for every certificate, so this never accepts anything. Only
+    /// the engine's own limits end the run; they never reach here.
+    fn skip(&mut self, certificate: &str, url: Option<&str>, e: VerificationError) {
         let e = match url {
             Some(url) => e.detail("url", url),
             None => e,
         };
-        let skippable = match e.code {
-            ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed => true,
-            ErrorCode::ResourceLimitExceeded => false,
-            _ => speculative,
-        };
-        if !skippable {
-            return Err(e);
-        }
         self.budget.log.info(
             Stage::Revocation,
             format_args!("CRL point yielded no evidence: {:?}", e.message),
         );
         self.record(certificate, url, &e);
         if let Some(entry) = url.and_then(|url| self.requested.get_mut(url)) {
-            *entry = Some(e.clone());
+            *entry = Some(e);
         }
-        self.skipped.get_or_insert(e);
-        Ok(())
     }
 
     /// One failure entry per certificate and URL.
@@ -271,8 +251,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
 
     /// Request every listed point of `cert`. A point that yields no evidence
     /// is recorded in the report's failures (see [`Self::skip`]); whether that
-    /// matters is decided by the next verification, which still requires
-    /// evidence for every certificate. A URL already requested is not
+    /// matters is decided by the next verification. The engine's own limits
+    /// (requests, retained CRLs, combined bytes, response size, URLs per
+    /// certificate) end the run. A URL already requested is not
     /// requested again; if it failed, the failure is recorded for this
     /// certificate too. Returns whether anything was added.
     fn fetch(
@@ -280,26 +261,32 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         sha256: &str,
         cert: &Certificate,
         source: &mut dyn CrlSource,
-        speculative: bool,
     ) -> Result<bool, VerificationError> {
         let log = self.budget.log;
         let mut added = false;
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
-            Err(e) => return self.skip(sha256, None, e, speculative).map(|()| false),
+            // The engine's own per-certificate URL limits end the run.
+            Err(e) if e.code == ErrorCode::ResourceLimitExceeded => return Err(e),
+            // A malformed extension: webpki skips it offline, so it is no
+            // evidence here, not a rejection.
+            Err(e) => {
+                self.skip(sha256, None, e);
+                return Ok(false);
+            }
         };
         for listed in listed {
             let raw = match listed {
                 Ok(raw) => raw,
                 Err(e) => {
-                    self.skip(sha256, None, e, speculative)?;
+                    self.skip(sha256, None, e);
                     continue;
                 }
             };
             let url = match http::checked_url(&raw) {
                 Ok(url) => url.to_string(),
                 Err(e) => {
-                    self.skip(sha256, Some(&raw), e, speculative)?;
+                    self.skip(sha256, Some(&raw), e);
                     continue;
                 }
             };
@@ -334,7 +321,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             let fetched = match source.fetch(&url, cap) {
                 Ok(fetched) => fetched,
                 Err(e) => {
-                    self.skip(sha256, Some(&url), e, speculative)?;
+                    self.skip(sha256, Some(&url), e);
                     continue;
                 }
             };
@@ -350,7 +337,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
             }
             if let Err(e) = http::checked_url(&fetched.final_url) {
-                self.skip(sha256, Some(&url), e, speculative)?;
+                self.skip(sha256, Some(&url), e);
                 continue;
             }
             for _ in 0..8 {
@@ -376,10 +363,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     ErrorCode::InvalidCrl,
                     format!("decoding retrieved CRL: {e:#}"),
                 );
-                // Bytes that are not a CRL are no evidence, in either step:
-                // another listed point may still supply it, and verification
-                // decides.
-                self.skip(sha256, Some(&url), e, true)?;
+                self.skip(sha256, Some(&url), e);
                 continue;
             }
             // A PEM response may contain multiple distinct CRLs. Bound the
@@ -482,7 +466,7 @@ fn retrieve(
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
             for (sha256, cert, _) in certificates {
-                added |= state.fetch(sha256, cert, source, step == 1)?;
+                added |= state.fetch(sha256, cert, source)?;
             }
             let verify = if step == 0 {
                 state.store.retrieval_crl_count() > 0
@@ -513,13 +497,13 @@ fn retrieve(
                 }
             }
         }
-        // Still unknown. The verifier's own result is reported when a
-        // verification ran; points that yielded no evidence are in the
-        // report's failures. Without one, the first such point explains it.
-        Err(verdict.or(state.skipped.take()).unwrap_or_else(|| {
+        // Still unknown: the verifier's own result when a verification ran,
+        // else the same code with no CRL at all. Points that yielded no
+        // evidence, and why, are in the report's failures.
+        Err(verdict.unwrap_or_else(|| {
             error(
                 ErrorCode::RevocationUnknown,
-                "no CRL was supplied or retrieved, and no selected certificate lists a usable CRL distribution point",
+                "no CRL was supplied or retrieved for the selected certificates",
             )
         }))
     })();
@@ -584,7 +568,7 @@ mod tests {
             ),
             (
                 include_bytes!("../tests/fixtures/bad-crl-private-url.exe").as_slice(),
-                ErrorCode::CrlFetchDenied,
+                ErrorCode::RevocationUnknown,
             ),
             (
                 include_bytes!("../tests/fixtures/good-pe64.exe").as_slice(),
@@ -732,55 +716,27 @@ mod tests {
         let mut source = Failing(0);
         assert!(
             !state
-                .fetch("a", &signer_with_points("a", 10), &mut source, false)
+                .fetch("a", &signer_with_points("a", 10), &mut source)
                 .unwrap()
         );
         assert_eq!(state.report.failures.len(), 10);
-        assert_eq!(
-            state.skipped.as_ref().unwrap().code,
-            ErrorCode::CrlFetchFailed
-        );
         let error = state
-            .fetch("b", &signer_with_points("b", 10), &mut source, false)
+            .fetch("b", &signer_with_points("b", 10), &mut source)
             .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
         assert_eq!(source.0, MAX_REQUESTS);
     }
     #[test]
-    fn skip_rules_by_step_and_one_entry_per_certificate_and_url() {
+    fn every_point_error_is_recorded_once_per_certificate_and_url() {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
-        let failed = || error(ErrorCode::CrlFetchFailed, "unreachable");
-        let invalid = || error(ErrorCode::InvalidCrl, "not a CRL");
-        // Limits end the run in either step.
-        for speculative in [false, true] {
-            assert!(
-                state
-                    .skip(
-                        "a",
-                        Some("http://x.invalid/a"),
-                        limit("x", 1, 1, 1),
-                        speculative
-                    )
-                    .is_err()
-            );
-        }
-        // Other errors are skipped only in the speculative step.
-        assert!(state.skip("a", None, invalid(), false).is_err());
-        state.skip("a", None, invalid(), true).unwrap();
-        // Denied and failed points are skipped in either step, once per
-        // certificate and URL.
-        state
-            .skip("a", Some("http://x.invalid/a"), failed(), false)
-            .unwrap();
-        state
-            .skip("a", Some("http://x.invalid/a"), failed(), false)
-            .unwrap();
-        state
-            .skip("b", Some("http://x.invalid/a"), failed(), false)
-            .unwrap();
+        let url = Some("http://x.invalid/a");
+        state.skip("a", None, error(ErrorCode::InvalidCertificate, "malformed"));
+        state.skip("a", url, limit("crl_network_bytes", 1, 1, 1));
+        state.skip("a", url, error(ErrorCode::CrlFetchFailed, "again"));
+        state.skip("b", url, error(ErrorCode::CrlFetchFailed, "unreachable"));
         let entries: Vec<_> = state
             .report
             .failures
@@ -790,16 +746,16 @@ mod tests {
         assert_eq!(
             entries,
             [
-                ("a", None, ErrorCode::InvalidCrl),
-                ("a", Some("http://x.invalid/a"), ErrorCode::CrlFetchFailed),
-                ("b", Some("http://x.invalid/a"), ErrorCode::CrlFetchFailed),
+                ("a", None, ErrorCode::InvalidCertificate),
+                ("a", url, ErrorCode::ResourceLimitExceeded),
+                ("b", url, ErrorCode::CrlFetchFailed),
             ]
         );
         // A URL that was never requested is not tracked as one.
         assert!(state.requested.is_empty());
     }
     #[test]
-    fn a_limit_from_the_source_is_final_not_skipped() {
+    fn a_source_error_is_no_evidence_even_when_it_is_a_limit() {
         struct Limited;
         impl CrlSource for Limited {
             fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
@@ -807,17 +763,20 @@ mod tests {
             }
         }
         let store = store();
-        let result = verify_with_crl_source(
+        let error = verify_with_crl_source(
             include_bytes!("../tests/fixtures/good-crl-discovery.exe"),
             None,
             &VerifyOptions::trusted(&store, 1800000000),
             &mut Limited,
         )
         .unwrap_err();
-        assert_eq!(result.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(result.details["resource"], "crl_network_bytes");
-        // The engine names the URL that hit the source's limit.
-        assert_eq!(result.details["url"], "http://crl.example.invalid/test.crl");
+        // The source is the caller's: its limit means this URL produced
+        // nothing, so the status is unknown and the reason is recorded.
+        assert_eq!(error.code, ErrorCode::RevocationUnknown);
+        let failure = &error.details["crl_retrieval"]["failures"][0];
+        assert_eq!(failure["code"], "resource_limit_exceeded");
+        assert_eq!(failure["details"]["resource"], "crl_network_bytes");
+        assert_eq!(failure["url"], "http://crl.example.invalid/test.crl");
     }
     #[test]
     fn discovery_preserves_uri_and_rejects_malformed_extensions() {

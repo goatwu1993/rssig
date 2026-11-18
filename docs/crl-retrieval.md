@@ -31,41 +31,43 @@ rule is restated for retrieval.
    cannot gain evidence, so the status cannot change
    (`sec10-fetch-uncovered-after-first-step-stops`).
 
-A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
-denied by transport policy, or whose request fails yields no evidence; these
-are the `crl_fetch_denied` and `crl_fetch_failed` errors. They do not end the
-run, because the next verification still requires evidence for every selected
-certificate. In step 4 the certificate may already be covered, so any other
-error from discovery, the source or decoding a response is treated the same
-way there, such as a malformed cRLDistributionPoints extension or a response
-that is not a CRL (`sec10-fetch-covered-point-bad-response-skipped`); a
-`resource_limit_exceeded` never is. Each is listed in
+Two kinds of error, and nothing in between:
+
+- **The engine's own limits end the run**: requests (16 per verification,
+  answered or not), retained CRLs, combined bytes, response size, URLs per
+  certificate and URL length, and the SEC-02 work budget.
+- **Every other error about one listed point is no evidence from that point**:
+  it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
+  certificate's cRLDistributionPoints is malformed (webpki skips it offline),
+  transport policy denies the URL, the response is not a CRL, or the source
+  returns any error. The source is the caller's (`CrlSource`), so any `Err`
+  from it, whatever its code, means only that this URL produced nothing; the
+  built-in source's time limit and DNS timeout are no different.
+
+No evidence never accepts anything: the next verification still requires
+evidence for every selected certificate. Each such point is listed in
 `crl_retrieval.failures` with the certificate's SHA-256, the URL when there is
-one, and the error's code, stage, message, details and causes; a URL that
-already failed is listed again for each further certificate that lists it, and
-is not requested again. An
-unsupported point is skipped on its own: a plain URI listed beside it is still
-requested (`sec10-fetch-mixed-point-requests-plain-uri`). If the status stays
-unknown, the result is the verifier's own `revocation_unknown` when any
-verification with revocation required ran, as it would be without
-`--fetch-crls`; otherwise the first failure is returned (for example
-`crl_fetch_denied` for a private URL with no supplied CRL). Every other error
-ends the run in step 2: a malformed cRLDistributionPoints extension. A
-response that does not decode as a CRL is recorded and skipped in either
-step. Every `resource_limit_exceeded` ends the run in either
-step: the engine's own limits (requests, retained CRLs, combined bytes,
-response size, URLs per certificate and URL length) and any the source
-reports, such as its time limit. A response identical to a CRL already loaded
-adds nothing and does not trigger another verification. A source error carries
-the URL it was requested for. The source's time limit replaces only a timeout:
-a request that fails another way after the deadline keeps its own error. Every request counts toward the request limit, answered
-or not. A certificate that a supplied CRL covers is not fetched for while another
+one, and the error's code, stage, message, details and causes. A URL is
+requested once; if it failed, it is listed again for each further certificate
+that lists it. An unsupported point is skipped on its own, so a plain URI
+beside it is still requested (`sec10-fetch-mixed-point-requests-plain-uri`). A
+response identical to a CRL already loaded adds nothing and does not trigger
+another verification.
+
+When evidence stays missing the result is always `revocation_unknown`: the
+verifier's own when a verification with revocation required ran, as without
+`--fetch-crls`, and otherwise one stating that no CRL was supplied or
+retrieved. `crl_fetch_denied` and `crl_fetch_failed` appear only inside
+`crl_retrieval.failures`, never as the result.
+
+A certificate that a supplied CRL covers is not fetched for while another
 chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
 in step 4 if a name-matching CRL elsewhere was not enough
 (`sec10-fetch-name-matched-signer-point-requested-second`), and a failure of
-that request does not matter if verification then succeeds
-(`sec10-fetch-covered-point-failure-skipped`). Supplied CRLs stay loaded beside
-the fetched ones.
+that request, or a response that is not a CRL, does not matter if verification
+then succeeds (`sec10-fetch-covered-point-failure-skipped`,
+`sec10-fetch-covered-point-bad-response-skipped`). Supplied CRLs stay loaded
+beside the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
 verifies once (step 1 only) when there is no CRL at all and step 2 fetches
@@ -134,7 +136,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30-second source lifetime starting with its first fetch, then `resource_limit_exceeded` (`crl_retrieval_time`), including for a request in progress when it runs out; a DNS timeout closes the source (`crl_dns_timeouts`); both end the run; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, every request fails (`crl_fetch_failed`, recorded as no evidence); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The CLI shares one HTTP source across its batch. Limits persist across files.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
@@ -161,10 +163,8 @@ supplied, while existing CRL reports describe normalized DER.
 Points that yielded no evidence are listed in `crl_retrieval.failures` (omitted
 when empty), on success and in failure `details.crl_retrieval`; a successful
 result can therefore show that some requests failed or were denied without
-that evidence being needed. `crl_fetch_failed` or `crl_fetch_denied` at stage
-`revocation` is the result only when no verification with revocation required
-ran. Missing evidence otherwise uses `revocation_unknown`. Budget failures use
-`resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
+that evidence being needed. Missing evidence is always `revocation_unknown`.
+The engine's own limits use `resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
 failure `details.crl_retrieval`.
 Malformed, stale, forged or revoked evidence retains existing verifier error
 codes. CLI failures remain ordered entries in one JSON document, without partial

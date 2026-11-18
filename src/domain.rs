@@ -516,12 +516,12 @@ pub struct CrlRetrievalArtifact {
     pub sha256: String,
     pub bytes: usize,
 }
-/// A listed distribution point that yielded no evidence. Usually
-/// `crl_fetch_denied` (not discovered, `url` absent, or denied by transport
-/// policy) or `crl_fetch_failed` (the request failed). In the speculative
-/// second retrieval step it can also be another code, such as `invalid_crl`
-/// for a response that is not a CRL or `invalid_certificate` for a malformed
-/// cRLDistributionPoints extension. Verification still decides whether the
+/// A listed distribution point that yielded no evidence, with the error that
+/// explains it. Usually `crl_fetch_denied` (not discovered, `url` absent, or
+/// denied by transport policy) or `crl_fetch_failed` (the request failed), but
+/// any code is possible: `invalid_crl` for a response that is not a CRL,
+/// `invalid_certificate` for a malformed cRLDistributionPoints extension, or
+/// whatever a `CrlSource` returned. Verification still decides whether the
 /// missing evidence mattered.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrlRetrievalFailure {

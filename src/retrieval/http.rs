@@ -85,23 +85,16 @@ impl HttpCrlSource {
         Self::default()
     }
     fn remaining(&self) -> Result<Duration, VerificationError> {
-        // Both end the source's usefulness, so they are limits: retrieval
-        // ends the run instead of skipping one point.
         if self.poisoned {
-            return Err(limit("crl_dns_timeouts", 1, 1, 1));
+            return Err(error(
+                ErrorCode::CrlFetchFailed,
+                "CRL source is closed after a DNS timeout",
+            ));
         }
-        let elapsed = self.started.expect("fetch started").elapsed();
         DEADLINE
-            .checked_sub(elapsed)
+            .checked_sub(self.started.expect("fetch started").elapsed())
             .filter(|d| !d.is_zero())
-            .ok_or_else(|| {
-                limit(
-                    "crl_retrieval_time",
-                    DEADLINE.as_secs() as usize,
-                    elapsed.as_secs() as usize,
-                    1,
-                )
-            })
+            .ok_or_else(|| error(ErrorCode::CrlFetchFailed, "CRL retrieval deadline exceeded"))
     }
     fn resolve(&mut self, url: &Url) -> Result<SocketAddr, VerificationError> {
         let host = url
@@ -131,10 +124,10 @@ impl HttpCrlSource {
             })?,
             Err(_) => {
                 self.poisoned = true;
-                return Err(
-                    error(ErrorCode::CrlFetchFailed, "CRL DNS deadline exceeded")
-                        .detail("timeout", true),
-                );
+                return Err(error(
+                    ErrorCode::CrlFetchFailed,
+                    "CRL DNS deadline exceeded",
+                ));
             }
         };
         if addresses.is_empty()
@@ -166,19 +159,10 @@ impl HttpCrlSource {
     }
 }
 fn io_error(e: std::io::Error) -> VerificationError {
-    let timeout = matches!(
-        e.kind(),
-        std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
-    );
-    let error = error(
+    error(
         ErrorCode::CrlFetchFailed,
         format!("CRL HTTP I/O failed: {e}"),
-    );
-    if timeout {
-        error.detail("timeout", true)
-    } else {
-        error
-    }
+    )
 }
 
 struct Headers {
@@ -241,29 +225,8 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
     })
 }
 impl CrlSource for HttpCrlSource {
-    /// A request that times out because the source's lifetime ran out, or
-    /// that timed out resolving, reports that limit rather than the timeout.
-    /// Other failures keep their own error even after the deadline.
     fn fetch(&mut self, raw: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError> {
         self.started.get_or_insert_with(Instant::now);
-        self.fetch_within_limits(raw, max_bytes).map_err(|mut e| {
-            // `timeout` is an internal marker, not part of the reported error.
-            if e.details.remove("timeout") == Some(serde_json::Value::Bool(true))
-                && let Err(limit) = self.remaining()
-            {
-                return limit;
-            }
-            e
-        })
-    }
-}
-
-impl HttpCrlSource {
-    fn fetch_within_limits(
-        &mut self,
-        raw: &str,
-        max_bytes: usize,
-    ) -> Result<FetchedCrl, VerificationError> {
         let mut url = checked_url(raw)?;
         let cap = max_bytes.min(MAX_CRL_BYTES);
         if cap == 0 {
@@ -470,25 +433,14 @@ mod tests {
             started: Some(Instant::now() - DEADLINE),
             ..HttpCrlSource::new()
         };
-        // The lifetime and a poisoned resolver are limits, so retrieval ends
-        // the run instead of treating them as one failed point.
-        let error = source.remaining().unwrap_err();
-        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(error.details["resource"], "crl_retrieval_time");
-        assert_eq!(error.details["limit"], DEADLINE.as_secs());
-        // A request made after the deadline reports the limit, not an I/O error.
-        let mut late = HttpCrlSource {
-            started: Some(Instant::now() - DEADLINE),
-            ..HttpCrlSource::new()
-        };
-        let error = late.fetch("http://example.com/x", 10).err().unwrap();
-        assert_eq!(error.details["resource"], "crl_retrieval_time");
-        let mut source = HttpCrlSource {
+        assert_eq!(
+            source.remaining().unwrap_err().code,
+            ErrorCode::CrlFetchFailed
+        );
+        let source = HttpCrlSource {
             poisoned: true,
             ..HttpCrlSource::new()
         };
-        let error = source.fetch("http://example.com/x", 10).err().unwrap();
-        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(error.details["resource"], "crl_dns_timeouts");
+        assert!(source.remaining().is_err());
     }
 }
