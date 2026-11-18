@@ -43,3 +43,29 @@ check-coverage-tools:
 .PHONY: build
 build:
 	@$(CARGO) build --locked
+
+# Fuzzing is optional and separate from `make test`: it needs a nightly
+# toolchain and cargo-fuzz. See docs/fuzzing.md.
+FUZZ_SECONDS ?= 30
+FUZZ_TARGETS := parse_cms parse_pe parse_cab_navx parse_msi parse_appx parse_text verify_binary verify_text
+FUZZ_FLAGS ?= -max_len=131072 -timeout=10 -rss_limit_mb=2048
+
+.PHONY: fuzz-seed
+fuzz-seed:
+	./fuzz/seed-corpus.sh
+
+.PHONY: fuzz
+fuzz: check-fuzz-tools fuzz-seed
+	@set -e; for target in $(FUZZ_TARGETS); do \
+		echo "== $$target ($(FUZZ_SECONDS)s)"; \
+		$(CARGO) +nightly fuzz run $$target -- -max_total_time=$(FUZZ_SECONDS) $(FUZZ_FLAGS); \
+	done
+
+.PHONY: check-fuzz-tools
+check-fuzz-tools:
+	@$(CARGO) +nightly fuzz --version >/dev/null 2>&1 || { \
+		echo "Fuzzing requires a nightly toolchain and cargo-fuzz. Install with:"; \
+		echo "  rustup toolchain install nightly --profile minimal"; \
+		echo "  cargo install cargo-fuzz --version 0.13.2 --locked"; \
+		exit 1; \
+	}

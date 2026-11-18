@@ -240,6 +240,7 @@ See [MSIX/AppX support and provenance](docs/appx.md) for ZIP limits, block maps,
 manifest publisher binding, and optional embedded catalog reporting.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
 Cobertura XML, and HTML reports.
+See [fuzzing](docs/fuzzing.md) for the optional cargo-fuzz targets and how to run them.
 
 This is an initial verifier, not a Windows trust-policy replacement. It requires
 embedded certificates and either supplied CRLs or explicit `--fetch-crls`;

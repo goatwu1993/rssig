@@ -1,0 +1,77 @@
+[package]
+name = "rssig-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Detached from the parent package so the nightly-only fuzzing toolchain and
+# its lockfile never affect `cargo test --locked` at the repository root.
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+rssig = { path = "..", default-features = false, features = ["verify"] }
+sha2 = { version = "0.10", default-features = false }
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "parse_cms"
+path = "fuzz_targets/parse_cms.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_pe"
+path = "fuzz_targets/parse_pe.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_cab_navx"
+path = "fuzz_targets/parse_cab_navx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_msi"
+path = "fuzz_targets/parse_msi.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_appx"
+path = "fuzz_targets/parse_appx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_text"
+path = "fuzz_targets/parse_text.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_binary"
+path = "fuzz_targets/verify_binary.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_text"
+path = "fuzz_targets/verify_text.rs"
+test = false
+doc = false
+bench = false
