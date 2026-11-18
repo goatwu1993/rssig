@@ -93,15 +93,28 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
     Ok(urls)
 }
 
-fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<&'a CertificateReport>) {
+/// Selected-path certificates below the anchor, each with whether it is the
+/// path's end entity (CRL role flags depend on it).
+fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<(&'a CertificateReport, bool)>) {
+    let mut path = |trust: &'a TrustReport| {
+        let below_anchor = trust.chain.len().saturating_sub(1);
+        output.extend(
+            trust
+                .chain
+                .iter()
+                .take(below_anchor)
+                .enumerate()
+                .map(|(depth, cert)| (cert, depth == 0)),
+        );
+    };
     for signature in &bundle.signatures {
         if let Some(trust) = &signature.trust {
-            output.extend(trust.chain.iter().take(trust.chain.len().saturating_sub(1)));
+            path(trust);
         }
         if let Some(timestamp) = &signature.timestamp_verification
             && let Some(trust) = &timestamp.trust
         {
-            output.extend(trust.chain.iter().take(trust.chain.len().saturating_sub(1)));
+            path(trust);
         }
     }
     if let Some(appx) = &bundle.appx
@@ -159,8 +172,8 @@ pub fn verify_with_crl_source(
             ));
         }
         let mut fetched_urls = BTreeSet::new();
-        for cert in certificates {
-            if !seen.insert(&cert.sha256) {
+        for (cert, end_entity) in certificates {
+            if !seen.insert((&cert.sha256, end_entity)) {
                 continue;
             }
             budget
@@ -186,7 +199,7 @@ pub fn verify_with_crl_source(
                 .collect::<Vec<_>>();
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            if store.has_crl_for(&cert, &budget).map_err(|e| {
+            if store.has_crl_for(&cert, end_entity, &budget).map_err(|e| {
                 VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
             })? {
                 continue;
@@ -391,7 +404,7 @@ mod tests {
             assert!(
                 selected
                     .iter()
-                    .all(|c| c.subject.common_names != ["rssig test root"])
+                    .all(|(c, _)| c.subject.common_names != ["rssig test root"])
             );
         }
     }

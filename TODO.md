@@ -1,8 +1,9 @@
 # Prioritized roadmap
 
 Maintained alongside implementation and its recorded completion evidence.
-Lifetime-signing and time-boundary policy (SEC-09) is complete; the next prioritized
-security task is CRL applicability and competing evidence (SEC-10). This coverage also
+Lifetime-signing and time-boundary policy (SEC-09) and CRL applicability and
+competing evidence (SEC-10) are complete; the next open security item is reporting
+the CRL evidence actually used (SEC-11). The SEC-10 coverage also
 supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
 Confirmed correctness regressions take priority over planned refactoring.
 New algorithms, formats, and network access require their own evidence and
@@ -154,10 +155,10 @@ timestamps, and local CRL validation already exist.
   verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
   macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
   Review items decided against or deferred are recorded in SEC-14.
-- [ ] **SEC-10: Audit CRL applicability and competing evidence.** Detail is in
+- [x] **SEC-10: Audit CRL applicability and competing evidence.** Detail is in
   [docs/tasks/sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md):
-  the audit checklist, decisions, evidence limits and pointers to known
-  limitations. Check this box when every box there is checked.
+  the audit checklist (every box checked), decisions, evidence limits and
+  pointers to known limitations, which stay open under their own IDs.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when

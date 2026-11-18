@@ -4,8 +4,8 @@ Task detail for **SEC-10** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox. Other IDs below (SEC-11, SEC-15 to SEC-21, TEST-11,
 PRODUCT-04, INTEROP-01, DEFER-01) are items in that file.
 
-**Status:** open. Close it, and check the box in `TODO.md`, when every box in
-the audit checklist is checked.
+**Status:** complete. Every box in the audit checklist is checked, as is the
+box in `TODO.md`. The limitations below stay open under their own IDs.
 
 ## Scope
 
@@ -18,7 +18,7 @@ unsupported-policy errors.
 
 The rules are stated in the CRL row of [time policy](../time-policy.md). The
 cases named below are in `tests/cases.json`, with named tests in
-`tests/cli/crl_applicability.rs`.
+`tests/cli/crl_applicability.rs` and `tests/cli/crl_fetch.rs`.
 
 ## Audit checklist
 
@@ -96,12 +96,20 @@ One box per item in the scope above.
   `sec10-crl-this-update-one-second-ahead`, `sec10-crl-this-update-exact`,
   `sec10-crl-next-update-one-second-left`, `sec10-crl-next-update-exact`. Whole
   seconds only; CRL times carry no fractions.
-- [ ] **`--fetch-crls` coverage.** `has_crl_for` treats any supplied CRL with
-  the certificate's issuer name as coverage, so a CRL that is not authoritative
-  for the certificate suppresses fetching its listed distribution point and the
-  result is `revocation_unknown` (observed with `sec10-leaf-crl-dp.exe` and
-  `sec10-issuer-idp-other.crl`). Make coverage use the same authority rule as
-  verification, with an injected-source fixture.
+- [x] **`--fetch-crls` coverage.** A supplied CRL suppresses retrieval for a
+  certificate only if it would be authoritative for it under the
+  distribution-point rule above (issuer name, role flags, a shared URI or no
+  issuingDistributionPoint); a CRL that merely has the issuer's name no longer
+  does, so the listed point is fetched and the fetched CRL is held to the same
+  rule. `sec10-fetch-other-idp-fetches-listed-point`,
+  `sec10-fetch-other-idp-fetched-revoked`,
+  `sec10-fetch-other-idp-fetched-other-unknown`,
+  `sec10-fetch-ca-scope-idp-fetches-listed-point`,
+  `sec10-fetch-ca-user-scope-idp-fetches-listed-point`, and the
+  `sec10-fetch-*-not-fetched` controls; named test in `tests/cli/crl_fetch.rs`.
+  Limits: the rule is restated in `has_crl_for`, not shared with webpki, and
+  does not consider AKI applicability or usability, which verification still
+  enforces on every CRL.
 
 ## Decisions made
 
@@ -125,6 +133,8 @@ Change these only with a new decision and paired fixtures.
   order ([PR #48](https://github.com/goatwu1993/rssig/pull/48)). A listing by a
   non-authoritative CRL alone is `revocation_unknown` ([PR
   #49](https://github.com/goatwu1993/rssig/pull/49), until SEC-21).
+- With `--fetch-crls`, only a supplied CRL that would be authoritative for a
+  certificate suppresses retrieval of its listed distribution point (PR #55).
 - When no supplied CRL applies, `revocation_unknown` is returned before path
   building ([PR #44](https://github.com/goatwu1993/rssig/pull/44); SEC-20).
 
@@ -142,7 +152,14 @@ Change these only with a new decision and paired fixtures.
   (fix written before the fixture) or
   `sec10-root-delta-expired-crl-reports-feature` (case added after the reorder).
   The distribution-point, cRLSign, revoked-intermediate, AKI issuer/serial and
-  freshness-boundary cases pinned behavior that already held.
+  freshness-boundary cases pinned behavior that already held. The five
+  `sec10-fetch-*-fetches-*`/`-fetched-*` cases failed before the coverage fix
+  (no request was made); the four `-not-fetched` controls already passed.
+- The `--fetch-crls` coverage rule is a second implementation of webpki's
+  authority rule, checked against it only through these fixtures. Not pinned:
+  a certificate with several points, a CRL with a malformed
+  issuingDistributionPoint, and the same certificate as end entity on one
+  path and issuer on another.
 - Validated on macOS locally and on Linux in CI. No Windows comparison
   (DEFER-01).
 

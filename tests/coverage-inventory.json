@@ -406,7 +406,16 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused"
+        "crl-stale-local-provider-unused",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-user-scope-idp-not-fetched",
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched"
       ]
     },
     {
@@ -786,7 +795,8 @@
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-other-idp-fetched-revoked"
       ],
       "gap": ""
     },
@@ -832,7 +842,8 @@
         "sec10-crl-dp-dns-name-unknown",
         "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-crl-issuer-point-unknown"
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-fetch-other-idp-fetched-other-unknown"
       ],
       "gap": ""
     },
