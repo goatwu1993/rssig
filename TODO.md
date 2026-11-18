@@ -17,8 +17,10 @@ timestamps, and local CRL validation already exist.
 
 - Update this file alongside implementation PRs. Keep task IDs stable, record
   completion evidence or a PR link, and split work that no longer fits one PR.
-- An item that links to a GitHub issue keeps its ID, title and checkbox here;
-  its detail is maintained in the issue, not in this file.
+- An item that has outgrown this file moves its detail to a document under
+  `docs/tasks/` and keeps its ID, title, checkbox and a link here. Maintain the
+  detail there, not in this file. Tracking stays in the repository so it does
+  not depend on a hosting service.
 - Follow [AGENTS.md](AGENTS.md): committed fixture and manifest provenance,
   declarative case, named in-process Rust test, observed intended failure, then
   implementation. Ordinary tests never regenerate fixtures or execute them.
@@ -152,11 +154,10 @@ timestamps, and local CRL validation already exist.
   verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
   macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
   Review items decided against or deferred are recorded in SEC-14.
-- [ ] **SEC-10: Audit CRL applicability and competing evidence.** Tracked in
-  [issue #56](https://github.com/goatwu1993/rssig/issues/56), which holds the
-  audit checklist, decisions, evidence limits and pointers to known
-  limitations. This is a pilot of issue-based tracking; check this box when
-  the issue closes.
+- [ ] **SEC-10: Audit CRL applicability and competing evidence.** Detail is in
+  [docs/tasks/sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md):
+  the audit checklist, decisions, evidence limits and pointers to known
+  limitations. Check this box when every box there is checked.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when
