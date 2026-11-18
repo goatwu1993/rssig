@@ -12,6 +12,12 @@ PR titles must use Conventional Commit format: `feat: Add xxx`,
 `fix: Correct xxx`, or `refactor: Simplify xxx`. Choose the appropriate lowercase
 type and capitalize the first word after the colon and space.
 
+## Task tracking
+
+Tasks live in `TODO.md`; an item that outgrows it keeps its ID, title and
+checkbox there and links to a detail document under `docs/tasks/`. Do not create
+or reference GitHub issues to track tasks or sub-items.
+
 ## Architecture and constraints
 
 - Use pure Rust for PE/MSI/CAB/NAVX/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,

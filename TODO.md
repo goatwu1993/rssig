@@ -20,8 +20,11 @@ timestamps, and local CRL validation already exist.
   completion evidence or a PR link, and split work that no longer fits one PR.
 - An item that has outgrown this file moves its detail to a document under
   `docs/tasks/` and keeps its ID, title, checkbox and a link here. Maintain the
-  detail there, not in this file. Tracking stays in the repository so it does
-  not depend on a hosting service.
+  detail there, not in this file.
+- Track tasks and their sub-items only in this file and in documents under
+  `docs/`. Do not open GitHub issues for them, and do not link an item's open
+  work to an issue. A pull request link is allowed only as evidence for work
+  already merged.
 - Follow [AGENTS.md](AGENTS.md): committed fixture and manifest provenance,
   declarative case, named in-process Rust test, observed intended failure, then
   implementation. Ordinary tests never regenerate fixtures or execute them.
