@@ -12,5 +12,8 @@ verifysign
 /*.profraw
 /*.profdata
 
-# macOS Finder metadata.
+# Operating-system and editor by-products (see docs/testing.md).
 .DS_Store
+._*
+.*.swp
+*~

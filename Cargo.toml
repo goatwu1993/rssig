@@ -103,6 +103,9 @@ p256 = { version = "0.13", features = ["ecdsa", "pem"] }
 rand = "0.8"
 sha2 = { version = "0.10", features = ["oid"] }
 x509-cert = { version = "0.2", features = ["builder"] }
+# Parses Rust test and generator sources for tests/manifest.rs. Already in the
+# lockfile through serde_derive.
+syn = { version = "2", default-features = false, features = ["full", "parsing", "visit"] }
 
 [profile.release]
 lto = true

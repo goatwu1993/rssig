@@ -1,49 +1,17 @@
 //! Load the portable CLI specification with Serde and exercise the CLI library.
-#[path = "common/spec_args.rs"]
-mod spec_args;
+#[path = "common/spec_suite.rs"]
+mod spec_suite;
 
 use rssig::cli;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
-use spec_args::Argument;
+use spec_suite::{Argument, Case, Suite};
 use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
     path::{Path, PathBuf},
 };
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Suite {
-    schema_version: u32,
-    fixtures: String,
-    cases: Vec<Case>,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    id: String,
-    input: Option<String>,
-    crl_responses: Option<BTreeMap<String, String>>,
-    inputs: Option<Vec<String>>,
-    command: Vec<String>,
-    expect: Expectation,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Expectation {
-    crl_requests: Option<Vec<String>>,
-    exit_code: u8,
-    json: Option<Value>,
-    stdout: Option<String>,
-    stderr: Option<String>,
-    #[serde(default)]
-    stdout_contains: Vec<String>,
-    #[serde(default)]
-    stderr_contains: Vec<String>,
-    #[serde(default)]
-    contains: BTreeMap<String, String>,
-}
 #[derive(Serialize)]
 struct CaseResult {
     id: String,
@@ -143,7 +111,7 @@ fn compare(expected: &Value, actual: &Value, pointer: &str, failures: &mut Vec<S
 
 fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> Vec<OsString> {
     let mut args = vec![OsString::from("rssig")];
-    for argument in spec_args::classify(case.command.iter().map(String::as_str), fixture_prefix) {
+    for argument in spec_suite::classify(case.command.iter().map(String::as_str), fixture_prefix) {
         args.push(match argument {
             Argument::Plain(argument) => argument.into(),
             Argument::Path(path) => parent.join(path).into_os_string(),
