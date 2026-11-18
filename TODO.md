@@ -585,15 +585,8 @@ timestamps, and local CRL validation already exist.
   fields, case references, and unlisted or missing artifacts. Define intentional
   exceptions for diagnostic JSON and helper data. Maintenance generation remains
   explicit and requires review of changed binary artifacts.
-  Added `tests/manifest.rs`: a typed, unknown-field-rejecting manifest loader and
-  checks for safe unique paths, missing and unlisted files, byte counts, digests,
-  descriptions, provenance and license fields, generator and named-test
-  references, case IDs, case inputs, and good/bad pairs. Each rule is also run
-  against a narrowly broken copy of the committed data. The committed manifest
-  needed no changes. [Rules and exceptions](docs/testing.md#manifest-consistency).
-  The only unlisted file is `manifest.json`; four intentionally absent case
-  inputs are listed explicitly. Not enforced: that an artifact lists every case
-  reading it, or that each listed case reads the artifact directly.
+  Done in `tests/manifest.rs`; rules, exceptions, and what is not enforced are in
+  [manifest consistency](docs/testing.md#manifest-consistency).
 - [ ] **TEST-07: Automate complete-output compatibility comparisons.** Preserve
   PR #18's in-process comparison approach for refactors: exit codes, complete
   JSON, stdout, and stderr. Normalize only unavoidable checkout paths, never

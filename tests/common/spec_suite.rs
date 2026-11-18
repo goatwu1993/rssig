@@ -69,10 +69,11 @@ pub fn classify<'a>(
     let mut result = Vec::new();
     let mut path_value = false;
     for argument in command {
-        // A flag right after a path option is a missing value, not a path.
-        if path_value && !argument.starts_with('-') {
+        let after_path_option = std::mem::take(&mut path_value);
+        // A `--flag` right after a path option is a missing value, not a path;
+        // any other value (`-`, `-name.crl`) is the path.
+        if after_path_option && !argument.starts_with("--") {
             result.push(Argument::Path(argument));
-            path_value = false;
         } else if let Some((flag, path)) = argument.split_once('=')
             && PATH_OPTIONS.contains(&flag)
         {
@@ -97,6 +98,9 @@ pub enum CaseFile {
     Fixture(String),
     /// Any other path: it resolves outside the fixture directory.
     Outside(String),
+    /// An injected CRL response body. Unlike inputs, it must always exist,
+    /// because the runner reads it whenever the CLI requests that URL.
+    ResponseBody(String),
 }
 
 impl Case {
@@ -125,11 +129,23 @@ impl Case {
                     contains: _,
                 },
         } = self;
+        let named = |name: &String, kind: fn(String) -> CaseFile| {
+            if is_fixture_name(name) {
+                kind(name.clone())
+            } else {
+                CaseFile::Outside(name.clone())
+            }
+        };
         let mut files: Vec<CaseFile> = input
             .iter()
             .chain(inputs.iter().flatten())
-            .chain(crl_responses.iter().flat_map(BTreeMap::values))
-            .map(|name| CaseFile::Fixture(name.clone()))
+            .map(|name| named(name, CaseFile::Fixture))
+            .chain(
+                crl_responses
+                    .iter()
+                    .flat_map(BTreeMap::values)
+                    .map(|name| named(name, CaseFile::ResponseBody)),
+            )
             .collect();
         for argument in classify(command.iter().map(String::as_str), fixture_prefix) {
             match argument {

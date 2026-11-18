@@ -16,7 +16,10 @@ use std::{
     path::Path,
     sync::LazyLock,
 };
-use syn::visit::{self, Visit};
+use syn::{
+    ext::IdentExt,
+    visit::{self, Visit},
+};
 
 const MANIFEST: &str = "manifest.json";
 
@@ -194,13 +197,24 @@ impl SourceIndex {
         Ok(index)
     }
 
-    /// Never panics: a file `syn` cannot parse is indexed as empty and the
-    /// error is recorded, so one bad file cannot fail every check.
+    /// Never panics: a file that is not UTF-8 or that `syn` cannot parse is
+    /// indexed as empty and the error is recorded, so one bad file cannot
+    /// fail every check.
     fn parse_recording(text: &str) -> Self {
         Self::parse(text).unwrap_or_else(|error| Self {
             errors: vec![format!("not parsable: {error}")],
             ..Self::default()
         })
+    }
+
+    fn read(bytes: &[u8]) -> Self {
+        match std::str::from_utf8(bytes) {
+            Ok(text) => Self::parse_recording(text),
+            Err(error) => Self {
+                errors: vec![format!("not UTF-8: {error}")],
+                ..Self::default()
+            },
+        }
     }
 }
 
@@ -213,23 +227,54 @@ impl<'ast> Visit<'ast> for SourceIndex {
             self.tests.insert(path.clone());
         }
         self.functions.insert(path);
-        // Functions declared inside a body cannot be named; do not descend.
+        visit::visit_item_fn(self, item);
+    }
+    /// Items inside any block (function and method bodies, closures, const
+    /// initializers) cannot be named by a link, so never index them.
+    fn visit_block(&mut self, _: &'ast syn::Block) {}
+    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
+        for attribute in item.attrs.iter().filter(|a| a.path().is_ident("command")) {
+            let mut renames = false;
+            let _ = attribute.parse_nested_meta(|meta| {
+                renames |= meta.path.is_ident("rename_all");
+                if meta.input.peek(syn::Token![=]) {
+                    meta.value()?.parse::<syn::Expr>()?;
+                }
+                Ok(())
+            });
+            if renames {
+                self.errors.push(format!(
+                    "rename_all on `{}` changes option names the index derives",
+                    item.ident
+                ));
+            }
+        }
+        visit::visit_item_struct(self, item);
     }
     fn visit_field(&mut self, field: &'ast syn::Field) {
         if let Some(name) = &field.ident
             && mentions(&field.ty, "PathBuf")
         {
-            for attribute in field.attrs.iter().filter(|a| a.path().is_ident("arg")) {
+            // Clap's default name: the field without `r#`, in kebab case.
+            let base = name.unraw().to_string().replace('_', "-");
+            for attribute in field
+                .attrs
+                .iter()
+                .filter(|a| a.path().is_ident("arg") || a.path().is_ident("clap"))
+            {
                 let mut names = Vec::new();
                 let parsed = attribute.parse_nested_meta(|meta| {
-                    let field_name = name.to_string();
                     let value = meta.input.peek(syn::Token![=]);
                     let key = meta.path.get_ident().map(ToString::to_string);
                     match (key.as_deref(), value) {
-                        (Some("long"), false) => {
-                            names.push(format!("--{}", field_name.replace('_', "-")))
+                        (Some("id" | "name"), _) => {
+                            return Err(meta.error("id and name overrides are not indexed"));
                         }
-                        (Some("short"), false) => names.push(format!("-{}", &field_name[..1])),
+                        (Some("long"), false) => names.push(format!("--{base}")),
+                        (Some("short"), false) => match base.chars().next() {
+                            Some(first) => names.push(format!("-{first}")),
+                            None => return Err(meta.error("empty field name")),
+                        },
                         (Some("long" | "alias" | "visible_alias"), true) => {
                             names.push(format!(
                                 "--{}",
@@ -312,13 +357,15 @@ struct Corpus {
 fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, SourceIndex>) {
     for entry in std::fs::read_dir(root.join(relative)).unwrap() {
         let entry = entry.unwrap();
-        let name = entry.file_name().into_string().unwrap();
+        let name = entry.file_name().to_string_lossy().into_owned();
         let path = format!("{relative}/{name}");
         if entry.file_type().unwrap().is_dir() {
             read_sources(root, &path, sources);
         } else if name.ends_with(".rs") {
-            let text = std::fs::read_to_string(entry.path()).unwrap();
-            sources.insert(path, SourceIndex::parse_recording(&text));
+            sources.insert(
+                path,
+                SourceIndex::read(&std::fs::read(entry.path()).unwrap()),
+            );
         }
     }
 }
@@ -330,7 +377,9 @@ fn read_fixture_directory(directory: &Path) -> (BTreeMap<String, FileFacts>, BTr
     let mut other_entries = BTreeSet::new();
     for entry in std::fs::read_dir(directory).unwrap() {
         let entry = entry.unwrap();
-        let name = entry.file_name().into_string().unwrap();
+        // A non-UTF-8 name becomes a lossy one, which is never a safe artifact
+        // name, so it is reported as unlisted instead of panicking.
+        let name = entry.file_name().to_string_lossy().into_owned();
         let is_file = entry.file_type().unwrap().is_file();
         if is_file && local_by_product(&name) {
             continue;
@@ -351,8 +400,8 @@ static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
     let mut sources = BTreeMap::new();
     read_sources(root, "src", &mut sources);
     read_sources(root, "tests", &mut sources);
-    if let Ok(text) = std::fs::read_to_string(root.join("build.rs")) {
-        sources.insert("build.rs".to_owned(), SourceIndex::parse_recording(&text));
+    if let Ok(bytes) = std::fs::read(root.join("build.rs")) {
+        sources.insert("build.rs".to_owned(), SourceIndex::read(&bytes));
     }
     Corpus {
         manifest: serde_json::from_slice(&std::fs::read(directory.join(MANIFEST)).unwrap())
@@ -416,7 +465,9 @@ fn test_exists(
     test: &str,
 ) -> bool {
     test.split_once("::").is_some_and(|(module, function)| {
-        harness.contains(format!("cli/{module}.rs").as_str())
+        // Top-level tests only: `module::inner::name` is not a test link.
+        !function.contains("::")
+            && harness.contains(format!("cli/{module}.rs").as_str())
             && sources
                 .get(&format!("tests/cli/{module}.rs"))
                 .is_some_and(|index| index.tests.contains(function))
@@ -599,6 +650,12 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
                     Rule::UnlistedCaseInput,
                     format!("{case}: {path} (outside the fixture directory)"),
                 )),
+                // A response body is read whenever its URL is requested, so it
+                // can never be one of the intentionally absent inputs.
+                CaseFile::ResponseBody(name) if !listed.contains(name.as_str()) => {
+                    problems.push(problem(Rule::UnlistedCaseInput, format!("{case}: {name}")));
+                }
+                CaseFile::ResponseBody(_) => {}
                 CaseFile::Fixture(name) if ABSENT_INPUTS.contains(&name.as_str()) => {
                     // Case-insensitive: on macOS `Missing.exe` would be opened.
                     if folded.contains(&name.to_ascii_lowercase())
@@ -671,13 +728,16 @@ fn one(rule: Rule, subject: &str) -> Vec<(Rule, String)> {
     vec![(rule, subject.to_owned())]
 }
 
+static COMMITTED_CASE_FILES: LazyLock<BTreeMap<String, BTreeSet<CaseFile>>> =
+    LazyLock::new(|| case_files(&COMMITTED.cases));
+
 /// Case IDs that read fixture `name`.
 fn readers(name: &str) -> Vec<String> {
     let fixture = CaseFile::Fixture(name.to_owned());
-    case_files(&COMMITTED.cases)
-        .into_iter()
+    COMMITTED_CASE_FILES
+        .iter()
         .filter(|(_, files)| files.contains(&fixture))
-        .map(|(case, _)| case)
+        .map(|(case, _)| case.clone())
         .collect()
 }
 
@@ -1457,4 +1517,137 @@ fn source_index_reads_clap_path_options_and_tolerates_unparsable_files() {
     let unparsable = SourceIndex::parse_recording("fn (");
     assert!(unparsable.functions.is_empty());
     assert!(unparsable.errors[0].starts_with("not parsable"));
+}
+
+#[test]
+fn path_option_state_never_leaks_past_one_argument() {
+    use spec_suite::Argument::{InlinePath, Path as PathArgument, Plain};
+    let prefix = Path::new(FIXTURES);
+    assert_eq!(
+        spec_suite::classify(["--roots", "--crl=fixtures/good.crl", "pe"], prefix),
+        [
+            Plain("--roots"),
+            InlinePath {
+                flag: "--crl",
+                path: "fixtures/good.crl"
+            },
+            Plain("pe"),
+        ]
+    );
+    // Only `--` begins a missing value; `-` and `-name.crl` are paths.
+    assert_eq!(
+        spec_suite::classify(["--crl", "-", "--roots", "-dash.der", "x"], prefix),
+        [
+            Plain("--crl"),
+            PathArgument("-"),
+            Plain("--roots"),
+            PathArgument("-dash.der"),
+            Plain("x"),
+        ]
+    );
+}
+
+#[test]
+fn response_bodies_must_be_listed_plain_names() {
+    let response = |c: &mut Corpus, body: &str| {
+        first_case(c).crl_responses = Some(BTreeMap::from([(
+            "http://crl.example.invalid/x".to_owned(),
+            body.to_owned(),
+        )]));
+    };
+    // Never an intentionally absent input: the runner would fail reading it.
+    assert_eq!(
+        broken(|c| response(c, "missing.crl")),
+        one(Rule::UnlistedCaseInput, "pe32: missing.crl")
+    );
+    for body in ["sub/good.crl", "./good.crl", "/abs.crl"] {
+        assert_eq!(
+            broken(|c| response(c, body)),
+            one(Rule::UnlistedCaseInput, &outside(body)),
+            "{body}"
+        );
+    }
+    assert_eq!(broken(|c| response(c, "good.crl")), vec![]);
+}
+
+#[test]
+fn nested_test_links_and_body_local_functions_are_not_linkable() {
+    let index = SourceIndex::parse(
+        r#"
+        struct S;
+        impl S {
+            fn build(&self) {
+                fn helper() {}
+                #[test]
+                fn in_method() {}
+            }
+        }
+        fn outer() {
+            fn in_function() {}
+        }
+        const C: () = {
+            fn in_const() {}
+        };
+        mod tests {
+            #[test]
+            fn nested() {}
+        }
+        "#,
+    )
+    .unwrap();
+    assert_eq!(
+        index.functions,
+        BTreeSet::from(["outer".to_owned(), "tests::nested".to_owned()])
+    );
+    assert_eq!(index.tests, BTreeSet::from(["tests::nested".to_owned()]));
+
+    // A test inside an inline module is not a top-level test link.
+    let module = "pe";
+    let problems = broken(|c| {
+        c.sources
+            .get_mut(&format!("tests/cli/{module}.rs"))
+            .unwrap()
+            .tests
+            .insert("inner::nested".to_owned());
+        artifact(c, FILE)["tests"] = json!([format!("{module}::inner::nested")]);
+    });
+    assert_eq!(
+        problems,
+        one(Rule::UnknownTest, &format!("{FILE}: pe::inner::nested"))
+    );
+}
+
+#[test]
+fn option_names_follow_clap_and_unsupported_forms_are_recorded() {
+    let index = SourceIndex::parse(
+        r#"
+        struct A {
+            #[arg(short, long)]
+            r#type: PathBuf,
+            #[arg(short, long)]
+            émoji: PathBuf,
+            #[clap(long)]
+            legacy: PathBuf,
+        }
+        "#,
+    )
+    .unwrap();
+    assert_eq!(
+        index.path_options,
+        BTreeSet::from(["-t", "--type", "-é", "--émoji", "--legacy"].map(str::to_owned))
+    );
+    assert!(index.errors.is_empty(), "{:?}", index.errors);
+
+    for source in [
+        "struct A { #[arg(id = \"cert\", long)] roots: Vec<PathBuf> }",
+        "#[command(rename_all = \"lower\")] struct A { #[arg(long)] roots: Vec<PathBuf> }",
+    ] {
+        assert_eq!(
+            SourceIndex::parse_recording(source).errors.len(),
+            1,
+            "{source}"
+        );
+    }
+    let not_utf8 = SourceIndex::read(&[0x66, 0x6e, 0xff]);
+    assert!(not_utf8.errors[0].starts_with("not UTF-8"));
 }

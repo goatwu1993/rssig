@@ -61,6 +61,7 @@ impl Suite {
                 .input
                 .iter()
                 .chain(case.inputs.iter().flatten())
+                .chain(case.crl_responses.iter().flat_map(BTreeMap::values))
                 .all(|name| spec_suite::is_fixture_name(name))
             {
                 return Err(format!("input must be a fixture file name: {}", case.id));
