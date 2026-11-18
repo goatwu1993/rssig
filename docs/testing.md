@@ -218,6 +218,54 @@ fixtures. `cases` links identify declarative cases; optional `tests` links point
 to additional native regressions. Neither fixture generation nor expected-output
 regeneration is part of ordinary tests or coverage.
 
+### Manifest consistency
+
+`tests/manifest.rs` checks the manifest against the committed fixtures, the case
+specification, and the tests and generators it names. It runs in
+`cargo test --locked` and never regenerates or modifies a fixture. Rust sources
+under `src/` and `tests/` (never `tests/fixtures/`) are parsed with `syn`, so comments and string literals never count as code; a
+file `syn` cannot parse or that is not UTF-8 is recorded and reported by
+`committed_sources_index_without_errors` rather than silently ignored or
+panicking. One
+test of the directory scan creates and removes a scratch directory under
+Cargo's `CARGO_TARGET_TMPDIR`, named per process so concurrent runs cannot collide.
+
+| Rule | Requirement |
+| --- | --- |
+| Schema | Only known fields with the expected types; `schema_version` is 1. A misspelled field fails instead of being ignored. |
+| Paths | `file` is one plain name directly in `tests/fixtures/`: it starts with an ASCII letter or digit and contains only those, `.`, `_`, and `-`, and is not `manifest.json` in any letter case. It is listed once, compared case-insensitively because macOS checkouts are case-insensitive. |
+| Presence | Every listed file exists; every file in the directory is listed; the directory has no subdirectories. By-product files matching `.gitignore` (`.DS_Store`, `._name`, `.name.swp`, `name~`) are skipped: no artifact can have such a name. Any other hidden file, and every directory, is reported. |
+| Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
+| Description | Nonblank. |
+| Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`. An artifact produced outside the repository (a `signer`, `signer_jar_sha256`, `upstream_revision`, or URL `source`) states its own `license`, and so does anything derived, through any chain of `source` links, from such an artifact or one with a `provenance` object. A URL is any `scheme://` text, in both the manifest and case arguments. No recorded provenance or license value is blank. |
+| Generators | Each `generator` names a Rust source file under `src/` or `tests/` (or `build.rs`), optionally followed by `::function` naming a free function declared in it (`inner::function` inside an inline `mod inner`), then optionally whitespace and a note. Methods and anything inside a block (function bodies, closures, const initializers) cannot be named. |
+| Case links | Each ID in `cases` is defined in `tests/cases.json` (`UnknownCase`) and listed once (`DuplicateCase`). |
+| Case inputs | Every file a case reads is a listed artifact. `tests/common/spec_suite.rs` defines the case types and `Case::files_read`, shared with `tests/spec.rs`: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, `--roots`/`--crl` values in both forms, and plain arguments containing a path separator. It destructures every case and expectation field, so a new field does not compile until it is classified. As in Clap, a value starting with `-` directly after a path option is another flag (the option's value is missing), except a lone `-`. Arguments after `--` are positional files read relative to the CLI's working directory, so they always fail; in `--flag=value`, only the value is checked for a path or URL. CRL response bodies must be listed plain names, never intentionally absent ones, since the runner reads them whenever the CLI requests their URL. A path option without the `fixtures/` prefix (even a listed name), a path leaving the fixture directory, a trailing separator or `.` segment, or an exempt file such as `manifest.json` fails. A bare positional argument without a separator is not treated as a file: the existing ones only appear in argument-error cases the CLI rejects before reading anything. |
+| Path options | `PATH_OPTIONS` equals every long name, alias, and short form of the options whose value Clap parses as a `PathBuf`, read from the real parser through the hidden `rssig::cli::command()` (test `path_options_match_the_cli_definition` in `tests/spec.rs`). A new file-valued option, alias, or short form fails until the runner and this check know about it. |
+| Fixture directory | `cases.json` names `fixtures`, the directory this manifest describes. Otherwise that single problem is reported and case inputs are not checked. |
+| Case IDs | Case IDs in `cases.json` are unique; the runner's own validation also rejects duplicates. Case `input`/`inputs` and CRL response bodies are plain fixture names in the schema (`$defs/fixtureName`), the runner, and this check (`spec_suite::is_fixture_name`). |
+| Test links | Each `tests` entry is `module::function`: a top-level function marked `#[test]` in `tests/cli/<module>.rs`, a module that a test target under `tests/` includes. |
+| Pairs | `paired_good` names another listed artifact. |
+| Derived sources | A top-level `source` that is not a URL (`scheme://...`) names another listed artifact. A `source` inside a `provenance` object is free text and is not resolved. |
+
+Intentional exceptions are constants in that file:
+
+- `manifest.json` is the only unlisted file. Diagnostic JSON and helper data
+  such as `cli-missing-files.json` are ordinary listed artifacts.
+- `missing.exe`, `missing-root.der`, `missing.crl`, and
+  `missing-parse-input.exe` are inputs that cases name because they do not
+  exist. Each must stay absent (`PresentAbsentInput`) and remain used by a case
+  (`UnusedException`).
+
+Artifacts without provenance of their own inherit the manifest-level default
+(repository-generated, Apache-2.0). Two relationships are deliberately not
+enforced: an artifact may list a case that reaches it only indirectly (for
+example an issuer certificate embedded in the signed input), and an artifact
+need not list every case that reads it. Each rule has a test that breaks a copy
+of the committed data and requires exactly the expected problems, and no
+others. An entry with an unsafe or duplicate name still has its other fields
+checked, so one run reports all of its problems.
+
 ## Invariant inventory
 
 See [coverage by invariant](coverage-inventory.md) and the maintained

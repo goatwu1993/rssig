@@ -899,6 +899,7 @@ dependencies = [
  "sha1",
  "sha2",
  "signature",
+ "syn 2.0.119",
  "url",
  "x509-cert",
 ]

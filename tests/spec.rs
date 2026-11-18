@@ -1,45 +1,17 @@
 //! Load the portable CLI specification with Serde and exercise the CLI library.
+#[path = "common/spec_suite.rs"]
+mod spec_suite;
+
 use rssig::cli;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
+use spec_suite::{Argument, Case, Suite};
 use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
     path::{Path, PathBuf},
 };
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Suite {
-    schema_version: u32,
-    fixtures: String,
-    cases: Vec<Case>,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    id: String,
-    input: Option<String>,
-    crl_responses: Option<BTreeMap<String, String>>,
-    inputs: Option<Vec<String>>,
-    command: Vec<String>,
-    expect: Expectation,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Expectation {
-    crl_requests: Option<Vec<String>>,
-    exit_code: u8,
-    json: Option<Value>,
-    stdout: Option<String>,
-    stderr: Option<String>,
-    #[serde(default)]
-    stdout_contains: Vec<String>,
-    #[serde(default)]
-    stderr_contains: Vec<String>,
-    #[serde(default)]
-    contains: BTreeMap<String, String>,
-}
 #[derive(Serialize)]
 struct CaseResult {
     id: String,
@@ -85,16 +57,24 @@ impl Suite {
             if case.inputs.as_ref().is_some_and(Vec::is_empty) {
                 return Err(format!("inputs must not be empty: {}", case.id));
             }
-            for name in case.input.iter().chain(case.inputs.iter().flatten()) {
-                let path = Path::new(name);
-                if name.is_empty()
-                    || path.is_absolute()
-                    || path
-                        .components()
-                        .any(|c| matches!(c, std::path::Component::ParentDir))
-                {
-                    return Err(format!("input must be relative to fixtures: {}", case.id));
-                }
+            if !case
+                .input
+                .iter()
+                .chain(case.inputs.iter().flatten())
+                .all(|name| spec_suite::is_fixture_name(name))
+            {
+                return Err(format!("input must be a fixture file name: {}", case.id));
+            }
+            if !case
+                .crl_responses
+                .iter()
+                .flat_map(BTreeMap::values)
+                .all(|name| spec_suite::is_fixture_name(name))
+            {
+                return Err(format!(
+                    "crl_responses body must be a fixture file name: {}",
+                    case.id
+                ));
             }
             if case
                 .expect
@@ -139,24 +119,14 @@ fn compare(expected: &Value, actual: &Value, pointer: &str, failures: &mut Vec<S
 
 fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> Vec<OsString> {
     let mut args = vec![OsString::from("rssig")];
-    let mut path_argument = false;
-    for arg in &case.command {
-        let path = Path::new(arg);
-        if path_argument {
-            args.push(parent.join(path).into_os_string());
-            path_argument = false;
-        } else if let Some((flag, value)) = arg.split_once('=')
-            && matches!(flag, "--roots" | "--crl")
-        {
-            args.push(format!("{flag}={}", parent.join(value).display()).into());
-        } else {
-            args.push(if path.is_relative() && path.starts_with(fixture_prefix) {
-                parent.join(path).into_os_string()
-            } else {
-                arg.into()
-            });
-            path_argument = matches!(arg.as_str(), "--roots" | "--crl");
-        }
+    for argument in spec_suite::classify(case.command.iter().map(String::as_str), fixture_prefix) {
+        args.push(match argument {
+            Argument::Plain(argument) | Argument::Positional(argument) => argument.into(),
+            Argument::Path(path) => parent.join(path).into_os_string(),
+            Argument::InlinePath { flag, path } => {
+                format!("{flag}={}", parent.join(path).display()).into()
+            }
+        });
     }
     args.extend(
         case.input
@@ -331,6 +301,39 @@ fn cli_conforms_to_committed_json_specification() {
 }
 
 #[test]
+fn path_options_match_the_cli_definition() {
+    // Every name, alias and short form of each option whose value Clap parses
+    // as a PathBuf, read from the real command rather than its source.
+    let command = cli::command();
+    let mut declared = std::collections::BTreeSet::new();
+    for argument in command
+        .get_arguments()
+        .chain(command.get_subcommands().flat_map(|s| s.get_arguments()))
+        .filter(|a| !a.is_positional())
+        .filter(|a| a.get_value_parser().type_id() == std::any::TypeId::of::<PathBuf>())
+    {
+        let longs = argument
+            .get_long()
+            .into_iter()
+            .chain(argument.get_all_aliases().into_iter().flatten());
+        declared.extend(longs.map(|long| format!("--{long}")));
+        let shorts = argument
+            .get_short()
+            .into_iter()
+            .chain(argument.get_all_short_aliases().into_iter().flatten());
+        declared.extend(shorts.map(|short| format!("-{short}")));
+    }
+    let shared: std::collections::BTreeSet<String> = spec_suite::PATH_OPTIONS
+        .iter()
+        .map(|o| (*o).to_owned())
+        .collect();
+    assert_eq!(
+        declared, shared,
+        "update PATH_OPTIONS in tests/common/spec_suite.rs to match the CLI"
+    );
+}
+
+#[test]
 fn specification_comparison_requires_exact_scalars_and_arrays() {
     let mut failures = Vec::new();
     compare(
@@ -378,6 +381,47 @@ fn specification_rejects_duplicate_case_ids() {
     )
     .unwrap();
     assert!(suite.validate().unwrap_err().contains("duplicate"));
+}
+
+#[test]
+fn specification_inputs_are_plain_fixture_names() {
+    for input in [
+        "good-pe32.exe",
+        "./good-pe32.exe",
+        "sub/x.exe",
+        "..",
+        "/abs.exe",
+        "",
+    ] {
+        let case = serde_json::json!({"id":"one","input":input,"command":["verify"],"expect":{"exit_code":0,"json":{"ok":true}}});
+        let suite: Suite = serde_json::from_value(
+            serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+        )
+        .unwrap();
+        let result = suite.validate();
+        if input == "good-pe32.exe" {
+            assert!(result.is_ok(), "{input}: {result:?}");
+        } else {
+            assert!(result.unwrap_err().contains("fixture file name"), "{input}");
+        }
+    }
+}
+
+#[test]
+fn specification_crl_response_bodies_are_plain_fixture_names() {
+    for body in ["good.crl", "sub/good.crl", "./good.crl", "/abs.crl", ""] {
+        let case = serde_json::json!({"id":"one","input":"good-pe32.exe","crl_responses":{"http://crl.example.invalid/x":body},"command":["verify"],"expect":{"exit_code":0,"json":{"ok":true}}});
+        let suite: Suite = serde_json::from_value(
+            serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+        )
+        .unwrap();
+        let result = suite.validate();
+        if body == "good.crl" {
+            assert!(result.is_ok(), "{body}: {result:?}");
+        } else {
+            assert!(result.unwrap_err().contains("crl_responses body"), "{body}");
+        }
+    }
 }
 
 #[test]

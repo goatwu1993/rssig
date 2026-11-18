@@ -60,26 +60,3 @@ fn mismatched_image_fixture_preserves_the_original_signature() {
     expected[700] ^= 1;
     assert_eq!(bad, expected);
 }
-
-#[test]
-fn fixture_manifest_pins_the_committed_artifacts() {
-    use sha2::{Digest, Sha256};
-    let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-    let manifest: Value = serde_json::from_slice(
-        &std::fs::read(directory.join("manifest.json"))
-            .expect("fixture provenance manifest is committed"),
-    )
-    .unwrap();
-    for artifact in manifest["artifacts"].as_array().unwrap() {
-        let bytes = std::fs::read(directory.join(artifact["file"].as_str().unwrap())).unwrap();
-        let digest: String = Sha256::digest(&bytes)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
-        assert_eq!(
-            artifact["sha256"], digest,
-            "fixture changed without manifest review: {}",
-            artifact["file"]
-        );
-    }
-}

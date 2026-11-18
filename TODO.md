@@ -580,11 +580,13 @@ timestamps, and local CRL validation already exist.
   rules with the Serde loader, and detect invalid references or duplicate IDs.
   Audit whether public verification/inspection report schemas suffice for another
   implementation; add missing schema detail before extending output.
-- [ ] **TEST-06: Strengthen fixture-manifest consistency checks.** Beyond current
+- [x] **TEST-06: Strengthen fixture-manifest consistency checks.** Beyond current
   SHA-256 verification, validate byte counts, unique/safe paths, provenance/license
   fields, case references, and unlisted or missing artifacts. Define intentional
   exceptions for diagnostic JSON and helper data. Maintenance generation remains
   explicit and requires review of changed binary artifacts.
+  Done in `tests/manifest.rs`; rules, exceptions, and what is not enforced are in
+  [manifest consistency](docs/testing.md#manifest-consistency).
 - [ ] **TEST-07: Automate complete-output compatibility comparisons.** Preserve
   PR #18's in-process comparison approach for refactors: exit codes, complete
   JSON, stdout, and stderr. Normalize only unavoidable checkout paths, never

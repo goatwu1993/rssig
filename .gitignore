@@ -11,3 +11,9 @@ verifysign
 # LLVM coverage profiles belong in target, not source control.
 /*.profraw
 /*.profdata
+
+# Operating-system and editor by-products (see docs/testing.md).
+.DS_Store
+._*
+.*.swp
+*~
