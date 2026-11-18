@@ -184,9 +184,17 @@ timestamps, and local CRL validation already exist.
   any applicable, authenticated CRL wins regardless of `--crl` order: webpki
   consults only the first authoritative CRL per certificate, so the path
   callback checks every one (`sec10-competing-crls-*`).
-  Remaining: when the certificate does list distribution points, webpki's name
-  matching is relied on without a fixture, and an IDP with a scope flag plus a
-  named point is not pinned.
+  When the certificate lists a distribution point (`sec10-crl-dp-*`, signer
+  `sec10-leaf-crl-dp.exe`): an issuer CRL whose IDP names that URI is
+  authoritative (good or `certificate_revoked`); one naming another URI leaves
+  the status `revocation_unknown`, even if it lists the serial; the matching
+  partition is selected in either `--crl` order; a serial listed by another
+  authenticated partition of the same issuer still rejects; and a full CRL
+  without an IDP covers the certificate.
+  Remaining: an IDP with a scope flag plus a named point is not pinned. Only
+  one exact-match URI is covered; several points or names, non-URI names,
+  issuer-relative names, and a certificate point with reasons or cRLIssuer rely
+  on webpki's matching without fixtures.
   Review items decided against or deferred are recorded in SEC-15 to SEC-20.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected

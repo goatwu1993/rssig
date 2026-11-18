@@ -714,7 +714,10 @@
         "msi-revoked",
         "cab-revoked",
         "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-crl-dp-matching-idp-revoked",
+        "sec10-crl-dp-other-partition-revoked",
+        "sec10-crl-dp-other-partition-revoked-first"
       ],
       "gap": ""
     },
@@ -745,7 +748,9 @@
     "revocation_unknown": {
       "cases": [
         "sec09-lifetime-rollover-revocation-unknown",
-        "sec10-only-unrelated-crl-is-unknown"
+        "sec10-only-unrelated-crl-is-unknown",
+        "sec10-crl-dp-other-idp-unknown",
+        "sec10-crl-dp-other-idp-revoked-unknown"
       ],
       "gap": ""
     },

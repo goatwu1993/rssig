@@ -30977,6 +30977,311 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-crl-dp-matching-idp",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "a031590f88a1dedaa021a3e4c454e415df74517b67fc881f472ac70fd6ba503e"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-other-idp-unknown",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-matching-idp-revoked",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-other-idp-revoked-unknown",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-other-idp-first",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "a031590f88a1dedaa021a3e4c454e415df74517b67fc881f472ac70fd6ba503e"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-other-partition-revoked",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-other-partition-revoked-first",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other-revoked.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-crl-dp-full-crl",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "a031590f88a1dedaa021a3e4c454e415df74517b67fc881f472ac70fd6ba503e"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

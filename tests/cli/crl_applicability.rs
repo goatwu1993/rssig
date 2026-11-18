@@ -1,7 +1,8 @@
 //! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
 //! a CRL from a chain issuer that is stale or structurally invalid fails closed.
 //! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
-//! KeyUsage.
+//! KeyUsage. The distribution-point tests use a SEC-06 leaf that lists one CRL
+//! distribution point, with issuer CRLs partitioned to that point or another.
 
 use super::support::*;
 
@@ -327,4 +328,121 @@ fn sec10_revocation_in_any_applicable_crl_wins_regardless_of_order() {
             None,
         );
     }
+}
+
+/// Verify the signer that lists distribution point A with the root CRL and
+/// these issuer CRLs, in order.
+fn run_crl_dp(crls: &[&str]) -> Output {
+    let mut args = vec![
+        "verify".to_string(),
+        "--no-system-roots".into(),
+        "--roots".into(),
+        "fixtures/sec06-root.der".into(),
+        "--time".into(),
+        T.into(),
+        "--crl".into(),
+        "fixtures/sec06-root.crl".into(),
+    ];
+    for crl in crls {
+        args.extend(["--crl".into(), format!("fixtures/{crl}")]);
+    }
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    run_fixture("sec10-leaf-crl-dp.exe", &args)
+}
+
+fn revocation_failure(output: &Output, code: &str, title: &str) {
+    expect_failure(output, 1, code, title, Some("revocation"), None);
+}
+
+fn revocation_good(output: &Output) {
+    expect_success(output);
+    let trust = &output.json["results"][0]["signatures"][0]["trust"];
+    assert_eq!(trust["revocation"]["status"], "good");
+    assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn sec10_crl_scoped_to_the_listed_distribution_point_is_authoritative() {
+    revocation_good(&run_crl_dp(&["sec10-issuer-idp-match.crl"]));
+    revocation_failure(
+        &run_crl_dp(&["sec10-issuer-idp-match-revoked.crl"]),
+        "certificate_revoked",
+        "Certificate revoked",
+    );
+}
+
+#[test]
+fn sec10_crl_scoped_to_another_distribution_point_leaves_status_unknown() {
+    // Neither partition covers the signer, so not even a listed serial is
+    // reported as its status: the request fails closed as unknown.
+    for crl in [
+        "sec10-issuer-idp-other.crl",
+        "sec10-issuer-idp-other-revoked.crl",
+    ] {
+        revocation_failure(
+            &run_crl_dp(&[crl]),
+            "revocation_unknown",
+            "Revocation status unknown",
+        );
+    }
+}
+
+#[test]
+fn sec10_matching_partition_is_selected_whatever_the_crl_order() {
+    let first = run_crl_dp(&["sec10-issuer-idp-other.crl", "sec10-issuer-idp-match.crl"]);
+    let last = run_crl_dp(&["sec10-issuer-idp-match.crl", "sec10-issuer-idp-other.crl"]);
+    revocation_good(&first);
+    revocation_good(&last);
+}
+
+#[test]
+fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
+    // Serials are unique per issuer, so a serial listed by any authenticated
+    // CRL of that issuer is revoked even if the partition is not authoritative.
+    for crls in [
+        [
+            "sec10-issuer-idp-match.crl",
+            "sec10-issuer-idp-other-revoked.crl",
+        ],
+        [
+            "sec10-issuer-idp-other-revoked.crl",
+            "sec10-issuer-idp-match.crl",
+        ],
+    ] {
+        revocation_failure(
+            &run_crl_dp(&crls),
+            "certificate_revoked",
+            "Certificate revoked",
+        );
+    }
+}
+
+#[test]
+fn sec10_full_crl_covers_a_certificate_that_lists_a_distribution_point() {
+    revocation_good(&run_crl_dp(&["sec06-issuer.crl"]));
+}
+
+#[test]
+fn sec10_partition_crl_is_rejected_for_a_signer_listing_no_distribution_point() {
+    // The same matching-partition CRL, but the base SEC-06 leaf lists no point.
+    let output = run_fixture(
+        "good-sec06-basic.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-root.crl",
+            "--crl",
+            "fixtures/sec10-issuer-idp-match.crl",
+        ],
+    );
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+    assert_eq!(
+        output.json["results"][0]["error"]["details"]["reason"],
+        "distribution_point_scope"
+    );
 }

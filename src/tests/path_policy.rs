@@ -161,6 +161,54 @@ fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKe
     )
     .unwrap();
 }
+/// A fresh CRL whose critical issuingDistributionPoint names one URI.
+fn scoped_crl(
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    uri: &str,
+    revoked: Option<u32>,
+) -> Vec<u8> {
+    use x509_cert::{
+        Version,
+        crl::{CertificateList, RevokedCert, TbsCertList},
+    };
+    let algorithm = issuer.signature_algorithm.clone();
+    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, uri.as_bytes())));
+    let tbs = TbsCertList {
+        version: Version::V2,
+        signature: algorithm.clone(),
+        issuer: issuer.tbs_certificate.subject.clone(),
+        this_update: tm(NOW - 100),
+        next_update: Some(tm(NOW + 1000)),
+        revoked_certificates: revoked.map(|serial| {
+            vec![RevokedCert {
+                serial_number: SerialNumber::from(serial),
+                revocation_date: tm(NOW - 50),
+                crl_entry_extensions: None,
+            }]
+        }),
+        crl_extensions: Some(vec![
+            Extension {
+                extn_id: "2.5.29.20".parse().unwrap(),
+                critical: false,
+                extn_value: OctetString::new([2, 1, 1]).unwrap(),
+            },
+            Extension {
+                extn_id: "2.5.29.28".parse().unwrap(),
+                critical: true,
+                extn_value: OctetString::new(seq(&[point])).unwrap(),
+            },
+        ]),
+    };
+    let sig: Signature = issuer_key.sign(&tbs.to_der().unwrap());
+    CertificateList {
+        tbs_cert_list: tbs,
+        signature_algorithm: algorithm,
+        signature: BitString::from_bytes(sig.to_der().as_bytes()).unwrap(),
+    }
+    .to_der()
+    .unwrap()
+}
 fn write_cert(dir: &std::path::Path, label: &str, cert: &Certificate) {
     std::fs::write(
         dir.join(format!("sec06-{label}.der")),
@@ -294,6 +342,32 @@ pub(super) fn write(dir: &std::path::Path) {
         anchor.to_der().unwrap(),
     )
     .unwrap();
+    // SEC-10: a leaf that lists one CRL distribution point, and issuer CRLs
+    // partitioned by issuingDistributionPoint to that point or to another.
+    let listed = "http://crl.invalid/sec10-a.crl";
+    let other_point = "http://crl.invalid/sec10-b.crl";
+    let mut scoped = leaf.clone();
+    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, listed.as_bytes())));
+    extension(&mut scoped, "2.5.29.31", false, Some(seq(&[seq(&[point])])));
+    sign(&mut scoped, &ca_key);
+    write_pe(
+        dir,
+        "sec10-leaf-crl-dp",
+        &scoped,
+        core::slice::from_ref(&ca),
+    );
+    for (label, uri, revoked) in [
+        ("match", listed, false),
+        ("match-revoked", listed, true),
+        ("other", other_point, false),
+        ("other-revoked", other_point, true),
+    ] {
+        std::fs::write(
+            dir.join(format!("sec10-issuer-idp-{label}.crl")),
+            scoped_crl(&ca, &ca_key, uri, revoked.then_some(120)),
+        )
+        .unwrap();
+    }
     for label in [
         "leaf-ca",
         "leaf-no-bc",
@@ -517,6 +591,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             "sec10-ca-no-crl-sign.exe",
             "sec10-ca-crl-sign.exe",
             "sec10-ca-crl-sign-fallback.exe",
+            "sec10-leaf-crl-dp.exe",
         ];
         let sec06 = filename.contains("-sec06-") || sec10.contains(&filename);
         if !sec06 || !filename.ends_with(".exe") {
@@ -551,5 +626,78 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 36);
+    assert_eq!(count, 37);
+}
+
+#[test]
+fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
+    use ::der::Decode;
+    use x509_cert::crl::CertificateList;
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let issuer =
+        Certificate::from_der(&std::fs::read(dir.join("sec06-issuer.der")).unwrap()).unwrap();
+    let signed = std::fs::read(dir.join("sec10-leaf-crl-dp.exe")).unwrap();
+    let pe = pe::Pe::parse(&signed).unwrap();
+    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
+    let leaf = sd
+        .certs
+        .iter()
+        .find(|c| c.tbs_certificate.issuer == issuer.tbs_certificate.subject)
+        .unwrap();
+    let listed = leaf
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.31")
+        .unwrap();
+    let contains =
+        |haystack: &[u8], uri: &str| haystack.windows(uri.len()).any(|w| w == uri.as_bytes());
+    assert!(contains(
+        listed.extn_value.as_bytes(),
+        "http://crl.invalid/sec10-a.crl"
+    ));
+    for (label, uri, revoked) in [
+        ("match", "http://crl.invalid/sec10-a.crl", false),
+        ("match-revoked", "http://crl.invalid/sec10-a.crl", true),
+        ("other", "http://crl.invalid/sec10-b.crl", false),
+        ("other-revoked", "http://crl.invalid/sec10-b.crl", true),
+    ] {
+        let name = format!("sec10-issuer-idp-{label}.crl");
+        let crl = CertificateList::from_der(&std::fs::read(dir.join(&name)).unwrap()).unwrap();
+        let tbs = &crl.tbs_cert_list;
+        assert_eq!(tbs.issuer, issuer.tbs_certificate.subject, "{name}");
+        crypto::verify_spki(
+            &issuer
+                .tbs_certificate
+                .subject_public_key_info
+                .to_der()
+                .unwrap(),
+            crypto::Hash::Sha256,
+            crl.signature_algorithm.oid.as_bytes(),
+            &tbs.to_der().unwrap(),
+            crl.signature.as_bytes().unwrap(),
+        )
+        .unwrap();
+        let idp = tbs
+            .crl_extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id.to_string() == "2.5.29.28")
+            .unwrap();
+        assert!(idp.critical, "{name}");
+        assert!(contains(idp.extn_value.as_bytes(), uri), "{name}");
+        let serials: Vec<_> = tbs
+            .revoked_certificates
+            .iter()
+            .flatten()
+            .map(|r| r.serial_number.clone())
+            .collect();
+        let expected = if revoked {
+            vec![leaf.tbs_certificate.serial_number.clone()]
+        } else {
+            vec![]
+        };
+        assert_eq!(serials, expected, "{name}");
+    }
 }
