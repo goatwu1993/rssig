@@ -230,7 +230,8 @@
         "sec10-crl-this-update-one-second-ahead",
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact"
+        "sec10-crl-next-update-exact",
+        "sec10-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
@@ -264,7 +265,8 @@
         "sec10-crl-this-update-one-second-ahead",
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact"
+        "sec10-crl-next-update-exact",
+        "sec10-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
@@ -6698,7 +6700,8 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused"
+        "crl-stale-local-provider-unused",
+        "sec10-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
@@ -7100,7 +7103,8 @@
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-partition-crl-relative-no-listed-point",
         "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected"
       ]
     },
     {
@@ -7904,7 +7908,9 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied"
+        "sec10-fetch-dns-name-point-denied",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {
@@ -8001,7 +8007,9 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied"
+        "sec10-fetch-dns-name-point-denied",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {
@@ -9252,7 +9260,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-name-other-aki-crl-excluded"
+        "sec10-root-name-other-aki-crl-excluded",
+        "sec10-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
@@ -9481,7 +9490,8 @@
         "sec10-fetch-ca-scope-idp-fetches-listed-point",
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-user-scope-idp-not-fetched",
-        "sec10-fetch-full-crl-not-fetched"
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {
@@ -9506,7 +9516,8 @@
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
-        "sec10-fetch-crl-issuer-point-denied"
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {
@@ -9662,7 +9673,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point"
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected"
       ]
     },
     {
@@ -9708,7 +9720,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-partition-crl-relative-no-listed-point"
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {

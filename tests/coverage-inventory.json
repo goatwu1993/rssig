@@ -419,7 +419,10 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied"
+        "sec10-fetch-dns-name-point-denied",
+        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ]
     },
     {
@@ -881,7 +884,9 @@
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-relative-idp-unsupported",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched"
       ],
       "gap": ""
     },

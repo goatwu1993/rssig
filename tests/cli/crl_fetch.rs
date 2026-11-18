@@ -356,3 +356,95 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         }
     }
 }
+
+/// SEC-10: retrieval follows the verifier's result. Each row is (input, root,
+/// supplied CRLs, response fixture, requested URLs, expected error code and
+/// `details.reason`).
+#[test]
+fn sec10_fetch_follows_the_verification_result() {
+    struct Source {
+        response: Vec<u8>,
+        requests: Vec<String>,
+    }
+    impl rssig::retrieval::CrlSource for Source {
+        fn fetch(
+            &mut self,
+            url: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.requests.push(url.into());
+            Ok(rssig::retrieval::FetchedCrl {
+                bytes: self.response.clone(),
+                final_url: url.into(),
+            })
+        }
+    }
+    type Row = (
+        &'static str,
+        &'static str,
+        &'static [&'static str],
+        &'static str,
+        &'static [&'static str],
+        Option<(&'static str, &'static str)>,
+    );
+    #[rustfmt::skip]
+    let rows: [Row; 3] = [
+        // A CRL with the issuer's name from another key is excluded by verification,
+        // so it does not stand in for the listed point.
+        ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], "good.crl", &["http://crl.example.invalid/test.crl"], None),
+        // A supplied CRL that verification rejects is reported as it is offline; the
+        // provider is not asked, although it could answer.
+        ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], "sec06-issuer.crl", &[], Some(("invalid_crl", "distribution_point_scope"))),
+        ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], "sec10-issuer-idp-match.crl", &[], Some(("invalid_crl", "issuing_distribution_point"))),
+    ];
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    for (input, root, supplied, response, requests, error) in rows {
+        let label = format!("{input} with {supplied:?}");
+        let mut args = vec![
+            "rssig".to_owned(),
+            "verify".to_owned(),
+            "--no-system-roots".to_owned(),
+            "--roots".to_owned(),
+            path(root),
+            "--time".to_owned(),
+            "1800000000".to_owned(),
+            "--fetch-crls".to_owned(),
+        ];
+        for crl in supplied {
+            args.extend(["--crl".to_owned(), path(crl)]);
+        }
+        args.push(path(input));
+        let mut source = Source {
+            response: std::fs::read(base.join(response)).unwrap(),
+            requests: Vec::new(),
+        };
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+        assert!(err.is_empty(), "{label}");
+        assert_eq!(source.requests, requests, "{label}");
+        let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let result = &report["results"][0];
+        if let Some((error, reason)) = error {
+            assert_eq!(code, 1, "{label}");
+            assert_eq!(result["error"]["code"], error, "{label}");
+            assert_eq!(result["error"]["stage"], "revocation", "{label}");
+            assert_eq!(result["error"]["details"]["reason"], reason, "{label}");
+            assert_eq!(
+                result["error"]["details"]["crl_retrieval"]["artifacts"],
+                serde_json::json!([]),
+                "{label}"
+            );
+        } else {
+            assert_eq!(code, 0, "{label}: {result}");
+            let revocation = &result["signatures"][0]["trust"]["revocation"];
+            assert_eq!(revocation["status"], "good", "{label}");
+            assert_eq!(
+                result["crl_retrieval"]["artifacts"][0]["url"], requests[0],
+                "{label}"
+            );
+            // The excluded supplied CRL stays loaded beside the fetched one.
+            assert_eq!(revocation["crls"].as_array().unwrap().len(), 2, "{label}");
+        }
+    }
+}

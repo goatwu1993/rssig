@@ -96,26 +96,31 @@ One box per item in the scope above.
   `sec10-crl-this-update-one-second-ahead`, `sec10-crl-this-update-exact`,
   `sec10-crl-next-update-one-second-left`, `sec10-crl-next-update-exact`. Whole
   seconds only; CRL times carry no fractions.
-- [x] **`--fetch-crls` coverage.** A supplied CRL suppresses retrieval for a
-  certificate only if it would be authoritative for it under the
-  distribution-point rule above (issuer name, role flags, a shared URI or no
-  issuingDistributionPoint); a CRL that merely has the issuer's name no longer
-  does, so the listed point is fetched and the fetched CRL is held to the same
-  rule. `sec10-fetch-other-idp-fetches-listed-point`,
+- [x] **`--fetch-crls` coverage.** Retrieval follows the verifier's result:
+  the supplied CRLs are verified first, and the selected certificates' listed
+  points are fetched only when that result is `revocation_unknown`. A CRL that
+  merely has the issuer's name (another partition, another role, or another
+  key of the same name) does not suppress the fetch, and the fetched CRL is
+  held to the same verification. `sec10-fetch-other-idp-fetches-listed-point`,
   `sec10-fetch-other-idp-fetched-revoked`,
   `sec10-fetch-other-idp-fetched-other-unknown`,
   `sec10-fetch-ca-scope-idp-fetches-listed-point`,
-  `sec10-fetch-ca-user-scope-idp-fetches-listed-point`, and the
-  `sec10-fetch-*-not-fetched` controls, including a signer that lists no point
-  (`sec10-fetch-no-listed-point-not-fetched`, still `invalid_crl`); named test in `tests/cli/crl_fetch.rs`.
+  `sec10-fetch-ca-user-scope-idp-fetches-listed-point`,
+  `sec10-fetch-excluded-name-match-fetches-listed-point`, and the
+  `sec10-fetch-*-not-fetched` controls; named tests in
+  `tests/cli/crl_fetch.rs`.
+  A supplied CRL that verification rejects is reported as it is offline and
+  nothing is fetched (`sec10-fetch-no-listed-point-not-fetched`,
+  `sec10-fetch-no-listed-point-role-excluded-scope-rejected`,
+  `sec10-fetch-unusable-supplied-crl-not-fetched`).
   A listed point that discovery does not support (reasons, cRLIssuer or a
-  non-URI name) is `crl_fetch_denied` once no supplied CRL is authoritative,
-  where the same inputs without `--fetch-crls` are `revocation_unknown`
+  non-URI name) is `crl_fetch_denied` once the status is unknown, where the
+  same inputs without `--fetch-crls` are `revocation_unknown`
   (`sec10-fetch-reasons-point-denied`, `sec10-fetch-crl-issuer-point-denied`,
   `sec10-fetch-dns-name-point-denied`).
-  Limits: the rule is restated in `has_crl_for`, not shared with webpki
-  (SEC-17), and does not consider AKI applicability (SEC-16) or usability,
-  which verification still enforces on every CRL.
+  History: PR #55 first restated webpki's authority rule for this
+  (`has_crl_for`); the follow-up replaced it with the flow above.
+  Limits: see evidence limits.
 
 ## Decisions made
 
@@ -139,8 +144,9 @@ Change these only with a new decision and paired fixtures.
   order ([PR #48](https://github.com/goatwu1993/rssig/pull/48)). A listing by a
   non-authoritative CRL alone is `revocation_unknown` ([PR
   #49](https://github.com/goatwu1993/rssig/pull/49), until SEC-21).
-- With `--fetch-crls`, only a supplied CRL that would be authoritative for a
-  certificate suppresses retrieval of its listed distribution point (PR #55).
+- With `--fetch-crls`, retrieval happens only when verification with the
+  supplied CRLs is `revocation_unknown`; any other result is returned
+  unchanged. This replaces the restated authority rule of PR #55.
 - When no supplied CRL applies, `revocation_unknown` is returned before path
   building ([PR #44](https://github.com/goatwu1993/rssig/pull/44); SEC-20).
 
@@ -163,11 +169,17 @@ Change these only with a new decision and paired fixtures.
   (no request was made); the five `-not-fetched` controls already passed. The
   three `-denied` cases were added after the fix and passed at once; before it
   the same inputs were `revocation_unknown`, which was not run.
-- The `--fetch-crls` coverage rule is a second implementation of webpki's
-  authority rule, checked against it only through these fixtures. Not pinned:
-  a certificate with several points, a CRL with a malformed
-  issuingDistributionPoint, and the same certificate as end entity on one
-  path and issuer on another.
+- The three cases added with the retrieval redesign
+  (`sec10-fetch-excluded-name-match-fetches-listed-point`,
+  `sec10-fetch-no-listed-point-role-excluded-scope-rejected`,
+  `sec10-fetch-unusable-supplied-crl-not-fetched`) failed before it, for the
+  intended reason each.
+- `--fetch-crls` requests every listed point of the selected certificates once
+  the status is unknown, because the verifier does not say which certificate
+  lacked evidence. No fixture has two selected certificates that both list a
+  point, so fetching for an already covered certificate is not pinned. Nor is
+  a certificate mixing a plain URI point with an unsupported one, which
+  discovery denies (SEC-17).
 - Validated on macOS locally and on Linux in CI. No Windows comparison
   (DEFER-01).
 

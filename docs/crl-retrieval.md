@@ -10,22 +10,29 @@ rssig verify application.exe --fetch-crls --no-system-roots --roots roots.pem
 
 `--fetch-crls` is explicit and conflicts with `--integrity-only` and
 `--no-revocation`. Existing verification entry points and ordinary CLI invocations
-remain offline. Local `--crl` files can be combined with retrieval. A local CRL
-suppresses retrieval for a certificate only if it would be authoritative for it:
-it has the certificate's issuer name and either no issuingDistributionPoint, or
-role flags that admit the certificate and a fullName URI the certificate lists
-(or the certificate lists no distribution points). A CRL for another
-distribution point does not suppress retrieval of the listed one. Freshness,
-applicability, signatures and revocation are still checked on every local and
-fetched CRL. An expired or forged authoritative local artifact is not silently
-replaced or ignored.
+remain offline. Local `--crl` files can be combined with retrieval. Retrieval
+follows the verifier's own result: the input is verified with the supplied CRLs
+and required revocation, and distribution points are fetched only when that
+result is `revocation_unknown`. A good result needs no request. Any other
+failure (a stale, forged, unusable or revoking local CRL) is returned as it
+would be without `--fetch-crls`; a bad local artifact is not silently replaced
+or ignored, and nothing is fetched for a verification that cannot succeed. No
+CRL applicability rule is restated for retrieval, so a supplied CRL suppresses
+a fetch exactly when verification accepts it as evidence (`sec10-fetch-*`).
+When the result is `revocation_unknown`, every distribution point listed by a
+selected certificate is requested, including one whose certificate a supplied
+CRL already covers; the verifier does not report which certificate lacked
+evidence. Supplied CRLs stay loaded beside the fetched ones.
 
 The implementation first verifies all signatures and candidate trust paths with
 revocation omitted internally. It discovers distribution points on selected leaf,
 intermediate and timestamp certificates, including bundle children; configured
-anchors are excluded. It retrieves missing CRL evidence and repeats verification
-with revocation required. Only that final result can be returned as success.
-Both passes share SEC-02 work allowances, so retrieval mode consumes additional
+anchors are excluded. With supplied CRLs it then verifies with revocation required; without any, the
+status is already unknown. If the status is unknown it retrieves the listed
+CRLs and repeats verification with revocation required. Success is only ever
+the result of a pass with revocation required. A run that both has supplied
+CRLs and needs a fetch therefore verifies three times. All passes share SEC-02
+work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
 search would prefer a different path. Missing embedded intermediates still fail;
@@ -50,7 +57,7 @@ The parser and `verify-core` remain usable without network dependencies or std.
   returned responses. A custom provider owns its transport policy and may use
   a cache or offline artifacts.
 - `verify_with_crl_source(bytes, filename, options, source)` performs the complete
-  two-pass flow. It requires configured trust and required revocation. It clones
+  flow above. It requires configured trust and required revocation. It clones
   the supplied store; fetched certificates never become roots, and the caller's
   store is not modified.
 - `cli::run_with_crl_source(argv, stdout, stderr, source)` injects a source into the
@@ -88,8 +95,7 @@ download provenance but returns no successful signature report.
 | Time | 30-second source lifetime starting with its first fetch; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The CLI shares one HTTP source across its batch. Limits persist across files.
-There is no persistent HTTP or disk cache. A verification reuses already loaded
-issuer evidence and deduplicates requested URLs; final validation checks all
+There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.
 

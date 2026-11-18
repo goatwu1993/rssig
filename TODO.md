@@ -277,16 +277,6 @@ timestamps, and local CRL validation already exist.
   root's real issuer and serial and is signed by the root, so it cannot tell
   name-only matching from issuer/serial matching; a fixture with a wrong
   serial is needed to pin either behavior.
-  `--fetch-crls` coverage (`has_crl_for`) matches the issuer by name only. A
-  supplied CRL without an issuingDistributionPoint that verification excludes
-  (its AKI matches no candidate and its signature verifies under none) still
-  suppresses retrieval, so the result is `revocation_unknown` although the
-  listed point could have been fetched. Apply the same applicability filter to
-  coverage, with a fixture. Coverage also decodes extensions with x509-cert,
-  which rejects a whole cRLDistributionPoints or issuingDistributionPoint
-  extension on one name form it cannot decode, where webpki skips that entry:
-  such a certificate beside a usable local CRL verifies offline but fails
-  under `--fetch-crls`. No fixture has such a name.
 - [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately
   skipped in PRs #44 and #45. Every verification re-parses all configured
   roots to collect issuer names, outside `budget.decoded_bytes`. The
@@ -299,28 +289,18 @@ timestamps, and local CRL validation already exist.
   map entry per revoked certificate that is not charged beyond the existing
   8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
   budget effect for large CRLs.
-  `--fetch-crls` coverage (`has_crl_for`, PR #55) adds to this: it decodes
-  every supplied CRL again for each selected certificate and role, charges 8x
-  its bytes each time, and copies every distribution-point URI to compare
-  them. Decode each CRL's issuer and scope once per verification and compare
-  borrowed bytes. It is also a second copy of webpki's authority rule; the
-  lasting fix is to drive retrieval from the verifier's own result (which
-  certificate had no authoritative CRL) instead of restating the rule.
-  Three further gaps found in the PR #55 review share that cause; fix or pin
-  them with the redesign. All reject, none accepts. (1) Coverage skips a
-  certificate point with reasons, a cRLIssuer or a non-URI name, but discovery
-  (`crl_distribution_points`) fails on the first such point, so a certificate
+  `--fetch-crls` no longer restates the authority rule: retrieval follows the
+  verifier's result (see [CRL retrieval](docs/crl-retrieval.md)), which removed
+  the per-certificate CRL decoding added in PR #55. What remains: a run with
+  supplied CRLs that still needs a fetch verifies three times against one
+  budget; every listed point of the selected certificates is requested once
+  the status is unknown, including for a certificate that a supplied CRL
+  already covers, because the verifier does not report which certificate
+  lacked evidence; and discovery (`crl_distribution_points`) fails on the
+  first point with reasons, a cRLIssuer or a non-URI name, so a certificate
   that also lists a plain URI point is `crl_fetch_denied` and that URI is never
-  requested. No fixture mixes the two forms. (2) A signer that lists no
-  distribution point, beside an issuer CRL whose issuingDistributionPoint names
-  a point and excludes its role (for example onlyContainsCACerts), is
-  `revocation_unknown` under `--fetch-crls` with a message saying no issuer
-  CRL was supplied, while the same inputs without the flag are `invalid_crl`
-  (`distribution_point_scope`). Read from the code, not run; no case pins it.
-  (3) A supplied CRL that verification rejects anyway (an undecodable or
-  issuer-relative issuingDistributionPoint) does not count as coverage, so the
-  listed point is fetched before the same `invalid_crl`: one request for a
-  verification that cannot succeed. Not run; no case pins it.
+  requested. No fixture has two selected certificates with listed points, or
+  mixes the two point forms.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another

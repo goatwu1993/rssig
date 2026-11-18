@@ -93,19 +93,10 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
     Ok(urls)
 }
 
-/// Selected-path certificates below the anchor, each with whether it is the
-/// path's end entity (CRL role flags depend on it).
-fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<(&'a CertificateReport, bool)>) {
+/// Selected-path certificates below the anchor.
+fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<&'a CertificateReport>) {
     let mut path = |trust: &'a TrustReport| {
-        let below_anchor = trust.chain.len().saturating_sub(1);
-        output.extend(
-            trust
-                .chain
-                .iter()
-                .take(below_anchor)
-                .enumerate()
-                .map(|(depth, cert)| (cert, depth == 0)),
-        );
+        output.extend(trust.chain.iter().take(trust.chain.len().saturating_sub(1)));
     };
     for signature in &bundle.signatures {
         if let Some(trust) = &signature.trust {
@@ -126,9 +117,13 @@ fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<(&'a Certificate
     }
 }
 
-/// Verify signatures and configured-root paths before discovery, then verify again
-/// with required revocation. The two passes share one SEC-02 work budget. Only the
-/// final fully verified bundle is returned. The input store is never modified.
+/// Verify signatures and configured-root paths without revocation, then with
+/// required revocation against the supplied CRLs. Only when that result is
+/// `revocation_unknown` are the selected certificates' listed distribution
+/// points fetched and verification repeated; any other result is returned as
+/// it is. Retrieval is driven by the verifier's own outcome, so no CRL
+/// applicability rule is restated here. The passes share one SEC-02 work
+/// budget. The input store is never modified.
 pub fn verify_with_crl_source(
     bytes: &[u8],
     filename: Option<&str>,
@@ -187,6 +182,32 @@ fn retrieve(
     let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(|e| {
         VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
     })?;
+    // With supplied CRLs, the verifier decides whether anything is missing.
+    // Without any, the outcome is already known to be revocation_unknown.
+    let mut unknown = None;
+    if base.retrieval_crl_count() > 0 {
+        match verify_inner_budget(bytes, options, format, budget) {
+            Ok(mut verified) => {
+                verified.crl_retrieval = Some(CrlRetrievalReport::default());
+                return Ok(verified);
+            }
+            Err(e) => {
+                let e = VerificationError::from_internal(
+                    e,
+                    ErrorCode::InvalidCertificate,
+                    Stage::Certificate,
+                );
+                if e.code != ErrorCode::RevocationUnknown {
+                    return Err(e.detail("crl_retrieval", CrlRetrievalReport::default()));
+                }
+                log.debug(
+                    Stage::Revocation,
+                    format_args!("CRL retrieval: supplied CRLs leave revocation status unknown"),
+                );
+                unknown = Some(e);
+            }
+        }
+    }
     let mut certificates = Vec::new();
     collect(&pending, &mut certificates);
     let mut seen = BTreeSet::new();
@@ -203,8 +224,8 @@ fn retrieve(
             ));
         }
         let mut fetched_urls = BTreeSet::new();
-        for (cert, end_entity) in certificates {
-            if !seen.insert((&cert.sha256, end_entity)) {
+        for cert in certificates {
+            if !seen.insert(&cert.sha256) {
                 continue;
             }
             budget
@@ -230,19 +251,7 @@ fn retrieve(
                 .collect::<Vec<_>>();
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            if store.has_crl_for(&cert, end_entity, budget).map_err(|e| {
-                VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
-            })? {
-                continue;
-            }
-            let urls = crl_distribution_points(&cert)?;
-            if urls.is_empty() {
-                return Err(error(
-                    ErrorCode::RevocationUnknown,
-                    "certificate has no usable CRL distribution point and no supplied issuer CRL",
-                ));
-            }
-            for raw in urls {
+            for raw in crl_distribution_points(&cert)? {
                 let url = http::checked_url(&raw)?.to_string();
                 if !fetched_urls.insert(url.clone()) {
                     continue;
@@ -331,6 +340,15 @@ fn retrieve(
                     ));
                 }
             }
+        }
+        if report.artifacts.is_empty() {
+            // Nothing to add: no selected certificate lists a distribution point.
+            return Err(unknown.take().unwrap_or_else(|| {
+                error(
+                    ErrorCode::RevocationUnknown,
+                    "no CRL was supplied and no selected certificate lists a CRL distribution point",
+                )
+            }));
         }
         log.debug(
             Stage::Revocation,
@@ -454,7 +472,7 @@ mod tests {
             assert!(
                 selected
                     .iter()
-                    .all(|(c, _)| c.subject.common_names != ["rssig test root"])
+                    .all(|c| c.subject.common_names != ["rssig test root"])
             );
         }
     }
