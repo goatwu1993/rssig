@@ -1,7 +1,8 @@
 //! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
 //! a CRL from a chain issuer that is stale or structurally invalid fails closed.
 //! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
-//! KeyUsage.
+//! KeyUsage. The distribution-point tests use a SEC-06 leaf that lists one CRL
+//! distribution point, with issuer CRLs partitioned to that point or another.
 
 use super::support::*;
 
@@ -190,21 +191,7 @@ fn sec10_unknown_noncritical_crl_extension_is_ignored() {
 }
 
 fn run_sec06(input: &str) -> Output {
-    run_fixture(
-        input,
-        &[
-            "verify",
-            "--no-system-roots",
-            "--roots",
-            "fixtures/sec06-root.der",
-            "--time",
-            T,
-            "--crl",
-            "fixtures/sec06-root.crl",
-            "--crl",
-            "fixtures/sec06-issuer.crl",
-        ],
-    )
+    run_sec06_crls(input, &["sec06-issuer.crl"])
 }
 
 #[test]
@@ -222,11 +209,7 @@ fn sec10_crl_from_an_issuer_without_crl_sign_is_rejected() {
 
 #[test]
 fn sec10_crl_from_an_issuer_with_crl_sign_is_used() {
-    let output = run_sec06("sec10-ca-crl-sign.exe");
-    expect_success(&output);
-    let trust = &output.json["results"][0]["signatures"][0]["trust"];
-    assert_eq!(trust["revocation"]["status"], "good");
-    assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+    revocation_good(&run_sec06("sec10-ca-crl-sign.exe"));
 }
 
 #[test]
@@ -272,32 +255,13 @@ fn sec10_named_distribution_point_crl_without_matching_certificate_point_fails_c
 }
 
 fn run_sec06_root(root: &str) -> Output {
-    run_fixture(
-        "good-sec06-basic.exe",
-        &[
-            "verify",
-            "--no-system-roots",
-            "--roots",
-            &format!("fixtures/{root}"),
-            "--time",
-            T,
-            "--crl",
-            "fixtures/sec06-root.crl",
-            "--crl",
-            "fixtures/sec06-issuer.crl",
-        ],
-    )
+    run_sec06_with(root, "good-sec06-basic.exe", &["sec06-issuer.crl"])
 }
 
 #[test]
 fn sec10_crl_from_a_root_without_crl_sign_is_used() {
     // Configured anchors are keys: their KeyUsage does not restrict CRL signing.
-    let output = run_sec06_root("sec10-root-no-crl-sign.der");
-    expect_success(&output);
-    assert_eq!(
-        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
-        "good"
-    );
+    revocation_good(&run_sec06_root("sec10-root-no-crl-sign.der"));
 }
 
 #[test]
@@ -327,4 +291,128 @@ fn sec10_revocation_in_any_applicable_crl_wins_regardless_of_order() {
             None,
         );
     }
+}
+
+/// Verify a SEC-06 chain input with the root CRL and these issuer CRLs, in order.
+fn run_sec06_crls(input: &str, crls: &[&str]) -> Output {
+    run_sec06_with("sec06-root.der", input, crls)
+}
+
+fn run_sec06_with(root: &str, input: &str, crls: &[&str]) -> Output {
+    let mut args = vec![
+        "verify".to_string(),
+        "--no-system-roots".into(),
+        "--roots".into(),
+        format!("fixtures/{root}"),
+        "--time".into(),
+        T.into(),
+        "--crl".into(),
+        "fixtures/sec06-root.crl".into(),
+    ];
+    for crl in crls {
+        args.extend(["--crl".into(), format!("fixtures/{crl}")]);
+    }
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    run_fixture(input, &args)
+}
+
+/// The signer that lists distribution point A.
+fn run_crl_dp(crls: &[&str]) -> Output {
+    run_sec06_crls("sec10-leaf-crl-dp.exe", crls)
+}
+
+fn revocation_failure(output: &Output, code: &str, title: &str) {
+    expect_failure(output, 1, code, title, Some("revocation"), None);
+}
+
+fn revocation_good(output: &Output) {
+    expect_success(output);
+    let trust = &output.json["results"][0]["signatures"][0]["trust"];
+    assert_eq!(trust["revocation"]["status"], "good");
+    assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn sec10_crl_scoped_to_the_listed_distribution_point_is_authoritative() {
+    revocation_good(&run_crl_dp(&["sec10-issuer-idp-match.crl"]));
+    revocation_failure(
+        &run_crl_dp(&["sec10-issuer-idp-match-revoked.crl"]),
+        "certificate_revoked",
+        "Certificate revoked",
+    );
+}
+
+#[test]
+fn sec10_crl_scoped_to_another_distribution_point_leaves_status_unknown() {
+    // The second URI differs from the listed point only in letter case.
+    for crl in ["sec10-issuer-idp-other.crl", "sec10-issuer-idp-case.crl"] {
+        revocation_failure(
+            &run_crl_dp(&[crl]),
+            "revocation_unknown",
+            "Revocation status unknown",
+        );
+    }
+}
+
+#[test]
+fn sec10_listing_by_a_non_authoritative_partition_alone_leaves_status_unknown() {
+    // A listed serial counts only on a path where every certificate has an
+    // authoritative CRL. A partition that is not authoritative for the signer
+    // is not enough evidence on its own to call it revoked.
+    revocation_failure(
+        &run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]),
+        "revocation_unknown",
+        "Revocation status unknown",
+    );
+}
+
+#[test]
+fn sec10_matching_partition_is_selected_whatever_the_crl_order() {
+    let first = run_crl_dp(&["sec10-issuer-idp-other.crl", "sec10-issuer-idp-match.crl"]);
+    let last = run_crl_dp(&["sec10-issuer-idp-match.crl", "sec10-issuer-idp-other.crl"]);
+    revocation_good(&first);
+    revocation_good(&last);
+}
+
+#[test]
+fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
+    // On a path whose certificates all have an authoritative CRL, a serial
+    // listed by another applicable CRL of the same issuer name also rejects.
+    for crls in [
+        [
+            "sec10-issuer-idp-match.crl",
+            "sec10-issuer-idp-other-revoked.crl",
+        ],
+        [
+            "sec10-issuer-idp-other-revoked.crl",
+            "sec10-issuer-idp-match.crl",
+        ],
+    ] {
+        revocation_failure(
+            &run_crl_dp(&crls),
+            "certificate_revoked",
+            "Certificate revoked",
+        );
+    }
+}
+
+#[test]
+fn sec10_full_crl_covers_a_certificate_that_lists_a_distribution_point() {
+    revocation_good(&run_crl_dp(&["sec06-issuer.crl"]));
+    // The full CRL is authoritative even next to a non-matching partition.
+    revocation_good(&run_crl_dp(&[
+        "sec10-issuer-idp-other.crl",
+        "sec06-issuer.crl",
+    ]));
+}
+
+#[test]
+fn sec10_partition_crl_is_rejected_for_a_signer_listing_no_distribution_point() {
+    // The same matching-partition CRL, but the base SEC-06 leaf lists no point.
+    let output = run_sec06_crls("good-sec06-basic.exe", &["sec10-issuer-idp-match.crl"]);
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+    assert_eq!(
+        output.json["results"][0]["error"]["details"]["reason"],
+        "distribution_point_scope"
+    );
 }

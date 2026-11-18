@@ -62,7 +62,7 @@ fn crl_with_entry_extension() -> Vec<u8> {
     )
 }
 
-fn crl_full(
+pub(super) fn crl_full(
     issuer: &str,
     key: &SigningKey,
     this_update: u64,
@@ -115,9 +115,9 @@ fn aki_value(id: &[u8]) -> Vec<u8> {
     .unwrap()
 }
 
-/// IDP whose distributionPoint fullName is one URI absent from every certificate.
-fn idp_named_point() -> Vec<u8> {
-    let general_name = tlv(0x86, b"http://crl.invalid/root.crl");
+/// IDP whose distributionPoint fullName is one URI.
+pub(super) fn idp_named_point(uri: &str) -> Vec<u8> {
+    let general_name = tlv(0x86, uri.as_bytes());
     seq(&[tlv(0xa0, &tlv(0xa0, &general_name))])
 }
 
@@ -269,7 +269,11 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // CRL may be a partition that does not cover them.
         (
             "sec10-root-idp-named-point.crl",
-            crl_with_extension("2.5.29.28", true, &idp_named_point()),
+            crl_with_extension(
+                "2.5.29.28",
+                true,
+                &idp_named_point("http://crl.invalid/root.crl"),
+            ),
         ),
         // AKI with authorityCertIssuer and serial but no keyIdentifier: matched by
         // name only, so the stale CRL fails closed.

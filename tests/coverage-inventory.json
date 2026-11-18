@@ -309,14 +309,33 @@
     },
     {
       "id": "revocation",
-      "claim": "CRL signature/freshness/revocation for selected chain",
+      "claim": "CRL signature/freshness/applicability/revocation for selected chain",
       "cases": [
         "current-crl",
         "intermediate-current-crls",
         "revoked",
         "expired-crl",
         "forged-crl",
-        "bad-crl-not-yet-valid"
+        "bad-crl-not-yet-valid",
+        "sec10-unrelated-expired-crl-excluded",
+        "sec10-root-name-other-aki-crl-excluded",
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-competing-crls-good-first-revoked",
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-root-idp-named-point-crl-rejected",
+        "sec10-partition-crl-no-listed-point",
+        "sec10-crl-dp-matching-idp",
+        "sec10-crl-dp-other-idp-unknown",
+        "sec10-crl-dp-matching-idp-revoked",
+        "sec10-crl-dp-other-partition-revoked",
+        "sec10-crl-dp-full-crl",
+        "sec10-ca-no-crl-sign",
+        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-crl-dp-other-idp-first",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-crl-dp-other-idp-revoked-unknown",
+        "sec10-crl-dp-case-variant-idp-unknown"
       ]
     },
     {
@@ -714,7 +733,10 @@
         "msi-revoked",
         "cab-revoked",
         "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-crl-dp-matching-idp-revoked",
+        "sec10-crl-dp-other-partition-revoked",
+        "sec10-crl-dp-other-partition-revoked-first"
       ],
       "gap": ""
     },
@@ -745,7 +767,10 @@
     "revocation_unknown": {
       "cases": [
         "sec09-lifetime-rollover-revocation-unknown",
-        "sec10-only-unrelated-crl-is-unknown"
+        "sec10-only-unrelated-crl-is-unknown",
+        "sec10-crl-dp-other-idp-unknown",
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-other-idp-revoked-unknown"
       ],
       "gap": ""
     },
@@ -772,7 +797,8 @@
         "sec10-root-delta-expired-crl-reports-feature",
         "sec10-root-idp-user-certs-crl-unsupported",
         "sec10-root-idp-ca-certs-crl-unsupported",
-        "sec10-root-idp-named-point-crl-rejected"
+        "sec10-root-idp-named-point-crl-rejected",
+        "sec10-partition-crl-no-listed-point"
       ],
       "gap": ""
     },
