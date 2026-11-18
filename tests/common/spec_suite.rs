@@ -27,7 +27,7 @@ pub struct Case {
     pub crl_responses: Option<BTreeMap<String, String>>,
     /// URLs the injected source answers with a fetch error of this kind
     /// instead of a response. Reads no file.
-    pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlFetchErrorKind>>,
+    pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
     pub expect: Expectation,

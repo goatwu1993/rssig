@@ -146,24 +146,25 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     let mut stderr = Vec::new();
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
-        errors: Option<&'a BTreeMap<String, rssig::domain::CrlFetchErrorKind>>,
+        errors: Option<&'a BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
         fixtures: &'a Path,
         requests: &'a mut Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source<'_> {
         fn fetch(
             &mut self,
-            url: &str,
-            max_bytes: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
-            use rssig::domain::CrlFetchErrorKind;
-            use rssig::retrieval::FetchError;
+            request: &rssig::retrieval::CrlRequest,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            let url = request.url.as_str();
+            let max_bytes = request.max_bytes;
+            use rssig::domain::CrlSourceErrorKind;
+            use rssig::retrieval::CrlSourceError;
             self.requests.push(url.to_owned());
             if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
-                return Err(FetchError::new(*kind, "injected CRL fetch error"));
+                return Err(CrlSourceError::new(*kind, "injected CRL fetch error"));
             }
             let name = self.responses.get(url).ok_or_else(|| {
-                FetchError::new(CrlFetchErrorKind::Failed, "no injected CRL response")
+                CrlSourceError::new(CrlSourceErrorKind::Failed, "no injected CRL response")
             })?;
             let path = Path::new(name);
             assert!(
@@ -174,10 +175,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             );
             let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
             assert!(bytes.len() <= max_bytes);
-            Ok(rssig::retrieval::FetchedCrl {
-                bytes,
-                final_url: url.into(),
-            })
+            Ok(rssig::retrieval::CrlResponse::new(bytes))
         }
     }
     let mut requests = Vec::new();

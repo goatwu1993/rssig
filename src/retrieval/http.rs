@@ -228,21 +228,23 @@ impl CrlSource for HttpCrlSource {
     /// Reports a blocked URL as `Denied`, a request that did not work as
     /// `Failed`, and its own spent request or byte budget, deadline or DNS
     /// timeout as `Abort`: after those this source can do no more work.
-    fn fetch(&mut self, raw: &str, max_bytes: usize) -> Result<FetchedCrl, FetchError> {
+    fn fetch(&mut self, request: &CrlRequest) -> Result<CrlResponse, CrlSourceError> {
+        let raw = request.url.as_str();
+        let max_bytes = request.max_bytes;
         self.fetch_http(raw, max_bytes).map_err(|e| {
             let source_spent = matches!(
                 e.details.get("resource").and_then(|r| r.as_str()),
                 Some("crl_http_requests" | "crl_network_bytes")
             );
             let kind = match e.code {
-                ErrorCode::CrlFetchDenied => CrlFetchErrorKind::Denied,
-                _ if source_spent || self.remaining().is_err() => CrlFetchErrorKind::Abort,
+                ErrorCode::CrlFetchDenied => CrlSourceErrorKind::Denied,
+                _ if source_spent || self.remaining().is_err() => CrlSourceErrorKind::Abort,
                 ErrorCode::CrlFetchFailed | ErrorCode::ResourceLimitExceeded => {
-                    CrlFetchErrorKind::Failed
+                    CrlSourceErrorKind::Failed
                 }
-                _ => CrlFetchErrorKind::Unknown,
+                _ => CrlSourceErrorKind::Unknown,
             };
-            let mut fetch_error = FetchError::new(kind, e.message);
+            let mut fetch_error = CrlSourceError::new(kind, e.message);
             fetch_error.details = e.details;
             fetch_error
         })
@@ -250,7 +252,11 @@ impl CrlSource for HttpCrlSource {
 }
 
 impl HttpCrlSource {
-    fn fetch_http(&mut self, raw: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError> {
+    fn fetch_http(
+        &mut self,
+        raw: &str,
+        max_bytes: usize,
+    ) -> Result<CrlResponse, VerificationError> {
         self.started.get_or_insert_with(Instant::now);
         let mut url = checked_url(raw)?;
         let cap = max_bytes.min(MAX_CRL_BYTES);
@@ -292,10 +298,7 @@ impl HttpCrlSource {
                     continue;
                 }
             };
-            return Ok(FetchedCrl {
-                bytes: body,
-                final_url: url.into(),
-            });
+            return Ok(CrlResponse::new(body).with_final_url(url.to_string()));
         }
         unreachable!("redirect bound returns an error")
     }
@@ -450,16 +453,19 @@ mod tests {
             requests: MAX_REQUESTS,
             ..HttpCrlSource::new()
         };
+        let request = |url: &str| CrlRequest {
+            url: url.into(),
+            max_bytes: 10,
+        };
         // A spent request budget, the deadline and a DNS timeout all mean
         // this source can do no more work: Abort.
         let kind = |source: &mut HttpCrlSource| {
             source
-                .fetch("http://example.com/x", 10)
-                .err()
-                .expect("no network is reached")
+                .fetch(&request("http://example.com/x"))
+                .expect_err("no network is reached")
                 .kind
         };
-        assert_eq!(kind(&mut source), CrlFetchErrorKind::Abort);
+        assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
         let mut source = HttpCrlSource {
             started: Some(Instant::now() - DEADLINE),
             ..HttpCrlSource::new()
@@ -468,22 +474,21 @@ mod tests {
             source.remaining().unwrap_err().code,
             ErrorCode::CrlFetchFailed
         );
-        assert_eq!(kind(&mut source), CrlFetchErrorKind::Abort);
+        assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
         let mut source = HttpCrlSource {
             poisoned: true,
             ..HttpCrlSource::new()
         };
         assert!(source.remaining().is_err());
-        assert_eq!(kind(&mut source), CrlFetchErrorKind::Abort);
+        assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
         // A URL the policy refuses is Denied, before any work.
         let mut source = HttpCrlSource::new();
         assert_eq!(
             source
-                .fetch("http://127.0.0.1/x", 10)
-                .err()
-                .expect("denied")
+                .fetch(&request("http://127.0.0.1/x"))
+                .expect_err("denied")
                 .kind,
-            CrlFetchErrorKind::Denied
+            CrlSourceErrorKind::Denied
         );
     }
 }

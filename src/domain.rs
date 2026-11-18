@@ -522,7 +522,8 @@ pub struct CrlRetrievalArtifact {
 /// chooses; the engine decides what each means for the run.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum CrlFetchErrorKind {
+#[non_exhaustive]
+pub enum CrlSourceErrorKind {
     /// The source refused this URL by its policy (`crl_fetch_denied`).
     Denied,
     /// The request was made and did not produce a response
@@ -535,7 +536,7 @@ pub enum CrlFetchErrorKind {
     /// Anything else the source cannot classify (`crl_fetch_failed`).
     Unknown,
 }
-impl CrlFetchErrorKind {
+impl CrlSourceErrorKind {
     /// The error code a failure of this kind is reported with.
     pub fn code(self) -> ErrorCode {
         match self {
@@ -568,7 +569,7 @@ pub struct CrlRetrievalFailure {
     pub causes: Vec<String>,
     /// The kind a `CrlSource` reported, when the failure came from one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub source_error: Option<CrlFetchErrorKind>,
+    pub source_error: Option<CrlSourceErrorKind>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CrlRetrievalReport {

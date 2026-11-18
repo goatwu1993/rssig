@@ -41,7 +41,7 @@ Two kinds of error, and nothing in between:
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
-  transport policy denies the URL, the response is not a CRL or is larger than
+  the response is not a CRL or is larger than
   the source was allowed to return (not loaded), or the source reports
   `denied`, `failed` or `unknown` (see below).
 - **The source reporting `abort` stops retrieval**: nothing further is
@@ -115,12 +115,21 @@ The parser and `verify-core` remain usable without network dependencies or std.
 - `crl_distribution_points(&Certificate)` decodes URI discovery metadata and
   fails at the first unsupported point; retrieval itself skips such points one
   by one.
-- `CrlSource::fetch(url, max_bytes)` returns untrusted `FetchedCrl` bytes and the
-  final URL, or a `FetchError` with one of the four kinds above, a message and
-  optional details. It never returns a trust verdict. Implementations must bound their
-  own I/O, allocation and latency; the engine independently rejects oversized
-  returned responses. A custom provider owns its transport policy and may use
-  a cache or offline artifacts.
+- `CrlSource` is the single interface through which the engine obtains CRLs.
+  `fetch(&CrlRequest)` receives a listed URI exactly as the certificate lists
+  it and `max_bytes`, and returns a `CrlResponse` (untrusted bytes, and the
+  final URL when a redirect changed it) or a `CrlSourceError` with one of the
+  four kinds above (`CrlSourceErrorKind`), a message and optional details. It
+  never returns a trust verdict. The engine applies no transport rule: every
+  listed URI, of any scheme, is passed to the source, which alone decides what
+  it may request and how (HTTP, HTTPS, LDAP, a proxy, a cache or offline
+  artifacts), and refuses the rest as `denied`. A custom source therefore owns
+  its own destination safety. Implementations must bound their own I/O,
+  allocation and latency; the engine independently rejects oversized
+  responses. `CrlRequest`, `CrlResponse`, `CrlSourceError` and
+  `CrlSourceErrorKind` are `#[non_exhaustive]`, so fields and kinds can be
+  added without breaking sources; build responses and errors with their
+  constructors.
 - `verify_with_crl_source(bytes, filename, options, source)` performs the complete
   flow above. It requires configured trust and required revocation. It clones
   the supplied store; fetched certificates never become roots, and the caller's
@@ -130,7 +139,8 @@ The parser and `verify-core` remain usable without network dependencies or std.
 
 ## Built-in HTTP policy
 
-`HttpCrlSource` uses Rust URL/HTTP parsing with std sockets. It performs no native
+`HttpCrlSource` is the built-in `CrlSource`, used by the CLI. The policy below
+is its own, not the engine's. It uses Rust URL/HTTP parsing with std sockets. It performs no native
 cryptography and uses no subprocesses, system proxy settings, cookies or TLS.
 HTTPS, LDAP, FTP and file URLs are unsupported. HTTPS support needs a separately
 reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
