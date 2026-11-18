@@ -524,13 +524,15 @@ timestamps, and local CRL validation already exist.
   fixtures. Exercise bounded verification with fixed policy where useful.
   Minimize failures into committed regression fixtures/spec cases. Keep the
   fuzzing toolchain optional and separate from ordinary `cargo test --locked`.
-  Added eight cargo-fuzz targets in the detached `fuzz/` crate covering every
-  listed parser plus integrity-only verification at a fixed time, seeded from
-  committed fixtures by `fuzz/seed-corpus.sh`, with `make fuzz` and a per-target
-  CI smoke job. An initial seven-minute run per target found no failures, so no
-  regression fixtures were added. [Targets, limits and recorded runs](docs/fuzzing.md).
-  Configured-root trust, revocation and CRL retrieval are not fuzzed; long or
-  scheduled campaigns and a differential oracle remain separate work.
+  Added ten cargo-fuzz targets in the detached `fuzz/` crate covering every
+  listed parser, integrity-only verification, and configured-root trust with
+  fuzzed artifacts and fuzzed roots/CRLs, all at a fixed time. `fuzz/targets.txt`
+  is the single target list; committed fixtures seed a git-ignored corpus.
+  `make fuzz` runs locally and in CI (short on pull requests, longer weekly with
+  a cached corpus); `make lint` checks target/lockfile consistency and lints the
+  crate. Initial runs found no failures, so no regression fixtures were added.
+  [Targets, limits, maintenance and recorded runs](docs/fuzzing.md).
+  CRL retrieval is not fuzzed; a differential oracle remains separate work.
 - [ ] **TEST-03: Extend invariant and mutation testing.** Verify that excluded
   checksum/signature fields and authenticated payload/metadata mutate as
   documented, and that digest, CMS, timestamp, and trust faults stay isolated.

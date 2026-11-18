@@ -12,22 +12,22 @@ use rssig::verify::{VerifyOptions, verify_as};
 const NOW: u64 = 1_799_999_999;
 
 fuzz_target!(|data: &[u8]| {
-    let format = if data.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
-        Format::Msi
+    let formats: &[Format] = if data.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
+        &[Format::Msi]
     } else if data.starts_with(b"PK\x03\x04") {
-        Format::Appx
+        &[Format::Appx]
     } else if data.starts_with(b"MZ") {
-        Format::Pe
+        &[Format::Pe]
     } else {
         // CAB and NAVX each reject the other's magic immediately.
-        let options = VerifyOptions::integrity_only(NOW);
-        let _ = verify_as(data, Format::Cab, &options);
-        let _ = verify_as(data, Format::Navx, &options);
-        return;
+        &[Format::Cab, Format::Navx]
     };
     let mut options = VerifyOptions::integrity_only(NOW);
-    let _ = verify_as(data, format, &options);
     // Legacy SHA-1 content digests take a separate policy branch.
-    options.allow_sha1 = true;
-    let _ = verify_as(data, format, &options);
+    for allow_sha1 in [false, true] {
+        options.allow_sha1 = allow_sha1;
+        for format in formats {
+            let _ = verify_as(data, *format, &options);
+        }
+    }
 });

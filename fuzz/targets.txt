@@ -1,0 +1,14 @@
+# Single list of fuzz targets and the fixture extensions that seed each one.
+# Read by seed-corpus.sh, check.sh and the Makefile; CI runs `make fuzz`.
+# A target also needs fuzz_targets/<name>.rs and a [[bin]] in Cargo.toml;
+# check.sh fails when the three disagree.
+parse_cms der crl
+parse_pe exe
+parse_cab_navx cab navx
+parse_msi msi msp
+parse_appx msix appx msixbundle appxbundle
+parse_text ps1 psm1 psd1 ps1xml vbs vbe js jse wsf rdp
+verify_binary exe msi msp cab navx msix appx msixbundle appxbundle
+verify_text ps1 psm1 psd1 ps1xml vbs vbe js jse wsf rdp
+verify_trusted exe msi msp cab navx msix appx msixbundle appxbundle ps1 ps1xml vbs js wsf rdp
+trust_loading der crl pem

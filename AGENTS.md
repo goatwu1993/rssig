@@ -121,6 +121,18 @@ HTML, and a per-case specification report. See `docs/testing.md` for local comma
 Fixture builders and Rust test source files are excluded from coverage reports;
 production source, including the thin process adapter, remains included.
 
+## Fuzzing
+
+Fuzz targets live in the detached `fuzz/` crate and need nightly; see
+`docs/fuzzing.md`. They are never part of `cargo test --locked`.
+
+- Adding a parser or public parse/verify entry point: add a fuzz target in the
+  same change (source file, `[[bin]]`, and a `fuzz/targets.txt` line).
+- Changing the root `Cargo.lock`: resynchronize `fuzz/Cargo.lock` as
+  `docs/fuzzing.md` describes. `make lint` runs `fuzz/check.sh` and fails on drift.
+- Fixing a fuzz finding: commit the minimized input as a fixture with a spec
+  case and named test, per the TDD workflow. Never weaken a target to pass.
+
 ## Fixtures
 
 Commit binary fixtures and their provenance, SHA-256 digests, and intended
