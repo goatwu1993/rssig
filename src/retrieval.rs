@@ -376,7 +376,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     ErrorCode::InvalidCrl,
                     format!("decoding retrieved CRL: {e:#}"),
                 );
-                self.skip(sha256, Some(&url), e, speculative)?;
+                // Bytes that are not a CRL are no evidence, in either step:
+                // another listed point may still supply it, and verification
+                // decides.
+                self.skip(sha256, Some(&url), e, true)?;
                 continue;
             }
             // A PEM response may contain multiple distinct CRLs. Bound the

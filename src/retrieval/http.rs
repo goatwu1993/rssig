@@ -246,8 +246,9 @@ impl CrlSource for HttpCrlSource {
     /// Other failures keep their own error even after the deadline.
     fn fetch(&mut self, raw: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError> {
         self.started.get_or_insert_with(Instant::now);
-        self.fetch_within_limits(raw, max_bytes).map_err(|e| {
-            if e.details.get("timeout") == Some(&serde_json::Value::Bool(true))
+        self.fetch_within_limits(raw, max_bytes).map_err(|mut e| {
+            // `timeout` is an internal marker, not part of the reported error.
+            if e.details.remove("timeout") == Some(serde_json::Value::Bool(true))
                 && let Err(limit) = self.remaining()
             {
                 return limit;

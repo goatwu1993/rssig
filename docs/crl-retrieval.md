@@ -50,8 +50,9 @@ unknown, the result is the verifier's own `revocation_unknown` when any
 verification with revocation required ran, as it would be without
 `--fetch-crls`; otherwise the first failure is returned (for example
 `crl_fetch_denied` for a private URL with no supplied CRL). Every other error
-ends the run in step 2: a malformed cRLDistributionPoints extension and an
-undecodable response. Every `resource_limit_exceeded` ends the run in either
+ends the run in step 2: a malformed cRLDistributionPoints extension. A
+response that does not decode as a CRL is recorded and skipped in either
+step. Every `resource_limit_exceeded` ends the run in either
 step: the engine's own limits (requests, retained CRLs, combined bytes,
 response size, URLs per certificate and URL length) and any the source
 reports, such as its time limit. A response identical to a CRL already loaded
