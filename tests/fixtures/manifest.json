@@ -7080,7 +7080,10 @@
         "good-sec06-root-expired",
         "good-sec06-root-profile",
         "sec10-root-no-crl-sign-accepted",
-        "sec10-partition-crl-no-listed-point"
+        "sec10-partition-crl-no-listed-point",
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl"
       ]
     },
     {
@@ -7512,7 +7515,17 @@
         "sec10-ca-crl-sign-fallback",
         "sec10-root-no-crl-sign-accepted",
         "sec10-crl-dp-full-crl",
-        "sec10-crl-dp-other-idp-with-full-crl"
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-ca-crl-dp-ca-scope-covers-issuer",
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-crl-dp-multi-full-crl",
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-crl-dp-relative-full-crl",
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl"
       ]
     },
     {
@@ -7841,7 +7854,24 @@
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-user-scope-covers-signer",
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-crl-dp-idp-second-name-matches",
+        "sec10-crl-dp-multi-second-point-matches",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-multi-full-crl",
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-full-crl",
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl"
       ]
     },
     {
@@ -7903,7 +7933,27 @@
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-user-scope-covers-signer",
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-ca-crl-dp-ca-scope-covers-issuer",
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-crl-dp-idp-second-name-matches",
+        "sec10-crl-dp-multi-second-point-matches",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-multi-full-crl",
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-full-crl",
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl"
       ]
     },
     {
@@ -9373,7 +9423,10 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-user-scope-covers-signer",
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-crl-dp-idp-second-name-matches"
       ]
     },
     {
@@ -9389,7 +9442,11 @@
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
         "sec10-crl-dp-matching-idp-first",
-        "sec10-partition-crl-no-listed-point"
+        "sec10-partition-crl-no-listed-point",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-crl-issuer-point-unknown"
       ]
     },
     {
@@ -9439,6 +9496,181 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-case-variant-idp-unknown"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-multi.exe",
+      "sha256": "c477222bbc572a7b594eaaa6e2184161c638bc5f588ae73311c8d598b60c2269",
+      "bytes": 2320,
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints lists two points: one naming http://crl.invalid/sec10-c.crl and one naming both sec10-d.crl and sec10-e.crl; serial 122. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-multi-second-point-matches",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-multi-full-crl"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-dns.exe",
+      "sha256": "efb05fb4d9bcbd1ef50dd0b72e9eb53f45d9b2656d18b58e7aee6a67490f3289",
+      "bytes": 2232,
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names only a dNSName (crl.invalid), not a URI; serial 123. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-crl-dp-dns-full-crl"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-relative.exe",
+      "sha256": "48dcab237ebc87ef8b4cd96a9c046f120bddbddd6aeec4d56b8a5241a95419e1",
+      "bytes": 2232,
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints uses nameRelativeToCRLIssuer (CN=sec10); serial 124. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-full-crl"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-reasons.exe",
+      "sha256": "7df2d2b0361704d66aa657967c0b4bb037bd95bc3098960e6db54e293a13b0be",
+      "bytes": 2256,
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a reasons field (keyCompromise); serial 125. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-reasons-full-crl"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "sha256": "25df07c6d83110ce0924c6f721324b6d36aad110ab6860c650f70b795297897d",
+      "bytes": 2280,
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a cRLIssuer (CN=SEC-06 upper); serial 126. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-crl-dp-crl-issuer-full-crl"
+      ]
+    },
+    {
+      "file": "sec10-ca-crl-dp.exe",
+      "sha256": "88efc22e200f6819c1be90582945da132e29712b1a922a1f72daa81b5ac8f2d8",
+      "bytes": 2256,
+      "description": "SEC-10: Inert PE signed by the base SEC-06 leaf; its issuer candidate is a SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-ca-crl-dp-ca-scope-covers-issuer",
+        "sec10-ca-crl-dp-user-scope-excludes-issuer"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-match-user.crl",
+      "sha256": "993f0d528b7f965f097f756eab8a84756386d9a1f406140a7adc9236b73ea446",
+      "bytes": 235,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl with onlyContainsUserCerts TRUE. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-user-scope-covers-signer"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-match-ca.crl",
+      "sha256": "98c8265f27f3c639045eaa42f2be2012ee34e9ecef13052ad27a760300bc9cbf",
+      "bytes": 235,
+      "description": "SEC-10: As sec10-issuer-idp-match-user.crl, but with onlyContainsCACerts TRUE; not authoritative for an end-entity signer. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-ca-scope-excludes-signer"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-two-names.crl",
+      "sha256": "27c22f2761c99791430e03b1ca87f51c7183d52d1681a0927b8a408c1c85c848",
+      "bytes": 266,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName lists http://crl.invalid/sec10-b.crl and then http://crl.invalid/sec10-a.crl. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-idp-second-name-matches"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-second-point.crl",
+      "sha256": "228cc78f5751145b4d5555106fcd1368459f5d3556c893b68f3fa817de3061c7",
+      "bytes": 232,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-e.crl, the second name of the sec10-leaf-crl-dp-multi signer's second point. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-multi-second-point-matches"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-dns.crl",
+      "sha256": "da1f60f8471c913d5dd7612baeda84a6f02b56d54012a71d655a14ccc8963079",
+      "bytes": 213,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is only a dNSName (crl.invalid). Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-dns-name-unknown"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-relative.crl",
+      "sha256": "c86e2c5ba3f049aead69efaeb92ee4fefd482951f329cafa1124c9619ee93d76",
+      "bytes": 214,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint uses nameRelativeToCRLIssuer (CN=sec10); unsupported, so it must fail closed. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-relative-idp-unsupported"
+      ]
+    },
+    {
+      "file": "sec10-sec06-root-idp-ca.crl",
+      "sha256": "7449402a8b071aae56f6adeadffe41afa351a7557dd1917c250c92c358705f6c",
+      "bytes": 240,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 root whose critical issuingDistributionPoint names http://crl.invalid/sec10-issuer.crl with onlyContainsCACerts TRUE. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-ca-crl-dp-ca-scope-covers-issuer"
+      ]
+    },
+    {
+      "file": "sec10-sec06-root-idp-user.crl",
+      "sha256": "4c3fb765004d20286ed6dca24d712b110fd4c17738b3b3a562bc010b2d11f20d",
+      "bytes": 240,
+      "description": "SEC-10: As sec10-sec06-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-ca-crl-dp-user-scope-excludes-issuer"
+      ]
+    },
+    {
+      "file": "sec10-sec06-root-revoked-issuer.crl",
+      "sha256": "9ecc7636c6365c1cce8f7920f5e8deda7602727e5930462531969824019284ab",
+      "bytes": 204,
+      "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 root (no issuingDistributionPoint) revoking serial 110, the SEC-06 issuer certificate and its variants. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl"
       ]
     }
   ]
