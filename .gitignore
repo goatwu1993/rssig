@@ -11,3 +11,6 @@ verifysign
 # LLVM coverage profiles belong in target, not source control.
 /*.profraw
 /*.profdata
+
+# macOS Finder metadata.
+.DS_Store

@@ -1,7 +1,11 @@
 //! Load the portable CLI specification with Serde and exercise the CLI library.
+#[path = "common/spec_args.rs"]
+mod spec_args;
+
 use rssig::cli;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use spec_args::Argument;
 use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
@@ -139,24 +143,14 @@ fn compare(expected: &Value, actual: &Value, pointer: &str, failures: &mut Vec<S
 
 fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> Vec<OsString> {
     let mut args = vec![OsString::from("rssig")];
-    let mut path_argument = false;
-    for arg in &case.command {
-        let path = Path::new(arg);
-        if path_argument {
-            args.push(parent.join(path).into_os_string());
-            path_argument = false;
-        } else if let Some((flag, value)) = arg.split_once('=')
-            && matches!(flag, "--roots" | "--crl")
-        {
-            args.push(format!("{flag}={}", parent.join(value).display()).into());
-        } else {
-            args.push(if path.is_relative() && path.starts_with(fixture_prefix) {
-                parent.join(path).into_os_string()
-            } else {
-                arg.into()
-            });
-            path_argument = matches!(arg.as_str(), "--roots" | "--crl");
-        }
+    for argument in spec_args::classify(case.command.iter().map(String::as_str), fixture_prefix) {
+        args.push(match argument {
+            Argument::Plain(argument) => argument.into(),
+            Argument::Path(path) => parent.join(path).into_os_string(),
+            Argument::InlinePath { flag, path } => {
+                format!("{flag}={}", parent.join(path).display()).into()
+            }
+        });
     }
     args.extend(
         case.input

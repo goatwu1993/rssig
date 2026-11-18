@@ -4,9 +4,13 @@
 //! `check` is a pure function over an in-memory [`Corpus`], so every rule is
 //! also exercised against a deliberately broken copy. Nothing here regenerates
 //! or rewrites a fixture. See `docs/testing.md` for the rules and exceptions.
+#[path = "common/spec_args.rs"]
+mod spec_args;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+use spec_args::Argument;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -18,6 +22,13 @@ const MANIFEST: &str = "manifest.json";
 /// Files in `tests/fixtures/` that the manifest intentionally does not list.
 /// Diagnostic JSON and helper data are ordinary listed artifacts.
 const UNLISTED: &[&str] = &[MANIFEST];
+
+/// Local operating-system and editor by-products, never committed: ignored so
+/// that `cargo test` does not fail on a developer machine. The fixture rules
+/// still reject them as artifact names.
+fn local_by_product(name: &str) -> bool {
+    name == ".DS_Store" || name.starts_with("._") || name.ends_with(".swp") || name.ends_with('~')
+}
 
 /// Inputs that cases name because they do not exist. Each must stay absent
 /// from both the manifest and the directory.
@@ -116,16 +127,37 @@ struct Artifact {
     upstream_revision: Option<String>,
 }
 
+/// What the checks need from a fixture file, computed once so mutation tests
+/// can copy the corpus cheaply.
+#[derive(Clone)]
+struct FileFacts {
+    bytes: u64,
+    sha256: String,
+}
+
+impl FileFacts {
+    fn of(bytes: &[u8]) -> Self {
+        Self {
+            bytes: bytes.len() as u64,
+            sha256: Sha256::digest(bytes)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect(),
+        }
+    }
+}
+
 /// Everything the checks read, loaded once and cloned for mutation tests.
 #[derive(Clone)]
 struct Corpus {
     manifest: Value,
     /// Regular files directly inside `tests/fixtures/`.
-    files: BTreeMap<String, Vec<u8>>,
+    files: BTreeMap<String, FileFacts>,
     /// Anything else found there; fixtures live in one flat directory.
     other_entries: BTreeSet<String>,
     cases: Value,
-    /// Repository-relative path to Rust source text, for `src/` and `tests/cli/`.
+    /// Repository-relative path to the text of every Rust file under `src/` and
+    /// `tests/`, plus `build.rs` when present.
     sources: BTreeMap<String, String>,
 }
 
@@ -142,25 +174,39 @@ fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, Stri
     }
 }
 
-static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let directory = root.join("tests/fixtures");
+/// Regular files and other entries directly inside `directory`, skipping
+/// [`local_by_product`] names.
+fn read_fixture_directory(directory: &Path) -> (BTreeMap<String, FileFacts>, BTreeSet<String>) {
     let mut files = BTreeMap::new();
     let mut other_entries = BTreeSet::new();
-    for entry in std::fs::read_dir(&directory).unwrap() {
+    for entry in std::fs::read_dir(directory).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name().into_string().unwrap();
+        if local_by_product(&name) {
+            continue;
+        }
         if entry.file_type().unwrap().is_file() {
-            files.insert(name, std::fs::read(entry.path()).unwrap());
+            files.insert(name, FileFacts::of(&std::fs::read(entry.path()).unwrap()));
         } else {
             other_entries.insert(name);
         }
     }
+    (files, other_entries)
+}
+
+static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let directory = root.join("tests/fixtures");
+    let (files, other_entries) = read_fixture_directory(&directory);
     let mut sources = BTreeMap::new();
     read_sources(root, "src", &mut sources);
-    read_sources(root, "tests/cli", &mut sources);
+    read_sources(root, "tests", &mut sources);
+    if let Ok(build) = std::fs::read_to_string(root.join("build.rs")) {
+        sources.insert("build.rs".to_owned(), build);
+    }
     Corpus {
-        manifest: serde_json::from_slice(&files[MANIFEST]).unwrap(),
+        manifest: serde_json::from_slice(&std::fs::read(directory.join(MANIFEST)).unwrap())
+            .unwrap(),
         files,
         other_entries,
         cases: serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap())
@@ -185,35 +231,83 @@ fn blank(text: &str) -> bool {
     text.trim().is_empty()
 }
 
-/// Whether `source` declares a function called exactly `name`: a line that,
-/// after indentation, visibility and `const`/`async`/`unsafe` qualifiers,
-/// begins `fn name` followed by `(` or `<`. Text in comments, string literals
-/// or the middle of a line never counts.
-fn defines_function(source: &str, name: &str) -> bool {
-    source.lines().any(|line| {
-        let mut rest = line.trim_start();
-        if let Some(after) = rest.strip_prefix("pub") {
-            rest = match after.strip_prefix('(') {
-                Some(scope) => match scope.split_once(')') {
-                    Some((_, after)) => after,
-                    None => return false,
-                },
-                None => after,
-            };
-            if !rest.starts_with(' ') {
-                return false;
-            }
-            rest = rest.trim_start();
+/// Line indices where `source` declares a function called exactly `name`: a
+/// line that, after indentation, visibility, and `const`/`async`/`unsafe`/
+/// `extern "ABI"` qualifiers, begins `fn name` followed by `(` or `<`. Lines in
+/// `//` and `/* */` comments, and text after the start of a line, never count.
+/// A line inside a multi-line string literal is not recognized as such.
+fn declarations(source: &str, name: &str) -> Vec<usize> {
+    let mut found = Vec::new();
+    let mut in_block = false;
+    for (index, line) in source.lines().enumerate() {
+        let code = line.split("//").next().unwrap_or_default();
+        if in_block {
+            in_block = !code.contains("*/");
+            continue;
         }
-        while let Some(after) = ["const ", "async ", "unsafe "]
+        if declares(line, name) {
+            found.push(index);
+        }
+        if let Some(open) = code.rfind("/*") {
+            in_block = !code[open..].contains("*/");
+        }
+    }
+    found
+}
+
+fn declares(line: &str, name: &str) -> bool {
+    let mut rest = line.trim_start();
+    if let Some(after) = rest.strip_prefix("pub") {
+        rest = match after.strip_prefix('(') {
+            Some(scope) => match scope.split_once(')') {
+                Some((_, after)) => after,
+                None => return false,
+            },
+            None => after,
+        };
+        if !rest.starts_with(' ') {
+            return false;
+        }
+        rest = rest.trim_start();
+    }
+    loop {
+        if let Some(after) = ["const ", "async ", "unsafe "]
             .iter()
             .find_map(|qualifier| rest.strip_prefix(qualifier))
         {
             rest = after.trim_start();
+        } else if let Some(after) = rest.strip_prefix("extern ") {
+            rest = after.trim_start();
+            if let Some(abi) = rest.strip_prefix('"') {
+                match abi.split_once('"') {
+                    Some((_, after)) => rest = after.trim_start(),
+                    None => return false,
+                }
+            }
+        } else {
+            break;
         }
-        rest.strip_prefix("fn ")
-            .and_then(|after| after.trim_start().strip_prefix(name))
-            .is_some_and(|after| after.trim_start().starts_with(['(', '<']))
+    }
+    rest.strip_prefix("fn ")
+        .and_then(|after| after.trim_start().strip_prefix(name))
+        .is_some_and(|after| after.trim_start().starts_with(['(', '<']))
+}
+
+fn defines_function(source: &str, name: &str) -> bool {
+    !declarations(source, name).is_empty()
+}
+
+/// Whether a declaration of `name` carries `#[test]` among the attribute and
+/// comment lines directly above it.
+fn declares_test(source: &str, name: &str) -> bool {
+    let lines: Vec<&str> = source.lines().collect();
+    declarations(source, name).into_iter().any(|index| {
+        lines[..index]
+            .iter()
+            .rev()
+            .map(|line| line.trim())
+            .take_while(|line| line.starts_with("#[") || line.starts_with("//"))
+            .any(|line| line.starts_with("#[test]"))
     })
 }
 
@@ -229,25 +323,42 @@ fn generator_exists(sources: &BTreeMap<String, String>, generator: &str) -> bool
         .is_some_and(|source| function.is_none_or(|name| defines_function(source, name)))
 }
 
-/// `module::function` in `tests/cli/<module>.rs`.
+/// `module::function`: a `#[test]` function in `tests/cli/<module>.rs`, which a
+/// test target under `tests/` includes as a module.
 fn test_exists(sources: &BTreeMap<String, String>, test: &str) -> bool {
-    test.split_once("::").is_some_and(|(module, function)| {
-        sources
+    let Some((module, function)) = test.split_once("::") else {
+        return false;
+    };
+    let included = format!("#[path = \"cli/{module}.rs\"]");
+    let harness = sources.iter().any(|(path, source)| {
+        path.strip_prefix("tests/")
+            .is_some_and(|name| !name.contains('/'))
+            && source.lines().any(|line| line.trim() == included)
+    });
+    harness
+        && sources
             .get(&format!("tests/cli/{module}.rs"))
-            .is_some_and(|source| defines_function(source, function))
-    })
+            .is_some_and(|source| declares_test(source, function))
 }
 
-/// Options whose value `tests/spec.rs` resolves to a file, in either the
-/// `--crl path` or the `--crl=path` form.
-const PATH_OPTIONS: &[&str] = &["--roots", "--crl"];
+/// The fixture name a path argument resolves to, or the path itself when it
+/// leaves the fixture directory (so it can never match a listed artifact).
+fn fixture_name(path: &str, prefix: &Path) -> String {
+    match Path::new(path).strip_prefix(prefix) {
+        Ok(rest) if rest.components().count() == 1 && rest.to_str().is_some_and(safe_file_name) => {
+            rest.to_str().unwrap().to_owned()
+        }
+        _ => path.to_owned(),
+    }
+}
 
-/// Case IDs and, per case, every fixture file name it reads: `input`, `inputs`,
-/// injected CRL response bodies, `<fixtures>/<name>` command arguments, and the
-/// values of [`PATH_OPTIONS`]. A path option value outside the fixture
-/// directory is recorded verbatim, so it can never match a listed file.
+/// Case IDs and, per case, every file it reads: `input`, `inputs`, injected
+/// CRL response bodies, and command arguments that `tests/spec.rs` resolves as
+/// paths (see `common/spec_args.rs`). A plain argument containing a path
+/// separator is recorded too: the CLI would read it relative to its working
+/// directory, outside the fixture directory.
 fn case_fixtures(cases: &Value) -> BTreeMap<String, BTreeSet<String>> {
-    let prefix = format!("{}/", cases["fixtures"].as_str().unwrap());
+    let prefix = Path::new(cases["fixtures"].as_str().unwrap());
     let mut result = BTreeMap::new();
     for case in cases["cases"].as_array().unwrap() {
         let mut used = BTreeSet::new();
@@ -263,22 +374,22 @@ fn case_fixtures(cases: &Value) -> BTreeMap<String, BTreeSet<String>> {
             .into_iter()
             .flat_map(|responses| responses.values())
             .for_each(&mut add);
-        let mut path_value = false;
-        for argument in case["command"].as_array().into_iter().flatten() {
-            let argument = argument.as_str().unwrap_or_default();
-            let (value, is_path) = match argument.split_once('=') {
-                Some((flag, value)) if PATH_OPTIONS.contains(&flag) => (value, true),
-                _ => (argument, path_value),
-            };
-            path_value = PATH_OPTIONS.contains(&argument);
-            match value.strip_prefix(&prefix) {
-                Some(name) => {
-                    used.insert(name.to_owned());
+        let command = case["command"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|argument| argument.as_str().unwrap_or_default());
+        for argument in spec_args::classify(command, prefix) {
+            match argument {
+                Argument::Path(path) | Argument::InlinePath { path, .. } => {
+                    used.insert(fixture_name(path, prefix));
                 }
-                None if is_path => {
-                    used.insert(value.to_owned());
+                Argument::Plain(argument)
+                    if !argument.contains("://") && argument.contains(['/', '\\']) =>
+                {
+                    used.insert(argument.to_owned());
                 }
-                None => {}
+                Argument::Plain(_) => {}
             }
         }
         result.insert(case["id"].as_str().unwrap().to_owned(), used);
@@ -320,28 +431,23 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
     let mut folded = BTreeSet::new();
     for artifact in &manifest.artifacts {
         let file = artifact.file.as_str();
+        // An unsafe or duplicate name is never looked up or counted as listed,
+        // but the entry's other fields are still checked.
         if !safe_file_name(file) {
-            // Never join an unsafe name to the fixture directory or report it as listed.
             problems.push(problem(Rule::UnsafePath, file));
-            continue;
-        }
-        if !folded.insert(file.to_ascii_lowercase()) {
+        } else if !folded.insert(file.to_ascii_lowercase()) {
             problems.push(problem(Rule::DuplicateFile, file));
-            continue;
-        }
-        listed.insert(file);
-        match corpus.files.get(file) {
-            None => problems.push(problem(Rule::MissingFile, file)),
-            Some(bytes) => {
-                if u64::try_from(bytes.len()) != Ok(artifact.bytes) {
-                    problems.push(problem(Rule::ByteCount, file));
-                }
-                let digest: String = Sha256::digest(bytes)
-                    .iter()
-                    .map(|byte| format!("{byte:02x}"))
-                    .collect();
-                if artifact.sha256 != digest {
-                    problems.push(problem(Rule::Sha256, file));
+        } else {
+            listed.insert(file);
+            match corpus.files.get(file) {
+                None => problems.push(problem(Rule::MissingFile, file)),
+                Some(facts) => {
+                    if facts.bytes != artifact.bytes {
+                        problems.push(problem(Rule::ByteCount, file));
+                    }
+                    if facts.sha256 != artifact.sha256 {
+                        problems.push(problem(Rule::Sha256, file));
+                    }
                 }
             }
         }
@@ -505,6 +611,20 @@ fn one(rule: Rule, subject: &str) -> Vec<(Rule, String)> {
     vec![(rule, subject.to_owned())]
 }
 
+/// `UnlistedCaseInput` for every committed case that reads `name`.
+fn readers_of(name: &str) -> Vec<(Rule, String)> {
+    case_fixtures(&COMMITTED.cases)
+        .into_iter()
+        .filter(|(_, used)| used.contains(name))
+        .map(|(case, _)| (Rule::UnlistedCaseInput, format!("{case}: {name}")))
+        .collect()
+}
+
+fn sorted(mut problems: Vec<(Rule, String)>) -> Vec<(Rule, String)> {
+    problems.sort();
+    problems
+}
+
 #[test]
 fn rejects_unknown_fields_wrong_types_and_versions() {
     let unknown = broken(|c| artifact(c, FILE)["sha265"] = json!("typo"));
@@ -542,18 +662,17 @@ fn rejects_paths_that_leave_or_hide_in_the_fixture_directory() {
         "manifest.json",
         "space name.exe",
     ] {
-        let problems = broken(|c| artifact(c, FILE)["file"] = json!(name));
-        assert!(
-            problems.contains(&(Rule::UnsafePath, name.to_owned())),
-            "{name}: {problems:?}"
-        );
-        // The renamed artifact's real file is now unlisted; nothing else may be reported.
-        assert!(
-            problems.iter().all(|(rule, _)| matches!(
-                rule,
-                Rule::UnsafePath | Rule::UnlistedFile | Rule::UnlistedCaseInput
-            )),
-            "{name}: {problems:?}"
+        // The renamed artifact's real file becomes unlisted, and so does the
+        // input of every case that reads it. Nothing else may be reported.
+        let mut expected = vec![
+            (Rule::UnsafePath, name.to_owned()),
+            (Rule::UnlistedFile, FILE.to_owned()),
+        ];
+        expected.extend(readers_of(FILE));
+        assert_eq!(
+            broken(|c| artifact(c, FILE)["file"] = json!(name)),
+            sorted(expected),
+            "{name}"
         );
     }
 }
@@ -573,7 +692,8 @@ fn rejects_duplicate_missing_and_unlisted_files() {
     assert_eq!(missing, one(Rule::MissingFile, UNUSED));
 
     let unlisted = broken(|c| {
-        c.files.insert("stray.exe".to_owned(), vec![0x4d, 0x5a]);
+        c.files
+            .insert("stray.exe".to_owned(), FileFacts::of(&[0x4d, 0x5a]));
     });
     assert_eq!(unlisted, one(Rule::UnlistedFile, "stray.exe"));
 
@@ -601,11 +721,22 @@ fn rejects_wrong_byte_counts_and_digests() {
     assert_eq!(count, one(Rule::ByteCount, FILE));
 
     // A changed fixture with a stale manifest entry: the count still matches.
-    let changed = broken(|c| c.files.get_mut(FILE).unwrap()[700] ^= 1);
+    let mut bytes = std::fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures")
+            .join(FILE),
+    )
+    .unwrap();
+    bytes[700] ^= 1;
+    let changed = broken(|c| {
+        c.files.insert(FILE.to_owned(), FileFacts::of(&bytes));
+    });
     assert_eq!(changed, one(Rule::Sha256, FILE));
 
+    bytes[700] ^= 1;
+    bytes.pop();
     let truncated = broken(|c| {
-        c.files.get_mut(FILE).unwrap().pop();
+        c.files.insert(FILE.to_owned(), FileFacts::of(&bytes));
     });
     assert_eq!(
         truncated,
@@ -704,7 +835,13 @@ fn rejects_unknown_or_repeated_cases_and_unknown_tests() {
         broken(|c| artifact(c, FILE)["cases"] = json!(["pe64", "pe64"])),
         one(Rule::UnknownCase, &format!("{FILE}: pe64"))
     );
-    for test in ["pe::no_such_test", "absent::test", "no_module"] {
+    for test in [
+        "pe::no_such_test",
+        "absent::test",
+        "no_module",
+        // A helper function, not a #[test].
+        "support::run_fixture",
+    ] {
         assert_eq!(
             broken(|c| artifact(c, FILE)["tests"] = json!([test])),
             one(Rule::UnknownTest, &format!("{FILE}: {test}"))
@@ -737,19 +874,13 @@ fn rejects_case_inputs_the_manifest_does_not_list() {
 #[test]
 fn intentionally_absent_inputs_must_stay_absent_and_used() {
     let present = broken(|c| {
-        c.files.insert("missing.exe".to_owned(), Vec::new());
+        c.files.insert("missing.exe".to_owned(), FileFacts::of(&[]));
     });
-    assert!(
-        present.contains(&(Rule::UnlistedFile, "missing.exe".to_owned())),
-        "{present:?}"
-    );
-    assert!(
-        present
-            .iter()
-            .any(|(rule, subject)| *rule == Rule::UnlistedCaseInput
-                && subject.ends_with(": missing.exe")),
-        "{present:?}"
-    );
+    let mut expected = vec![(Rule::UnlistedFile, "missing.exe".to_owned())];
+    let readers = readers_of("missing.exe");
+    assert!(!readers.is_empty());
+    expected.extend(readers);
+    assert_eq!(present, sorted(expected));
 
     let unused = broken(|c| {
         for case in c.cases["cases"].as_array_mut().unwrap() {
@@ -843,10 +974,7 @@ fn rejects_names_that_collide_on_case_insensitive_filesystems() {
         copy["file"] = json!(FILE.to_uppercase());
         c.manifest["artifacts"].as_array_mut().unwrap().push(copy);
     });
-    assert!(
-        problems.contains(&(Rule::DuplicateFile, FILE.to_uppercase())),
-        "{problems:?}"
-    );
+    assert_eq!(problems, one(Rule::DuplicateFile, &FILE.to_uppercase()));
 }
 
 #[test]
@@ -923,4 +1051,162 @@ fn function_lookup_ignores_comments_strings_and_mid_line_text() {
     ] {
         assert!(defines_function(source, "write"), "{source:?}");
     }
+}
+
+#[test]
+fn test_links_need_a_test_attribute_and_an_including_harness() {
+    let named = "support::run_fixture";
+    let source = &COMMITTED.sources["tests/cli/support.rs"];
+    assert!(
+        defines_function(source, "run_fixture"),
+        "{named} still exists"
+    );
+    assert!(!declares_test(source, "run_fixture"));
+    assert!(declares_test(
+        "#[test]\n#[ignore = \"slow\"]\n/// docs\nfn slow() {}",
+        "slow"
+    ));
+    assert!(!declares_test(
+        "#[test]\nfn other() {}\n\nfn slow() {}",
+        "slow"
+    ));
+
+    // A real test whose module no harness includes is not a test link.
+    let real = COMMITTED.manifest["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|a| a["tests"].as_array().into_iter().flatten())
+        .filter_map(Value::as_str)
+        .next()
+        .unwrap()
+        .to_owned();
+    let module = real.split_once("::").unwrap().0.to_owned();
+    let orphaned = broken(|c| {
+        for (path, source) in c.sources.iter_mut() {
+            if path
+                .strip_prefix("tests/")
+                .is_some_and(|n| !n.contains('/'))
+            {
+                *source = source.replace(&format!("#[path = \"cli/{module}.rs\"]"), "");
+            }
+        }
+    });
+    assert!(
+        !orphaned.is_empty()
+            && orphaned
+                .iter()
+                .all(|(rule, subject)| *rule == Rule::UnknownTest
+                    && subject.contains(&format!(": {module}::"))),
+        "{orphaned:?}"
+    );
+}
+
+#[test]
+fn generators_may_live_anywhere_under_src_or_tests() {
+    assert_eq!(
+        broken(|c| artifact(c, FILE)["generator"] =
+            json!("tests/fixtures.rs::problem_details_preserve_typed_causes_and_roundtrip")),
+        vec![]
+    );
+}
+
+#[test]
+fn function_lookup_ignores_block_comments_and_reads_extern_functions() {
+    let commented = "/*\nfn write() {}\n*/\nfn other() {}";
+    assert!(!defines_function(commented, "write"));
+    assert!(defines_function(commented, "other"));
+    assert!(!defines_function(
+        "let x = 1; /* start\nfn write() {}\n end */",
+        "write"
+    ));
+    assert!(defines_function("/* closed */\nfn write() {}", "write"));
+    assert!(defines_function("pub extern \"C\" fn write() {}", "write"));
+    assert!(defines_function(
+        "unsafe extern \"system\" fn write() {}",
+        "write"
+    ));
+    assert!(defines_function("extern fn write() {}", "write"));
+}
+
+#[test]
+fn plain_arguments_with_a_path_separator_are_case_inputs() {
+    for (argument, expected) in [
+        (
+            "tests/fixtures/good-pe64.exe",
+            "pe32: tests/fixtures/good-pe64.exe",
+        ),
+        (
+            "../fixtures/good-pe64.exe",
+            "pe32: ../fixtures/good-pe64.exe",
+        ),
+        (
+            "fixtures/../good-pe64.exe",
+            "pe32: fixtures/../good-pe64.exe",
+        ),
+    ] {
+        assert_eq!(
+            broken(|c| {
+                c.cases["cases"][0]["command"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(json!(argument));
+            }),
+            one(Rule::UnlistedCaseInput, expected),
+            "{argument}"
+        );
+    }
+    // A fixture path with a doubled separator still names the fixture, and URLs are not paths.
+    assert_eq!(
+        broken(|c| {
+            let command = c.cases["cases"][0]["command"].as_array_mut().unwrap();
+            command.push(json!("fixtures//good.crl"));
+            command.push(json!("http://crl.example.invalid/x.crl"));
+        }),
+        vec![]
+    );
+}
+
+#[test]
+fn an_unsafe_or_duplicate_entry_still_reports_its_other_problems() {
+    let problems = broken(|c| {
+        let mut copy = artifact(c, FILE).clone();
+        copy["license"] = json!("");
+        copy["cases"] = json!(["no-such-case"]);
+        c.manifest["artifacts"].as_array_mut().unwrap().push(copy);
+    });
+    assert_eq!(
+        problems,
+        vec![
+            (Rule::DuplicateFile, FILE.to_owned()),
+            (Rule::Provenance, FILE.to_owned()),
+            (Rule::UnknownCase, format!("{FILE}: no-such-case")),
+        ]
+    );
+}
+
+#[test]
+fn local_by_products_are_not_fixtures() {
+    for name in [".DS_Store", "._good.exe", ".manifest.json.swp", "notes~"] {
+        assert!(local_by_product(name), "{name}");
+        assert!(!safe_file_name(name), "{name}");
+    }
+    assert!(!local_by_product("good.exe"));
+
+    let directory = std::env::temp_dir().join(format!("rssig-manifest-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(directory.join("nested")).unwrap();
+    for name in [
+        "good.exe",
+        ".DS_Store",
+        "._good.exe",
+        "good.exe.swp",
+        "good.exe~",
+    ] {
+        std::fs::write(directory.join(name), b"MZ").unwrap();
+    }
+    let (files, other_entries) = read_fixture_directory(&directory);
+    std::fs::remove_dir_all(&directory).unwrap();
+    assert_eq!(files.keys().collect::<Vec<_>>(), ["good.exe"]);
+    assert_eq!(other_entries.iter().collect::<Vec<_>>(), ["nested"]);
 }

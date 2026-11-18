@@ -228,16 +228,16 @@ specification, and the tests and generators it names. It runs in
 | --- | --- |
 | Schema | Only known fields with the expected types; `schema_version` is 1. A misspelled field fails instead of being ignored. |
 | Paths | `file` is one plain name directly in `tests/fixtures/`: it starts with an ASCII letter or digit and contains only those, `.`, `_`, and `-`. It is listed once, compared case-insensitively because macOS checkouts are case-insensitive. |
-| Presence | Every listed file exists; every file in the directory is listed; the directory has no subdirectories. |
+| Presence | Every listed file exists; every file in the directory is listed; the directory has no subdirectories. Local by-products (`.DS_Store`, `._*`, `*.swp`, `*~`) are ignored, since they are never committed. |
 | Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
 | Description | Nonblank. |
 | Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`. An artifact produced outside the repository (a `signer`, `signer_jar_sha256`, `upstream_revision`, or URL `source`) states its own `license`. No recorded provenance or license value is blank. |
-| Generators | Each `generator` names an existing Rust source file and, after `::`, a function declared in it. A declaration is a line beginning (after indentation, visibility, and `const`/`async`/`unsafe`) with `fn name(` or `fn name<`; comments and strings do not count. |
+| Generators | Each `generator` names a Rust source file under `src/` or `tests/` (or `build.rs`) and, after `::`, a function declared in it. A declaration is a line beginning (after indentation, visibility, and `const`/`async`/`unsafe`/`extern "ABI"`) with `fn name(` or `fn name<`. Lines in `//` and `/* */` comments do not count; a line inside a multi-line string literal is not detected as such. |
 | Case links | Each ID in `cases` is defined in `tests/cases.json` and listed once. |
-| Case inputs | Every file a case reads is a listed artifact: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, and `--roots`/`--crl` values in both the `--crl path` and `--crl=path` forms. A path option outside the fixture directory, or an exempt file such as `manifest.json`, fails. |
-| Test links | Each `tests` entry is `module::function` declared in `tests/cli/<module>.rs`. |
+| Case inputs | Every file a case reads is a listed artifact: `input`, `inputs`, CRL response bodies, and every argument the runner resolves as a path. `tests/common/spec_args.rs` defines those (`fixtures/...` arguments and `--roots`/`--crl` values in both forms) and is shared by `tests/spec.rs`, so the two cannot disagree. A path leaving the fixture directory, a plain argument containing a path separator, or an exempt file such as `manifest.json` fails. |
+| Test links | Each `tests` entry is `module::function`: a function marked `#[test]` in `tests/cli/<module>.rs`, a module that a test target under `tests/` includes. |
 | Pairs | `paired_good` names another listed artifact. |
-| Derived sources | A `source` that is not an `http://` or `https://` URL names another listed artifact. |
+| Derived sources | A top-level `source` that is not an `http://` or `https://` URL names another listed artifact. A `source` inside a `provenance` object is free text and is not resolved. |
 
 Intentional exceptions are constants in that file:
 
@@ -252,7 +252,9 @@ Artifacts without provenance of their own inherit the manifest-level default
 enforced: an artifact may list a case that reaches it only indirectly (for
 example an issuer certificate embedded in the signed input), and an artifact
 need not list every case that reads it. Each rule has a test that breaks a copy
-of the committed data and requires exactly that rule to fail.
+of the committed data and requires exactly the expected problems, and no
+others. An entry with an unsafe or duplicate name still has its other fields
+checked, so one run reports all of its problems.
 
 ## Invariant inventory
 
