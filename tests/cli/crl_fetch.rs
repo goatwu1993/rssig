@@ -424,8 +424,8 @@ fn sec10_fetch_follows_the_verification_result() {
         ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[], Some(("invalid_crl", "issuing_distribution_point"))),
         // Both selected certificates list a point. Only the issuer has no supplied CRL
-        // naming its issuer, so only its point is requested: the signer's point has no
-        // response here and a request for it would fail the run.
+        // naming its issuer, so only its point is requested; verification then
+        // succeeds and the signer's point is never requested.
         ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
         // A name-matching CRL that is not authoritative for the signer: its point is
         // requested second, after the certainly missing one did not settle the status.

@@ -1,8 +1,8 @@
-//! CRL retrieval through an injected source, offline. The first byte picks the
-//! mode: either the signed artifact is fuzzed and the source answers with the
-//! committed CRL, or a fixed artifact whose signer and issuer both list a
-//! distribution point is verified and the source answers every request with
-//! the fuzzed bytes. Reaches retrieval ordering, the DER issuer walker over
+//! CRL retrieval through an injected source, offline. An input that starts
+//! like a PE (`MZ`) is the signed artifact, and the source answers with the
+//! committed CRL; any other input is the source's answer to every request for
+//! a fixed artifact whose signer and issuer both list a distribution point.
+//! So `.exe` seeds fuzz the artifact and `.crl`/`.der` seeds the response. Reaches retrieval ordering, the DER issuer walker over
 //! certificates and fetched CRLs, failure recording and the engine's limits.
 //! Property: no input panics, and the source is the only I/O.
 #![no_main]
@@ -49,16 +49,13 @@ impl CrlSource for Answer<'_> {
 }
 
 fuzz_target!(|data: &[u8]| {
-    let Some((&mode, rest)) = data.split_first() else {
-        return;
-    };
-    if mode & 1 == 0 {
+    if data.starts_with(b"MZ") {
         let options = VerifyOptions::trusted(&TEST_ROOT, NOW);
         let crl = include_bytes!("../../tests/fixtures/good.crl");
-        let _ = verify_with_crl_source(rest, None, &options, &mut Answer(crl));
+        let _ = verify_with_crl_source(data, None, &options, &mut Answer(crl));
     } else {
         let options = VerifyOptions::trusted(&SEC06, NOW);
         let input = include_bytes!("../../tests/fixtures/sec10-chain-crl-dp.exe");
-        let _ = verify_with_crl_source(input, None, &options, &mut Answer(rest));
+        let _ = verify_with_crl_source(input, None, &options, &mut Answer(data));
     }
 });

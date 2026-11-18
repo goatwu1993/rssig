@@ -227,14 +227,17 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
     }
 
-    /// One failure entry per certificate and URL; without a URL, per
-    /// certificate and message.
+    /// One failure entry per certificate and URL. A point without a URL is
+    /// reached once per certificate (certificates are deduplicated), so each
+    /// is listed.
     fn record(&mut self, certificate: &str, url: Option<&str>, e: &VerificationError) {
-        if self.report.failures.iter().any(|f| {
-            f.certificate_sha256 == certificate
-                && f.url.as_deref() == url
-                && (url.is_some() || f.message == e.message)
-        }) {
+        if url.is_some()
+            && self
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == certificate && f.url.as_deref() == url)
+        {
             return;
         }
         self.report.failures.push(CrlRetrievalFailure {

@@ -538,7 +538,8 @@ pub struct CrlRetrievalFailure {
 pub struct CrlRetrievalReport {
     /// Retrieved artifacts are untrusted evidence; this is not per-CRL verification status.
     pub artifacts: Vec<CrlRetrievalArtifact>,
-    /// Listed points that yielded no evidence, in request order.
+    /// Listed points that yielded no evidence, in the order they were
+    /// considered: by selected certificate, then by listed point.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failures: Vec<CrlRetrievalFailure>,
 }
