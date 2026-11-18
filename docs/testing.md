@@ -227,16 +227,17 @@ specification, and the tests and generators it names. It runs in
 | Rule | Requirement |
 | --- | --- |
 | Schema | Only known fields with the expected types; `schema_version` is 1. A misspelled field fails instead of being ignored. |
-| Paths | `file` is one plain name (ASCII letters, digits, `.`, `_`, `-`, not starting with `.`) directly in `tests/fixtures/`, and is listed once. |
+| Paths | `file` is one plain name directly in `tests/fixtures/`: it starts with an ASCII letter or digit and contains only those, `.`, `_`, and `-`. It is listed once, compared case-insensitively because macOS checkouts are case-insensitive. |
 | Presence | Every listed file exists; every file in the directory is listed; the directory has no subdirectories. |
 | Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
 | Description | Nonblank. |
-| Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`; no recorded provenance or license value is blank. |
-| Generators | Each `generator` names an existing Rust source file and, after `::`, a function declared in it. |
+| Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`. An artifact produced outside the repository (a `signer`, `signer_jar_sha256`, `upstream_revision`, or URL `source`) states its own `license`. No recorded provenance or license value is blank. |
+| Generators | Each `generator` names an existing Rust source file and, after `::`, a function declared in it. A declaration is a line beginning (after indentation, visibility, and `const`/`async`/`unsafe`) with `fn name(` or `fn name<`; comments and strings do not count. |
 | Case links | Each ID in `cases` is defined in `tests/cases.json` and listed once. |
-| Case inputs | Every fixture a case reads (`input`, `inputs`, CRL response bodies, `fixtures/...` arguments) is listed. |
+| Case inputs | Every file a case reads is a listed artifact: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, and `--roots`/`--crl` values in both the `--crl path` and `--crl=path` forms. A path option outside the fixture directory, or an exempt file such as `manifest.json`, fails. |
 | Test links | Each `tests` entry is `module::function` declared in `tests/cli/<module>.rs`. |
 | Pairs | `paired_good` names another listed artifact. |
+| Derived sources | A `source` that is not an `http://` or `https://` URL names another listed artifact. |
 
 Intentional exceptions are constants in that file:
 

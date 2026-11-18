@@ -53,6 +53,8 @@ enum Rule {
     /// An artifact names a Rust test that does not exist.
     UnknownTest,
     PairedGood,
+    /// A `source` that is not a URL must name another listed artifact.
+    DerivedSource,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -175,16 +177,43 @@ fn safe_file_name(name: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
+fn is_url(text: &str) -> bool {
+    text.starts_with("https://") || text.starts_with("http://")
+}
+
 fn blank(text: &str) -> bool {
     text.trim().is_empty()
 }
 
-/// Whether `source` declares a function called exactly `name`.
+/// Whether `source` declares a function called exactly `name`: a line that,
+/// after indentation, visibility and `const`/`async`/`unsafe` qualifiers,
+/// begins `fn name` followed by `(` or `<`. Text in comments, string literals
+/// or the middle of a line never counts.
 fn defines_function(source: &str, name: &str) -> bool {
-    let declaration = format!("fn {name}");
-    source.match_indices(&declaration).any(|(index, _)| {
-        !source[index + declaration.len()..]
-            .starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+    source.lines().any(|line| {
+        let mut rest = line.trim_start();
+        if let Some(after) = rest.strip_prefix("pub") {
+            rest = match after.strip_prefix('(') {
+                Some(scope) => match scope.split_once(')') {
+                    Some((_, after)) => after,
+                    None => return false,
+                },
+                None => after,
+            };
+            if !rest.starts_with(' ') {
+                return false;
+            }
+            rest = rest.trim_start();
+        }
+        while let Some(after) = ["const ", "async ", "unsafe "]
+            .iter()
+            .find_map(|qualifier| rest.strip_prefix(qualifier))
+        {
+            rest = after.trim_start();
+        }
+        rest.strip_prefix("fn ")
+            .and_then(|after| after.trim_start().strip_prefix(name))
+            .is_some_and(|after| after.trim_start().starts_with(['(', '<']))
     })
 }
 
@@ -209,8 +238,14 @@ fn test_exists(sources: &BTreeMap<String, String>, test: &str) -> bool {
     })
 }
 
+/// Options whose value `tests/spec.rs` resolves to a file, in either the
+/// `--crl path` or the `--crl=path` form.
+const PATH_OPTIONS: &[&str] = &["--roots", "--crl"];
+
 /// Case IDs and, per case, every fixture file name it reads: `input`, `inputs`,
-/// injected CRL response bodies, and `<fixtures>/<name>` command arguments.
+/// injected CRL response bodies, `<fixtures>/<name>` command arguments, and the
+/// values of [`PATH_OPTIONS`]. A path option value outside the fixture
+/// directory is recorded verbatim, so it can never match a listed file.
 fn case_fixtures(cases: &Value) -> BTreeMap<String, BTreeSet<String>> {
     let prefix = format!("{}/", cases["fixtures"].as_str().unwrap());
     let mut result = BTreeMap::new();
@@ -228,9 +263,22 @@ fn case_fixtures(cases: &Value) -> BTreeMap<String, BTreeSet<String>> {
             .into_iter()
             .flat_map(|responses| responses.values())
             .for_each(&mut add);
+        let mut path_value = false;
         for argument in case["command"].as_array().into_iter().flatten() {
-            if let Some(name) = argument.as_str().and_then(|a| a.strip_prefix(&prefix)) {
-                used.insert(name.to_owned());
+            let argument = argument.as_str().unwrap_or_default();
+            let (value, is_path) = match argument.split_once('=') {
+                Some((flag, value)) if PATH_OPTIONS.contains(&flag) => (value, true),
+                _ => (argument, path_value),
+            };
+            path_value = PATH_OPTIONS.contains(&argument);
+            match value.strip_prefix(&prefix) {
+                Some(name) => {
+                    used.insert(name.to_owned());
+                }
+                None if is_path => {
+                    used.insert(value.to_owned());
+                }
+                None => {}
             }
         }
         result.insert(case["id"].as_str().unwrap().to_owned(), used);
@@ -268,6 +316,8 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
 
     let cases = case_fixtures(&corpus.cases);
     let mut listed = BTreeSet::new();
+    // macOS CI checks out onto a case-insensitive filesystem.
+    let mut folded = BTreeSet::new();
     for artifact in &manifest.artifacts {
         let file = artifact.file.as_str();
         if !safe_file_name(file) {
@@ -275,10 +325,11 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
             problems.push(problem(Rule::UnsafePath, file));
             continue;
         }
-        if !listed.insert(file) {
+        if !folded.insert(file.to_ascii_lowercase()) {
             problems.push(problem(Rule::DuplicateFile, file));
             continue;
         }
+        listed.insert(file);
         match corpus.files.get(file) {
             None => problems.push(problem(Rule::MissingFile, file)),
             Some(bytes) => {
@@ -313,6 +364,15 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         let mut provenance_ok = recorded
             .iter()
             .all(|v| v.as_deref().is_none_or(|v| !blank(v)));
+        // Signed or fetched outside this repository: the repository-generated
+        // default license cannot apply, so the artifact must state its own.
+        let external = artifact.signer.is_some()
+            || artifact.signer_jar_sha256.is_some()
+            || artifact.upstream_revision.is_some()
+            || artifact.source.as_deref().is_some_and(is_url);
+        if external && artifact.license.is_none() && artifact.provenance.is_none() {
+            provenance_ok = false;
+        }
         if let Some(provenance) = &artifact.provenance {
             provenance_ok &= provenance.values().all(|value| !blank(value))
                 && provenance.contains_key("license")
@@ -353,6 +413,12 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         {
             problems.push(problem(Rule::PairedGood, artifact.file.as_str()));
         }
+        if let Some(source) = artifact.source.as_deref()
+            && !is_url(source)
+            && (source == artifact.file || !listed.contains(source))
+        {
+            problems.push(problem(Rule::DerivedSource, artifact.file.as_str()));
+        }
     }
 
     for name in corpus.files.keys() {
@@ -367,8 +433,14 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
     for (case, used) in &cases {
         for name in used {
             let absent = ABSENT_INPUTS.contains(&name.as_str());
-            let present = listed.contains(name.as_str()) || corpus.files.contains_key(name);
-            if absent == present {
+            // Exempt files such as manifest.json are not fixtures: a case may
+            // read only listed artifacts.
+            let bad = if absent {
+                listed.contains(name.as_str()) || corpus.files.contains_key(name)
+            } else {
+                !listed.contains(name.as_str())
+            };
+            if bad {
                 problems.push(problem(Rule::UnlistedCaseInput, format!("{case}: {name}")));
             }
         }
@@ -412,6 +484,21 @@ fn artifact<'a>(corpus: &'a mut Corpus, file: &str) -> &'a mut Value {
         .iter_mut()
         .find(|artifact| artifact["file"] == file)
         .unwrap()
+}
+
+/// A listed fixture that no case reads, so removing it affects only file rules.
+const UNUSED: &str = "attribute-certificate-v1.der";
+
+fn assert_unused_by_cases(name: &str) {
+    let used = case_fixtures(&COMMITTED.cases);
+    let readers: Vec<_> = used
+        .iter()
+        .filter(|(_, used)| used.contains(name))
+        .collect();
+    assert!(
+        readers.is_empty(),
+        "{name} is now read by {readers:?}; choose a fixture no case reads"
+    );
 }
 
 fn one(rule: Rule, subject: &str) -> Vec<(Rule, String)> {
@@ -473,6 +560,7 @@ fn rejects_paths_that_leave_or_hide_in_the_fixture_directory() {
 
 #[test]
 fn rejects_duplicate_missing_and_unlisted_files() {
+    assert_unused_by_cases(UNUSED);
     let duplicate = broken(|c| {
         let copy = artifact(c, FILE).clone();
         c.manifest["artifacts"].as_array_mut().unwrap().push(copy);
@@ -480,12 +568,9 @@ fn rejects_duplicate_missing_and_unlisted_files() {
     assert_eq!(duplicate, one(Rule::DuplicateFile, FILE));
 
     let missing = broken(|c| {
-        c.files.remove("attribute-certificate-v1.der");
+        c.files.remove(UNUSED);
     });
-    assert_eq!(
-        missing,
-        one(Rule::MissingFile, "attribute-certificate-v1.der")
-    );
+    assert_eq!(missing, one(Rule::MissingFile, UNUSED));
 
     let unlisted = broken(|c| {
         c.files.insert("stray.exe".to_owned(), vec![0x4d, 0x5a]);
@@ -502,12 +587,9 @@ fn rejects_duplicate_missing_and_unlisted_files() {
         c.manifest["artifacts"]
             .as_array_mut()
             .unwrap()
-            .retain(|artifact| artifact["file"] != "attribute-certificate-v1.der");
+            .retain(|artifact| artifact["file"] != UNUSED);
     });
-    assert_eq!(
-        removed,
-        one(Rule::UnlistedFile, "attribute-certificate-v1.der")
-    );
+    assert_eq!(removed, one(Rule::UnlistedFile, UNUSED));
 }
 
 #[test]
@@ -715,4 +797,130 @@ fn function_lookup_requires_the_whole_name() {
     assert!(defines_function(source, "regenerate"));
     assert!(!defines_function(source, "write"));
     assert!(!defines_function(source, "all"));
+}
+
+#[test]
+fn reads_path_options_in_both_forms_and_outside_the_fixture_directory() {
+    for (command, expected) in [
+        (vec!["--crl=fixtures/unlisted.crl"], "pe32: unlisted.crl"),
+        (vec!["--roots=fixtures/unlisted.der"], "pe32: unlisted.der"),
+        (vec!["--crl", "elsewhere.crl"], "pe32: elsewhere.crl"),
+        (vec!["--roots=../root.der"], "pe32: ../root.der"),
+    ] {
+        let problems = broken(|c| {
+            let arguments = c.cases["cases"][0]["command"].as_array_mut().unwrap();
+            arguments.extend(command.iter().map(|argument| json!(argument)));
+        });
+        assert_eq!(
+            problems,
+            one(Rule::UnlistedCaseInput, expected),
+            "{command:?}"
+        );
+    }
+    // The listed form is accepted, and an unrelated `=` option is not a path.
+    assert_eq!(
+        broken(|c| {
+            let arguments = c.cases["cases"][0]["command"].as_array_mut().unwrap();
+            arguments.push(json!("--crl=fixtures/good.crl"));
+            arguments.push(json!("--time=1800000000"));
+        }),
+        vec![]
+    );
+}
+
+#[test]
+fn a_case_may_not_read_an_exempt_unlisted_file() {
+    assert_eq!(
+        broken(|c| c.cases["cases"][0]["input"] = json!(MANIFEST)),
+        one(Rule::UnlistedCaseInput, "pe32: manifest.json")
+    );
+}
+
+#[test]
+fn rejects_names_that_collide_on_case_insensitive_filesystems() {
+    let problems = broken(|c| {
+        let mut copy = artifact(c, FILE).clone();
+        copy["file"] = json!(FILE.to_uppercase());
+        c.manifest["artifacts"].as_array_mut().unwrap().push(copy);
+    });
+    assert!(
+        problems.contains(&(Rule::DuplicateFile, FILE.to_uppercase())),
+        "{problems:?}"
+    );
+}
+
+#[test]
+fn externally_produced_artifacts_must_state_a_license() {
+    // Top-level external fields, as the jsign-signed MSI records them.
+    const SIGNED: &str = "msi-independent-jsign.msi";
+    assert_eq!(
+        broken(|c| {
+            artifact(c, SIGNED)
+                .as_object_mut()
+                .unwrap()
+                .remove("license");
+        }),
+        one(Rule::Provenance, SIGNED)
+    );
+    for (field, value) in [
+        ("signer", "an external tool"),
+        ("upstream_revision", "0123456789abcdef"),
+        ("signer_jar_sha256", "00"),
+        ("source", "https://example.invalid/artifact"),
+    ] {
+        assert_eq!(
+            broken(|c| artifact(c, FILE)[field] = json!(value)),
+            one(Rule::Provenance, FILE),
+            "{field}"
+        );
+    }
+    // Derived from a listed fixture: the repository default still applies.
+    assert_eq!(
+        broken(|c| artifact(c, FILE)["source"] = json!("good-pe64.exe")),
+        vec![]
+    );
+}
+
+#[test]
+fn rejects_derived_sources_that_do_not_resolve() {
+    const DERIVED: &str = "parse-rfc3161.der";
+    assert!(
+        COMMITTED.manifest["artifacts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["file"] == DERIVED && a["source"] == "good-rfc3161.exe")
+    );
+    assert_eq!(
+        broken(|c| artifact(c, DERIVED)["source"] = json!("good-rfc316.exe")),
+        one(Rule::DerivedSource, DERIVED)
+    );
+    assert_eq!(
+        broken(|c| artifact(c, DERIVED)["source"] = json!(DERIVED)),
+        one(Rule::DerivedSource, DERIVED)
+    );
+}
+
+#[test]
+fn function_lookup_ignores_comments_strings_and_mid_line_text() {
+    for source in [
+        "// fn write() is gone",
+        "/// see fn write(",
+        "let text = \"fn write()\";",
+        "    call(fn write());",
+        "fn writer() {}",
+        "pubfn write() {}",
+    ] {
+        assert!(!defines_function(source, "write"), "{source:?}");
+    }
+    for source in [
+        "fn write() {}",
+        "    fn write(bytes: &[u8]) {}",
+        "pub fn write() {}",
+        "pub(crate) fn write() {}",
+        "pub(super) const unsafe fn write() {}",
+        "async fn write<T>() {}",
+    ] {
+        assert!(defines_function(source, "write"), "{source:?}");
+    }
 }
