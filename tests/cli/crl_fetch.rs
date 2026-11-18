@@ -514,11 +514,11 @@ fn sec10_fetch_follows_the_verification_result() {
     }
 }
 
-/// SEC-10: when a first-step certificate's issuer is still named by no CRL
-/// after its points were requested, the second step cannot help and is not
-/// requested; the verifier's unknown status is reported with the failed point.
+/// SEC-10: a first-step certificate whose point fails stays uncovered, and the
+/// second step is still requested: a second-step response could carry its
+/// issuer's CRL. Both failures are recorded; the status is the verifier's.
 #[test]
-fn sec10_fetch_stops_when_the_first_step_leaves_a_certificate_uncovered() {
+fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
     struct Unreachable(Vec<String>);
     impl rssig::retrieval::CrlSource for Unreachable {
         fn fetch(
@@ -554,16 +554,23 @@ fn sec10_fetch_stops_when_the_first_step_leaves_a_certificate_uncovered() {
     let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
     assert!(err.is_empty());
     assert_eq!(code, 1);
-    assert_eq!(source.0, ["http://crl.invalid/sec10-issuer.crl"]);
+    assert_eq!(
+        source.0,
+        [
+            "http://crl.invalid/sec10-issuer.crl",
+            "http://crl.invalid/sec10-a.crl"
+        ]
+    );
     let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
     let error = &report["results"][0]["error"];
     assert_eq!(error["code"], "revocation_unknown");
     let failures = error["details"]["crl_retrieval"]["failures"]
         .as_array()
         .unwrap();
-    assert_eq!(failures.len(), 1);
+    assert_eq!(failures.len(), 2);
     assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-issuer.crl");
-    assert_eq!(failures[0]["code"], "crl_fetch_failed");
+    assert_eq!(failures[1]["url"], "http://crl.invalid/sec10-a.crl");
+    assert!(failures.iter().all(|f| f["code"] == "crl_fetch_failed"));
 }
 
 /// SEC-10: in the second step a certificate may already be covered, so a bad

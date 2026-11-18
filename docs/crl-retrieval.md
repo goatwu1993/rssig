@@ -26,21 +26,24 @@ rule is restated for retrieval.
    CRL is reported as it is without `--fetch-crls`, not replaced or ignored.
 4. If the status is still unknown, request the listed points of the remaining
    certificates, whose issuer a supplied CRL names but which may not be
-   authoritative for them, and verify again. This step is skipped when a
-   certificate from step 2 still has an issuer that no loaded CRL names: it
-   cannot gain evidence, so the status cannot change
-   (`sec10-fetch-uncovered-after-first-step-stops`).
+   authoritative for them, and verify again. This step runs even when a step-2
+   certificate is still uncovered, since a response here can carry its
+   issuer's CRL too (`sec10-fetch-uncovered-first-step-still-tries-second`).
+5. If evidence is still missing, the result is the verifier's own
+   `revocation_unknown`; when no verification has run yet (no CRL at all), one
+   runs now.
 
 Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests (16 per verification,
-  answered or not), retained CRLs, combined bytes, response size, URLs per
-  certificate and URL length, and the SEC-02 work budget.
+  answered or not), retained CRLs, combined bytes, URLs per certificate and
+  URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
-  transport policy denies the URL, the response is not a CRL, or the source
-  returns any error. The source is the caller's (`CrlSource`), so any `Err`
+  transport policy denies the URL, the response is not a CRL or is larger than
+  the source was allowed to return (not loaded), or the source returns any
+  error. The source is the caller's (`CrlSource`), so any `Err`
   from it, whatever its code, means only that this URL produced nothing; the
   built-in source's time limit and DNS timeout are no different.
 
@@ -54,10 +57,8 @@ beside it is still requested (`sec10-fetch-mixed-point-requests-plain-uri`). A
 response identical to a CRL already loaded adds nothing and does not trigger
 another verification.
 
-When evidence stays missing the result is always `revocation_unknown`: the
-verifier's own when a verification with revocation required ran, as without
-`--fetch-crls`, and otherwise one stating that no CRL was supplied or
-retrieved. `crl_fetch_denied` and `crl_fetch_failed` appear only inside
+When evidence stays missing the result is always the verifier's own
+`revocation_unknown`, as without `--fetch-crls`. `crl_fetch_denied` and `crl_fetch_failed` appear only inside
 `crl_retrieval.failures`, never as the result.
 
 A certificate that a supplied CRL covers is not fetched for while another
@@ -70,9 +71,9 @@ then succeeds (`sec10-fetch-covered-point-failure-skipped`,
 beside the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
-verifies once (step 1 only) when there is no CRL at all and step 2 fetches
-nothing, twice when step 4 is skipped or fetches nothing, and three times when
-it fetches something. All passes share
+verifies two or three times: the discovery pass, then once after step 2 (or
+in step 5 when there is no CRL at all), and once more if step 4 fetches a new
+CRL. All passes share
 SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path

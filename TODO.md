@@ -296,10 +296,7 @@ timestamps, and local CRL validation already exist.
   that path. In the second retrieval step a certificate that a supplied CRL
   already covers can still be fetched for; a failed request is skipped, but a
   fetched CRL that is stale or unusable fails the run closed, because the
-  verifier does not report which certificate lacked evidence. The second step
-  is skipped when a first-step certificate's issuer is still unnamed after its
-  points were requested, although a second-step response could in principle
-  carry that issuer's CRL (a PEM bundle or a shared point). Having it report
+  verifier does not report which certificate lacked evidence. Having it report
   the certificates without authoritative evidence would remove the second step
   and the issuer-name split, but webpki does not expose that. No fixture has
   that shape.

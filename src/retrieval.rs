@@ -227,15 +227,14 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
     }
 
-    /// One failure entry per certificate and URL.
+    /// One failure entry per certificate and URL; without a URL, per
+    /// certificate and message.
     fn record(&mut self, certificate: &str, url: Option<&str>, e: &VerificationError) {
-        if url.is_some()
-            && self
-                .report
-                .failures
-                .iter()
-                .any(|f| f.certificate_sha256 == certificate && f.url.as_deref() == url)
-        {
+        if self.report.failures.iter().any(|f| {
+            f.certificate_sha256 == certificate
+                && f.url.as_deref() == url
+                && (url.is_some() || f.message == e.message)
+        }) {
             return;
         }
         self.report.failures.push(CrlRetrievalFailure {
@@ -333,8 +332,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     fetched.final_url
                 ),
             );
+            // A source that returns more than it was allowed is not trusted
+            // with that response; the bytes are not loaded.
             if fetched.bytes.len() > cap {
-                return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
+                let e = limit("crl_response_bytes", cap, 0, fetched.bytes.len());
+                self.skip(sha256, Some(&url), e);
+                continue;
             }
             if let Err(e) = http::checked_url(&fetched.final_url) {
                 self.skip(sha256, Some(&url), e);
@@ -430,7 +433,7 @@ fn retrieve(
         // requested only if verification then still reports unknown status:
         // the verifier does not say which certificate lacked evidence, and a
         // name-matching CRL may or may not be authoritative for it.
-        let named = base.crl_issuers(0, budget).map_err(crl_internal)?;
+        let named = base.crl_issuers(budget).map_err(crl_internal)?;
         let mut seen = BTreeSet::new();
         let mut stages = [Vec::new(), Vec::new()];
         for cert_report in selected {
@@ -452,11 +455,11 @@ fn retrieve(
                         .expect("generated DER hex")
                 })
                 .collect::<Vec<_>>();
-            let issuer = crate::der::tbs_issuer(&der, 0xa0, 2).map(<[u8]>::to_vec);
-            let named_issuer = issuer.as_ref().is_some_and(|i| named.contains(i));
+            let named_issuer = crate::der::tbs_issuer(&der, 0xa0, 2)
+                .is_some_and(|issuer| named.iter().any(|n| n == issuer));
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert, issuer));
+            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert));
         }
         // Step 1 fetches for certificates no supplied CRL names, step 2 for
         // the rest. Verification follows each step that has any CRL to use
@@ -465,7 +468,7 @@ fn retrieve(
         let mut verdict = None;
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
-            for (sha256, cert, _) in certificates {
+            for (sha256, cert) in certificates {
                 added |= state.fetch(sha256, cert, source)?;
             }
             let verify = if step == 0 {
@@ -479,33 +482,14 @@ fn retrieve(
                     result => return result,
                 }
             }
-            // A first-step certificate whose issuer still no CRL names cannot
-            // gain evidence in the second step, so the status cannot change.
-            if step == 0 && !certificates.is_empty() {
-                let mut named = named.clone();
-                named.extend(
-                    state
-                        .store
-                        .crl_issuers(base.retrieval_crl_count(), budget)
-                        .map_err(crl_internal)?,
-                );
-                if certificates
-                    .iter()
-                    .any(|(_, _, issuer)| !issuer.as_ref().is_some_and(|i| named.contains(i)))
-                {
-                    break;
-                }
-            }
         }
-        // Still unknown: the verifier's own result when a verification ran,
-        // else the same code with no CRL at all. Points that yielded no
-        // evidence, and why, are in the report's failures.
-        Err(verdict.unwrap_or_else(|| {
-            error(
-                ErrorCode::RevocationUnknown,
-                "no CRL was supplied or retrieved for the selected certificates",
-            )
-        }))
+        // Still unknown. The result is always the verifier's own: if no
+        // verification ran yet (no CRL at all), it runs now. Points that
+        // yielded no evidence, and why, are in the report's failures.
+        match verdict {
+            Some(e) => Err(e),
+            None => verify_with(bytes, options, &state.store, format, budget),
+        }
     })();
     match result {
         Ok(mut verified) => {
@@ -661,9 +645,15 @@ mod tests {
             &mut Huge,
         )
         .unwrap_err();
-        assert_eq!(result.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(result.details["resource"], "crl_response_bytes");
-        assert_eq!(result.details["requested"], MAX_CRL_BYTES + 1);
+        // An over-cap response is no evidence: not loaded, not reported as an
+        // artifact, and the status stays unknown with the reason recorded.
+        assert_eq!(result.code, ErrorCode::RevocationUnknown);
+        let report = &result.details["crl_retrieval"];
+        assert_eq!(report["artifacts"], serde_json::json!([]));
+        let failure = &report["failures"][0];
+        assert_eq!(failure["code"], "resource_limit_exceeded");
+        assert_eq!(failure["details"]["resource"], "crl_response_bytes");
+        assert_eq!(failure["details"]["requested"], MAX_CRL_BYTES + 1);
     }
     /// The good-crl-discovery signer with `count` distinct listed URIs.
     fn signer_with_points(tag: &str, count: usize) -> Certificate {

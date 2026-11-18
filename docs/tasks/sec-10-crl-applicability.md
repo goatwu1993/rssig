@@ -182,7 +182,8 @@ Change these only with a new decision and paired fixtures.
   `sec10-fetch-covered-signer-point-not-requested`,
   `sec10-fetch-name-matched-signer-point-requested-second`,
   `sec10-fetch-covered-point-failure-skipped` and
-  `sec10-fetch-uncovered-after-first-step-stops`; all but the second failed
+  `sec10-fetch-uncovered-first-step-still-tries-second`; the first, third and
+  fourth failed
   before the change that introduced them. In the second step a certificate
   that a supplied CRL does cover can still be fetched for; a failed request is
   skipped, but a fetched CRL that is stale or unusable still fails the run
