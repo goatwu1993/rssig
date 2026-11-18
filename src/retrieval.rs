@@ -7,7 +7,7 @@ use crate::{
 };
 use ::der::Decode;
 pub use http::HttpCrlSource;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use x509_cert::{
     Certificate,
     ext::pkix::{
@@ -176,14 +176,14 @@ impl crate::verify::Verifier<'_> {
 }
 
 /// Retrieval state for one verification: the store that grows with fetched
-/// Retrieval state for one verification: the store that grows with fetched
 /// CRLs and the provenance report.
 struct Retrieval<'s, 'b, 'l> {
     base: &'s TrustStore,
     store: TrustStore,
     report: CrlRetrievalReport,
     downloaded: usize,
-    fetched_urls: BTreeSet<String>,
+    /// Requested URLs, with the failure of those that yielded no evidence.
+    requested: BTreeMap<String, Option<VerificationError>>,
     /// Requests made, answered or not; bounded by `MAX_REQUESTS`.
     requests: usize,
     /// The first point that yielded no evidence, reported if no verification
@@ -203,78 +203,100 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             store: base.clone(),
             report: CrlRetrievalReport::default(),
             downloaded: 0,
-            fetched_urls: BTreeSet::new(),
+            requested: BTreeMap::new(),
             requests: 0,
             skipped: None,
             budget,
         }
     }
 
-    /// Record a discovery, transport-policy or request failure as "no
-    /// evidence from this point" and return `Ok`; any other error (a work or
-    /// size limit, a malformed certificate extension) is returned as final.
+    /// Record a point that yielded no evidence and return `Ok`, or return the
+    /// error as final. `crl_fetch_denied` and `crl_fetch_failed` are always
+    /// recorded. In the speculative second step every error from discovery,
+    /// the source or decoding a response is recorded too: that certificate may
+    /// already be covered. The engine's own work and size limits never reach
+    /// here; they always end the run.
     fn skip(
         &mut self,
         certificate: &str,
         url: Option<&str>,
         e: VerificationError,
+        speculative: bool,
     ) -> Result<(), VerificationError> {
-        if !matches!(
-            e.code,
-            ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed
-        ) {
-            return Err(e);
-        }
         let e = match url {
             Some(url) => e.detail("url", url),
             None => e,
         };
+        if !speculative
+            && !matches!(
+                e.code,
+                ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed
+            )
+        {
+            return Err(e);
+        }
         self.budget.log.info(
             Stage::Revocation,
             format_args!("CRL point yielded no evidence: {:?}", e.message),
         );
-        self.report.failures.push(CrlRetrievalFailure {
-            certificate_sha256: certificate.into(),
-            url: url.map(Into::into),
-            code: e.code,
-            message: e.message.clone(),
-        });
+        self.record(certificate, url, &e);
+        if let Some(url) = url {
+            self.requested.insert(url.into(), Some(e.clone()));
+        }
         self.skipped.get_or_insert(e);
         Ok(())
     }
 
-    /// Request every listed point of `cert`. A point that cannot be
-    /// discovered (`crl_fetch_denied`), is denied by transport policy, or
-    /// whose request fails (`crl_fetch_failed`) yields no evidence and is
-    /// recorded in the report's failures: whether that matters is decided by
-    /// the next verification, which still requires evidence for every
-    /// certificate. Every other error is final, including work and size
-    /// limits, a malformed cRLDistributionPoints extension and an undecodable
-    /// response. Returns whether anything was added.
+    fn record(&mut self, certificate: &str, url: Option<&str>, e: &VerificationError) {
+        self.report.failures.push(CrlRetrievalFailure {
+            certificate_sha256: certificate.into(),
+            url: url.map(Into::into),
+            code: e.code,
+            stage: e.stage,
+            message: e.message.clone(),
+            details: e.details.clone(),
+            causes: e.causes.clone(),
+        });
+    }
+
+    /// Request every listed point of `cert`. A point that yields no evidence
+    /// is recorded in the report's failures (see [`Self::skip`]); whether that
+    /// matters is decided by the next verification, which still requires
+    /// evidence for every certificate. A URL already requested is not
+    /// requested again; if it failed, the failure is recorded for this
+    /// certificate too. Returns whether anything was added.
     fn fetch(
         &mut self,
         sha256: &str,
         cert: &Certificate,
         source: &mut dyn CrlSource,
+        speculative: bool,
     ) -> Result<bool, VerificationError> {
         let log = self.budget.log;
         let mut added = false;
-        for listed in listed_points(cert, false)? {
+        let listed = match listed_points(cert, false) {
+            Ok(listed) => listed,
+            Err(e) => return self.skip(sha256, None, e, speculative).map(|()| false),
+        };
+        for listed in listed {
             let raw = match listed {
                 Ok(raw) => raw,
                 Err(e) => {
-                    self.skip(sha256, None, e)?;
+                    self.skip(sha256, None, e, speculative)?;
                     continue;
                 }
             };
             let url = match http::checked_url(&raw) {
                 Ok(url) => url.to_string(),
                 Err(e) => {
-                    self.skip(sha256, Some(&raw), e)?;
+                    self.skip(sha256, Some(&raw), e, speculative)?;
                     continue;
                 }
             };
-            if !self.fetched_urls.insert(url.clone()) {
+            if let Some(previous) = self.requested.get(&url) {
+                if let Some(e) = previous.clone() {
+                    self.record(sha256, Some(&url), &e);
+                }
                 continue;
             }
             if self.requests >= MAX_REQUESTS {
@@ -293,15 +315,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             if cap == 0 {
                 return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
             }
+            self.requests += 1;
+            self.requested.insert(url.clone(), None);
             log.info(
                 Stage::Revocation,
                 format_args!("requesting CRL {url:?} (at most {cap} bytes)"),
             );
-            self.requests += 1;
             let fetched = match source.fetch(&url, cap) {
                 Ok(fetched) => fetched,
                 Err(e) => {
-                    self.skip(sha256, Some(&url), e)?;
+                    self.skip(sha256, Some(&url), e, speculative)?;
                     continue;
                 }
             };
@@ -317,7 +340,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
             }
             if let Err(e) = http::checked_url(&fetched.final_url) {
-                self.skip(sha256, Some(&url), e)?;
+                self.skip(sha256, Some(&url), e, speculative)?;
                 continue;
             }
             for _ in 0..8 {
@@ -332,18 +355,20 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 .map_err(crl_internal)?;
             self.downloaded += fetched.bytes.len();
             self.report.artifacts.push(CrlRetrievalArtifact {
-                url,
+                url: url.clone(),
                 final_url: fetched.final_url,
                 sha256: hex(&crate::crypto::Hash::Sha256.digest(&fetched.bytes)),
                 bytes: fetched.bytes.len(),
             });
             let prior = self.store.retrieval_crl_count();
-            self.store.add_crl(&fetched.bytes).map_err(|e| {
-                error(
+            if let Err(e) = self.store.add_crl(&fetched.bytes) {
+                let e = error(
                     ErrorCode::InvalidCrl,
                     format!("decoding retrieved CRL: {e:#}"),
-                )
-            })?;
+                );
+                self.skip(sha256, Some(&url), e, speculative)?;
+                continue;
+            }
             // A PEM response may contain multiple distinct CRLs. Bound the
             // retained store after deduplication, before verification.
             let loaded = self.store.retrieval_crl_count();
@@ -407,7 +432,7 @@ fn retrieve(
         // requested only if verification then still reports unknown status:
         // the verifier does not say which certificate lacked evidence, and a
         // name-matching CRL may or may not be authoritative for it.
-        let named = base.crl_issuers(budget).map_err(crl_internal)?;
+        let named = base.crl_issuers(0, budget).map_err(crl_internal)?;
         let mut seen = BTreeSet::new();
         let mut stages = [Vec::new(), Vec::new()];
         for cert_report in selected {
@@ -443,7 +468,7 @@ fn retrieve(
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
             for (sha256, cert, _) in certificates {
-                added |= state.fetch(sha256, cert, source)?;
+                added |= state.fetch(sha256, cert, source, step == 1)?;
             }
             let verify = if step == 0 {
                 state.store.retrieval_crl_count() > 0
@@ -459,7 +484,13 @@ fn retrieve(
             // A first-step certificate whose issuer still no CRL names cannot
             // gain evidence in the second step, so the status cannot change.
             if step == 0 && !certificates.is_empty() {
-                let named = state.store.crl_issuers(budget).map_err(crl_internal)?;
+                let mut named = named.clone();
+                named.extend(
+                    state
+                        .store
+                        .crl_issuers(base.retrieval_crl_count(), budget)
+                        .map_err(crl_internal)?,
+                );
                 if certificates
                     .iter()
                     .any(|(_, _, issuer)| !issuer.as_ref().is_some_and(|i| named.contains(i)))
@@ -687,7 +718,7 @@ mod tests {
         let mut source = Failing(0);
         assert!(
             !state
-                .fetch("a", &signer_with_points("a", 10), &mut source)
+                .fetch("a", &signer_with_points("a", 10), &mut source, false)
                 .unwrap()
         );
         assert_eq!(state.report.failures.len(), 10);
@@ -696,7 +727,7 @@ mod tests {
             ErrorCode::CrlFetchFailed
         );
         let error = state
-            .fetch("b", &signer_with_points("b", 10), &mut source)
+            .fetch("b", &signer_with_points("b", 10), &mut source, false)
             .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
@@ -706,8 +737,8 @@ mod tests {
     fn a_limit_from_the_source_is_final_not_skipped() {
         struct Limited;
         impl CrlSource for Limited {
-            fn fetch(&mut self, url: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
-                Err(limit("crl_network_bytes", 1, 1, 1).detail("url", url))
+            fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
+                Err(limit("crl_network_bytes", 1, 1, 1))
             }
         }
         let store = store();
@@ -720,6 +751,8 @@ mod tests {
         .unwrap_err();
         assert_eq!(result.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(result.details["resource"], "crl_network_bytes");
+        // The engine names the URL that hit the source's limit.
+        assert_eq!(result.details["url"], "http://crl.example.invalid/test.crl");
     }
     #[test]
     fn discovery_preserves_uri_and_rejects_malformed_extensions() {

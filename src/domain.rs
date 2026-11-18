@@ -526,7 +526,10 @@ pub struct CrlRetrievalFailure {
     pub certificate_sha256: String,
     pub url: Option<String>,
     pub code: ErrorCode,
+    pub stage: Stage,
     pub message: String,
+    pub details: BTreeMap<String, Value>,
+    pub causes: Vec<String>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CrlRetrievalReport {

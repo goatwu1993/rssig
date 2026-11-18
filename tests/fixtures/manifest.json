@@ -7555,7 +7555,8 @@
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-covered-point-failure-skipped",
         "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-uncovered-after-first-step-stops"
+        "sec10-fetch-uncovered-after-first-step-stops",
+        "sec10-fetch-covered-point-bad-response-skipped"
       ]
     },
     {
@@ -7921,7 +7922,8 @@
         "sec10-fetch-name-matched-signer-point-requested-second",
         "sec10-fetch-covered-point-failure-skipped",
         "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri"
+        "sec10-fetch-mixed-point-requests-plain-uri",
+        "sec10-fetch-covered-point-bad-response-skipped"
       ]
     },
     {
@@ -8027,7 +8029,8 @@
         "sec10-fetch-covered-point-failure-skipped",
         "sec10-leaf-crl-dp-mixed-full-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-uncovered-after-first-step-stops"
+        "sec10-fetch-uncovered-after-first-step-stops",
+        "sec10-fetch-covered-point-bad-response-skipped"
       ]
     },
     {
@@ -9698,7 +9701,8 @@
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-name-matched-signer-point-requested-second",
         "sec10-fetch-covered-point-failure-skipped",
-        "sec10-fetch-uncovered-after-first-step-stops"
+        "sec10-fetch-uncovered-after-first-step-stops",
+        "sec10-fetch-covered-point-bad-response-skipped"
       ]
     },
     {
@@ -9796,7 +9800,8 @@
       "cases": [
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-covered-point-failure-skipped"
+        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-fetch-covered-point-bad-response-skipped"
       ]
     },
     {

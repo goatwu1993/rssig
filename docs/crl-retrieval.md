@@ -33,19 +33,28 @@ rule is restated for retrieval.
 
 A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
 denied by transport policy, or whose request fails yields no evidence; these
-are exactly the `crl_fetch_denied` and `crl_fetch_failed` errors. They do not
-end the run, because the next verification still requires evidence for every
-selected certificate. Each is listed in `crl_retrieval.failures` with the
-certificate's SHA-256, the URL when there is one, its code and message. An
+are the `crl_fetch_denied` and `crl_fetch_failed` errors. They do not end the
+run, because the next verification still requires evidence for every selected
+certificate. In step 4 the certificate may already be covered, so any error
+from discovery, the source or decoding a response is treated the same way
+there, including a malformed cRLDistributionPoints extension, a limit the
+source reports and a response that is not a CRL
+(`sec10-fetch-covered-point-bad-response-skipped`). Each is listed in
+`crl_retrieval.failures` with the certificate's SHA-256, the URL when there is
+one, and the error's code, stage, message, details and causes; a URL that
+already failed is listed again for each further certificate that lists it, and
+is not requested again. An
 unsupported point is skipped on its own: a plain URI listed beside it is still
 requested (`sec10-fetch-mixed-point-requests-plain-uri`). If the status stays
 unknown, the result is the verifier's own `revocation_unknown` when any
 verification with revocation required ran, as it would be without
 `--fetch-crls`; otherwise the first failure is returned (for example
 `crl_fetch_denied` for a private URL with no supplied CRL). Every other error
-ends the run: work and size limits, including the source's time limit and any
-other limit it reports, a malformed cRLDistributionPoints extension, and an
-undecodable response. Every request counts toward the request limit, answered
+ends the run in step 2: work and size limits, including the source's time
+limit and any other limit it reports, a malformed cRLDistributionPoints
+extension, and an undecodable response. The engine's own limits (requests,
+retained CRLs, combined bytes, response size) end the run in either step. A
+source error carries the URL it was requested for. Every request counts toward the request limit, answered
 or not. A certificate that a supplied CRL covers is not fetched for while another
 chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
 in step 4 if a name-matching CRL elsewhere was not enough

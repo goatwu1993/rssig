@@ -59,11 +59,12 @@ impl TrustStore {
     /// here; verification reports it. A name match is necessary for a CRL
     /// to apply to a certificate, never sufficient.
     #[cfg(feature = "crl-fetch")]
-    pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<Vec<u8>>> {
+    pub(crate) fn crl_issuers(&self, from: usize, budget: &Budget) -> Result<Vec<Vec<u8>>> {
         let mut issuers = Vec::new();
         for name in self
             .crls
             .iter()
+            .skip(from)
             .filter_map(|bytes| crate::der::tbs_issuer(bytes, 0x02, 1))
         {
             budget.decoded_bytes.charge(name.len())?;

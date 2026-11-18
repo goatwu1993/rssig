@@ -552,3 +552,73 @@ fn sec10_fetch_stops_when_the_first_step_leaves_a_certificate_uncovered() {
     assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-issuer.crl");
     assert_eq!(failures[0]["code"], "crl_fetch_failed");
 }
+
+/// SEC-10: in the second step a certificate may already be covered, so a bad
+/// response for its point is recorded and skipped instead of ending the run.
+#[test]
+fn sec10_fetch_second_step_skips_a_bad_response() {
+    struct Source(Vec<String>);
+    impl rssig::retrieval::CrlSource for Source {
+        fn fetch(
+            &mut self,
+            url: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.0.push(url.into());
+            let file = if url.ends_with("sec10-a.crl") {
+                "sec06-root.der" // a certificate, not a CRL
+            } else {
+                "sec06-root.crl"
+            };
+            let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+            Ok(rssig::retrieval::FetchedCrl {
+                bytes: std::fs::read(base.join(file)).unwrap(),
+                final_url: url.into(),
+            })
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("sec06-root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--crl".to_owned(),
+        path("sec06-issuer.crl"),
+        "--crl".to_owned(),
+        path("sec10-sec06-root-idp-user.crl"),
+        "--fetch-crls".to_owned(),
+        path("sec10-chain-crl-dp.exe"),
+    ];
+    let mut source = Source(Vec::new());
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    assert!(err.is_empty());
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let result = &report["results"][0];
+    assert_eq!(code, 0, "{result}");
+    assert_eq!(
+        source.0,
+        [
+            "http://crl.invalid/sec10-a.crl",
+            "http://crl.invalid/sec10-issuer.crl"
+        ]
+    );
+    let failures = result["crl_retrieval"]["failures"].as_array().unwrap();
+    assert_eq!(failures.len(), 1);
+    assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-a.crl");
+    assert_eq!(failures[0]["code"], "invalid_crl");
+    assert_eq!(failures[0]["stage"], "revocation");
+    assert_eq!(
+        failures[0]["details"]["url"],
+        "http://crl.invalid/sec10-a.crl"
+    );
+    assert_eq!(
+        result["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+}
