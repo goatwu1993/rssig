@@ -53,15 +53,18 @@ pub(crate) fn limit(
 /// Decode direct, complete CRL distribution-point URIs. Relative names, reason
 /// partitions, and indirect CRL issuers are unsupported and fail closed.
 pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, VerificationError> {
-    listed_points(cert)?.into_iter().collect()
+    listed_points(cert, true)?.into_iter().collect()
 }
 
 /// Each listed name of `cert`'s cRLDistributionPoints: a URI, or
 /// `crl_fetch_denied` for a point with reasons, a cRLIssuer, a relative name or
 /// a non-URI name. A malformed extension and the URL count and length limits
-/// are errors for the whole certificate.
+/// are errors for the whole certificate. With `strict`, the first unsupported
+/// point is that error, before any later limit, as [`crl_distribution_points`]
+/// has always reported it.
 fn listed_points(
     cert: &Certificate,
+    strict: bool,
 ) -> Result<Vec<Result<String, VerificationError>>, VerificationError> {
     let value = cert
         .tbs_certificate
@@ -71,28 +74,33 @@ fn listed_points(
         return Ok(Vec::new());
     };
     let mut listed = Vec::new();
+    let deny = |listed: &mut Vec<_>, message: &'static str| {
+        let e = error(ErrorCode::CrlFetchDenied, message);
+        if strict {
+            return Err(e);
+        }
+        listed.push(Err(e));
+        Ok(())
+    };
     let mut urls = 0;
     for point in points.0 {
         if point.reasons.is_some() || point.crl_issuer.is_some() {
-            listed.push(Err(error(
-                ErrorCode::CrlFetchDenied,
+            deny(
+                &mut listed,
                 "partitioned or indirect CRL distribution points are unsupported",
-            )));
+            )?;
             continue;
         }
         let Some(DistributionPointName::FullName(names)) = point.distribution_point else {
-            listed.push(Err(error(
-                ErrorCode::CrlFetchDenied,
+            deny(
+                &mut listed,
                 "CRL distribution point requires a full URI name",
-            )));
+            )?;
             continue;
         };
         for name in names {
             let GeneralName::UniformResourceIdentifier(uri) = name else {
-                listed.push(Err(error(
-                    ErrorCode::CrlFetchDenied,
-                    "non-URI CRL distribution point is unsupported",
-                )));
+                deny(&mut listed, "non-URI CRL distribution point is unsupported")?;
                 continue;
             };
             if urls >= MAX_REQUESTS {
@@ -106,20 +114,6 @@ fn listed_points(
         }
     }
     Ok(listed)
-}
-
-/// The issuer Name DER as encoded in `der`, a certificate, without
-/// re-encoding a decoded value.
-fn issuer_der(der: &[u8]) -> Option<&[u8]> {
-    let fields = crate::der::one(der, 0x30).ok()?.children().ok()?;
-    let tbs = fields.first()?.expect(0x30).ok()?.children().ok()?;
-    // Optional [0] version, serialNumber, signature, then issuer.
-    let at = if tbs.first().is_some_and(|f| f.tag == 0xa0) {
-        3
-    } else {
-        2
-    };
-    Some(tbs.get(at)?.expect(0x30).ok()?.full)
 }
 
 /// Selected-path certificates below the anchor.
@@ -146,13 +140,15 @@ fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<&'a CertificateR
     }
 }
 
-/// Verify signatures and configured-root paths without revocation, then with
-/// required revocation against the supplied CRLs. Only when that result is
-/// `revocation_unknown` are the selected certificates' listed distribution
-/// points fetched and verification repeated; any other result is returned as
-/// it is. Retrieval is driven by the verifier's own outcome, so no CRL
-/// applicability rule is restated here. The passes share one SEC-02 work
-/// budget. The input store is never modified.
+/// Verify signatures and configured-root paths without revocation to find the
+/// selected certificates, then retrieve CRLs in two steps and verify with
+/// required revocation after each: first for certificates whose issuer no
+/// supplied CRL names (with no such certificate, the first verification uses
+/// the supplied CRLs alone, before any request), then, only if the status is
+/// still `revocation_unknown`, for the rest. A good result or any other failure
+/// is final. Whether a CRL applies is decided only by verification; retrieval
+/// compares issuer names to order requests. See `docs/crl-retrieval.md`. The
+/// passes share one SEC-02 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
     bytes: &[u8],
     filename: Option<&str>,
@@ -263,7 +259,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     ) -> Result<bool, VerificationError> {
         let log = self.budget.log;
         let mut added = false;
-        for listed in listed_points(cert)? {
+        for listed in listed_points(cert, false)? {
             let raw = match listed {
                 Ok(raw) => raw,
                 Err(e) => {
@@ -433,10 +429,11 @@ fn retrieve(
                         .expect("generated DER hex")
                 })
                 .collect::<Vec<_>>();
-            let named_issuer = issuer_der(&der).is_some_and(|i| named.iter().any(|n| n == i));
+            let issuer = crate::der::tbs_issuer(&der, 0xa0, 2).map(<[u8]>::to_vec);
+            let named_issuer = issuer.as_ref().is_some_and(|i| named.contains(i));
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert));
+            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert, issuer));
         }
         // Step 1 fetches for certificates no supplied CRL names, step 2 for
         // the rest. Verification follows each step that has any CRL to use
@@ -445,7 +442,7 @@ fn retrieve(
         let mut verdict = None;
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
-            for (sha256, cert) in certificates {
+            for (sha256, cert, _) in certificates {
                 added |= state.fetch(sha256, cert, source)?;
             }
             let verify = if step == 0 {
@@ -457,6 +454,17 @@ fn retrieve(
                 match verify_with(bytes, options, &state.store, format, budget) {
                     Err(e) if e.code == ErrorCode::RevocationUnknown => verdict = Some(e),
                     result => return result,
+                }
+            }
+            // A first-step certificate whose issuer still no CRL names cannot
+            // gain evidence in the second step, so the status cannot change.
+            if step == 0 && !certificates.is_empty() {
+                let named = state.store.crl_issuers(budget).map_err(crl_internal)?;
+                if certificates
+                    .iter()
+                    .any(|(_, _, issuer)| !issuer.as_ref().is_some_and(|i| named.contains(i)))
+                {
+                    break;
                 }
             }
         }
@@ -734,6 +742,31 @@ mod tests {
             .find(|e| e.extn_id.to_string() == "2.5.29.31")
             .unwrap();
         ext.extn_value = ::der::asn1::OctetString::new([0x30, 0x7f]).unwrap();
+        // The public API stops at the first unsupported point, before limits.
+        let pe = crate::parse::Pe::parse(include_bytes!(
+            "../tests/fixtures/sec10-leaf-crl-dp-mixed.exe"
+        ))
+        .unwrap();
+        let cms = pe.signatures().unwrap();
+        let sd = crate::parse::SignedData::parse(cms[0]).unwrap();
+        let mixed = sd
+            .certificate_choices()
+            .iter()
+            .map(|c| c.x509().unwrap())
+            .find(|c| c.tbs_certificate.serial_number.as_bytes() == [127])
+            .unwrap();
+        assert_eq!(
+            crl_distribution_points(mixed).unwrap_err().code,
+            ErrorCode::CrlFetchDenied
+        );
+        assert_eq!(
+            listed_points(mixed, false)
+                .unwrap()
+                .iter()
+                .filter(|p| p.is_ok())
+                .count(),
+            1
+        );
         assert_eq!(
             crl_distribution_points(&cert).unwrap_err().code,
             ErrorCode::InvalidCertificate

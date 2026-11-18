@@ -81,3 +81,15 @@ pub(crate) fn fields(node: Node<'_>, count: usize) -> Result<Vec<Node<'_>>> {
     }
     Ok(fields)
 }
+
+/// The issuer Name of a certificate or CRL, as encoded in `der`, without
+/// decoding the rest. `version_tag` is the optional leading version field's
+/// tag (`0xa0` in a certificate, `0x02` in a CRL) and `index` the issuer's
+/// position after it (2 in a certificate, 1 in a CRL).
+#[cfg(feature = "crl-fetch")]
+pub(crate) fn tbs_issuer(der: &[u8], version_tag: u8, index: usize) -> Option<&[u8]> {
+    let fields = one(der, 0x30).ok()?.children().ok()?;
+    let tbs = fields.first()?.expect(0x30).ok()?.children().ok()?;
+    let at = index + usize::from(tbs.first().is_some_and(|f| f.tag == version_tag));
+    Some(tbs.get(at)?.expect(0x30).ok()?.full)
+}

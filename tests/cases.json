@@ -33391,6 +33391,51 @@
           "http://crl.invalid/sec10-a.crl"
         ]
       }
+    },
+    {
+      "id": "sec10-fetch-uncovered-after-first-step-stops",
+      "input": "sec10-chain-crl-dp.exe",
+      "crl_responses": {},
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.invalid/sec10-issuer.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-issuer.crl"
+        ]
+      }
     }
   ]
 }

@@ -500,3 +500,55 @@ fn sec10_fetch_follows_the_verification_result() {
         }
     }
 }
+
+/// SEC-10: when a first-step certificate's issuer is still named by no CRL
+/// after its points were requested, the second step cannot help and is not
+/// requested; the verifier's unknown status is reported with the failed point.
+#[test]
+fn sec10_fetch_stops_when_the_first_step_leaves_a_certificate_uncovered() {
+    struct Unreachable(Vec<String>);
+    impl rssig::retrieval::CrlSource for Unreachable {
+        fn fetch(
+            &mut self,
+            url: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.0.push(url.into());
+            Err(rssig::VerificationError::new(
+                rssig::domain::ErrorCode::CrlFetchFailed,
+                rssig::domain::Stage::Revocation,
+                "unreachable",
+            ))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("sec06-root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--crl".to_owned(),
+        path("sec06-issuer.crl"),
+        "--fetch-crls".to_owned(),
+        path("sec10-chain-crl-dp.exe"),
+    ];
+    let mut source = Unreachable(Vec::new());
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    assert!(err.is_empty());
+    assert_eq!(code, 1);
+    assert_eq!(source.0, ["http://crl.invalid/sec10-issuer.crl"]);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    let failures = error["details"]["crl_retrieval"]["failures"]
+        .as_array()
+        .unwrap();
+    assert_eq!(failures.len(), 1);
+    assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-issuer.crl");
+    assert_eq!(failures[0]["code"], "crl_fetch_failed");
+}

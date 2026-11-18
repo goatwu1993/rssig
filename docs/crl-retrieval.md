@@ -26,7 +26,10 @@ rule is restated for retrieval.
    CRL is reported as it is without `--fetch-crls`, not replaced or ignored.
 4. If the status is still unknown, request the listed points of the remaining
    certificates, whose issuer a supplied CRL names but which may not be
-   authoritative for them, and verify again.
+   authoritative for them, and verify again. This step is skipped when a
+   certificate from step 2 still has an issuer that no loaded CRL names: it
+   cannot gain evidence, so the status cannot change
+   (`sec10-fetch-uncovered-after-first-step-stops`).
 
 A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
 denied by transport policy, or whose request fails yields no evidence; these
@@ -53,7 +56,8 @@ the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
 verifies once (step 1 only) when there is no CRL at all and step 2 fetches
-nothing, twice when step 4 fetches nothing, and three times when it does. All passes share
+nothing, twice when step 4 is skipped or fetches nothing, and three times when
+it fetches something. All passes share
 SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
@@ -73,7 +77,9 @@ artifact never implies that its signature or revocation status is valid.
 Enable the optional `crl-fetch` feature for `rssig::retrieval`; `cli` includes it.
 The parser and `verify-core` remain usable without network dependencies or std.
 
-- `crl_distribution_points(&Certificate)` decodes URI discovery metadata.
+- `crl_distribution_points(&Certificate)` decodes URI discovery metadata and
+  fails at the first unsupported point; retrieval itself skips such points one
+  by one.
 - `CrlSource::fetch(url, max_bytes)` returns untrusted `FetchedCrl` bytes and the
   final URL. It never returns a trust verdict. Implementations must bound their
   own I/O, allocation and latency; the engine independently rejects oversized
@@ -115,7 +121,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30-second source lifetime starting with its first fetch, then `resource_limit_exceeded` (`crl_retrieval_time`), which ends the run; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30-second source lifetime starting with its first fetch, then `resource_limit_exceeded` (`crl_retrieval_time`), including for a request in progress when it runs out; a DNS timeout closes the source (`crl_dns_timeouts`); both end the run; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The CLI shares one HTTP source across its batch. Limits persist across files.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all

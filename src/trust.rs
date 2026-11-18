@@ -60,19 +60,12 @@ impl TrustStore {
     /// to apply to a certificate, never sufficient.
     #[cfg(feature = "crl-fetch")]
     pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<Vec<u8>>> {
-        fn issuer(bytes: &[u8]) -> Option<&[u8]> {
-            let fields = crate::der::one(bytes, 0x30).ok()?.children().ok()?;
-            let tbs = fields.first()?.expect(0x30).ok()?.children().ok()?;
-            // Optional version INTEGER, then signature AlgorithmIdentifier.
-            let at = if tbs.first().is_some_and(|f| f.tag == 0x02) {
-                2
-            } else {
-                1
-            };
-            Some(tbs.get(at)?.expect(0x30).ok()?.full)
-        }
         let mut issuers = Vec::new();
-        for name in self.crls.iter().filter_map(|bytes| issuer(bytes)) {
+        for name in self
+            .crls
+            .iter()
+            .filter_map(|bytes| crate::der::tbs_issuer(bytes, 0x02, 1))
+        {
             budget.decoded_bytes.charge(name.len())?;
             issuers.push(name.to_vec());
         }
