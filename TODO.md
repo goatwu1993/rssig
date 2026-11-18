@@ -1,8 +1,9 @@
 # Prioritized roadmap
 
 Maintained alongside implementation and its recorded completion evidence.
-Lifetime-signing and time-boundary policy (SEC-09) is complete; the next prioritized
-security task is CRL applicability and competing evidence (SEC-10). This coverage also
+Lifetime-signing and time-boundary policy (SEC-09) and CRL applicability and
+competing evidence (SEC-10) are complete; the next open security item is reporting
+the CRL evidence actually used (SEC-11). The SEC-10 coverage also
 supports the separately scoped AIA retrieval work (FEATURE-01-AIA).
 Confirmed correctness regressions take priority over planned refactoring.
 New algorithms, formats, and network access require their own evidence and
@@ -17,6 +18,13 @@ timestamps, and local CRL validation already exist.
 
 - Update this file alongside implementation PRs. Keep task IDs stable, record
   completion evidence or a PR link, and split work that no longer fits one PR.
+- An item that has outgrown this file moves its detail to a document under
+  `docs/tasks/` and keeps its ID, title, checkbox and a link here. Maintain the
+  detail there, not in this file.
+- Track tasks and their sub-items only in this file and in documents under
+  `docs/`. Do not open GitHub issues for them, and do not link an item's open
+  work to an issue. A pull request link is allowed only as evidence for work
+  already merged.
 - Follow [AGENTS.md](AGENTS.md): committed fixture and manifest provenance,
   declarative case, named in-process Rust test, observed intended failure, then
   implementation. Ordinary tests never regenerate fixtures or execute them.
@@ -150,77 +158,20 @@ timestamps, and local CRL validation already exist.
   verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
   macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
   Review items decided against or deferred are recorded in SEC-14.
-- [ ] **SEC-10: Audit CRL applicability and competing evidence.** Cover absent
-  nextUpdate, issuer/AKI mismatch, cRLSign usage, revoked intermediates, incomplete
-  issuer coverage, distribution-point scope, unknown critical extensions,
-  delta/indirect CRLs, and competing or unrelated supplied CRLs. Specify whether
-  an unusable extra CRL rejects a request or is excluded. Never silently treat
-  unknown status as good; pin freshness boundaries and unsupported-policy errors.
-  First slice done: a supplied CRL is checked for freshness and structure only
-  when its issuer matches a configured root or embedded candidate certificate;
-  others are excluded, and a missing nextUpdate is a typed `invalid_crl`
-  (`sec10-*` cases and `tests/cli/crl_applicability.rs`). A CRL whose AKI
-  keyIdentifier matches no name-matching candidate's SKI is likewise excluded
-  unless its signature verifies under a name-matching candidate key.
-  Applicable CRLs with an unknown critical extension, delta or indirect form fail
-  closed as `invalid_crl` with `details.reason`. A CRL from an issuer whose
-  KeyUsage lacks cRLSign is rejected as `invalid_key_usage` at `revocation`
-  (`sec10-ca-no-crl-sign`, paired with `sec10-ca-crl-sign`), and path building
-  falls back to a candidate with cRLSign (`sec10-ca-crl-sign-fallback`). This
-  covers intermediate issuers only: webpki 0.103 does not track trust-anchor
-  KeyUsage, so a root lacking cRLSign still issues usable CRLs (decided and
-  pinned in PR #48, below).
-  An AKI with only authorityCertIssuer/serial is matched by issuer name
-  (`sec10-root-aki-issuer-serial-crl-name-matched`). An IDP carrying only a
-  user/CA scope flag is rejected by webpki 0.103 as `issuing_distribution_point`
-  (`sec10-root-idp-*-crl-unsupported`). Incomplete issuer coverage is pinned by
-  `sec09-lifetime-rollover-revocation-unknown`.
-  Policy decisions (PR #48): configured anchors stay keys, so a root whose
-  KeyUsage lacks cRLSign still issues usable CRLs (`sec10-root-no-crl-sign-accepted`;
-  webpki 0.103 does not track anchor KeyUsage). A CRL whose IDP names a
-  distribution point fails closed as `invalid_crl` (`distribution_point_scope`)
-  when a certificate it would cover lists no CRL distribution points, because
-  webpki then treats it as authoritative (`authoritative_for`). A revocation in
-  any applicable, authenticated CRL wins regardless of `--crl` order: webpki
-  consults only the first authoritative CRL per certificate, so the path
-  callback checks every one (`sec10-competing-crls-*`).
-  When the certificate lists a distribution point (`sec10-crl-dp-*`, signer
-  `sec10-leaf-crl-dp.exe`): an issuer CRL whose IDP names that URI is
-  authoritative (good or `certificate_revoked`); one naming another URI leaves
-  the status `revocation_unknown`; the matching partition is selected in either
-  `--crl` order; a serial listed by another authenticated partition of the same
-  issuer still rejects; and a full CRL without an IDP covers the certificate.
-  A listed serial counts only on a path where every certificate has an
-  authoritative CRL: a partition that is not authoritative for the signer and
-  lists it, supplied alone, is `revocation_unknown`
-  (`sec10-crl-dp-other-idp-revoked-unknown`). URIs are compared byte-exactly
-  (`sec10-crl-dp-case-variant-idp-unknown`). Reporting such a listing as
-  `certificate_revoked` needs the evidence binding in SEC-21 first.
-  `--fetch-crls` gap: `has_crl_for` treats any supplied CRL with the
-  certificate's issuer name as coverage, so a partition that is not
-  authoritative for the certificate suppresses fetching its listed
-  distribution point and the result is `revocation_unknown`. Make coverage
-  use the same authority rule, with an injected-source fixture.
-  Other distribution-point forms are pinned (`sec10-crl-dp-*`,
-  `sec10-ca-crl-dp-*`): a scope flag with a named point restricts the CRL to
-  end-entity or CA certificates, for the signer and for an intermediate; any
-  matching URI among several names or points is authoritative; dNSName and
-  issuer-relative names never match, including against the directoryName a
-  relative name expands to; a certificate point with reasons or cRLIssuer is
-  skipped; a full CRL covers each of those signers; and a CRL scoped by an
-  issuer-relative name is `invalid_crl` (`issuing_distribution_point`, or
-  `distribution_point_scope` first when a covered certificate lists no
-  point). A revoked intermediate is `certificate_revoked` in any `--crl` order
-  (`sec10-revoked-issuer*`). These results are webpki's matching at the
-  locked 0.103.16; `Cargo.toml` allows any 0.103. Not pinned: a certificate
-  mixing a skipped point with a plain URI point.
-  Remaining before closing: the `--fetch-crls` coverage gap above.
-  Review items decided against or deferred are recorded in SEC-15 to SEC-21.
+- [x] **SEC-10: Audit CRL applicability and competing evidence.** Detail is in
+  [docs/tasks/sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md):
+  the audit checklist (every box checked), decisions, evidence limits and
+  pointers to known limitations, which stay open under their own IDs.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when
   a current CRL lists a signer even after its signing time; historical good status
   requires separate evidence and policy.
+  Observed today: a CRL excluded as non-applicable still appears in
+  `revocation.crls` with role `supplied` beside status `good` (for example
+  `sec10-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
+  A `certificate_revoked` result does not identify which supplied CRL listed
+  the certificate.
 - [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
   all-required-signatures policy, primary/nested ordering, first-failure
   precedence, and bundle/child identity and signer binding. Test a valid first
@@ -307,6 +258,12 @@ timestamps, and local CRL validation already exist.
   reject the request (fail closed). A CRL is also not tied to the specific
   certificate that issues it. Move applicability into path building, or
   re-check it against the selected chain, with paired fixtures.
+  The distribution-point scope rule (PR #48) has the same shape: it rejects a
+  CRL that names a point when any embedded candidate issued under the CRL's
+  issuer name lists no cRLDistributionPoints, whether or not that candidate is
+  on the selected path. It tests only for the extension's presence and treats
+  an undecodable issuingDistributionPoint as naming a point. No fixture has an
+  off-path candidate.
 - [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A
@@ -314,6 +271,22 @@ timestamps, and local CRL validation already exist.
   compare as exact DER, so an issuer encoded differently (PrintableString vs
   UTF8String) is excluded with no diagnostic. Decide whether these should
   exclude, reject or be reported, and pin each with fixtures.
+  An AKI that carries only authorityCertIssuer and serial is not compared at
+  all; the CRL is matched by issuer name
+  (`sec10-root-aki-issuer-serial-crl-name-matched`). That fixture names the
+  root's real issuer and serial and is signed by the root, so it cannot tell
+  name-only matching from issuer/serial matching; a fixture with a wrong
+  serial is needed to pin either behavior.
+  `--fetch-crls` coverage (`has_crl_for`) matches the issuer by name only. A
+  supplied CRL without an issuingDistributionPoint that verification excludes
+  (its AKI matches no candidate and its signature verifies under none) still
+  suppresses retrieval, so the result is `revocation_unknown` although the
+  listed point could have been fetched. Apply the same applicability filter to
+  coverage, with a fixture. Coverage also decodes extensions with x509-cert,
+  which rejects a whole cRLDistributionPoints or issuingDistributionPoint
+  extension on one name form it cannot decode, where webpki skips that entry:
+  such a certificate beside a usable local CRL verifies offline but fails
+  under `--fetch-crls`. No fixture has such a name.
 - [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately
   skipped in PRs #44 and #45. Every verification re-parses all configured
   roots to collect issuer names, outside `budget.decoded_bytes`. The
@@ -326,6 +299,13 @@ timestamps, and local CRL validation already exist.
   map entry per revoked certificate that is not charged beyond the existing
   8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
   budget effect for large CRLs.
+  `--fetch-crls` coverage (`has_crl_for`, PR #55) adds to this: it decodes
+  every supplied CRL again for each selected certificate and role, charges 8x
+  its bytes each time, and copies every distribution-point URI to compare
+  them. Decode each CRL's issuer and scope once per verification and compare
+  borrowed bytes. It is also a second copy of webpki's authority rule; the
+  lasting fix is to drive retrieval from the verifier's own result (which
+  certificate had no authoritative CRL) instead of restating the rule.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
@@ -333,6 +313,15 @@ timestamps, and local CRL validation already exist.
   deployment fails. Options: real delta-CRL support (with FEATURE-level
   evidence) or an explicit, JSON-reported opt-in to skip known-unsupported
   CRLs. Never skip silently.
+  Two more cases of the same shape. A CRL naming a distribution point rejects
+  the request as `invalid_crl` (`distribution_point_scope`) when the signer
+  lists no point, even if a full CRL from the same issuer is also supplied
+  (observed with `good-sec06-basic.exe`, `sec06-issuer.crl` and
+  `sec10-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
+  from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
+  same issuer is supplied (`sec10-root-expired-crl-still-rejected`), so an
+  operator who keeps old CRLs beside current ones is rejected. Decide these
+  together with the delta case.
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
   in PR #46. Only `issuing_distribution_point` and the feature reasons used by
   SEC-10 cases are pinned; `crl_version`, `malformed_extensions`,
@@ -351,6 +340,13 @@ timestamps, and local CRL validation already exist.
   report is attached when an intermediate is revoked (`sec10-revoked-issuer`)
   or has unknown status (`sec10-ca-crl-dp-user-scope-excludes-issuer`), so
   the error does not identify the affected certificate; no test asserts it.
+  `details.reason` values are string literals in `src/trust.rs`, documented in
+  `docs/problems.md` but not a Serde domain enum in `src/domain.rs` and not
+  enumerated in `tests/cases.schema.json`. `details.crl` is attached with
+  `CrlReport::parse(..).ok()` on the AKI, scope and unsupported-feature paths
+  (null if the report parser fails) but with `?` on the nextUpdate and
+  freshness paths (a report-parse error replaces the typed error); make them
+  consistent.
 - [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain
@@ -596,6 +592,24 @@ timestamps, and local CRL validation already exist.
   on representative sizes and adversarial bounded inputs. Track peak memory and
   repeated metadata conversion. Consider streaming/caching or batch parallelism
   with measured benefit, immutable input, bounded work, and deterministic results.
+- [ ] **TEST-11: Consolidate CRL fixture builders and SEC-10 fixture provenance.**
+  Recorded from PR #44 to #53 reviews; none affects verifier behavior. Four
+  test builders construct a `TbsCertList` by hand (`src/tests.rs::crl`,
+  `time_policy.rs::crls`, `path_policy.rs::write_crl`,
+  `crl_applicability.rs::crl_full`). `crl_full` takes seven positional
+  arguments and stamps the signature algorithm from the main test identity
+  whatever issuer it is given (every test key is P-256 today). The 45 SEC-10
+  fixtures come from two generators (`regenerate_sec10_fixtures` for the rssig
+  test root's CRLs, `regenerate_sec06_fixtures` for the SEC-06 chain), and the
+  names do not say which: `sec10-root-*.crl` is the rssig test root,
+  `sec10-sec06-root-*` and `sec10-root-no-crl-sign.der` the SEC-06 root. 57
+  SEC-06 manifest entries have no `generator` field, so tests select those
+  fixtures by filename. The single-URI distribution-point encoding is written
+  by hand in three builders (`path_policy.rs`, `crl_applicability.rs`,
+  `crl_fetch_fixtures.rs`), and the `ski` helper in `crl_applicability.rs`
+  compares the OID as a string. `sec10-ca-crl-sign-fallback` relies on
+  embedded-certificate order to exercise fallback and does not assert that the
+  first candidate was tried. Keep committed bytes unchanged when consolidating.
 
 ## P1 — CLI, reporting, and distribution
 
@@ -619,6 +633,11 @@ timestamps, and local CRL validation already exist.
   combinations, and error handling. Update stale source paths in the comparison
   document; keep format limits, CLI help, README tables, architecture, and tests
   aligned. External comparisons retain pinned revisions and stated evidence limits.
+  CRL applicability, distribution-point and competing-evidence policy lives in
+  one table cell of `docs/time-policy.md` (the CRL row), which is hard to read
+  and to cite. Move it to its own document with one rule per line and its
+  pinning cases, and link it from the README and from `AGENTS.md`'s current
+  boundaries, which describe CRL handling only in general terms.
 - [ ] **PRODUCT-05: Define compiler, target, and release support.** Choose and
   test an MSRV; distinguish compiled targets/features from runtime-tested ones.
   Check packaged-crate contents and consumer builds, and document semver/API

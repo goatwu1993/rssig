@@ -357,7 +357,31 @@
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-root-crl-no-next-update",
+        "sec10-unrelated-not-yet-valid-crl-excluded",
+        "sec10-unrelated-no-next-update-crl-excluded",
+        "sec10-root-expired-crl-still-rejected",
+        "sec10-only-unrelated-crl-is-unknown",
+        "sec10-root-aki-crl-still-rejected",
+        "sec10-root-crl-malformed-aki",
+        "sec10-unrelated-malformed-aki-crl-excluded",
+        "sec10-root-unknown-critical-extension-crl-unsupported",
+        "sec10-root-delta-crl-unsupported",
+        "sec10-root-indirect-crl-unsupported",
+        "sec10-root-unknown-noncritical-extension-crl-accepted",
+        "sec10-root-entry-critical-extension-crl-unsupported",
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-ca-crl-sign",
+        "sec10-ca-crl-sign-fallback",
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-aki-issuer-serial-crl-name-matched",
+        "sec10-root-no-crl-sign-accepted",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -382,7 +406,20 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused"
+        "crl-stale-local-provider-unused",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-user-scope-idp-not-fetched",
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -762,7 +799,8 @@
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-other-idp-fetched-revoked"
       ],
       "gap": ""
     },
@@ -771,14 +809,19 @@
         "expired-crl",
         "msi-expired-crl",
         "powershell-expired-crl",
-        "sec10-root-aki-issuer-serial-crl-name-matched"
+        "sec10-root-aki-issuer-serial-crl-name-matched",
+        "sec10-root-expired-crl-still-rejected",
+        "sec10-root-aki-crl-still-rejected",
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-crl-next-update-exact"
       ],
       "gap": ""
     },
     "crl_not_yet_valid": {
       "cases": [
         "bad-crl-not-yet-valid",
-        "msi-bad-crl-not-yet-valid"
+        "msi-bad-crl-not-yet-valid",
+        "sec10-crl-this-update-one-second-ahead"
       ],
       "gap": ""
     },
@@ -803,7 +846,8 @@
         "sec10-crl-dp-dns-name-unknown",
         "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-crl-issuer-point-unknown"
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-fetch-other-idp-fetched-other-unknown"
       ],
       "gap": ""
     },
@@ -815,7 +859,10 @@
     },
     "crl_fetch_denied": {
       "cases": [
-        "crl-fetch-private"
+        "crl-fetch-private",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ],
       "gap": ""
     },
@@ -833,7 +880,8 @@
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-partition-crl-relative-no-listed-point"
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-fetch-no-listed-point-not-fetched"
       ],
       "gap": ""
     },

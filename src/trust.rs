@@ -53,17 +53,33 @@ impl TrustStore {
         }
         Ok(())
     }
+    /// Whether a supplied CRL would be authoritative for `cert`, by the rule
+    /// path validation applies (rustls-webpki 0.103): the CRL has the
+    /// certificate's issuer name and either carries no
+    /// issuingDistributionPoint, or its role flags admit the certificate and
+    /// the certificate lists no distribution points or shares a URI with it.
+    /// A CRL for another distribution point or certificate role does not
+    /// suppress retrieval of the certificate's listed point. The issuer is
+    /// still matched by name only: a CRL without an issuingDistributionPoint
+    /// from another key of the same name counts as coverage, although
+    /// verification excludes it (SEC-16). Usability (signature, freshness,
+    /// unsupported features) is left to verification.
     #[cfg(feature = "crl-fetch")]
-    pub(crate) fn has_crl_for(&self, cert: &Certificate, budget: &Budget) -> Result<bool> {
+    pub(crate) fn has_crl_for(
+        &self,
+        cert: &Certificate,
+        end_entity: bool,
+        budget: &Budget,
+    ) -> Result<bool> {
         for bytes in &self.crls {
             for _ in 0..8 {
                 budget.decoded_bytes.charge(bytes.len())?;
             }
-            if CertificateList::from_der(bytes)
+            let tbs = CertificateList::from_der(bytes)
                 .map_err(crate::compat_error)?
-                .tbs_cert_list
-                .issuer
-                == cert.tbs_certificate.issuer
+                .tbs_cert_list;
+            if tbs.issuer == cert.tbs_certificate.issuer
+                && authoritative_for(&tbs, cert, end_entity)
             {
                 return Ok(true);
             }
@@ -668,6 +684,58 @@ fn has_extension(cert: &Certificate, oid: &str) -> bool {
         .iter()
         .flatten()
         .any(|e| e.extn_id.to_string() == oid)
+}
+
+/// The distribution-point part of webpki's CRL authority rule, for a CRL whose
+/// issuer name already equals the certificate's. Malformed extensions never
+/// match, as in webpki.
+#[cfg(feature = "crl-fetch")]
+fn authoritative_for(
+    tbs: &x509_cert::crl::TbsCertList,
+    cert: &Certificate,
+    end_entity: bool,
+) -> bool {
+    use x509_cert::ext::pkix::{
+        CrlDistributionPoints,
+        crl::dp::IssuingDistributionPoint,
+        name::{DistributionPointName, GeneralName},
+    };
+    // By OID string: x509-cert 0.2 associates the wrong OID with this type.
+    let Some(idp) = tbs
+        .crl_extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.28")
+    else {
+        return true;
+    };
+    let Ok(idp) = IssuingDistributionPoint::from_der(idp.extn_value.as_bytes()) else {
+        return false;
+    };
+    if idp.only_contains_ca_certs && end_entity || idp.only_contains_user_certs && !end_entity {
+        return false;
+    }
+    let points = match cert.tbs_certificate.get::<CrlDistributionPoints>() {
+        Ok(None) => return true,
+        Ok(Some((_, points))) => points.0,
+        Err(_) => return false,
+    };
+    let uris = |name: &Option<DistributionPointName>| match name {
+        Some(DistributionPointName::FullName(names)) => names
+            .iter()
+            .filter_map(|n| match n {
+                GeneralName::UniformResourceIdentifier(uri) => Some(uri.as_bytes().to_vec()),
+                _ => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+    let scope = uris(&idp.distribution_point);
+    points
+        .iter()
+        .filter(|p| p.reasons.is_none() && p.crl_issuer.is_none())
+        .flat_map(|p| uris(&p.distribution_point))
+        .any(|uri| scope.contains(&uri))
 }
 
 /// Whether the CRL's issuingDistributionPoint carries a [0] distributionPoint.

@@ -528,3 +528,58 @@ fn sec10_revoked_intermediate_is_rejected_whatever_the_crl_order() {
         revocation_failure(&output, "certificate_revoked", "Certificate revoked");
     }
 }
+
+/// `good.crl`: thisUpdate and nextUpdate in seconds.
+const CRL_THIS_UPDATE: u64 = 1_799_999_900;
+const CRL_NEXT_UPDATE: u64 = 1_800_001_000;
+
+/// An untimestamped signer, so the validation time is the pinned `--time`.
+fn run_at(time: u64) -> Output {
+    run_fixture(
+        "good-pe64.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            "fixtures/good.crl",
+            "--time",
+            &time.to_string(),
+        ],
+    )
+}
+
+fn fresh_at(time: u64) {
+    let output = run_at(time);
+    expect_success(&output);
+    let signature = &output.json["results"][0]["signatures"][0];
+    assert!(signature["timestamp"].is_null());
+    assert_eq!(signature["trust"]["validation_time"], time);
+    assert_eq!(signature["trust"]["revocation"]["status"], "good");
+}
+
+fn stale_at(time: u64, code: &str, title: &str) {
+    let output = run_at(time);
+    revocation_failure(&output, code, title);
+    let details = &output.json["results"][0]["error"]["details"];
+    assert_eq!(details["validation_time"], time);
+    assert_eq!(details["crl"]["this_update"], CRL_THIS_UPDATE);
+    assert_eq!(details["crl"]["next_update"], CRL_NEXT_UPDATE);
+}
+
+#[test]
+fn sec10_crl_this_update_is_an_inclusive_lower_bound() {
+    stale_at(
+        CRL_THIS_UPDATE - 1,
+        "crl_not_yet_valid",
+        "CRL not yet valid",
+    );
+    fresh_at(CRL_THIS_UPDATE);
+}
+
+#[test]
+fn sec10_crl_next_update_is_an_exclusive_upper_bound() {
+    fresh_at(CRL_NEXT_UPDATE - 1);
+    stale_at(CRL_NEXT_UPDATE, "crl_expired", "CRL expired");
+}

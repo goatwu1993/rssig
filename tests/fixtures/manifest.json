@@ -185,7 +185,11 @@
         "sec03-report",
         "sec03-batch-input",
         "sec03-parse-input",
-        "sec03-batch-count"
+        "sec03-batch-count",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -222,7 +226,11 @@
         "sec10-root-aki-issuer-serial-crl-name-matched",
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
       ]
     },
     {
@@ -251,7 +259,13 @@
       "file": "root.der",
       "sha256": "240a0d897e8088d327bf395e4b083d3ef395189a3e001e6f367a01b91cbae844",
       "bytes": 362,
-      "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store."
+      "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store.",
+      "cases": [
+        "sec10-crl-this-update-one-second-ahead",
+        "sec10-crl-this-update-exact",
+        "sec10-crl-next-update-one-second-left",
+        "sec10-crl-next-update-exact"
+      ]
     },
     {
       "file": "unrelated-root.der",
@@ -7085,7 +7099,8 @@
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {
@@ -7528,7 +7543,10 @@
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched"
       ]
     },
     {
@@ -7875,7 +7893,18 @@
         "sec10-crl-dp-crl-issuer-full-crl",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-partition-crl-relative-no-listed-point"
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-user-scope-idp-not-fetched",
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -7959,7 +7988,20 @@
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-user-scope-idp-not-fetched",
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -9432,7 +9474,14 @@
         "sec10-crl-dp-case-variant-idp-unknown",
         "sec10-crl-dp-user-scope-covers-signer",
         "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-crl-dp-idp-second-name-matches"
+        "sec10-crl-dp-idp-second-name-matches",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-user-scope-idp-not-fetched",
+        "sec10-fetch-full-crl-not-fetched"
       ]
     },
     {
@@ -9451,7 +9500,13 @@
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-multi-unlisted-point-unknown",
         "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-crl-issuer-point-unknown"
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point",
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied"
       ]
     },
     {
@@ -9462,7 +9517,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-matching-idp-revoked"
+        "sec10-crl-dp-matching-idp-revoked",
+        "sec10-fetch-other-idp-fetched-revoked"
       ]
     },
     {
@@ -9476,7 +9532,10 @@
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl"
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-fetch-other-idp-fetches-listed-point",
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-fetch-other-idp-fetched-other-unknown"
       ]
     },
     {
@@ -9525,7 +9584,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-dns-name-unknown",
-        "sec10-crl-dp-dns-full-crl"
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -9550,7 +9610,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-reasons-full-crl"
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-fetch-reasons-point-denied"
       ]
     },
     {
@@ -9562,7 +9623,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-crl-dp-crl-issuer-full-crl"
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-fetch-crl-issuer-point-denied"
       ]
     },
     {
@@ -9574,7 +9636,9 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-ca-crl-dp-ca-scope-covers-issuer",
-        "sec10-ca-crl-dp-user-scope-excludes-issuer"
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched"
       ]
     },
     {
@@ -9585,7 +9649,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-user-scope-covers-signer"
+        "sec10-crl-dp-user-scope-covers-signer",
+        "sec10-fetch-user-scope-idp-not-fetched"
       ]
     },
     {
@@ -9596,7 +9661,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-ca-scope-excludes-signer"
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-fetch-ca-scope-idp-fetches-listed-point"
       ]
     },
     {
@@ -9629,7 +9695,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-dns-name-unknown"
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -9652,7 +9719,9 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-dp-ca-scope-covers-issuer"
+        "sec10-ca-crl-dp-ca-scope-covers-issuer",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
+        "sec10-fetch-ca-ca-scope-idp-not-fetched"
       ]
     },
     {
@@ -9663,7 +9732,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-dp-user-scope-excludes-issuer"
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-fetch-ca-user-scope-idp-fetches-listed-point"
       ]
     },
     {

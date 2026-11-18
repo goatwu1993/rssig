@@ -80,7 +80,9 @@ digest = { version = "0.10", default-features = false }
 x509-cert = { version = "0.2", default-features = false }
 rustls-native-certs = { version = "0.8", optional = true }
 rustls-pki-types = { version = "1", optional = true, default-features = false, features = ["alloc"] }
-webpki = { package = "rustls-webpki", version = "0.103", optional = true, default-features = false, features = ["alloc"] }
+# Pinned exactly: CRL authority and path behavior are documented as observed at
+# this version (docs/tasks/sec-10-crl-applicability.md). Upgrade deliberately.
+webpki = { package = "rustls-webpki", version = "=0.103.16", optional = true, default-features = false, features = ["alloc"] }
 rsa = { version = "0.9", optional = true, default-features = false, features = ["sha2", "u64_digit"] }
 sha1 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
 sha2 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }

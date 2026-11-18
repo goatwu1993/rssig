@@ -233,3 +233,126 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
         }
     }
 }
+
+/// SEC-10: a supplied CRL suppresses retrieval only when it would be
+/// authoritative for the certificate, not merely because it has the issuer's
+/// name. Each row is (input, supplied CRLs, fetched response, requested URLs,
+/// expected error code).
+#[test]
+fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
+    struct Source {
+        response: Option<Vec<u8>>,
+        requests: Vec<String>,
+    }
+    impl rssig::retrieval::CrlSource for Source {
+        fn fetch(
+            &mut self,
+            url: &str,
+            _: usize,
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+            self.requests.push(url.into());
+            Ok(rssig::retrieval::FetchedCrl {
+                bytes: self.response.clone().expect("unexpected provider call"),
+                final_url: url.into(),
+            })
+        }
+    }
+    const LEAF: &str = "sec10-leaf-crl-dp.exe";
+    const CA: &str = "sec10-ca-crl-dp.exe";
+    const NO_POINT: &str = "good-sec06-basic.exe";
+    const LEAF_POINT: &str = "http://crl.invalid/sec10-a.crl";
+    const CA_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let root = base.join("sec06-root.der");
+    type Row = (
+        &'static str,
+        [&'static str; 2],
+        Option<&'static str>,
+        &'static [&'static str],
+        Option<&'static str>,
+    );
+    #[rustfmt::skip]
+    let rows: [Row; 13] = [
+        // Another partition's CRL has the issuer's name but is not authoritative.
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match-revoked.crl"), &[LEAF_POINT], Some("certificate_revoked")),
+        // The fetched bytes are held to the same rule: still no authoritative CRL.
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-other.crl"), &[LEAF_POINT], Some("revocation_unknown")),
+        // Role flags: a CA-only CRL does not cover the signer, nor a user-only CRL an issuer.
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
+        (CA, ["sec10-sec06-root-idp-user.crl", "sec06-issuer.crl"], Some("sec10-sec06-root-idp-ca.crl"), &[CA_POINT], None),
+        // Authoritative supplied CRLs still suppress retrieval.
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], None),
+        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match-user.crl"], None, &[], None),
+        (LEAF, ["sec06-root.crl", "sec06-issuer.crl"], None, &[], None),
+        (CA, ["sec10-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
+        // A signer listing no point has nothing to fetch: the partition is reported, not skipped.
+        (NO_POINT, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
+        // A listed point that discovery does not support is denied, not fetched: without
+        // --fetch-crls the same inputs are revocation_unknown.
+        ("sec10-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
+        ("sec10-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
+        ("sec10-leaf-crl-dp-dns.exe", ["sec06-root.crl", "sec10-issuer-idp-dns.crl"], None, &[], Some("crl_fetch_denied")),
+    ];
+    for (input, supplied, response, requests, error) in rows {
+        let label = format!("{input} with {supplied:?}");
+        let input = base.join(input);
+        let supplied = supplied.map(|crl| base.join(crl));
+        let mut source = Source {
+            response: response.map(|crl| std::fs::read(base.join(crl)).unwrap()),
+            requests: Vec::new(),
+        };
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let code = rssig::cli::run_with_crl_source(
+            [
+                "rssig",
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                root.to_str().unwrap(),
+                "--time",
+                "1800000000",
+                "--fetch-crls",
+                "--crl",
+                supplied[0].to_str().unwrap(),
+                "--crl",
+                supplied[1].to_str().unwrap(),
+                input.to_str().unwrap(),
+            ],
+            &mut out,
+            &mut err,
+            &mut source,
+        )
+        .unwrap();
+        assert!(err.is_empty(), "{label}");
+        assert_eq!(source.requests, requests, "{label}");
+        let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let result = &report["results"][0];
+        if let Some(error) = error {
+            assert_eq!(code, 1, "{label}");
+            assert_eq!(result["error"]["code"], error, "{label}");
+            assert_eq!(result["error"]["stage"], "revocation", "{label}");
+            let artifacts = result["error"]["details"]["crl_retrieval"]["artifacts"]
+                .as_array()
+                .unwrap();
+            assert_eq!(artifacts.len(), requests.len(), "{label}");
+            for (artifact, request) in artifacts.iter().zip(requests) {
+                assert_eq!(artifact["url"], *request, "{label}");
+            }
+        } else {
+            assert_eq!(code, 0, "{label}: {result}");
+            assert_eq!(
+                result["signatures"][0]["revocation_checked"], true,
+                "{label}"
+            );
+            assert_eq!(
+                result["crl_retrieval"]["artifacts"]
+                    .as_array()
+                    .unwrap()
+                    .len(),
+                requests.len(),
+                "{label}"
+            );
+        }
+    }
+}

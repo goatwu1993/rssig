@@ -10,10 +10,15 @@ rssig verify application.exe --fetch-crls --no-system-roots --roots roots.pem
 
 `--fetch-crls` is explicit and conflicts with `--integrity-only` and
 `--no-revocation`. Existing verification entry points and ordinary CLI invocations
-remain offline. Local `--crl` files can be combined with retrieval. An issuer-matching
-local artifact suppresses retrieval for that issuer; freshness, authority,
-applicability, signatures and revocation are still checked. An expired or forged
-local artifact is not silently replaced or ignored.
+remain offline. Local `--crl` files can be combined with retrieval. A local CRL
+suppresses retrieval for a certificate only if it would be authoritative for it:
+it has the certificate's issuer name and either no issuingDistributionPoint, or
+role flags that admit the certificate and a fullName URI the certificate lists
+(or the certificate lists no distribution points). A CRL for another
+distribution point does not suppress retrieval of the listed one. Freshness,
+applicability, signatures and revocation are still checked on every local and
+fetched CRL. An expired or forged authoritative local artifact is not silently
+replaced or ignored.
 
 The implementation first verifies all signatures and candidate trust paths with
 revocation omitted internally. It discovers distribution points on selected leaf,
