@@ -306,6 +306,21 @@ timestamps, and local CRL validation already exist.
   borrowed bytes. It is also a second copy of webpki's authority rule; the
   lasting fix is to drive retrieval from the verifier's own result (which
   certificate had no authoritative CRL) instead of restating the rule.
+  Three further gaps found in the PR #55 review share that cause; fix or pin
+  them with the redesign. All reject, none accepts. (1) Coverage skips a
+  certificate point with reasons, a cRLIssuer or a non-URI name, but discovery
+  (`crl_distribution_points`) fails on the first such point, so a certificate
+  that also lists a plain URI point is `crl_fetch_denied` and that URI is never
+  requested. No fixture mixes the two forms. (2) A signer that lists no
+  distribution point, beside an issuer CRL whose issuingDistributionPoint names
+  a point and excludes its role (for example onlyContainsCACerts), is
+  `revocation_unknown` under `--fetch-crls` with a message saying no issuer
+  CRL was supplied, while the same inputs without the flag are `invalid_crl`
+  (`distribution_point_scope`). Read from the code, not run; no case pins it.
+  (3) A supplied CRL that verification rejects anyway (an undecodable or
+  issuer-relative issuingDistributionPoint) does not count as coverage, so the
+  listed point is fetched before the same `invalid_crl`: one request for a
+  verification that cannot succeed. Not run; no case pins it.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
