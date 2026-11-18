@@ -187,10 +187,14 @@ timestamps, and local CRL validation already exist.
   When the certificate lists a distribution point (`sec10-crl-dp-*`, signer
   `sec10-leaf-crl-dp.exe`): an issuer CRL whose IDP names that URI is
   authoritative (good or `certificate_revoked`); one naming another URI leaves
-  the status `revocation_unknown`, even if it lists the serial; the matching
-  partition is selected in either `--crl` order; a serial listed by another
-  authenticated partition of the same issuer still rejects; and a full CRL
-  without an IDP covers the certificate.
+  the status `revocation_unknown`; the matching partition is selected in either
+  `--crl` order; a serial listed by another authenticated partition of the same
+  issuer still rejects; and a full CRL without an IDP covers the certificate.
+  Open decision: a non-authoritative partition that lists the signer, supplied
+  with no authoritative CRL, is rejected as `revocation_unknown` because webpki
+  reports unknown status before the path callback sees the listed serial. It is
+  deliberately not pinned in `cases.json`; decide whether it should report
+  `certificate_revoked` like the case where an authoritative CRL is present.
   Remaining: an IDP with a scope flag plus a named point is not pinned. Only
   one exact-match URI is covered; several points or names, non-URI names,
   issuer-relative names, and a certificate point with reasons or cRLIssuer rely

@@ -7079,7 +7079,8 @@
         "good-sec06-basic",
         "good-sec06-root-expired",
         "good-sec06-root-profile",
-        "sec10-root-no-crl-sign-accepted"
+        "sec10-root-no-crl-sign-accepted",
+        "sec10-partition-crl-no-listed-point"
       ]
     },
     {
@@ -7510,7 +7511,8 @@
         "sec10-ca-crl-sign",
         "sec10-ca-crl-sign-fallback",
         "sec10-root-no-crl-sign-accepted",
-        "sec10-crl-dp-full-crl"
+        "sec10-crl-dp-full-crl",
+        "sec10-crl-dp-other-idp-with-full-crl"
       ]
     },
     {
@@ -7831,11 +7833,13 @@
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-full-crl"
+        "sec10-crl-dp-full-crl",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-partition-crl-no-listed-point"
       ]
     },
     {
@@ -7889,11 +7893,13 @@
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-full-crl"
+        "sec10-crl-dp-full-crl",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-partition-crl-no-listed-point"
       ]
     },
     {
@@ -9347,20 +9353,21 @@
     },
     {
       "file": "sec10-leaf-crl-dp.exe",
-      "sha256": "a1f6f839a80dd5fad4e81051f632c4ff8a693f86bd5c3742a1e1f409f0acc06a",
+      "sha256": "fe672939a8507db27ac21072a8f14418f565ccebc2ae99cebb79408aa7fdff92",
       "bytes": 2248,
-      "description": "SEC-10: Inert PE signed by a SEC-06 leaf variant (serial 120) whose cRLDistributionPoints lists one fullName URI (http://crl.invalid/sec10-a.crl); issuer candidate is the SEC-06 issuer. Never execute. Deterministic public test keys.",
+      "description": "SEC-10: Inert PE signed by a SEC-06 leaf with its own serial (121) whose cRLDistributionPoints lists one fullName URI (http://crl.invalid/sec10-a.crl); issuer candidate is the SEC-06 issuer. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first",
-        "sec10-crl-dp-full-crl"
+        "sec10-crl-dp-full-crl",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-crl-dp-other-idp-with-full-crl"
       ]
     },
     {
@@ -9374,14 +9381,16 @@
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first"
+        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-partition-crl-no-listed-point"
       ]
     },
     {
       "file": "sec10-issuer-idp-match-revoked.crl",
-      "sha256": "3cfcb93bcd9dce6565c19e870e59153117d5f8a1a25397e71527c8ad88071102",
+      "sha256": "f538f815d11ab48b72d20de0ce26f7e01225513b96e51448cea19be95a511fd7",
       "bytes": 258,
-      "description": "SEC-10: As sec10-issuer-idp-match.crl, but revoking serial 120 (the sec10-leaf-crl-dp signer). Deterministic public test keys.",
+      "description": "SEC-10: As sec10-issuer-idp-match.crl, but revoking serial 121, which only the sec10-leaf-crl-dp signer has. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
@@ -9397,18 +9406,19 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-other-idp-first"
+        "sec10-crl-dp-other-idp-first",
+        "sec10-crl-dp-matching-idp-first",
+        "sec10-crl-dp-other-idp-with-full-crl"
       ]
     },
     {
       "file": "sec10-issuer-idp-other-revoked.crl",
-      "sha256": "f9a58f5cde83d2e65a6f03f4e675dbfeef4d542abf39723e432cd2d8f96f9f87",
-      "bytes": 257,
-      "description": "SEC-10: As sec10-issuer-idp-other.crl, but revoking serial 120 (the sec10-leaf-crl-dp signer). Deterministic public test keys.",
+      "sha256": "04ce40d26b3f3025fbfd306a13bf784f548106c6de37c915553a179ed3f7a050",
+      "bytes": 256,
+      "description": "SEC-10: As sec10-issuer-idp-other.crl, but revoking serial 121, which only the sec10-leaf-crl-dp signer has. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-other-idp-revoked-unknown",
         "sec10-crl-dp-other-partition-revoked",
         "sec10-crl-dp-other-partition-revoked-first"
       ]

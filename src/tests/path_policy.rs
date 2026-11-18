@@ -3,6 +3,18 @@ use super::*;
 use ::der::asn1::{ObjectIdentifier, OctetString};
 use x509_cert::ext::{Extension, pkix::BasicConstraints};
 
+/// SEC-10 distribution-point fixtures: the point the scoped leaf lists, another
+/// point, and the issuer CRL partitions as (label, scope, revokes the leaf).
+const LISTED_POINT: &str = "http://crl.invalid/sec10-a.crl";
+const OTHER_POINT: &str = "http://crl.invalid/sec10-b.crl";
+const SCOPED_LEAF_SERIAL: u32 = 121;
+const PARTITIONS: [(&str, &str, bool); 4] = [
+    ("match", LISTED_POINT, false),
+    ("match-revoked", LISTED_POINT, true),
+    ("other", OTHER_POINT, false),
+    ("other-revoked", OTHER_POINT, true),
+];
+
 fn key(byte: u8) -> SigningKey {
     SigningKey::from_bytes((&[byte; 32]).into()).unwrap()
 }
@@ -161,54 +173,6 @@ fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKe
     )
     .unwrap();
 }
-/// A fresh CRL whose critical issuingDistributionPoint names one URI.
-fn scoped_crl(
-    issuer: &Certificate,
-    issuer_key: &SigningKey,
-    uri: &str,
-    revoked: Option<u32>,
-) -> Vec<u8> {
-    use x509_cert::{
-        Version,
-        crl::{CertificateList, RevokedCert, TbsCertList},
-    };
-    let algorithm = issuer.signature_algorithm.clone();
-    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, uri.as_bytes())));
-    let tbs = TbsCertList {
-        version: Version::V2,
-        signature: algorithm.clone(),
-        issuer: issuer.tbs_certificate.subject.clone(),
-        this_update: tm(NOW - 100),
-        next_update: Some(tm(NOW + 1000)),
-        revoked_certificates: revoked.map(|serial| {
-            vec![RevokedCert {
-                serial_number: SerialNumber::from(serial),
-                revocation_date: tm(NOW - 50),
-                crl_entry_extensions: None,
-            }]
-        }),
-        crl_extensions: Some(vec![
-            Extension {
-                extn_id: "2.5.29.20".parse().unwrap(),
-                critical: false,
-                extn_value: OctetString::new([2, 1, 1]).unwrap(),
-            },
-            Extension {
-                extn_id: "2.5.29.28".parse().unwrap(),
-                critical: true,
-                extn_value: OctetString::new(seq(&[point])).unwrap(),
-            },
-        ]),
-    };
-    let sig: Signature = issuer_key.sign(&tbs.to_der().unwrap());
-    CertificateList {
-        tbs_cert_list: tbs,
-        signature_algorithm: algorithm,
-        signature: BitString::from_bytes(sig.to_der().as_bytes()).unwrap(),
-    }
-    .to_der()
-    .unwrap()
-}
 fn write_cert(dir: &std::path::Path, label: &str, cert: &Certificate) {
     std::fs::write(
         dir.join(format!("sec06-{label}.der")),
@@ -342,12 +306,17 @@ pub(super) fn write(dir: &std::path::Path) {
         anchor.to_der().unwrap(),
     )
     .unwrap();
-    // SEC-10: a leaf that lists one CRL distribution point, and issuer CRLs
-    // partitioned by issuingDistributionPoint to that point or to another.
-    let listed = "http://crl.invalid/sec10-a.crl";
-    let other_point = "http://crl.invalid/sec10-b.crl";
-    let mut scoped = leaf.clone();
-    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, listed.as_bytes())));
+    // SEC-10: a leaf with its own serial that lists one CRL distribution point,
+    // and issuer CRLs partitioned by issuingDistributionPoint.
+    let mut scoped = certificate(
+        "publisher",
+        SCOPED_LEAF_SERIAL,
+        &leaf_key,
+        "issuer",
+        &ca_key,
+        false,
+    );
+    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, LISTED_POINT.as_bytes())));
     extension(&mut scoped, "2.5.29.31", false, Some(seq(&[seq(&[point])])));
     sign(&mut scoped, &ca_key);
     write_pe(
@@ -356,15 +325,30 @@ pub(super) fn write(dir: &std::path::Path) {
         &scoped,
         core::slice::from_ref(&ca),
     );
-    for (label, uri, revoked) in [
-        ("match", listed, false),
-        ("match-revoked", listed, true),
-        ("other", other_point, false),
-        ("other-revoked", other_point, true),
-    ] {
+    for (label, uri, revoked) in PARTITIONS {
+        let scope = Extension {
+            extn_id: "2.5.29.28".parse().unwrap(),
+            critical: true,
+            extn_value: OctetString::new(crl_applicability::idp_named_point(uri)).unwrap(),
+        };
+        let entries = revoked.then(|| {
+            vec![x509_cert::crl::RevokedCert {
+                serial_number: scoped.tbs_certificate.serial_number.clone(),
+                revocation_date: tm(NOW - 50),
+                crl_entry_extensions: None,
+            }]
+        });
         std::fs::write(
             dir.join(format!("sec10-issuer-idp-{label}.crl")),
-            scoped_crl(&ca, &ca_key, uri, revoked.then_some(120)),
+            crl_applicability::crl_full(
+                "CN=SEC-06 issuer",
+                &ca_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![scope],
+                entries,
+            ),
         )
         .unwrap();
     }
@@ -586,7 +570,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
     let mut count = 0;
     for artifact in manifest["artifacts"].as_array().unwrap() {
         let filename = artifact["file"].as_str().unwrap();
-        // SEC-10 cRLSign variants are built here on the SEC-06 chain.
+        // SEC-10 variants built here on the SEC-06 chain.
         let sec10 = [
             "sec10-ca-no-crl-sign.exe",
             "sec10-ca-crl-sign.exe",
@@ -653,16 +637,12 @@ fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
         .unwrap();
     let contains =
         |haystack: &[u8], uri: &str| haystack.windows(uri.len()).any(|w| w == uri.as_bytes());
-    assert!(contains(
-        listed.extn_value.as_bytes(),
-        "http://crl.invalid/sec10-a.crl"
-    ));
-    for (label, uri, revoked) in [
-        ("match", "http://crl.invalid/sec10-a.crl", false),
-        ("match-revoked", "http://crl.invalid/sec10-a.crl", true),
-        ("other", "http://crl.invalid/sec10-b.crl", false),
-        ("other-revoked", "http://crl.invalid/sec10-b.crl", true),
-    ] {
+    assert!(contains(listed.extn_value.as_bytes(), LISTED_POINT));
+    assert_eq!(
+        leaf.tbs_certificate.serial_number,
+        SerialNumber::from(SCOPED_LEAF_SERIAL)
+    );
+    for (label, uri, revoked) in PARTITIONS {
         let name = format!("sec10-issuer-idp-{label}.crl");
         let crl = CertificateList::from_der(&std::fs::read(dir.join(&name)).unwrap()).unwrap();
         let tbs = &crl.tbs_cert_list;
