@@ -7839,7 +7839,8 @@
         "sec10-crl-dp-full-crl",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-partition-crl-no-listed-point"
+        "sec10-partition-crl-no-listed-point",
+        "sec10-crl-dp-other-idp-revoked-rejected"
       ]
     },
     {
@@ -7899,7 +7900,8 @@
         "sec10-crl-dp-full-crl",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-partition-crl-no-listed-point"
+        "sec10-partition-crl-no-listed-point",
+        "sec10-crl-dp-other-idp-revoked-rejected"
       ]
     },
     {
@@ -9367,7 +9369,8 @@
         "sec10-crl-dp-other-partition-revoked-first",
         "sec10-crl-dp-full-crl",
         "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl"
+        "sec10-crl-dp-other-idp-with-full-crl",
+        "sec10-crl-dp-other-idp-revoked-rejected"
       ]
     },
     {
@@ -9420,7 +9423,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first"
+        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-crl-dp-other-idp-revoked-rejected"
       ]
     }
   ]

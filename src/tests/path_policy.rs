@@ -635,17 +635,20 @@ fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
         .flatten()
         .find(|e| e.extn_id.to_string() == "2.5.29.31")
         .unwrap();
-    let contains =
-        |haystack: &[u8], uri: &str| haystack.windows(uri.len()).any(|w| w == uri.as_bytes());
-    assert!(contains(listed.extn_value.as_bytes(), LISTED_POINT));
+    // Exactly one DistributionPoint: [0] distributionPoint, [0] fullName, one URI.
+    let point = tlv(0xa0, &tlv(0xa0, &tlv(0x86, LISTED_POINT.as_bytes())));
+    assert_eq!(listed.extn_value.as_bytes(), seq(&[seq(&[point])]));
     assert_eq!(
         leaf.tbs_certificate.serial_number,
         SerialNumber::from(SCOPED_LEAF_SERIAL)
     );
     for (label, uri, revoked) in PARTITIONS {
         let name = format!("sec10-issuer-idp-{label}.crl");
-        let crl = CertificateList::from_der(&std::fs::read(dir.join(&name)).unwrap()).unwrap();
+        let bytes = std::fs::read(dir.join(&name)).unwrap();
+        let crl = CertificateList::from_der(&bytes).unwrap();
         let tbs = &crl.tbs_cert_list;
+        // The committed TBS bytes, as production verifies them.
+        let signed = der::one(&bytes, 0x30).unwrap().children().unwrap()[0].full;
         assert_eq!(tbs.issuer, issuer.tbs_certificate.subject, "{name}");
         crypto::verify_spki(
             &issuer
@@ -655,7 +658,7 @@ fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
                 .unwrap(),
             crypto::Hash::Sha256,
             crl.signature_algorithm.oid.as_bytes(),
-            &tbs.to_der().unwrap(),
+            signed,
             crl.signature.as_bytes().unwrap(),
         )
         .unwrap();
@@ -666,7 +669,12 @@ fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
             .find(|e| e.extn_id.to_string() == "2.5.29.28")
             .unwrap();
         assert!(idp.critical, "{name}");
-        assert!(contains(idp.extn_value.as_bytes(), uri), "{name}");
+        // The whole IDP value: one fullName URI, no scope flags or reasons.
+        assert_eq!(
+            idp.extn_value.as_bytes(),
+            crl_applicability::idp_named_point(uri),
+            "{name}"
+        );
         let serials: Vec<_> = tbs
             .revoked_certificates
             .iter()

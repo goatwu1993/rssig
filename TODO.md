@@ -193,8 +193,15 @@ timestamps, and local CRL validation already exist.
   Open decision: a non-authoritative partition that lists the signer, supplied
   with no authoritative CRL, is rejected as `revocation_unknown` because webpki
   reports unknown status before the path callback sees the listed serial. It is
-  deliberately not pinned in `cases.json`; decide whether it should report
-  `certificate_revoked` like the case where an authoritative CRL is present.
+  `cases.json` pins only the rejection and stage
+  (`sec10-crl-dp-other-idp-revoked-rejected`), not the code; decide whether it
+  should report `certificate_revoked` like the case where an authoritative CRL
+  is present.
+  `--fetch-crls` gap: `has_crl_for` treats any supplied CRL with the
+  certificate's issuer name as coverage, so a partition that is not
+  authoritative for the certificate suppresses fetching its listed
+  distribution point and the result is `revocation_unknown`. Make coverage
+  use the same authority rule, with an injected-source fixture.
   Remaining: an IDP with a scope flag plus a named point is not pinned. Only
   one exact-match URI is covered; several points or names, non-URI names,
   issuer-relative names, and a certificate point with reasons or cRLIssuer rely

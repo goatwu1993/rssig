@@ -31385,6 +31385,36 @@
           ]
         }
       }
+    },
+    {
+      "id": "sec10-crl-dp-other-idp-revoked-rejected",
+      "input": "sec10-leaf-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
