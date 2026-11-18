@@ -335,7 +335,29 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "sec10-crl-dp-case-variant-idp-unknown",
+        "sec10-crl-dp-user-scope-covers-signer",
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-ca-crl-dp-ca-scope-covers-issuer",
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-crl-dp-idp-second-name-matches",
+        "sec10-crl-dp-multi-second-point-matches",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-multi-full-crl",
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-crl-dp-relative-expanded-name-unknown",
+        "sec10-crl-dp-relative-full-crl",
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-crl-dp-crl-issuer-point-unknown",
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-revoked-issuer-issuer-crl-first"
       ]
     },
     {
@@ -736,7 +758,11 @@
         "sec10-competing-crls-revoked-first-revoked",
         "sec10-crl-dp-matching-idp-revoked",
         "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first"
+        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-revoked-issuer",
+        "sec10-revoked-issuer-after-good-root-crl",
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-revoked-issuer-issuer-crl-first"
       ],
       "gap": ""
     },
@@ -770,7 +796,14 @@
         "sec10-only-unrelated-crl-is-unknown",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-case-variant-idp-unknown",
-        "sec10-crl-dp-other-idp-revoked-unknown"
+        "sec10-crl-dp-other-idp-revoked-unknown",
+        "sec10-crl-dp-ca-scope-excludes-signer",
+        "sec10-ca-crl-dp-user-scope-excludes-issuer",
+        "sec10-crl-dp-multi-unlisted-point-unknown",
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-crl-dp-relative-expanded-name-unknown",
+        "sec10-crl-dp-reasons-point-unknown",
+        "sec10-crl-dp-crl-issuer-point-unknown"
       ],
       "gap": ""
     },
@@ -798,7 +831,9 @@
         "sec10-root-idp-user-certs-crl-unsupported",
         "sec10-root-idp-ca-certs-crl-unsupported",
         "sec10-root-idp-named-point-crl-rejected",
-        "sec10-partition-crl-no-listed-point"
+        "sec10-partition-crl-no-listed-point",
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-partition-crl-relative-no-listed-point"
       ],
       "gap": ""
     },

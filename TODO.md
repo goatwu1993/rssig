@@ -168,8 +168,8 @@ timestamps, and local CRL validation already exist.
   (`sec10-ca-no-crl-sign`, paired with `sec10-ca-crl-sign`), and path building
   falls back to a candidate with cRLSign (`sec10-ca-crl-sign-fallback`). This
   covers intermediate issuers only: webpki 0.103 does not track trust-anchor
-  KeyUsage, so a root lacking cRLSign still issues usable CRLs (consistent with
-  SEC-14's anchors-as-keys policy; decide and pin it).
+  KeyUsage, so a root lacking cRLSign still issues usable CRLs (decided and
+  pinned in PR #48, below).
   An AKI with only authorityCertIssuer/serial is matched by issuer name
   (`sec10-root-aki-issuer-serial-crl-name-matched`). An IDP carrying only a
   user/CA scope flag is rejected by webpki 0.103 as `issuing_distribution_point`
@@ -201,11 +201,21 @@ timestamps, and local CRL validation already exist.
   authoritative for the certificate suppresses fetching its listed
   distribution point and the result is `revocation_unknown`. Make coverage
   use the same authority rule, with an injected-source fixture.
-  Remaining: an IDP with a scope flag plus a named point is not pinned. Only
-  one exact-match URI is covered; several points or names, non-URI names,
-  issuer-relative names, and a certificate point with reasons or cRLIssuer rely
-  on webpki's matching without fixtures.
-  Review items decided against or deferred are recorded in SEC-15 to SEC-20.
+  Other distribution-point forms are pinned (`sec10-crl-dp-*`,
+  `sec10-ca-crl-dp-*`): a scope flag with a named point restricts the CRL to
+  end-entity or CA certificates, for the signer and for an intermediate; any
+  matching URI among several names or points is authoritative; dNSName and
+  issuer-relative names never match, including against the directoryName a
+  relative name expands to; a certificate point with reasons or cRLIssuer is
+  skipped; a full CRL covers each of those signers; and a CRL scoped by an
+  issuer-relative name is `invalid_crl` (`issuing_distribution_point`, or
+  `distribution_point_scope` first when a covered certificate lists no
+  point). A revoked intermediate is `certificate_revoked` in any `--crl` order
+  (`sec10-revoked-issuer*`). These results are webpki's matching at the
+  locked 0.103.16; `Cargo.toml` allows any 0.103. Not pinned: a certificate
+  mixing a skipped point with a plain URI point.
+  Remaining before closing: the `--fetch-crls` coverage gap above.
+  Review items decided against or deferred are recorded in SEC-15 to SEC-21.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts
   from CRLs authenticated and used for each selected chain. Include affected
   certificates/CRLs in structured failures. Preserve conservative rejection when
@@ -337,7 +347,10 @@ timestamps, and local CRL validation already exist.
   signature probe uses the original TBS bytes.
   For a CRL issuer without cRLSign, `details.certificate` names the leaf being
   checked rather than the issuer whose KeyUsage fails; add the issuer (or a
-  `reason`) before consumers depend on the current detail.
+  `reason`) before consumers depend on the current detail. The same leaf
+  report is attached when an intermediate is revoked (`sec10-revoked-issuer`)
+  or has unknown status (`sec10-ca-crl-dp-user-scope-excludes-issuer`), so
+  the error does not identify the affected certificate; no test asserts it.
 - [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain

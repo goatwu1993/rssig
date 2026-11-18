@@ -3,13 +3,26 @@ use super::*;
 use ::der::asn1::{ObjectIdentifier, OctetString};
 use x509_cert::ext::{Extension, pkix::BasicConstraints};
 
-/// SEC-10 distribution-point fixtures: the point the scoped leaf lists, another
-/// point, and the issuer CRL partitions as (label, scope, revokes the leaf).
+/// SEC-10 distribution-point fixtures. First the single-point signer: the point
+/// it lists, another point, and the issuer CRL partitions as (label, scope,
+/// revokes the leaf). `point_forms`, `scope_forms` and `root_scope_forms` below
+/// hold the other signer and CRL forms.
 const LISTED_POINT: &str = "http://crl.invalid/sec10-a.crl";
 const OTHER_POINT: &str = "http://crl.invalid/sec10-b.crl";
 const SCOPED_LEAF_SERIAL: u32 = 121;
 /// The listed point with its scheme and host in upper case: a different URI.
 const CASE_POINT: &str = "HTTP://CRL.INVALID/sec10-a.crl";
+/// The three URIs the `multi` signer lists across two points.
+const MULTI_POINTS: [&str; 3] = [
+    "http://crl.invalid/sec10-c.crl",
+    "http://crl.invalid/sec10-d.crl",
+    "http://crl.invalid/sec10-e.crl",
+];
+/// The point the `sec10-ca-crl-dp` intermediate lists.
+const ISSUER_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
+/// The SEC-06 issuer certificate's serial, revoked by
+/// `sec10-sec06-root-revoked-issuer.crl`.
+const ISSUER_SERIAL: u32 = 110;
 const PARTITIONS: [(&str, &str, bool); 5] = [
     ("match", LISTED_POINT, false),
     ("match-revoked", LISTED_POINT, true),
@@ -22,7 +35,108 @@ const PARTITIONS: [(&str, &str, bool); 5] = [
 /// `LISTED_POINT`. A DistributionPoint that has only a fullName encodes like an
 /// issuingDistributionPoint that has only a fullName.
 fn listed_points() -> Vec<u8> {
-    seq(&[crl_applicability::idp_named_point(LISTED_POINT)])
+    one_point(LISTED_POINT)
+}
+
+/// cRLDistributionPoints with exactly one DistributionPoint naming one URI.
+fn one_point(value: &str) -> Vec<u8> {
+    seq(&[seq(&[full_name(&[uri(value)])])])
+}
+
+/// A uniformResourceIdentifier GeneralName.
+fn uri(value: &str) -> Vec<u8> {
+    tlv(0x86, value.as_bytes())
+}
+
+/// `[0] distributionPoint` holding a fullName with these GeneralNames.
+fn full_name(names: &[Vec<u8>]) -> Vec<u8> {
+    tlv(0xa0, &tlv(0xa0, &names.concat()))
+}
+
+/// `[0] distributionPoint` holding nameRelativeToCRLIssuer `CN=sec10`.
+fn relative_name() -> Vec<u8> {
+    let cn = seq(&[tlv(6, &[0x55, 4, 3]), tlv(0x0c, b"sec10")]);
+    tlv(0xa0, &tlv(0xa1, &cn))
+}
+
+/// A directoryName GeneralName: the SEC-06 issuer's DN followed by `CN=sec10`.
+fn expanded_relative_name() -> Vec<u8> {
+    let issuer = name("issuer").to_der().unwrap();
+    let cn = seq(&[tlv(6, &[0x55, 4, 3]), tlv(0x0c, b"sec10")]);
+    let mut rdns = der::one(&issuer, 0x30).unwrap().body.to_vec();
+    rdns.extend(tlv(0x31, &cn));
+    tlv(0xa4, &tlv(0x30, &rdns))
+}
+
+/// SEC-10 signers with other cRLDistributionPoints forms, as (label, serial,
+/// extension value). Each is `sec10-leaf-crl-dp-{label}.exe`.
+fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
+    let dns = tlv(0x82, b"crl.invalid");
+    let reasons = tlv(0x81, &[6, 0x40]);
+    let crl_issuer = tlv(0xa2, &tlv(0xa4, &name("upper").to_der().unwrap()));
+    vec![
+        // Two points; the second has two names.
+        (
+            "multi",
+            122,
+            seq(&[
+                seq(&[full_name(&[uri(MULTI_POINTS[0])])]),
+                seq(&[full_name(&[uri(MULTI_POINTS[1]), uri(MULTI_POINTS[2])])]),
+            ]),
+        ),
+        // A dNSName, which is not a URI.
+        ("dns", 123, seq(&[seq(&[full_name(&[dns])])])),
+        ("relative", 124, seq(&[seq(&[relative_name()])])),
+        // The listed URI, but partitioned by reason (keyCompromise).
+        (
+            "reasons",
+            125,
+            seq(&[seq(&[full_name(&[uri(LISTED_POINT)]), reasons])]),
+        ),
+        // The listed URI, but naming another CRL issuer (an indirect CRL).
+        (
+            "crl-issuer",
+            126,
+            seq(&[seq(&[full_name(&[uri(LISTED_POINT)]), crl_issuer])]),
+        ),
+    ]
+}
+
+/// SEC-10 issuer CRLs with other issuingDistributionPoint forms, as (label,
+/// extension value). Each is `sec10-issuer-idp-{label}.crl` and revokes nothing.
+fn scope_forms() -> Vec<(&'static str, Vec<u8>)> {
+    let listed = full_name(&[uri(LISTED_POINT)]);
+    vec![
+        // The listed URI with onlyContainsUserCerts or onlyContainsCACerts.
+        ("match-user", seq(&[listed.clone(), tlv(0x81, &[0xff])])),
+        ("match-ca", seq(&[listed, tlv(0x82, &[0xff])])),
+        // Two names; only the second is the listed URI.
+        (
+            "two-names",
+            seq(&[full_name(&[uri(OTHER_POINT), uri(LISTED_POINT)])]),
+        ),
+        // The second name of the `multi` signer's second point.
+        ("second-point", seq(&[full_name(&[uri(MULTI_POINTS[2])])])),
+        ("dns", seq(&[full_name(&[tlv(0x82, b"crl.invalid")])])),
+        ("relative", seq(&[relative_name()])),
+        // The directoryName that `CN=sec10` relative to the issuer expands to
+        // (RFC 5280 6.3.3): a verifier that expanded relative names would
+        // match the `relative` signer with it.
+        (
+            "relative-expanded",
+            seq(&[full_name(&[expanded_relative_name()])]),
+        ),
+    ]
+}
+
+/// SEC-10 SEC-06 root CRLs naming `ISSUER_POINT` with a role scope, as (label,
+/// extension value). Each is `sec10-sec06-root-idp-{label}.crl`.
+fn root_scope_forms() -> Vec<(&'static str, Vec<u8>)> {
+    let point = full_name(&[uri(ISSUER_POINT)]);
+    vec![
+        ("ca", seq(&[point.clone(), tlv(0x82, &[0xff])])),
+        ("user", seq(&[point, tlv(0x81, &[0xff])])),
+    ]
 }
 
 fn key(byte: u8) -> SigningKey {
@@ -183,6 +297,38 @@ fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKe
     )
     .unwrap();
 }
+/// Write a fresh SEC-10 CRL from `issuer` with this critical
+/// issuingDistributionPoint value, if any, revoking `revoked`, if any.
+fn write_scoped_crl(
+    dir: &std::path::Path,
+    file: &str,
+    issuer: (&Certificate, &SigningKey),
+    scope: Option<Vec<u8>>,
+    revoked: Option<&Certificate>,
+) {
+    let scope = scope.map(|value| Extension {
+        extn_id: "2.5.29.28".parse().unwrap(),
+        critical: true,
+        extn_value: OctetString::new(value).unwrap(),
+    });
+    let entries = revoked.map(|cert| {
+        vec![x509_cert::crl::RevokedCert {
+            serial_number: cert.tbs_certificate.serial_number.clone(),
+            revocation_date: tm(NOW - 50),
+            crl_entry_extensions: None,
+        }]
+    });
+    let crl = crl_applicability::crl_full(
+        &issuer.0.tbs_certificate.subject.to_string(),
+        issuer.1,
+        NOW - 100,
+        Some(NOW + 1000),
+        None,
+        scope.into_iter().collect(),
+        entries,
+    );
+    std::fs::write(dir.join(file), crl).unwrap();
+}
 fn write_cert(dir: &std::path::Path, label: &str, cert: &Certificate) {
     std::fs::write(
         dir.join(format!("sec06-{label}.der")),
@@ -205,7 +351,7 @@ pub(super) fn write(dir: &std::path::Path) {
         &other_key,
         true,
     );
-    let mut ca = certificate("issuer", 110, &ca_key, "root", &root_key, true);
+    let mut ca = certificate("issuer", ISSUER_SERIAL, &ca_key, "root", &root_key, true);
     bc(&mut ca, true, Some(0));
     sign(&mut ca, &root_key);
     let leaf = certificate("publisher", 120, &leaf_key, "issuer", &ca_key, false);
@@ -335,32 +481,58 @@ pub(super) fn write(dir: &std::path::Path) {
         core::slice::from_ref(&ca),
     );
     for (label, uri, revoked) in PARTITIONS {
-        let scope = Extension {
-            extn_id: "2.5.29.28".parse().unwrap(),
-            critical: true,
-            extn_value: OctetString::new(crl_applicability::idp_named_point(uri)).unwrap(),
-        };
-        let entries = revoked.then(|| {
-            vec![x509_cert::crl::RevokedCert {
-                serial_number: scoped.tbs_certificate.serial_number.clone(),
-                revocation_date: tm(NOW - 50),
-                crl_entry_extensions: None,
-            }]
-        });
-        std::fs::write(
-            dir.join(format!("sec10-issuer-idp-{label}.crl")),
-            crl_applicability::crl_full(
-                &ca.tbs_certificate.subject.to_string(),
-                &ca_key,
-                NOW - 100,
-                Some(NOW + 1000),
-                None,
-                vec![scope],
-                entries,
-            ),
-        )
-        .unwrap();
+        write_scoped_crl(
+            dir,
+            &format!("sec10-issuer-idp-{label}.crl"),
+            (&ca, &ca_key),
+            Some(crl_applicability::idp_named_point(uri)),
+            revoked.then_some(&scoped),
+        );
     }
+    // SEC-10: other distribution-point forms on the signer and on issuer CRLs.
+    for (label, serial, points) in point_forms() {
+        let mut signer = certificate("publisher", serial, &leaf_key, "issuer", &ca_key, false);
+        extension(&mut signer, "2.5.29.31", false, Some(points));
+        sign(&mut signer, &ca_key);
+        write_pe(
+            dir,
+            &format!("sec10-leaf-crl-dp-{label}"),
+            &signer,
+            core::slice::from_ref(&ca),
+        );
+    }
+    for (label, scope) in scope_forms() {
+        let file = format!("sec10-issuer-idp-{label}.crl");
+        write_scoped_crl(dir, &file, (&ca, &ca_key), Some(scope), None);
+    }
+    // SEC-10: an intermediate that lists a distribution point, and SEC-06 root
+    // CRLs naming it with a CA-only or user-only scope.
+    let mut pointed = ca.clone();
+    extension(
+        &mut pointed,
+        "2.5.29.31",
+        false,
+        Some(one_point(ISSUER_POINT)),
+    );
+    sign(&mut pointed, &root_key);
+    write_pe(
+        dir,
+        "sec10-ca-crl-dp",
+        &leaf,
+        core::slice::from_ref(&pointed),
+    );
+    for (label, scope) in root_scope_forms() {
+        let file = format!("sec10-sec06-root-idp-{label}.crl");
+        write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
+    }
+    // SEC-10: a full root CRL that revokes the intermediate issuer.
+    write_scoped_crl(
+        dir,
+        "sec10-sec06-root-revoked-issuer.crl",
+        (&root, &root_key),
+        None,
+        Some(&ca),
+    );
     for label in [
         "leaf-ca",
         "leaf-no-bc",
@@ -585,8 +757,12 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             "sec10-ca-crl-sign.exe",
             "sec10-ca-crl-sign-fallback.exe",
             "sec10-leaf-crl-dp.exe",
+            "sec10-ca-crl-dp.exe",
         ];
-        let sec06 = filename.contains("-sec06-") || sec10.contains(&filename);
+        let form = point_forms()
+            .iter()
+            .any(|(label, ..)| filename == format!("sec10-leaf-crl-dp-{label}.exe"));
+        let sec06 = filename.contains("-sec06-") || sec10.contains(&filename) || form;
         if !sec06 || !filename.ends_with(".exe") {
             continue;
         }
@@ -619,80 +795,296 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 37);
+    assert_eq!(count, 38 + point_forms().len());
+}
+
+fn committed(name: &str) -> Vec<u8> {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    std::fs::read(dir.join(name)).unwrap()
+}
+
+fn committed_certificate(name: &str) -> Certificate {
+    use ::der::Decode;
+    Certificate::from_der(&committed(name)).unwrap()
+}
+
+/// The first embedded certificate issued by `issuer` in a committed PE.
+fn embedded(name: &str, issuer: &Certificate) -> Certificate {
+    let signed = committed(name);
+    let pe = pe::Pe::parse(&signed).unwrap();
+    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
+    sd.certs
+        .iter()
+        .find(|c| c.tbs_certificate.issuer == issuer.tbs_certificate.subject)
+        .unwrap()
+        .clone()
+}
+
+fn extension_value(cert: &Certificate, oid: &str) -> Vec<u8> {
+    cert.tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == oid)
+        .unwrap()
+        .extn_value
+        .as_bytes()
+        .to_vec()
+}
+
+/// A committed CRL is signed by `issuer` over its committed TBS bytes (as
+/// production verifies them), carries exactly this critical
+/// issuingDistributionPoint value or none, and revokes exactly these serials.
+fn assert_crl(name: &str, issuer: &Certificate, scope: Option<&[u8]>, revoked: &[u32]) {
+    use ::der::Decode;
+    use x509_cert::crl::CertificateList;
+    let bytes = committed(name);
+    let crl = CertificateList::from_der(&bytes).unwrap();
+    let tbs = &crl.tbs_cert_list;
+    let signed = der::one(&bytes, 0x30).unwrap().children().unwrap()[0].full;
+    assert_eq!(tbs.issuer, issuer.tbs_certificate.subject, "{name}");
+    crypto::verify_spki(
+        &issuer
+            .tbs_certificate
+            .subject_public_key_info
+            .to_der()
+            .unwrap(),
+        crypto::Hash::Sha256,
+        crl.signature_algorithm.oid.as_bytes(),
+        signed,
+        crl.signature.as_bytes().unwrap(),
+    )
+    .unwrap();
+    let idp = tbs
+        .crl_extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.28");
+    assert_eq!(idp.map(|e| e.critical), scope.map(|_| true), "{name}");
+    assert_eq!(idp.map(|e| e.extn_value.as_bytes()), scope, "{name}");
+    let serials: Vec<_> = tbs
+        .revoked_certificates
+        .iter()
+        .flatten()
+        .map(|r| r.serial_number.clone())
+        .collect();
+    let expected: Vec<_> = revoked.iter().map(|s| SerialNumber::from(*s)).collect();
+    assert_eq!(serials, expected, "{name}");
 }
 
 #[test]
 fn sec10_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
-    use ::der::Decode;
-    use x509_cert::crl::CertificateList;
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-    let issuer =
-        Certificate::from_der(&std::fs::read(dir.join("sec06-issuer.der")).unwrap()).unwrap();
-    let signed = std::fs::read(dir.join("sec10-leaf-crl-dp.exe")).unwrap();
-    let pe = pe::Pe::parse(&signed).unwrap();
-    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
-    let leaf = sd
-        .certs
-        .iter()
-        .find(|c| c.tbs_certificate.issuer == issuer.tbs_certificate.subject)
-        .unwrap();
-    let listed = leaf
-        .tbs_certificate
-        .extensions
-        .iter()
-        .flatten()
-        .find(|e| e.extn_id.to_string() == "2.5.29.31")
-        .unwrap();
-    assert_eq!(listed.extn_value.as_bytes(), listed_points());
+    let issuer = committed_certificate("sec06-issuer.der");
+    let leaf = embedded("sec10-leaf-crl-dp.exe", &issuer);
+    assert_eq!(extension_value(&leaf, "2.5.29.31"), listed_points());
     assert_eq!(
         leaf.tbs_certificate.serial_number,
         SerialNumber::from(SCOPED_LEAF_SERIAL)
     );
     for (label, uri, revoked) in PARTITIONS {
-        let name = format!("sec10-issuer-idp-{label}.crl");
-        let bytes = std::fs::read(dir.join(&name)).unwrap();
-        let crl = CertificateList::from_der(&bytes).unwrap();
-        let tbs = &crl.tbs_cert_list;
-        // The committed TBS bytes, as production verifies them.
-        let signed = der::one(&bytes, 0x30).unwrap().children().unwrap()[0].full;
-        assert_eq!(tbs.issuer, issuer.tbs_certificate.subject, "{name}");
-        crypto::verify_spki(
-            &issuer
-                .tbs_certificate
-                .subject_public_key_info
-                .to_der()
-                .unwrap(),
-            crypto::Hash::Sha256,
-            crl.signature_algorithm.oid.as_bytes(),
-            signed,
-            crl.signature.as_bytes().unwrap(),
-        )
-        .unwrap();
-        let idp = tbs
+        // The whole IDP value: one fullName URI, no scope flags or reasons.
+        assert_crl(
+            &format!("sec10-issuer-idp-{label}.crl"),
+            &issuer,
+            Some(&crl_applicability::idp_named_point(uri)),
+            if revoked { &[SCOPED_LEAF_SERIAL] } else { &[] },
+        );
+    }
+}
+
+#[test]
+fn sec10_distribution_point_forms_are_signed_and_encoded() {
+    let root = committed_certificate("sec06-root.der");
+    let issuer = committed_certificate("sec06-issuer.der");
+    for (label, serial, points) in point_forms() {
+        let name = format!("sec10-leaf-crl-dp-{label}.exe");
+        let leaf = embedded(&name, &issuer);
+        assert_eq!(extension_value(&leaf, "2.5.29.31"), points, "{name}");
+        assert_eq!(
+            leaf.tbs_certificate.serial_number,
+            SerialNumber::from(serial),
+            "{name}"
+        );
+    }
+    for (label, scope) in scope_forms() {
+        assert_crl(
+            &format!("sec10-issuer-idp-{label}.crl"),
+            &issuer,
+            Some(&scope),
+            &[],
+        );
+    }
+    let pointed = embedded("sec10-ca-crl-dp.exe", &root);
+    assert_eq!(
+        extension_value(&pointed, "2.5.29.31"),
+        one_point(ISSUER_POINT)
+    );
+    assert_eq!(
+        pointed.tbs_certificate.serial_number,
+        SerialNumber::from(ISSUER_SERIAL)
+    );
+    for (label, scope) in root_scope_forms() {
+        assert_crl(
+            &format!("sec10-sec06-root-idp-{label}.crl"),
+            &root,
+            Some(&scope),
+            &[],
+        );
+    }
+    assert_crl(
+        "sec10-sec06-root-revoked-issuer.crl",
+        &root,
+        None,
+        &[ISSUER_SERIAL],
+    );
+}
+
+/// What a decoded DistributionPointName holds, read with x509-cert's typed
+/// decoder rather than the hand-written encoders above.
+#[derive(Debug, PartialEq)]
+enum NameForm {
+    Uris(Vec<String>),
+    Dns(String),
+    /// A directoryName with this many RDNs.
+    Directory(usize),
+    Relative,
+}
+
+fn name_form(name: &Option<x509_cert::ext::pkix::name::DistributionPointName>) -> NameForm {
+    use x509_cert::ext::pkix::name::{DistributionPointName, GeneralName};
+    let names = match name.as_ref().unwrap() {
+        DistributionPointName::NameRelativeToCRLIssuer(_) => return NameForm::Relative,
+        DistributionPointName::FullName(names) => names,
+    };
+    match names.as_slice() {
+        [GeneralName::DnsName(dns)] => NameForm::Dns(dns.to_string()),
+        [GeneralName::DirectoryName(name)] => NameForm::Directory(name.0.len()),
+        names => NameForm::Uris(
+            names
+                .iter()
+                .map(|name| match name {
+                    GeneralName::UniformResourceIdentifier(uri) => uri.to_string(),
+                    other => panic!("unexpected general name {other:?}"),
+                })
+                .collect(),
+        ),
+    }
+}
+
+fn uris(values: &[&str]) -> NameForm {
+    NameForm::Uris(values.iter().map(|v| v.to_string()).collect())
+}
+
+#[test]
+fn sec10_distribution_point_forms_decode_as_intended() {
+    use ::der::Decode;
+    use x509_cert::ext::pkix::{CrlDistributionPoints, crl::dp::IssuingDistributionPoint};
+    let issuer = committed_certificate("sec06-issuer.der");
+    // Per point: its name, and whether it has reasons or a cRLIssuer.
+    let points = |label: &str| -> Vec<(NameForm, bool, bool)> {
+        let leaf = embedded(&format!("sec10-leaf-crl-dp-{label}.exe"), &issuer);
+        CrlDistributionPoints::from_der(&extension_value(&leaf, "2.5.29.31"))
+            .unwrap()
+            .0
+            .iter()
+            .map(|p| {
+                (
+                    name_form(&p.distribution_point),
+                    p.reasons.is_some(),
+                    p.crl_issuer.is_some(),
+                )
+            })
+            .collect()
+    };
+    let [c, d, e] = MULTI_POINTS;
+    assert_eq!(
+        points("multi"),
+        [(uris(&[c]), false, false), (uris(&[d, e]), false, false)]
+    );
+    assert_eq!(
+        points("dns"),
+        [(NameForm::Dns("crl.invalid".into()), false, false)]
+    );
+    assert_eq!(points("relative"), [(NameForm::Relative, false, false)]);
+    assert_eq!(points("reasons"), [(uris(&[LISTED_POINT]), true, false)]);
+    assert_eq!(points("crl-issuer"), [(uris(&[LISTED_POINT]), false, true)]);
+    // Per CRL: its name, then onlyContainsUserCerts and onlyContainsCACerts.
+    let scope = |file: &str| -> (NameForm, bool, bool) {
+        use x509_cert::crl::CertificateList;
+        let crl = CertificateList::from_der(&committed(file)).unwrap();
+        let value = crl
+            .tbs_cert_list
             .crl_extensions
             .iter()
             .flatten()
             .find(|e| e.extn_id.to_string() == "2.5.29.28")
-            .unwrap();
-        assert!(idp.critical, "{name}");
-        // The whole IDP value: one fullName URI, no scope flags or reasons.
-        assert_eq!(
-            idp.extn_value.as_bytes(),
-            crl_applicability::idp_named_point(uri),
-            "{name}"
+            .unwrap()
+            .extn_value
+            .as_bytes()
+            .to_vec();
+        let idp = IssuingDistributionPoint::from_der(&value).unwrap();
+        assert!(
+            idp.only_some_reasons.is_none() && !idp.indirect_crl,
+            "{file}"
         );
-        let serials: Vec<_> = tbs
-            .revoked_certificates
+        (
+            name_form(&idp.distribution_point),
+            idp.only_contains_user_certs,
+            idp.only_contains_ca_certs,
+        )
+    };
+    let issuer_scope = |label: &str| scope(&format!("sec10-issuer-idp-{label}.crl"));
+    assert_eq!(
+        issuer_scope("match-user"),
+        (uris(&[LISTED_POINT]), true, false)
+    );
+    assert_eq!(
+        issuer_scope("match-ca"),
+        (uris(&[LISTED_POINT]), false, true)
+    );
+    assert_eq!(
+        issuer_scope("two-names"),
+        (uris(&[OTHER_POINT, LISTED_POINT]), false, false)
+    );
+    assert_eq!(issuer_scope("second-point"), (uris(&[e]), false, false));
+    assert_eq!(
+        issuer_scope("dns"),
+        (NameForm::Dns("crl.invalid".into()), false, false)
+    );
+    assert_eq!(issuer_scope("relative"), (NameForm::Relative, false, false));
+    // The issuer's single RDN followed by CN=sec10.
+    assert_eq!(
+        issuer_scope("relative-expanded"),
+        (NameForm::Directory(2), false, false)
+    );
+    assert_eq!(
+        scope("sec10-sec06-root-idp-ca.crl"),
+        (uris(&[ISSUER_POINT]), false, true)
+    );
+    assert_eq!(
+        scope("sec10-sec06-root-idp-user.crl"),
+        (uris(&[ISSUER_POINT]), true, false)
+    );
+    // The intermediate lists the point; its signer is the plain SEC-06 leaf.
+    let root = committed_certificate("sec06-root.der");
+    let pointed = embedded("sec10-ca-crl-dp.exe", &root);
+    let listed = CrlDistributionPoints::from_der(&extension_value(&pointed, "2.5.29.31")).unwrap();
+    assert_eq!(listed.0.len(), 1);
+    assert_eq!(
+        name_form(&listed.0[0].distribution_point),
+        uris(&[ISSUER_POINT])
+    );
+    let signer = embedded("sec10-ca-crl-dp.exe", &issuer);
+    assert_eq!(
+        signer.tbs_certificate.serial_number,
+        SerialNumber::from(120u32)
+    );
+    assert!(
+        signer
+            .tbs_certificate
+            .extensions
             .iter()
             .flatten()
-            .map(|r| r.serial_number.clone())
-            .collect();
-        let expected = if revoked {
-            vec![leaf.tbs_certificate.serial_number.clone()]
-        } else {
-            vec![]
-        };
-        assert_eq!(serials, expected, "{name}");
-    }
+            .all(|e| e.extn_id.to_string() != "2.5.29.31")
+    );
 }
