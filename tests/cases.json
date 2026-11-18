@@ -31895,7 +31895,7 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-name-unknown",
+      "id": "sec10-crl-dp-relative-expanded-name-unknown",
       "input": "sec10-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
@@ -31907,7 +31907,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/sec10-issuer-idp-relative-expanded.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32211,6 +32211,71 @@
         "fixtures/sec06-root.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-partition-crl-relative-no-listed-point",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-relative.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "distribution_point_scope"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-revoked-issuer-issuer-crl-first",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,

@@ -1,8 +1,9 @@
 //! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
 //! a CRL from a chain issuer that is stale or structurally invalid fails closed.
 //! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
-//! KeyUsage. The distribution-point tests use a SEC-06 leaf that lists one CRL
-//! distribution point, with issuer CRLs partitioned to that point or another.
+//! KeyUsage. The distribution-point tests use SEC-06 signers and one intermediate
+//! that list CRL distribution points in several forms, issuer and root CRLs
+//! scoped by issuingDistributionPoint, and a root CRL revoking the intermediate.
 
 use super::support::*;
 
@@ -353,11 +354,7 @@ fn sec10_crl_scoped_to_the_listed_distribution_point_is_authoritative() {
 fn sec10_crl_scoped_to_another_distribution_point_leaves_status_unknown() {
     // The second URI differs from the listed point only in letter case.
     for crl in ["sec10-issuer-idp-other.crl", "sec10-issuer-idp-case.crl"] {
-        revocation_failure(
-            &run_crl_dp(&[crl]),
-            "revocation_unknown",
-            "Revocation status unknown",
-        );
+        unknown(&run_crl_dp(&[crl]));
     }
 }
 
@@ -366,11 +363,7 @@ fn sec10_listing_by_a_non_authoritative_partition_alone_leaves_status_unknown() 
     // A listed serial counts only on a path where every certificate has an
     // authoritative CRL. A partition that is not authoritative for the signer
     // is not enough evidence on its own to call it revoked.
-    revocation_failure(
-        &run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]),
-        "revocation_unknown",
-        "Revocation status unknown",
-    );
+    unknown(&run_crl_dp(&["sec10-issuer-idp-other-revoked.crl"]));
 }
 
 #[test]
@@ -470,14 +463,31 @@ fn sec10_non_uri_and_issuer_relative_names_never_match() {
         "sec10-leaf-crl-dp-dns.exe",
         &["sec10-issuer-idp-dns.crl"],
     ));
+    // The CRL names the directoryName that the signer's issuer-relative name
+    // expands to; relative names are not expanded.
     let relative = "sec10-leaf-crl-dp-relative.exe";
-    unknown(&run_sec06_crls(relative, &["sec10-issuer-idp-match.crl"]));
-    // A CRL scoped by an issuer-relative name is unsupported outright.
-    let output = run_sec06_crls(relative, &["sec10-issuer-idp-relative.crl"]);
-    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+    unknown(&run_sec06_crls(
+        relative,
+        &["sec10-issuer-idp-relative-expanded.crl"],
+    ));
+}
+
+#[test]
+fn sec10_crl_scoped_by_an_issuer_relative_name_is_rejected() {
+    let reason = |output: &Output| {
+        revocation_failure(output, "invalid_crl", "Invalid CRL");
+        output.json["results"][0]["error"]["details"]["reason"].clone()
+    };
+    let crl = ["sec10-issuer-idp-relative.crl"];
+    // Unsupported form when every covered certificate lists a point.
     assert_eq!(
-        output.json["results"][0]["error"]["details"]["reason"],
+        reason(&run_sec06_crls("sec10-leaf-crl-dp-relative.exe", &crl)),
         "issuing_distribution_point"
+    );
+    // The scope rule is checked first for a signer that lists no point.
+    assert_eq!(
+        reason(&run_sec06_crls("good-sec06-basic.exe", &crl)),
+        "distribution_point_scope"
     );
 }
 
@@ -510,6 +520,7 @@ fn sec10_revoked_intermediate_is_rejected_whatever_the_crl_order() {
     let revoked = "sec10-sec06-root-revoked-issuer.crl";
     for crls in [
         vec![revoked, "sec06-issuer.crl"],
+        vec!["sec06-issuer.crl", revoked],
         vec!["sec06-root.crl", revoked, "sec06-issuer.crl"],
         vec![revoked, "sec06-root.crl", "sec06-issuer.crl"],
     ] {

@@ -7083,7 +7083,9 @@
         "sec10-partition-crl-no-listed-point",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl"
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-revoked-issuer-issuer-crl-first"
       ]
     },
     {
@@ -7525,7 +7527,8 @@
         "sec10-crl-dp-crl-issuer-full-crl",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl"
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-revoked-issuer-issuer-crl-first"
       ]
     },
     {
@@ -7864,14 +7867,15 @@
         "sec10-crl-dp-dns-name-unknown",
         "sec10-crl-dp-dns-full-crl",
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-relative-full-crl",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-reasons-full-crl",
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-crl-dp-crl-issuer-full-crl",
         "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl"
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-partition-crl-relative-no-listed-point"
       ]
     },
     {
@@ -7945,7 +7949,7 @@
         "sec10-crl-dp-dns-name-unknown",
         "sec10-crl-dp-dns-full-crl",
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-relative-full-crl",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-reasons-full-crl",
@@ -7953,7 +7957,9 @@
         "sec10-crl-dp-crl-issuer-full-crl",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl"
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-revoked-issuer-issuer-crl-first"
       ]
     },
     {
@@ -9444,7 +9450,6 @@
         "sec10-crl-dp-matching-idp-first",
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-relative-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown"
       ]
@@ -9532,7 +9537,7 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-name-unknown",
+        "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-relative-full-crl"
       ]
     },
@@ -9635,7 +9640,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-relative-idp-unsupported"
+        "sec10-crl-dp-relative-idp-unsupported",
+        "sec10-partition-crl-relative-no-listed-point"
       ]
     },
     {
@@ -9670,7 +9676,19 @@
       "cases": [
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl"
+        "sec10-revoked-issuer-before-good-root-crl",
+        "sec10-revoked-issuer-issuer-crl-first"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-relative-expanded.crl",
+      "sha256": "7abe814aef630857f23d5be49d7c2ca4d0b2e7f2d248283680f75aafcc26429d",
+      "bytes": 244,
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is the directoryName CN=SEC-06 issuer, CN=sec10: what the sec10-leaf-crl-dp-relative signer's issuer-relative name expands to under RFC 5280 6.3.3. Relative names are not expanded, so it is not authoritative. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-crl-dp-relative-expanded-name-unknown"
       ]
     }
   ]
