@@ -1,0 +1,63 @@
+name: Fuzz smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds to fuzz each target
+        default: "300"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - parse_cms
+          - parse_pe
+          - parse_cab_navx
+          - parse_msi
+          - parse_appx
+          - parse_text
+          - verify_binary
+          - verify_text
+    env:
+      CARGO_TERM_COLOR: always
+      FUZZ_SECONDS: ${{ inputs.seconds || '60' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-fuzz
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
+        with:
+          tool: cargo-fuzz@0.13.2
+      - name: Seed the corpus from committed fixtures
+        run: ./fuzz/seed-corpus.sh
+      - name: Fuzz ${{ matrix.target }}
+        run: >
+          cargo +nightly fuzz run ${{ matrix.target }} --
+          -max_total_time="$FUZZ_SECONDS" -max_len=131072 -timeout=10 -rss_limit_mb=2048
+      - name: Upload crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

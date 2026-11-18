@@ -3,7 +3,7 @@
 This audit covers local structural arithmetic and allocation bounds on 32-bit and
 64-bit targets. It does not establish exhaustive input safety. Aggregate verification work is covered by [SEC-02 budgets](verification-budgets.md).
 CLI file reads and retained reports use [SEC-03 host limits](host-limits.md).
-Fuzzing remains TEST-02.
+Fuzz targets for these parsers are described in [fuzzing](fuzzing.md).
 
 | Boundary | Bounds and evidence |
 | --- | --- |

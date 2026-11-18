@@ -490,11 +490,18 @@ timestamps, and local CRL validation already exist.
   `docs/coverage-inventory.md` with explicit path-policy/algorithm/producer gaps.
   Closed CRL provider-call coverage gaps with exact portable request traces
   and offline/supplied-good/supplied-stale cases using existing fixtures.
-- [ ] **TEST-02: Add local parser and verifier fuzz targets.** Start with DER,
+- [x] **TEST-02: Add local parser and verifier fuzz targets.** Start with DER,
   PE/CMS, CAB/NAVX, script blocks, and archive/XML framing; seed with committed
   fixtures. Exercise bounded verification with fixed policy where useful.
   Minimize failures into committed regression fixtures/spec cases. Keep the
   fuzzing toolchain optional and separate from ordinary `cargo test --locked`.
+  Added eight cargo-fuzz targets in the detached `fuzz/` crate covering every
+  listed parser plus integrity-only verification at a fixed time, seeded from
+  committed fixtures by `fuzz/seed-corpus.sh`, with `make fuzz` and a per-target
+  CI smoke job. An initial seven-minute run per target found no failures, so no
+  regression fixtures were added. [Targets, limits and recorded runs](docs/fuzzing.md).
+  Configured-root trust, revocation and CRL retrieval are not fuzzed; long or
+  scheduled campaigns and a differential oracle remain separate work.
 - [ ] **TEST-03: Extend invariant and mutation testing.** Verify that excluded
   checksum/signature fields and authenticated payload/metadata mutate as
   documented, and that digest, CMS, timestamp, and trust faults stay isolated.
