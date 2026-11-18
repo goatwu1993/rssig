@@ -212,10 +212,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
 
     /// Record a point that yielded no evidence and return `Ok`, or return the
     /// error as final. `crl_fetch_denied` and `crl_fetch_failed` are always
-    /// recorded. In the speculative second step every error from discovery,
-    /// the source or decoding a response is recorded too: that certificate may
-    /// already be covered. The engine's own work and size limits never reach
-    /// here; they always end the run.
+    /// recorded. In the speculative second step any other error from
+    /// discovery, the source or decoding a response is recorded too, since
+    /// that certificate may already be covered, except
+    /// `resource_limit_exceeded`, which always ends the run.
     fn skip(
         &mut self,
         certificate: &str,
@@ -227,12 +227,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Some(url) => e.detail("url", url),
             None => e,
         };
-        if !speculative
-            && !matches!(
-                e.code,
-                ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed
-            )
-        {
+        let skippable = match e.code {
+            ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed => true,
+            ErrorCode::ResourceLimitExceeded => false,
+            _ => speculative,
+        };
+        if !skippable {
             return Err(e);
         }
         self.budget.log.info(
@@ -240,14 +240,24 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             format_args!("CRL point yielded no evidence: {:?}", e.message),
         );
         self.record(certificate, url, &e);
-        if let Some(url) = url {
-            self.requested.insert(url.into(), Some(e.clone()));
+        if let Some(entry) = url.and_then(|url| self.requested.get_mut(url)) {
+            *entry = Some(e.clone());
         }
         self.skipped.get_or_insert(e);
         Ok(())
     }
 
+    /// One failure entry per certificate and URL.
     fn record(&mut self, certificate: &str, url: Option<&str>, e: &VerificationError) {
+        if url.is_some()
+            && self
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == certificate && f.url.as_deref() == url)
+        {
+            return;
+        }
         self.report.failures.push(CrlRetrievalFailure {
             certificate_sha256: certificate.into(),
             url: url.map(Into::into),
@@ -375,7 +385,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             if loaded > 64 {
                 return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
             }
-            added = true;
+            // A response identical to a loaded CRL adds nothing to verify.
+            added |= loaded > prior;
         }
         Ok(added)
     }
@@ -732,6 +743,57 @@ mod tests {
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
         assert_eq!(source.0, MAX_REQUESTS);
+    }
+    #[test]
+    fn skip_rules_by_step_and_one_entry_per_certificate_and_url() {
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let failed = || error(ErrorCode::CrlFetchFailed, "unreachable");
+        let invalid = || error(ErrorCode::InvalidCrl, "not a CRL");
+        // Limits end the run in either step.
+        for speculative in [false, true] {
+            assert!(
+                state
+                    .skip(
+                        "a",
+                        Some("http://x.invalid/a"),
+                        limit("x", 1, 1, 1),
+                        speculative
+                    )
+                    .is_err()
+            );
+        }
+        // Other errors are skipped only in the speculative step.
+        assert!(state.skip("a", None, invalid(), false).is_err());
+        state.skip("a", None, invalid(), true).unwrap();
+        // Denied and failed points are skipped in either step, once per
+        // certificate and URL.
+        state
+            .skip("a", Some("http://x.invalid/a"), failed(), false)
+            .unwrap();
+        state
+            .skip("a", Some("http://x.invalid/a"), failed(), false)
+            .unwrap();
+        state
+            .skip("b", Some("http://x.invalid/a"), failed(), false)
+            .unwrap();
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.certificate_sha256.as_str(), f.url.as_deref(), f.code))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                ("a", None, ErrorCode::InvalidCrl),
+                ("a", Some("http://x.invalid/a"), ErrorCode::CrlFetchFailed),
+                ("b", Some("http://x.invalid/a"), ErrorCode::CrlFetchFailed),
+            ]
+        );
+        // A URL that was never requested is not tracked as one.
+        assert!(state.requested.is_empty());
     }
     #[test]
     fn a_limit_from_the_source_is_final_not_skipped() {

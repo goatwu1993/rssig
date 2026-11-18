@@ -131,10 +131,10 @@ impl HttpCrlSource {
             })?,
             Err(_) => {
                 self.poisoned = true;
-                return Err(error(
-                    ErrorCode::CrlFetchFailed,
-                    "CRL DNS deadline exceeded",
-                ));
+                return Err(
+                    error(ErrorCode::CrlFetchFailed, "CRL DNS deadline exceeded")
+                        .detail("timeout", true),
+                );
             }
         };
         if addresses.is_empty()
@@ -166,10 +166,19 @@ impl HttpCrlSource {
     }
 }
 fn io_error(e: std::io::Error) -> VerificationError {
-    error(
+    let timeout = matches!(
+        e.kind(),
+        std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+    );
+    let error = error(
         ErrorCode::CrlFetchFailed,
         format!("CRL HTTP I/O failed: {e}"),
-    )
+    );
+    if timeout {
+        error.detail("timeout", true)
+    } else {
+        error
+    }
 }
 
 struct Headers {
@@ -232,15 +241,19 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
     })
 }
 impl CrlSource for HttpCrlSource {
-    /// A request that fails because the source's lifetime ran out, or that
-    /// timed out resolving, reports that limit rather than the I/O error.
+    /// A request that times out because the source's lifetime ran out, or
+    /// that timed out resolving, reports that limit rather than the timeout.
+    /// Other failures keep their own error even after the deadline.
     fn fetch(&mut self, raw: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError> {
         self.started.get_or_insert_with(Instant::now);
-        self.fetch_within_limits(raw, max_bytes)
-            .map_err(|e| match (e.code, self.remaining()) {
-                (ErrorCode::CrlFetchFailed, Err(limit)) => limit,
-                _ => e,
-            })
+        self.fetch_within_limits(raw, max_bytes).map_err(|e| {
+            if e.details.get("timeout") == Some(&serde_json::Value::Bool(true))
+                && let Err(limit) = self.remaining()
+            {
+                return limit;
+            }
+            e
+        })
     }
 }
 
