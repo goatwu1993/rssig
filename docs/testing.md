@@ -224,7 +224,9 @@ regeneration is part of ordinary tests or coverage.
 specification, and the tests and generators it names. It runs in
 `cargo test --locked` and never regenerates or modifies a fixture. Rust sources
 are parsed with `syn`, so comments and string literals never count as code; a
-file `syn` cannot parse is indexed as empty, so only a reference into it fails. One
+file `syn` cannot parse, or a `#[arg]` form the index does not read, is
+recorded and reported by `committed_sources_index_without_errors` rather than
+silently ignored or panicking. One
 test of the directory scan creates and removes a scratch directory under
 Cargo's `CARGO_TARGET_TMPDIR`.
 
@@ -236,12 +238,13 @@ Cargo's `CARGO_TARGET_TMPDIR`.
 | Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
 | Description | Nonblank. |
 | Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`. An artifact produced outside the repository (a `signer`, `signer_jar_sha256`, `upstream_revision`, or URL `source`) states its own `license`. No recorded provenance or license value is blank. |
-| Generators | Each `generator` names a Rust source file under `src/` or `tests/` (or `build.rs`), optionally followed by `::function` naming a function, method, or associated function declared in it, then optionally whitespace and a note. |
+| Generators | Each `generator` names a Rust source file under `src/` or `tests/` (or `build.rs`), optionally followed by `::function` naming a free function declared in it (`inner::function` inside an inline `mod inner`), then optionally whitespace and a note. Methods and functions inside function bodies cannot be named. |
 | Case links | Each ID in `cases` is defined in `tests/cases.json` (`UnknownCase`) and listed once (`DuplicateCase`). |
-| Case inputs | Every file a case reads is a listed artifact. `tests/common/spec_suite.rs` defines the case types and `Case::files_read`, shared with `tests/spec.rs`: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, `--roots`/`--crl` values in both forms, and plain arguments containing a path separator. It destructures every case field, so a new field does not compile until it is classified. A path option without the `fixtures/` prefix (even a listed name), a path leaving the fixture directory, a trailing separator or `.` segment, or an exempt file such as `manifest.json` fails. A bare positional argument without a separator is not treated as a file: the existing ones only appear in argument-error cases the CLI rejects before reading anything. |
-| Path options | `PATH_OPTIONS` equals the `--long` options the CLI source declares with a `PathBuf` type, so a new file-valued option fails until the runner and this check know about it. |
-| Fixture directory | `cases.json` names `fixtures`, the directory this manifest describes. |
-| Test links | Each `tests` entry is `module::function`: a function marked `#[test]` in `tests/cli/<module>.rs`, a module that a test target under `tests/` includes. |
+| Case inputs | Every file a case reads is a listed artifact. `tests/common/spec_suite.rs` defines the case types and `Case::files_read`, shared with `tests/spec.rs`: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, `--roots`/`--crl` values in both forms, and plain arguments containing a path separator. It destructures every case and expectation field, so a new field does not compile until it is classified. A flag directly after a path option is a missing value, not a path. A path option without the `fixtures/` prefix (even a listed name), a path leaving the fixture directory, a trailing separator or `.` segment, or an exempt file such as `manifest.json` fails. A bare positional argument without a separator is not treated as a file: the existing ones only appear in argument-error cases the CLI rejects before reading anything. |
+| Path options | `PATH_OPTIONS` equals every name (long, `short`, and aliases) the CLI source declares for `PathBuf`-typed arguments, so a new file-valued option or alias fails until the runner and this check know about it. |
+| Fixture directory | `cases.json` names `fixtures`, the directory this manifest describes. Otherwise that single problem is reported and case inputs are not checked. |
+| Case IDs | Case IDs in `cases.json` are unique; the runner's own validation also rejects duplicates. Case `input`/`inputs` are plain fixture names in both the runner and this check (`spec_suite::is_fixture_name`). |
+| Test links | Each `tests` entry is `module::function`: a top-level function marked `#[test]` in `tests/cli/<module>.rs`, a module that a test target under `tests/` includes. |
 | Pairs | `paired_good` names another listed artifact. |
 | Derived sources | A top-level `source` that is not an `http://` or `https://` URL names another listed artifact. A `source` inside a `provenance` object is free text and is not resolved. |
 

@@ -69,7 +69,8 @@ pub fn classify<'a>(
     let mut result = Vec::new();
     let mut path_value = false;
     for argument in command {
-        if path_value {
+        // A flag right after a path option is a missing value, not a path.
+        if path_value && !argument.starts_with('-') {
             result.push(Argument::Path(argument));
             path_value = false;
         } else if let Some((flag, path)) = argument.split_once('=')
@@ -112,7 +113,17 @@ impl Case {
             crl_responses,
             inputs,
             command,
-            expect: _,
+            expect:
+                Expectation {
+                    crl_requests: _,
+                    exit_code: _,
+                    json: _,
+                    stdout: _,
+                    stderr: _,
+                    stdout_contains: _,
+                    stderr_contains: _,
+                    contains: _,
+                },
         } = self;
         let mut files: Vec<CaseFile> = input
             .iter()
@@ -137,21 +148,24 @@ impl Case {
     }
 }
 
-/// A path argument names a fixture only when it is `<prefix>/<one name>`.
-/// `Path::components` drops `.` segments and a trailing separator, which the
-/// CLI would not (`fixtures/x.crl/` is not a readable file), so reject those
-/// first.
+/// One plain name directly inside the fixture directory: not empty, `.` or
+/// `..`, and without a path separator. Case `input`/`inputs` must be such
+/// names, and a path argument names a fixture only as `<prefix>/<name>`.
+pub fn is_fixture_name(name: &str) -> bool {
+    !name.is_empty() && name != "." && name != ".." && !name.contains(['/', '\\'])
+}
+
+/// `Path::strip_prefix` alone would accept `fixtures/./x` and `fixtures/x/`,
+/// which `Path::components` normalizes but the CLI cannot open as `x`.
 fn fixture_path(path: &str, prefix: &Path) -> CaseFile {
-    if path.ends_with(['/', '\\']) || path.split(['/', '\\']).any(|segment| segment == ".") {
-        return CaseFile::Outside(path.to_owned());
-    }
-    match Path::new(path).strip_prefix(prefix) {
-        Ok(rest) if rest.components().count() == 1 => match rest.to_str() {
-            Some(name) if !name.is_empty() && name != "." && name != ".." => {
-                CaseFile::Fixture(name.to_owned())
-            }
-            _ => CaseFile::Outside(path.to_owned()),
-        },
-        _ => CaseFile::Outside(path.to_owned()),
+    let name = Path::new(path)
+        .strip_prefix(prefix)
+        .ok()
+        .and_then(|rest| rest.to_str())
+        .filter(|rest| is_fixture_name(rest))
+        .filter(|_| !path.ends_with(['/', '\\']) && !path.split(['/', '\\']).any(|s| s == "."));
+    match name {
+        Some(name) => CaseFile::Fixture(name.to_owned()),
+        None => CaseFile::Outside(path.to_owned()),
     }
 }

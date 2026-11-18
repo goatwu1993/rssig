@@ -57,16 +57,13 @@ impl Suite {
             if case.inputs.as_ref().is_some_and(Vec::is_empty) {
                 return Err(format!("inputs must not be empty: {}", case.id));
             }
-            for name in case.input.iter().chain(case.inputs.iter().flatten()) {
-                let path = Path::new(name);
-                if name.is_empty()
-                    || path.is_absolute()
-                    || path
-                        .components()
-                        .any(|c| matches!(c, std::path::Component::ParentDir))
-                {
-                    return Err(format!("input must be relative to fixtures: {}", case.id));
-                }
+            if !case
+                .input
+                .iter()
+                .chain(case.inputs.iter().flatten())
+                .all(|name| spec_suite::is_fixture_name(name))
+            {
+                return Err(format!("input must be a fixture file name: {}", case.id));
             }
             if case
                 .expect
@@ -340,6 +337,30 @@ fn specification_rejects_duplicate_case_ids() {
     )
     .unwrap();
     assert!(suite.validate().unwrap_err().contains("duplicate"));
+}
+
+#[test]
+fn specification_inputs_are_plain_fixture_names() {
+    for input in [
+        "good-pe32.exe",
+        "./good-pe32.exe",
+        "sub/x.exe",
+        "..",
+        "/abs.exe",
+        "",
+    ] {
+        let case = serde_json::json!({"id":"one","input":input,"command":["verify"],"expect":{"exit_code":0,"json":{"ok":true}}});
+        let suite: Suite = serde_json::from_value(
+            serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+        )
+        .unwrap();
+        let result = suite.validate();
+        if input == "good-pe32.exe" {
+            assert!(result.is_ok(), "{input}: {result:?}");
+        } else {
+            assert!(result.unwrap_err().contains("fixture file name"), "{input}");
+        }
+    }
 }
 
 #[test]

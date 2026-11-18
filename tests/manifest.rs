@@ -86,6 +86,8 @@ enum Rule {
     /// `cases.json` reads fixtures from a directory other than the one the
     /// manifest describes.
     FixtureDirectory,
+    /// Two cases in `cases.json` share an ID.
+    DuplicateCaseId,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -167,15 +169,22 @@ impl FileFacts {
 /// comments and string literals can never be mistaken for code.
 #[derive(Clone, Debug, Default)]
 struct SourceIndex {
-    /// Every function, method and associated function, at any nesting.
+    /// Free functions by path from the file root: `name`, or `inner::name`
+    /// inside an inline `mod inner`. Methods and functions nested in function
+    /// bodies cannot be named by a link and are left out.
     functions: BTreeSet<String>,
-    /// Functions marked `#[test]`.
+    /// The subset of [`Self::functions`] marked `#[test]`.
     tests: BTreeSet<String>,
     /// `#[path = "..."]` values on module declarations.
     included: BTreeSet<String>,
-    /// `--long` options declared by Clap `#[arg(long ...)]` fields whose type
-    /// is or contains `PathBuf`.
+    /// Every option name (`--long`, aliases, `-s`) that a Clap `#[arg]` field
+    /// typed with `PathBuf` declares.
     path_options: BTreeSet<String>,
+    /// Why parts of the file could not be indexed. Committed sources must
+    /// index without errors; see `committed_sources_index_without_errors`.
+    errors: Vec<String>,
+    /// Inline modules enclosing the item being visited.
+    modules: Vec<String>,
 }
 
 impl SourceIndex {
@@ -185,57 +194,71 @@ impl SourceIndex {
         Ok(index)
     }
 
-    /// A file `syn` cannot parse indexes as empty instead of failing every
-    /// check: only a generator or test link into it is then reported.
-    fn parse_or_empty(text: &str) -> Self {
-        Self::parse(text).unwrap_or_default()
-    }
-
-    fn add(&mut self, name: &syn::Ident, attributes: &[syn::Attribute]) {
-        let name = name.to_string();
-        if attributes.iter().any(|a| a.path().is_ident("test")) {
-            self.tests.insert(name.clone());
-        }
-        self.functions.insert(name);
+    /// Never panics: a file `syn` cannot parse is indexed as empty and the
+    /// error is recorded, so one bad file cannot fail every check.
+    fn parse_recording(text: &str) -> Self {
+        Self::parse(text).unwrap_or_else(|error| Self {
+            errors: vec![format!("not parsable: {error}")],
+            ..Self::default()
+        })
     }
 }
 
 impl<'ast> Visit<'ast> for SourceIndex {
     fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        self.add(&item.sig.ident, &item.attrs);
-        visit::visit_item_fn(self, item);
-    }
-    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
-        self.add(&item.sig.ident, &item.attrs);
-        visit::visit_impl_item_fn(self, item);
-    }
-    fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
-        self.add(&item.sig.ident, &item.attrs);
-        visit::visit_trait_item_fn(self, item);
+        let mut path = self.modules.clone();
+        path.push(item.sig.ident.to_string());
+        let path = path.join("::");
+        if item.attrs.iter().any(|a| a.path().is_ident("test")) {
+            self.tests.insert(path.clone());
+        }
+        self.functions.insert(path);
+        // Functions declared inside a body cannot be named; do not descend.
     }
     fn visit_field(&mut self, field: &'ast syn::Field) {
         if let Some(name) = &field.ident
             && mentions(&field.ty, "PathBuf")
         {
             for attribute in field.attrs.iter().filter(|a| a.path().is_ident("arg")) {
-                let mut long = None;
-                attribute
-                    .parse_nested_meta(|meta| {
-                        let value = meta.input.peek(syn::Token![=]);
-                        if meta.path.is_ident("long") {
-                            long = Some(if value {
+                let mut names = Vec::new();
+                let parsed = attribute.parse_nested_meta(|meta| {
+                    let field_name = name.to_string();
+                    let value = meta.input.peek(syn::Token![=]);
+                    let key = meta.path.get_ident().map(ToString::to_string);
+                    match (key.as_deref(), value) {
+                        (Some("long"), false) => {
+                            names.push(format!("--{}", field_name.replace('_', "-")))
+                        }
+                        (Some("short"), false) => names.push(format!("-{}", &field_name[..1])),
+                        (Some("long" | "alias" | "visible_alias"), true) => {
+                            names.push(format!(
+                                "--{}",
                                 meta.value()?.parse::<syn::LitStr>()?.value()
-                            } else {
-                                name.to_string().replace('_', "-")
-                            });
-                        } else if value {
+                            ));
+                        }
+                        (Some("short" | "short_alias" | "visible_short_alias"), true) => {
+                            names.push(format!(
+                                "-{}",
+                                meta.value()?.parse::<syn::LitChar>()?.value()
+                            ));
+                        }
+                        (Some(key), true) if key.ends_with("aliases") => {
+                            return Err(meta.error("list aliases are not indexed; name each alias"));
+                        }
+                        (_, true) => {
                             meta.value()?.parse::<syn::Expr>()?;
                         }
-                        Ok(())
-                    })
-                    .unwrap();
-                self.path_options
-                    .extend(long.map(|long| format!("--{long}")));
+                        (_, false) if meta.input.peek(syn::token::Paren) => {
+                            return Err(meta.error("parenthesized #[arg] items are not indexed"));
+                        }
+                        (_, false) => {}
+                    }
+                    Ok(())
+                });
+                match parsed {
+                    Ok(()) => self.path_options.extend(names),
+                    Err(error) => self.errors.push(format!("#[arg] on `{name}`: {error}")),
+                }
             }
         }
         visit::visit_field(self, field);
@@ -252,7 +275,9 @@ impl<'ast> Visit<'ast> for SourceIndex {
                 self.included.insert(path.value());
             }
         }
+        self.modules.push(item.ident.to_string());
         visit::visit_item_mod(self, item);
+        self.modules.pop();
     }
 }
 
@@ -293,7 +318,7 @@ fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, Sour
             read_sources(root, &path, sources);
         } else if name.ends_with(".rs") {
             let text = std::fs::read_to_string(entry.path()).unwrap();
-            sources.insert(path, SourceIndex::parse_or_empty(&text));
+            sources.insert(path, SourceIndex::parse_recording(&text));
         }
     }
 }
@@ -327,7 +352,7 @@ static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
     read_sources(root, "src", &mut sources);
     read_sources(root, "tests", &mut sources);
     if let Ok(text) = std::fs::read_to_string(root.join("build.rs")) {
-        sources.insert("build.rs".to_owned(), SourceIndex::parse_or_empty(&text));
+        sources.insert("build.rs".to_owned(), SourceIndex::parse_recording(&text));
     }
     Corpus {
         manifest: serde_json::from_slice(&std::fs::read(directory.join(MANIFEST)).unwrap())
@@ -399,20 +424,18 @@ fn test_exists(
 }
 
 /// Case IDs and the files each case reads, as `tests/spec.rs` resolves them.
-/// Arguments are classified against [`FIXTURES`]; a suite naming another
-/// directory is reported once as [`Rule::FixtureDirectory`].
+/// A repeated ID merges its cases' files, so none are lost; the repetition
+/// itself is reported as [`Rule::DuplicateCaseId`].
 fn case_files(suite: &Suite) -> BTreeMap<String, BTreeSet<CaseFile>> {
-    let prefix = Path::new(FIXTURES);
-    suite
-        .cases
-        .iter()
-        .map(|case| {
-            (
-                case.id.clone(),
-                case.files_read(prefix).into_iter().collect(),
-            )
-        })
-        .collect()
+    let prefix = Path::new(&suite.fixtures);
+    let mut result: BTreeMap<String, BTreeSet<CaseFile>> = BTreeMap::new();
+    for case in &suite.cases {
+        result
+            .entry(case.id.clone())
+            .or_default()
+            .extend(case.files_read(prefix));
+    }
+    result
 }
 
 fn check(corpus: &Corpus) -> Vec<Problem> {
@@ -443,8 +466,17 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         problems.push(problem(Rule::Generator, "manifest"));
     }
 
-    if corpus.cases.fixtures != FIXTURES {
+    // Against another directory, every case input would be misreported; one
+    // problem says what is wrong, and case inputs are not checked.
+    let same_directory = corpus.cases.fixtures == FIXTURES;
+    if !same_directory {
         problems.push(problem(Rule::FixtureDirectory, &corpus.cases.fixtures));
+    }
+    let mut ids = BTreeSet::new();
+    for case in &corpus.cases.cases {
+        if !ids.insert(case.id.as_str()) {
+            problems.push(problem(Rule::DuplicateCaseId, case.id.as_str()));
+        }
     }
     let cases = case_files(&corpus.cases);
     let harness = harness_modules(&corpus.sources);
@@ -560,7 +592,7 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         problems.push(problem(Rule::UnlistedFile, name.as_str()));
     }
 
-    for (case, files) in &cases {
+    for (case, files) in cases.iter().filter(|_| same_directory) {
         for file in files {
             match file {
                 CaseFile::Outside(path) => problems.push(problem(
@@ -587,7 +619,7 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
             }
         }
     }
-    for name in ABSENT_INPUTS {
+    for name in ABSENT_INPUTS.iter().filter(|_| same_directory) {
         let fixture = CaseFile::Fixture((*name).to_owned());
         if !cases.values().any(|files| files.contains(&fixture)) {
             problems.push(problem(Rule::UnusedException, *name));
@@ -1232,16 +1264,12 @@ fn source_index_reads_code_never_comments_or_strings() {
     ] {
         assert!(!index.functions.contains(absent), "{absent}");
     }
-    for present in [
-        "writer",
-        "qualified",
-        "external",
-        "nested",
-        "method",
-        "provided",
-        "slow",
-    ] {
+    for present in ["writer", "qualified", "external", "inner::nested", "slow"] {
         assert!(index.functions.contains(present), "{present}");
+    }
+    // Only free functions, by their path from the file root, can be linked.
+    for unlinkable in ["nested", "method", "provided"] {
+        assert!(!index.functions.contains(unlinkable), "{unlinkable}");
     }
     assert_eq!(index.tests, BTreeSet::from(["slow".to_owned()]));
     assert_eq!(index.included, BTreeSet::from(["cli/pe.rs".to_owned()]));
@@ -1295,10 +1323,70 @@ fn local_by_products_are_skipped_and_can_never_be_artifacts() {
 #[test]
 fn cases_must_read_the_fixture_directory_the_manifest_describes() {
     assert_eq!(COMMITTED.cases.fixtures, FIXTURES);
+    // Renaming only the directory leaves every `fixtures/...` argument
+    // pointing elsewhere; that is still one problem, not one per input.
     assert_eq!(
         broken(|c| c.cases.fixtures = "fixtures-v2".to_owned()),
         one(Rule::FixtureDirectory, "fixtures-v2")
     );
+    // A complete move to another directory is reported once, not per input.
+    assert_eq!(
+        broken(|c| {
+            c.cases.fixtures = "fixtures-v2".to_owned();
+            for case in &mut c.cases.cases {
+                for argument in &mut case.command {
+                    if let Some(rest) = argument.strip_prefix("fixtures/") {
+                        *argument = format!("fixtures-v2/{rest}");
+                    }
+                }
+            }
+        }),
+        one(Rule::FixtureDirectory, "fixtures-v2")
+    );
+}
+
+#[test]
+fn duplicate_case_ids_are_reported_and_keep_every_input() {
+    let problems = broken(|c| {
+        let mut copy = c.cases.cases[0].clone();
+        copy.command.push("fixtures/unlisted.crl".to_owned());
+        c.cases.cases.insert(0, copy);
+    });
+    assert_eq!(
+        problems,
+        sorted(vec![
+            (Rule::UnlistedCaseInput, "pe32: unlisted.crl".to_owned()),
+            (Rule::DuplicateCaseId, "pe32".to_owned()),
+        ])
+    );
+}
+
+#[test]
+fn a_flag_after_a_path_option_is_not_a_path() {
+    assert_eq!(
+        spec_suite::classify(["--roots", "--no-system-roots"], Path::new(FIXTURES)),
+        [
+            spec_suite::Argument::Plain("--roots"),
+            spec_suite::Argument::Plain("--no-system-roots"),
+        ]
+    );
+    assert_eq!(
+        broken(|c| first_case(c)
+            .command
+            .extend(["--crl", "--no-revocation"].map(str::to_owned))),
+        vec![]
+    );
+}
+
+#[test]
+fn committed_sources_index_without_errors() {
+    let errors: Vec<_> = COMMITTED
+        .sources
+        .iter()
+        .filter(|(_, index)| !index.errors.is_empty())
+        .map(|(path, index)| (path, &index.errors))
+        .collect();
+    assert!(errors.is_empty(), "{errors:#?}");
 }
 
 #[test]
@@ -1328,6 +1416,10 @@ fn source_index_reads_clap_path_options_and_tolerates_unparsable_files() {
             extra_roots: Vec<PathBuf>,
             #[arg(long = "catalog", hide = true)]
             catalog_path: Option<std::path::PathBuf>,
+            #[arg(long, value_name = "FILE", default_value_t = PathBuf::from("a/b"))]
+            output: PathBuf,
+            #[arg(short, long, visible_alias = "root", short_alias = 'R')]
+            trust: Vec<PathBuf>,
             #[arg(long, default_value_t = 8 * 1024)]
             limit: usize,
             #[arg(long)]
@@ -1338,10 +1430,31 @@ fn source_index_reads_clap_path_options_and_tolerates_unparsable_files() {
     .unwrap();
     assert_eq!(
         index.path_options,
-        BTreeSet::from(["--extra-roots".to_owned(), "--catalog".to_owned()])
+        BTreeSet::from(
+            [
+                "--extra-roots",
+                "--catalog",
+                "--output",
+                "-t",
+                "--trust",
+                "--root",
+                "-R"
+            ]
+            .map(str::to_owned)
+        )
     );
+    assert!(index.errors.is_empty(), "{:?}", index.errors);
 
-    assert!(SourceIndex::parse("fn (").is_err());
-    let empty = SourceIndex::parse_or_empty("fn (");
-    assert!(empty.functions.is_empty() && empty.tests.is_empty());
+    // Forms the index cannot read are recorded, never panicked on or ignored.
+    for field in [
+        "#[arg(long = ROOTS)] roots: Vec<PathBuf>",
+        "#[arg(long, value_parser(parse_path))] roots: Vec<PathBuf>",
+        "#[arg(long, visible_aliases = [\"a\", \"b\"])] roots: Vec<PathBuf>",
+    ] {
+        let index = SourceIndex::parse_recording(&format!("struct A {{ {field} }}"));
+        assert_eq!(index.errors.len(), 1, "{field}: {:?}", index.errors);
+    }
+    let unparsable = SourceIndex::parse_recording("fn (");
+    assert!(unparsable.functions.is_empty());
+    assert!(unparsable.errors[0].starts_with("not parsable"));
 }
