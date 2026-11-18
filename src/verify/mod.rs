@@ -29,6 +29,7 @@ use crate::{
     wsh::{Kind, Wsh},
 };
 use anyhow::Result;
+pub(crate) use authenticode::log_signer;
 use authenticode::verify_container;
 use budget::Budget;
 use container::Container;
@@ -89,6 +90,134 @@ impl<'a> VerifyOptions<'a> {
             now,
         }
     }
+}
+
+/// Verification with caller-injected collaborators, currently a diagnostic
+/// [`Logger`](crate::log::Logger). Policy still comes only from [`VerifyOptions`];
+/// a logger observes verification and cannot change its result.
+///
+/// Fields are private so later collaborators do not break callers. Without a
+/// logger the methods behave exactly like the free functions of the same name.
+/// Parsed-container entry points (`verify_parsed_*`) do not log.
+///
+/// ```
+/// use rssig::{log::{Level, Logger, Record}, verify::{Verifier, VerifyOptions}};
+/// use std::sync::Mutex;
+///
+/// struct Lines(Mutex<Vec<String>>);
+/// impl Logger for Lines {
+///     fn enabled(&self, level: Level) -> bool { level >= Level::Info }
+///     fn log(&self, record: &Record<'_>) {
+///         self.0.lock().unwrap().push(format!("{:?} {}", record.stage, record.message));
+///     }
+/// }
+///
+/// # let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/good-pe64.exe"));
+/// let lines = Lines(Mutex::new(Vec::new()));
+/// let options = VerifyOptions::integrity_only(1800000000);
+/// let report = Verifier::new(&options).with_logger(&lines).verify(bytes)?;
+/// assert!(!report.signatures[0].chain_trusted);
+/// assert!(!lines.0.lock().unwrap().is_empty());
+/// # Ok::<(), rssig::VerificationError>(())
+/// ```
+#[derive(Clone, Copy)]
+pub struct Verifier<'a> {
+    options: &'a VerifyOptions<'a>,
+    logger: Option<&'a dyn crate::log::Logger>,
+}
+
+impl<'a> Verifier<'a> {
+    /// Verify under `options` with no logger.
+    pub fn new(options: &'a VerifyOptions<'a>) -> Self {
+        Self {
+            options,
+            logger: None,
+        }
+    }
+
+    /// Send diagnostics for subsequent verifications to `logger`.
+    pub fn with_logger(mut self, logger: &'a dyn crate::log::Logger) -> Self {
+        self.logger = Some(logger);
+        self
+    }
+
+    /// Detect the signed container from its bytes; see [`verify`].
+    pub fn verify(
+        &self,
+        bytes: &[u8],
+    ) -> core::result::Result<VerificationBundle, VerificationError> {
+        self.verify_with_hint(bytes, None)
+    }
+
+    /// Detect using bytes and an optional filename hint; see [`verify_with_hint`].
+    pub fn verify_with_hint(
+        &self,
+        bytes: &[u8],
+        filename: Option<&str>,
+    ) -> core::result::Result<VerificationBundle, VerificationError> {
+        let budget = Budget::with_logger(self.logger);
+        logged(&budget, self.options, || {
+            verify_inner_budget(
+                bytes,
+                self.options,
+                format::detect(bytes, filename)?,
+                &budget,
+            )
+        })
+    }
+
+    /// Select an explicit container format; see [`verify_as`].
+    pub fn verify_as(
+        &self,
+        bytes: &[u8],
+        format: Format,
+    ) -> core::result::Result<VerificationBundle, VerificationError> {
+        let budget = Budget::with_logger(self.logger);
+        logged(&budget, self.options, || {
+            verify_inner_budget(bytes, self.options, format, &budget)
+        })
+    }
+
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn parts(&self) -> (&'a VerifyOptions<'a>, Option<&'a dyn crate::log::Logger>) {
+        (self.options, self.logger)
+    }
+}
+
+/// Log explicitly weakened policy before `run`, and the typed failure after it.
+pub(crate) fn logged(
+    budget: &Budget,
+    options: &VerifyOptions<'_>,
+    run: impl FnOnce() -> Result<VerificationBundle>,
+) -> core::result::Result<VerificationBundle, VerificationError> {
+    let log = &budget.log;
+    if options.trust.is_none() {
+        log.warn(
+            Stage::Configuration,
+            format_args!("integrity-only policy: certificate trust and revocation are not checked"),
+        );
+    } else if !options.check_revocation {
+        log.warn(
+            Stage::Configuration,
+            format_args!("revocation checking is disabled by policy"),
+        );
+    }
+    if options.allow_sha1 {
+        log.warn(
+            Stage::Configuration,
+            format_args!("SHA-1 content digests are permitted by policy"),
+        );
+    }
+    run()
+        .map_err(|e| {
+            VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+        })
+        .inspect_err(|error| {
+            log.warn(
+                error.stage,
+                format_args!("verification failed ({:?}): {}", error.code, error.message),
+            );
+        })
 }
 
 pub fn verify_pe(
@@ -244,6 +373,15 @@ pub(crate) fn verify_inner_budget(
     format: Format,
     budget: &Budget,
 ) -> Result<VerificationBundle> {
+    budget.log.debug(
+        Stage::Input,
+        format_args!(
+            "verifying {} input ({} bytes) at validation time {}",
+            format.report_name(),
+            bytes.len(),
+            options.now
+        ),
+    );
     budget.container(bytes)?;
     #[cfg(feature = "appx")]
     let appx;

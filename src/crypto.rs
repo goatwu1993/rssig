@@ -236,7 +236,7 @@ impl digest::Update for DigestSink<'_> {
 #[derive(Debug)]
 pub(crate) struct BudgetedAlgorithm<'a> {
     pub(crate) algorithm: &'a dyn SignatureVerificationAlgorithm,
-    pub(crate) budget: &'a crate::verify::budget::Budget,
+    pub(crate) budget: &'a crate::verify::budget::Budget<'a>,
 }
 impl SignatureVerificationAlgorithm for BudgetedAlgorithm<'_> {
     fn public_key_alg_id(&self) -> AlgorithmIdentifier {

@@ -45,10 +45,11 @@ pub(super) struct Args {
     json: bool,
 }
 
-pub(super) fn execute(
-    args: Args,
-    source: Option<&mut dyn crate::retrieval::CrlSource>,
-) -> Result<(Value, u8)> {
+pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> {
+    let super::Host {
+        crl_source: source,
+        logger,
+    } = host;
     let Args {
         files,
         limits,
@@ -135,10 +136,21 @@ pub(super) fn execute(
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| format!("input.{e}"));
+            let mut verifier = crate::verify::Verifier::new(&options);
+            if let Some(logger) = logger {
+                verifier = verifier.with_logger(logger);
+                if logger.enabled(crate::log::Level::Debug) {
+                    logger.log(&crate::log::Record {
+                        level: crate::log::Level::Debug,
+                        stage: crate::domain::Stage::Input,
+                        message: format_args!("verifying file {path:?} ({} bytes)", bytes.len()),
+                    });
+                }
+            }
             if fetch_crls {
-                crate::retrieval::verify_with_crl_source(bytes, hint.as_deref(), &options, source)
+                verifier.verify_with_crl_source(bytes, hint.as_deref(), source)
             } else {
-                crate::verify::verify_with_hint(bytes, hint.as_deref(), &options)
+                verifier.verify_with_hint(bytes, hint.as_deref())
             }
         },
         |file, verification| {

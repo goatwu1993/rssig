@@ -725,3 +725,8 @@ The optional `crl-fetch` feature adds `retrieval::CrlSource`, distribution-point
 discovery, and `verify_with_crl_source`. The CLI includes it and opts in through
 `--fetch-crls`; existing verify APIs remain offline. See [provider and network
 policy](crl-retrieval.md).
+
+`rssig::log::Logger` is an optional, caller-injected diagnostic sink, supplied
+through `verify::Verifier` or `cli::Host`. Nothing is logged without one, and
+`VerifyOptions` and the existing entry points are unchanged. See [injected
+logging](logging.md).

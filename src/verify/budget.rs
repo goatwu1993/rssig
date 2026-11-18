@@ -82,7 +82,9 @@ impl Counter {
 }
 
 #[derive(Debug)]
-pub(crate) struct Budget {
+pub(crate) struct Budget<'a> {
+    /// Caller-injected diagnostics for this verification; never affects charges.
+    pub(crate) log: crate::log::Sink<'a>,
     pub(crate) cms_objects: Counter,
     pub(crate) certificate_entries: Counter,
     pub(crate) cms_bytes: Counter,
@@ -96,9 +98,10 @@ pub(crate) struct Budget {
     pub(crate) path_work: Counter,
     pub(crate) crypto: Counter,
 }
-impl Default for Budget {
+impl Default for Budget<'_> {
     fn default() -> Self {
         Self {
+            log: crate::log::Sink::default(),
             certificate_entries: Counter::new("certificate_entries", 64),
             cms_objects: Counter::new("cms_objects", 64),
             cms_bytes: Counter::new("cms_bytes", 64 * 1024 * 1024),
@@ -114,7 +117,13 @@ impl Default for Budget {
         }
     }
 }
-impl Budget {
+impl<'a> Budget<'a> {
+    pub(crate) fn with_logger(logger: Option<&'a dyn crate::log::Logger>) -> Self {
+        Self {
+            log: crate::log::Sink(logger),
+            ..Self::default()
+        }
+    }
     pub(crate) fn depth(&self, depth: usize) -> Result<()> {
         if depth > 8 {
             return Err(VerificationError::new(
