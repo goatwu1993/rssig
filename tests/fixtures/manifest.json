@@ -7901,7 +7901,10 @@
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-user-scope-idp-not-fetched",
         "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -7995,7 +7998,10 @@
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-ca-ca-scope-idp-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -9498,7 +9504,9 @@
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-ca-scope-idp-fetches-listed-point",
         "sec10-fetch-matching-idp-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied"
       ]
     },
     {
@@ -9576,7 +9584,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-dns-name-unknown",
-        "sec10-crl-dp-dns-full-crl"
+        "sec10-crl-dp-dns-full-crl",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -9601,7 +9610,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-reasons-full-crl"
+        "sec10-crl-dp-reasons-full-crl",
+        "sec10-fetch-reasons-point-denied"
       ]
     },
     {
@@ -9613,7 +9623,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-crl-dp-crl-issuer-full-crl"
+        "sec10-crl-dp-crl-issuer-full-crl",
+        "sec10-fetch-crl-issuer-point-denied"
       ]
     },
     {
@@ -9684,7 +9695,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-dns-name-unknown"
+        "sec10-crl-dp-dns-name-unknown",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {

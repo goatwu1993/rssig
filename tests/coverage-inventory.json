@@ -416,7 +416,10 @@
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-ca-ca-scope-idp-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -856,7 +859,10 @@
     },
     "crl_fetch_denied": {
       "cases": [
-        "crl-fetch-private"
+        "crl-fetch-private",
+        "sec10-fetch-reasons-point-denied",
+        "sec10-fetch-crl-issuer-point-denied",
+        "sec10-fetch-dns-name-point-denied"
       ],
       "gap": ""
     },

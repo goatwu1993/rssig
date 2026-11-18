@@ -272,7 +272,7 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         Option<&'static str>,
     );
     #[rustfmt::skip]
-    let rows: [Row; 10] = [
+    let rows: [Row; 13] = [
         // Another partition's CRL has the issuer's name but is not authoritative.
         (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
         (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match-revoked.crl"), &[LEAF_POINT], Some("certificate_revoked")),
@@ -288,6 +288,11 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         (CA, ["sec10-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
         // A signer listing no point has nothing to fetch: the partition is reported, not skipped.
         (NO_POINT, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
+        // A listed point that discovery does not support is denied, not fetched: without
+        // --fetch-crls the same inputs are revocation_unknown.
+        ("sec10-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
+        ("sec10-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
+        ("sec10-leaf-crl-dp-dns.exe", ["sec06-root.crl", "sec10-issuer-idp-dns.crl"], None, &[], Some("crl_fetch_denied")),
     ];
     for (input, supplied, response, requests, error) in rows {
         let label = format!("{input} with {supplied:?}");

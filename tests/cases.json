@@ -32815,6 +32815,108 @@
         "crl_requests": []
       },
       "crl_responses": {}
+    },
+    {
+      "id": "sec10-fetch-reasons-point-denied",
+      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_denied",
+                "stage": "revocation"
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
+    },
+    {
+      "id": "sec10-fetch-crl-issuer-point-denied",
+      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_denied",
+                "stage": "revocation"
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
+    },
+    {
+      "id": "sec10-fetch-dns-name-point-denied",
+      "input": "sec10-leaf-crl-dp-dns.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-dns.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_denied",
+                "stage": "revocation"
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
     }
   ]
 }

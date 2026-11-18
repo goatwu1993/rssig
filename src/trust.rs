@@ -58,9 +58,12 @@ impl TrustStore {
     /// certificate's issuer name and either carries no
     /// issuingDistributionPoint, or its role flags admit the certificate and
     /// the certificate lists no distribution points or shares a URI with it.
-    /// A CRL that is only name-matched must not suppress retrieval of the
-    /// certificate's listed distribution point. Usability (signature,
-    /// freshness, unsupported features) is left to verification.
+    /// A CRL for another distribution point or certificate role does not
+    /// suppress retrieval of the certificate's listed point. The issuer is
+    /// still matched by name only: a CRL without an issuingDistributionPoint
+    /// from another key of the same name counts as coverage, although
+    /// verification excludes it (SEC-16). Usability (signature, freshness,
+    /// unsupported features) is left to verification.
     #[cfg(feature = "crl-fetch")]
     pub(crate) fn has_crl_for(
         &self,

@@ -277,6 +277,16 @@ timestamps, and local CRL validation already exist.
   root's real issuer and serial and is signed by the root, so it cannot tell
   name-only matching from issuer/serial matching; a fixture with a wrong
   serial is needed to pin either behavior.
+  `--fetch-crls` coverage (`has_crl_for`) matches the issuer by name only. A
+  supplied CRL without an issuingDistributionPoint that verification excludes
+  (its AKI matches no candidate and its signature verifies under none) still
+  suppresses retrieval, so the result is `revocation_unknown` although the
+  listed point could have been fetched. Apply the same applicability filter to
+  coverage, with a fixture. Coverage also decodes extensions with x509-cert,
+  which rejects a whole cRLDistributionPoints or issuingDistributionPoint
+  extension on one name form it cannot decode, where webpki skips that entry:
+  such a certificate beside a usable local CRL verifies offline but fails
+  under `--fetch-crls`. No fixture has such a name.
 - [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately
   skipped in PRs #44 and #45. Every verification re-parses all configured
   roots to collect issuer names, outside `budget.decoded_bytes`. The
@@ -289,6 +299,13 @@ timestamps, and local CRL validation already exist.
   map entry per revoked certificate that is not charged beyond the existing
   8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
   budget effect for large CRLs.
+  `--fetch-crls` coverage (`has_crl_for`, PR #55) adds to this: it decodes
+  every supplied CRL again for each selected certificate and role, charges 8x
+  its bytes each time, and copies every distribution-point URI to compare
+  them. Decode each CRL's issuer and scope once per verification and compare
+  borrowed bytes. It is also a second copy of webpki's authority rule; the
+  lasting fix is to drive retrieval from the verifier's own result (which
+  certificate had no authoritative CRL) instead of restating the rule.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
