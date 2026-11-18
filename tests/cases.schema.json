@@ -33,8 +33,7 @@
             "minLength": 1
           },
           "input": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/fixtureName"
           },
           "command": {
             "type": "array",
@@ -115,16 +114,15 @@
             "type": "array",
             "minItems": 1,
             "items": {
-              "type": "string",
-              "minLength": 1
+              "$ref": "#/$defs/fixtureName"
             }
           },
           "crl_responses": {
             "type": "object",
             "additionalProperties": {
-              "type": "string"
+              "$ref": "#/$defs/fixtureName"
             },
-            "description": "Offline injected CRL source: map requested URL to a fixture-relative DER/PEM response file. Unmapped requests fail; no live network is used."
+            "description": "Offline injected CRL source: map requested URL to a DER/PEM response file named directly in the fixtures directory. Unmapped requests fail; no live network is used."
           }
         },
         "not": {
@@ -134,6 +132,20 @@
           ]
         }
       }
+    }
+  },
+  "$defs": {
+    "fixtureName": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\]+$",
+      "not": {
+        "enum": [
+          ".",
+          ".."
+        ]
+      },
+      "description": "A plain file name directly in the fixtures directory: no path separator, and not . or .."
     }
   }
 }

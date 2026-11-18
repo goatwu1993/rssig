@@ -121,7 +121,7 @@ fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> V
     let mut args = vec![OsString::from("rssig")];
     for argument in spec_suite::classify(case.command.iter().map(String::as_str), fixture_prefix) {
         args.push(match argument {
-            Argument::Plain(argument) => argument.into(),
+            Argument::Plain(argument) | Argument::Positional(argument) => argument.into(),
             Argument::Path(path) => parent.join(path).into_os_string(),
             Argument::InlinePath { flag, path } => {
                 format!("{flag}={}", parent.join(path).display()).into()

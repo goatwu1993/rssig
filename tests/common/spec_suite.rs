@@ -57,6 +57,8 @@ pub enum Argument<'a> {
     Path(&'a str),
     /// `--flag=path`; the path is resolved like [`Argument::Path`].
     InlinePath { flag: &'a str, path: &'a str },
+    /// After `--`: passed unchanged, and Clap reads it as a positional file.
+    Positional(&'a str),
 }
 
 /// Classify each argument. A value following a [`PATH_OPTIONS`] flag, an
@@ -68,7 +70,12 @@ pub fn classify<'a>(
 ) -> Vec<Argument<'a>> {
     let mut result = Vec::new();
     let mut path_value = false;
+    let mut positional_only = false;
     for argument in command {
+        if positional_only {
+            result.push(Argument::Positional(argument));
+            continue;
+        }
         let after_path_option = std::mem::take(&mut path_value);
         // As in Clap, a value starting with `-` after a path option is another
         // flag (the option's value is missing), except a lone `-`.
@@ -79,6 +86,8 @@ pub fn classify<'a>(
         {
             result.push(Argument::InlinePath { flag, path });
         } else {
+            // `--` ends option parsing (unless it is itself a missing value).
+            positional_only = argument == "--";
             let path = Path::new(argument);
             result.push(if path.is_relative() && path.starts_with(fixture_prefix) {
                 Argument::Path(argument)
@@ -152,12 +161,20 @@ impl Case {
                 Argument::Path(path) | Argument::InlinePath { path, .. } => {
                     files.push(fixture_path(path, fixture_prefix));
                 }
-                Argument::Plain(argument)
-                    if !is_url(argument) && argument.contains(['/', '\\']) =>
-                {
-                    files.push(CaseFile::Outside(argument.to_owned()));
+                // Read relative to the CLI's working directory, never a fixture.
+                Argument::Positional(argument) => {
+                    files.push(CaseFile::Outside(argument.to_owned()))
                 }
-                Argument::Plain(_) => {}
+                Argument::Plain(argument) => {
+                    // `--flag=value`: only the value can be a path or a URL.
+                    let value = match argument.split_once('=') {
+                        Some((flag, value)) if flag.starts_with('-') => value,
+                        _ => argument,
+                    };
+                    if !is_url(value) && value.contains(['/', '\\']) {
+                        files.push(CaseFile::Outside(argument.to_owned()));
+                    }
+                }
             }
         }
         files

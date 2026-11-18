@@ -210,14 +210,22 @@ impl SourceIndex {
     /// Any `rename_all` in a `#[command]`/`#[clap]` attribute, wherever it sits
     /// in the token stream, changes the names the index derives.
     fn reject_renames(&mut self, item: &syn::Ident, attributes: &[syn::Attribute]) {
-        let renames = attributes
+        use syn::{Meta, Token, punctuated::Punctuated};
+        for attribute in attributes
             .iter()
             .filter(|a| a.path().is_ident("command") || a.path().is_ident("clap"))
-            .any(|a| matches!(&a.meta, syn::Meta::List(list) if list.tokens.to_string().contains("rename_all")));
-        if renames {
-            self.errors.push(format!(
-                "rename_all on `{item}` changes option names the index derives"
-            ));
+        {
+            match attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                Ok(items) if items.iter().any(|meta| meta.path().is_ident("rename_all")) => {
+                    self.errors.push(format!(
+                        "rename_all on `{item}` changes option names the index derives"
+                    ));
+                }
+                Ok(_) => {}
+                Err(error) => self
+                    .errors
+                    .push(format!("#[command] on `{item}` is not readable: {error}")),
+            }
         }
     }
 
@@ -259,7 +267,7 @@ impl<'ast> Visit<'ast> for SourceIndex {
             && mentions(&field.ty, "PathBuf")
         {
             // Clap's default name: the field without `r#`, in kebab case.
-            let base = name.unraw().to_string().replace('_', "-");
+            let base = kebab_case(&name.unraw().to_string());
             for attribute in field
                 .attrs
                 .iter()
@@ -329,6 +337,28 @@ impl<'ast> Visit<'ast> for SourceIndex {
     }
 }
 
+/// Clap derive's default argument name: words split at `_` and at lower-to-
+/// upper case changes, lowercased, joined by `-` (`_extra__Roots` is
+/// `extra-roots`).
+fn kebab_case(identifier: &str) -> String {
+    let mut words: Vec<String> = Vec::new();
+    let mut previous_lower = false;
+    for c in identifier.chars() {
+        if c == '_' {
+            words.push(String::new());
+            previous_lower = false;
+            continue;
+        }
+        if words.is_empty() || (c.is_uppercase() && previous_lower) {
+            words.push(String::new());
+        }
+        words.last_mut().unwrap().extend(c.to_lowercase());
+        previous_lower = c.is_lowercase() || c.is_ascii_digit();
+    }
+    words.retain(|word| !word.is_empty());
+    words.join("-")
+}
+
 /// Whether `ty` is the named type or has it as a generic argument.
 fn mentions(ty: &syn::Type, name: &str) -> bool {
     let syn::Type::Path(path) = ty else {
@@ -362,6 +392,10 @@ fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, Sour
         let entry = entry.unwrap();
         let name = entry.file_name().to_string_lossy().into_owned();
         let path = format!("{relative}/{name}");
+        // Fixtures are data, even a fixture named `*.rs`.
+        if path == format!("tests/{FIXTURES}") {
+            continue;
+        }
         if entry.file_type().unwrap().is_dir() {
             read_sources(root, &path, sources);
         } else if name.ends_with(".rs") {
@@ -626,6 +660,20 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
                 problems.push(problem(Rule::UnknownTest, format!("{file}: {test}")));
             }
         }
+    }
+    // Third-party content stays third-party through any chain of derivation.
+    loop {
+        let derived: Vec<&str> = manifest
+            .artifacts
+            .iter()
+            .filter(|a| !third_party.contains(a.file.as_str()))
+            .filter(|a| a.source.as_deref().is_some_and(|s| third_party.contains(s)))
+            .map(|a| a.file.as_str())
+            .collect();
+        if derived.is_empty() {
+            break;
+        }
+        third_party.extend(derived);
     }
     for artifact in &manifest.artifacts {
         if let Some(good) = artifact.paired_good.as_deref()
@@ -1712,4 +1760,109 @@ fn any_scheme_is_a_url_in_both_halves_of_the_check() {
     for path in ["fixtures/x", "://x", "a b://x"] {
         assert!(!is_url(path), "{path}");
     }
+}
+
+#[test]
+fn third_party_content_stays_third_party_through_derivation() {
+    // FILE derives from a jsign-signed artifact and states a license; UNUSED
+    // derives from FILE without one, so it must not inherit the default.
+    assert_eq!(
+        broken(|c| {
+            artifact(c, FILE)["source"] = json!("msi-independent-jsign.msi");
+            artifact(c, FILE)["license"] = json!("Apache-2.0 (derived from jsign output)");
+            artifact(c, UNUSED)["source"] = json!(FILE);
+        }),
+        one(Rule::Provenance, UNUSED)
+    );
+}
+
+#[test]
+fn rename_detection_reads_attribute_items_not_text() {
+    for source in [
+        "#[command(rename_all_env = \"screaming-snake\")] struct A {}",
+        "#[command(about = \"never uses rename_all\")] struct A {}",
+    ] {
+        let index = SourceIndex::parse_recording(source);
+        assert!(index.errors.is_empty(), "{source}: {:?}", index.errors);
+    }
+}
+
+#[test]
+fn default_option_names_use_clap_kebab_case() {
+    // The indexer applies it to the field it reads.
+    let index = SourceIndex::parse(
+        "struct A { #[arg(long)] _roots: PathBuf, #[arg(long)] extraRoots: Vec<PathBuf> }",
+    )
+    .unwrap();
+    assert_eq!(
+        index.path_options,
+        BTreeSet::from(["--roots", "--extra-roots"].map(str::to_owned))
+    );
+    for (identifier, expected) in [
+        ("roots", "roots"),
+        ("no_system_roots", "no-system-roots"),
+        ("_roots", "roots"),
+        ("extra__roots", "extra-roots"),
+        ("extraRoots", "extra-roots"),
+        ("sha1_roots", "sha1-roots"),
+    ] {
+        assert_eq!(kebab_case(identifier), expected, "{identifier}");
+    }
+}
+
+#[test]
+fn arguments_after_a_double_dash_are_positional_files() {
+    use spec_suite::Argument::{Plain, Positional};
+    assert_eq!(
+        spec_suite::classify(
+            ["verify", "--", "--crl=fixtures/good.crl"],
+            Path::new(FIXTURES)
+        ),
+        [
+            Plain("verify"),
+            Plain("--"),
+            Positional("--crl=fixtures/good.crl")
+        ]
+    );
+    assert_eq!(
+        broken(|c| first_case(c)
+            .command
+            .extend(["--", "--crl=fixtures/good.crl"].map(str::to_owned))),
+        one(Rule::UnlistedCaseInput, &outside("--crl=fixtures/good.crl"))
+    );
+}
+
+#[test]
+fn url_values_of_options_are_not_files() {
+    assert_eq!(
+        broken(|c| first_case(c)
+            .command
+            .push("--crl-url=http://crl.example.invalid/x.crl".to_owned())),
+        vec![]
+    );
+    // A path value of an unknown option is still a file read outside fixtures.
+    assert_eq!(
+        broken(|c| first_case(c).command.push("--other=sub/x.der".to_owned())),
+        one(Rule::UnlistedCaseInput, &outside("--other=sub/x.der"))
+    );
+}
+
+#[test]
+fn fixtures_are_never_indexed_as_sources() {
+    assert!(
+        COMMITTED
+            .sources
+            .keys()
+            .all(|path| !path.starts_with(&format!("tests/{FIXTURES}/")))
+    );
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("manifest-sources-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("tests").join(FIXTURES)).unwrap();
+    std::fs::write(root.join("tests/kept.rs"), "fn kept() {}").unwrap();
+    std::fs::write(root.join("tests").join(FIXTURES).join("sample.rs"), "fn (").unwrap();
+    let mut sources = BTreeMap::new();
+    read_sources(&root, "tests", &mut sources);
+    std::fs::remove_dir_all(&root).unwrap();
+    assert_eq!(sources.keys().collect::<Vec<_>>(), ["tests/kept.rs"]);
 }
