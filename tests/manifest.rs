@@ -16,10 +16,7 @@ use std::{
     path::Path,
     sync::LazyLock,
 };
-use syn::{
-    ext::IdentExt,
-    visit::{self, Visit},
-};
+use syn::visit::{self, Visit};
 
 const MANIFEST: &str = "manifest.json";
 
@@ -180,9 +177,6 @@ struct SourceIndex {
     tests: BTreeSet<String>,
     /// `#[path = "..."]` values on module declarations.
     included: BTreeSet<String>,
-    /// Every option name (`--long`, aliases, `-s`) that a Clap `#[arg]` field
-    /// typed with `PathBuf` declares.
-    path_options: BTreeSet<String>,
     /// Why parts of the file could not be indexed. Committed sources must
     /// index without errors; see `committed_sources_index_without_errors`.
     errors: Vec<String>,
@@ -205,28 +199,6 @@ impl SourceIndex {
             errors: vec![format!("not parsable: {error}")],
             ..Self::default()
         })
-    }
-
-    /// Any `rename_all` in a `#[command]`/`#[clap]` attribute, wherever it sits
-    /// in the token stream, changes the names the index derives.
-    fn reject_renames(&mut self, item: &syn::Ident, attributes: &[syn::Attribute]) {
-        use syn::{Meta, Token, punctuated::Punctuated};
-        for attribute in attributes
-            .iter()
-            .filter(|a| a.path().is_ident("command") || a.path().is_ident("clap"))
-        {
-            match attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
-                Ok(items) if items.iter().any(|meta| meta.path().is_ident("rename_all")) => {
-                    self.errors.push(format!(
-                        "rename_all on `{item}` changes option names the index derives"
-                    ));
-                }
-                Ok(_) => {}
-                Err(error) => self
-                    .errors
-                    .push(format!("#[command] on `{item}` is not readable: {error}")),
-            }
-        }
     }
 
     fn read(bytes: &[u8]) -> Self {
@@ -254,71 +226,6 @@ impl<'ast> Visit<'ast> for SourceIndex {
     /// Items inside any block (function and method bodies, closures, const
     /// initializers) cannot be named by a link, so never index them.
     fn visit_block(&mut self, _: &'ast syn::Block) {}
-    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
-        self.reject_renames(&item.ident, &item.attrs);
-        visit::visit_item_struct(self, item);
-    }
-    fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
-        self.reject_renames(&item.ident, &item.attrs);
-        visit::visit_item_enum(self, item);
-    }
-    fn visit_field(&mut self, field: &'ast syn::Field) {
-        if let Some(name) = &field.ident
-            && mentions(&field.ty, "PathBuf")
-        {
-            // Clap's default name: the field without `r#`, in kebab case.
-            let base = kebab_case(&name.unraw().to_string());
-            for attribute in field
-                .attrs
-                .iter()
-                .filter(|a| a.path().is_ident("arg") || a.path().is_ident("clap"))
-            {
-                let mut names = Vec::new();
-                let parsed = attribute.parse_nested_meta(|meta| {
-                    let value = meta.input.peek(syn::Token![=]);
-                    let key = meta.path.get_ident().map(ToString::to_string);
-                    match (key.as_deref(), value) {
-                        (Some("id" | "name"), _) => {
-                            return Err(meta.error("id and name overrides are not indexed"));
-                        }
-                        (Some("long"), false) => names.push(format!("--{base}")),
-                        (Some("short"), false) => match base.chars().next() {
-                            Some(first) => names.push(format!("-{first}")),
-                            None => return Err(meta.error("empty field name")),
-                        },
-                        (Some("long" | "alias" | "visible_alias"), true) => {
-                            names.push(format!(
-                                "--{}",
-                                meta.value()?.parse::<syn::LitStr>()?.value()
-                            ));
-                        }
-                        (Some("short" | "short_alias" | "visible_short_alias"), true) => {
-                            names.push(format!(
-                                "-{}",
-                                meta.value()?.parse::<syn::LitChar>()?.value()
-                            ));
-                        }
-                        (Some(key), true) if key.ends_with("aliases") => {
-                            return Err(meta.error("list aliases are not indexed; name each alias"));
-                        }
-                        (_, true) => {
-                            meta.value()?.parse::<syn::Expr>()?;
-                        }
-                        (_, false) if meta.input.peek(syn::token::Paren) => {
-                            return Err(meta.error("parenthesized #[arg] items are not indexed"));
-                        }
-                        (_, false) => {}
-                    }
-                    Ok(())
-                });
-                match parsed {
-                    Ok(()) => self.path_options.extend(names),
-                    Err(error) => self.errors.push(format!("#[arg] on `{name}`: {error}")),
-                }
-            }
-        }
-        visit::visit_field(self, field);
-    }
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         for attribute in &item.attrs {
             if attribute.path().is_ident("path")
@@ -335,42 +242,6 @@ impl<'ast> Visit<'ast> for SourceIndex {
         visit::visit_item_mod(self, item);
         self.modules.pop();
     }
-}
-
-/// Clap derive's default argument name: words split at `_` and at lower-to-
-/// upper case changes, lowercased, joined by `-` (`_extra__Roots` is
-/// `extra-roots`).
-fn kebab_case(identifier: &str) -> String {
-    let mut words: Vec<String> = Vec::new();
-    let mut previous_lower = false;
-    for c in identifier.chars() {
-        if c == '_' {
-            words.push(String::new());
-            previous_lower = false;
-            continue;
-        }
-        if words.is_empty() || (c.is_uppercase() && previous_lower) {
-            words.push(String::new());
-        }
-        words.last_mut().unwrap().extend(c.to_lowercase());
-        previous_lower = c.is_lowercase() || c.is_ascii_digit();
-    }
-    words.retain(|word| !word.is_empty());
-    words.join("-")
-}
-
-/// Whether `ty` is the named type or has it as a generic argument.
-fn mentions(ty: &syn::Type, name: &str) -> bool {
-    let syn::Type::Path(path) = ty else {
-        return false;
-    };
-    path.path.segments.iter().any(|segment| {
-        segment.ident == name
-            || matches!(&segment.arguments, syn::PathArguments::AngleBracketed(arguments)
-            if arguments.args.iter().any(|argument| {
-                matches!(argument, syn::GenericArgument::Type(ty) if mentions(ty, name))
-            }))
-    })
 }
 
 /// Everything the checks read, loaded once and cloned for mutation tests.
@@ -1515,76 +1386,6 @@ fn committed_sources_index_without_errors() {
 }
 
 #[test]
-fn spec_path_options_match_the_cli_definition() {
-    // Every `#[arg(long)]` field typed with PathBuf, in the CLI source.
-    let declared: BTreeSet<&str> = COMMITTED
-        .sources
-        .iter()
-        .filter(|(path, _)| path.starts_with("src/"))
-        .flat_map(|(_, index)| index.path_options.iter().map(String::as_str))
-        .collect();
-    let shared: BTreeSet<&str> = spec_suite::PATH_OPTIONS.iter().copied().collect();
-    assert_eq!(
-        declared, shared,
-        "update PATH_OPTIONS in tests/common/spec_suite.rs to match the CLI"
-    );
-}
-
-#[test]
-fn source_index_reads_clap_path_options_and_tolerates_unparsable_files() {
-    let index = SourceIndex::parse(
-        r#"
-        struct Args {
-            #[arg(required = true)]
-            files: Vec<PathBuf>,
-            #[arg(long, conflicts_with_all = ["a", "b"])]
-            extra_roots: Vec<PathBuf>,
-            #[arg(long = "catalog", hide = true)]
-            catalog_path: Option<std::path::PathBuf>,
-            #[arg(long, value_name = "FILE", default_value_t = PathBuf::from("a/b"))]
-            output: PathBuf,
-            #[arg(short, long, visible_alias = "root", short_alias = 'R')]
-            trust: Vec<PathBuf>,
-            #[arg(long, default_value_t = 8 * 1024)]
-            limit: usize,
-            #[arg(long)]
-            no_roots: bool,
-        }
-        "#,
-    )
-    .unwrap();
-    assert_eq!(
-        index.path_options,
-        BTreeSet::from(
-            [
-                "--extra-roots",
-                "--catalog",
-                "--output",
-                "-t",
-                "--trust",
-                "--root",
-                "-R"
-            ]
-            .map(str::to_owned)
-        )
-    );
-    assert!(index.errors.is_empty(), "{:?}", index.errors);
-
-    // Forms the index cannot read are recorded, never panicked on or ignored.
-    for field in [
-        "#[arg(long = ROOTS)] roots: Vec<PathBuf>",
-        "#[arg(long, value_parser(parse_path))] roots: Vec<PathBuf>",
-        "#[arg(long, visible_aliases = [\"a\", \"b\"])] roots: Vec<PathBuf>",
-    ] {
-        let index = SourceIndex::parse_recording(&format!("struct A {{ {field} }}"));
-        assert_eq!(index.errors.len(), 1, "{field}: {:?}", index.errors);
-    }
-    let unparsable = SourceIndex::parse_recording("fn (");
-    assert!(unparsable.functions.is_empty());
-    assert!(unparsable.errors[0].starts_with("not parsable"));
-}
-
-#[test]
 fn path_option_state_never_leaks_past_one_argument() {
     use spec_suite::Argument::{InlinePath, Path as PathArgument, Plain};
     let prefix = Path::new(FIXTURES);
@@ -1684,43 +1485,6 @@ fn nested_test_links_and_body_local_functions_are_not_linkable() {
 }
 
 #[test]
-fn option_names_follow_clap_and_unsupported_forms_are_recorded() {
-    let index = SourceIndex::parse(
-        r#"
-        struct A {
-            #[arg(short, long)]
-            r#type: PathBuf,
-            #[arg(short, long)]
-            émoji: PathBuf,
-            #[clap(long)]
-            legacy: PathBuf,
-        }
-        "#,
-    )
-    .unwrap();
-    assert_eq!(
-        index.path_options,
-        BTreeSet::from(["-t", "--type", "-é", "--émoji", "--legacy"].map(str::to_owned))
-    );
-    assert!(index.errors.is_empty(), "{:?}", index.errors);
-
-    for source in [
-        "struct A { #[arg(id = \"cert\", long)] roots: Vec<PathBuf> }",
-        "#[command(rename_all = \"lower\")] struct A { #[arg(long)] roots: Vec<PathBuf> }",
-        "#[command(group(ArgGroup::new(\"g\")), rename_all = \"lower\")] struct A {}",
-        "#[clap(rename_all = \"lower\")] enum E { V }",
-    ] {
-        assert_eq!(
-            SourceIndex::parse_recording(source).errors.len(),
-            1,
-            "{source}"
-        );
-    }
-    let not_utf8 = SourceIndex::read(&[0x66, 0x6e, 0xff]);
-    assert!(not_utf8.errors[0].starts_with("not UTF-8"));
-}
-
-#[test]
 fn artifacts_derived_from_third_party_ones_state_a_license() {
     // Derived from a repository-generated artifact: the default applies.
     assert_eq!(
@@ -1774,40 +1538,6 @@ fn third_party_content_stays_third_party_through_derivation() {
         }),
         one(Rule::Provenance, UNUSED)
     );
-}
-
-#[test]
-fn rename_detection_reads_attribute_items_not_text() {
-    for source in [
-        "#[command(rename_all_env = \"screaming-snake\")] struct A {}",
-        "#[command(about = \"never uses rename_all\")] struct A {}",
-    ] {
-        let index = SourceIndex::parse_recording(source);
-        assert!(index.errors.is_empty(), "{source}: {:?}", index.errors);
-    }
-}
-
-#[test]
-fn default_option_names_use_clap_kebab_case() {
-    // The indexer applies it to the field it reads.
-    let index = SourceIndex::parse(
-        "struct A { #[arg(long)] _roots: PathBuf, #[arg(long)] extraRoots: Vec<PathBuf> }",
-    )
-    .unwrap();
-    assert_eq!(
-        index.path_options,
-        BTreeSet::from(["--roots", "--extra-roots"].map(str::to_owned))
-    );
-    for (identifier, expected) in [
-        ("roots", "roots"),
-        ("no_system_roots", "no-system-roots"),
-        ("_roots", "roots"),
-        ("extra__roots", "extra-roots"),
-        ("extraRoots", "extra-roots"),
-        ("sha1_roots", "sha1-roots"),
-    ] {
-        assert_eq!(kebab_case(identifier), expected, "{identifier}");
-    }
 }
 
 #[test]
@@ -1865,4 +1595,14 @@ fn fixtures_are_never_indexed_as_sources() {
     read_sources(&root, "tests", &mut sources);
     std::fs::remove_dir_all(&root).unwrap();
     assert_eq!(sources.keys().collect::<Vec<_>>(), ["tests/kept.rs"]);
+}
+
+#[test]
+fn unreadable_sources_are_recorded_not_fatal() {
+    assert!(SourceIndex::parse("fn (").is_err());
+    let unparsable = SourceIndex::parse_recording("fn (");
+    assert!(unparsable.functions.is_empty());
+    assert!(unparsable.errors[0].starts_with("not parsable"));
+    let not_utf8 = SourceIndex::read(&[0x66, 0x6e, 0xff]);
+    assert!(not_utf8.errors[0].starts_with("not UTF-8"));
 }

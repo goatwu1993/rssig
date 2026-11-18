@@ -56,6 +56,14 @@ impl<'a> Host<'a> {
     }
 }
 
+/// The Clap definition behind [`run`], for tests that must agree with the
+/// real argument parser (the specification runner checks which options take
+/// a file). Hidden and not a stable interface: Clap's types may change.
+#[doc(hidden)]
+pub fn command() -> clap::Command {
+    <Cli as clap::CommandFactory>::command()
+}
+
 fn execute(command: Command, host: Host<'_>) -> Result<(Value, u8)> {
     match command {
         Command::Verify(args) => verify::execute(args, host),
