@@ -516,10 +516,25 @@ pub struct CrlRetrievalArtifact {
     pub sha256: String,
     pub bytes: usize,
 }
+/// A listed distribution point that yielded no evidence: not discovered
+/// (`crl_fetch_denied`, `url` absent), denied by transport policy, or whose
+/// request failed (`crl_fetch_failed`). Verification still decides whether
+/// the missing evidence mattered.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrlRetrievalFailure {
+    /// SHA-256 of the certificate that lists the point.
+    pub certificate_sha256: String,
+    pub url: Option<String>,
+    pub code: ErrorCode,
+    pub message: String,
+}
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CrlRetrievalReport {
     /// Retrieved artifacts are untrusted evidence; this is not per-CRL verification status.
     pub artifacts: Vec<CrlRetrievalArtifact>,
+    /// Listed points that yielded no evidence, in request order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failures: Vec<CrlRetrievalFailure>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {

@@ -32,12 +32,18 @@ A point that cannot be discovered (reasons, cRLIssuer or a non-URI name), is
 denied by transport policy, or whose request fails yields no evidence; these
 are exactly the `crl_fetch_denied` and `crl_fetch_failed` errors. They do not
 end the run, because the next verification still requires evidence for every
-selected certificate. If the status stays unknown, the first such failure is
-returned instead of the bare `revocation_unknown`; it may belong to a
-certificate that did not lack evidence. Every other error ends the run: work
-and size limits (including a limit reported by the source), a malformed
-cRLDistributionPoints extension, and an undecodable response. Every request
-counts toward the request limit, answered or not. A certificate that a supplied CRL covers is not fetched for while another
+selected certificate. Each is listed in `crl_retrieval.failures` with the
+certificate's SHA-256, the URL when there is one, its code and message. An
+unsupported point is skipped on its own: a plain URI listed beside it is still
+requested (`sec10-fetch-mixed-point-requests-plain-uri`). If the status stays
+unknown, the result is the verifier's own `revocation_unknown` when any
+verification with revocation required ran, as it would be without
+`--fetch-crls`; otherwise the first failure is returned (for example
+`crl_fetch_denied` for a private URL with no supplied CRL). Every other error
+ends the run: work and size limits, including the source's time limit and any
+other limit it reports, a malformed cRLDistributionPoints extension, and an
+undecodable response. Every request counts toward the request limit, answered
+or not. A certificate that a supplied CRL covers is not fetched for while another
 chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
 in step 4 if a name-matching CRL elsewhere was not enough
 (`sec10-fetch-name-matched-signer-point-requested-second`), and a failure of
@@ -57,10 +63,9 @@ AIA issuer fetching is a separate follow-up.
 Distribution points follow the [RFC 5280 CRLDistributionPoints structure](https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.13).
 This initial profile accepts full URI names for direct, complete CRLs. Relative
 names, reason partitions, indirect CRL issuers and non-URI names are not
-discovered: a certificate with such a point yields no fetched evidence, and if
-that leaves the status unknown the run fails with `crl_fetch_denied`. One such
-point makes the whole certificate's points undiscovered, including a plain URI
-beside it. Successfully retrieving an
+discovered: each such point yields no evidence and is listed in
+`crl_retrieval.failures`, while other plain URI points of the same certificate
+are still requested. Successfully retrieving an
 artifact never implies that its signature or revocation status is valid.
 
 ## Provider boundary
@@ -110,7 +115,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30-second source lifetime starting with its first fetch; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30-second source lifetime starting with its first fetch, then `resource_limit_exceeded` (`crl_retrieval_time`), which ends the run; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The CLI shares one HTTP source across its batch. Limits persist across files.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
@@ -134,10 +139,14 @@ Existing CRL reports retain `role: "supplied"`; full chain revocation remains
 required. Response hashes cover the original response bytes, including PEM if
 supplied, while existing CRL reports describe normalized DER.
 
-Retrieval failures use `crl_fetch_failed` or `crl_fetch_denied` at stage
-`revocation`. Missing discovery/evidence uses `revocation_unknown`. Budget failures
-use `resource_limit_exceeded`. Successfully downloaded artifacts remain visible
-in failure `details.crl_retrieval`; a failed provider request includes its URL.
+Points that yielded no evidence are listed in `crl_retrieval.failures` (omitted
+when empty), on success and in failure `details.crl_retrieval`; a successful
+result can therefore show that some requests failed or were denied without
+that evidence being needed. `crl_fetch_failed` or `crl_fetch_denied` at stage
+`revocation` is the result only when no verification with revocation required
+ran. Missing evidence otherwise uses `revocation_unknown`. Budget failures use
+`resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
+failure `details.crl_retrieval`.
 Malformed, stale, forged or revoked evidence retains existing verifier error
 codes. CLI failures remain ordered entries in one JSON document, without partial
 success reports. Host input and retained-output limits still apply.

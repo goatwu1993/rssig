@@ -117,8 +117,8 @@ One box per item in the scope above.
   `sec10-fetch-no-listed-point-role-excluded-scope-rejected`,
   `sec10-fetch-unusable-supplied-crl-not-fetched`).
   A listed point that discovery does not support (reasons, cRLIssuer or a
-  non-URI name) is `crl_fetch_denied` once the status is unknown, where the
-  same inputs without `--fetch-crls` are `revocation_unknown`
+  non-URI name) is not requested and is listed in `crl_retrieval.failures`; the
+  result is the verifier's `revocation_unknown`, as without `--fetch-crls`
   (`sec10-fetch-reasons-point-denied`, `sec10-fetch-crl-issuer-point-denied`,
   `sec10-fetch-dns-name-point-denied`).
   History: PR #55 first restated webpki's authority rule for this
@@ -186,7 +186,9 @@ Change these only with a new decision and paired fixtures.
   that a supplied CRL does cover can still be fetched for; a failed request is
   skipped, but a fetched CRL that is stale or unusable still fails the run
   closed. No fixture has that shape. A certificate mixing a plain URI point
-  with an unsupported one yields no evidence at all (SEC-17).
+  with an unsupported one has the plain URI requested
+  (`sec10-fetch-mixed-point-requests-plain-uri`, on
+  `sec10-leaf-crl-dp-mixed.exe`, which failed first).
 - Validated on macOS locally and on Linux in CI. No Windows comparison
   (DEFER-01).
 

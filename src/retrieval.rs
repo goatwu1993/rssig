@@ -5,7 +5,7 @@ use crate::{
     domain::*,
     verify::{VerifyOptions, budget::Budget, verify_inner_budget},
 };
-use ::der::{Decode, Encode};
+use ::der::Decode;
 pub use http::HttpCrlSource;
 use std::collections::BTreeSet;
 use x509_cert::{
@@ -53,6 +53,16 @@ pub(crate) fn limit(
 /// Decode direct, complete CRL distribution-point URIs. Relative names, reason
 /// partitions, and indirect CRL issuers are unsupported and fail closed.
 pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, VerificationError> {
+    listed_points(cert)?.into_iter().collect()
+}
+
+/// Each listed name of `cert`'s cRLDistributionPoints: a URI, or
+/// `crl_fetch_denied` for a point with reasons, a cRLIssuer, a relative name or
+/// a non-URI name. A malformed extension and the URL count and length limits
+/// are errors for the whole certificate.
+fn listed_points(
+    cert: &Certificate,
+) -> Result<Vec<Result<String, VerificationError>>, VerificationError> {
     let value = cert
         .tbs_certificate
         .get::<CrlDistributionPoints>()
@@ -60,38 +70,56 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
     let Some((_, points)) = value else {
         return Ok(Vec::new());
     };
-    let mut urls = Vec::new();
+    let mut listed = Vec::new();
+    let mut urls = 0;
     for point in points.0 {
         if point.reasons.is_some() || point.crl_issuer.is_some() {
-            return Err(error(
+            listed.push(Err(error(
                 ErrorCode::CrlFetchDenied,
                 "partitioned or indirect CRL distribution points are unsupported",
-            ));
+            )));
+            continue;
         }
         let Some(DistributionPointName::FullName(names)) = point.distribution_point else {
-            return Err(error(
+            listed.push(Err(error(
                 ErrorCode::CrlFetchDenied,
                 "CRL distribution point requires a full URI name",
-            ));
+            )));
+            continue;
         };
         for name in names {
-            if let GeneralName::UniformResourceIdentifier(uri) = name {
-                if urls.len() >= MAX_REQUESTS {
-                    return Err(limit("crl_urls", MAX_REQUESTS, urls.len(), 1));
-                }
-                if uri.as_str().len() > 2048 {
-                    return Err(limit("crl_url_bytes", 2048, 0, uri.as_str().len()));
-                }
-                urls.push(uri.as_str().into());
-            } else {
-                return Err(error(
+            let GeneralName::UniformResourceIdentifier(uri) = name else {
+                listed.push(Err(error(
                     ErrorCode::CrlFetchDenied,
                     "non-URI CRL distribution point is unsupported",
-                ));
+                )));
+                continue;
+            };
+            if urls >= MAX_REQUESTS {
+                return Err(limit("crl_urls", MAX_REQUESTS, urls, 1));
             }
+            if uri.as_str().len() > 2048 {
+                return Err(limit("crl_url_bytes", 2048, 0, uri.as_str().len()));
+            }
+            urls += 1;
+            listed.push(Ok(uri.as_str().into()));
         }
     }
-    Ok(urls)
+    Ok(listed)
+}
+
+/// The issuer Name DER as encoded in `der`, a certificate, without
+/// re-encoding a decoded value.
+fn issuer_der(der: &[u8]) -> Option<&[u8]> {
+    let fields = crate::der::one(der, 0x30).ok()?.children().ok()?;
+    let tbs = fields.first()?.expect(0x30).ok()?.children().ok()?;
+    // Optional [0] version, serialNumber, signature, then issuer.
+    let at = if tbs.first().is_some_and(|f| f.tag == 0xa0) {
+        3
+    } else {
+        2
+    };
+    Some(tbs.get(at)?.expect(0x30).ok()?.full)
 }
 
 /// Selected-path certificates below the anchor.
@@ -152,6 +180,7 @@ impl crate::verify::Verifier<'_> {
 }
 
 /// Retrieval state for one verification: the store that grows with fetched
+/// Retrieval state for one verification: the store that grows with fetched
 /// CRLs and the provenance report.
 struct Retrieval<'s, 'b, 'l> {
     base: &'s TrustStore,
@@ -161,57 +190,91 @@ struct Retrieval<'s, 'b, 'l> {
     fetched_urls: BTreeSet<String>,
     /// Requests made, answered or not; bounded by `MAX_REQUESTS`.
     requests: usize,
+    /// The first point that yielded no evidence, reported if no verification
+    /// with revocation required ran.
+    skipped: Option<VerificationError>,
     budget: &'b Budget<'l>,
-}
-
-/// Keep a discovery, transport-policy or request failure as "no evidence from
-/// this point" and return `Ok`; any other error (a work or size limit, a
-/// malformed certificate extension) is returned as final.
-fn skip(
-    e: VerificationError,
-    skipped: &mut Option<VerificationError>,
-) -> Result<(), VerificationError> {
-    if matches!(
-        e.code,
-        ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed
-    ) {
-        skipped.get_or_insert(e);
-        Ok(())
-    } else {
-        Err(e)
-    }
 }
 
 fn crl_internal(e: anyhow::Error) -> VerificationError {
     VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
 }
 
-impl Retrieval<'_, '_, '_> {
+impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
+    fn new(base: &'s TrustStore, budget: &'b Budget<'l>) -> Self {
+        Self {
+            base,
+            store: base.clone(),
+            report: CrlRetrievalReport::default(),
+            downloaded: 0,
+            fetched_urls: BTreeSet::new(),
+            requests: 0,
+            skipped: None,
+            budget,
+        }
+    }
+
+    /// Record a discovery, transport-policy or request failure as "no
+    /// evidence from this point" and return `Ok`; any other error (a work or
+    /// size limit, a malformed certificate extension) is returned as final.
+    fn skip(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: VerificationError,
+    ) -> Result<(), VerificationError> {
+        if !matches!(
+            e.code,
+            ErrorCode::CrlFetchDenied | ErrorCode::CrlFetchFailed
+        ) {
+            return Err(e);
+        }
+        let e = match url {
+            Some(url) => e.detail("url", url),
+            None => e,
+        };
+        self.budget.log.info(
+            Stage::Revocation,
+            format_args!("CRL point yielded no evidence: {:?}", e.message),
+        );
+        self.report.failures.push(CrlRetrievalFailure {
+            certificate_sha256: certificate.into(),
+            url: url.map(Into::into),
+            code: e.code,
+            message: e.message.clone(),
+        });
+        self.skipped.get_or_insert(e);
+        Ok(())
+    }
+
     /// Request every listed point of `cert`. A point that cannot be
     /// discovered (`crl_fetch_denied`), is denied by transport policy, or
     /// whose request fails (`crl_fetch_failed`) yields no evidence and is
-    /// recorded in `skipped`: whether that matters is decided by the next
-    /// verification, which still requires evidence for every certificate.
-    /// Every other error is final, including work and size limits, a
-    /// malformed cRLDistributionPoints extension and an undecodable response.
-    /// Returns whether anything was added.
+    /// recorded in the report's failures: whether that matters is decided by
+    /// the next verification, which still requires evidence for every
+    /// certificate. Every other error is final, including work and size
+    /// limits, a malformed cRLDistributionPoints extension and an undecodable
+    /// response. Returns whether anything was added.
     fn fetch(
         &mut self,
+        sha256: &str,
         cert: &Certificate,
         source: &mut dyn CrlSource,
-        skipped: &mut Option<VerificationError>,
     ) -> Result<bool, VerificationError> {
-        let log = &self.budget.log;
+        let log = self.budget.log;
         let mut added = false;
-        let urls = match crl_distribution_points(cert) {
-            Ok(urls) => urls,
-            Err(e) => return skip(e, skipped).map(|()| false),
-        };
-        for raw in urls {
+        for listed in listed_points(cert)? {
+            let raw = match listed {
+                Ok(raw) => raw,
+                Err(e) => {
+                    self.skip(sha256, None, e)?;
+                    continue;
+                }
+            };
             let url = match http::checked_url(&raw) {
                 Ok(url) => url.to_string(),
                 Err(e) => {
-                    skip(e, skipped)?;
+                    self.skip(sha256, Some(&raw), e)?;
                     continue;
                 }
             };
@@ -242,7 +305,7 @@ impl Retrieval<'_, '_, '_> {
             let fetched = match source.fetch(&url, cap) {
                 Ok(fetched) => fetched,
                 Err(e) => {
-                    skip(e.detail("url", &url), skipped)?;
+                    self.skip(sha256, Some(&url), e)?;
                     continue;
                 }
             };
@@ -258,7 +321,7 @@ impl Retrieval<'_, '_, '_> {
                 return Err(limit("crl_response_bytes", cap, 0, fetched.bytes.len()));
             }
             if let Err(e) = http::checked_url(&fetched.final_url) {
-                skip(e.detail("url", &url), skipped)?;
+                self.skip(sha256, Some(&url), e)?;
                 continue;
             }
             for _ in 0..8 {
@@ -320,15 +383,7 @@ fn retrieve(
     let log = &budget.log;
     let internal =
         |e| VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate);
-    let mut state = Retrieval {
-        base,
-        store: base.clone(),
-        report: CrlRetrievalReport::default(),
-        downloaded: 0,
-        fetched_urls: BTreeSet::new(),
-        requests: 0,
-        budget,
-    };
+    let mut state = Retrieval::new(base, budget);
     let result = (|| {
         if base.retrieval_bytes() > MAX_TOTAL_BYTES {
             return Err(limit(
@@ -359,15 +414,15 @@ fn retrieve(
         let named = base.crl_issuers(budget).map_err(crl_internal)?;
         let mut seen = BTreeSet::new();
         let mut stages = [Vec::new(), Vec::new()];
-        for cert in selected {
-            if !seen.insert(&cert.sha256) {
+        for cert_report in selected {
+            if !seen.insert(&cert_report.sha256) {
                 continue;
             }
             budget
                 .decoded_bytes
-                .charge(cert.der_hex.len())
+                .charge(cert_report.der_hex.len())
                 .map_err(internal)?;
-            let der = cert
+            let der = cert_report
                 .der_hex
                 .as_bytes()
                 .as_chunks::<2>()
@@ -378,26 +433,20 @@ fn retrieve(
                         .expect("generated DER hex")
                 })
                 .collect::<Vec<_>>();
+            let named_issuer = issuer_der(&der).is_some_and(|i| named.iter().any(|n| n == i));
             let cert = Certificate::from_der(&der)
                 .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            let issuer = cert
-                .tbs_certificate
-                .issuer
-                .to_der()
-                .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            let named_issuer = named.contains(&issuer);
-            stages[usize::from(named_issuer)].push(cert);
+            stages[usize::from(named_issuer)].push((&cert_report.sha256, cert));
         }
         // Step 1 fetches for certificates no supplied CRL names, step 2 for
         // the rest. Verification follows each step that has any CRL to use
         // (after step 1 that includes the supplied CRLs alone); a good result
         // or any failure but unknown status is final.
-        let mut skipped = None;
         let mut verdict = None;
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
-            for cert in certificates {
-                added |= state.fetch(cert, source, &mut skipped)?;
+            for (sha256, cert) in certificates {
+                added |= state.fetch(sha256, cert, source)?;
             }
             let verify = if step == 0 {
                 state.store.retrieval_crl_count() > 0
@@ -411,13 +460,13 @@ fn retrieve(
                 }
             }
         }
-        // Still unknown. The first skipped point is reported, as more specific
-        // than the bare unknown status, though it may belong to a certificate
-        // that did not lack evidence.
-        Err(skipped.or(verdict).unwrap_or_else(|| {
+        // Still unknown. The verifier's own result is reported when a
+        // verification ran; points that yielded no evidence are in the
+        // report's failures. Without one, the first such point explains it.
+        Err(verdict.or(state.skipped.take()).unwrap_or_else(|| {
             error(
                 ErrorCode::RevocationUnknown,
-                "no CRL was supplied and no selected certificate lists a CRL distribution point",
+                "no CRL was supplied or retrieved, and no selected certificate lists a usable CRL distribution point",
             )
         }))
     })();
@@ -626,25 +675,20 @@ mod tests {
         }
         let store = store();
         let budget = Budget::default();
-        let mut state = Retrieval {
-            base: &store,
-            store: store.clone(),
-            report: CrlRetrievalReport::default(),
-            downloaded: 0,
-            fetched_urls: BTreeSet::new(),
-            requests: 0,
-            budget: &budget,
-        };
-        let (mut source, mut skipped) = (Failing(0), None);
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Failing(0);
         assert!(
             !state
-                .fetch(&signer_with_points("a", 10), &mut source, &mut skipped)
+                .fetch("a", &signer_with_points("a", 10), &mut source)
                 .unwrap()
         );
-        assert_eq!(skipped.unwrap().code, ErrorCode::CrlFetchFailed);
-        let mut skipped = None;
+        assert_eq!(state.report.failures.len(), 10);
+        assert_eq!(
+            state.skipped.as_ref().unwrap().code,
+            ErrorCode::CrlFetchFailed
+        );
         let error = state
-            .fetch(&signer_with_points("b", 10), &mut source, &mut skipped)
+            .fetch("b", &signer_with_points("b", 10), &mut source)
             .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");

@@ -7553,7 +7553,8 @@
         "sec10-fetch-ca-ca-scope-idp-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-covered-point-failure-skipped"
+        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-leaf-crl-dp-mixed-full-crl"
       ]
     },
     {
@@ -7917,7 +7918,9 @@
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-name-matched-signer-point-requested-second",
-        "sec10-fetch-covered-point-failure-skipped"
+        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-leaf-crl-dp-mixed-full-crl",
+        "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -8020,7 +8023,9 @@
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-name-matched-signer-point-requested-second",
-        "sec10-fetch-covered-point-failure-skipped"
+        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-leaf-crl-dp-mixed-full-crl",
+        "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -9529,7 +9534,8 @@
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -9559,7 +9565,8 @@
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-other-idp-fetched-revoked",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-name-matched-signer-point-requested-second"
+        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -9649,6 +9656,18 @@
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-crl-dp-crl-issuer-full-crl",
         "sec10-fetch-crl-issuer-point-denied"
+      ]
+    },
+    {
+      "file": "sec10-leaf-crl-dp-mixed.exe",
+      "sha256": "e3fc096b982386c2cfb42ae25e7f14408327caf19a6cd9b6c9a16f256e959a45",
+      "bytes": 2296,
+      "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 127) whose cRLDistributionPoints lists a reason-partitioned point (http://crl.invalid/sec10-c.crl, keyCompromise) and then http://crl.invalid/sec10-a.crl as a plain point. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-leaf-crl-dp-mixed-full-crl",
+        "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {

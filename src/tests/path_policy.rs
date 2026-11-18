@@ -99,6 +99,15 @@ fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
             126,
             seq(&[seq(&[full_name(&[uri(LISTED_POINT)]), crl_issuer])]),
         ),
+        // A reason-partitioned point, then the listed URI as a plain point.
+        (
+            "mixed",
+            127,
+            seq(&[
+                seq(&[full_name(&[uri(MULTI_POINTS[0])]), tlv(0x81, &[6, 0x40])]),
+                seq(&[full_name(&[uri(LISTED_POINT)])]),
+            ]),
+        ),
     ]
 }
 

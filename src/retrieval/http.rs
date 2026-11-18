@@ -87,14 +87,22 @@ impl HttpCrlSource {
     fn remaining(&self) -> Result<Duration, VerificationError> {
         if self.poisoned {
             return Err(error(
-                ErrorCode::CrlFetchFailed,
+                ErrorCode::ResourceLimitExceeded,
                 "CRL source is closed after a DNS timeout",
-            ));
+            )
+            .detail("resource", "crl_retrieval_time"));
         }
         DEADLINE
             .checked_sub(self.started.expect("fetch started").elapsed())
             .filter(|d| !d.is_zero())
-            .ok_or_else(|| error(ErrorCode::CrlFetchFailed, "CRL retrieval deadline exceeded"))
+            .ok_or_else(|| {
+                error(
+                    ErrorCode::ResourceLimitExceeded,
+                    "CRL retrieval deadline exceeded",
+                )
+                .detail("resource", "crl_retrieval_time")
+                .detail("limit", DEADLINE.as_secs())
+            })
     }
     fn resolve(&mut self, url: &Url) -> Result<SocketAddr, VerificationError> {
         let host = url
@@ -433,14 +441,17 @@ mod tests {
             started: Some(Instant::now() - DEADLINE),
             ..HttpCrlSource::new()
         };
-        assert_eq!(
-            source.remaining().unwrap_err().code,
-            ErrorCode::CrlFetchFailed
-        );
+        // The lifetime and a poisoned resolver are limits, so retrieval ends
+        // the run instead of treating them as one failed point.
+        let error = source.remaining().unwrap_err();
+        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(error.details["resource"], "crl_retrieval_time");
         let source = HttpCrlSource {
             poisoned: true,
             ..HttpCrlSource::new()
         };
-        assert!(source.remaining().is_err());
+        let error = source.remaining().unwrap_err();
+        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(error.details["resource"], "crl_retrieval_time");
     }
 }

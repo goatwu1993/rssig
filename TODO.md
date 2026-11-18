@@ -296,10 +296,10 @@ timestamps, and local CRL validation already exist.
   that path. In the second retrieval step a certificate that a supplied CRL
   already covers can still be fetched for; a failed request is skipped, but a
   fetched CRL that is stale or unusable fails the run closed, because the
-  verifier does not report which certificate lacked evidence. Discovery
-  (`crl_distribution_points`) gives up on a certificate at its first point with
-  reasons, a cRLIssuer or a non-URI name, so a plain URI point beside it is
-  never requested. No fixture has these shapes.
+  verifier does not report which certificate lacked evidence; having it report
+  the certificates without authoritative evidence would remove the second step
+  and the issuer-name split, but webpki does not expose that. No fixture has
+  that shape.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another

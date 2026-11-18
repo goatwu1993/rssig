@@ -288,11 +288,11 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         (CA, ["sec10-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
         // A signer listing no point has nothing to fetch: the partition is reported, not skipped.
         (NO_POINT, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
-        // A listed point that discovery does not support is denied, not fetched: without
-        // --fetch-crls the same inputs are revocation_unknown.
-        ("sec10-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
-        ("sec10-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("crl_fetch_denied")),
-        ("sec10-leaf-crl-dp-dns.exe", ["sec06-root.crl", "sec10-issuer-idp-dns.crl"], None, &[], Some("crl_fetch_denied")),
+        // A listed point that discovery does not support is not fetched. Verification
+        // decides, as without --fetch-crls; the point is listed in the report's failures.
+        ("sec10-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
+        ("sec10-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
+        ("sec10-leaf-crl-dp-dns.exe", ["sec06-root.crl", "sec10-issuer-idp-dns.crl"], None, &[], Some("revocation_unknown")),
     ];
     for (input, supplied, response, requests, error) in rows {
         let label = format!("{input} with {supplied:?}");
@@ -402,7 +402,7 @@ fn sec10_fetch_follows_the_verification_result() {
         Option<(&'static str, &'static str)>,
     );
     #[rustfmt::skip]
-    let rows: [Row; 6] = [
+    let rows: [Row; 7] = [
         // A CRL with the issuer's name from another key is excluded by verification,
         // so it does not stand in for the listed point.
         ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
@@ -421,6 +421,9 @@ fn sec10_fetch_follows_the_verification_result() {
         // points are requested in the second step. The signer's request fails, which
         // yields no evidence but does not abort: verification decides, and succeeds.
         ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "sec10-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[LEAF_POINT, CA_POINT], None),
+        // A reason-partitioned point beside a plain one: the plain URI is still requested,
+        // and the partitioned point is listed in the report's failures.
+        ("sec10-leaf-crl-dp-mixed.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-other.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT], None),
     ];
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
@@ -477,6 +480,17 @@ fn sec10_fetch_follows_the_verification_result() {
             for (artifact, request) in artifacts.iter().zip(&answered) {
                 assert_eq!(artifact["url"], **request, "{label}");
             }
+            // Every unanswered request, and the mixed signer's partitioned point, is a
+            // reported failure.
+            let failures = result["crl_retrieval"]["failures"]
+                .as_array()
+                .map_or(0, Vec::len);
+            let partitioned = usize::from(input == "sec10-leaf-crl-dp-mixed.exe");
+            assert_eq!(
+                failures,
+                requests.len() - answered.len() + partitioned,
+                "{label}"
+            );
             // Supplied CRLs stay loaded beside the fetched ones.
             assert_eq!(
                 revocation["crls"].as_array().unwrap().len(),
