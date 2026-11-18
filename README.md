@@ -263,3 +263,8 @@ CLI input, trust-file, batch, and retained-report growth is bounded. See
 Opt-in [CRL retrieval](docs/crl-retrieval.md) discovers distribution points after
 signature/trust checks and authenticates fetched evidence in the Rust verifier.
 The initial built-in transport supports bounded public HTTP, not HTTPS or LDAP.
+
+## License
+
+rssig is licensed under the [Apache License, Version 2.0](LICENSE). Third-party
+attribution for referenced projects and borrowed test fixtures is in [NOTICE](NOTICE).
