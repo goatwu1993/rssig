@@ -70,9 +70,9 @@ pub fn classify<'a>(
     let mut path_value = false;
     for argument in command {
         let after_path_option = std::mem::take(&mut path_value);
-        // A `--flag` right after a path option is a missing value, not a path;
-        // any other value (`-`, `-name.crl`) is the path.
-        if after_path_option && !argument.starts_with("--") {
+        // As in Clap, a value starting with `-` after a path option is another
+        // flag (the option's value is missing), except a lone `-`.
+        if after_path_option && (argument == "-" || !argument.starts_with('-')) {
             result.push(Argument::Path(argument));
         } else if let Some((flag, path)) = argument.split_once('=')
             && PATH_OPTIONS.contains(&flag)
@@ -153,7 +153,7 @@ impl Case {
                     files.push(fixture_path(path, fixture_prefix));
                 }
                 Argument::Plain(argument)
-                    if !argument.contains("://") && argument.contains(['/', '\\']) =>
+                    if !is_url(argument) && argument.contains(['/', '\\']) =>
                 {
                     files.push(CaseFile::Outside(argument.to_owned()));
                 }
@@ -162,6 +162,16 @@ impl Case {
         }
         files
     }
+}
+
+/// `scheme://...`: a URL, never a file path. Shared with the manifest check.
+pub fn is_url(text: &str) -> bool {
+    text.split_once("://").is_some_and(|(scheme, _)| {
+        !scheme.is_empty()
+            && scheme
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    })
 }
 
 /// One plain name directly inside the fixture directory: not empty, `.` or

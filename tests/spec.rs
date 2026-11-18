@@ -61,10 +61,20 @@ impl Suite {
                 .input
                 .iter()
                 .chain(case.inputs.iter().flatten())
-                .chain(case.crl_responses.iter().flat_map(BTreeMap::values))
                 .all(|name| spec_suite::is_fixture_name(name))
             {
                 return Err(format!("input must be a fixture file name: {}", case.id));
+            }
+            if !case
+                .crl_responses
+                .iter()
+                .flat_map(BTreeMap::values)
+                .all(|name| spec_suite::is_fixture_name(name))
+            {
+                return Err(format!(
+                    "crl_responses body must be a fixture file name: {}",
+                    case.id
+                ));
             }
             if case
                 .expect
@@ -360,6 +370,23 @@ fn specification_inputs_are_plain_fixture_names() {
             assert!(result.is_ok(), "{input}: {result:?}");
         } else {
             assert!(result.unwrap_err().contains("fixture file name"), "{input}");
+        }
+    }
+}
+
+#[test]
+fn specification_crl_response_bodies_are_plain_fixture_names() {
+    for body in ["good.crl", "sub/good.crl", "./good.crl", "/abs.crl", ""] {
+        let case = serde_json::json!({"id":"one","input":"good-pe32.exe","crl_responses":{"http://crl.example.invalid/x":body},"command":["verify"],"expect":{"exit_code":0,"json":{"ok":true}}});
+        let suite: Suite = serde_json::from_value(
+            serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+        )
+        .unwrap();
+        let result = suite.validate();
+        if body == "good.crl" {
+            assert!(result.is_ok(), "{body}: {result:?}");
+        } else {
+            assert!(result.unwrap_err().contains("crl_responses body"), "{body}");
         }
     }
 }

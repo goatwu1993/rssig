@@ -207,6 +207,20 @@ impl SourceIndex {
         })
     }
 
+    /// Any `rename_all` in a `#[command]`/`#[clap]` attribute, wherever it sits
+    /// in the token stream, changes the names the index derives.
+    fn reject_renames(&mut self, item: &syn::Ident, attributes: &[syn::Attribute]) {
+        let renames = attributes
+            .iter()
+            .filter(|a| a.path().is_ident("command") || a.path().is_ident("clap"))
+            .any(|a| matches!(&a.meta, syn::Meta::List(list) if list.tokens.to_string().contains("rename_all")));
+        if renames {
+            self.errors.push(format!(
+                "rename_all on `{item}` changes option names the index derives"
+            ));
+        }
+    }
+
     fn read(bytes: &[u8]) -> Self {
         match std::str::from_utf8(bytes) {
             Ok(text) => Self::parse_recording(text),
@@ -233,23 +247,12 @@ impl<'ast> Visit<'ast> for SourceIndex {
     /// initializers) cannot be named by a link, so never index them.
     fn visit_block(&mut self, _: &'ast syn::Block) {}
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
-        for attribute in item.attrs.iter().filter(|a| a.path().is_ident("command")) {
-            let mut renames = false;
-            let _ = attribute.parse_nested_meta(|meta| {
-                renames |= meta.path.is_ident("rename_all");
-                if meta.input.peek(syn::Token![=]) {
-                    meta.value()?.parse::<syn::Expr>()?;
-                }
-                Ok(())
-            });
-            if renames {
-                self.errors.push(format!(
-                    "rename_all on `{}` changes option names the index derives",
-                    item.ident
-                ));
-            }
-        }
+        self.reject_renames(&item.ident, &item.attrs);
         visit::visit_item_struct(self, item);
+    }
+    fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
+        self.reject_renames(&item.ident, &item.attrs);
+        visit::visit_item_enum(self, item);
     }
     fn visit_field(&mut self, field: &'ast syn::Field) {
         if let Some(name) = &field.ident
@@ -424,9 +427,7 @@ fn safe_file_name(name: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
-fn is_url(text: &str) -> bool {
-    text.starts_with("https://") || text.starts_with("http://")
-}
+use spec_suite::is_url;
 
 fn blank(text: &str) -> bool {
     text.trim().is_empty()
@@ -534,6 +535,9 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
     let mut listed = BTreeSet::new();
     // macOS CI checks out onto a case-insensitive filesystem.
     let mut folded = BTreeSet::new();
+    // Artifacts with third-party provenance; anything derived from one must
+    // state its own license rather than inherit the repository default.
+    let mut third_party = BTreeSet::new();
     for artifact in &manifest.artifacts {
         let file = artifact.file.as_str();
         // An unsafe or duplicate name is never looked up or counted as listed,
@@ -584,6 +588,9 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         if external && artifact.license.is_none() && artifact.provenance.is_none() {
             provenance_ok = false;
         }
+        if external || artifact.provenance.is_some() {
+            third_party.insert(file);
+        }
         if let Some(provenance) = &artifact.provenance {
             provenance_ok &= provenance.values().all(|value| !blank(value))
                 && provenance.contains_key("license")
@@ -628,9 +635,15 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         }
         if let Some(source) = artifact.source.as_deref()
             && !is_url(source)
-            && (source == artifact.file || !listed.contains(source))
         {
-            problems.push(problem(Rule::DerivedSource, artifact.file.as_str()));
+            if source == artifact.file || !listed.contains(source) {
+                problems.push(problem(Rule::DerivedSource, artifact.file.as_str()));
+            } else if third_party.contains(source)
+                && artifact.license.is_none()
+                && artifact.provenance.is_none()
+            {
+                problems.push(problem(Rule::Provenance, artifact.file.as_str()));
+            }
         }
     }
 
@@ -1353,7 +1366,11 @@ fn local_by_products_are_skipped_and_can_never_be_artifacts() {
             let _ = std::fs::remove_dir_all(&self.0);
         }
     }
-    let scratch = Scratch(Path::new(env!("CARGO_TARGET_TMPDIR")).join("manifest-by-products"));
+    // Per process: test runs sharing a target directory must not collide.
+    let scratch = Scratch(
+        Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join(format!("manifest-by-products-{}", std::process::id())),
+    );
     let directory = &scratch.0;
     let _ = std::fs::remove_dir_all(directory);
     std::fs::create_dir_all(directory.join("nested")).unwrap();
@@ -1455,7 +1472,7 @@ fn spec_path_options_match_the_cli_definition() {
     let declared: BTreeSet<&str> = COMMITTED
         .sources
         .iter()
-        .filter(|(path, _)| path.starts_with("src/cli"))
+        .filter(|(path, _)| path.starts_with("src/"))
         .flat_map(|(_, index)| index.path_options.iter().map(String::as_str))
         .collect();
     let shared: BTreeSet<&str> = spec_suite::PATH_OPTIONS.iter().copied().collect();
@@ -1534,14 +1551,15 @@ fn path_option_state_never_leaks_past_one_argument() {
             Plain("pe"),
         ]
     );
-    // Only `--` begins a missing value; `-` and `-name.crl` are paths.
+    // As in Clap, `-name.der` after a path option is a flag (the value is
+    // missing); only a lone `-` is a value.
     assert_eq!(
         spec_suite::classify(["--crl", "-", "--roots", "-dash.der", "x"], prefix),
         [
             Plain("--crl"),
             PathArgument("-"),
             Plain("--roots"),
-            PathArgument("-dash.der"),
+            Plain("-dash.der"),
             Plain("x"),
         ]
     );
@@ -1641,6 +1659,8 @@ fn option_names_follow_clap_and_unsupported_forms_are_recorded() {
     for source in [
         "struct A { #[arg(id = \"cert\", long)] roots: Vec<PathBuf> }",
         "#[command(rename_all = \"lower\")] struct A { #[arg(long)] roots: Vec<PathBuf> }",
+        "#[command(group(ArgGroup::new(\"g\")), rename_all = \"lower\")] struct A {}",
+        "#[clap(rename_all = \"lower\")] enum E { V }",
     ] {
         assert_eq!(
             SourceIndex::parse_recording(source).errors.len(),
@@ -1650,4 +1670,46 @@ fn option_names_follow_clap_and_unsupported_forms_are_recorded() {
     }
     let not_utf8 = SourceIndex::read(&[0x66, 0x6e, 0xff]);
     assert!(not_utf8.errors[0].starts_with("not UTF-8"));
+}
+
+#[test]
+fn artifacts_derived_from_third_party_ones_state_a_license() {
+    // Derived from a repository-generated artifact: the default applies.
+    assert_eq!(
+        broken(|c| artifact(c, FILE)["source"] = json!("good-pe64.exe")),
+        vec![]
+    );
+    // Derived from an externally signed one: it must say so.
+    assert_eq!(
+        broken(|c| artifact(c, FILE)["source"] = json!("msi-independent-jsign.msi")),
+        one(Rule::Provenance, FILE)
+    );
+    assert_eq!(
+        broken(|c| {
+            artifact(c, FILE)["source"] = json!("msi-independent-jsign.msi");
+            artifact(c, FILE)["license"] = json!("Apache-2.0 (derived from a jsign 7.6 signature)");
+        }),
+        vec![]
+    );
+}
+
+#[test]
+fn any_scheme_is_a_url_in_both_halves_of_the_check() {
+    for url in [
+        "git://host/repo",
+        "ftp://host/file",
+        "file:///x",
+        "https://h/x",
+    ] {
+        assert!(is_url(url), "{url}");
+        // Never resolved as a derived fixture, and treated as external.
+        assert_eq!(
+            broken(|c| artifact(c, FILE)["source"] = json!(url)),
+            one(Rule::Provenance, FILE),
+            "{url}"
+        );
+    }
+    for path in ["fixtures/x", "://x", "a b://x"] {
+        assert!(!is_url(path), "{path}");
+    }
 }
