@@ -259,6 +259,7 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
     }
     const LEAF: &str = "sec10-leaf-crl-dp.exe";
     const CA: &str = "sec10-ca-crl-dp.exe";
+    const NO_POINT: &str = "good-sec06-basic.exe";
     const LEAF_POINT: &str = "http://crl.invalid/sec10-a.crl";
     const CA_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -271,7 +272,7 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         Option<&'static str>,
     );
     #[rustfmt::skip]
-    let rows: [Row; 9] = [
+    let rows: [Row; 10] = [
         // Another partition's CRL has the issuer's name but is not authoritative.
         (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
         (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match-revoked.crl"), &[LEAF_POINT], Some("certificate_revoked")),
@@ -285,6 +286,8 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
         (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match-user.crl"], None, &[], None),
         (LEAF, ["sec06-root.crl", "sec06-issuer.crl"], None, &[], None),
         (CA, ["sec10-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
+        // A signer listing no point has nothing to fetch: the partition is reported, not skipped.
+        (NO_POINT, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
     ];
     for (input, supplied, response, requests, error) in rows {
         let label = format!("{input} with {supplied:?}");
@@ -324,10 +327,13 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
             assert_eq!(code, 1, "{label}");
             assert_eq!(result["error"]["code"], error, "{label}");
             assert_eq!(result["error"]["stage"], "revocation", "{label}");
-            assert_eq!(
-                result["error"]["details"]["crl_retrieval"]["artifacts"][0]["url"], requests[0],
-                "{label}"
-            );
+            let artifacts = result["error"]["details"]["crl_retrieval"]["artifacts"]
+                .as_array()
+                .unwrap();
+            assert_eq!(artifacts.len(), requests.len(), "{label}");
+            for (artifact, request) in artifacts.iter().zip(requests) {
+                assert_eq!(artifact["url"], *request, "{label}");
+            }
         } else {
             assert_eq!(code, 0, "{label}: {result}");
             assert_eq!(

@@ -7099,7 +7099,8 @@
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first"
+        "sec10-revoked-issuer-issuer-crl-first",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {
@@ -7899,7 +7900,8 @@
         "sec10-fetch-ca-scope-idp-fetches-listed-point",
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-user-scope-idp-not-fetched",
-        "sec10-fetch-full-crl-not-fetched"
+        "sec10-fetch-full-crl-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {
@@ -7992,7 +7994,8 @@
         "sec10-fetch-user-scope-idp-not-fetched",
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched"
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {
@@ -9494,7 +9497,8 @@
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-matching-idp-not-fetched"
+        "sec10-fetch-matching-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {

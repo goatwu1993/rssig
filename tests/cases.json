@@ -32778,6 +32778,43 @@
         },
         "crl_requests": []
       }
+    },
+    {
+      "id": "sec10-fetch-no-listed-point-not-fetched",
+      "input": "good-sec06-basic.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec10-issuer-idp-match.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "distribution_point_scope"
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      },
+      "crl_responses": {}
     }
   ]
 }

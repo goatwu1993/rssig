@@ -415,7 +415,8 @@
         "sec10-fetch-user-scope-idp-not-fetched",
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched"
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-fetch-no-listed-point-not-fetched"
       ]
     },
     {
@@ -873,7 +874,8 @@
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-partition-crl-relative-no-listed-point"
+        "sec10-partition-crl-relative-no-listed-point",
+        "sec10-fetch-no-listed-point-not-fetched"
       ],
       "gap": ""
     },

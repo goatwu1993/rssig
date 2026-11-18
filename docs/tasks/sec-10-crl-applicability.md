@@ -106,7 +106,8 @@ One box per item in the scope above.
   `sec10-fetch-other-idp-fetched-other-unknown`,
   `sec10-fetch-ca-scope-idp-fetches-listed-point`,
   `sec10-fetch-ca-user-scope-idp-fetches-listed-point`, and the
-  `sec10-fetch-*-not-fetched` controls; named test in `tests/cli/crl_fetch.rs`.
+  `sec10-fetch-*-not-fetched` controls, including a signer that lists no point
+  (`sec10-fetch-no-listed-point-not-fetched`, still `invalid_crl`); named test in `tests/cli/crl_fetch.rs`.
   Limits: the rule is restated in `has_crl_for`, not shared with webpki, and
   does not consider AKI applicability or usability, which verification still
   enforces on every CRL.
@@ -154,7 +155,7 @@ Change these only with a new decision and paired fixtures.
   The distribution-point, cRLSign, revoked-intermediate, AKI issuer/serial and
   freshness-boundary cases pinned behavior that already held. The five
   `sec10-fetch-*-fetches-*`/`-fetched-*` cases failed before the coverage fix
-  (no request was made); the four `-not-fetched` controls already passed.
+  (no request was made); the five `-not-fetched` controls already passed.
 - The `--fetch-crls` coverage rule is a second implementation of webpki's
   authority rule, checked against it only through these fixtures. Not pinned:
   a certificate with several points, a CRL with a malformed
