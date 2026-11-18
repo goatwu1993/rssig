@@ -53,6 +53,24 @@ impl TrustStore {
         }
         Ok(())
     }
+    /// Issuer names of the supplied CRLs, each CRL decoded once. A name match
+    /// is necessary for a CRL to apply to a certificate, never sufficient.
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<x509_cert::name::Name>> {
+        let mut issuers = Vec::new();
+        for bytes in &self.crls {
+            for _ in 0..8 {
+                budget.decoded_bytes.charge(bytes.len())?;
+            }
+            issuers.push(
+                CertificateList::from_der(bytes)
+                    .map_err(crate::compat_error)?
+                    .tbs_cert_list
+                    .issuer,
+            );
+        }
+        Ok(issuers)
+    }
     #[cfg(feature = "crl-fetch")]
     pub(crate) fn retrieval_crl_count(&self) -> usize {
         self.crls.len()

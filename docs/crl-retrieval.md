@@ -19,20 +19,29 @@ would be without `--fetch-crls`; a bad local artifact is not silently replaced
 or ignored, and nothing is fetched for a verification that cannot succeed. No
 CRL applicability rule is restated for retrieval, so a supplied CRL suppresses
 a fetch exactly when verification accepts it as evidence (`sec10-fetch-*`).
-When the result is `revocation_unknown`, every distribution point listed by a
-selected certificate is requested, including one whose certificate a supplied
-CRL already covers; the verifier does not report which certificate lacked
-evidence. Supplied CRLs stay loaded beside the fetched ones.
+When the result is `revocation_unknown`, points are requested in two steps.
+First those of selected certificates whose issuer no supplied CRL even names:
+such a certificate certainly lacks evidence. Verification is repeated, and only
+if the status is still unknown are the points of the remaining certificates
+requested, because a CRL that names the issuer may or may not be authoritative
+and the verifier does not say which certificate lacked evidence. A certificate
+covered by a supplied CRL is therefore not fetched for while another chain
+lacks one (`sec10-fetch-covered-signer-point-not-requested`), but it is in the
+second step if a name-matching CRL elsewhere was not enough
+(`sec10-fetch-name-matched-signer-point-requested-second`). Supplied CRLs stay
+loaded beside the fetched ones.
 
-The implementation first verifies all signatures and candidate trust paths with
-revocation omitted internally. It discovers distribution points on selected leaf,
-intermediate and timestamp certificates, including bundle children; configured
-anchors are excluded. With supplied CRLs it then verifies with revocation required; without any, the
-status is already unknown. If the status is unknown it retrieves the listed
-CRLs and repeats verification with revocation required. Success is only ever
-the result of a pass with revocation required. A run that both has supplied
-CRLs and needs a fetch therefore verifies three times. All passes share SEC-02
-work allowances, so retrieval mode consumes additional
+With supplied CRLs the implementation first verifies with revocation required;
+a good result or any failure but unknown status ends there, in one pass. Else
+it verifies all signatures and candidate trust paths with revocation omitted
+internally and discovers distribution points on selected leaf, intermediate
+and timestamp certificates, including bundle children; configured anchors are
+excluded. It retrieves CRLs in the two steps above and verifies with
+revocation required after each step that fetched something. Success is only
+ever the result of a pass with revocation required. A run needs one pass when
+supplied CRLs settle it, two when none are supplied, and up to four when
+supplied CRLs leave the status unknown. All passes share SEC-02 work allowances,
+so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
 search would prefer a different path. Missing embedded intermediates still fail;

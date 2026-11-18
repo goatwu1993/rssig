@@ -358,12 +358,12 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
 }
 
 /// SEC-10: retrieval follows the verifier's result. Each row is (input, root,
-/// supplied CRLs, response fixture, requested URLs, expected error code and
-/// `details.reason`).
+/// supplied CRLs, responses by URL, requested URLs in order, expected error
+/// code and `details.reason`). A URL without a response fails the request.
 #[test]
 fn sec10_fetch_follows_the_verification_result() {
     struct Source {
-        response: Vec<u8>,
+        responses: Vec<(&'static str, Vec<u8>)>,
         requests: Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source {
@@ -373,33 +373,54 @@ fn sec10_fetch_follows_the_verification_result() {
             _: usize,
         ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
             self.requests.push(url.into());
+            let (_, bytes) = self
+                .responses
+                .iter()
+                .find(|(known, _)| *known == url)
+                .ok_or_else(|| {
+                    rssig::VerificationError::new(
+                        rssig::domain::ErrorCode::CrlFetchFailed,
+                        rssig::domain::Stage::Revocation,
+                        "no response for this URL",
+                    )
+                })?;
             Ok(rssig::retrieval::FetchedCrl {
-                bytes: self.response.clone(),
+                bytes: bytes.clone(),
                 final_url: url.into(),
             })
         }
     }
+    const EXAMPLE_POINT: &str = "http://crl.example.invalid/test.crl";
+    const LEAF_POINT: &str = "http://crl.invalid/sec10-a.crl";
+    const CA_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
     type Row = (
         &'static str,
         &'static str,
         &'static [&'static str],
-        &'static str,
+        &'static [(&'static str, &'static str)],
         &'static [&'static str],
         Option<(&'static str, &'static str)>,
     );
     #[rustfmt::skip]
-    let rows: [Row; 3] = [
+    let rows: [Row; 5] = [
         // A CRL with the issuer's name from another key is excluded by verification,
         // so it does not stand in for the listed point.
-        ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], "good.crl", &["http://crl.example.invalid/test.crl"], None),
+        ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
         // A supplied CRL that verification rejects is reported as it is offline; the
         // provider is not asked, although it could answer.
-        ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], "sec06-issuer.crl", &[], Some(("invalid_crl", "distribution_point_scope"))),
-        ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], "sec10-issuer-idp-match.crl", &[], Some(("invalid_crl", "issuing_distribution_point"))),
+        ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
+        ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[], Some(("invalid_crl", "issuing_distribution_point"))),
+        // Both selected certificates list a point. Only the issuer has no supplied CRL
+        // naming its issuer, so only its point is requested: the signer's point has no
+        // response here and a request for it would fail the run.
+        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
+        // A name-matching CRL that is not authoritative for the signer: its point is
+        // requested second, after the certainly missing one did not settle the status.
+        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec10-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "sec10-issuer-idp-match.crl")], &[CA_POINT, LEAF_POINT], None),
     ];
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
-    for (input, root, supplied, response, requests, error) in rows {
+    for (input, root, supplied, responses, requests, error) in rows {
         let label = format!("{input} with {supplied:?}");
         let mut args = vec![
             "rssig".to_owned(),
@@ -416,7 +437,10 @@ fn sec10_fetch_follows_the_verification_result() {
         }
         args.push(path(input));
         let mut source = Source {
-            response: std::fs::read(base.join(response)).unwrap(),
+            responses: responses
+                .iter()
+                .map(|(url, file)| (*url, std::fs::read(base.join(file)).unwrap()))
+                .collect(),
             requests: Vec::new(),
         };
         let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -439,12 +463,17 @@ fn sec10_fetch_follows_the_verification_result() {
             assert_eq!(code, 0, "{label}: {result}");
             let revocation = &result["signatures"][0]["trust"]["revocation"];
             assert_eq!(revocation["status"], "good", "{label}");
+            let artifacts = result["crl_retrieval"]["artifacts"].as_array().unwrap();
+            assert_eq!(artifacts.len(), requests.len(), "{label}");
+            for (artifact, request) in artifacts.iter().zip(requests) {
+                assert_eq!(artifact["url"], *request, "{label}");
+            }
+            // Supplied CRLs stay loaded beside the fetched ones.
             assert_eq!(
-                result["crl_retrieval"]["artifacts"][0]["url"], requests[0],
+                revocation["crls"].as_array().unwrap().len(),
+                supplied.len() + requests.len(),
                 "{label}"
             );
-            // The excluded supplied CRL stays loaded beside the fetched one.
-            assert_eq!(revocation["crls"].as_array().unwrap().len(), 2, "{label}");
         }
     }
 }

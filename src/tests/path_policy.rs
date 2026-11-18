@@ -521,6 +521,14 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         core::slice::from_ref(&pointed),
     );
+    // SEC-10: both selected certificates list a distribution point, the signer
+    // LISTED_POINT and its issuer ISSUER_POINT.
+    write_pe(
+        dir,
+        "sec10-chain-crl-dp",
+        &scoped,
+        core::slice::from_ref(&pointed),
+    );
     for (label, scope) in root_scope_forms() {
         let file = format!("sec10-sec06-root-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
@@ -758,6 +766,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             "sec10-ca-crl-sign-fallback.exe",
             "sec10-leaf-crl-dp.exe",
             "sec10-ca-crl-dp.exe",
+            "sec10-chain-crl-dp.exe",
         ];
         let form = point_forms()
             .iter()
@@ -795,7 +804,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 38 + point_forms().len());
+    assert_eq!(count, 39 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {

@@ -7550,7 +7550,9 @@
         "sec10-revoked-issuer-issuer-crl-first",
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched"
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-chain-crl-dp-full-crls",
+        "sec10-fetch-covered-signer-point-not-requested"
       ]
     },
     {
@@ -7910,7 +7912,10 @@
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-dns-name-point-denied",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-chain-crl-dp-full-crls",
+        "sec10-fetch-covered-signer-point-not-requested",
+        "sec10-fetch-name-matched-signer-point-requested-second"
       ]
     },
     {
@@ -8009,7 +8014,10 @@
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-dns-name-point-denied",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-chain-crl-dp-full-crls",
+        "sec10-fetch-covered-signer-point-not-requested",
+        "sec10-fetch-name-matched-signer-point-requested-second"
       ]
     },
     {
@@ -9517,7 +9525,8 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-name-matched-signer-point-requested-second"
       ]
     },
     {
@@ -9546,7 +9555,8 @@
         "sec10-crl-dp-other-idp-with-full-crl",
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-fetch-other-idp-fetched-other-unknown"
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-fetch-name-matched-signer-point-requested-second"
       ]
     },
     {
@@ -9650,6 +9660,19 @@
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-ca-ca-scope-idp-not-fetched"
+      ]
+    },
+    {
+      "file": "sec10-chain-crl-dp.exe",
+      "sha256": "d6bc19962ae073701b65f095457ae87f347de994130c03145e35acdede113ed2",
+      "bytes": 2312,
+      "description": "SEC-10: Inert PE signed by the sec10-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl, so both selected certificates list a point. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-chain-crl-dp-full-crls",
+        "sec10-fetch-covered-signer-point-not-requested",
+        "sec10-fetch-name-matched-signer-point-requested-second"
       ]
     },
     {

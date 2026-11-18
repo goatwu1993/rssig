@@ -33047,6 +33047,161 @@
         },
         "crl_requests": []
       }
+    },
+    {
+      "id": "sec10-chain-crl-dp-full-crls",
+      "input": "sec10-chain-crl-dp.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-covered-signer-point-not-requested",
+      "input": "sec10-chain-crl-dp.exe",
+      "crl_responses": {
+        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.invalid/sec10-issuer.crl",
+                    "final_url": "http://crl.invalid/sec10-issuer.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
+                    "bytes": 180
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-issuer.crl"
+        ]
+      }
+    },
+    {
+      "id": "sec10-fetch-name-matched-signer-point-requested-second",
+      "input": "sec10-chain-crl-dp.exe",
+      "crl_responses": {
+        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
+        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-issuer-idp-other.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.invalid/sec10-issuer.crl",
+                    "final_url": "http://crl.invalid/sec10-issuer.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
+                    "bytes": 180
+                  },
+                  {
+                    "url": "http://crl.invalid/sec10-a.crl",
+                    "final_url": "http://crl.invalid/sec10-a.crl",
+                    "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
+                    "bytes": 233
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-issuer.crl",
+          "http://crl.invalid/sec10-a.crl"
+        ]
+      }
     }
   ]
 }
