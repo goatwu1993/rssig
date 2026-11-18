@@ -633,6 +633,13 @@ fn sec10_fetch_second_step_skips_a_bad_response() {
     assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-a.crl");
     assert_eq!(failures[0]["code"], "invalid_crl");
     assert_eq!(failures[0]["stage"], "revocation");
+    assert_eq!(failures[0]["title"], "Invalid CRL");
+    assert!(
+        failures[0]["type"]
+            .as_str()
+            .unwrap()
+            .ends_with("problems.md#invalid_crl")
+    );
     assert_eq!(
         failures[0]["details"]["url"],
         "http://crl.invalid/sec10-a.crl"

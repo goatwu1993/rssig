@@ -241,6 +241,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return;
         }
         self.report.failures.push(CrlRetrievalFailure {
+            problem: e.problem.clone(),
             certificate_sha256: certificate.into(),
             url: url.map(Into::into),
             code: e.code,
@@ -254,8 +255,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     /// Request every listed point of `cert`. A point that yields no evidence
     /// is recorded in the report's failures (see [`Self::skip`]); whether that
     /// matters is decided by the next verification. The engine's own limits
-    /// (requests, retained CRLs, combined bytes, response size, URLs per
-    /// certificate) end the run. A URL already requested is not
+    /// (requests, retained CRLs, combined bytes, URLs per certificate and URL
+    /// length) end the run; a response over its size cap is no evidence. A URL already requested is not
     /// requested again; if it failed, the failure is recorded for this
     /// certificate too. Returns whether anything was added.
     fn fetch(

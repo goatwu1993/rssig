@@ -525,6 +525,9 @@ pub struct CrlRetrievalArtifact {
 /// missing evidence mattered.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrlRetrievalFailure {
+    /// RFC 7807 `type`, `title` and `detail`, as on every serialized error.
+    #[serde(flatten)]
+    pub problem: Box<ProblemDetails>,
     /// SHA-256 of the certificate that lists the point.
     pub certificate_sha256: String,
     pub url: Option<String>,
