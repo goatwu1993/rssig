@@ -23,12 +23,49 @@ pub const MAX_REQUESTS: usize = 16;
 /// Providers return untrusted bytes, never a trust/revocation verdict. Implementations
 /// must bound their own I/O/allocation by `max_bytes` and enforce a finite deadline.
 /// The engine independently checks response length and authenticates every artifact.
+///
+/// A request that produces no CRL returns a [`FetchError`] of one of four
+/// kinds. `Denied`, `Failed` and `Unknown` mean only that this URL produced
+/// nothing: the engine records it and goes on. `Abort` means the source can do
+/// no more work; the engine requests nothing further and verifies with what it
+/// has. See `docs/crl-retrieval.md`.
 pub trait CrlSource {
-    fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError>;
+    fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, FetchError>;
 }
 pub struct FetchedCrl {
     pub bytes: Vec<u8>,
     pub final_url: String,
+}
+
+/// Why a [`CrlSource`] request produced no CRL.
+#[derive(Clone, Debug)]
+pub struct FetchError {
+    pub kind: CrlFetchErrorKind,
+    pub message: String,
+    /// Optional structured context, reported with the failure.
+    pub details: std::collections::BTreeMap<String, serde_json::Value>,
+}
+impl FetchError {
+    pub fn new(kind: CrlFetchErrorKind, message: impl Into<String>) -> Self {
+        Self {
+            kind,
+            message: message.into(),
+            details: Default::default(),
+        }
+    }
+    pub fn detail(mut self, key: impl Into<String>, value: impl serde::Serialize) -> Self {
+        self.details.insert(
+            key.into(),
+            serde_json::to_value(value).unwrap_or(serde_json::Value::Null),
+        );
+        self
+    }
+    /// The verification error this failure is reported as.
+    fn into_error(self) -> VerificationError {
+        let mut error = error(self.kind.code(), self.message);
+        error.details.extend(self.details);
+        error
+    }
 }
 
 pub(crate) fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
@@ -183,9 +220,11 @@ struct Retrieval<'s, 'b, 'l> {
     report: CrlRetrievalReport,
     downloaded: usize,
     /// Requested URLs, with the failure of those that yielded no evidence.
-    requested: BTreeMap<String, Option<VerificationError>>,
+    requested: BTreeMap<String, Option<(VerificationError, Option<CrlFetchErrorKind>)>>,
     /// Requests made, answered or not; bounded by `MAX_REQUESTS`.
     requests: usize,
+    /// The source reported `Abort`: nothing further is requested.
+    aborted: bool,
     budget: &'b Budget<'l>,
 }
 
@@ -202,6 +241,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             downloaded: 0,
             requested: BTreeMap::new(),
             requests: 0,
+            aborted: false,
             budget,
         }
     }
@@ -213,6 +253,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     /// evidence for every certificate, so this never accepts anything. Only
     /// the engine's own limits end the run; they never reach here.
     fn skip(&mut self, certificate: &str, url: Option<&str>, e: VerificationError) {
+        self.skip_kind(certificate, url, e, None);
+    }
+
+    fn skip_kind(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: VerificationError,
+        kind: Option<CrlFetchErrorKind>,
+    ) {
         let e = match url {
             Some(url) => e.detail("url", url),
             None => e,
@@ -221,16 +271,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Stage::Revocation,
             format_args!("CRL point yielded no evidence: {:?}", e.message),
         );
-        self.record(certificate, url, &e);
+        self.record(certificate, url, &e, kind);
         if let Some(entry) = url.and_then(|url| self.requested.get_mut(url)) {
-            *entry = Some(e);
+            *entry = Some((e, kind));
         }
     }
 
     /// One failure entry per certificate and URL. A point without a URL is
     /// reached once per certificate (certificates are deduplicated), so each
     /// is listed.
-    fn record(&mut self, certificate: &str, url: Option<&str>, e: &VerificationError) {
+    fn record(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: &VerificationError,
+        source_error: Option<CrlFetchErrorKind>,
+    ) {
         if url.is_some()
             && self
                 .report
@@ -249,6 +305,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             message: e.message.clone(),
             details: e.details.clone(),
             causes: e.causes.clone(),
+            source_error,
         });
     }
 
@@ -294,10 +351,13 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             };
             if let Some(previous) = self.requested.get(&url) {
-                if let Some(e) = previous.clone() {
-                    self.record(sha256, Some(&url), &e);
+                if let Some((e, kind)) = previous.clone() {
+                    self.record(sha256, Some(&url), &e, kind);
                 }
                 continue;
+            }
+            if self.aborted {
+                return Ok(added);
             }
             if self.requests >= MAX_REQUESTS {
                 return Err(limit("crl_requests", MAX_REQUESTS, self.requests, 1));
@@ -324,7 +384,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             let fetched = match source.fetch(&url, cap) {
                 Ok(fetched) => fetched,
                 Err(e) => {
-                    self.skip(sha256, Some(&url), e);
+                    let kind = e.kind;
+                    self.skip_kind(sha256, Some(&url), e.into_error(), Some(kind));
+                    if kind == CrlFetchErrorKind::Abort {
+                        self.aborted = true;
+                        log.info(
+                            Stage::Revocation,
+                            format_args!("CRL source aborted retrieval"),
+                        );
+                        return Ok(added);
+                    }
                     continue;
                 }
             };
@@ -473,6 +542,9 @@ fn retrieve(
         for (step, certificates) in stages.iter().enumerate() {
             let mut added = false;
             for (sha256, cert) in certificates {
+                if state.aborted {
+                    break;
+                }
                 added |= state.fetch(sha256, cert, source)?;
             }
             let verify = if step == 0 {
@@ -490,9 +562,19 @@ fn retrieve(
         // Still unknown. The result is always the verifier's own: if no
         // verification ran yet (no CRL at all), it runs now. Points that
         // yielded no evidence, and why, are in the report's failures.
-        match verdict {
+        let result = match verdict {
             Some(e) => Err(e),
             None => verify_with(bytes, options, &state.store, format, budget),
+        };
+        // Evidence is still missing because the source stopped: say so, so
+        // that "the source gave up" is distinct from "no CRL was available".
+        match result {
+            Err(e) if state.aborted && e.code == ErrorCode::RevocationUnknown => Err(error(
+                ErrorCode::CrlFetchAborted,
+                "the CRL source stopped retrieval before revocation status was known",
+            )
+            .detail("revocation_unknown", e.message)),
+            result => result,
         }
     })();
     match result {
@@ -534,7 +616,7 @@ mod tests {
     use crate::{TrustStore, verify::RevocationPolicy};
     struct Never;
     impl CrlSource for Never {
-        fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
+        fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, FetchError> {
             panic!("unexpected provider call")
         }
     }
@@ -634,7 +716,7 @@ mod tests {
     fn provider_overflow_is_rejected_without_loading_or_trusting_the_artifact() {
         struct Huge;
         impl CrlSource for Huge {
-            fn fetch(&mut self, url: &str, cap: usize) -> Result<FetchedCrl, VerificationError> {
+            fn fetch(&mut self, url: &str, cap: usize) -> Result<FetchedCrl, FetchError> {
                 Ok(FetchedCrl {
                     bytes: vec![0; cap + 1],
                     final_url: url.into(),
@@ -699,9 +781,9 @@ mod tests {
     fn failed_requests_count_toward_the_request_cap() {
         struct Failing(usize);
         impl CrlSource for Failing {
-            fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
+            fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, FetchError> {
                 self.0 += 1;
-                Err(error(ErrorCode::CrlFetchFailed, "unreachable"))
+                Err(FetchError::new(CrlFetchErrorKind::Failed, "unreachable"))
             }
         }
         let store = store();
@@ -748,29 +830,82 @@ mod tests {
         // A URL that was never requested is not tracked as one.
         assert!(state.requested.is_empty());
     }
-    #[test]
-    fn a_source_error_is_no_evidence_even_when_it_is_a_limit() {
-        struct Limited;
-        impl CrlSource for Limited {
-            fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, VerificationError> {
-                Err(limit("crl_network_bytes", 1, 1, 1))
-            }
+    /// Answers each request with the next kind in turn, counting requests.
+    struct Kinds(Vec<CrlFetchErrorKind>, usize);
+    impl CrlSource for Kinds {
+        fn fetch(&mut self, _: &str, _: usize) -> Result<FetchedCrl, FetchError> {
+            let kind = self.0[self.1 % self.0.len()];
+            self.1 += 1;
+            Err(FetchError::new(kind, "no CRL").detail("hint", "test"))
         }
+    }
+    #[test]
+    fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {
+        use CrlFetchErrorKind::*;
         let store = store();
-        let error = verify_with_crl_source(
-            include_bytes!("../tests/fixtures/good-crl-discovery.exe"),
-            None,
-            &VerifyOptions::trusted(&store, 1800000000),
-            &mut Limited,
-        )
-        .unwrap_err();
-        // The source is the caller's: its limit means this URL produced
-        // nothing, so the status is unknown and the reason is recorded.
-        assert_eq!(error.code, ErrorCode::RevocationUnknown);
-        let failure = &error.details["crl_retrieval"]["failures"][0];
-        assert_eq!(failure["code"], "resource_limit_exceeded");
-        assert_eq!(failure["details"]["resource"], "crl_network_bytes");
-        assert_eq!(failure["url"], "http://crl.example.invalid/test.crl");
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds(vec![Denied, Failed, Unknown], 0);
+        let cert = signer_with_points("k", 3);
+        assert!(!state.fetch("k", &cert, &mut source).unwrap());
+        assert_eq!(source.1, 3);
+        assert!(!state.aborted);
+        let seen: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.code, f.source_error, f.details["hint"].clone()))
+            .collect();
+        assert_eq!(
+            seen,
+            [
+                (ErrorCode::CrlFetchDenied, Some(Denied), "test".into()),
+                (ErrorCode::CrlFetchFailed, Some(Failed), "test".into()),
+                (ErrorCode::CrlFetchFailed, Some(Unknown), "test".into()),
+            ]
+        );
+    }
+    #[test]
+    fn abort_stops_every_further_request() {
+        use CrlFetchErrorKind::*;
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds(vec![Failed, Abort], 0);
+        assert!(
+            !state
+                .fetch("a", &signer_with_points("a", 4), &mut source)
+                .unwrap()
+        );
+        assert!(
+            !state
+                .fetch("b", &signer_with_points("b", 4), &mut source)
+                .unwrap()
+        );
+        assert_eq!(source.1, 2, "nothing is requested after Abort");
+        assert!(state.aborted);
+        assert_eq!(state.report.failures.len(), 2);
+        assert_eq!(state.report.failures[1].code, ErrorCode::CrlFetchAborted);
+    }
+    #[test]
+    fn the_result_tells_an_aborted_source_from_missing_evidence() {
+        use CrlFetchErrorKind::*;
+        let store = store();
+        let options = VerifyOptions::trusted(&store, 1800000000);
+        let input = include_bytes!("../tests/fixtures/good-crl-discovery.exe");
+        for (kind, code) in [
+            (Denied, ErrorCode::RevocationUnknown),
+            (Failed, ErrorCode::RevocationUnknown),
+            (Unknown, ErrorCode::RevocationUnknown),
+            (Abort, ErrorCode::CrlFetchAborted),
+        ] {
+            let error = verify_with_crl_source(input, None, &options, &mut Kinds(vec![kind], 0))
+                .unwrap_err();
+            assert_eq!(error.code, code, "{kind:?}");
+            let failure = &error.details["crl_retrieval"]["failures"][0];
+            assert_eq!(failure["source_error"], serde_json::to_value(kind).unwrap());
+            assert_eq!(failure["url"], "http://crl.example.invalid/test.crl");
+        }
     }
     #[test]
     fn discovery_preserves_uri_and_rejects_malformed_extensions() {

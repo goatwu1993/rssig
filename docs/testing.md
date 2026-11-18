@@ -272,7 +272,10 @@ See [coverage by invariant](coverage-inventory.md) and the maintained
 `tests/coverage-inventory.json` case/error/producer index. Cargo tests validate
 its references; it records open gaps separately from existing evidence.
 
-Retrieval cases can provide `crl_responses` (URL to fixture filename) and
-`expect.crl_requests` (exact ordered URL array, including failed requests).
+Retrieval cases can provide `crl_responses` (URL to fixture filename),
+`crl_errors` (URL to the fetch-error kind the injected source returns instead:
+`denied`, `failed`, `abort` or `unknown`; it reads no file and requires
+`crl_responses`; an unmapped URL is `failed`) and `expect.crl_requests`
+(exact ordered URL array, including failed requests).
 An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.

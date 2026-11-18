@@ -11,8 +11,8 @@ use std::sync::LazyLock;
 
 use libfuzzer_sys::fuzz_target;
 use rssig::TrustStore;
-use rssig::domain::VerificationError;
-use rssig::retrieval::{CrlSource, FetchedCrl, verify_with_crl_source};
+use rssig::domain::CrlFetchErrorKind;
+use rssig::retrieval::{CrlSource, FetchError, FetchedCrl, verify_with_crl_source};
 use rssig::verify::VerifyOptions;
 
 /// Fixed validation time (2027-01-15T07:59:59Z), matching the pinned test clock.
@@ -38,9 +38,20 @@ static SEC06: LazyLock<TrustStore> = LazyLock::new(|| {
 });
 
 /// Answers every request with the same bytes, at most `max_bytes` of them.
+/// An empty answer is a fetch error whose kind follows the URL's length, so
+/// every kind, `Abort` included, is reached.
 struct Answer<'a>(&'a [u8]);
 impl CrlSource for Answer<'_> {
-    fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError> {
+    fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, FetchError> {
+        if self.0.is_empty() {
+            let kinds = [
+                CrlFetchErrorKind::Denied,
+                CrlFetchErrorKind::Failed,
+                CrlFetchErrorKind::Abort,
+                CrlFetchErrorKind::Unknown,
+            ];
+            return Err(FetchError::new(kinds[url.len() % 4], "fuzz"));
+        }
         Ok(FetchedCrl {
             bytes: self.0[..self.0.len().min(max_bytes)].to_vec(),
             final_url: url.into(),

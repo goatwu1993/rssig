@@ -109,7 +109,7 @@ fn cli_logger_and_crl_source_combine_and_log_each_request() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             Ok(rssig::retrieval::FetchedCrl {
                 bytes: self.0.clone(),
                 final_url: url.into(),

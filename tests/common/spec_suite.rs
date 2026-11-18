@@ -25,6 +25,9 @@ pub struct Case {
     pub id: String,
     pub input: Option<String>,
     pub crl_responses: Option<BTreeMap<String, String>>,
+    /// URLs the injected source answers with a fetch error of this kind
+    /// instead of a response. Reads no file.
+    pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlFetchErrorKind>>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
     pub expect: Expectation,
@@ -124,6 +127,7 @@ impl Case {
             id: _,
             input,
             crl_responses,
+            crl_errors: _,
             inputs,
             command,
             expect:

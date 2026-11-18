@@ -30,6 +30,9 @@ impl Suite {
         let mut ids = HashSet::new();
         for case in &self.cases {
             let expect = &case.expect;
+            if case.crl_errors.is_some() && case.crl_responses.is_none() {
+                return Err(format!("crl_errors requires crl_responses: {}", case.id));
+            }
             if expect.crl_requests.is_some() && case.crl_responses.is_none() {
                 return Err(format!(
                     "crl_requests requires an injected source: {}",
@@ -143,6 +146,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     let mut stderr = Vec::new();
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
+        errors: Option<&'a BTreeMap<String, rssig::domain::CrlFetchErrorKind>>,
         fixtures: &'a Path,
         requests: &'a mut Vec<String>,
     }
@@ -151,14 +155,15 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut self,
             url: &str,
             max_bytes: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
+            use rssig::domain::CrlFetchErrorKind;
+            use rssig::retrieval::FetchError;
             self.requests.push(url.to_owned());
+            if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
+                return Err(FetchError::new(*kind, "injected CRL fetch error"));
+            }
             let name = self.responses.get(url).ok_or_else(|| {
-                rssig::VerificationError::new(
-                    rssig::domain::ErrorCode::CrlFetchFailed,
-                    rssig::domain::Stage::Revocation,
-                    "no injected CRL response",
-                )
+                FetchError::new(CrlFetchErrorKind::Failed, "no injected CRL response")
             })?;
             let path = Path::new(name);
             assert!(
@@ -183,6 +188,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut stderr,
             &mut Source {
                 responses,
+                errors: case.crl_errors.as_ref(),
                 fixtures,
                 requests: &mut requests,
             },

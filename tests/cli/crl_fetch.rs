@@ -46,7 +46,7 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             assert_eq!(url, "http://crl.example.invalid/test.crl");
             self.calls += 1;
             Ok(rssig::retrieval::FetchedCrl {
@@ -115,7 +115,7 @@ fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
             &mut self,
             _: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             panic!("supplied CRL or offline mode must not call the provider");
         }
     }
@@ -176,7 +176,7 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             self.calls += 1;
             Ok(rssig::retrieval::FetchedCrl {
                 bytes: self.bytes.clone(),
@@ -262,7 +262,7 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             self.requests.push(url.into());
             Ok(rssig::retrieval::FetchedCrl {
                 bytes: self.response.clone().expect("unexpected provider call"),
@@ -384,16 +384,15 @@ fn sec10_fetch_follows_the_verification_result() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             self.requests.push(url.into());
             let (_, bytes) = self
                 .responses
                 .iter()
                 .find(|(known, _)| *known == url)
                 .ok_or_else(|| {
-                    rssig::VerificationError::new(
-                        rssig::domain::ErrorCode::CrlFetchFailed,
-                        rssig::domain::Stage::Revocation,
+                    rssig::retrieval::FetchError::new(
+                        rssig::domain::CrlFetchErrorKind::Failed,
                         "no response for this URL",
                     )
                 })?;
@@ -525,11 +524,10 @@ fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             self.0.push(url.into());
-            Err(rssig::VerificationError::new(
-                rssig::domain::ErrorCode::CrlFetchFailed,
-                rssig::domain::Stage::Revocation,
+            Err(rssig::retrieval::FetchError::new(
+                rssig::domain::CrlFetchErrorKind::Failed,
                 "unreachable",
             ))
         }
@@ -583,7 +581,7 @@ fn sec10_fetch_second_step_skips_a_bad_response() {
             &mut self,
             url: &str,
             _: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
+        ) -> Result<rssig::retrieval::FetchedCrl, rssig::retrieval::FetchError> {
             self.0.push(url.into());
             let file = if url.ends_with("sec10-a.crl") {
                 "sec06-root.der" // a certificate, not a CRL

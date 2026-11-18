@@ -59,6 +59,7 @@ pub enum ErrorCode {
     RevocationUnknown,
     CrlFetchFailed,
     CrlFetchDenied,
+    CrlFetchAborted,
     InvalidCrl,
     InvalidCertificate,
     CertificateChainInvalid,
@@ -166,6 +167,7 @@ impl ErrorCode {
             Self::InvalidCrlSignature => "Invalid CRL signature",
             Self::CrlFetchFailed => "CRL retrieval failed",
             Self::CrlFetchDenied => "CRL retrieval denied",
+            Self::CrlFetchAborted => "CRL retrieval aborted",
             Self::RevocationUnknown => "Revocation status unknown",
             Self::InvalidCrl => "Invalid CRL",
             Self::InvalidCertificate => "Invalid certificate",
@@ -516,13 +518,41 @@ pub struct CrlRetrievalArtifact {
     pub sha256: String,
     pub bytes: usize,
 }
+/// How a CRL source reports a request that produced no CRL. The source
+/// chooses; the engine decides what each means for the run.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CrlFetchErrorKind {
+    /// The source refused this URL by its policy (`crl_fetch_denied`).
+    Denied,
+    /// The request was made and did not produce a response
+    /// (`crl_fetch_failed`).
+    Failed,
+    /// The source can do no more work in this verification, for example its
+    /// time or byte budget is spent or it was cancelled (`crl_fetch_aborted`).
+    /// No further URL is requested.
+    Abort,
+    /// Anything else the source cannot classify (`crl_fetch_failed`).
+    Unknown,
+}
+impl CrlFetchErrorKind {
+    /// The error code a failure of this kind is reported with.
+    pub fn code(self) -> ErrorCode {
+        match self {
+            Self::Denied => ErrorCode::CrlFetchDenied,
+            Self::Failed | Self::Unknown => ErrorCode::CrlFetchFailed,
+            Self::Abort => ErrorCode::CrlFetchAborted,
+        }
+    }
+}
 /// A listed distribution point that yielded no evidence, with the error that
 /// explains it. Usually `crl_fetch_denied` (not discovered, `url` absent, or
-/// denied by transport policy) or `crl_fetch_failed` (the request failed), but
-/// any code is possible: `invalid_crl` for a response that is not a CRL,
+/// denied by transport policy), `crl_fetch_failed` or `crl_fetch_aborted`
+/// (from the source; `source_error` then says which kind it reported), but
+/// other codes are possible: `invalid_crl` for a response that is not a CRL,
 /// `invalid_certificate` for a malformed cRLDistributionPoints extension, or
-/// whatever a `CrlSource` returned. Verification still decides whether the
-/// missing evidence mattered.
+/// `resource_limit_exceeded` for a response over its size cap. Verification
+/// still decides whether the missing evidence mattered.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrlRetrievalFailure {
     /// RFC 7807 `type`, `title` and `detail`, as on every serialized error.
@@ -536,6 +566,9 @@ pub struct CrlRetrievalFailure {
     pub message: String,
     pub details: BTreeMap<String, Value>,
     pub causes: Vec<String>,
+    /// The kind a `CrlSource` reported, when the failure came from one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_error: Option<CrlFetchErrorKind>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CrlRetrievalReport {

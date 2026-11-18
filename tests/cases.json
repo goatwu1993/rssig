@@ -33532,6 +33532,241 @@
           "http://crl.invalid/sec10-issuer.crl"
         ]
       }
+    },
+    {
+      "id": "crl-fetch-source-denied-is-no-evidence",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.example.invalid/test.crl": "denied"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "crl-fetch-source-failed-is-no-evidence",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.example.invalid/test.crl": "failed"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed",
+                        "source_error": "failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "crl-fetch-source-unknown-is-no-evidence",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.example.invalid/test.crl": "unknown"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed",
+                        "source_error": "unknown"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "crl-fetch-source-abort-is-reported",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.example.invalid/test.crl": "abort"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_aborted",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
+      "id": "sec10-fetch-source-abort-stops-requests",
+      "input": "sec10-chain-crl-dp.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.invalid/sec10-a.crl": "abort"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_aborted",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl"
+        ]
+      }
     }
   ]
 }

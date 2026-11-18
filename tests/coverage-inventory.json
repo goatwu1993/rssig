@@ -430,7 +430,12 @@
         "sec10-fetch-covered-point-failure-skipped",
         "sec10-fetch-mixed-point-requests-plain-uri",
         "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped"
+        "sec10-fetch-covered-point-bad-response-skipped",
+        "crl-fetch-source-denied-is-no-evidence",
+        "crl-fetch-source-failed-is-no-evidence",
+        "crl-fetch-source-unknown-is-no-evidence",
+        "crl-fetch-source-abort-is-reported",
+        "sec10-fetch-source-abort-stops-requests"
       ]
     },
     {
@@ -874,6 +879,13 @@
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-dns-name-point-denied"
+      ],
+      "gap": ""
+    },
+    "crl_fetch_aborted": {
+      "cases": [
+        "crl-fetch-source-abort-is-reported",
+        "sec10-fetch-source-abort-stops-requests"
       ],
       "gap": ""
     },

@@ -123,6 +123,18 @@
               "$ref": "#/$defs/fixtureName"
             },
             "description": "Offline injected CRL source: map requested URL to a DER/PEM response file named directly in the fixtures directory. Unmapped requests fail; no live network is used."
+          },
+          "crl_errors": {
+            "type": "object",
+            "additionalProperties": {
+              "enum": [
+                "denied",
+                "failed",
+                "abort",
+                "unknown"
+              ]
+            },
+            "description": "Offline injected CRL source: map requested URL to the kind of fetch error the source returns instead of a response (denied, failed, abort or unknown). Requires crl_responses; checked before it."
           }
         },
         "not": {

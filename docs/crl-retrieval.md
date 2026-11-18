@@ -42,10 +42,25 @@ Two kinds of error, and nothing in between:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
   transport policy denies the URL, the response is not a CRL or is larger than
-  the source was allowed to return (not loaded), or the source returns any
-  error. The source is the caller's (`CrlSource`), so any `Err`
-  from it, whatever its code, means only that this URL produced nothing; the
-  built-in source's time limit and DNS timeout are no different.
+  the source was allowed to return (not loaded), or the source reports
+  `denied`, `failed` or `unknown` (see below).
+- **The source reporting `abort` stops retrieval**: nothing further is
+  requested, and the run verifies with what it already has.
+
+A source reports a request that produced no CRL as one of four kinds, and the
+engine treats them so:
+
+| Kind | Meaning, chosen by the source | Recorded as | Effect |
+|---|---|---|---|
+| `denied` | Its policy refuses this URL | `crl_fetch_denied` | Go on with other URLs |
+| `failed` | The request was made and did not work | `crl_fetch_failed` | Go on |
+| `unknown` | Anything it cannot classify | `crl_fetch_failed` | Go on |
+| `abort` | It can do no more work (budget spent, deadline, cancelled) | `crl_fetch_aborted` | Request nothing more |
+
+The kind is kept in each failure entry as `source_error`. The built-in
+`HttpCrlSource` reports a blocked URL as `denied`, an ordinary request failure
+as `failed`, and its spent request or byte budget, its deadline or a DNS
+timeout as `abort`.
 
 No evidence never accepts anything: the next verification still requires
 evidence for every selected certificate. Each such point is listed in
@@ -57,9 +72,13 @@ beside it is still requested (`sec10-fetch-mixed-point-requests-plain-uri`). A
 response identical to a CRL already loaded adds nothing and does not trigger
 another verification.
 
-When evidence stays missing the result is always the verifier's own
-`revocation_unknown`, as without `--fetch-crls`. `crl_fetch_denied` and `crl_fetch_failed` appear only inside
-`crl_retrieval.failures`, never as the result.
+When evidence stays missing the result is the verifier's own
+`revocation_unknown`, as without `--fetch-crls`, unless the source aborted:
+then it is `crl_fetch_aborted` (with the verifier's message in
+`details.revocation_unknown`), so that "the source gave up" is distinct from
+"no CRL was available". A good result is still returned if the CRLs gathered
+before the abort are enough. `crl_fetch_denied` and `crl_fetch_failed` appear
+only inside `crl_retrieval.failures`, never as the result.
 
 A certificate that a supplied CRL covers is not fetched for while another
 chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
@@ -97,7 +116,8 @@ The parser and `verify-core` remain usable without network dependencies or std.
   fails at the first unsupported point; retrieval itself skips such points one
   by one.
 - `CrlSource::fetch(url, max_bytes)` returns untrusted `FetchedCrl` bytes and the
-  final URL. It never returns a trust verdict. Implementations must bound their
+  final URL, or a `FetchError` with one of the four kinds above, a message and
+  optional details. It never returns a trust verdict. Implementations must bound their
   own I/O, allocation and latency; the engine independently rejects oversized
   returned responses. A custom provider owns its transport policy and may use
   a cache or offline artifacts.

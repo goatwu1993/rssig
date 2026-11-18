@@ -266,7 +266,11 @@
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
         "sec10-crl-next-update-exact",
-        "sec10-fetch-excluded-name-match-fetches-listed-point"
+        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "crl-fetch-source-denied-is-no-evidence",
+        "crl-fetch-source-failed-is-no-evidence",
+        "crl-fetch-source-unknown-is-no-evidence",
+        "crl-fetch-source-abort-is-reported"
       ]
     },
     {
@@ -6701,7 +6705,11 @@
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
         "crl-stale-local-provider-unused",
-        "sec10-fetch-excluded-name-match-fetches-listed-point"
+        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "crl-fetch-source-denied-is-no-evidence",
+        "crl-fetch-source-failed-is-no-evidence",
+        "crl-fetch-source-unknown-is-no-evidence",
+        "crl-fetch-source-abort-is-reported"
       ]
     },
     {
@@ -8030,7 +8038,8 @@
         "sec10-leaf-crl-dp-mixed-full-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
         "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped"
+        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-source-abort-stops-requests"
       ]
     },
     {
@@ -9702,7 +9711,8 @@
         "sec10-fetch-name-matched-signer-point-requested-second",
         "sec10-fetch-covered-point-failure-skipped",
         "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped"
+        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-source-abort-stops-requests"
       ]
     },
     {
