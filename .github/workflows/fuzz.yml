@@ -50,8 +50,10 @@ jobs:
       - name: Seed the corpus from committed fixtures
         run: ./fuzz/seed-corpus.sh
       - name: Fuzz ${{ matrix.target }}
+        # The prebuilt cargo-fuzz binary is a musl build and would otherwise
+        # default to a musl target, which the address sanitizer cannot use.
         run: >
-          cargo +nightly fuzz run ${{ matrix.target }} --
+          cargo +nightly fuzz run --target x86_64-unknown-linux-gnu ${{ matrix.target }} --
           -max_total_time="$FUZZ_SECONDS" -max_len=131072 -timeout=10 -rss_limit_mb=2048
       - name: Upload crashing inputs
         if: failure()
