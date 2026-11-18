@@ -30,12 +30,35 @@ enum Command {
     Parse(parse::Args),
 }
 
-fn execute(
-    command: Command,
-    source: Option<&mut dyn crate::retrieval::CrlSource>,
-) -> Result<(Value, u8)> {
+/// Collaborators an embedding application injects into the in-process CLI.
+/// Everything is optional; [`Host::new`] reproduces [`run_with_writers`].
+#[derive(Default)]
+#[non_exhaustive]
+pub struct Host<'a> {
+    /// Replaces the built-in HTTP CRL source. Called only with `--fetch-crls`.
+    pub crl_source: Option<&'a mut dyn crate::retrieval::CrlSource>,
+    /// Receives verification diagnostics. Nothing is logged without one, and
+    /// records never reach stdout or stderr. `parse` does not log.
+    pub logger: Option<&'a dyn crate::log::Logger>,
+}
+
+impl<'a> Host<'a> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn with_crl_source(mut self, source: &'a mut dyn crate::retrieval::CrlSource) -> Self {
+        self.crl_source = Some(source);
+        self
+    }
+    pub fn with_logger(mut self, logger: &'a dyn crate::log::Logger) -> Self {
+        self.logger = Some(logger);
+        self
+    }
+}
+
+fn execute(command: Command, host: Host<'_>) -> Result<(Value, u8)> {
     match command {
-        Command::Verify(args) => verify::execute(args, source),
+        Command::Verify(args) => verify::execute(args, host),
         Command::Parse(args) => parse::execute(args),
     }
 }
@@ -60,7 +83,7 @@ where
     T: Into<OsString> + Clone,
     W: Write,
 {
-    dispatch(arguments, None).write(output)
+    dispatch(arguments, Host::new()).write(output)
 }
 
 /// Execute with separate output sinks, without exiting the calling process.
@@ -75,7 +98,26 @@ where
     O: Write,
     E: Write,
 {
-    let output = dispatch(arguments, None);
+    run_with_host(arguments, stdout, stderr, Host::new())
+}
+
+/// Execute with injected collaborators: a CRL source, a diagnostic logger, or both.
+///
+/// The stream and exit-code contract of [`run_with_writers`] is unchanged: log
+/// records go only to the supplied logger, never to `stdout` or `stderr`.
+pub fn run_with_host<I, T, O, E>(
+    arguments: I,
+    stdout: O,
+    stderr: E,
+    host: Host<'_>,
+) -> io::Result<u8>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+    O: Write,
+    E: Write,
+{
+    let output = dispatch(arguments, host);
     if matches!(output, Output::Text { stderr: true, .. }) {
         output.write(stderr)
     } else {
@@ -97,12 +139,12 @@ where
     O: Write,
     E: Write,
 {
-    let output = dispatch(arguments, Some(source));
-    if matches!(output, Output::Text { stderr: true, .. }) {
-        output.write(stderr)
-    } else {
-        output.write(stdout)
-    }
+    run_with_host(
+        arguments,
+        stdout,
+        stderr,
+        Host::new().with_crl_source(source),
+    )
 }
 
 enum Output {
@@ -132,7 +174,7 @@ impl Output {
     }
 }
 
-fn dispatch<I, T>(arguments: I, source: Option<&mut dyn crate::retrieval::CrlSource>) -> Output
+fn dispatch<I, T>(arguments: I, host: Host<'_>) -> Output
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -147,7 +189,7 @@ where
             };
         }
     };
-    match execute(cli.command, source) {
+    match execute(cli.command, host) {
         Ok((value, exit)) => Output::Json(value, exit),
         Err(error) => Output::Text {
             text: format!("error: {error:#}\n"),

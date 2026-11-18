@@ -69,3 +69,6 @@ mod crl_applicability;
 
 #[path = "cli/time_policy.rs"]
 mod time_policy;
+
+#[path = "cli/logging.rs"]
+mod logging;

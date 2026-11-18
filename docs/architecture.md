@@ -84,3 +84,7 @@ trust/revocation verifier; the reference is not a build or runtime dependency.
 untrusted CRL bytes through `CrlSource`; URL/HTTP transport and bounded DNS/socket
 I/O stay outside `verify-core`. Two verification passes share the engine budget,
 and only the final revocation-checked result is returned. See [CRL retrieval](crl-retrieval.md).
+
+`log` defines the caller-injected `Logger`. The sink travels beside the
+per-verification work budget, so the engine has no global logger and writes to
+no stream. See [injected logging](logging.md).

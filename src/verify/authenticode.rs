@@ -72,6 +72,42 @@ pub(super) fn verify_container_budget(
     Ok(verification)
 }
 
+/// Describe one verified signer. A record is not a verdict: later checks can
+/// still reject the file, and only the returned bundle reports success.
+pub(crate) fn log_signer(
+    budget: &Budget,
+    certificate: &CertificateReport,
+    timestamp: Option<u64>,
+    trust: Option<&TrustReport>,
+) {
+    let log = &budget.log;
+    match timestamp {
+        Some(time) => log.debug(
+            Stage::Timestamp,
+            format_args!("timestamp verified: signing time {time}"),
+        ),
+        None => log.debug(Stage::Timestamp, format_args!("signer has no timestamp")),
+    }
+    if let Some(trust) = trust {
+        log.debug(
+            Stage::CertificateChain,
+            format_args!(
+                "certificate path of {} certificate(s) validated at {}; revocation status {:?}",
+                trust.chain.len(),
+                trust.validation_time,
+                trust.revocation.status
+            ),
+        );
+    }
+    log.info(
+        Stage::Cms,
+        format_args!(
+            "signer verified: subject {:?}, certificate SHA-256 {}",
+            certificate.subject.display, certificate.sha256
+        ),
+    );
+}
+
 #[allow(clippy::too_many_arguments)] // Explicit shared budget and original input length across recursion.
 fn verify_signature(
     bytes: &[u8],
@@ -90,6 +126,14 @@ fn verify_signature(
         ErrorCode::MalformedCms,
         Stage::Cms,
     )?;
+    budget.log.debug(
+        Stage::Cms,
+        format_args!(
+            "CMS at nested depth {depth}: {} signer(s), {} embedded certificate(s)",
+            sd.signers.len(),
+            sd.certs.len()
+        ),
+    );
     for _ in 0..4 {
         budget.hash_bytes.charge(container_bytes)?;
     }
@@ -100,6 +144,10 @@ fn verify_signature(
     }
     let integrity = integrity::verify(container, &sd, options.allow_sha1)?;
     *appx_report = integrity.appx;
+    budget.log.debug(
+        Stage::Cms,
+        format_args!("signed content digest matches ({:?})", integrity.hash),
+    );
     for si in &sd.signers {
         budget.report(sd.certs.len() + 1)?;
         budget.certificate_bytes(&sd.certs)?;
@@ -148,6 +196,7 @@ fn verify_signature(
             None
         };
         let certificate = CertificateReport::parse(signer.cert)?;
+        log_signer(budget, &certificate, timestamp, trust_report.as_ref());
         if let Some(timestamp) = &timestamp_verification {
             check_fractional_validity(
                 trust_report.as_ref(),

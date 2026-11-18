@@ -131,6 +131,7 @@ pub(crate) fn verify_budget(
             None
         };
         let certificate = CertificateReport::parse(signer.cert)?;
+        crate::verify::log_signer(budget, &certificate, timestamp, trust.as_ref());
         if let Some(timestamp) = &timestamp_verification {
             crate::verify::timestamp::check_fractional_validity(
                 trust.as_ref(),

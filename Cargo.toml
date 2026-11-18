@@ -49,6 +49,10 @@ required-features = ["verify"]
 name = "parse"
 required-features = ["verify"]
 
+[[test]]
+name = "logging"
+required-features = ["verify"]
+
 [lints.rust]
 unsafe_code = "forbid"
 unused_must_use = "deny"
