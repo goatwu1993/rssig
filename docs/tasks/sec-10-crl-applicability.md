@@ -146,9 +146,9 @@ Change these only with a new decision and paired fixtures.
 
 ## Evidence limits
 
-- Distribution-point matching is rustls-webpki's, observed at the locked
-  0.103.16. `Cargo.toml` allows any 0.103 patch and other patch versions were
-  not checked; raise the minimum or test the oldest allowed version.
+- Distribution-point matching is rustls-webpki's, observed at 0.103.16, which
+  `Cargo.toml` now requires exactly (`=0.103.16`). No other version was
+  checked; rerun the `sec10-*` cases when changing the pin.
 - Not pinned: a certificate mixing a skipped point (reasons or cRLIssuer) with a
   plain URI point.
 - Every SEC-10 CRL is synthetic and signed with ECDSA P-256/SHA-256. There is no
