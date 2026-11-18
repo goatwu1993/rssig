@@ -138,7 +138,13 @@ impl Case {
 }
 
 /// A path argument names a fixture only when it is `<prefix>/<one name>`.
+/// `Path::components` drops `.` segments and a trailing separator, which the
+/// CLI would not (`fixtures/x.crl/` is not a readable file), so reject those
+/// first.
 fn fixture_path(path: &str, prefix: &Path) -> CaseFile {
+    if path.ends_with(['/', '\\']) || path.split(['/', '\\']).any(|segment| segment == ".") {
+        return CaseFile::Outside(path.to_owned());
+    }
     match Path::new(path).strip_prefix(prefix) {
         Ok(rest) if rest.components().count() == 1 => match rest.to_str() {
             Some(name) if !name.is_empty() && name != "." && name != ".." => {

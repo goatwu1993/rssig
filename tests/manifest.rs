@@ -20,16 +20,24 @@ use syn::visit::{self, Visit};
 
 const MANIFEST: &str = "manifest.json";
 
+/// The fixture directory, relative to `tests/`: where the manifest lives and
+/// what `cases.json` must name as its `fixtures` directory.
+const FIXTURES: &str = "fixtures";
+
 /// Files in `tests/fixtures/` that the manifest intentionally does not list.
 /// Diagnostic JSON and helper data are ordinary listed artifacts.
 const UNLISTED: &[&str] = &[MANIFEST];
 
-/// Hidden files (`.DS_Store`, `._name`, `.name.swp`) and `name~` backups:
-/// operating-system and editor by-products. They can never be artifact names
-/// (see [`safe_file_name`]) and `.gitignore` keeps them out of commits, so the
-/// directory scan skips them instead of failing on a developer machine.
+/// Operating-system and editor by-product files: `.DS_Store`, `._name`,
+/// `.name.swp`, and `name~`. These are exactly the patterns `.gitignore`
+/// excludes, and none can be an artifact name (see [`safe_file_name`]), so the
+/// directory scan skips such files instead of failing on a developer machine.
+/// Any other hidden file, and every directory, is still reported.
 fn local_by_product(name: &str) -> bool {
-    name.starts_with('.') || name.ends_with('~')
+    name == ".DS_Store"
+        || name.starts_with("._")
+        || (name.starts_with('.') && name.ends_with(".swp"))
+        || name.ends_with('~')
 }
 
 /// Inputs that cases name because they do not exist. Each must stay absent
@@ -75,6 +83,9 @@ enum Rule {
     PairedGood,
     /// A `source` that is not a URL must name another listed artifact.
     DerivedSource,
+    /// `cases.json` reads fixtures from a directory other than the one the
+    /// manifest describes.
+    FixtureDirectory,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -147,10 +158,7 @@ impl FileFacts {
     fn of(bytes: &[u8]) -> Self {
         Self {
             bytes: bytes.len() as u64,
-            sha256: Sha256::digest(bytes)
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect(),
+            sha256: format!("{:x}", Sha256::digest(bytes)),
         }
     }
 }
@@ -165,6 +173,9 @@ struct SourceIndex {
     tests: BTreeSet<String>,
     /// `#[path = "..."]` values on module declarations.
     included: BTreeSet<String>,
+    /// `--long` options declared by Clap `#[arg(long ...)]` fields whose type
+    /// is or contains `PathBuf`.
+    path_options: BTreeSet<String>,
 }
 
 impl SourceIndex {
@@ -172,6 +183,12 @@ impl SourceIndex {
         let mut index = Self::default();
         index.visit_file(&syn::parse_file(text)?);
         Ok(index)
+    }
+
+    /// A file `syn` cannot parse indexes as empty instead of failing every
+    /// check: only a generator or test link into it is then reported.
+    fn parse_or_empty(text: &str) -> Self {
+        Self::parse(text).unwrap_or_default()
     }
 
     fn add(&mut self, name: &syn::Ident, attributes: &[syn::Attribute]) {
@@ -196,6 +213,33 @@ impl<'ast> Visit<'ast> for SourceIndex {
         self.add(&item.sig.ident, &item.attrs);
         visit::visit_trait_item_fn(self, item);
     }
+    fn visit_field(&mut self, field: &'ast syn::Field) {
+        if let Some(name) = &field.ident
+            && mentions(&field.ty, "PathBuf")
+        {
+            for attribute in field.attrs.iter().filter(|a| a.path().is_ident("arg")) {
+                let mut long = None;
+                attribute
+                    .parse_nested_meta(|meta| {
+                        let value = meta.input.peek(syn::Token![=]);
+                        if meta.path.is_ident("long") {
+                            long = Some(if value {
+                                meta.value()?.parse::<syn::LitStr>()?.value()
+                            } else {
+                                name.to_string().replace('_', "-")
+                            });
+                        } else if value {
+                            meta.value()?.parse::<syn::Expr>()?;
+                        }
+                        Ok(())
+                    })
+                    .unwrap();
+                self.path_options
+                    .extend(long.map(|long| format!("--{long}")));
+            }
+        }
+        visit::visit_field(self, field);
+    }
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {
         for attribute in &item.attrs {
             if attribute.path().is_ident("path")
@@ -210,6 +254,20 @@ impl<'ast> Visit<'ast> for SourceIndex {
         }
         visit::visit_item_mod(self, item);
     }
+}
+
+/// Whether `ty` is the named type or has it as a generic argument.
+fn mentions(ty: &syn::Type, name: &str) -> bool {
+    let syn::Type::Path(path) = ty else {
+        return false;
+    };
+    path.path.segments.iter().any(|segment| {
+        segment.ident == name
+            || matches!(&segment.arguments, syn::PathArguments::AngleBracketed(arguments)
+            if arguments.args.iter().any(|argument| {
+                matches!(argument, syn::GenericArgument::Type(ty) if mentions(ty, name))
+            }))
+    })
 }
 
 /// Everything the checks read, loaded once and cloned for mutation tests.
@@ -235,24 +293,24 @@ fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, Sour
             read_sources(root, &path, sources);
         } else if name.ends_with(".rs") {
             let text = std::fs::read_to_string(entry.path()).unwrap();
-            let index = SourceIndex::parse(&text).unwrap_or_else(|error| panic!("{path}: {error}"));
-            sources.insert(path, index);
+            sources.insert(path, SourceIndex::parse_or_empty(&text));
         }
     }
 }
 
 /// Regular files and other entries directly inside `directory`, skipping
-/// [`local_by_product`] names.
+/// [`local_by_product`] files.
 fn read_fixture_directory(directory: &Path) -> (BTreeMap<String, FileFacts>, BTreeSet<String>) {
     let mut files = BTreeMap::new();
     let mut other_entries = BTreeSet::new();
     for entry in std::fs::read_dir(directory).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name().into_string().unwrap();
-        if local_by_product(&name) {
+        let is_file = entry.file_type().unwrap().is_file();
+        if is_file && local_by_product(&name) {
             continue;
         }
-        if entry.file_type().unwrap().is_file() {
+        if is_file {
             files.insert(name, FileFacts::of(&std::fs::read(entry.path()).unwrap()));
         } else {
             other_entries.insert(name);
@@ -263,13 +321,13 @@ fn read_fixture_directory(directory: &Path) -> (BTreeMap<String, FileFacts>, BTr
 
 static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let directory = root.join("tests/fixtures");
+    let directory = root.join("tests").join(FIXTURES);
     let (files, other_entries) = read_fixture_directory(&directory);
     let mut sources = BTreeMap::new();
     read_sources(root, "src", &mut sources);
     read_sources(root, "tests", &mut sources);
     if let Ok(text) = std::fs::read_to_string(root.join("build.rs")) {
-        sources.insert("build.rs".to_owned(), SourceIndex::parse(&text).unwrap());
+        sources.insert("build.rs".to_owned(), SourceIndex::parse_or_empty(&text));
     }
     Corpus {
         manifest: serde_json::from_slice(&std::fs::read(directory.join(MANIFEST)).unwrap())
@@ -341,8 +399,10 @@ fn test_exists(
 }
 
 /// Case IDs and the files each case reads, as `tests/spec.rs` resolves them.
+/// Arguments are classified against [`FIXTURES`]; a suite naming another
+/// directory is reported once as [`Rule::FixtureDirectory`].
 fn case_files(suite: &Suite) -> BTreeMap<String, BTreeSet<CaseFile>> {
-    let prefix = Path::new(&suite.fixtures);
+    let prefix = Path::new(FIXTURES);
     suite
         .cases
         .iter()
@@ -383,6 +443,9 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
         problems.push(problem(Rule::Generator, "manifest"));
     }
 
+    if corpus.cases.fixtures != FIXTURES {
+        problems.push(problem(Rule::FixtureDirectory, &corpus.cases.fixtures));
+    }
     let cases = case_files(&corpus.cases);
     let harness = harness_modules(&corpus.sources);
     let mut listed = BTreeSet::new();
@@ -505,7 +568,13 @@ fn check(corpus: &Corpus) -> Vec<Problem> {
                     format!("{case}: {path} (outside the fixture directory)"),
                 )),
                 CaseFile::Fixture(name) if ABSENT_INPUTS.contains(&name.as_str()) => {
-                    if listed.contains(name.as_str()) || corpus.files.contains_key(name) {
+                    // Case-insensitive: on macOS `Missing.exe` would be opened.
+                    if folded.contains(&name.to_ascii_lowercase())
+                        || corpus
+                            .files
+                            .keys()
+                            .any(|file| file.eq_ignore_ascii_case(name))
+                    {
                         problems.push(problem(Rule::PresentAbsentInput, format!("{case}: {name}")));
                     }
                 }
@@ -954,6 +1023,15 @@ fn reads_path_options_in_both_forms_and_rejects_paths_outside_fixtures() {
             vec!["--crl", "fixtures/../good.crl"],
             outside("fixtures/../good.crl"),
         ),
+        // The CLI cannot open these as the fixture, though `Path` normalizes them.
+        (
+            vec!["--crl", "fixtures/good.crl/"],
+            outside("fixtures/good.crl/"),
+        ),
+        (
+            vec!["--crl=fixtures/./good.crl"],
+            outside("fixtures/./good.crl"),
+        ),
     ] {
         let problems = broken(|c| {
             first_case(c)
@@ -1019,6 +1097,18 @@ fn intentionally_absent_inputs_must_stay_absent_and_used() {
             .map(|case| (Rule::PresentAbsentInput, format!("{case}: missing.exe"))),
     );
     assert_eq!(present, sorted(expected));
+
+    // macOS checkouts are case-insensitive, so `Missing.exe` would be opened.
+    let differently_cased = broken(|c| {
+        c.files.insert("Missing.exe".to_owned(), FileFacts::of(&[]));
+    });
+    let mut expected = vec![(Rule::UnlistedFile, "Missing.exe".to_owned())];
+    expected.extend(
+        readers
+            .iter()
+            .map(|case| (Rule::PresentAbsentInput, format!("{case}: missing.exe"))),
+    );
+    assert_eq!(differently_cased, sorted(expected));
 
     let unused = broken(|c| {
         for case in &mut c.cases.cases {
@@ -1163,28 +1253,95 @@ fn local_by_products_are_skipped_and_can_never_be_artifacts() {
         assert!(local_by_product(name), "{name}");
         assert!(!safe_file_name(name), "{name}");
     }
-    // An ordinary name is never skipped, so a committed one must be listed.
-    for name in ["good.exe", "good.exe.swp", "_x"] {
+    // Anything else is never skipped, so a committed one must be listed.
+    for name in ["good.exe", "good.exe.swp", "_x", ".keep", ".gitattributes"] {
         assert!(!local_by_product(name), "{name}");
     }
 
-    let directory = std::env::temp_dir().join(format!("rssig-manifest-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&directory);
+    /// Removes the scratch directory even if the scan panics.
+    struct Scratch(std::path::PathBuf);
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let scratch = Scratch(Path::new(env!("CARGO_TARGET_TMPDIR")).join("manifest-by-products"));
+    let directory = &scratch.0;
+    let _ = std::fs::remove_dir_all(directory);
     std::fs::create_dir_all(directory.join("nested")).unwrap();
+    std::fs::create_dir_all(directory.join(".cache")).unwrap();
     for name in [
         "good.exe",
         "good.exe.swp",
         ".DS_Store",
         "._good.exe",
         "good.exe~",
+        ".keep",
     ] {
         std::fs::write(directory.join(name), b"MZ").unwrap();
     }
-    let (files, other_entries) = read_fixture_directory(&directory);
-    std::fs::remove_dir_all(&directory).unwrap();
+    let (files, other_entries) = read_fixture_directory(directory);
+    drop(scratch);
     assert_eq!(
         files.keys().collect::<Vec<_>>(),
-        ["good.exe", "good.exe.swp"]
+        [".keep", "good.exe", "good.exe.swp"]
     );
-    assert_eq!(other_entries.iter().collect::<Vec<_>>(), ["nested"]);
+    assert_eq!(
+        other_entries.iter().collect::<Vec<_>>(),
+        [".cache", "nested"]
+    );
+}
+
+#[test]
+fn cases_must_read_the_fixture_directory_the_manifest_describes() {
+    assert_eq!(COMMITTED.cases.fixtures, FIXTURES);
+    assert_eq!(
+        broken(|c| c.cases.fixtures = "fixtures-v2".to_owned()),
+        one(Rule::FixtureDirectory, "fixtures-v2")
+    );
+}
+
+#[test]
+fn spec_path_options_match_the_cli_definition() {
+    // Every `#[arg(long)]` field typed with PathBuf, in the CLI source.
+    let declared: BTreeSet<&str> = COMMITTED
+        .sources
+        .iter()
+        .filter(|(path, _)| path.starts_with("src/cli"))
+        .flat_map(|(_, index)| index.path_options.iter().map(String::as_str))
+        .collect();
+    let shared: BTreeSet<&str> = spec_suite::PATH_OPTIONS.iter().copied().collect();
+    assert_eq!(
+        declared, shared,
+        "update PATH_OPTIONS in tests/common/spec_suite.rs to match the CLI"
+    );
+}
+
+#[test]
+fn source_index_reads_clap_path_options_and_tolerates_unparsable_files() {
+    let index = SourceIndex::parse(
+        r#"
+        struct Args {
+            #[arg(required = true)]
+            files: Vec<PathBuf>,
+            #[arg(long, conflicts_with_all = ["a", "b"])]
+            extra_roots: Vec<PathBuf>,
+            #[arg(long = "catalog", hide = true)]
+            catalog_path: Option<std::path::PathBuf>,
+            #[arg(long, default_value_t = 8 * 1024)]
+            limit: usize,
+            #[arg(long)]
+            no_roots: bool,
+        }
+        "#,
+    )
+    .unwrap();
+    assert_eq!(
+        index.path_options,
+        BTreeSet::from(["--extra-roots".to_owned(), "--catalog".to_owned()])
+    );
+
+    assert!(SourceIndex::parse("fn (").is_err());
+    let empty = SourceIndex::parse_or_empty("fn (");
+    assert!(empty.functions.is_empty() && empty.tests.is_empty());
 }
