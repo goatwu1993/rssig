@@ -680,6 +680,16 @@ relic 02c54d58 and BoringSSL `main`.
     requested only if no request carried it. The shared-point variant has no
     spec case: no committed file has two certificates of different issuers
     listing one URI; the unit test checks the serialized failure entries.
+    After a source abort, such a point is reported as `crl_fetch_aborted`
+    (not tried), and when retrieval ends early on an engine limit or a
+    failed check, every unused point still held is reported.
+- **Declined after review (already decided):** confirming intermediates on a
+  key-rollover path with webpki (it cannot confirm two same-name issuers;
+  rssig's per-key evaluation decides, SEC-16 above); a batch-wide fetch
+  bound (the owner's per-verification choice); one JSON shape for absent
+  URLs on artifacts and failures (the artifact change is in the migration
+  notes); spreading a URL-less failure beside an answer by certificate over
+  the points (it is recorded as it is, decided earlier).
   - Two configured roots with one key and name (one trust anchor to webpki)
     may carry different subjectKeyIdentifiers. A CRL signed by another key
     that names any of them is forged for that anchor
