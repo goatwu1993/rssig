@@ -260,6 +260,18 @@ impl TrustStore {
             Vec::new()
         };
         let revocation_enabled = revocation;
+        // The configured root behind each anchor, parsed once.
+        let anchor_certificates: Vec<Option<Certificate>> = if revocation {
+            self.roots
+                .iter()
+                .map(|root| Certificate::from_der(root.as_ref()).ok())
+                .collect()
+        } else {
+            Vec::new()
+        };
+        // CRL signature results by (CRL, issuer key), shared by every
+        // candidate path and charged to the work budget once each.
+        let signatures: core::cell::RefCell<SignatureCache> = Default::default();
         // Per candidate path: the revocation outcomes it produced, and the
         // CRLs chosen for an accepted path.
         let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
@@ -287,8 +299,14 @@ impl TrustStore {
             if revocation_enabled {
                 // Each certificate's issuer on this path: the next
                 // certificate, or the configured root behind the anchor.
-                let anchor = self
-                    .anchor_certificate(path.anchor())
+                let anchor = roots
+                    .iter()
+                    .position(|root| {
+                        root.subject == path.anchor().subject
+                            && root.subject_public_key_info == path.anchor().subject_public_key_info
+                            && root.name_constraints == path.anchor().name_constraints
+                    })
+                    .and_then(|index| anchor_certificates[index].clone())
                     .ok_or(webpki::Error::UnknownIssuer)?;
                 // Every certificate is evaluated, so that an unknown status
                 // names every certificate without a usable CRL at once.
@@ -300,7 +318,29 @@ impl TrustStore {
                         None => IssuerKey::of(&anchor, true),
                     }
                     .map_err(|_| webpki::Error::BadDer)?;
-                    let evidence = evaluate_crls(cert, depth == 0, &issuer, &crls, now);
+                    let evidence = evaluate_crls(
+                        cert,
+                        depth == 0,
+                        &issuer,
+                        &crls,
+                        now,
+                        &mut |index, crl: &LoadedCrl| {
+                            *signatures
+                                .borrow_mut()
+                                .entry((index, issuer.spki.clone()))
+                                .or_insert_with(|| {
+                                    // Over budget: no verification, and the
+                                    // exhausted counter ends the run below.
+                                    budget.crypto.charge(1).ok()?;
+                                    signed_by(
+                                        &issuer.spki,
+                                        &crl.algorithm,
+                                        &crl.signed,
+                                        &crl.signature,
+                                    )
+                                })
+                        },
+                    );
                     match &evidence.outcome {
                         Outcome::Good(index) => path_chosen.push(*index),
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -510,21 +550,9 @@ impl TrustStore {
     }
 }
 
-impl TrustStore {
-    /// The configured root behind a path's anchor.
-    fn anchor_certificate(
-        &self,
-        anchor: &rustls_pki_types::TrustAnchor<'_>,
-    ) -> Option<Certificate> {
-        self.roots.iter().find_map(|root| {
-            let candidate = webpki::anchor_from_trusted_cert(root).ok()?;
-            (candidate.subject == anchor.subject
-                && candidate.subject_public_key_info == anchor.subject_public_key_info)
-                .then(|| Certificate::from_der(root.as_ref()).ok())
-                .flatten()
-        })
-    }
-}
+/// CRL signature results by (CRL index, issuer SPKI); `None` when the
+/// algorithm is unsupported or the work budget is spent.
+type SignatureCache = alloc::collections::BTreeMap<(usize, Vec<u8>), Option<bool>>;
 
 /// A supplied or retrieved CRL, decoded once per verification.
 struct LoadedCrl {
@@ -619,6 +647,7 @@ impl IssuerKey {
 /// What one certificate's CRLs established on one candidate path.
 struct CertificateEvidence {
     sha256: String,
+    der: Vec<u8>,
     outcome: Outcome,
 }
 
@@ -642,13 +671,18 @@ fn evaluate_crls(
     issuer: &IssuerKey,
     crls: &[LoadedCrl],
     now: u64,
+    verify_signature: &mut dyn FnMut(usize, &LoadedCrl) -> Option<bool>,
 ) -> CertificateEvidence {
     let der = cert.to_der().unwrap_or_default();
     let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
-    let report = || CrlReportContext::new(cert);
+    let context = CrlReportContext {
+        sha256: sha256.clone(),
+    };
+    let report = || &context;
     let Ok(issuer_name) = cert.tbs_certificate.issuer.to_der() else {
         return CertificateEvidence {
             sha256,
+            der,
             outcome: Outcome::Missing(None),
         };
     };
@@ -682,7 +716,7 @@ fn evaluate_crls(
         // Authenticate under this path's issuer key. A CRL that names
         // another key of the same name, and is not signed by this one, is
         // not this issuer's: it is set aside without a failure.
-        match signed_by(&issuer.spki, &crl.algorithm, &crl.signed, &crl.signature) {
+        match verify_signature(index, crl) {
             Some(true) => {}
             Some(false)
                 if authority_key.is_some()
@@ -755,6 +789,12 @@ fn evaluate_crls(
             );
             continue;
         }
+        // Freshness only matters for a CRL that could decide this
+        // certificate: one for another distribution point or role is set
+        // aside, whatever its age.
+        if !authoritative_for(&crl.tbs, cert, end_entity) {
+            continue;
+        }
         if crl.tbs.this_update.to_unix_duration().as_secs() > now {
             fail(
                 2,
@@ -775,9 +815,6 @@ fn evaluate_crls(
             );
             continue;
         }
-        if !authoritative_for(&crl.tbs, cert, end_entity) {
-            continue;
-        }
         usable.get_or_insert(index);
     }
     let outcome = match (usable, authenticated_listing) {
@@ -793,7 +830,11 @@ fn evaluate_crls(
         // Without one, the status is unknown, even if a CRL lists it.
         (None, _) => Outcome::Missing(failure),
     };
-    CertificateEvidence { sha256, outcome }
+    CertificateEvidence {
+        sha256,
+        der,
+        outcome,
+    }
 }
 
 /// The error for a revocation rejection, from what the candidate paths
@@ -821,12 +862,21 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     if let Some((_, error)) = best {
         return Some(error.clone());
     }
-    let mut missing: Vec<&str> = Vec::new();
+    // Each certificate in full, so that a CRL source can be asked about it
+    // whichever candidate path it was on.
+    let mut seen: Vec<&str> = Vec::new();
+    let mut missing: Vec<CertificateReport> = Vec::new();
     for outcome in outcomes {
         if matches!(outcome.outcome, Outcome::Missing(None))
-            && !missing.contains(&outcome.sha256.as_str())
+            && !seen.contains(&outcome.sha256.as_str())
         {
-            missing.push(&outcome.sha256);
+            seen.push(&outcome.sha256);
+            if let Some(report) = Certificate::from_der(&outcome.der)
+                .ok()
+                .and_then(|c| CertificateReport::parse(&c).ok())
+            {
+                missing.push(report);
+            }
         }
     }
     Some(
@@ -845,12 +895,6 @@ struct CrlReportContext {
 }
 
 impl CrlReportContext {
-    fn new(cert: &Certificate) -> Self {
-        let der = cert.to_der().unwrap_or_default();
-        Self {
-            sha256: crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der)),
-        }
-    }
     fn error(&self, code: ErrorCode, message: impl Into<String>) -> VerificationError {
         VerificationError::new(code, Stage::Revocation, message)
             .detail("affected_certificate", &self.sha256)

@@ -640,3 +640,17 @@ fn sec10_a_revocation_in_a_stale_crl_still_counts_beside_a_fresh_one() {
     let output = run_alone("sec10-root-expired-revoked.crl");
     revocation_failure(&output, "crl_expired", "CRL expired");
 }
+
+#[test]
+fn sec10_an_expired_partition_for_another_point_does_not_decide_the_signer() {
+    // Not authoritative for the signer, so its age is irrelevant: the status
+    // is unknown and the signer is named, not crl_expired.
+    let output = run_crl_dp(&["sec06-root.crl", "sec10-issuer-idp-other-expired.crl"]);
+    revocation_failure(&output, "revocation_unknown", "Revocation status unknown");
+    let missing = &output.json["results"][0]["error"]["details"]["certificates_without_crl"];
+    assert_eq!(missing.as_array().unwrap().len(), 1);
+    assert_eq!(
+        missing[0]["sha256"],
+        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+    );
+}

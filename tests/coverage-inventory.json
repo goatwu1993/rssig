@@ -400,7 +400,8 @@
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
-        "sec10-stale-crl-revocation-alone-is-expired"
+        "sec10-stale-crl-revocation-alone-is-expired",
+        "sec10-expired-partition-for-another-point-leaves-status-unknown"
       ]
     },
     {
@@ -454,7 +455,8 @@
         "crl-fetch-source-abort-is-reported",
         "sec10-fetch-source-abort-stops-requests",
         "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https"
+        "sec10-fetch-builtin-source-denies-https",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {

@@ -504,6 +504,26 @@ pub(super) fn write(dir: &std::path::Path) {
             revoked.then_some(&scoped),
         );
     }
+    // SEC-10: an expired partition for another point. It cannot decide the
+    // signer, so its age must not either.
+    let other_scope = Extension {
+        extn_id: "2.5.29.28".parse().unwrap(),
+        critical: true,
+        extn_value: OctetString::new(crl_applicability::idp_named_point(OTHER_POINT)).unwrap(),
+    };
+    std::fs::write(
+        dir.join("sec10-issuer-idp-other-expired.crl"),
+        crl_applicability::crl_full(
+            &ca.tbs_certificate.subject.to_string(),
+            &ca_key,
+            NOW - 200,
+            Some(NOW - 1),
+            None,
+            vec![other_scope],
+            None,
+        ),
+    )
+    .unwrap();
     // SEC-10: other distribution-point forms on the signer and on issuer CRLs.
     for (label, serial, points) in point_forms() {
         let mut signer = certificate("publisher", serial, &leaf_key, "issuer", &ca_key, false);

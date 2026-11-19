@@ -20,6 +20,8 @@ use x509_cert::{
 pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
+/// Requests to a [`CrlSource`] per verification, one per certificate.
+pub const MAX_SOURCE_REQUESTS: usize = 64;
 
 /// The single interface through which the engine obtains CRLs, asked once per
 /// certificate, like OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by
@@ -178,7 +180,14 @@ pub fn fetch_each(
     let mut remaining = request.max_bytes;
     for url in request.distribution_points {
         if remaining == 0 {
-            break;
+            response.failures.push(
+                CrlSourceError::new(
+                    CrlSourceErrorKind::Failed,
+                    "the byte allowance for this request is spent",
+                )
+                .with_url(url.clone()),
+            );
+            continue;
         }
         match fetch(url, remaining.min(MAX_CRL_BYTES)) {
             Ok(mut crl) => {
@@ -515,8 +524,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             }
         }
-        if self.requests >= MAX_REQUESTS {
-            return Err(limit("crl_requests", MAX_REQUESTS, self.requests, 1));
+        if self.requests >= MAX_SOURCE_REQUESTS {
+            return Err(limit("crl_requests", MAX_SOURCE_REQUESTS, self.requests, 1));
         }
         if self.store.retrieval_crl_count() >= 64 {
             return Err(limit(
@@ -543,7 +552,15 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         let response = match source.crls(&request) {
             Ok(response) => response,
             Err(e) => {
-                self.source_failure(sha256, e);
+                // The whole request failed: every point it carried yielded
+                // nothing, for this certificate and any later one listing it.
+                if e.url.is_none() && !points.is_empty() {
+                    for point in &points {
+                        self.source_failure(sha256, e.clone().with_url(point.clone()));
+                    }
+                } else {
+                    self.source_failure(sha256, e);
+                }
                 return Ok(false);
             }
         };
@@ -660,26 +677,33 @@ fn retrieve(
             if state.aborted {
                 break;
             }
-            // The selected certificates, found once by verifying without
-            // revocation; integrity and trust failures end the run here.
-            let selected = match &mut selected {
-                Some(selected) => selected,
-                None => selected.insert(selected_certificates(bytes, options, format, budget)?),
-            };
-            // Ask about exactly the certificates without a usable CRL, as
-            // OpenSSL and Bouncy Castle look up CRLs for the certificate being
-            // checked. Without that list (no CRL applied at all), every
-            // selected certificate lacks one.
-            let missing: Option<Vec<String>> = unknown
+            // Ask about exactly the certificates the verifier reports without
+            // a usable CRL, as OpenSSL and Bouncy Castle look up CRLs for the
+            // certificate being checked. The report carries each certificate,
+            // whichever candidate path it was on. Without that list (no CRL
+            // applied at all), every selected certificate lacks one; those
+            // are found once by verifying without revocation, where
+            // integrity and trust failures end the run.
+            let missing: Option<Vec<CertificateReport>> = unknown
                 .details
                 .get("certificates_without_crl")
                 .and_then(|v| serde_json::from_value(v.clone()).ok());
+            let targets = match missing {
+                Some(reports) => reports
+                    .iter()
+                    .map(decode_report)
+                    .collect::<Result<Vec<_>, _>>()?,
+                None => match &selected {
+                    Some(selected) => selected.clone(),
+                    None => selected
+                        .insert(selected_certificates(bytes, options, format, budget)?)
+                        .clone(),
+                },
+            };
             let mut added = false;
             let mut any = false;
-            for (sha256, der, cert) in selected.iter() {
-                if missing.as_ref().is_some_and(|m| !m.contains(sha256))
-                    || !asked.insert(sha256.clone())
-                {
+            for (sha256, der, cert) in &targets {
+                if !asked.insert(sha256.clone()) {
                     continue;
                 }
                 any = true;
@@ -696,11 +720,16 @@ fn retrieve(
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
         match result {
-            Err(e) if state.aborted && e.code == ErrorCode::RevocationUnknown => Err(error(
-                ErrorCode::CrlFetchAborted,
-                "the CRL source stopped retrieval before revocation status was known",
-            )
-            .detail("revocation_unknown", e.message)),
+            Err(e) if state.aborted && e.code == ErrorCode::RevocationUnknown => {
+                let mut aborted = error(
+                    ErrorCode::CrlFetchAborted,
+                    "the CRL source stopped retrieval before revocation status was known",
+                );
+                // Keep the verifier's structured details, such as the
+                // certificates still without a CRL.
+                aborted.details.extend(e.details);
+                Err(aborted.detail("revocation_unknown", e.message))
+            }
             result => result,
         }
     })();
@@ -711,6 +740,33 @@ fn retrieve(
         }
         Err(e) => Err(e.detail("crl_retrieval", state.report)),
     }
+}
+
+/// A reported certificate's SHA-256, DER and decoded form.
+fn decode_report(
+    report: &CertificateReport,
+) -> Result<(String, Vec<u8>, Certificate), VerificationError> {
+    let der = report
+        .der_hex
+        .as_bytes()
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| {
+            std::str::from_utf8(pair)
+                .ok()
+                .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+        })
+        .collect::<Option<Vec<u8>>>()
+        .ok_or_else(|| {
+            error(
+                ErrorCode::InvalidCertificate,
+                "malformed certificate report",
+            )
+        })?;
+    let cert = Certificate::from_der(&der)
+        .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
+    Ok((report.sha256.clone(), der, cert))
 }
 
 /// The selected non-anchor certificates of every signature, timestamp and
@@ -744,20 +800,7 @@ fn selected_certificates(
             .decoded_bytes
             .charge(report.der_hex.len())
             .map_err(internal)?;
-        let der = report
-            .der_hex
-            .as_bytes()
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .map(|pair| {
-                u8::from_str_radix(std::str::from_utf8(pair).expect("generated DER hex"), 16)
-                    .expect("generated DER hex")
-            })
-            .collect::<Vec<_>>();
-        let cert = Certificate::from_der(&der)
-            .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-        selected.push((report.sha256.clone(), der, cert));
+        selected.push(decode_report(report)?);
     }
     Ok(selected)
 }
@@ -1016,7 +1059,7 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
-        for i in 0..MAX_REQUESTS {
+        for i in 0..MAX_SOURCE_REQUESTS {
             let cert = signer_with_points(&format!("c{i}"), 1);
             assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut source).unwrap());
         }
@@ -1029,7 +1072,7 @@ mod tests {
         .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
-        assert_eq!(source.calls, MAX_REQUESTS);
+        assert_eq!(source.calls, MAX_SOURCE_REQUESTS);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

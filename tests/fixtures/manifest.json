@@ -7983,7 +7983,9 @@
         "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https"
+        "sec10-fetch-builtin-source-denies-https",
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
@@ -8094,7 +8096,9 @@
         "sec10-fetch-source-abort-stops-requests",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https"
+        "sec10-fetch-builtin-source-denies-https",
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
@@ -9601,7 +9605,9 @@
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-user-scope-idp-not-fetched",
         "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
@@ -9629,7 +9635,8 @@
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri"
+        "sec10-fetch-mixed-point-requests-plain-uri",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
@@ -9661,6 +9668,18 @@
         "sec10-fetch-other-idp-fetched-other-unknown",
         "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-mixed-point-requests-plain-uri"
+      ]
+    },
+    {
+      "file": "sec10-issuer-idp-other-expired.crl",
+      "sha256": "b2e3aaa8744c3beffca0da753bd46d65357cdc80ea1e052ffcb267023131d461",
+      "bytes": 233,
+      "description": "SEC-10: Correctly signed CRL from the SEC-06 issuer, expired, whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the sec10-leaf-crl-dp signer does not list. Not authoritative for that signer, so its age does not decide it. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
