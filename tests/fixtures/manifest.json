@@ -215,7 +215,8 @@
         "sec10-crl-this-update-one-second-ahead",
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact"
+        "sec10-crl-next-update-exact",
+        "sec10-no-next-update-crl-revocation-alone-revokes"
       ]
     },
     {
@@ -354,7 +355,8 @@
         "crl-unknown-critical-extension-local-source-abort-is-marked",
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-malformed-aki-beside-expired-local-asks-provider"
+        "crl-malformed-aki-beside-expired-local-asks-provider",
+        "sec10-no-next-update-crl-revocation-alone-revokes"
       ]
     },
     {
@@ -9593,7 +9595,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
-        "sec10-no-next-update-crl-revocation-alone-is-invalid"
+        "sec10-no-next-update-crl-revocation-alone-is-invalid",
+        "sec10-no-next-update-crl-revocation-alone-revokes"
       ]
     },
     {

@@ -890,6 +890,10 @@ fn evaluate_crls(
     // Authenticated CRLs that list the serial, whether or not they count:
     // one that does not is logged, never dropped silently.
     let mut listings: Vec<usize> = Vec::new();
+    // The newest listing in a CRL whose only defect is a missing nextUpdate:
+    // OpenSSL, BoringSSL and Bouncy Castle use such a CRL, so its listing
+    // revokes even when no CRL is usable as evidence of good status.
+    let mut revoking_without_next_update: Option<(usize, u64)> = None;
     let mut failure: Option<(u8, VerificationError)> = None;
     // A failure's error is built only when it would be kept.
     let mut fail = |rank: u8, error: &dyn Fn() -> VerificationError| {
@@ -1022,6 +1026,17 @@ fn evaluate_crls(
             continue;
         }
         let Some(next_update) = crl.tbs.next_update else {
+            // The conditions under which a listing counts beside another
+            // CRL: authenticated (above), current and covering the
+            // certificate. webpki cannot parse a CRL without nextUpdate, so
+            // its feature checks are not applied, as for that listing.
+            if lists
+                && covers
+                && this_update <= now
+                && revoking_without_next_update.is_none_or(|(_, newest)| this_update > newest)
+            {
+                revoking_without_next_update = Some((index, this_update));
+            }
             fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
@@ -1112,8 +1127,16 @@ fn evaluate_crls(
             webpki_revocation_error(&sha256, webpki::Error::CertRevoked).detail(CRL_INDEX, listing),
         ),
         (Some((index, _)), _) => Outcome::Good(index),
-        // Without one, the status is unknown, even if a CRL lists it.
-        (None, _) => Outcome::Missing(failure),
+        // Without one, a listing revokes only from a CRL whose sole defect
+        // is a missing nextUpdate; otherwise the status is unknown, even if
+        // a CRL lists it.
+        (None, _) => match revoking_without_next_update {
+            Some((listing, _)) => Outcome::Revoked(
+                webpki_revocation_error(&sha256, webpki::Error::CertRevoked)
+                    .detail(CRL_INDEX, listing),
+            ),
+            None => Outcome::Missing(failure),
+        },
     };
     // With a good status, every listing was set aside.
     let ignored_listings = match outcome {

@@ -471,10 +471,10 @@ timestamps, and local CRL validation already exist.
   unsupported signature algorithm, or from an issuer without cRLSign, is
   not (SEC-10, "Case reasons (refresh of an unusable supplied
   CRL)").
-  Owner decision needed:
-  - A CRL without nextUpdate that lists a certificate, alone, is
-    `invalid_crl` (`missing_next_update`) rather than `certificate_revoked`
-    (`sec10-no-next-update-crl-revocation-alone-is-invalid`); both reject.
+  Also decided since: a CRL without nextUpdate that lists the certificate,
+  alone, is `certificate_revoked`, as in OpenSSL, BoringSSL and Bouncy
+  Castle (SEC-10, "Case reasons (a CRL without nextUpdate that lists the
+  certificate)").
   Retrieval and the built-in HTTP source:
   - The CLI's fetch limits are per file, so a batch is bounded only by its
     file count (up to 16 requests, 32 MiB and 30 s each). Consider an

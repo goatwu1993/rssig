@@ -362,8 +362,13 @@ relic 02c54d58 and BoringSSL `main`.
   acceptance; the old
   rule verified a certificate the issuer said was revoked). Such a CRL is
   still unusable as evidence of good status: RFC 5280 requires nextUpdate,
-  and alone it is `invalid_crl` / `missing_next_update`
-  (`sec10-no-next-update-crl-revocation-alone-is-invalid`, diagnostics).
+  and alone, without a listing, it is `invalid_crl` / `missing_next_update`
+  (`sec10-root-crl-no-next-update`). Alone with a listing it revokes
+  (`sec10-no-next-update-crl-revocation-alone-revokes`; see "Case reasons (a
+  CRL without nextUpdate that lists the certificate)"). On a timestamped
+  file the timestamp authority's chain is checked first, and that
+  certificate is not listed, so the same CRL alone is `invalid_crl` there
+  (`sec10-no-next-update-crl-revocation-alone-is-invalid`).
 - **A listing in a current CRL with a malformed AKI counts.** Decided by the
   owner (PR #60), acceptance (fails closed): a correctly signed CRL of the
   issuer said the certificate is revoked, and a malformed identifier field
@@ -750,12 +755,10 @@ relic 02c54d58 and BoringSSL `main`.
     An anchor whose same-key root has no identifier cannot disprove a match.
     Unit test `only_a_differing_key_identifier_sets_a_failed_crl_aside`, named
     test `sec10_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside`.
-  - A CRL without nextUpdate alone that lists a certificate leaves the
-    status `invalid_crl` (`missing_next_update`), not `certificate_revoked`:
-    it is unusable evidence (RFC 5280 requires nextUpdate), and the
-    certificate is rejected either way
-    (`sec10-no-next-update-crl-revocation-alone-is-invalid`, Decided,
-    diagnostics).
+  - A CRL without nextUpdate alone that lists a certificate left the
+    status `invalid_crl` (`missing_next_update`). Since changed to
+    `certificate_revoked` with the owner's approval; see "Case reasons (a
+    CRL without nextUpdate that lists the certificate)".
   - The built-in source's reserved-name check (now `localhost`, `local`,
     `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion`, `alt`) matches whole labels: `foo.local` is denied,
     `crl.foolocal` is not (a suffix match denied public names). Unit test
@@ -900,3 +903,40 @@ is replaceable: BoringSSL drops it when decoding, OpenSSL never tests the
 invalid flag and still consults the store, and Bouncy Castle fetches. A CRL scoped to a distribution point the
 certificate does not list, when it lists none, is not replaceable either: a
 source is asked about the points the certificate lists.
+
+## Case reasons (a CRL without nextUpdate that lists the certificate)
+
+Decided by the repository owner after PR #60 (SEC-23): the owner asked for
+the references to be checked and the call made on them. They agree:
+
+- OpenSSL `crypto/x509/x509_vfy.c:1112` (`ossl_x509_check_crl_time`) and
+  BoringSSL `crypto/x509/x509_vfy.cc:414` (`check_crl_time`) check
+  nextUpdate only when it is present: the CRL is current, it is used, and a
+  listed certificate is `X509_V_ERR_CERT_REVOKED`.
+- Bouncy Castle `PKIXCRLUtil.findCRLs` keeps a CRL whose nextUpdate is null,
+  so its entry revokes.
+
+A correctly signed, in-scope CRL of the issuer without nextUpdate that lists
+the certificate is therefore `certificate_revoked`, alone as beside another
+CRL. **Decided, diagnostics:** both results reject; only the code changes.
+`sec10-no-next-update-crl-revocation-alone-revokes` pins it on
+`good-pe64.exe`, which has no timestamp, and failed before the change
+(`invalid_crl`).
+
+The Decided case `sec10-no-next-update-crl-revocation-alone-is-invalid`,
+which this question was taken from, is unchanged. It uses
+`good-countersignature.exe`, whose timestamp authority's chain is checked
+first; that certificate is not on the CRL, so the result is the stricter
+rule below (`invalid_crl` for the timestamp authority), not the signer's
+listing. Its earlier reason in this document described it as the signer's
+listing; the reason is now corrected.
+
+Kept, stricter than the references: the same CRL without a listing is not
+evidence of good status. It stays `invalid_crl` (`missing_next_update`), as
+RFC 5280 section 5.1.2.5 requires nextUpdate in conforming CRLs, and a CRL
+that never expires cannot show the status is still current; the references
+would accept it. That rejection is an acceptance pin
+(`sec10-root-crl-no-next-update`) and is not changed here. Nor is such a CRL
+refreshed by `--fetch-crls` (`crl-no-next-update-local-asks-nothing`): a
+source's CRL would decide only if newer, and the open question was the
+wording of a listing, not retrieval.
