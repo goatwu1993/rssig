@@ -413,8 +413,10 @@ fn sec10_fetch_follows_the_verification_result() {
         // A CRL with the issuer's name from another key is excluded by verification,
         // so it does not stand in for the listed point.
         ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
-        // A supplied CRL that verification rejects is reported as it is offline; the
-        // provider is not asked, although it could answer.
+        // A CRL scoped to a point, for a signer that lists none: no URL is requested
+        // (the signer lists none); the signer is asked about by certificate, which
+        // this source does not answer, so the error stands. A source answering by
+        // certificate completes it: sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate.
         ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         // A supplied CRL whose scope cannot be used is one a source's CRL can replace
         // (SEC-23): the listed point is requested, and without an answer the error stands.

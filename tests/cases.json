@@ -37436,7 +37436,7 @@
       "input": "good-pe64.exe",
       "decision": {
         "basis": "decided",
-        "pins": "acceptance",
+        "pins": "diagnostics",
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-a-crl-without-nextupdate-that-lists-the-certificate",
         "references": [
           "OpenSSL crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time): nextUpdate is checked only when present, so the CRL is current and its entry revokes (X509_V_ERR_CERT_REVOKED).",

@@ -953,12 +953,17 @@ authorityKeyIdentifier does not stop it, as decided for a listing beside
 another CRL. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
 A newer such CRL that leaves the signer out clears the listing
 (`sec10-no-next-update-crl-revocation-cleared-by-newer-crl`, Decided,
-acceptance: the result is `invalid_crl`, as for the CRL without nextUpdate
-alone), and an older one does not
+diagnostics: the result is `invalid_crl`, as for the CRL without nextUpdate
+alone; both reject), and an older one does not
 (`sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`,
 Decided, diagnostics). Only a current, complete, direct CRL clears: an
 expired or not-yet-valid one, or a delta, indirect or reason-partitioned
-one, would not be preferred by OpenSSL or Bouncy Castle.
+one, would not be preferred by OpenSSL or Bouncy Castle; nor one whose
+scope match cannot be read. The newest such CRL decides even if it lists
+the certificate too: a newer entry released by removeFromCRL leaves an
+older listing without effect, as OpenSSL reads only the newest
+best-scored CRL. A CRL without nextUpdate known to cover another scope is
+set aside only if it is otherwise complete and direct.
 
 Beside a usable CRL the PR #60 rule is unchanged: any authenticated,
 current, covering listing counts, whatever else is wrong with its CRL, since

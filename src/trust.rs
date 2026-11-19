@@ -894,9 +894,11 @@ fn evaluate_crls(
     // OpenSSL, BoringSSL and Bouncy Castle use such a CRL, so its listing
     // revokes even when no CRL is usable as evidence of good status.
     let mut revoking_without_next_update: Option<(usize, u64)> = None;
-    // The newest authenticated full CRL that covers the certificate and
-    // leaves it out: a listing older than that may be a released hold.
-    let mut newest_clear: Option<u64> = None;
+    // The newest authenticated, current, complete CRL definitely in scope
+    // for the certificate, listing it or not: as OpenSSL reads only the
+    // newest best-scored CRL, a listing older than that does not revoke
+    // (it may be a released hold, or released by removeFromCRL there).
+    let mut newest_complete: Option<u64> = None;
     let mut failure: Option<(u8, VerificationError)> = None;
     // A failure's error is built only when it would be kept.
     let mut fail = |rank: u8, error: &dyn Fn() -> VerificationError| {
@@ -973,15 +975,17 @@ fn evaluate_crls(
         if lists {
             listings.push(index);
         }
-        // Only a CRL OpenSSL or Bouncy Castle would prefer can clear it: a
-        // current, complete and direct one.
-        if covers
-            && !lists
+        // Only a CRL OpenSSL or Bouncy Castle would prefer counts: current,
+        // complete and direct, and positively in scope. `covers` also admits
+        // a CRL whose match cannot be ruled out, which is right for counting
+        // a listing but would let it clear one.
+        if authority == Some(true)
+            && !points_unreadable
             && current
             && complete_direct_crl(&crl.tbs)
-            && newest_clear.is_none_or(|n| this_update > n)
+            && newest_complete.is_none_or(|n| this_update > n)
         {
-            newest_clear = Some(this_update);
+            newest_complete = Some(this_update);
         }
         // A listing in a CRL whose only defect is a missing nextUpdate
         // revokes alone, under the same conditions as beside another CRL
@@ -1027,7 +1031,10 @@ fn evaluate_crls(
             // One known to cover another scope (a partition for another
             // point or role) is set aside, as a usable one is below: it says
             // nothing about this certificate.
-            if authority == Some(false) {
+            // Only when it is otherwise one webpki's rules admit: a scope
+            // read from a CRL webpki would reject is not trusted enough to
+            // set it aside silently (see below).
+            if authority == Some(false) && complete_direct_crl(&crl.tbs) {
                 continue;
             }
             fail(UNUSABLE, &|| {
@@ -1163,7 +1170,7 @@ fn evaluate_crls(
         // is a missing nextUpdate; otherwise the status is unknown, even if
         // a CRL lists it.
         (None, _) => match revoking_without_next_update {
-            Some((listing, listed)) if newest_clear.is_none_or(|clear| listed >= clear) => {
+            Some((listing, listed)) if newest_complete.is_none_or(|newest| listed >= newest) => {
                 Outcome::Revoked(
                     webpki_revocation_error(&sha256, webpki::Error::CertRevoked)
                         .detail(CRL_INDEX, listing),
@@ -1719,9 +1726,13 @@ fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
 }
 
 /// Whether the CRL is one webpki's rules admit apart from its times: v2, and
-/// complete and direct (no deltaCRLIndicator; no indirect, reason-partitioned
-/// or attribute-only issuingDistributionPoint; no other critical CRL
-/// extension). OpenSSL's `get_crl_score` gives the others no valid score.
+/// complete and direct (no deltaCRLIndicator; an issuingDistributionPoint, if
+/// any, with a fullName distributionPoint and neither indirectCRL,
+/// onlySomeReasons nor onlyContainsAttributeCerts; no other critical CRL
+/// extension). webpki 0.103 rejects the rest (`UnsupportedDeltaCrl`,
+/// `UnsupportedIndirectCrl`, `UnsupportedCrlIssuingDistributionPoint`), and
+/// OpenSSL's `get_crl_score` gives delta, indirect and reason-partitioned
+/// CRLs no valid score.
 fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
     use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
     if tbs.version != x509_cert::Version::V2 {
@@ -1734,7 +1745,12 @@ fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
             "2.5.29.27" => false,
             "2.5.29.28" => {
                 IssuingDistributionPoint::from_der(e.extn_value.as_bytes()).is_ok_and(|idp| {
-                    !idp.indirect_crl
+                    matches!(
+                        idp.distribution_point,
+                        Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(
+                            _
+                        ))
+                    ) && !idp.indirect_crl
                         && idp.only_some_reasons.is_none()
                         && !idp.only_contains_attribute_certs
                 })
@@ -1745,9 +1761,9 @@ fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
 }
 
 /// Whether a CRL that webpki cannot parse only because it lacks nextUpdate
-/// revokes `serial` under webpki's other rules, which OpenSSL also applies
-/// (`get_crl_score`, `cert_crl`): a complete, direct v2 CRL whose entry for
-/// the serial has no critical extension and is not removeFromCRL.
+/// revokes `serial` under webpki's other rules: a complete, direct v2 CRL
+/// whose entry for the serial webpki would accept. A removeFromCRL entry
+/// does not revoke, as in OpenSSL's `cert_crl`.
 fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
     if !complete_direct_crl(tbs) {
         return false;
@@ -1762,9 +1778,9 @@ fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8])
     };
     // As webpki: reasonCode and invalidityDate are understood (critical or
     // not); a certificateIssuer makes the CRL indirect; any other critical
-    // entry extension is unsupported. A reasonCode must be a single-byte
-    // ENUMERATED with a defined value, and removeFromCRL (8) releases the
-    // entry rather than revoking.
+    // entry extension is unsupported; a reasonCode must be a single-byte
+    // ENUMERATED with a defined value. As OpenSSL (`cert_crl`), not webpki
+    // (which revokes on any entry): removeFromCRL (8) releases the entry.
     entry
         .crl_entry_extensions
         .iter()
@@ -1867,6 +1883,9 @@ mod revocation_reporting {
         let mut v1 = base.clone();
         v1.version = x509_cert::Version::V1;
         assert!(!revokes_without_next_update(&v1, &serial));
+        // A role-only issuingDistributionPoint, which webpki 0.103 rejects.
+        let role_only = with_crl_extension(extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]));
+        assert!(!revokes_without_next_update(&role_only, &serial));
         // A non-critical unknown extension is ignorable.
         let tbs = with_crl_extension(extension("1.2.3.4", false, &[5, 0]));
         assert!(revokes_without_next_update(&tbs, &serial));
