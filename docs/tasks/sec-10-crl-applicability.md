@@ -836,7 +836,7 @@ fetches from the certificate's distribution points.
 |---|---|---|---|
 | expired | second source | fetches | asked about (`certificates_with_expired_crl`) |
 | not yet valid | second source | fetches after a failure | asked about |
-| an issuingDistributionPoint that cannot be used | second source | fetches | asked about (`certificates_with_unusable_crl`) |
+| an issuingDistributionPoint that cannot be used | second source | fetches | asked about (`certificates_with_replaceable_crl`) |
 | another scope that is known (a partition for another point or role) | second source | fetches | set aside; its certificate is listed under `certificates_without_crl` and asked about, as before |
 | unknown critical extension, delta, indirect, reasons partition | second source | fetches | asked about |
 | bad signature, unsupported signature algorithm | reported, no lookup | fetches | not asked (BoringSSL decides) |
@@ -847,7 +847,7 @@ fetches from the certificate's distribution points.
 | no nextUpdate | usable | usable | not asked; a listing in it revokes (see "Case reasons (a CRL without nextUpdate that lists the certificate)") |
 
 A certificate whose only CRLs are unusable for one of the "asked about"
-reasons other than expiry is named in `details.certificates_with_unusable_crl`
+reasons other than expiry is named in `details.certificates_with_replaceable_crl`
 on the error that stands (`invalid_crl`, `crl_not_yet_valid`, an unknown
 status, or another path's revocation), and a source is asked about it. A
 fetched CRL passes the same checks as a supplied one and the best CRL
@@ -888,11 +888,11 @@ path is not one a source could complete.
 - **Decided, diagnostics:** the list's placement beside other evidence,
   on the `sec06` chain with the root's CRL not yet valid
   (`sec06-root-not-yet-valid.crl`): a revocation on the cross path names
-  the root path's certificate in `certificates_with_unusable_crl`
+  the root path's certificate in `certificates_with_replaceable_crl`
   (`sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`),
   and an unknown status names the signer without a CRL in
   `certificates_without_crl` and the issuer with the not-yet-valid CRL in
-  `certificates_with_unusable_crl`
+  `certificates_with_replaceable_crl`
   (`sec10-chain-unknown-names-missing-and-not-yet-valid-crl`).
 - **Decided, acceptance:** with a source, both complete
   (`sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path`,
@@ -963,7 +963,17 @@ scope match cannot be read. The newest such CRL decides even if it lists
 the certificate too: a newer entry released by removeFromCRL leaves an
 older listing without effect, as OpenSSL reads only the newest
 best-scored CRL. A CRL without nextUpdate known to cover another scope is
-set aside only if it is otherwise complete and direct.
+set aside only if it is otherwise complete and direct. The newest CRL that counts must
+also be one rssig would otherwise use (a well-formed authorityKeyIdentifier,
+an issuer with cRLSign, webpki's acceptance unless only nextUpdate is
+missing) and must cover the certificate, never a partition for a point the
+certificate does not list; if it lists the certificate too, the revocation
+stands.
+
+The detail was first named `certificates_with_unusable_crl`; it is
+`certificates_with_replaceable_crl`, as it names only certificates whose CRL
+a source's CRL could replace (forged, no-cRLSign and no-nextUpdate CRLs are
+reported through `unusable_crl` only).
 
 Beside a usable CRL the PR #60 rule is unchanged: any authenticated,
 current, covering listing counts, whatever else is wrong with its CRL, since
@@ -976,7 +986,7 @@ Recorded, not changed:
 - Without `--fetch-crls`, a path whose only gap is a replaceable CRL is
   reported ahead of another path's error that webpki ranks higher (for
   example a certificate not valid at the lifetime signing time), naming its
-  certificate in `certificates_with_unusable_crl`. That is what `main`
+  certificate in `certificates_with_replaceable_crl`. That is what `main`
   already does for an expired CRL (`completable_path`); the replaceable
   failures follow the same rule.
 - Beside a usable CRL, a newer complete CRL without nextUpdate that leaves

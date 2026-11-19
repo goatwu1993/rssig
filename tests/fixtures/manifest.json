@@ -8378,7 +8378,7 @@
       "file": "sec06-root-not-yet-valid.crl",
       "sha256": "1fcb6f9b8aeaf794176106e5cdadd584831548a15e3867ef1c13675cb3b2223b",
       "bytes": 180,
-      "description": "SEC-23: empty, correctly signed CRL of the SEC-06 root, not yet valid at 1800000000 (thisUpdate 1000 seconds after): a CRL a source could replace, so the certificates it fails to cover are named in certificates_with_unusable_crl; supporting revocation evidence, not an individual verification claim.",
+      "description": "SEC-23: empty, correctly signed CRL of the SEC-06 root, not yet valid at 1800000000 (thisUpdate 1000 seconds after): a CRL a source could replace, so the certificates it fails to cover are named in certificates_with_replaceable_crl; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
         "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",

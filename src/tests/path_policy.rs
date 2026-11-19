@@ -800,7 +800,7 @@ pub(super) fn write(dir: &std::path::Path) {
         (NOW - 2000, NOW - 1000),
     );
     // SEC-23: the root's CRL, not yet valid: a CRL a source could replace,
-    // named under certificates_with_unusable_crl rather than as expired.
+    // named under certificates_with_replaceable_crl rather than as expired.
     write_crl_at(
         dir,
         &root,

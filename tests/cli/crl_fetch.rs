@@ -1369,7 +1369,7 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
         // Offline, the error names the certificates to ask about only when
         // a source's CRL could replace the unusable one.
         assert_eq!(
-            error["details"]["certificates_with_unusable_crl"].is_array(),
+            error["details"]["certificates_with_replaceable_crl"].is_array(),
             asked,
             "{crl}"
         );
@@ -1452,7 +1452,7 @@ fn sec10_unknown_status_names_a_missing_and_a_replaceable_crl() {
     let leaf = "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1";
     let issuer = "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb";
     assert_eq!(sha("certificates_without_crl"), [leaf]);
-    assert_eq!(sha("certificates_with_unusable_crl"), [issuer]);
+    assert_eq!(sha("certificates_with_replaceable_crl"), [issuer]);
     assert_eq!(details["unusable_crl"]["code"], "crl_not_yet_valid");
 
     let mut source = Points(

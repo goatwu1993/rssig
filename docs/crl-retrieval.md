@@ -70,7 +70,7 @@ rule is restated for retrieval.
    one without a CRL, as before. OpenSSL and BoringSSL look the issuer's CRLs up
    again for these, and Bouncy Castle fetches. The error that stands
    (`crl_not_yet_valid`, `invalid_crl`, an unknown status or another path's
-   revocation) names it in `details.certificates_with_unusable_crl`; a usable
+   revocation) names it in `details.certificates_with_replaceable_crl`; a usable
    fetched CRL verifies
    (`crl-not-yet-valid-local-refreshed-by-provider`,
    `crl-unknown-critical-extension-local-refreshed-by-provider`,

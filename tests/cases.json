@@ -25006,7 +25006,7 @@
                       }
                     ]
                   },
-                  "certificates_with_unusable_crl": [
+                  "certificates_with_replaceable_crl": [
                     {
                       "subject": {
                         "display": "CN=rssig test publisher"
@@ -25289,7 +25289,7 @@
                       }
                     ]
                   },
-                  "certificates_with_unusable_crl": [
+                  "certificates_with_replaceable_crl": [
                     {
                       "subject": {
                         "display": "CN=rssig test publisher"
@@ -33844,7 +33844,7 @@
                 "code": "certificate_revoked",
                 "stage": "revocation",
                 "details": {
-                  "certificates_with_unusable_crl": [
+                  "certificates_with_replaceable_crl": [
                     {
                       "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
                     }
@@ -33953,7 +33953,7 @@
                       "sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
                     }
                   ],
-                  "certificates_with_unusable_crl": [
+                  "certificates_with_replaceable_crl": [
                     {
                       "sha256": "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb"
                     }
@@ -35619,7 +35619,7 @@
                 "stage": "revocation",
                 "details": {
                   "reason": "issuing_distribution_point",
-                  "certificates_with_unusable_crl": [
+                  "certificates_with_replaceable_crl": [
                     {}
                   ]
                 }

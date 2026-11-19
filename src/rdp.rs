@@ -237,7 +237,7 @@ fn verify_trust(
 /// every certificate any other usage reports without a CRL
 /// (`certificates_without_crl`), with only expired ones
 /// (`certificates_with_expired_crl`) or with only ones a source's CRL could
-/// replace (`certificates_with_unusable_crl`), once each, so that
+/// replace (`certificates_with_replaceable_crl`), once each, so that
 /// `--fetch-crls` can still complete that usage. Otherwise a usage that
 /// only lacks CRLs a source could supply is reported ahead of another
 /// usage's failure; on a tie, the first.
@@ -345,7 +345,7 @@ fn completable_by_crl(e: &anyhow::Error) -> u8 {
 const KEYS: [&str; 3] = [
     "certificates_without_crl",
     "certificates_with_expired_crl",
-    crate::trust::WITH_UNUSABLE_CRL,
+    crate::trust::WITH_REPLACEABLE_CRL,
 ];
 
 #[cfg(test)]
@@ -421,7 +421,7 @@ mod tests {
         let replaceable = || {
             anyhow::Error::from(
                 error(ErrorCode::CrlNotYetValid)
-                    .detail(crate::trust::WITH_UNUSABLE_CRL, vec![report("u")]),
+                    .detail(crate::trust::WITH_REPLACEABLE_CRL, vec![report("u")]),
             )
         };
         let chosen = choose_usage_failure(vec![
@@ -433,7 +433,7 @@ mod tests {
         .unwrap();
         assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
         assert_eq!(
-            details(&chosen)[crate::trust::WITH_UNUSABLE_CRL],
+            details(&chosen)[crate::trust::WITH_REPLACEABLE_CRL],
             serde_json::json!([report("u")])
         );
         assert_eq!(

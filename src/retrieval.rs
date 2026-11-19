@@ -1065,7 +1065,7 @@ fn retrieve(
                             || e.code == ErrorCode::CrlNotYetValid
                             || e.code == ErrorCode::InvalidCrl)
                             && (e.details.contains_key("certificates_with_expired_crl")
-                                || e.details.contains_key(crate::trust::WITH_UNUSABLE_CRL))) =>
+                                || e.details.contains_key(crate::trust::WITH_REPLACEABLE_CRL))) =>
                 {
                     e
                 }
@@ -1281,7 +1281,7 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
     let mut expired = listed("certificates_with_expired_crl").unwrap_or_default();
     // Once each: a certificate can be expired on one path and unusable on
     // another.
-    for report in listed(crate::trust::WITH_UNUSABLE_CRL).unwrap_or_default() {
+    for report in listed(crate::trust::WITH_REPLACEABLE_CRL).unwrap_or_default() {
         if !expired.iter().any(|r| r.sha256 == report.sha256) {
             expired.push(report);
         }

@@ -449,7 +449,7 @@ timestamps, and local CRL validation already exist.
   `details` and hex-decoding each `der_hex`. If that schema changes and the
   list no longer deserializes, retrieval treats the result as final and
   quietly asks nothing (the same holds for `certificates_with_expired_crl`
-  and `certificates_with_unusable_crl`),
+  and `certificates_with_replaceable_crl`),
   so `--fetch-crls` stops fetching with no error. Carry the uncovered certificates' DER
   beside the error inside the crate, keep the JSON field for consumers, and
   pin the request sequence with a test.
@@ -512,7 +512,7 @@ timestamps, and local CRL validation already exist.
   Left open by the refresh of unusable supplied CRLs (SEC-10, "Case reasons
   (refresh of an unusable supplied CRL)"):
   - The three gap keys (`certificates_without_crl`,
-    `certificates_with_expired_crl`, `certificates_with_unusable_crl`) are
+    `certificates_with_expired_crl`, `certificates_with_replaceable_crl`) are
     string literals in `src/trust.rs`, `src/retrieval.rs` and `src/rdp.rs`,
     and `choose_usage_failure` sizes its merge from the RDP-only `KEYS`.
     Define them once with a shared list (this is part of SEC-22's typed
