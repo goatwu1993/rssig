@@ -123,6 +123,56 @@
               "$ref": "#/$defs/fixtureName"
             },
             "description": "Offline injected CRL source: map requested URL to a DER/PEM response file named directly in the fixtures directory. Unmapped requests fail; no live network is used."
+          },
+          "decision": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "basis",
+              "pins"
+            ],
+            "description": "Why this case's result is pinned. Not used to run the case; a case without it counts as observed.",
+            "properties": {
+              "basis": {
+                "enum": [
+                  "decided",
+                  "observed"
+                ],
+                "description": "decided: chosen on purpose, changes only with the owner's approval. observed: current behavior, kept so that a change is visible."
+              },
+              "pins": {
+                "enum": [
+                  "acceptance",
+                  "diagnostics"
+                ],
+                "description": "acceptance: whether the input verifies or is rejected. diagnostics: which error code, stage, detail or request."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Repository-relative document, with an optional #anchor, that names this case and gives the reason."
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "What reference implementations do, each with its source location."
+              }
+            },
+            "if": {
+              "properties": {
+                "basis": {
+                  "const": "decided"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reason"
+              ]
+            }
           }
         },
         "not": {
