@@ -377,6 +377,11 @@ impl TrustStore {
                     match &evidence.outcome {
                         Outcome::Good(index) => {
                             let named = crls[*index].authority_key.as_ref();
+                            // A positive match only: an issuer with no key
+                            // identifier never names itself, while
+                            // `names_another_key` (a CRL set aside as another
+                            // key's) needs a negative one it cannot make
+                            // without an identifier.
                             let names_issuer =
                                 matches!(named, Ok(Some(named)) if issuer.names(named));
                             path_chosen.push((*index, names_issuer));

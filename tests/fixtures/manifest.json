@@ -9599,6 +9599,29 @@
       ]
     },
     {
+      "file": "sec10-root-forged-other-ski.crl",
+      "sha256": "e113f4b2769a4167735c32f5fc9720b03f0dc0901c71f053571c9eb6dbe11499",
+      "bytes": 217,
+      "description": "SEC-10: Fresh CRL under the test root's name signed by another key and naming subjectKeyIdentifier 0xbb x20, the identifier of sec10-root-other-ski.der. Another issuer's CRL when only root.der is configured; forged when the same-key root is configured too. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-forged-crl-naming-another-key-is-set-aside",
+        "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+      ]
+    },
+    {
+      "file": "sec10-root-other-ski.der",
+      "sha256": "aa98e555460c9af16f5c9ae172dca19e1f8734b2c457de426d25322753921b2a",
+      "bytes": 361,
+      "description": "SEC-10: The test root re-issued with the same key and name and subjectKeyIdentifier 0xbb x20: the same trust anchor to webpki, a second identifier for it. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+      ]
+    },
+    {
       "file": "sec10-unrelated-malformed-aki.crl",
       "sha256": "7345feee7c3d869960f72ba94332325d4f4c2868b70c2128ef2099b4ac01fc02",
       "bytes": 200,

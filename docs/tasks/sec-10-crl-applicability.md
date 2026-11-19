@@ -573,6 +573,33 @@ relic 02c54d58 and BoringSSL `main`.
     source across verifications renews it before each, as the CLI does for
     every file (`docs/library.md`).
   - `check_public_http_url` has a fuzz target, `check_url`.
+  - The reserved-name check trims one trailing dot before testing for a
+    single-label name too, so `http://intranet./x.crl` is denied like
+    `http://intranet/x.crl`. Other private-use DNS suffixes (`.lan`,
+    `.corp`, `.localdomain`) are not listed: the check is of the URL text
+    only; the built-in source refuses any DNS answer that is not a public
+    address and re-checks every redirect, which is what protects against
+    them. A custom source must do the same in its own client (see
+    `docs/library.md`).
+  - Two configured roots with one key and name (one trust anchor to webpki)
+    may carry different subjectKeyIdentifiers. A CRL signed by another key
+    that names any of them is forged for that anchor
+    (`invalid_crl_signature`, recorded as `details.unusable_crl`), whichever
+    root is listed first; one naming an identifier no configured root carries
+    is another issuer's and is set aside
+    (`sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged`,
+    `sec10-forged-crl-naming-another-key-is-set-aside`; **Observed**,
+    diagnostics only, since it changes only which error is reported: both
+    reject, and the libraries have no equivalent for two same-key anchors).
+    An anchor whose same-key root has no identifier cannot disprove a match.
+    Unit test `only_a_differing_key_identifier_sets_a_failed_crl_aside`, named
+    test `sec10_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside`.
+  - A CRL without nextUpdate alone that lists a certificate leaves the
+    status `invalid_crl` (`missing_next_update`), not `certificate_revoked`:
+    it is unusable evidence (RFC 5280 requires nextUpdate), and the
+    certificate is rejected either way
+    (`sec10-no-next-update-crl-revocation-alone-is-invalid`, Decided,
+    diagnostics).
   - The built-in source's reserved-name check (`local`, `internal`,
     `localhost`, `home.arpa`) matches whole labels: `foo.local` is denied,
     `crl.foolocal` is not (a suffix match denied public names). Unit test

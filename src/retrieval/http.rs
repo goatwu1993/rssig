@@ -58,7 +58,7 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
         Host::Ipv4(ip) if !public_ip(IpAddr::V4(ip)) => return Err(denied()),
         Host::Ipv6(ip) if !public_ip(IpAddr::V6(ip)) => return Err(denied()),
         Host::Domain(name)
-            if !name.contains('.')
+            if !name.trim_end_matches('.').contains('.')
                 || ["localhost", "local", "internal", "home.arpa"]
                     .iter()
                     .any(|reserved| {
@@ -464,6 +464,9 @@ mod tests {
             "http://localhost./",
             "http://foo.local/",
             "http://local/",
+            // A trailing dot is the same name: still one label.
+            "http://intranet./x.crl",
+            "http://printer./",
             "http://a.b.internal./",
             "http://x.home.arpa/",
             "http://example.com/\r\nx",

@@ -131,6 +131,27 @@ fn aki_issuer_serial() -> Vec<u8> {
     seq(&[tlv(0xa1, &tlv(0xa4, &name)), tlv(0x82, &[1])])
 }
 
+/// The test root re-issued with the same key and name but another
+/// subjectKeyIdentifier (all 0xbb): to webpki the same trust anchor.
+fn root_with_other_ski() -> Certificate {
+    use ::der::asn1::OctetString;
+    let id = identity();
+    let mut cert = id.root.clone();
+    let extension = cert
+        .tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .unwrap();
+    extension.extn_value = OctetString::new(tlv(4, &[0xbb; 20])).unwrap();
+    let signature: p256::ecdsa::Signature =
+        id.root_key.sign(&cert.tbs_certificate.to_der().unwrap());
+    cert.signature = ::der::asn1::BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    cert
+}
+
 fn ski(cert: &Certificate) -> Vec<u8> {
     use ::der::Decode;
     let ext = cert
@@ -155,6 +176,20 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
+        // The root's name, a fresh period, signed by another key, naming the
+        // subjectKeyIdentifier of `sec10-root-other-ski.der`: forged when that
+        // root is configured (it is the same anchor), another issuer's CRL
+        // otherwise.
+        (
+            "sec10-root-forged-other-ski.crl",
+            crl_with_aki(
+                root,
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_value(&[0xbb; 20])),
+            ),
+        ),
         // The root's name, but signed by another key that its authorityKeyIdentifier
         // names: a CRL of a rolled-over issuer, not of the chain's root.
         (
@@ -412,4 +447,9 @@ fn regenerate_sec10_fixtures() {
     for (name, bytes) in crls() {
         std::fs::write(dir.join(name), bytes).unwrap();
     }
+    std::fs::write(
+        dir.join("sec10-root-other-ski.der"),
+        root_with_other_ski().to_der().unwrap(),
+    )
+    .unwrap();
 }

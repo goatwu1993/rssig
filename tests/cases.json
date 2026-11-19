@@ -30745,6 +30745,81 @@
       }
     },
     {
+      "id": "sec10-forged-crl-naming-another-key-is-set-aside",
+      "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "observed",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-forged-other-ski.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+      "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "observed",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--roots",
+        "fixtures/sec10-root-other-ski.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-forged-other-ski.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "unusable_crl": {
+                    "code": "invalid_crl_signature"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-unrelated-malformed-aki-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [

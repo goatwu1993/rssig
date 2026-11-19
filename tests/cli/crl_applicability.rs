@@ -849,3 +849,47 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
     ]);
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }
+
+/// SEC-10: two configured roots with one key and name may carry different
+/// subjectKeyIdentifiers. A CRL signed by another key that names one of them
+/// is forged for that anchor, whichever root is listed first; naming an
+/// identifier no configured root carries, it is another issuer's CRL and is
+/// set aside without a failure.
+#[test]
+fn sec10_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside() {
+    let run = |roots: &[&str]| {
+        let mut args = vec!["verify", "--no-system-roots"];
+        for root in roots {
+            args.extend(["--roots", root]);
+        }
+        args.extend([
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec10-root-forged-other-ski.crl",
+        ]);
+        run_fixture("good-countersignature.exe", &args)
+    };
+    let alone = run(&["fixtures/root.der"]);
+    assert_eq!(
+        alone.json["results"][0]["error"]["code"],
+        "revocation_unknown"
+    );
+    assert!(
+        alone.json["results"][0]["error"]["details"]
+            .get("unusable_crl")
+            .is_none()
+    );
+    for roots in [
+        ["fixtures/root.der", "fixtures/sec10-root-other-ski.der"],
+        ["fixtures/sec10-root-other-ski.der", "fixtures/root.der"],
+    ] {
+        let output = run(&roots);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "revocation_unknown");
+        assert_eq!(
+            error["details"]["unusable_crl"]["code"],
+            "invalid_crl_signature"
+        );
+    }
+}
