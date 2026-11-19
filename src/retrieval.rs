@@ -733,7 +733,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
         let by_certificate = !self.aborted && loaded.by_certificate;
         if by_certificate {
-            self.answered_by_certificate.insert(key);
+            // A partition may not cover the issuer's other certificates:
+            // only a full CRL answers for them all.
+            if loaded.full {
+                self.answered_by_certificate.insert(key);
+            }
             // No source used these points: a later certificate listing one
             // still offers it. Each offer counts toward `crl_source_urls`.
             for point in &unanswered {
@@ -778,7 +782,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             let (by_certificate, added) =
                 self.load(sha256, issuer, crl, &mut loaded.accepted_bytes, max_bytes)?;
             loaded.added |= added;
-            loaded.by_certificate |= by_certificate;
+            loaded.by_certificate |= by_certificate.is_some();
+            loaded.full |= by_certificate == Some(true);
         }
         Ok(loaded)
     }
@@ -796,7 +801,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         crl: SourcedCrl,
         total: &mut usize,
         max_bytes: usize,
-    ) -> Result<(bool, bool), VerificationError> {
+    ) -> Result<(Option<bool>, bool), VerificationError> {
         let url = crl.url.filter(|u| hygienic_url(u));
         // A redirect target the source reported but that is not recorded is
         // withheld, never replaced by the requested URL.
@@ -812,7 +817,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // A body over its caps is not counted against the bodies after it.
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
             self.skip(sha256, url.as_deref(), e, None);
-            return Ok((false, false));
+            return Ok((None, false));
         }
         *total += len;
         for _ in 0..8 {
@@ -837,7 +842,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 format!("decoding retrieved CRL: {e:#}"),
             );
             self.skip(sha256, url.as_deref(), e, None);
-            return Ok((false, false));
+            return Ok((None, false));
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
@@ -845,12 +850,20 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if loaded > 64 {
             return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
         }
-        let by_certificate = url.is_none()
-            && crate::trust::crl_issuers(&crl.bytes)
-                .iter()
-                .any(|name| name == issuer);
+        // An answer by certificate, and whether it is a full CRL, which
+        // serves every certificate of that issuer and role.
+        let answer = if url.is_none() {
+            let of_issuer: Vec<bool> = crate::trust::crl_issuers(&crl.bytes)
+                .into_iter()
+                .filter(|(name, _)| name == issuer)
+                .map(|(_, full)| full)
+                .collect();
+            (!of_issuer.is_empty()).then(|| of_issuer.contains(&true))
+        } else {
+            None
+        };
         // A body identical to a loaded CRL adds nothing to verify.
-        Ok((by_certificate, loaded > prior))
+        Ok((answer, loaded > prior))
     }
 }
 
@@ -1054,6 +1067,9 @@ struct Loaded {
     /// A body naming no URL loaded as a CRL of the certificate's issuer: the
     /// source answered by certificate or issuer.
     by_certificate: bool,
+    /// Such a body was a full CRL (no issuingDistributionPoint), which
+    /// serves every certificate of that issuer and role.
+    full: bool,
 }
 
 /// What an unknown revocation status tells retrieval to ask about.
@@ -1818,6 +1834,22 @@ mod tests {
         }
         assert_eq!(source.0, 1);
         assert!(state.report.failures.is_empty());
+        // A partition CRL answers only the certificate it was returned for:
+        // the next certificate of that issuer is still asked.
+        struct Partition(usize);
+        impl CrlSource for Partition {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/sec10-root-idp-named-point.crl").to_vec(),
+                )))
+            }
+        }
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Partition(0);
+        ask(&mut state, "p0", &cert, &mut source).unwrap();
+        ask(&mut state, "p1", &cert, &mut source).unwrap();
+        assert_eq!(source.0, 2);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

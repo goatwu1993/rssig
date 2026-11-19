@@ -68,7 +68,9 @@ rule is restated for retrieval.
    body that loads as a CRL of the certificate's issuer counts as such an
    answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
    unused points stay open: a later certificate listing one still offers it,
-   and each offer counts toward the 64 URIs passed per verification.
+   and each offer counts toward the 64 URIs passed per verification. When
+   the answer is a full CRL (no issuingDistributionPoint), later
+   certificates of that issuer key and role are not asked again.
    CRLs are per issuer, so a certificate with no point left to pass on,
    whose issuer was already asked about, is not asked again and does not
    spend the request cap. A list that is present but empty (a certificate

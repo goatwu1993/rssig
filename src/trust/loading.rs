@@ -87,14 +87,25 @@ impl TrustStore {
     }
 }
 
-/// The issuer names (DER) of the CRLs in a DER or PEM input that loads.
+/// The issuer name (DER) of each CRL in a DER or PEM input that loads, and
+/// whether it is a full CRL (no issuingDistributionPoint).
 #[cfg(feature = "crl-fetch")]
-pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<Vec<u8>> {
+pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<(Vec<u8>, bool)> {
     decode_input(bytes, Kind::Crl)
         .unwrap_or_default()
         .iter()
         .filter_map(|der| CertificateList::from_der(der).ok())
-        .filter_map(|list| ::der::Encode::to_der(&list.tbs_cert_list.issuer).ok())
+        .filter_map(|list| {
+            let full = !list
+                .tbs_cert_list
+                .crl_extensions
+                .iter()
+                .flatten()
+                .any(|e| e.extn_id.to_string() == "2.5.29.28");
+            ::der::Encode::to_der(&list.tbs_cert_list.issuer)
+                .ok()
+                .map(|issuer| (issuer, full))
+        })
         .collect()
 }
 
