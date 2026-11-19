@@ -1488,8 +1488,8 @@ fn issuer_identity(cert: &Certificate) -> Result<IssuerIdentity> {
 }
 
 /// Whether the CRL signature verifies under `spki`. `None` when the signature
-/// algorithm is not one we can map to a digest: the caller must then treat
-/// the CRL as applicable rather than exclude it.
+/// algorithm is not one we can map to a digest: the CRL is then unsupported,
+/// not forged. A signature that is not whole octets does not verify.
 fn signed_by(
     spki: &[u8],
     algorithm: &::der::asn1::ObjectIdentifier,
@@ -1506,7 +1506,9 @@ fn signed_by(
         | [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 1, 1, 13] => crate::crypto::Hash::Sha512,
         _ => return None,
     };
-    Some(crate::crypto::verify_spki(spki, hash, oid, message, signature.as_bytes()?).is_ok())
+    Some(signature.as_bytes().is_some_and(|signature| {
+        crate::crypto::verify_spki(spki, hash, oid, message, signature).is_ok()
+    }))
 }
 
 /// Stable machine-readable reason for a CRL that webpki cannot use.
@@ -1816,6 +1818,26 @@ mod revocation_reporting {
         crl.tbs_cert_list.signature.parameters = Some(null);
         let loaded = LoadedCrl::load(&crl.to_der().unwrap()).unwrap();
         assert!(!loaded.algorithm_accepted);
+    }
+
+    #[test]
+    fn a_crl_signature_that_is_not_whole_octets_is_invalid_not_unsupported() {
+        let crl = LoadedCrl::load(include_bytes!("../tests/fixtures/good.crl")).unwrap();
+        let spki = Certificate::from_der(include_bytes!("../tests/fixtures/root.der"))
+            .unwrap()
+            .tbs_certificate
+            .subject_public_key_info
+            .to_der()
+            .unwrap();
+        assert_eq!(
+            signed_by(&spki, &crl.algorithm, &crl.signed, &crl.signature),
+            Some(true)
+        );
+        let bits = ::der::asn1::BitString::new(3, crl.signature.raw_bytes()).unwrap();
+        assert_eq!(
+            signed_by(&spki, &crl.algorithm, &crl.signed, &bits),
+            Some(false)
+        );
     }
 
     #[test]

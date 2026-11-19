@@ -393,6 +393,13 @@ relic 02c54d58 and BoringSSL `main`.
   `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`,
   `sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
   `sec10-fetch-path-failing-key-usage-asks-nothing`).
+  Changed after review (owner asked for the fix): with `--fetch-crls`, an
+  unknown status that names nothing to ask is followed by the check of the
+  whole input without revocation, so
+  `sec10-fetch-path-failing-key-usage-asks-nothing` now reports the path's
+  own failure (`invalid_key_usage`), as on `main`, where that check ran
+  first; still no request is made. Without `--fetch-crls` the result is
+  `revocation_unknown` with an empty list, as on `main`.
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
@@ -425,7 +432,12 @@ relic 02c54d58 and BoringSSL `main`.
   and Bouncy Castle's store lookups have no per-point outcome. Only a body
   that loads as a CRL of the certificate's issuer counts, as both look CRLs
   up by issuer name:
-  `sec10-fetch-by-certificate-answer-requests-no-listed-point`.
+  `sec10-fetch-by-certificate-answer-requests-no-listed-point`. When that
+  answer does not settle the certificate's status (for example an expired
+  CRL), the listed points the source left unused are recorded as
+  `crl_fetch_failed` ("not requested"), so that no listed point disappears
+  from the report of a failed retrieval (written argument, diagnostics):
+  `sec10-fetch-by-certificate-unusable-answer-records-unused-points`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds
   denied/failed/abort/unknown), diagnostics. The single code matches the
@@ -506,6 +518,10 @@ relic 02c54d58 and BoringSSL `main`.
   `good-rdp-eku-retry-ca.rdp` has codeSigning and serverAuth under a CA
   whose EKU admits serverAuth only: the codeSigning attempt fails on the
   path (`invalid_eku`) and the serverAuth attempt lacks only the CA's CRL.
+  Only a failure that names certificates a source could cover counts (an
+  empty list names nothing), and a revocation naming another path's gap
+  ranks below an unknown status or expired CRL (unit test
+  `only_a_named_missing_crl_ranks_a_usage_failure_as_completable`).
   The missing CRL is reported, because a source can supply it
   (`rdp-eku-retry-ca-missing-crl-is-unknown`, diagnostics), and
   `--fetch-crls` then verifies the file, as on `main`, where retrieval

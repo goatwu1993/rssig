@@ -88,6 +88,7 @@
       "bytes": 184,
       "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
       "cases": [
+        "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-fetch-injected-expired",
         "sec10-root-expired-crl-still-rejected",
         "sec10-root-expired-crl-still-rejected-beside-good-crl"
@@ -6792,6 +6793,7 @@
         "license": "Apache-2.0"
       },
       "cases": [
+        "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-discovery-local",
         "crl-fetch-injected-expired",
         "crl-fetch-injected-forged",

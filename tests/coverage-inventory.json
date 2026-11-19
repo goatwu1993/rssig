@@ -839,6 +839,7 @@
     },
     "invalid_key_usage": {
       "cases": [
+        "sec10-fetch-path-failing-key-usage-asks-nothing",
         "ca-key-usage",
         "bad-signer-key-usage",
         "msi-ca-key-usage",
@@ -912,8 +913,7 @@
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
-        "sec10-fetch-path-failing-key-usage-asks-nothing"
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
       ],
       "gap": ""
     },

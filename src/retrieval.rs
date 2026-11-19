@@ -450,6 +450,10 @@ struct Retrieval<'s, 'b, 'l> {
     /// The normalized points the current request carries: only their
     /// recorded outcome may change while it is answered.
     in_flight: BTreeSet<String>,
+    /// Per certificate, the listed points its source left unused when it
+    /// answered by certificate: recorded if that answer does not settle
+    /// the certificate's status.
+    unused_points: BTreeMap<String, Vec<String>>,
     budget: &'b Budget<'l>,
 }
 
@@ -472,6 +476,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             aborted_for: None,
             urls_passed: 0,
             in_flight: BTreeSet::new(),
+            unused_points: BTreeMap::new(),
             budget,
         }
     }
@@ -783,6 +788,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             for point in &unanswered {
                 self.asked.remove(&url_key(point));
             }
+            if !unanswered.is_empty() {
+                self.unused_points
+                    .insert(sha256.to_owned(), unanswered.clone());
+            }
         }
         for point in unanswered.iter().filter(|_| !by_certificate) {
             let e = if self.aborted {
@@ -982,7 +991,15 @@ fn retrieve(
                 // every certificate on it had a usable CRL, so no source can
                 // help, and asking about covered certificates is refused.
                 // Unit-tested only: no fixture makes the two disagree.
-                Uncovered::Final => break,
+                // An unknown status that names nothing also arises when no
+                // path passes path policy: no CRL can help, so the input is
+                // checked without revocation and that failure is the result.
+                Uncovered::Final => {
+                    if unknown.code == ErrorCode::RevocationUnknown && !authenticated {
+                        authenticate(bytes, options, &state.store, format, budget)?;
+                    }
+                    break;
+                }
                 Uncovered::Listed(reports) => {
                     let mut targets = Vec::new();
                     // A certificate already asked about is neither decoded
@@ -1030,6 +1047,28 @@ fn retrieve(
                 break;
             }
             result = verify_with(bytes, options, &state.store, format, budget);
+        }
+        // A certificate still named after its source answered by certificate:
+        // that answer did not settle its status, so the listed points the
+        // source left unused are recorded. No listed point disappears from
+        // the report of a failed retrieval.
+        if let Err(e) = &result
+            && let Uncovered::Listed(reports) = uncovered(e)
+        {
+            for report in &reports {
+                for point in state
+                    .unused_points
+                    .remove(&report.sha256)
+                    .unwrap_or_default()
+                {
+                    let e = error(
+                        ErrorCode::CrlFetchFailed,
+                        "not requested: the CRL source answered for the certificate \
+                         without using this point, and its answer did not settle the status",
+                    );
+                    state.skip(&report.sha256, Some(&point), e, None);
+                }
+            }
         }
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".

@@ -45,9 +45,14 @@ rule is restated for retrieval.
    revocation does not hide such a path's own CRL failure. When no path
    passes the other path policy, revocation is still reported first, as on
    `main`, with an empty `certificates_without_crl`: no CRL could make such
-   a path verify, so retrieval asks nothing and the result is the same as
-   without it (`sec10-fetch-path-failing-key-usage-asks-nothing`). The same
-   empty list marks a certificate the verifier could not name. A
+   a path verify, so retrieval asks nothing. With `--fetch-crls` the whole
+   input is then checked without revocation and that failure, such as
+   `invalid_key_usage`, is the result
+   (`sec10-fetch-path-failing-key-usage-asks-nothing`). The same
+   empty list marks a certificate the verifier could not name. When a source
+   answers by certificate and its answer does not settle that certificate's
+   status, the listed points it left unused are recorded as not requested
+   (`sec10-fetch-by-certificate-unusable-answer-records-unused-points`). A
    certificate whose only CRLs have expired is offered to the source too, as
    Bouncy Castle drops expired CRLs and fetches from the certificate's
    points: `crl_expired` names it in `details.certificates_with_expired_crl`

@@ -216,19 +216,11 @@ fn verify_trust(
                     }) {
                         return Err(e);
                     }
-                    // A usage whose only failure is missing or expired CRLs
-                    // can still verify once a source supplies them: it is
+                    // A usage that only lacks CRLs a source could supply is
                     // reported ahead of another usage's failure.
-                    let lacks_crl = |e: &anyhow::Error| {
-                        e.downcast_ref::<VerificationError>().is_some_and(|error| {
-                            error.code == ErrorCode::RevocationUnknown
-                                || error.details.contains_key("certificates_without_crl")
-                                || error.details.contains_key("certificates_with_expired_crl")
-                        })
-                    };
                     if failure
                         .as_ref()
-                        .is_none_or(|kept| !lacks_crl(kept) && lacks_crl(&e))
+                        .is_none_or(|kept| completable_by_crl(&e) > completable_by_crl(kept))
                     {
                         failure = Some(e)
                     }
@@ -247,10 +239,73 @@ fn verify_trust(
     }))
 }
 
+/// How far CRLs from a source could complete a failed usage: 2 when the
+/// failure is only an unknown status or an expired CRL that names the
+/// certificates to ask about, 1 for a revocation that names another path's
+/// certificates without a CRL, and 0 otherwise. An empty list names nothing:
+/// it is what the verifier returns when no path passes path policy.
+fn completable_by_crl(e: &anyhow::Error) -> u8 {
+    e.chain()
+        .filter_map(|cause| cause.downcast_ref::<VerificationError>())
+        .map(|error| {
+            let named = ["certificates_without_crl", "certificates_with_expired_crl"]
+                .iter()
+                .any(|key| {
+                    error
+                        .details
+                        .get(*key)
+                        .and_then(|v| v.as_array())
+                        .is_some_and(|list| !list.is_empty())
+                });
+            match error.code {
+                _ if !named => 0,
+                ErrorCode::CertificateRevoked => 1,
+                _ => 2,
+            }
+        })
+        .max()
+        .unwrap_or(0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use ::der::Encode;
+    #[test]
+    fn only_a_named_missing_crl_ranks_a_usage_failure_as_completable() {
+        let named = serde_json::json!([{"sha256": "a"}]);
+        let error = |code| VerificationError::new(code, Stage::Revocation, "x");
+        let rank = |e: VerificationError| completable_by_crl(&anyhow::Error::from(e));
+        // Unknown or expired, naming certificates a source could cover.
+        assert_eq!(
+            rank(error(ErrorCode::RevocationUnknown).detail("certificates_without_crl", &named)),
+            2
+        );
+        assert_eq!(
+            rank(error(ErrorCode::CrlExpired).detail("certificates_with_expired_crl", &named)),
+            2
+        );
+        // A revocation naming another path's gap can be completed, but is
+        // not preferred to a usage that is only missing a CRL.
+        assert_eq!(
+            rank(error(ErrorCode::CertificateRevoked).detail("certificates_without_crl", &named)),
+            1
+        );
+        // An empty list names nothing to ask: no path passes path policy.
+        let empty = serde_json::json!([]);
+        assert_eq!(
+            rank(error(ErrorCode::RevocationUnknown).detail("certificates_without_crl", &empty)),
+            0
+        );
+        assert_eq!(rank(error(ErrorCode::RevocationUnknown)), 0);
+        assert_eq!(rank(error(ErrorCode::CertificateRevoked)), 0);
+        // Found through added context too.
+        let wrapped = anyhow::Error::from(
+            error(ErrorCode::RevocationUnknown).detail("certificates_without_crl", &named),
+        )
+        .context("usage");
+        assert_eq!(completable_by_crl(&wrapped), 2);
+    }
     fn fixture(name: &str) -> Vec<u8> {
         std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
