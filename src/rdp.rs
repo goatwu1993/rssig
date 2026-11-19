@@ -238,9 +238,9 @@ fn verify_trust(
 /// (`certificates_without_crl`), with only expired ones
 /// (`certificates_with_expired_crl`) or with only ones a source's CRL could
 /// replace (`certificates_with_unusable_crl`), once each, so that
-/// `--fetch-crls` can still complete that usage. Otherwise a usage that only lacks CRLs a source
-/// could supply is reported ahead of another usage's failure; on a tie, the
-/// first.
+/// `--fetch-crls` can still complete that usage. Otherwise a usage that
+/// only lacks CRLs a source could supply is reported ahead of another
+/// usage's failure; on a tie, the first.
 fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
     // A failure's code is the first verification error in its chain, as
     // `VerificationError::from_internal` reports it.

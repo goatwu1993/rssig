@@ -516,6 +516,26 @@ timestamps, and local CRL validation already exist.
   deadline and byte-cap behavior. Those are unit-tested only
   (`docs/testing.md`); extend the case format before pinning them
   portably.
+  Left open by the refresh of unusable supplied CRLs (SEC-10, "Case reasons
+  (refresh of an unusable supplied CRL)"):
+  - A certificate with a malformed or unsupported-version CRL beside an
+    expired one is not asked about, because the unreplaceable failure
+    outranks the replaceable one; the best-CRL rule would allow a fetched
+    CRL to decide. Decide whether a sibling that cannot be replaced should
+    block the refresh.
+  - The three gap keys (`certificates_without_crl`,
+    `certificates_with_expired_crl`, `certificates_with_unusable_crl`) are
+    string literals in `src/trust.rs`, `src/retrieval.rs` and `src/rdp.rs`,
+    and `choose_usage_failure` sizes its merge from the RDP-only `KEYS`.
+    Define them once with a shared list (this is part of SEC-22's typed
+    channel), so that a fourth key cannot be missed in one place.
+  - `replaceable_rejection` is an allow-list over webpki rejections: a new
+    `webpki::Error` variant on a dependency bump defaults to not
+    replaceable, and the unit test pins only the variants known today.
+  - `unknown_status` names every outcome passed to it, and relies on its
+    callers to exclude paths no source could complete (`completable_first`,
+    or the key strip in the no-viable-path branch of
+    `revocation_failure`); a new caller must do the same.
   Not from this PR's changes, found during its review:
   - `rssig::cli::command()` is a hidden public function kept for the spec
     runner (#59).
