@@ -448,7 +448,8 @@ timestamps, and local CRL validation already exist.
   usable CRL by reading `certificates_without_crl` back out of the error's JSON
   `details` and hex-decoding each `der_hex`. If that schema changes and the
   list no longer deserializes, retrieval treats the result as final and
-  quietly asks nothing (the same holds for `certificates_with_expired_crl`),
+  quietly asks nothing (the same holds for `certificates_with_expired_crl`
+  and `certificates_with_unusable_crl`),
   so `--fetch-crls` stops fetching with no error. Carry the uncovered certificates' DER
   beside the error inside the crate, keep the JSON field for consumers, and
   pin the request sequence with a test.

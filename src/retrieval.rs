@@ -1279,7 +1279,13 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
     // Certificates whose only CRLs have expired, or are unusable for
     // another reason a source's CRL could replace, can be refreshed.
     let mut expired = listed("certificates_with_expired_crl").unwrap_or_default();
-    expired.extend(listed(crate::trust::WITH_UNUSABLE_CRL).unwrap_or_default());
+    // Once each: a certificate can be expired on one path and unusable on
+    // another.
+    for report in listed(crate::trust::WITH_UNUSABLE_CRL).unwrap_or_default() {
+        if !expired.iter().any(|r| r.sha256 == report.sha256) {
+            expired.push(report);
+        }
+    }
     match listed("certificates_without_crl") {
         Some(mut reports) => {
             // Once each: a certificate can lack a CRL on one path and have
