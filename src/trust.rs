@@ -417,7 +417,9 @@ impl TrustStore {
                 e,
                 webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
             );
-            let viable = if revocation {
+            // webpki's own search limits are never replaced: the search did
+            // not finish, so no other path's status is final.
+            let viable = if revocation || search_limit(&e) {
                 None
             } else {
                 completable_path(&outcomes.borrow())
@@ -990,6 +992,17 @@ fn first_revocation(outcomes: &[&CertificateEvidence]) -> Option<VerificationErr
     })
 }
 
+/// Whether webpki stopped the path search at one of its own limits.
+fn search_limit(e: &webpki::Error) -> bool {
+    matches!(
+        e,
+        webpki::Error::MaximumPathBuildCallsExceeded
+            | webpki::Error::MaximumSignatureChecksExceeded
+            | webpki::Error::MaximumPathDepthExceeded
+            | webpki::Error::MaximumNameConstraintComparisonsExceeded
+    )
+}
+
 /// The unknown status of a path that passes every path policy, has no
 /// revocation and only lacks CRLs, if any path is like that.
 fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
@@ -1407,6 +1420,17 @@ mod revocation_reporting {
         assert_eq!(reencoded, sorted);
         assert!(crl_may_apply(&crl, &[sorted]));
         assert!(!crl_may_apply(&crl, &[b"other".to_vec()]));
+    }
+
+    #[test]
+    fn a_search_limit_is_never_replaced_by_a_completable_path() {
+        assert!(search_limit(&webpki::Error::MaximumPathBuildCallsExceeded));
+        assert!(search_limit(&webpki::Error::MaximumSignatureChecksExceeded));
+        assert!(!search_limit(&webpki::Error::CertExpired {
+            time: UnixTime::since_unix_epoch(Duration::from_secs(2)),
+            not_after: UnixTime::since_unix_epoch(Duration::from_secs(1)),
+        }));
+        assert!(!search_limit(&webpki::Error::UnknownIssuer));
     }
 
     #[test]
