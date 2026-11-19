@@ -102,7 +102,7 @@ Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests to the source (64 per
   verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
-  passed to it (64 per verification, `crl_source_urls`), CRL bodies and
+  passed to it (64 distinct URIs per verification, `crl_source_urls`; one offered again after an answer by certificate left it unused counts once), CRL bodies and
   failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
   combined bytes, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:

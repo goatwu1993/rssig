@@ -86,10 +86,13 @@ impl HttpCrlSource {
     }
     /// Start a new verification's allowances: requests, bytes and lifetime
     /// are bounded per verification, as in OpenSSL and Bouncy Castle, where
-    /// nothing one validation fetched is charged to the next. A DNS timeout
-    /// still closes the source for good, so that no more than one unfinished
-    /// resolver worker can exist.
-    pub(crate) fn renew(&mut self) {
+    /// nothing one validation fetched is charged to the next. A source reused
+    /// across verifications must be renewed before each one, as the CLI does
+    /// for each file; otherwise its 16 requests, 32 MiB and 30 seconds are
+    /// shared by all of them and, once spent, every later request aborts. A
+    /// DNS timeout still closes the source for good, so that no more than one
+    /// unfinished resolver worker can exist.
+    pub fn renew(&mut self) {
         *self = Self {
             poisoned: self.poisoned,
             ..Self::default()

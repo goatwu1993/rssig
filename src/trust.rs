@@ -307,15 +307,29 @@ impl TrustStore {
             if revocation_enabled {
                 // Each certificate's issuer on this path: the next
                 // certificate, or the configured root behind the anchor.
-                let anchor = roots
+                // Configured roots that are this anchor to webpki (one key,
+                // name and constraints) may carry different key identifiers:
+                // a CRL naming any of them is this anchor's.
+                let mut anchors = roots
                     .iter()
-                    .position(|root| {
+                    .enumerate()
+                    .filter(|(_, root)| {
                         root.subject == path.anchor().subject
                             && root.subject_public_key_info == path.anchor().subject_public_key_info
                             && root.name_constraints == path.anchor().name_constraints
                     })
-                    .and_then(|index| anchor_certificates[index].clone())
-                    .ok_or(webpki::Error::UnknownIssuer)?;
+                    .filter_map(|(index, _)| anchor_certificates[index].as_ref());
+                let anchor = anchors.next().ok_or(webpki::Error::UnknownIssuer)?;
+                let mut anchor_key =
+                    IssuerKey::of(anchor, true).map_err(|_| webpki::Error::BadDer)?;
+                for same_key in anchors {
+                    let identity = issuer_identity(same_key).map_err(|_| webpki::Error::BadDer)?;
+                    match identity.key_id {
+                        Some(id) => anchor_key.other_key_ids.push(id),
+                        // One that names no key cannot disprove a match.
+                        None => anchor_key.key_id = None,
+                    }
+                }
                 // Every certificate is evaluated, so that an unknown status
                 // names every certificate without a usable CRL at once.
                 let path_index = paths_evaluated.get();
@@ -324,10 +338,11 @@ impl TrustStore {
                 let mut rejected = None;
                 for (depth, cert) in path_certificates.iter().enumerate() {
                     let issuer = match path_certificates.get(depth + 1) {
-                        Some(next) => IssuerKey::of(next, false),
-                        None => IssuerKey::of(&anchor, true),
-                    }
-                    .map_err(|_| webpki::Error::BadDer)?;
+                        Some(next) => {
+                            IssuerKey::of(next, false).map_err(|_| webpki::Error::BadDer)?
+                        }
+                        None => anchor_key.clone(),
+                    };
                     let mut evidence = evaluate_crls(
                         cert,
                         depth == 0,
@@ -362,10 +377,8 @@ impl TrustStore {
                     match &evidence.outcome {
                         Outcome::Good(index) => {
                             let named = crls[*index].authority_key.as_ref();
-                            let names_issuer = matches!(
-                                (named, issuer.key_id.as_deref()),
-                                (Ok(Some(named)), Some(key)) if named.as_slice() == key
-                            );
+                            let names_issuer = issuer.key_id.is_some()
+                                && matches!(named, Ok(Some(named)) if issuer.names(named));
                             path_chosen.push((*index, names_issuer));
                         }
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -707,9 +720,12 @@ impl LoadedCrl {
 
 /// The key, identifier and CRL-signing permission of a certificate's issuer
 /// on one path.
+#[derive(Clone)]
 struct IssuerKey {
     spki: Vec<u8>,
     key_id: Option<Vec<u8>>,
+    /// Identifiers of other configured roots that are this same anchor.
+    other_key_ids: Vec<Vec<u8>>,
     /// Configured anchors are keys: their KeyUsage does not restrict CRL
     /// signing (webpki does not track anchor KeyUsage either).
     crl_sign: bool,
@@ -728,8 +744,14 @@ impl IssuerKey {
         Ok(Self {
             spki: identity.spki,
             key_id: identity.key_id,
+            other_key_ids: Vec::new(),
             crl_sign,
         })
+    }
+    /// Whether `identifier` names this key.
+    fn names(&self, identifier: &[u8]) -> bool {
+        self.key_id.as_deref() == Some(identifier)
+            || self.other_key_ids.iter().any(|id| id == identifier)
     }
 }
 
@@ -875,7 +897,7 @@ fn evaluate_crls(
         let named_key = crl.authority_key.as_ref().ok().and_then(Option::as_ref);
         match verify_signature(index, crl) {
             Ok(Some(true)) => {}
-            Ok(Some(false)) if names_another_key(named_key, issuer.key_id.as_deref()) => {
+            Ok(Some(false)) if names_another_key(named_key, issuer) => {
                 continue;
             }
             Ok(Some(false)) => {
@@ -908,14 +930,16 @@ fn evaluate_crls(
         // time, as in OpenSSL (only the best-scored, current CRL is read) and
         // Bouncy Castle (CRLs past nextUpdate are dropped before any entry is
         // read): a stale CRL's entry may be a hold that was since released.
-        // One without nextUpdate is never current: it claims no period. The
-        // newest listing is kept, to be compared with the deciding CRL.
+        // One without nextUpdate claims no expiry and is current, as in
+        // OpenSSL (`ossl_x509_check_crl_time`), Bouncy Castle (`PKIXCRLUtil`)
+        // and BoringSSL; it is still unusable as evidence of good status.
+        // The newest listing is kept, to be compared with the deciding CRL.
         let this_update = crl.tbs.this_update.to_unix_duration().as_secs();
         let current = this_update <= now
             && crl
                 .tbs
                 .next_update
-                .is_some_and(|next| next.to_unix_duration().as_secs() > now);
+                .is_none_or(|next| next.to_unix_duration().as_secs() > now);
         // Nor does one in a CRL that does not cover this certificate (a
         // partition for another point or role): OpenSSL gives it no scope
         // score and Bouncy Castle's processCRLB2 rejects it, so neither reads
@@ -1090,8 +1114,8 @@ fn evaluate_crls(
 /// A CRL that fails under this issuer's key is set aside as another key's
 /// only when both identifiers are present and differ: an issuer without a
 /// subjectKeyIdentifier cannot disprove a match, so the CRL counts as forged.
-fn names_another_key(crl_key: Option<&Vec<u8>>, issuer_key: Option<&[u8]>) -> bool {
-    matches!((crl_key, issuer_key), (Some(named), Some(own)) if named.as_slice() != own)
+fn names_another_key(crl_key: Option<&Vec<u8>>, issuer: &IssuerKey) -> bool {
+    matches!(crl_key, Some(named) if issuer.key_id.is_some() && !issuer.names(named))
 }
 
 /// The error for a revocation rejection, from what the candidate paths
@@ -1874,11 +1898,28 @@ mod revocation_reporting {
     #[test]
     fn only_a_differing_key_identifier_sets_a_failed_crl_aside() {
         let named = vec![1u8, 2];
-        assert!(names_another_key(Some(&named), Some(&[3u8][..])));
-        assert!(!names_another_key(Some(&named), Some(&[1u8, 2][..])));
+        let issuer = |key_id: Option<Vec<u8>>, others: Vec<Vec<u8>>| IssuerKey {
+            spki: Vec::new(),
+            key_id,
+            other_key_ids: others,
+            crl_sign: true,
+        };
+        assert!(names_another_key(
+            Some(&named),
+            &issuer(Some(vec![3]), vec![])
+        ));
+        assert!(!names_another_key(
+            Some(&named),
+            &issuer(Some(vec![1, 2]), vec![])
+        ));
         // An issuer without a subjectKeyIdentifier cannot disprove the match.
-        assert!(!names_another_key(Some(&named), None));
-        assert!(!names_another_key(None, Some(&[3u8][..])));
-        assert!(!names_another_key(None, None));
+        assert!(!names_another_key(Some(&named), &issuer(None, vec![])));
+        assert!(!names_another_key(None, &issuer(Some(vec![3]), vec![])));
+        assert!(!names_another_key(None, &issuer(None, vec![])));
+        // Another configured root with the same key may carry the identifier
+        // the CRL names.
+        let same_key = issuer(Some(vec![3]), vec![vec![1, 2]]);
+        assert!(!names_another_key(Some(&named), &same_key));
+        assert!(same_key.names(&[3]) && same_key.names(&[1, 2]) && !same_key.names(&[9]));
     }
 }

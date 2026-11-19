@@ -9470,6 +9470,18 @@
       ]
     },
     {
+      "file": "sec10-root-no-next-update-revoked.crl",
+      "sha256": "7d0d8b004e3388475d60f81b4b7e213a375f7ade83bf59378255fb5e305ef99b",
+      "bytes": 191,
+      "description": "SEC-10: Correctly signed root CRL without nextUpdate, newer than good.crl (thisUpdate 50 seconds before the pinned time), revoking serial 2, the test signer. It claims no expiry, so as in OpenSSL, Bouncy Castle and BoringSSL its listing counts: beside good.crl the certificate is revoked; alone the CRL is unusable (missing_next_update). Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
+        "sec10-no-next-update-crl-revocation-alone-is-invalid"
+      ]
+    },
+    {
       "file": "sec10-root-superseded-revoked.crl",
       "sha256": "03d7b931fce4ea3bf9aeb2a7eac6cd412abb96e54e94b1d8ee21cd99dc648752",
       "bytes": 209,

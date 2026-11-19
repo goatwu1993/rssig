@@ -103,3 +103,10 @@ path = "fuzz_targets/verify_retrieval.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "check_url"
+path = "fuzz_targets/check_url.rs"
+test = false
+doc = false
+bench = false

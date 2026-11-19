@@ -344,6 +344,18 @@ relic 02c54d58 and BoringSSL `main`.
   a newer one (`sec10-superseded-crl-revocation-beside-newer-crl-is-ignored`)
   and alone it revokes (`sec10-superseded-crl-revocation-alone-revokes`). A
   CRL without nextUpdate is never current.
+  **Corrected after review (the libraries agree):** a CRL without nextUpdate
+  claims no expiry, so it *is* current. OpenSSL's `ossl_x509_check_crl_time`
+  (`crypto/x509/x509_vfy.c:1555-1587`) checks nextUpdate only when present,
+  Bouncy Castle's `PKIXCRLUtil` (`PKIXCRLUtil.java:42-45`) keeps a CRL whose
+  nextUpdate is null, and BoringSSL (`x509_vfy.cc:414`) behaves as OpenSSL.
+  An authenticated, in-scope CRL without nextUpdate therefore counts for a
+  listing, so it revokes beside an older usable CRL
+  (`sec10-no-next-update-crl-revocation-beside-older-crl-revokes`; the old
+  rule verified a certificate the issuer said was revoked). Such a CRL is
+  still unusable as evidence of good status: RFC 5280 requires nextUpdate,
+  and alone it is `invalid_crl` / `missing_next_update`
+  (`sec10-no-next-update-crl-revocation-alone-is-invalid`, diagnostics).
 - **A listing in a current CRL with a malformed AKI counts.** Decided by the
   owner (PR #60), acceptance (fails closed): a correctly signed CRL of the
   issuer said the certificate is revoked, and a malformed identifier field
@@ -534,6 +546,33 @@ relic 02c54d58 and BoringSSL `main`.
   fails on a relative one (`CrlCache.java:185`). It is recorded as
   `crl_fetch_denied` with its own message and no `url`. Unit test
   `a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason`.
+- **Smaller review fixes (PR #60), unit-tested.** Decided by written
+  argument, diagnostics unless noted; no reference library has an equivalent
+  (they have no source interface or per-verification URI limit):
+  - The `crl_source_urls` limit counts each distinct normalized URI once, so
+    a source that answers by certificate or issuer, and so leaves points
+    unused that later certificates list again, cannot exhaust it; five
+    certificates listing the same 16 points use 16, not 80
+    (`a_source_answering_by_certificate_never_exhausts_the_uri_limit`).
+  - A whole-request source error naming a URL that is none of the request's
+    points is recorded without that URL, so a certificate is never attributed
+    a distribution point it did not list
+    (`a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`).
+  - A full CRL answered by certificate asks for another verification pass
+    only when that body itself was newly added, not when another body of the
+    response was
+    (`a_duplicate_full_crl_by_certificate_beside_a_new_url_body_does_not_ask_for_verification`).
+  - Configured roots that are one anchor to webpki (same key, name and
+    constraints) may carry different key identifiers; a CRL naming any of
+    them is that anchor's, as OpenSSL's `crl_akid_check` compares against the
+    chain certificate that matches and Bouncy Castle selects signing keys by
+    the CRL's key identifier (`RFC3280CertPathUtilities.java:379-390`). A
+    root that names no key cannot disprove a match. Unit test
+    `only_a_differing_key_identifier_sets_a_failed_crl_aside`.
+  - `HttpCrlSource::renew()` is public: a library caller that reuses one
+    source across verifications renews it before each, as the CLI does for
+    every file (`docs/library.md`).
+  - `check_public_http_url` has a fuzz target, `check_url`.
 - **Who screens a distribution-point address.** Decided, acceptance for
   library users: the verification core passes every listed URI to the source
   after hygiene screening only, and the source decides what to fetch. None of

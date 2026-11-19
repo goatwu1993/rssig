@@ -14,3 +14,5 @@ verify_trusted exe msi msp cab navx msix appx msixbundle appxbundle ps1 ps1xml v
 verify_logged exe msi msp cab navx msix appx msixbundle appxbundle ps1 ps1xml vbs js wsf rdp
 trust_loading der crl pem
 verify_retrieval exe crl der
+
+check_url

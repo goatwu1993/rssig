@@ -333,6 +333,25 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
+        // A root CRL without nextUpdate that lists the test signer and is
+        // newer than good.crl: it claims no expiry, so it is not stale. It is
+        // unusable (RFC 5280 requires nextUpdate) but its listing counts.
+        (
+            "sec10-root-no-next-update-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 50,
+                None,
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 60),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         // An expired root CRL that lists the test signer (serial 2): a listing
         // counts only from a current CRL, so beside a fresh CRL that does not
         // list the signer it is ignored, and alone it is only expired.

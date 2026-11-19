@@ -447,6 +447,9 @@ struct Retrieval<'s, 'b, 'l> {
     /// one passed again after an answer by certificate left it unused;
     /// bounded by `MAX_SOURCE_REQUESTS`.
     urls_passed: usize,
+    /// The normalized URIs already counted in `urls_passed`: one offered
+    /// again after an answer by certificate left it unused costs nothing.
+    urls_counted: BTreeSet<String>,
     /// The normalized points the current request carries: only their
     /// recorded outcome may change while it is answered.
     in_flight: BTreeSet<String>,
@@ -475,6 +478,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             aborted: false,
             aborted_for: None,
             urls_passed: 0,
+            urls_counted: BTreeSet::new(),
             in_flight: BTreeSet::new(),
             unused_points: BTreeMap::new(),
             budget,
@@ -619,15 +623,18 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 None => {
                     // The engine bounds the URIs it passes to sources in one
                     // verification, whatever each source does with them.
-                    if self.urls_passed >= MAX_SOURCE_REQUESTS {
-                        return Err(limit(
-                            "crl_source_urls",
-                            MAX_SOURCE_REQUESTS,
-                            self.urls_passed,
-                            1,
-                        ));
+                    if !self.urls_counted.contains(&url_key(&raw)) {
+                        if self.urls_passed >= MAX_SOURCE_REQUESTS {
+                            return Err(limit(
+                                "crl_source_urls",
+                                MAX_SOURCE_REQUESTS,
+                                self.urls_passed,
+                                1,
+                            ));
+                        }
+                        self.urls_passed += 1;
+                        self.urls_counted.insert(url_key(&raw));
                     }
-                    self.urls_passed += 1;
                     self.asked.insert(url_key(&raw), None);
                     points.push(raw);
                 }
@@ -705,11 +712,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 // nothing, for this certificate and any later one listing it.
                 // The URL the source named keeps its own entry; every other
                 // point of the request is recorded with the same error.
-                let named = e.url.as_deref().map(url_key);
+                // A URL that is none of this request's points is not this
+                // certificate's: it is dropped, and the error stands for the
+                // whole request.
+                let mut e = e;
+                let named = e
+                    .url
+                    .as_deref()
+                    .map(url_key)
+                    .filter(|named| points.iter().any(|p| url_key(p) == *named));
+                if named.is_none() {
+                    e.url = None;
+                }
                 for point in points.iter().filter(|p| named != Some(url_key(p))) {
                     self.source_failure(sha256, e.clone().with_url(point.clone()));
                 }
-                if points.is_empty() || e.url.is_some() {
+                if points.is_empty() || named.is_some() {
                     self.source_failure(sha256, e);
                 }
                 return Ok(false);
@@ -782,7 +800,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             // A new full CRL may cover the issuer's other certificates, but
             // its name and syntax do not establish authority or freshness:
             // verification decides, before anything else is asked.
-            self.reverify = loaded.full && loaded.added;
+            self.reverify = loaded.full_added;
             // No source used these points: a later certificate listing one
             // still offers it. Each offer counts toward `crl_source_urls`.
             for point in &unanswered {
@@ -833,6 +851,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             loaded.added |= added;
             loaded.by_certificate |= by_certificate.is_some();
             loaded.full |= by_certificate == Some(true);
+            loaded.full_added |= by_certificate == Some(true) && added;
         }
         Ok(loaded)
     }
@@ -1168,6 +1187,8 @@ struct Loaded {
     /// Such a body was a full CRL (no issuingDistributionPoint), which
     /// serves every certificate of that issuer and role.
     full: bool,
+    /// A full CRL answered by certificate and was itself newly added.
+    full_added: bool,
 }
 
 /// What an unknown revocation status tells retrieval to ask about.
@@ -1932,8 +1953,103 @@ mod tests {
         ask(&mut state, "a", &a, &mut source).unwrap();
         ask(&mut state, "b", &b, &mut source).unwrap();
         assert_eq!(source.0, [2, 2]);
-        // Each offer counts toward the per-verification URI limit.
-        assert_eq!(state.urls_passed, 4);
+        // A URI offered again costs nothing more: each distinct one counts once.
+        assert_eq!(state.urls_passed, 2);
+    }
+    #[test]
+    fn a_source_answering_by_certificate_never_exhausts_the_uri_limit() {
+        // Five certificates, each listing the same 16 points, all answered
+        // by the issuer's CRL without a URL: the points are offered every
+        // time but are 16 distinct URIs, far below the 64 limit.
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("shared", 16);
+        for index in 0..5 {
+            ask(&mut state, &format!("c{index}"), &cert, &mut Source).unwrap();
+        }
+        assert_eq!(state.urls_passed, 16);
+    }
+    #[test]
+    fn a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate() {
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                    .with_url("http://other.example.invalid/x.crl"))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("own", 2);
+        ask(&mut state, "a", &cert, &mut Source).unwrap();
+        let urls: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| f.url.clone().unwrap_or_default())
+            .collect();
+        assert_eq!(
+            urls,
+            [
+                "http://crl.example.invalid/own-0.crl",
+                "http://crl.example.invalid/own-1.crl"
+            ]
+        );
+    }
+    #[test]
+    fn a_duplicate_full_crl_by_certificate_beside_a_new_url_body_does_not_ask_for_verification() {
+        struct Source(usize);
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
+                let mut response = CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                ));
+                if self.0 == 2 {
+                    response = response.with_crl(
+                        SourcedCrl::new(
+                            include_bytes!("../tests/fixtures/sec10-root-idp-named-point.crl")
+                                .to_vec(),
+                        )
+                        .with_url(request.distribution_points[0].clone()),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Source(0);
+        // The full CRL is new for the first certificate.
+        ask(
+            &mut state,
+            "c0",
+            &signer_with_points("first", 2),
+            &mut source,
+        )
+        .unwrap();
+        assert!(state.reverify);
+        state.reverify = false;
+        // For the second it is a duplicate, beside a new body from a URL.
+        ask(
+            &mut state,
+            "c1",
+            &signer_with_points("second", 2),
+            &mut source,
+        )
+        .unwrap();
+        assert!(!state.reverify);
     }
     #[test]
     fn a_new_full_crl_by_certificate_asks_for_verification_first() {
