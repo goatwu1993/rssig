@@ -100,7 +100,8 @@
       "bytes": 183,
       "description": "Current CRL with a modified signature byte.",
       "cases": [
-        "crl-fetch-injected-forged"
+        "crl-fetch-injected-forged",
+        "crl-forged-local-asks-nothing"
       ]
     },
     {
@@ -274,7 +275,11 @@
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
         "crl-stale-local-refreshed-by-provider",
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-role-partition-crl-revocation-beside-full-crl-revokes"
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "crl-not-yet-valid-local-refreshed-by-provider",
+        "crl-forged-local-asks-nothing",
+        "crl-unknown-critical-extension-local-refreshed-by-provider",
+        "crl-no-next-update-local-asks-nothing"
       ]
     },
     {
@@ -335,7 +340,12 @@
         "sec10-superseded-crl-revocation-alone-revokes",
         "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
         "sec10-role-partition-crl-revocation-alone-is-unsupported",
-        "crl-fetch-invalid-nested-signature-requests-nothing"
+        "crl-fetch-invalid-nested-signature-requests-nothing",
+        "crl-not-yet-valid-local-refreshed-by-provider",
+        "crl-not-yet-valid-local-asks-provider",
+        "crl-forged-local-asks-nothing",
+        "crl-unknown-critical-extension-local-refreshed-by-provider",
+        "crl-no-next-update-local-asks-nothing"
       ]
     },
     {
@@ -496,7 +506,11 @@
       "sha256": "fc66805dd5dbf064f05ee2abe12fe843568c9ae6e41eacbe75d1f301a4a32b8c",
       "bytes": 184,
       "description": "Correctly root-signed CRL has thisUpdate NOW+1 while nextUpdate remains NOW+1000. Expected crl_not_yet_valid.",
-      "paired_good": "good.crl"
+      "paired_good": "good.crl",
+      "cases": [
+        "crl-not-yet-valid-local-refreshed-by-provider",
+        "crl-not-yet-valid-local-asks-provider"
+      ]
     },
     {
       "file": "good-intermediate.crl",
@@ -6827,7 +6841,12 @@
         "crl-fetch-source-abort-is-reported",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
-        "crl-stale-local-source-abort-is-marked"
+        "crl-stale-local-source-abort-is-marked",
+        "crl-not-yet-valid-local-refreshed-by-provider",
+        "crl-not-yet-valid-local-asks-provider",
+        "crl-forged-local-asks-nothing",
+        "crl-unknown-critical-extension-local-refreshed-by-provider",
+        "crl-no-next-update-local-asks-nothing"
       ]
     },
     {
@@ -8078,7 +8097,7 @@
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-dns-name-point-denied",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-asks-each-certificate-without-crl",
@@ -8092,7 +8111,8 @@
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec16-self-issued-rollover-with-both-crls-is-rejected"
+        "sec16-self-issued-rollover-with-both-crls-is-rejected",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
@@ -8193,7 +8213,7 @@
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-dns-name-point-denied",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-asks-each-certificate-without-crl",
@@ -8211,7 +8231,8 @@
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec16-self-issued-rollover-without-revocation-verifies",
-        "sec16-self-issued-rollover-with-both-crls-is-rejected"
+        "sec16-self-issued-rollover-with-both-crls-is-rejected",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
@@ -9501,7 +9522,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-crl-no-next-update",
-        "sec10-root-crl-no-next-update-beside-good-crl"
+        "sec10-root-crl-no-next-update-beside-good-crl",
+        "crl-no-next-update-local-asks-nothing"
       ]
     },
     {
@@ -9688,7 +9710,8 @@
       "license": "Apache-2.0",
       "cases": [
         "sec10-root-unknown-critical-extension-crl-unsupported",
-        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl"
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-unknown-critical-extension-local-refreshed-by-provider"
       ]
     },
     {
@@ -9871,10 +9894,11 @@
         "sec10-fetch-matching-idp-not-fetched",
         "sec10-fetch-user-scope-idp-not-fetched",
         "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-fetch-by-certificate-answer-requests-no-listed-point"
+        "sec10-fetch-by-certificate-answer-requests-no-listed-point",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
@@ -9900,7 +9924,7 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
         "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
         "sec10-fetch-expired-partition-for-another-point-still-fetches"
@@ -10164,7 +10188,8 @@
       "cases": [
         "sec10-crl-dp-relative-idp-unsupported",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {

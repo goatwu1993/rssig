@@ -464,12 +464,12 @@ timestamps, and local CRL validation already exist.
   PR #60 was concluded with these items not changed in that PR. Reasons and
   references are in
   [SEC-10](docs/tasks/sec-10-crl-applicability.md) ("Case reasons (PR #60)").
+  Decided since: a supplied CRL that is not yet valid, scoped elsewhere or
+  uses an unsupported feature is refreshed by `--fetch-crls`, as an expired
+  one is; one with a bad signature, from an issuer without cRLSign, or
+  malformed is not (SEC-10, "Case reasons (refresh of an unusable supplied
+  CRL)").
   Owner decision needed:
-  - A supplied CRL that is unusable for a reason other than expiry (bad
-    signature, `invalid_crl`, not yet valid) is not refreshed by
-    `--fetch-crls`, and a path with one is not named for retrieval
-    (`sec10-fetch-unusable-supplied-crl-not-fetched`, Observed). Bouncy
-    Castle would fetch; OpenSSL and BoringSSL do not fetch at all.
   - A CRL without nextUpdate that lists a certificate, alone, is
     `invalid_crl` (`missing_next_update`) rather than `certificate_revoked`
     (`sec10-no-next-update-crl-revocation-alone-is-invalid`); both reject.

@@ -22,9 +22,9 @@ rule is restated for retrieval.
    timestamp and bundle member) is verified once without revocation; a
    failure there is the result and nothing is asked
    (`crl-fetch-invalid-nested-signature-requests-nothing`). A good result,
-   or any failure but `revocation_unknown`, is final, with the two
-   exceptions below (a revocation naming another path's gap, and an expired
-   CRL): a forged, unusable or revoking local CRL is reported as it is without
+   or any failure but `revocation_unknown`, is final, with the exceptions
+   below (a revocation naming another path's gap, and an expired or
+   replaceable CRL): a forged, malformed or revoking local CRL is reported as it is without
    `--fetch-crls`, unless another CRL of the same issuer is usable (the best
    CRL decides). An unknown status names, in
    `details.certificates_without_crl`, every certificate on a tried path that
@@ -61,9 +61,28 @@ rule is restated for retrieval.
    points: `crl_expired` names it in `details.certificates_with_expired_crl`
    (an unknown status lists such certificates under the same key), a
    fresh CRL verifies (`crl-stale-local-refreshed-by-provider`), and without
-   one `crl_expired` stands (`crl-stale-local-asks-provider`). One whose only
-   CRL is unusable for another reason is not offered
-   (`sec10-fetch-unusable-supplied-crl-not-fetched`). A path that passes every check but lacks CRLs is reported
+   one `crl_expired` stands (`crl-stale-local-asks-provider`). So is one
+   whose only CRLs are unusable for another reason that a source's CRL could
+   replace: not yet valid, scoped to another distribution point or with an
+   issuingDistributionPoint that cannot be used, or using an unsupported
+   feature (an unknown critical extension, a delta, indirect or
+   reasons-partitioned CRL). OpenSSL and BoringSSL look the issuer's CRLs up
+   again for these, and Bouncy Castle fetches. The error that stands
+   (`crl_not_yet_valid`, `invalid_crl`, an unknown status or another path's
+   revocation) names it in `details.certificates_with_unusable_crl`; a usable
+   fetched CRL verifies
+   (`crl-not-yet-valid-local-refreshed-by-provider`,
+   `crl-unknown-critical-extension-local-refreshed-by-provider`,
+   `sec10-fetch-unusable-scope-supplied-crl-refreshed`), and without one the
+   error stands (`crl-not-yet-valid-local-asks-provider`,
+   `sec10-fetch-unusable-scope-supplied-crl-stands-without-answer`). A
+   certificate with a CRL that cannot be replaced is not offered: a bad
+   signature (`crl-forged-local-asks-nothing`; OpenSSL and BoringSSL report
+   it without another lookup), an unsupported signature algorithm, an issuer
+   without cRLSign, a malformed CRL, or one without nextUpdate
+   (`crl-no-next-update-local-asks-nothing`). The reasons are in
+   [SEC-10](tasks/sec-10-crl-applicability.md) ("Case reasons (refresh of an
+   unusable supplied CRL)"). A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an
    expired cross certificate
    (`sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,

@@ -915,7 +915,7 @@ fn evaluate_crls(
                 continue;
             }
             Ok(Some(false)) => {
-                fail(5, &|| {
+                fail(FORGED, &|| {
                     with_crl(webpki_revocation_error(
                         &sha256,
                         webpki::Error::InvalidCrlSignatureForPublicKey,
@@ -925,7 +925,7 @@ fn evaluate_crls(
             }
             // An algorithm the engine cannot verify: unsupported, not forged.
             Ok(None) => {
-                fail(3, &|| {
+                fail(UNUSABLE, &|| {
                     with_crl(
                         revocation_error(
                             &sha256,
@@ -975,7 +975,7 @@ fn evaluate_crls(
             authenticated_listing = Some((index, this_update));
         }
         if crl.authority_key.is_err() {
-            fail(3, &|| {
+            fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -988,7 +988,7 @@ fn evaluate_crls(
             continue;
         }
         if !issuer.crl_sign {
-            fail(4, &|| {
+            fail(NO_CRL_SIGN, &|| {
                 with_crl(webpki_revocation_error(
                     &sha256,
                     webpki::Error::IssuerNotCrlSigner,
@@ -1000,7 +1000,7 @@ fn evaluate_crls(
         // authoritative for a certificate that lists none, so such a
         // partition could clear a certificate it does not cover.
         if !lists_points && names_distribution_point(&crl.tbs) {
-            fail(3, &|| {
+            fail(REPLACEABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1020,7 +1020,7 @@ fn evaluate_crls(
             continue;
         }
         let Some(next_update) = crl.tbs.next_update else {
-            fail(3, &|| {
+            fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
                         .detail("reason", "missing_next_update"),
@@ -1028,10 +1028,16 @@ fn evaluate_crls(
             });
             continue;
         };
-        // Feature support is reported before freshness, which a refreshed
-        // CRL could not fix.
+        // Feature support is reported before freshness. A feature OpenSSL
+        // scores below a valid CRL (and then looks for another) is
+        // replaceable; a malformed CRL is not.
         if let Err(e) = &crl.webpki {
-            fail(3, &|| {
+            let rank = if replaceable_rejection(e) {
+                REPLACEABLE
+            } else {
+                UNUSABLE
+            };
+            fail(rank, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1044,7 +1050,7 @@ fn evaluate_crls(
             continue;
         }
         if crl.tbs.this_update.to_unix_duration().as_secs() > now {
-            fail(2, &|| {
+            fail(NOT_YET_VALID, &|| {
                 with_crl(revocation_error(
                     &sha256,
                     ErrorCode::CrlNotYetValid,
@@ -1055,7 +1061,7 @@ fn evaluate_crls(
             continue;
         }
         if next_update.to_unix_duration().as_secs() <= now {
-            fail(1, &|| {
+            fail(EXPIRED, &|| {
                 with_crl(revocation_error(
                     &sha256,
                     ErrorCode::CrlExpired,
@@ -1078,7 +1084,7 @@ fn evaluate_crls(
             // never silently dropped.
             // The certificate is at fault, not the CRL: its own points
             // cannot be read, so the CRL's scope cannot be matched.
-            None if points_unreadable => fail(3, &|| {
+            None if points_unreadable => fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1089,7 +1095,7 @@ fn evaluate_crls(
                     .detail("reason", "certificate_distribution_points"),
                 )
             }),
-            None => fail(3, &|| {
+            None => fail(REPLACEABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1161,6 +1167,7 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             // Nothing is named: no CRL could make such a path verify.
             let mut error = error;
             error.details.remove("certificates_with_expired_crl");
+            error.details.remove(WITH_UNUSABLE_CRL);
             if error.code == ErrorCode::RevocationUnknown {
                 error.detail("certificates_without_crl", Vec::<CertificateReport>::new())
             } else {
@@ -1179,9 +1186,9 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         // have expired, could still verify with a current one: they are
         // named, so that a CRL source can be asked about them, as Bouncy
         // Castle tries every path and fetches past an expired CRL. Only a
-        // path a source could complete is named: one with a CRL unusable for
-        // another reason (forged, no cRLSign, `invalid_crl`) cannot verify
-        // whatever is fetched, so nothing on it is asked about.
+        // path a source could complete is named: one with a CRL that cannot
+        // be replaced (forged, no cRLSign, malformed) cannot verify whatever
+        // is fetched, so nothing on it is asked about.
         let stuck = stuck_paths(&viable);
         let open: Vec<&CertificateEvidence> = viable
             .iter()
@@ -1197,6 +1204,10 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         if !expired.is_empty() {
             revoked = revoked.detail("certificates_with_expired_crl", expired);
         }
+        let unusable = with_replaceable_crl(&open);
+        if !unusable.is_empty() {
+            revoked = revoked.detail(WITH_UNUSABLE_CRL, unusable);
+        }
         return Some(revoked);
     }
     // A path a source could complete is reported over a stuck path's more
@@ -1204,12 +1215,12 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     unknown_status(&completable_first(&viable))
 }
 
-/// The paths with a CRL that no refresh can fix (forged, no cRLSign,
-/// `invalid_crl`, not yet valid): no source could complete them.
+/// The paths with a CRL that no source can replace (forged, no cRLSign,
+/// malformed): no source could complete them.
 fn stuck_paths(outcomes: &[&CertificateEvidence]) -> Vec<usize> {
     outcomes
         .iter()
-        .filter(|o| matches!(&o.outcome, Outcome::Missing(Some((rank, _))) if *rank != EXPIRED))
+        .filter(|o| matches!(&o.outcome, Outcome::Missing(Some((rank, _))) if *rank > REPLACEABLE))
         .map(|o| o.path)
         .collect()
 }
@@ -1279,8 +1290,8 @@ fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationErro
     }
     unknown_status(&open).filter(|error| {
         error.code == ErrorCode::RevocationUnknown
-            || error.code == ErrorCode::CrlExpired
-                && error.details.contains_key("certificates_with_expired_crl")
+            || error.details.contains_key("certificates_with_expired_crl")
+            || error.details.contains_key(WITH_UNUSABLE_CRL)
     })
 }
 
@@ -1297,6 +1308,16 @@ fn without_crl(outcomes: &[&CertificateEvidence]) -> (bool, Vec<CertificateRepor
 fn with_expired_crl(outcomes: &[&CertificateEvidence]) -> Vec<CertificateReport> {
     reports(outcomes, |o| {
         matches!(o, Outcome::Missing(Some((EXPIRED, _))))
+    })
+    .1
+}
+
+/// The certificates whose only CRLs are unusable for another reason a
+/// source's CRL could replace (not yet valid, another scope, an unsupported
+/// feature), once each.
+fn with_replaceable_crl(outcomes: &[&CertificateEvidence]) -> Vec<CertificateReport> {
+    reports(outcomes, |o| {
+        matches!(o, Outcome::Missing(Some((rank, _))) if *rank > EXPIRED && *rank <= REPLACEABLE)
     })
     .1
 }
@@ -1347,8 +1368,41 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
     }
 }
 
-/// The rank of an expired CRL among unusable-CRL failures: the lowest.
+/// The ranks of unusable-CRL failures; the highest among a certificate's
+/// CRLs is reported. Up to `REPLACEABLE`, a CRL from a source can replace
+/// the unusable one: it has expired, is not yet valid, is scoped to another
+/// distribution point, or uses a feature that is not supported. OpenSSL and
+/// BoringSSL score such a CRL below a valid one and then look the issuer's
+/// CRLs up in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle
+/// fetches after any CRL failure. Above it, the failure stands whatever is
+/// fetched: OpenSSL and BoringSSL do not score the signature and report its
+/// failure without another lookup, an issuer without cRLSign signs no usable
+/// CRL, and a malformed CRL has no reference that replaces it.
 const EXPIRED: u8 = 1;
+const NOT_YET_VALID: u8 = 2;
+const REPLACEABLE: u8 = 3;
+const UNUSABLE: u8 = 4;
+const NO_CRL_SIGN: u8 = 5;
+const FORGED: u8 = 6;
+
+/// The detail naming certificates whose only CRLs are unusable for a reason
+/// other than expiry that a CRL from a source could replace.
+pub(crate) const WITH_UNUSABLE_CRL: &str = "certificates_with_unusable_crl";
+
+/// Whether webpki rejected the CRL for a feature OpenSSL gives no valid
+/// score (delta, indirect, reasons, an unusable issuingDistributionPoint, an
+/// unhandled critical extension), rather than for being malformed.
+fn replaceable_rejection(error: &webpki::Error) -> bool {
+    use webpki::Error as W;
+    matches!(
+        error,
+        W::UnsupportedCriticalExtension
+            | W::UnsupportedDeltaCrl
+            | W::UnsupportedIndirectCrl
+            | W::UnsupportedCrlIssuingDistributionPoint
+            | W::UnsupportedRevocationReasonsPartitioning
+    )
+}
 
 /// The failure for paths without a revocation: unknown status naming every
 /// certificate without any CRL, else the most specific unusable CRL.
@@ -1357,6 +1411,16 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
     // whichever candidate path it was on.
     let (any_without, missing) = without_crl(outcomes);
     let expired = with_expired_crl(outcomes);
+    let unusable = with_replaceable_crl(outcomes);
+    let named = |mut error: VerificationError| {
+        if !expired.is_empty() {
+            error = error.detail("certificates_with_expired_crl", expired.clone());
+        }
+        if !unusable.is_empty() {
+            error = error.detail(WITH_UNUSABLE_CRL, unusable.clone());
+        }
+        error
+    };
     let mut best: Option<&(u8, VerificationError)> = None;
     for outcome in outcomes {
         if let Outcome::Missing(Some(failure)) = &outcome.outcome
@@ -1370,13 +1434,9 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
     // with it. Only when no certificate simply lacks one does that failure
     // decide.
     match best {
-        // Every failure is an expired CRL: the error stands, and names the
-        // certificates whose CRL a source could refresh.
-        Some((EXPIRED, error)) if !any_without && !expired.is_empty() => Some(
-            error
-                .clone()
-                .detail("certificates_with_expired_crl", expired),
-        ),
+        // Every failure is one a source's CRL could replace: the error
+        // stands, and names the certificates to ask about.
+        Some((rank, error)) if !any_without && *rank <= REPLACEABLE => Some(named(error.clone())),
         Some((_, error)) if !any_without => Some(error.clone()),
         best => {
             let error = VerificationError::new(
@@ -1385,11 +1445,7 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
                 "no usable authoritative CRL for a certificate on the path",
             )
             .detail("certificates_without_crl", missing);
-            let error = if expired.is_empty() {
-                error
-            } else {
-                error.detail("certificates_with_expired_crl", expired)
-            };
+            let error = named(error);
             Some(match best {
                 Some((_, unusable)) => error.detail("unusable_crl", unusable),
                 None => error,
@@ -1659,10 +1715,46 @@ mod revocation_reporting {
         Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
     }
 
+    /// A CRL a source could replace names its certificate on the error that
+    /// stands; one that cannot be replaced does not, and its path is stuck.
+    #[test]
+    fn only_a_replaceable_crl_failure_names_its_certificate() {
+        for (rank, code) in [
+            (NOT_YET_VALID, ErrorCode::CrlNotYetValid),
+            (REPLACEABLE, ErrorCode::InvalidCrl),
+        ] {
+            let error = revocation_failure(&[evidence("a", failed(rank, code))]).unwrap();
+            assert_eq!(error.code, code);
+            assert!(error.details.contains_key(WITH_UNUSABLE_CRL));
+            assert!(!error.details.contains_key("certificates_with_expired_crl"));
+            assert!(completable_path(&[evidence("a", failed(rank, code))]).is_some());
+        }
+        for (rank, code) in [
+            (UNUSABLE, ErrorCode::InvalidCrl),
+            (NO_CRL_SIGN, ErrorCode::InvalidCrl),
+            (FORGED, ErrorCode::InvalidCrlSignature),
+        ] {
+            let error = revocation_failure(&[evidence("a", failed(rank, code))]).unwrap();
+            assert_eq!(error.code, code);
+            assert!(!error.details.contains_key(WITH_UNUSABLE_CRL));
+            assert!(completable_path(&[evidence("a", failed(rank, code))]).is_none());
+        }
+        // A certificate without a CRL beside one with a replaceable CRL:
+        // unknown status naming both.
+        let error = revocation_failure(&[
+            evidence("a", Outcome::Missing(None)),
+            evidence("b", failed(REPLACEABLE, ErrorCode::InvalidCrl)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::RevocationUnknown);
+        assert!(error.details.contains_key("certificates_without_crl"));
+        assert!(error.details.contains_key(WITH_UNUSABLE_CRL));
+    }
+
     #[test]
     fn a_path_a_source_could_complete_is_reported_over_a_stuck_paths_failure() {
         let expired = || failed(EXPIRED, ErrorCode::CrlExpired);
-        let forged = || failed(5, ErrorCode::InvalidCrlSignature);
+        let forged = || failed(FORGED, ErrorCode::InvalidCrlSignature);
         // Path 0's CRL is forged (no refresh fixes it); path 1 only has an
         // expired CRL: path 1 is reported, so a source can refresh it.
         let outcomes = [on_path(0, "f", forged()), on_path(1, "e", expired())];
@@ -1706,7 +1798,7 @@ mod revocation_reporting {
             on_path(0, "r", revoked()),
             on_path(1, "m", Outcome::Missing(None)),
             on_path(1, "e", expired()),
-            on_path(1, "f", failed(5, ErrorCode::InvalidCrlSignature)),
+            on_path(1, "f", failed(FORGED, ErrorCode::InvalidCrlSignature)),
         ])
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
@@ -1719,7 +1811,7 @@ mod revocation_reporting {
         // A certificate without any CRL outranks one whose CRL is unusable, so
         // that it can still be retrieved.
         let error = revocation_failure(&[
-            evidence("a", failed(5, ErrorCode::InvalidCrlSignature)),
+            evidence("a", failed(FORGED, ErrorCode::InvalidCrlSignature)),
             evidence("b", Outcome::Missing(None)),
         ])
         .unwrap();
@@ -1738,8 +1830,8 @@ mod revocation_reporting {
         );
         // Without one, the highest-ranked failure decides.
         let error = revocation_failure(&[
-            evidence("a", failed(1, ErrorCode::CrlExpired)),
-            evidence("b", failed(3, ErrorCode::InvalidCrl)),
+            evidence("a", failed(EXPIRED, ErrorCode::CrlExpired)),
+            evidence("b", failed(UNUSABLE, ErrorCode::InvalidCrl)),
         ])
         .unwrap();
         assert_eq!(error.code, ErrorCode::InvalidCrl);
@@ -1809,12 +1901,14 @@ mod revocation_reporting {
         // and path 1's certificate is not offered for retrieval.
         let mut blocked = on_path(1, "m", Outcome::Missing(None));
         blocked.path_viable = false;
-        let error =
-            revocation_failure(&[on_path(0, "a", failed(1, ErrorCode::CrlExpired)), blocked])
-                .unwrap();
+        let error = revocation_failure(&[
+            on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired)),
+            blocked,
+        ])
+        .unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
         // When no path passes other policy, every tried path decides.
-        let mut first = on_path(0, "a", failed(1, ErrorCode::CrlExpired));
+        let mut first = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
         first.path_viable = false;
         let mut second = on_path(1, "m", Outcome::Missing(None));
         second.path_viable = false;
@@ -1826,7 +1920,7 @@ mod revocation_reporting {
             serde_json::json!([])
         );
         // A specific CRL failure on such paths carries no such list.
-        let mut first = on_path(0, "a", failed(1, ErrorCode::CrlExpired));
+        let mut first = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
         first.path_viable = false;
         let error = revocation_failure(&[first]).unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
@@ -1835,9 +1929,11 @@ mod revocation_reporting {
         // usable path's own failure.
         let mut blocked = on_path(1, "r", revoked());
         blocked.path_viable = false;
-        let error =
-            revocation_failure(&[on_path(0, "a", failed(1, ErrorCode::CrlExpired)), blocked])
-                .unwrap();
+        let error = revocation_failure(&[
+            on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired)),
+            blocked,
+        ])
+        .unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
     }
 
@@ -2006,8 +2102,10 @@ mod revocation_reporting {
             completable_path(&[on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired))]).unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
         assert!(error.details.contains_key("certificates_with_expired_crl"));
-        // A CRL unusable for another reason is not something a source fixes.
-        assert!(completable_path(&[on_path(0, "a", failed(3, ErrorCode::InvalidCrl))]).is_none());
+        // A CRL that cannot be replaced is not something a source fixes.
+        assert!(
+            completable_path(&[on_path(0, "a", failed(UNUSABLE, ErrorCode::InvalidCrl))]).is_none()
+        );
         // Nor is a path that fails other path policy.
         let mut blocked = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
         blocked.path_viable = false;

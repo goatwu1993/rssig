@@ -260,8 +260,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         }
         return chosen;
     };
-    const KEYS: [&str; 2] = ["certificates_without_crl", "certificates_with_expired_crl"];
-    let mut gaps: [Vec<serde_json::Value>; 2] = Default::default();
+    let mut gaps: [Vec<serde_json::Value>; 3] = Default::default();
     for e in &failures {
         for error in e
             .chain()
@@ -284,7 +283,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         }
     }
     let mut revoked = failures.into_iter().nth(position)?;
-    let add = |error: &mut VerificationError, gaps: [Vec<serde_json::Value>; 2]| {
+    let add = |error: &mut VerificationError, gaps: [Vec<serde_json::Value>; 3]| {
         for (key, list) in KEYS.iter().zip(gaps) {
             if !list.is_empty() {
                 error
@@ -322,15 +321,13 @@ fn completable_by_crl(e: &anyhow::Error) -> u8 {
     e.chain()
         .filter_map(|cause| cause.downcast_ref::<VerificationError>())
         .map(|error| {
-            let named = ["certificates_without_crl", "certificates_with_expired_crl"]
-                .iter()
-                .any(|key| {
-                    error
-                        .details
-                        .get(*key)
-                        .and_then(|v| v.as_array())
-                        .is_some_and(|list| !list.is_empty())
-                });
+            let named = KEYS.iter().any(|key| {
+                error
+                    .details
+                    .get(*key)
+                    .and_then(|v| v.as_array())
+                    .is_some_and(|list| !list.is_empty())
+            });
             if named && error.code != ErrorCode::CertificateRevoked {
                 2
             } else {
@@ -340,6 +337,13 @@ fn completable_by_crl(e: &anyhow::Error) -> u8 {
         .max()
         .unwrap_or(0)
 }
+
+/// The details that name certificates a CRL source could be asked about.
+const KEYS: [&str; 3] = [
+    "certificates_without_crl",
+    "certificates_with_expired_crl",
+    crate::trust::WITH_UNUSABLE_CRL,
+];
 
 #[cfg(test)]
 mod tests {

@@ -1054,14 +1054,14 @@ fn retrieve(
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
-                // A revocation naming another path's gap, or an expired CRL
-                // naming the certificates a source could refresh.
+                // A revocation naming another path's gap, or an unusable
+                // CRL naming the certificates whose CRL a source could
+                // replace.
                 Err(e)
                     if e.code == ErrorCode::CertificateRevoked
-                        && (e.details.contains_key("certificates_without_crl")
-                            || e.details.contains_key("certificates_with_expired_crl"))
-                        || e.code == ErrorCode::CrlExpired
-                            && e.details.contains_key("certificates_with_expired_crl") =>
+                        && e.details.contains_key("certificates_without_crl")
+                        || e.details.contains_key("certificates_with_expired_crl")
+                        || e.details.contains_key(crate::trust::WITH_UNUSABLE_CRL) =>
                 {
                     e
                 }
@@ -1269,8 +1269,10 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
             .get(key)
             .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
     };
-    // Certificates whose only CRLs have expired can be refreshed.
-    let expired = listed("certificates_with_expired_crl").unwrap_or_default();
+    // Certificates whose only CRLs have expired, or are unusable for
+    // another reason a source's CRL could replace, can be refreshed.
+    let mut expired = listed("certificates_with_expired_crl").unwrap_or_default();
+    expired.extend(listed(crate::trust::WITH_UNUSABLE_CRL).unwrap_or_default());
     match listed("certificates_without_crl") {
         Some(mut reports) => {
             // Once each: a certificate can lack a CRL on one path and have

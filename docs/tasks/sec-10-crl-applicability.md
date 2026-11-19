@@ -115,9 +115,12 @@ One box per item in the scope above.
   `sec10-fetch-*-not-fetched` controls; named tests in
   `tests/cli/crl_fetch.rs`.
   A supplied CRL that verification rejects is reported as it is offline and
-  nothing is fetched (`sec10-fetch-no-listed-point-not-fetched`,
-  `sec10-fetch-no-listed-point-role-excluded-scope-rejected`,
-  `sec10-fetch-unusable-supplied-crl-not-fetched`).
+  nothing is fetched when the certificate lists no point
+  (`sec10-fetch-no-listed-point-not-fetched`,
+  `sec10-fetch-no-listed-point-role-excluded-scope-rejected`). One that a
+  source's CRL could replace is asked about
+  (`sec10-fetch-unusable-scope-supplied-crl-refreshed`; see "Case reasons
+  (refresh of an unusable supplied CRL)").
   A listed point that discovery does not support (reasons, cRLIssuer or a
   non-URI name) is not requested and is listed in `crl_retrieval.failures`; the
   result is the verifier's `revocation_unknown`, as without `--fetch-crls`
@@ -494,9 +497,11 @@ relic 02c54d58 and BoringSSL `main`.
   with the fetched CRL; `crl-stale-local-asks-provider` (before PR #60 as
   `crl-stale-local-provider-unused`, which expected no request) now expects
   the request and, without an answer, the same `crl_expired`.
-- **A supplied CRL unusable for another reason is not refreshed.** Observed,
-  diagnostics: `sec10-fetch-unusable-supplied-crl-not-fetched`. Bouncy Castle
-  would fetch here too; kept narrow until compared case by case.
+- **A supplied CRL unusable for another reason was not refreshed.**
+  Superseded: compared case by case and decided in "Case reasons (refresh of
+  an unusable supplied CRL)" below; the Observed case
+  `sec10-fetch-unusable-supplied-crl-not-fetched` became
+  `sec10-fetch-unusable-scope-supplied-crl-refreshed`.
 - **A source answering by certificate leaves no per-point failures.**
   Decided, diagnostics (owner delegated the call): OpenSSL's `lookup_crls`
   and Bouncy Castle's store lookups have no per-point outcome. Only a body
@@ -721,10 +726,10 @@ relic 02c54d58 and BoringSSL `main`.
   trait).
 - **Declined after review:** naming the gaps of a path whose other
   certificate has a supplied CRL that is unusable for a reason other than
-  expiry. Such a certificate is never asked about (Observed,
-  `sec10-fetch-unusable-supplied-crl-not-fetched`), so the path cannot be
-  completed by retrieval; changing that is revisiting the Observed rule
-  (Bouncy Castle would fetch), not this one.
+  expiry. Such a certificate was never asked about, so the path could not
+  be completed by retrieval. Since revisited: a certificate whose CRL a
+  source could replace is now asked about and its path's gaps are named
+  ("Case reasons (refresh of an unusable supplied CRL)").
 - **Declined after review (already decided):** confirming intermediates on a
   key-rollover path with webpki (it cannot confirm two same-name issuers;
   rssig's per-key evaluation decides, SEC-16 above); a batch-wide fetch
@@ -801,3 +806,65 @@ relic 02c54d58 and BoringSSL `main`.
   abort; a withheld URL is not an answer by certificate. A certificate whose
   own points cannot be read is reported as `certificate_distribution_points`,
   not as a fault of the CRL.
+
+## Case reasons (refresh of an unusable supplied CRL)
+
+Decided by the repository owner after PR #60 (SEC-23), under the standing
+rule: follow OpenSSL and Bouncy Castle where they agree, and BoringSSL where
+they differ. It replaces the Observed rule that only an expired supplied CRL
+is refreshed.
+
+OpenSSL and BoringSSL never download, but both look the issuer's CRLs up in
+a second source, the store, which is what `--fetch-crls` and a `CrlSource`
+are here. OpenSSL's `get_crl_delta` (`crypto/x509/x509_vfy.c:1564-1590`)
+calls `lookup_crls` when the best supplied CRL scores below
+`CRL_SCORE_VALID` (`:33-42`): no unhandled critical extension, valid times
+and scope. `get_crl_score` (`:1283-1340`) gives a delta CRL, and without
+extended support an indirect or reasons-partitioned one, no score at all.
+BoringSSL's `get_crl` (`crypto/x509/x509_vfy.cc:697-708`) does the same. The
+signature is not scored: it is checked afterwards and its failure is
+reported without another lookup (`x509_vfy.c:1664`). Bouncy Castle
+(`pkix/.../X509RevocationChecker.java:797-863`, `:468-487`) turns any
+`checkCRL` failure but a revocation into "no valid CRL found" and then
+fetches from the certificate's distribution points.
+
+| Supplied CRL | OpenSSL, BoringSSL | Bouncy Castle | rssig |
+|---|---|---|---|
+| expired | second source | fetches | asked about (`certificates_with_expired_crl`) |
+| not yet valid | second source | fetches after a failure | asked about |
+| another scope, or an issuingDistributionPoint that cannot be used | second source | fetches | asked about |
+| unknown critical extension, delta, indirect, reasons partition | second source | fetches | asked about |
+| bad signature, unsupported signature algorithm | reported, no lookup | fetches | not asked (BoringSSL decides) |
+| issuer without cRLSign | reported | fetches | not asked: a fetched CRL has the same issuer |
+| malformed (extensions, authorityKeyIdentifier, CRL number, version), or the certificate's own points unreadable | no equivalent | fetches | not asked: written choice, kept as before |
+| no nextUpdate | usable | usable | not asked: `invalid_crl`, the separate open question in SEC-23 |
+
+A certificate whose only CRLs are unusable for one of the "asked about"
+reasons other than expiry is named in `details.certificates_with_unusable_crl`
+on the error that stands (`invalid_crl`, `crl_not_yet_valid`, an unknown
+status, or another path's revocation), and a source is asked about it. A
+fetched CRL passes the same checks as a supplied one and the best CRL
+decides, so the unusable one is set aside beside a usable one, as it already
+was between supplied CRLs. Without an answer the original error stands. A
+certificate with any CRL that cannot be replaced is not asked about, and its
+path is not one a source could complete.
+
+- **Decided, acceptance:**
+  `sec10-fetch-unusable-scope-supplied-crl-refreshed` (was
+  `sec10-fetch-unusable-supplied-crl-not-fetched`, Observed, which rejected
+  with `invalid_crl` and asked nothing; changed with the owner's approval),
+  `crl-not-yet-valid-local-refreshed-by-provider`,
+  `crl-unknown-critical-extension-local-refreshed-by-provider`. Each verifies
+  with the fetched CRL.
+- **Decided, acceptance:** `crl-forged-local-asks-nothing`: a supplied CRL
+  with a bad signature is `invalid_crl_signature` and nothing is requested,
+  although the source holds a good CRL.
+- **Decided, diagnostics:**
+  `sec10-fetch-unusable-scope-supplied-crl-stands-without-answer` and
+  `crl-not-yet-valid-local-asks-provider`: the point is requested, and
+  without an answer the original error stands, naming the certificate.
+  `crl-no-next-update-local-asks-nothing`: `invalid_crl`
+  (`missing_next_update`) asks nothing, pending the other SEC-23 question.
+
+Among a certificate's unusable CRLs, one that cannot be replaced is now
+reported ahead of one that can (wording only).
