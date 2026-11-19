@@ -243,8 +243,8 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Boundary | Limit/policy |
 | --- | --- |
 | Scheme and port | HTTP, port 80 only |
-| URL | At most 2,048 bytes; no credentials, fragments, control characters or backslashes |
-| Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
+| URL | At most 2,048 bytes; no credentials, fragments, whitespace (anywhere, including around the URL), control characters or backslashes |
+| Destinations | Reject single-label names; names ending in the labels `localhost`, `local`, `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion` or `alt` (whole labels); nonpublic/reserved literal addresses; and an entire DNS answer containing nonpublic addresses. A denied host is reported as not public |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
 | Requests | At most 64 requests to the source per verification (one per certificate), and 16 HTTP hops per verification for the built-in HTTP source (redirects included) |

@@ -44,14 +44,24 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             "CRL URL must be public HTTP on port 80 without credentials or fragments",
         )
     };
-    // Whitespace too: `Url::parse` would trim it, so the string as given
-    // would not be the URL that was checked.
+    let not_public = || {
+        error(
+            ErrorCode::CrlFetchDenied,
+            "CRL URL host is not public: a private, reserved or special-use name or address",
+        )
+    };
+    // Whitespace too (as the engine's own screening, any Unicode whitespace):
+    // `Url::parse` would trim it, so the string as given would not be the
+    // URL that was checked.
     if raw.len() > 2048
         || raw
-            .bytes()
-            .any(|b| b.is_ascii_control() || b.is_ascii_whitespace() || b == b'\\')
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
     {
-        return Err(denied());
+        return Err(error(
+            ErrorCode::CrlFetchDenied,
+            "CRL URL is over 2,048 bytes or has whitespace, control characters or backslashes",
+        ));
     }
     let url = Url::parse(raw).map_err(|_| denied())?;
     if url.scheme() != "http"
@@ -63,12 +73,16 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
         return Err(denied());
     }
     match url.host().ok_or_else(denied)? {
-        Host::Ipv4(ip) if !public_ip(IpAddr::V4(ip)) => return Err(denied()),
-        Host::Ipv6(ip) if !public_ip(IpAddr::V6(ip)) => return Err(denied()),
+        Host::Ipv4(ip) if !public_ip(IpAddr::V4(ip)) => return Err(not_public()),
+        Host::Ipv6(ip) if !public_ip(IpAddr::V6(ip)) => return Err(not_public()),
         Host::Domain(name)
             if !name.trim_end_matches('.').contains('.')
-                // RFC 6761 special-use names and private-use suffixes.
-                || ["localhost", "local", "internal", "home.arpa", "invalid", "test", "example"]
+                // Special-use names (RFC 6761, 6762, 7686, 8375, 9476) and the
+                // private-use `internal`.
+                || [
+                    "localhost", "local", "internal", "home.arpa", "invalid", "test", "example",
+                    "onion", "alt",
+                ]
                     .iter()
                     .any(|reserved| {
                         // Whole labels: `foo.local` is reserved, `foolocal` is not.
@@ -79,7 +93,7 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
                                 .is_some_and(|rest| rest.ends_with('.'))
                     }) =>
         {
-            return Err(denied());
+            return Err(not_public());
         }
         _ => {}
     }
@@ -485,6 +499,9 @@ mod tests {
             "http://crl.example.invalid/x.crl",
             "http://ca.test/x.crl",
             "http://crl.example/x.crl",
+            "http://crl.foo.onion/x.crl",
+            "http://crl.ca.alt/x.crl",
+            "http://a.com/x\u{3000}.crl",
             // Surrounding spaces: the URL as given is not clean.
             " http://example.com/x.crl",
             "http://example.com/x.crl ",
@@ -497,6 +514,12 @@ mod tests {
         ] {
             assert!(checked_url(url).is_err(), "{url}");
         }
+        // Each reason has its own message.
+        let message = |url: &str| checked_url(url).unwrap_err().message;
+        assert!(message("http://ca.test/x.crl").contains("not public"));
+        assert!(message("http://10.0.0.1/x.crl").contains("not public"));
+        assert!(message(" http://example.com/x").contains("whitespace"));
+        assert!(message("https://example.com/x").contains("port 80"));
         for url in [
             "http://example.com/test.crl",
             "http://8.8.8.8/x",

@@ -666,11 +666,20 @@ relic 02c54d58 and BoringSSL `main`.
     `invalid`, `test` and `example` (as whole labels), and any URL with
     surrounding whitespace, so `check_public_http_url` accepting a string
     means that string is the URL checked.
+    `onion` (RFC 7686) and `alt` (RFC 9476) are denied too, whitespace is
+    any Unicode whitespace (as the engine's own screening), and a denied
+    host, a malformed string and a wrong scheme or port each have their own
+    message.
   - A certificate named both without a CRL and with an expired one (on two
     paths) is one retrieval target; a point a certificate left unused is no
     longer reported as not requested once another certificate's request
     offers it (`a_certificate_named_twice_is_one_target`,
-    `a_point_requested_later_is_not_reported_as_not_requested`).
+    `a_point_requested_later_is_not_reported_as_not_requested`). Such a
+    point is reported for the first certificate with the outcome its later
+    request got (its failure, or nothing if it was answered), and as not
+    requested only if no request carried it. The shared-point variant has no
+    spec case: no committed file has two certificates of different issuers
+    listing one URI; the unit test checks the serialized failure entries.
   - Two configured roots with one key and name (one trust anchor to webpki)
     may carry different subjectKeyIdentifiers. A CRL signed by another key
     that names any of them is forged for that anchor
@@ -690,8 +699,8 @@ relic 02c54d58 and BoringSSL `main`.
     certificate is rejected either way
     (`sec10-no-next-update-crl-revocation-alone-is-invalid`, Decided,
     diagnostics).
-  - The built-in source's reserved-name check (`local`, `internal`,
-    `localhost`, `home.arpa`) matches whole labels: `foo.local` is denied,
+  - The built-in source's reserved-name check (now `localhost`, `local`,
+    `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion`, `alt`) matches whole labels: `foo.local` is denied,
     `crl.foolocal` is not (a suffix match denied public names). Unit test
     `denies_nonpublic_ambiguous_or_unsupported_destinations`.
 - **Who screens a distribution-point address.** Decided, acceptance for
