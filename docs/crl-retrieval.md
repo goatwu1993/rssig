@@ -247,12 +247,12 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source per verification (one per certificate), and 16 HTTP hops per HTTP source (redirects included) |
+| Requests | At most 64 requests to the source per verification (one per certificate), and 16 HTTP hops per verification for the built-in HTTP source (redirects included) |
 | Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
-| Wire bytes | At most 32 MiB of response headers and bodies per HTTP source |
+| Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
 
 PEM responses can contain multiple CRLs. After each response is loaded, the
@@ -263,7 +263,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for good), the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The built-in source's HTTP limits bound one verification, not a batch or a
 reused instance: the engine calls `CrlSource::begin_verification` first, so in

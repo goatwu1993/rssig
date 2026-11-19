@@ -44,7 +44,13 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             "CRL URL must be public HTTP on port 80 without credentials or fragments",
         )
     };
-    if raw.len() > 2048 || raw.bytes().any(|b| b.is_ascii_control() || b == b'\\') {
+    // Whitespace too: `Url::parse` would trim it, so the string as given
+    // would not be the URL that was checked.
+    if raw.len() > 2048
+        || raw
+            .bytes()
+            .any(|b| b.is_ascii_control() || b.is_ascii_whitespace() || b == b'\\')
+    {
         return Err(denied());
     }
     let url = Url::parse(raw).map_err(|_| denied())?;
@@ -61,7 +67,8 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
         Host::Ipv6(ip) if !public_ip(IpAddr::V6(ip)) => return Err(denied()),
         Host::Domain(name)
             if !name.trim_end_matches('.').contains('.')
-                || ["localhost", "local", "internal", "home.arpa"]
+                // RFC 6761 special-use names and private-use suffixes.
+                || ["localhost", "local", "internal", "home.arpa", "invalid", "test", "example"]
                     .iter()
                     .any(|reserved| {
                         // Whole labels: `foo.local` is reserved, `foolocal` is not.
@@ -473,6 +480,14 @@ mod tests {
             "http://localhost./",
             "http://foo.local/",
             "http://local/",
+            // RFC 6761 special-use names never resolve publicly.
+            "http://crl.invalid/x.crl",
+            "http://crl.example.invalid/x.crl",
+            "http://ca.test/x.crl",
+            "http://crl.example/x.crl",
+            // Surrounding spaces: the URL as given is not clean.
+            " http://example.com/x.crl",
+            "http://example.com/x.crl ",
             // A trailing dot is the same name: still one label.
             "http://intranet./x.crl",
             "http://printer./",

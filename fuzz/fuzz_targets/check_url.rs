@@ -13,8 +13,7 @@ fuzz_target!(|data: &[u8]| {
     };
     if check_public_http_url(text).is_ok() {
         assert!(
-            text.trim_start_matches(' ')
-                .get(..5)
+            text.get(..5)
                 .is_some_and(|scheme| scheme.eq_ignore_ascii_case("http:")),
             "accepted a URL that is not http"
         );

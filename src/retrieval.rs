@@ -645,6 +645,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                         self.urls_counted.insert(key.clone());
                         newly_counted.push(key.clone());
                     }
+                    // Offered again: a certificate that left it unused no
+                    // longer reports it as not requested.
+                    for unused in self.unused_points.values_mut() {
+                        unused.retain(|point| url_key(point) != key);
+                    }
+                    self.unused_points.retain(|_, unused| !unused.is_empty());
                     self.asked.insert(key, None);
                     points.push(raw);
                 }
@@ -1234,7 +1240,13 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
     let expired = listed("certificates_with_expired_crl").unwrap_or_default();
     match listed("certificates_without_crl") {
         Some(mut reports) => {
-            reports.extend(expired);
+            // Once each: a certificate can lack a CRL on one path and have
+            // only an expired one on another.
+            for report in expired {
+                if !reports.iter().any(|r| r.sha256 == report.sha256) {
+                    reports.push(report);
+                }
+            }
             if reports.is_empty() {
                 // The verifier's own list, but empty: the certificate
                 // without a CRL could not be named. Asking about every
@@ -2006,6 +2018,52 @@ mod tests {
             );
             assert_eq!(source.begun, round);
         }
+    }
+    #[test]
+    fn a_certificate_named_twice_is_one_target() {
+        use ::der::Decode;
+        let cert =
+            Certificate::from_der(include_bytes!("../tests/fixtures/sec06-issuer.der")).unwrap();
+        let report = serde_json::to_value(CertificateReport::parse(&cert).unwrap()).unwrap();
+        let error = error(ErrorCode::RevocationUnknown, "x")
+            .detail("certificates_without_crl", vec![report.clone()])
+            .detail("certificates_with_expired_crl", vec![report]);
+        let Uncovered::Listed(reports) = uncovered(&error) else {
+            panic!("listed");
+        };
+        assert_eq!(reports.len(), 1);
+    }
+    #[test]
+    fn a_point_requested_later_is_not_reported_as_not_requested() {
+        // Certificate A is answered by its issuer's CRL without a URL and
+        // leaves its point unused; certificate B, of another issuer, lists
+        // the same point, which is then requested.
+        struct Source(usize);
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
+                Ok(match self.0 {
+                    1 => CrlResponse::new().with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                    )),
+                    _ => fetch_each(request, |_, _| {
+                        Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down"))
+                    }),
+                })
+            }
+        }
+        use core::str::FromStr;
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let a = signer_with_points("shared", 1);
+        let mut b = a.clone();
+        b.tbs_certificate.issuer = x509_cert::name::Name::from_str("CN=another issuer").unwrap();
+        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
+        assert!(state.unused_points.contains_key("a"));
+        let mut source = Source(1);
+        ask(&mut state, "b", &b, &mut source).unwrap();
+        assert!(!state.unused_points.contains_key("a"));
     }
     #[test]
     fn re_offered_points_are_bounded_by_the_request_limit() {

@@ -662,6 +662,15 @@ relic 02c54d58 and BoringSSL `main`.
     address and re-checks every redirect, which is what protects against
     them. A custom source must do the same in its own client (see
     `docs/library.md`).
+  - The built-in source also denies the RFC 6761 special-use names
+    `invalid`, `test` and `example` (as whole labels), and any URL with
+    surrounding whitespace, so `check_public_http_url` accepting a string
+    means that string is the URL checked.
+  - A certificate named both without a CRL and with an expired one (on two
+    paths) is one retrieval target; a point a certificate left unused is no
+    longer reported as not requested once another certificate's request
+    offers it (`a_certificate_named_twice_is_one_target`,
+    `a_point_requested_later_is_not_reported_as_not_requested`).
   - Two configured roots with one key and name (one trust anchor to webpki)
     may carry different subjectKeyIdentifiers. A CRL signed by another key
     that names any of them is forged for that anchor
