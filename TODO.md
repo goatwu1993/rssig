@@ -425,6 +425,14 @@ timestamps, and local CRL validation already exist.
   changes request order and counts. Carry the uncovered certificates' DER
   beside the error inside the crate, keep the JSON field for consumers, and
   pin the request sequence with a test.
+  Carry the original certificate bytes through that channel too. Today
+  `CrlRequest.certificate`, its `issuer`, `certificates_without_crl` and
+  `certificate_sha256` all use rssig's re-encoding, which equals the
+  original for DER-conformant input. der sorts a SET OF while decoding, so
+  a certificate whose name has a multi-valued RDN out of DER order reaches a
+  source with an invalid signature and a sorted issuer key, and a portable
+  `crl_certificate_responses` implementation hashing the original bytes
+  disagrees. Add a fixture with such a name before changing it.
 
 ## P1 — Clean parse/verify interfaces
 

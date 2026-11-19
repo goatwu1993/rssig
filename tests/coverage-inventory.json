@@ -411,7 +411,7 @@
         "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
         "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
         "sec10-fetch-completes-the-path-beside-an-expired-path",
-        "sec10-fetch-path-failing-key-usage-reports-key-usage"
+        "sec10-fetch-path-failing-key-usage-asks-nothing"
       ]
     },
     {
@@ -830,8 +830,7 @@
         "bad-signer-key-usage",
         "msi-ca-key-usage",
         "bad-sec06-ca-ku",
-        "sec10-ca-no-crl-sign",
-        "sec10-fetch-path-failing-key-usage-reports-key-usage"
+        "sec10-ca-no-crl-sign"
       ],
       "gap": ""
     },
@@ -900,7 +899,8 @@
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-fetch-path-failing-key-usage-asks-nothing"
       ],
       "gap": ""
     },

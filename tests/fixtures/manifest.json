@@ -6962,7 +6962,7 @@
       },
       "cases": [
         "bad-sec06-ca-ku",
-        "sec10-fetch-path-failing-key-usage-reports-key-usage"
+        "sec10-fetch-path-failing-key-usage-asks-nothing"
       ]
     },
     {

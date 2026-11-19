@@ -792,9 +792,9 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
 }
 
 /// SEC-10: the only path's intermediate lacks keyCertSign and its root CRL.
-/// No CRL could make that path verify, so nothing is named for retrieval and
-/// the source is never asked: retrieval reports the path policy failure, as
-/// verification without revocation finds it.
+/// No CRL could make that path verify, so nothing is named for retrieval:
+/// the source is never asked, and the result is the same with and without
+/// retrieval.
 #[test]
 fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
     struct Counts(usize);
@@ -836,8 +836,11 @@ fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
     let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
     let error = &report["results"][0]["error"];
     assert_eq!(error["code"], "revocation_unknown");
-    assert!(error["details"].get("certificates_without_crl").is_none());
-    // With retrieval: no request, and the path policy failure decides.
+    assert_eq!(
+        error["details"]["certificates_without_crl"],
+        serde_json::json!([])
+    );
+    // With retrieval: no request, and the same result.
     let mut source = Counts(0);
     let (mut out, mut err) = (Vec::new(), Vec::new());
     let code =
@@ -845,5 +848,5 @@ fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
     assert_eq!(code, 1);
     assert_eq!(source.0, 0);
     let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
-    assert_eq!(report["results"][0]["error"]["code"], "invalid_key_usage");
+    assert_eq!(report["results"][0]["error"]["code"], "revocation_unknown");
 }

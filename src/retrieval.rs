@@ -50,10 +50,12 @@ pub trait CrlSource {
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub struct CrlRequest<'a> {
-    /// The certificate, DER.
+    /// The certificate, DER as rssig re-encodes it after decoding. That is
+    /// the original encoding for DER-conformant input; a name whose SET OF is
+    /// out of DER order is sorted (SEC-22).
     pub certificate: &'a [u8],
-    /// Its issuer Name, DER as encoded in the certificate: the key a store of
-    /// CRLs by issuer looks up.
+    /// Its issuer Name, DER, read from `certificate`: the key a store of CRLs
+    /// by issuer looks up.
     pub issuer: &'a [u8],
     /// Its supported cRLDistributionPoints URIs, in listed order, without
     /// those already asked about in this verification. A hint: a source may
@@ -377,8 +379,11 @@ struct Retrieval<'s, 'b, 'l> {
     /// Requests made to the source, one per certificate; bounded by
     /// `MAX_SOURCE_REQUESTS`.
     requests: usize,
-    /// Issuer names (DER) already asked about in this verification.
-    asked_issuers: BTreeSet<Vec<u8>>,
+    /// What was already asked about in this verification, by issuer name
+    /// (DER), authority key identifier and whether the certificate is a CA:
+    /// an issuer's CRLs can differ by key and be split between CA and
+    /// end-entity certificates.
+    asked_issuers: BTreeSet<(Vec<u8>, Vec<u8>, bool)>,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
     budget: &'b Budget<'l>,
@@ -530,7 +535,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     // The engine bounds the URIs it passes to sources in one
                     // verification, whatever each source does with them.
                     if self.asked.len() >= MAX_SOURCE_REQUESTS {
-                        return Err(limit("crl_urls", MAX_SOURCE_REQUESTS, self.asked.len(), 1));
+                        return Err(limit(
+                            "crl_source_urls",
+                            MAX_SOURCE_REQUESTS,
+                            self.asked.len(),
+                            1,
+                        ));
                     }
                     self.asked.insert(url_key(&raw), None);
                     points.push(raw);
@@ -540,9 +550,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // The issuer name is the key for a source that stores CRLs by
         // issuer; a certificate without a readable one is not asked about,
         // and each of its listed points is recorded with that reason. The
-        // raw bytes are preferred: a re-encoding can differ from them (der
-        // sorts a SET OF while decoding). No committed input reaches the
-        // failure branch: a decoded name re-encodes (docs/testing.md).
+        // certificate here is itself a re-encoding (SEC-22), so its issuer
+        // bytes are sorted like the chain's names. No committed input
+        // reaches the failure branch: a decoded name re-encodes
+        // (docs/testing.md).
         let decoded_issuer;
         let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
             Some(issuer) => issuer,
@@ -566,10 +577,27 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             },
         };
-        // CRLs are per issuer: a certificate with no new point, whose issuer
-        // was already asked about, needs no request of its own (its points'
+        // CRLs are per issuer key and role: a certificate with no new point,
+        // whose issuer, authority key and role (CA or end entity) were
+        // already asked about, needs no request of its own (its points'
         // outcomes were recorded above) and does not spend the cap.
-        let new_issuer = self.asked_issuers.insert(issuer.to_vec());
+        let authority_key = cert
+            .tbs_certificate
+            .get::<x509_cert::ext::pkix::AuthorityKeyIdentifier>()
+            .ok()
+            .flatten()
+            .and_then(|(_, aki)| aki.key_identifier)
+            .map(|k| k.as_bytes().to_vec())
+            .unwrap_or_default();
+        let is_ca = cert
+            .tbs_certificate
+            .get::<x509_cert::ext::pkix::BasicConstraints>()
+            .ok()
+            .flatten()
+            .is_some_and(|(_, constraints)| constraints.ca);
+        let new_issuer = self
+            .asked_issuers
+            .insert((issuer.to_vec(), authority_key, is_ca));
         if points.is_empty() && !new_issuer {
             return Ok(false);
         }
@@ -632,8 +660,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             })
             .cloned()
             .collect();
+        // A failure without a URL is about the whole request, as an `Err`
+        // is: it answers every point no CRL or failure named, so each is
+        // recorded with it and none as "returned nothing".
+        let mut whole_request = None;
         for failure in response.failures {
-            self.source_failure(sha256, failure);
+            if failure.url.is_none() && !unanswered.is_empty() {
+                whole_request.get_or_insert(failure);
+            } else {
+                self.source_failure(sha256, failure);
+            }
+        }
+        if let Some(failure) = whole_request {
+            for point in &unanswered {
+                self.source_failure(sha256, failure.clone().with_url(point.clone()));
+            }
+            return self.load_all(sha256, response.crls, max_bytes);
         }
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort the
@@ -648,9 +690,19 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 self.skip(sha256, Some(point), e, None);
             }
         }
+        self.load_all(sha256, response.crls, max_bytes)
+    }
+
+    /// Load every returned body; returns whether a new CRL was added.
+    fn load_all(
+        &mut self,
+        sha256: &str,
+        crls: Vec<SourcedCrl>,
+        max_bytes: usize,
+    ) -> Result<bool, VerificationError> {
         let mut added = false;
         let mut total = 0usize;
-        for crl in response.crls {
+        for crl in crls {
             added |= self.load(sha256, crl, &mut total, max_bytes)?;
         }
         Ok(added)
@@ -1262,7 +1314,7 @@ mod tests {
             })
             .find_map(Result::err)
             .unwrap();
-        assert_eq!(error.details["resource"], "crl_urls");
+        assert_eq!(error.details["resource"], "crl_source_urls");
         assert_eq!(source.urls.len(), MAX_SOURCE_REQUESTS);
     }
     #[test]
@@ -1331,6 +1383,67 @@ mod tests {
                 .any(|f| f.certificate_sha256 == "b" && f.message == "down"),
             "{:?}",
             state.report.failures
+        );
+    }
+    #[test]
+    fn a_ca_and_an_end_entity_of_one_issuer_are_each_asked() {
+        // CRLs of one issuer can be split between CA and end-entity
+        // certificates (an ARL and a user CRL), so each role is asked about.
+        use ::der::{Decode, Encode};
+        use x509_cert::ext::{Extension, pkix::BasicConstraints};
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let leaf = signer_with_uris(&[]);
+        let mut ca = leaf.clone();
+        let constraints = BasicConstraints {
+            ca: true,
+            path_len_constraint: None,
+        };
+        let extension = Extension {
+            extn_id: ::der::oid::ObjectIdentifier::new_unwrap("2.5.29.19"),
+            critical: true,
+            extn_value: ::der::asn1::OctetString::new(constraints.to_der().unwrap()).unwrap(),
+        };
+        let extensions = ca.tbs_certificate.extensions.get_or_insert_with(Vec::new);
+        extensions.retain(|e| e.extn_id != extension.extn_id);
+        extensions.push(extension);
+        let _ = Certificate::from_der(&ca.to_der().unwrap()).unwrap();
+        ask(&mut state, "leaf", &leaf, &mut source).unwrap();
+        ask(&mut state, "ca", &ca, &mut source).unwrap();
+        assert_eq!(source.calls, 2);
+        // Another end entity of the same issuer, with nothing new, is not.
+        ask(&mut state, "leaf2", &leaf, &mut source).unwrap();
+        assert_eq!(source.calls, 2);
+    }
+    #[test]
+    fn a_failure_without_a_url_in_a_response_answers_every_point() {
+        struct DeniesAll;
+        impl CrlSource for DeniesAll {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "policy")))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut DeniesAll).unwrap();
+        // One entry per point, each the source's own denial: no
+        // contradictory "returned nothing".
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.is_some(), f.code))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                (true, ErrorCode::CrlFetchDenied),
+                (true, ErrorCode::CrlFetchDenied)
+            ]
         );
     }
     #[test]

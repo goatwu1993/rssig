@@ -945,15 +945,15 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     let viable: Vec<&CertificateEvidence> = outcomes.iter().filter(|o| o.path_viable).collect();
     if viable.is_empty() {
         // No path passes the other path policy. Revocation is still reported
-        // first, as webpki checked it first, but nothing is named for
-        // retrieval: no CRL could make such a path verify.
+        // first, as webpki checked it first, but the list of certificates
+        // without a CRL is empty: no CRL could make such a path verify, so
+        // retrieval asks nothing and reports the same result.
         let all: Vec<&CertificateEvidence> = outcomes.iter().collect();
         if let Some(revoked) = first_revocation(&all) {
             return Some(revoked);
         }
-        return unknown_status(&all).map(|mut error| {
-            error.details.remove("certificates_without_crl");
-            error
+        return unknown_status(&all).map(|error| {
+            error.detail("certificates_without_crl", Vec::<CertificateReport>::new())
         });
     }
     let revoked_paths: Vec<usize> = viable
@@ -1360,7 +1360,10 @@ mod revocation_reporting {
         let error = revocation_failure(&[first, second]).unwrap();
         assert_eq!(error.code, ErrorCode::RevocationUnknown);
         // ... but names nothing for retrieval: no CRL could make it verify.
-        assert!(!error.details.contains_key("certificates_without_crl"));
+        assert_eq!(
+            error.details["certificates_without_crl"],
+            serde_json::json!([])
+        );
         // A revocation on a path failing other policy does not hide the
         // usable path's own failure.
         let mut blocked = on_path(1, "r", revoked());

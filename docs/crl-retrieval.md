@@ -38,9 +38,10 @@ rule is restated for retrieval.
    `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`), and its
    revocation does not hide such a path's own CRL failure. When no path
    passes the other path policy, revocation is still reported first, as on
-   `main`, but nothing is named: retrieval then verifies without revocation
-   and reports the path policy failure
-   (`sec10-fetch-path-failing-key-usage-reports-key-usage`). A
+   `main`, with an empty `certificates_without_crl`: no CRL could make such
+   a path verify, so retrieval asks nothing and the result is the same as
+   without it (`sec10-fetch-path-failing-key-usage-asks-nothing`). The same
+   empty list marks a certificate the verifier could not name. A
    certificate whose only CRL is stale or unusable is never offered to a
    source. A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an
@@ -72,7 +73,7 @@ Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests to the source (64 per
   verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
-  passed to it (64 per verification), CRL bodies and failures in one response
+  passed to it (64 per verification, `crl_source_urls`; the 16 per certificate are `crl_urls`), CRL bodies and failures in one response
   (64, `MAX_RESPONSE_ENTRIES`), retained CRLs, combined bytes, URLs per
   certificate and URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:

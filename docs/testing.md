@@ -279,7 +279,8 @@ Retrieval cases can provide `crl_responses` (URL to fixture filename),
 (exact ordered URL array, including failed requests).
 An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.
-`crl_certificate_responses` (lowercase SHA-256 of a certificate's DER to a
+`crl_certificate_responses` (lowercase SHA-256 of a certificate's DER, as
+rssig re-encodes it, which equals the original for every committed fixture, to a
 fixture filename; requires `crl_responses`) makes the injected source also
 answer a request for that certificate with that CRL, without a URL, as a
 source keyed by certificate or issuer does. Such answers are not listed in

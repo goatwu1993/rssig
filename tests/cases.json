@@ -32648,7 +32648,7 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-reports-key-usage",
+      "id": "sec10-fetch-path-failing-key-usage-asks-nothing",
       "input": "bad-sec06-ca-ku.exe",
       "crl_responses": {},
       "command": [
@@ -32670,8 +32670,11 @@
             {
               "ok": false,
               "error": {
-                "code": "invalid_key_usage",
-                "stage": "certificate_chain"
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "certificates_without_crl": []
+                }
               }
             }
           ]
