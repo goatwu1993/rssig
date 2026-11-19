@@ -537,6 +537,10 @@ timestamps, and local CRL validation already exist.
     A stray such CRL with the issuer's name makes the path one no source
     can complete. Setting it aside would let another CRL decide, which can
     turn a rejection into acceptance: owner's decision.
+  - A CRL without nextUpdate is decoded, re-encoded and parsed by webpki a
+    second time on every verification pass (each retrieval round included)
+    to judge it apart from nextUpdate; that work is not charged to the
+    decode budget. Cache the verdict per CRL or charge it.
   - The cRLSign requirement for a revocation by a CRL without nextUpdate has
     only code review behind it: no fixture has an intermediate without
     cRLSign issuing such a CRL.

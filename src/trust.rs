@@ -670,7 +670,7 @@ struct LoadedCrl {
 impl LoadedCrl {
     fn load(bytes: &[u8]) -> Result<Self> {
         let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
-        let admitted_without_next_update = webpki_admits_without_next_update(&crl);
+        let admitted_without_next_update = webpki_admits_without_next_update(&crl, bytes);
         let signed = crate::der::one(bytes, 0x30)
             .and_then(|outer| outer.children())
             .map_err(crate::compat_error)?
@@ -1198,9 +1198,11 @@ fn evaluate_crls(
             _ => Outcome::Missing(failure),
         },
     };
-    // With a good status, every listing was set aside.
+    // With a good status, every listing was set aside; so was a listing in
+    // a CRL without nextUpdate that a newer CRL cleared.
     let ignored_listings = match outcome {
         Outcome::Good(_) => listings.len(),
+        Outcome::Missing(_) if revoking_without_next_update.is_some() => listings.len(),
         _ => 0,
     };
     Some(CertificateEvidence {
@@ -1462,12 +1464,14 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
 /// supported, or is malformed. OpenSSL and BoringSSL score such a CRL below a
 /// valid one, or drop it when decoding, and then look the issuer's CRLs up
 /// in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle fetches after
-/// any CRL failure. Above it, the failure stands whatever is fetched: OpenSSL
-/// and BoringSSL do not score the signature and report its failure (or an
-/// unsupported signature algorithm) without another lookup; an issuer
-/// without cRLSign signs no usable CRL; a CRL without nextUpdate is kept
-/// stricter than the references and is not evidence of good status; and a
-/// certificate whose own points cannot be read is itself at fault. A CRL
+/// any CRL failure. Above it, a source is not asked, by policy: a fetched
+/// usable CRL would still decide if supplied, but OpenSSL and BoringSSL do
+/// not score the signature and report its failure (or an unsupported
+/// signature algorithm) without another lookup (BoringSSL decides the tie
+/// with Bouncy Castle); an issuer without cRLSign signs no usable CRL; a CRL
+/// without nextUpdate is time-valid to all three references, so none of
+/// them would look again; and a certificate whose own points cannot be read
+/// is itself at fault. A CRL
 /// scoped to a point, for a certificate that lists none, is replaceable: the
 /// certificate is asked about by certificate and issuer.
 const EXPIRED: u8 = 1;
@@ -1755,8 +1759,15 @@ fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
 /// extensions, cRLNumber, issuingDistributionPoint, every entry, and the
 /// signature AlgorithmIdentifier match). The signature is not checked here;
 /// it was authenticated over the original bytes.
-fn webpki_admits_without_next_update(crl: &CertificateList) -> bool {
+///
+/// Only a CRL that re-encodes to exactly its original bytes is judged this
+/// way, so webpki never sees a normalized copy of an encoding it would
+/// reject; any other is not admitted, which fails closed.
+fn webpki_admits_without_next_update(crl: &CertificateList, original: &[u8]) -> bool {
     if crl.tbs_cert_list.next_update.is_some() {
+        return false;
+    }
+    if crl.to_der().ok().as_deref() != Some(original) {
         return false;
     }
     let mut synthetic = crl.clone();
@@ -1772,11 +1783,12 @@ fn webpki_admits_without_next_update(crl: &CertificateList) -> bool {
 /// (`cert_crl`), not webpki (which revokes on any entry), an entry with
 /// reasonCode removeFromCRL (8) releases the certificate.
 fn lists_revoking(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
+    // Any entry for the serial that revokes counts, as the listing does.
     tbs.revoked_certificates
         .iter()
         .flatten()
-        .find(|r| r.serial_number.as_bytes() == serial)
-        .is_some_and(|entry| {
+        .filter(|r| r.serial_number.as_bytes() == serial)
+        .any(|entry| {
             !entry.crl_entry_extensions.iter().flatten().any(|e| {
                 e.extn_id.to_string() == "2.5.29.21" && e.extn_value.as_bytes() == [0x0a, 1, 8]
             })
@@ -1843,7 +1855,8 @@ mod revocation_reporting {
         let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList, serial: &[u8]| {
             let mut list = outer.clone();
             list.tbs_cert_list = tbs.clone();
-            webpki_admits_without_next_update(&list) && lists_revoking(tbs, serial)
+            let der = list.to_der().unwrap();
+            webpki_admits_without_next_update(&list, &der) && lists_revoking(tbs, serial)
         };
         let serial = base.revoked_certificates.as_ref().unwrap()[0]
             .serial_number

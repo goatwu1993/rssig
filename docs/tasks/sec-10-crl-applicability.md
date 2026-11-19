@@ -950,7 +950,7 @@ deltas, every entry, the signature AlgorithmIdentifier match). The
 signature was already authenticated over the original bytes. A first
 version copied those rules by hand and kept missing some; review found
 them one by one. In addition, as OpenSSL's `cert_crl` and unlike webpki, an
-entry with reasonCode removeFromCRL does not revoke. It does not revoke
+entry with reasonCode removeFromCRL does not revoke (any revoking entry for the serial counts). Only a CRL that re-encodes to exactly its original bytes is judged this way; any other is not admitted, which fails closed. References to OpenSSL line numbers in these SEC-23 cases are to the 3.3 branch. It does not revoke
 either when a newer authenticated full CRL of the issuer
 covering the certificate leaves it out, as a listing beside a newer CRL
 does not count; and not from an issuer without cRLSign. A malformed
