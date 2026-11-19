@@ -6,6 +6,8 @@ use std::{
     time::{Duration, Instant},
 };
 use url::{Host, Url};
+/// What a source closed by a DNS timeout reports, on every path.
+const CLOSED_AFTER_DNS_TIMEOUT: &str = "CRL source is closed after a DNS timeout";
 const DEADLINE: Duration = Duration::from_secs(30);
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
 const HEADER_LIMIT: usize = 16 * 1024;
@@ -106,11 +108,8 @@ impl HttpCrlSource {
     fn remaining(&self) -> Result<Duration, VerificationError> {
         // Both mean this source can do no more work, and say so.
         if self.poisoned {
-            return Err(error(
-                ErrorCode::CrlFetchFailed,
-                "CRL source is closed after a DNS timeout",
-            )
-            .detail("source_spent", true));
+            return Err(error(ErrorCode::CrlFetchFailed, CLOSED_AFTER_DNS_TIMEOUT)
+                .detail("source_spent", true));
         }
         DEADLINE
             .checked_sub(self.started.expect("fetch started").elapsed())
@@ -306,16 +305,16 @@ impl CrlSource for HttpCrlSource {
 
 impl HttpCrlSource {
     fn fetch_one(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
-        // Whether the source was already spent before this request: then
-        // nothing this request reports is about its own URL.
         // A source closed by a DNS timeout does no work at all, whatever the
         // URL: no request is spent and nothing is called denied.
         if self.poisoned {
             return Err(CrlSourceError::new(
                 CrlSourceErrorKind::Abort,
-                "CRL source is closed after a DNS timeout",
+                CLOSED_AFTER_DNS_TIMEOUT,
             ));
         }
+        // Whether the source was already spent before this request: then
+        // nothing this request reports is about its own URL.
         let spent_before = self.requests >= MAX_REQUESTS
             || self.bytes >= MAX_TOTAL_BYTES
             || self.started.is_some() && self.remaining().is_err();
@@ -600,6 +599,21 @@ mod tests {
             let e = source.fetch_one(url, 10).expect_err("a closed source");
             assert_eq!(e.kind, CrlSourceErrorKind::Abort, "{url}");
         }
+        assert_eq!(source.requests, 0);
+        // Through the whole-request interface, an abort is terminal: the first
+        // URL reports it, the rest are left for the engine to record as not
+        // tried, and still no request is spent.
+        let points = vec![
+            "http://127.0.0.1/a.crl".to_string(),
+            "http://example.com/b.crl".to_string(),
+            "http://example.org/c.crl".to_string(),
+        ];
+        let request = CrlRequest::new(&[], &[], &points, 1024);
+        let response = source.crls(&request).unwrap();
+        assert!(response.crls.is_empty());
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Abort);
+        assert_eq!(response.failures[0].message, CLOSED_AFTER_DNS_TIMEOUT);
         assert_eq!(source.requests, 0);
     }
     #[test]
