@@ -407,6 +407,20 @@ impl TrustStore {
         budget.hash_bytes.check()?;
         budget.decoded_bytes.check()?;
         let path = path.map_err(|e| {
+            // webpki ranks another path's validity error above unknown
+            // revocation status, but a path that passes every path policy
+            // and only lacks CRLs is the one a CRL could complete: it
+            // outranks every other path's error, including a CA issued after
+            // the lifetime signing time.
+            let revocation = matches!(
+                e,
+                webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
+            );
+            let completable = if revocation {
+                None
+            } else {
+                completable_path(&outcomes.borrow())
+            };
             // Only the callback reports a validity error at the signing time;
             // webpki's own checks use the (later) validation time. Also require
             // the stored certificate to be the one behind the surviving error.
@@ -418,18 +432,18 @@ impl TrustStore {
                 Some(at),
                 Some(cert),
             ) = (&e, lifetime_signed_at, issued_after_signing.get())
+                && completable.is_none()
                 && time.as_secs() == at
                 && rejected.as_secs() == not_before(cert).as_secs()
             {
                 // Every candidate path failed; report the issuer that postdates signing.
                 return not_valid_at_signing(cert, at);
             }
-            let revocation_error = matches!(
-                e,
-                webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
-            )
-            .then(|| revocation_failure(&outcomes.borrow()))
-            .flatten();
+            let revocation_error = if revocation {
+                revocation_failure(&outcomes.borrow())
+            } else {
+                completable
+            };
             let mut error = if let Some(error) = revocation_error {
                 error
             } else if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
@@ -948,6 +962,25 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     } else {
         unknown_status(&viable)
     }
+}
+
+/// The unknown status of a path that passes every path policy, has no
+/// revocation and only lacks CRLs, if any path is like that.
+fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
+    let revoked_paths: Vec<usize> = outcomes
+        .iter()
+        .filter(|o| matches!(o.outcome, Outcome::Revoked(_)))
+        .map(|o| o.path)
+        .collect();
+    let open: Vec<&CertificateEvidence> = outcomes
+        .iter()
+        .filter(|o| o.path_viable && !revoked_paths.contains(&o.path))
+        .collect();
+    let (_, missing) = without_crl(&open);
+    if missing.is_empty() {
+        return None;
+    }
+    unknown_status(&open)
 }
 
 /// The certificates with no CRL at all, once each, and whether there were

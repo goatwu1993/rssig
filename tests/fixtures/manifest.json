@@ -9993,6 +9993,18 @@
       ]
     },
     {
+      "file": "sec10-sec06-cross-expired-first.exe",
+      "sha256": "2918f55141fe79bba16639cc2e642249b5701d4fd204b9c3747acd3a3e79bfdf",
+      "bytes": 2968,
+      "description": "SEC-10 signed inert PE: the SEC-06 signer with an expired cross certificate (the issuer re-signed by the other root, notAfter one second before 1800000000) embedded first, then the other root and the issuer. webpki's highest-ranked error comes from the expired path, while the issuer's path only lacks a root CRL. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-fetch-completes-the-path-beside-an-expired-path"
+      ]
+    },
+    {
       "file": "sec10-issuer-idp-relative-expanded.crl",
       "sha256": "7abe814aef630857f23d5be49d7c2ca4d0b2e7f2d248283680f75aafcc26429d",
       "bytes": 244,

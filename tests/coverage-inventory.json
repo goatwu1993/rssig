@@ -408,7 +408,9 @@
         "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
         "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
         "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
-        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-fetch-completes-the-path-beside-an-expired-path"
       ]
     },
     {
@@ -895,7 +897,8 @@
         "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-fetch-other-idp-fetched-other-unknown"
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
       ],
       "gap": ""
     },

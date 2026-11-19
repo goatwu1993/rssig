@@ -717,6 +717,18 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross_no_cert_sign, other.clone(), ca.clone()],
     );
+    // SEC-10: an expired cross certificate, first, so that webpki's highest
+    // ranked error (expiry) comes from a path other than the one that only
+    // lacks a root CRL.
+    let mut cross_expired = cross.clone();
+    cross_expired.tbs_certificate.validity.not_after = tm(NOW - 1);
+    sign(&mut cross_expired, &other_key);
+    write_pe(
+        dir,
+        "sec10-sec06-cross-expired-first",
+        &leaf,
+        &[cross_expired, other.clone(), ca.clone()],
+    );
     write_pe(
         dir,
         "good-sec06-cross-last",
@@ -865,7 +877,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 40 + point_forms().len());
+    assert_eq!(count, 41 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {

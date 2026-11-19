@@ -335,7 +335,13 @@ timestamps, and local CRL validation already exist.
   entry whose `certificateIssuer` names another CA with the same serial,
   therefore rejects as `certificate_revoked` a certificate the full CRL
   leaves good. This fails closed. Decide it with real delta support and pin it
-  with a full-plus-delta `removeFromCRL` fixture. Original notes follow.
+  with a full-plus-delta `removeFromCRL` fixture.
+  The same rule counts a listing in a stale full CRL: a certificate on
+  `certificateHold` in last week's CRL, and absent from today's current CRL
+  of the same issuer, is `certificate_revoked`, although the hold was
+  released. Decide whether a listing from a non-current CRL counts only for
+  a permanent reason, or only when no newer authoritative CRL omits the
+  serial, and pin it with a hold-then-release fixture pair. Original notes follow.
   Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another

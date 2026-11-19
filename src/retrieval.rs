@@ -377,6 +377,8 @@ struct Retrieval<'s, 'b, 'l> {
     /// Requests made to the source, one per certificate; bounded by
     /// `MAX_SOURCE_REQUESTS`.
     requests: usize,
+    /// Issuer names (DER) already asked about in this verification.
+    asked_issuers: BTreeSet<Vec<u8>>,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
     budget: &'b Budget<'l>,
@@ -395,6 +397,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             downloaded: 0,
             asked: BTreeMap::new(),
             requests: 0,
+            asked_issuers: BTreeSet::new(),
             aborted: false,
             budget,
         }
@@ -410,6 +413,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         e: VerificationError,
         kind: Option<CrlSourceErrorKind>,
     ) {
+        // The point's outcome is kept under its normalized key even when the
+        // URL as given is not recorded, so a later certificate listing the
+        // point still reports it.
+        let key = url.map(url_key);
         let url = url.filter(|u| hygienic_url(u));
         let e = match url {
             Some(url) => e.detail("url", url),
@@ -420,7 +427,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             format_args!("CRL evidence missing: {:?}", e.message),
         );
         self.record(certificate, url, &e, kind);
-        if let Some(entry) = url.and_then(|url| self.asked.get_mut(&url_key(url))) {
+        if let Some(entry) = key.and_then(|key| self.asked.get_mut(&key)) {
             *entry = Some((e, kind));
         }
     }
@@ -558,6 +565,13 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             },
         };
+        // CRLs are per issuer: a certificate with no new point, whose issuer
+        // was already asked about, needs no request of its own (its points'
+        // outcomes were recorded above) and does not spend the cap.
+        let new_issuer = self.asked_issuers.insert(issuer.to_vec());
+        if points.is_empty() && !new_issuer {
+            return Ok(false);
+        }
         if self.requests >= MAX_SOURCE_REQUESTS {
             return Err(limit("crl_requests", MAX_SOURCE_REQUESTS, self.requests, 1));
         }
@@ -808,16 +822,28 @@ fn retrieve(
         }
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
+        // That includes a revocation that names another path's
+        // certificates without a CRL: that path might have verified.
         match result {
-            Err(e) if state.aborted && e.code == ErrorCode::RevocationUnknown => {
+            Err(e)
+                if state.aborted
+                    && (e.code == ErrorCode::RevocationUnknown
+                        || (e.code == ErrorCode::CertificateRevoked
+                            && e.details.contains_key("certificates_without_crl"))) =>
+            {
                 let mut aborted = error(
                     ErrorCode::CrlFetchAborted,
                     "the CRL source stopped retrieval before revocation status was known",
                 );
                 // Keep the verifier's structured details, such as the
-                // certificates still without a CRL.
+                // certificates still without a CRL, and its result.
+                let key = if e.code == ErrorCode::RevocationUnknown {
+                    "revocation_unknown"
+                } else {
+                    "certificate_revoked"
+                };
                 aborted.details.extend(e.details);
-                Err(aborted.detail("revocation_unknown", e.message))
+                Err(aborted.detail(key, e.message))
             }
             result => result,
         }
@@ -864,12 +890,15 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
         .get("certificates_without_crl")
         .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
     {
-        // An empty list names nothing to ask about.
         Some(reports) if !reports.is_empty() => Uncovered::Listed(reports),
+        // The verifier's own list, but empty: the certificate without a CRL
+        // could not be named. Asking about every selected certificate would
+        // ask about covered ones, so nothing is asked.
+        Some(_) => Uncovered::Final,
         // A revocation is definite evidence: only the certificates it names
         // are worth asking about, never every selected one.
-        _ if unknown.code == ErrorCode::CertificateRevoked => Uncovered::Final,
-        _ => Uncovered::Unlisted,
+        None if unknown.code == ErrorCode::CertificateRevoked => Uncovered::Final,
+        None => Uncovered::Unlisted,
     }
 }
 
@@ -1196,12 +1225,25 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
-        // Every certificate lists the same URL: one URI, many requests.
-        let shared = || signer_with_points("shared", 1);
+        // Every certificate lists the same URL, under its own issuer name:
+        // one URI, many requests.
+        let shared = |i: usize| {
+            use core::str::FromStr;
+            let mut cert = signer_with_points("shared", 1);
+            cert.tbs_certificate.issuer =
+                x509_cert::name::Name::from_str(&format!("CN=issuer {i}")).unwrap();
+            cert
+        };
         for i in 0..MAX_SOURCE_REQUESTS {
-            assert!(!ask(&mut state, &format!("c{i}"), &shared(), &mut source).unwrap());
+            assert!(!ask(&mut state, &format!("c{i}"), &shared(i), &mut source).unwrap());
         }
-        let error = ask(&mut state, "last", &shared(), &mut source).unwrap_err();
+        let error = ask(
+            &mut state,
+            "last",
+            &shared(MAX_SOURCE_REQUESTS),
+            &mut source,
+        )
+        .unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
         assert_eq!(source.calls, MAX_SOURCE_REQUESTS);
@@ -1221,6 +1263,74 @@ mod tests {
             .unwrap();
         assert_eq!(error.details["resource"], "crl_urls");
         assert_eq!(source.urls.len(), MAX_SOURCE_REQUESTS);
+    }
+    #[test]
+    fn a_request_with_nothing_new_for_an_asked_issuer_is_not_made() {
+        use CrlSourceErrorKind::*;
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![Failed]);
+        // Many certificates of one issuer listing one URL: CRLs are per
+        // issuer, so one request answers all, and none spends the cap.
+        for i in 0..=MAX_SOURCE_REQUESTS {
+            assert!(
+                !ask(
+                    &mut state,
+                    &format!("c{i}"),
+                    &signer_with_points("shared", 1),
+                    &mut source
+                )
+                .unwrap()
+            );
+        }
+        assert_eq!(source.calls, 1);
+        // Each certificate still reports the shared point's failure.
+        for i in 0..=MAX_SOURCE_REQUESTS {
+            let certificate = format!("c{i}");
+            assert!(
+                state
+                    .report
+                    .failures
+                    .iter()
+                    .any(|f| f.certificate_sha256 == certificate && f.url.is_some()),
+                "{certificate}"
+            );
+        }
+    }
+    #[test]
+    fn a_point_answered_under_an_unhygienic_spelling_stays_in_later_reports() {
+        // The source names the point with a trailing space: the URL is not
+        // recorded as given, but the point's outcome is, for every
+        // certificate listing it.
+        struct Spaced;
+        impl CrlSource for Spaced {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new();
+                for point in request.distribution_points {
+                    response = response.with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                            .with_url(format!("{point} ")),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("a", 1);
+        ask(&mut state, "a", &cert, &mut Spaced).unwrap();
+        ask(&mut state, "b", &cert, &mut Spaced).unwrap();
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == "b" && f.message == "down"),
+            "{:?}",
+            state.report.failures
+        );
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
@@ -1402,9 +1512,10 @@ mod tests {
         let cert = signer_with_points("a", 2);
         ask(&mut state, "a", &cert, &mut source).unwrap();
         ask(&mut state, "b", &cert, &mut source).unwrap();
-        // Each URI goes to the source once per verification; both
-        // certificates report the points the answer passed over.
-        assert_eq!(source.0, [2, 0]);
+        // Each URI goes to the source once per verification, and the second
+        // certificate of the same issuer, with nothing new, is not asked;
+        // both certificates report the points the answer passed over.
+        assert_eq!(source.0, [2]);
         for certificate in ["a", "b"] {
             let urls = state
                 .report
@@ -1473,11 +1584,12 @@ mod tests {
             Uncovered::Final
         ));
         assert!(matches!(uncovered(&unknown()), Uncovered::Unlisted));
+        // The verifier's own list, empty: a certificate it could not name.
         assert!(matches!(
             uncovered(
                 &unknown().detail("certificates_without_crl", Vec::<CertificateReport>::new())
             ),
-            Uncovered::Unlisted
+            Uncovered::Final
         ));
         // A revocation names what is worth asking about, or nothing is.
         let revoked = || error(ErrorCode::CertificateRevoked, "revoked");

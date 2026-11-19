@@ -37,7 +37,11 @@ rule is restated for retrieval.
    (`sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
    `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`), and a
    certificate whose only CRL is stale or unusable is never offered to a
-   source. An unknown
+   source. A path that passes every check but lacks CRLs is reported
+   ahead of another path's error that webpki ranks higher, such as an
+   expired cross certificate
+   (`sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
+   `sec10-fetch-completes-the-path-beside-an-expired-path`). An unknown
    status from webpki's confirmation of a path whose every certificate had a
    CRL (`details.reason` `confirmation`) is final: no source is asked.
 2. Ask the source about exactly those certificates, once each, as OpenSSL's
@@ -47,10 +51,17 @@ rule is restated for retrieval.
    `sec10-fetch-asks-only-the-uncovered-certificate`). A certificate whose
    only CRL is stale or unusable is not asked about: that CRL is reported as
    it is, as without `--fetch-crls` (`crl-stale-local-provider-unused`).
+   CRLs are per issuer, so a certificate with no point left to pass on,
+   whose issuer was already asked about, is not asked again and does not
+   spend the request cap. A list that is present but empty (a certificate
+   the verifier could not name) asks nothing.
 3. Verify again with what was added, and repeat steps 2 and 3 while a round
    adds a CRL and another certificate is still reported without one.
 4. If evidence is still missing, the result is the verifier's own
-   `revocation_unknown`, or `crl_fetch_aborted` when the source aborted.
+   `revocation_unknown` or revocation, or `crl_fetch_aborted` when the
+   source aborted while a certificate was still without a CRL, also beside a
+   revocation that named another path's gap (details keep the verifier's
+   result under `revocation_unknown` or `certificate_revoked`).
 
 Two kinds of error, and nothing in between:
 

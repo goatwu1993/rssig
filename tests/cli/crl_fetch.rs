@@ -732,3 +732,61 @@ fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
     );
 }
+
+/// SEC-10: one path is revoked and the other only lacks its root's CRL. The
+/// source aborts before that path could be completed, so the result says that
+/// retrieval was cut short, keeping the revocation and the gap it names.
+#[test]
+fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
+    struct Aborts(usize);
+    impl rssig::retrieval::CrlSource for Aborts {
+        fn crls(
+            &mut self,
+            _: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            self.0 += 1;
+            Err(rssig::retrieval::CrlSourceError::new(
+                rssig::domain::CrlSourceErrorKind::Abort,
+                "deadline",
+            ))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("sec06-root.der"),
+        "--roots".to_owned(),
+        path("sec06-other-root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--crl".to_owned(),
+        path("sec06-issuer.crl"),
+        "--crl".to_owned(),
+        path("sec10-sec06-other-root-revoked-cross.crl"),
+        "--fetch-crls".to_owned(),
+        path("good-sec06-cross-first.exe"),
+    ];
+    let mut source = Aborts(0);
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    assert!(err.is_empty());
+    assert_eq!(code, 1);
+    assert_eq!(source.0, 1);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "crl_fetch_aborted", "{error}");
+    let details = &error["details"];
+    assert!(details["certificate_revoked"].is_string(), "{details}");
+    assert_eq!(
+        details["certificates_without_crl"][0]["sha256"],
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+    );
+    assert_eq!(
+        details["crl_retrieval"]["failures"][0]["source_error"],
+        "abort"
+    );
+}
