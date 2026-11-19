@@ -335,8 +335,23 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   and alone it revokes (`sec10-superseded-crl-revocation-alone-revokes`). A
   CRL without nextUpdate is never current.
 - **A listing in a current CRL with a malformed AKI counts.** Observed,
-  acceptance (fails closed); not yet compared with either library:
-  `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`.
+  acceptance (fails closed); **awaiting the owner's decision**:
+  `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`. The
+  references do not agree, with a well-formed CRL that omits the serial also
+  present:
+  - OpenSSL uses the CRL: `crl_cb` leaves `akid` NULL and sets
+    `EXFLAG_INVALID`, which `x509_vfy.c` never reads for a CRL, and
+    `X509_check_akid` treats a NULL akid as a match. Revoked if that CRL has
+    the later lastUpdate (or an equal one and comes first), else good.
+  - Bouncy Castle's `X509RevocationChecker` (pkix) ignores the CRL's AKI:
+    revoked or good by iteration order.
+  - Bouncy Castle's provider path throws an uncaught
+    `IllegalArgumentException` in `processCRLF`, or reports good if the
+    well-formed CRL is iterated first; never revoked.
+  - BoringSSL rejects the CRL at parse (`crl_cb` returns 0): never revoked.
+  - relic checks no CRLs.
+  rssig today: `invalid_crl` alone; beside a usable CRL its listing revokes
+  when it is at least as new, which is closest to OpenSSL.
 - **Cross-certified paths.** A path that verifies with its CRLs is accepted
   whatever another path does: Decided, acceptance, as Bouncy Castle's builder
   tries every candidate path and accepts one that validates

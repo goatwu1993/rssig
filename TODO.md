@@ -341,8 +341,10 @@ timestamps, and local CRL validation already exist.
   (`sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
   current delta or indirect CRL's entries, and the listing in a current CRL
   with a malformed authorityKeyIdentifier
-  (`sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`), which is
-  not yet compared with either library. Original notes follow.
+  (`sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
+  both Bouncy Castle paths, BoringSSL and relic were compared and do not
+  agree (`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"), so the
+  owner decides. Original notes follow.
   Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
