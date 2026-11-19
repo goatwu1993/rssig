@@ -6,6 +6,17 @@ read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
 project at build or runtime.
 
+## Release status
+
+rssig is pre-release (0.x, unpublished). Its public interfaces and contracts
+may change without notice: the library API, CLI arguments and exit codes, the
+JSON result schema and error codes, `tests/cases.json` and its schema, and the
+fixture manifest. Do not add compatibility shims, deprecation periods or
+migration layers for earlier shapes; change the contract directly and update
+the specification, documentation and migration notes in the same change. This
+does not relax the "Pinned expectations" rules below: a pinned result still
+changes only for a stated reason.
+
 ## Pull request titles
 
 PR titles must use Conventional Commit format: `feat: Add xxx`,
