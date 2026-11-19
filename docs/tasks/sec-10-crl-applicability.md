@@ -415,11 +415,13 @@ relic 02c54d58 and BoringSSL `main`.
   `revocation_unknown` with an empty list, as before PR #60.
   Only that unknown status, which is no evidence, is followed by the check
   without revocation. A definite CRL failure or revocation on such a chain
-  keeps its code with `--fetch-crls`, as without it, so the result does not
-  depend on fetching
+  keeps its code with `--fetch-crls`, as without it
   (`sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure`,
   `sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked`;
-  Decided, diagnostics: both reject).
+  Decided, diagnostics: both reject). So with fetching the code differs from
+  the offline one only for an unknown status (including one that also
+  carries `unusable_crl` because another certificate on the path lacks a
+  CRL), which becomes the path failure; both reject.
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's

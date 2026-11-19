@@ -449,9 +449,9 @@ struct Retrieval<'s, 'b, 'l> {
     aborted: bool,
     /// The certificate whose request the source aborted.
     aborted_for: Option<String>,
-    /// How many URIs were passed to sources in this verification, counting
-    /// one passed again after an answer by certificate left it unused;
-    /// bounded by `MAX_SOURCE_REQUESTS`.
+    /// How many distinct normalized URIs were passed to sources in this
+    /// verification; one passed again after an answer by certificate left it
+    /// unused counts once. Bounded by `MAX_SOURCE_REQUESTS`.
     urls_passed: usize,
     /// The normalized URIs already counted in `urls_passed`: one offered
     /// again after an answer by certificate left it unused costs nothing.
@@ -597,6 +597,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             }
         };
         let mut points = Vec::new();
+        // URIs first counted by this request: given back if it is not made.
+        let mut newly_counted = Vec::new();
         for listed in listed {
             let raw = match listed {
                 Ok(raw) => raw,
@@ -641,6 +643,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                         }
                         self.urls_passed += 1;
                         self.urls_counted.insert(key.clone());
+                        newly_counted.push(key.clone());
                     }
                     self.asked.insert(key, None);
                     points.push(raw);
@@ -677,6 +680,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                         self.record(sha256, Some(point), &e, None);
                         self.asked.remove(&url_key(point));
                     }
+                    // No source was given them: they cost no URI allowance.
+                    for key in &newly_counted {
+                        self.urls_counted.remove(key);
+                    }
+                    self.urls_passed -= newly_counted.len();
                     return Ok(false);
                 }
             },

@@ -33672,7 +33672,7 @@
         "pins": "diagnostics",
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
         "references": [
-          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code, so the result does not depend on whether fetching is enabled.",
+          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).",
           "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
           "Diagnostics only: both results reject."
         ]
@@ -33719,7 +33719,7 @@
         "pins": "diagnostics",
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
         "references": [
-          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code, so the result does not depend on whether fetching is enabled.",
+          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).",
           "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
           "Diagnostics only: both results reject."
         ]

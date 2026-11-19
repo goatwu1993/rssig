@@ -793,8 +793,9 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
 
 /// SEC-10: the only path's intermediate lacks keyCertSign, and its root CRL
 /// is unusable or revokes it. That is definite evidence, so with retrieval
-/// it keeps its code, as without it: no source is asked and the result does
-/// not depend on fetching.
+/// it keeps its code, as without it, and no source is asked. (Only an
+/// unknown status naming nothing is replaced by the path failure with
+/// retrieval: `sec10_fetch_never_asks_about_a_path_failing_key_usage`.)
 #[test]
 fn sec10_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
