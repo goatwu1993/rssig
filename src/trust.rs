@@ -662,11 +662,15 @@ struct LoadedCrl {
     revoked: Vec<Vec<u8>>,
     /// webpki's own parse, which also rejects unsupported features.
     webpki: core::result::Result<webpki::OwnedCertRevocationList, webpki::Error>,
+    /// Whether webpki accepts the CRL, or would if only its missing
+    /// nextUpdate were present: such a CRL counts under webpki's rules.
+    webpki_admits: bool,
 }
 
 impl LoadedCrl {
     fn load(bytes: &[u8]) -> Result<Self> {
         let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
+        let admitted_without_next_update = webpki_admits_without_next_update(&crl);
         let signed = crate::der::one(bytes, 0x30)
             .and_then(|outer| outer.children())
             .map_err(crate::compat_error)?
@@ -713,8 +717,10 @@ impl LoadedCrl {
                     .iter()
                     .any(|a| a.signature_alg_id().as_ref() == identifier.as_slice())
             });
+        let webpki_admits = webpki.is_ok() || admitted_without_next_update;
         Ok(Self {
             bytes: bytes.to_vec(),
+            webpki_admits,
             signed,
             algorithm_accepted,
             algorithm: crl.signature_algorithm.oid,
@@ -989,10 +995,9 @@ fn evaluate_crls(
             && !(!lists_points && names_distribution_point(&crl.tbs))
             && !points_unreadable
             && current
-            && complete_direct_crl(&crl.tbs)
+            && crl.webpki_admits
             && crl.authority_key.is_ok()
             && issuer.crl_sign
-            && (crl.webpki.is_ok() || crl.tbs.next_update.is_none())
             && newest_complete.is_none_or(|(n, _)| this_update > n)
         {
             newest_complete = Some((this_update, lists_revoking(&crl.tbs, serial)));
@@ -1008,7 +1013,8 @@ fn evaluate_crls(
             && covers
             && crl.tbs.next_update.is_none()
             && issuer.crl_sign
-            && revokes_without_next_update(&crl.tbs, serial)
+            && crl.webpki_admits
+            && lists_revoking(&crl.tbs, serial)
             && revoking_without_next_update.is_none_or(|(_, newest)| this_update > newest)
         {
             revoking_without_next_update = Some((index, this_update));
@@ -1044,7 +1050,7 @@ fn evaluate_crls(
             // Only when it is otherwise one webpki's rules admit: a scope
             // read from a CRL webpki would reject is not trusted enough to
             // set it aside silently (see below).
-            if authority == Some(false) && complete_direct_crl(&crl.tbs) {
+            if authority == Some(false) && crl.webpki_admits {
                 continue;
             }
             fail(UNUSABLE, &|| {
@@ -1743,76 +1749,23 @@ fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
     }
 }
 
-/// Whether the CRL is one webpki's rules admit apart from its times: v2, and
-/// complete and direct (no deltaCRLIndicator; an issuingDistributionPoint, if
-/// any, with a fullName distributionPoint and neither indirectCRL,
-/// onlySomeReasons nor onlyContainsAttributeCerts; no other critical CRL
-/// extension). webpki 0.103 rejects the rest (`UnsupportedDeltaCrl`,
-/// `UnsupportedIndirectCrl`, `UnsupportedCrlIssuingDistributionPoint`), and
-/// OpenSSL's `get_crl_score` gives delta, indirect and reason-partitioned
-/// CRLs no valid score.
-fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
-    use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
-    if tbs.version != x509_cert::Version::V2 {
+/// Whether webpki would accept a CRL that lacks nextUpdate if it had one:
+/// the CRL is re-encoded with a stand-in nextUpdate (its thisUpdate) and
+/// parsed by webpki, so every other webpki rule applies (version,
+/// extensions, cRLNumber, issuingDistributionPoint, every entry, and the
+/// signature AlgorithmIdentifier match). The signature is not checked here;
+/// it was authenticated over the original bytes.
+fn webpki_admits_without_next_update(crl: &CertificateList) -> bool {
+    if crl.tbs_cert_list.next_update.is_some() {
         return false;
     }
-    let extensions_ok =
-        tbs.crl_extensions
-            .iter()
-            .flatten()
-            .all(|e| match e.extn_id.to_string().as_str() {
-                "2.5.29.27" => false,
-                "2.5.29.28" => IssuingDistributionPoint::from_der(e.extn_value.as_bytes())
-                    .is_ok_and(|idp| {
-                        matches!(
-                            idp.distribution_point,
-                            Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(
-                                _
-                            ))
-                        ) && !idp.indirect_crl
-                            && idp.only_some_reasons.is_none()
-                            && !idp.only_contains_attribute_certs
-                    }),
-                // cRLNumber: a non-negative INTEGER of at most 20 octets, as
-                // webpki requires (`InvalidCrlNumber`).
-                "2.5.29.20" => matches!(
-                    e.extn_value.as_bytes(),
-                    [0x02, len, first, ..]
-                        if (1..=20).contains(len)
-                            && usize::from(*len) + 2 == e.extn_value.as_bytes().len()
-                            && *first < 0x80
-                ),
-                "2.5.29.35" => true,
-                _ => !e.critical,
-            });
-    // webpki rejects the whole CRL for any entry it cannot use.
-    extensions_ok
-        && tbs
-            .revoked_certificates
-            .iter()
-            .flatten()
-            .all(entry_acceptable)
-}
-
-/// Whether webpki accepts a CRL entry: reasonCode and invalidityDate are
-/// understood (critical or not), a reasonCode being a single-byte ENUMERATED
-/// with a defined value and an invalidityDate a GeneralizedTime; a
-/// certificateIssuer makes the CRL indirect; any other critical entry
-/// extension is unsupported.
-fn entry_acceptable(entry: &x509_cert::crl::RevokedCert) -> bool {
-    entry
-        .crl_entry_extensions
-        .iter()
-        .flatten()
-        .all(|e| match e.extn_id.to_string().as_str() {
-            "2.5.29.21" => matches!(
-                e.extn_value.as_bytes(),
-                [0x0a, 1, reason] if *reason <= 10 && *reason != 7
-            ),
-            "2.5.29.24" => e.extn_value.as_bytes().first() == Some(&0x18),
-            "2.5.29.29" => false,
-            _ => !e.critical,
-        })
+    let mut synthetic = crl.clone();
+    synthetic.tbs_cert_list.next_update = Some(synthetic.tbs_cert_list.this_update);
+    synthetic.to_der().is_ok_and(|der| {
+        webpki::BorrowedCertRevocationList::from_der(&der)
+            .and_then(|parsed| parsed.to_owned())
+            .is_ok()
+    })
 }
 
 /// Whether the CRL lists `serial` with an entry that revokes: as OpenSSL
@@ -1828,14 +1781,6 @@ fn lists_revoking(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
                 e.extn_id.to_string() == "2.5.29.21" && e.extn_value.as_bytes() == [0x0a, 1, 8]
             })
         })
-}
-
-/// Whether a CRL that webpki cannot parse only because it lacks nextUpdate
-/// revokes `serial` under webpki's other rules: a complete, direct v2 CRL
-/// whose every entry webpki would accept, listing the serial with an entry
-/// that is not removeFromCRL.
-fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
-    complete_direct_crl(tbs) && lists_revoking(tbs, serial)
 }
 
 fn has_extension(cert: &Certificate, oid: &str) -> bool {
@@ -1891,7 +1836,15 @@ mod revocation_reporting {
             "../tests/fixtures/sec10-root-no-next-update-revoked.crl"
         ))
         .unwrap();
+        let outer = crl.clone();
         let base = crl.tbs_cert_list;
+        // A CRL without nextUpdate revokes when webpki would accept it with
+        // one and its entry for the serial is not removeFromCRL.
+        let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList, serial: &[u8]| {
+            let mut list = outer.clone();
+            list.tbs_cert_list = tbs.clone();
+            webpki_admits_without_next_update(&list) && lists_revoking(tbs, serial)
+        };
         let serial = base.revoked_certificates.as_ref().unwrap()[0]
             .serial_number
             .as_bytes()
@@ -1966,6 +1919,23 @@ mod revocation_reporting {
             .unwrap()
             .push(indirect_entry);
         assert!(!revokes_without_next_update(&other, &serial));
+        // No crlExtensions at all, which webpki requires.
+        let mut bare = base.clone();
+        bare.crl_extensions = None;
+        assert!(!revokes_without_next_update(&bare, &serial));
+        // A tbsCertList signature algorithm that differs from the outer one.
+        let mut mismatched = base.clone();
+        mismatched.signature.oid = ::der::asn1::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.3");
+        assert!(!revokes_without_next_update(&mismatched, &serial));
+        // A duplicate issuingDistributionPoint.
+        let twice = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
+        let mut twice = twice;
+        twice
+            .crl_extensions
+            .as_mut()
+            .unwrap()
+            .push(extension("2.5.29.28", true, &idp(&[])));
+        assert!(!revokes_without_next_update(&twice, &serial));
         // A role-only issuingDistributionPoint, which webpki 0.103 rejects.
         let role_only = with_crl_extension(extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]));
         assert!(!revokes_without_next_update(&role_only, &serial));

@@ -941,12 +941,17 @@ rule below (`invalid_crl` for the timestamp authority), not the signer's
 listing. Its earlier reason in this document described it as the signer's
 listing; the reason is now corrected.
 
-Such a listing revokes alone only under webpki's other rules, applied by
-rssig because webpki cannot parse a CRL without nextUpdate: not from a
-delta, indirect, reason-partitioned or attribute-only CRL, one with another
-critical extension, or an entry that is critical or removeFromCRL (OpenSSL
-`get_crl_score` gives such CRLs no valid score; `cert_crl` releases a
-removeFromCRL entry); not when a newer authenticated full CRL of the issuer
+Such a listing revokes alone only if webpki would accept the CRL apart
+from its missing nextUpdate. webpki cannot parse a CRL without nextUpdate,
+so rssig re-encodes it with a stand-in nextUpdate (its thisUpdate) and
+parses that with webpki, whose verdict decides: every other webpki rule
+applies (version, crlExtensions, cRLNumber, issuingDistributionPoint,
+deltas, every entry, the signature AlgorithmIdentifier match). The
+signature was already authenticated over the original bytes. A first
+version copied those rules by hand and kept missing some; review found
+them one by one. In addition, as OpenSSL's `cert_crl` and unlike webpki, an
+entry with reasonCode removeFromCRL does not revoke. It does not revoke
+either when a newer authenticated full CRL of the issuer
 covering the certificate leaves it out, as a listing beside a newer CRL
 does not count; and not from an issuer without cRLSign. A malformed
 authorityKeyIdentifier does not stop it, as decided for a listing beside

@@ -530,6 +530,13 @@ timestamps, and local CRL validation already exist.
     the certificate out does not clear an older listing (it does when no CRL
     is usable). OpenSSL's best-scored newest CRL would give good status.
     Clearing it would loosen an acceptance pin: owner's decision.
+  - A CRL whose signature algorithm the engine cannot verify is reported
+    (`unsupported_signature_algorithm`, not replaceable) even when its
+    authorityKeyIdentifier names another key, whereas a CRL that fails
+    verification in that case is set aside silently (`names_another_key`).
+    A stray such CRL with the issuer's name makes the path one no source
+    can complete. Setting it aside would let another CRL decide, which can
+    turn a rejection into acceptance: owner's decision.
   - The cRLSign requirement for a revocation by a CRL without nextUpdate has
     only code review behind it: no fixture has an intermediate without
     cRLSign issuing such a CRL.
