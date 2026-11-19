@@ -87,6 +87,17 @@ impl TrustStore {
     }
 }
 
+/// The issuer names (DER) of the CRLs in a DER or PEM input that loads.
+#[cfg(feature = "crl-fetch")]
+pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<Vec<u8>> {
+    decode_input(bytes, Kind::Crl)
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|der| CertificateList::from_der(der).ok())
+        .filter_map(|list| ::der::Encode::to_der(&list.tbs_cert_list.issuer).ok())
+        .collect()
+}
+
 fn validate(bytes: &[u8], kind: Kind, index: usize) -> Result<(), TrustLoadError> {
     let parsed = match kind {
         Kind::Crl => CertificateList::from_der(bytes).map(|_| ()),

@@ -20,6 +20,8 @@ use anyhow::{Context, Result};
 use core::time::Duration;
 use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
+#[cfg(feature = "crl-fetch")]
+pub(crate) use loading::crl_issuers;
 use rustls_pki_types::{CertificateDer, UnixTime};
 use x509_cert::{
     Certificate,
@@ -275,6 +277,8 @@ impl TrustStore {
         let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
         let chosen: core::cell::RefCell<Vec<usize>> = Default::default();
         let paths_evaluated = core::cell::Cell::new(0usize);
+        // The last path whose revocation passed: the accepted one on success.
+        let accepted_path = core::cell::Cell::new(None::<usize>);
         // Rejecting a candidate path here is non-fatal: webpki tries other
         // issuers and reports the most specific rejection by its error rank.
         let invalid_ca_usage = core::cell::Cell::new(false);
@@ -348,16 +352,6 @@ impl TrustStore {
                     .ok_or(webpki::Error::BadDer)?;
                     evidence.path = path_index;
                     evidence.path_viable = other_policy.is_none();
-                    if evidence.ignored_listings > 0 {
-                        budget.log.warn(
-                            Stage::Revocation,
-                            format_args!(
-                                "certificate {} is listed by {} authenticated CRL(s) that do not \
-                                 decide (not current, superseded or out of scope); not counted",
-                                evidence.sha256, evidence.ignored_listings
-                            ),
-                        );
-                    }
                     match &evidence.outcome {
                         Outcome::Good(index) => path_chosen.push(*index),
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -371,6 +365,7 @@ impl TrustStore {
                     return Err(error);
                 }
                 *chosen.borrow_mut() = path_chosen;
+                accepted_path.set(Some(path_index));
             }
             match other_policy {
                 None => Ok(()),
@@ -524,6 +519,22 @@ impl TrustStore {
                     .detail("required_eku", eku_oid.to_string())
                     .detail("reason", "confirmation")
             })?;
+            // Once, for the accepted path only: a listing that was set aside
+            // is never dropped silently.
+            for evidence in outcomes
+                .borrow()
+                .iter()
+                .filter(|o| Some(o.path) == accepted_path.get() && o.ignored_listings > 0)
+            {
+                budget.log.warn(
+                    Stage::Revocation,
+                    format_args!(
+                        "certificate {} is listed by {} authenticated CRL(s) that do not \
+                         decide (not current, superseded or out of scope); not counted",
+                        evidence.sha256, evidence.ignored_listings
+                    ),
+                );
+            }
         }
         let mut chain = vec![leaf_report];
         for intermediate in path.intermediate_certificates() {
@@ -829,8 +840,11 @@ fn evaluate_crls(
         // score and Bouncy Castle's processCRLB2 rejects it, so neither reads
         // its entries.
         let authority = authority_for(&crl.tbs, cert, end_entity);
+        // Nor one whose scope cannot be read: OpenSSL scores an invalid
+        // issuingDistributionPoint as unusable (`IDP_INVALID`) and Bouncy
+        // Castle skips a CRL whose extension does not parse.
         let covers =
-            authority != Some(false) && (lists_points || !names_distribution_point(&crl.tbs));
+            authority == Some(true) && (lists_points || !names_distribution_point(&crl.tbs));
         let lists = crl.revoked.iter().any(|s| s.as_slice() == serial);
         if lists {
             listings.push(index);

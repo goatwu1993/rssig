@@ -298,7 +298,10 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `certificate_revoked`); they are now
   `sec10-crl-dp-other-partition-revocation-is-ignored` and `-first` and
   verify. Comparing thisUpdate across partitions would have made the result
-  depend on issuance order.
+  depend on issuance order. The same holds for a CRL whose
+  issuingDistributionPoint cannot be read: OpenSSL scores it unusable
+  (`IDP_INVALID` in `get_crl_score`) and Bouncy Castle skips a CRL whose
+  extension does not parse, so its entries are not read here either.
 - **A partition for another point is no evidence.** Decided, diagnostics.
   Bouncy Castle's processCRLB2 rejects a CRL whose distribution point does not
   match; OpenSSL gives it no `CRL_SCORE_SCOPE`. The certificate is without a

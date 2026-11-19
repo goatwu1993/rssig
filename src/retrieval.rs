@@ -185,6 +185,7 @@ pub fn fetch_each(
 ) -> CrlResponse {
     let mut response = CrlResponse::new();
     let mut remaining = request.max_bytes;
+    let mut oversized = false;
     for url in request.distribution_points {
         // The allowance is spent: the rest are not tried, and the engine
         // records them as such.
@@ -196,9 +197,25 @@ pub fn fetch_each(
             // A body over what was allowed is passed on for the engine to
             // reject and report, but does not spend the allowance: the next
             // point is still tried.
+            // Only the first such body is kept; later ones are reported
+            // without their bytes, so a response cannot pile them up.
             Ok(mut crl) if crl.bytes.len() > allowed => {
-                crl.url.get_or_insert_with(|| url.clone());
-                response.crls.push(crl);
+                if oversized {
+                    response.failures.push(
+                        CrlSourceError::new(
+                            CrlSourceErrorKind::Failed,
+                            "the response is larger than allowed",
+                        )
+                        .with_url(url.clone())
+                        .detail("resource", "crl_response_bytes")
+                        .detail("limit", allowed)
+                        .detail("requested", crl.bytes.len()),
+                    );
+                } else {
+                    oversized = true;
+                    crl.url.get_or_insert_with(|| url.clone());
+                    response.crls.push(crl);
+                }
             }
             Ok(mut crl) => {
                 remaining = remaining.saturating_sub(crl.bytes.len());
@@ -767,25 +784,24 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     ) -> Result<Loaded, VerificationError> {
         let mut loaded = Loaded::default();
         for crl in crls {
-            // A DER CRL naming no URL whose issuer is the certificate's.
-            let for_issuer = crl.url.is_none()
-                && x509_cert::crl::CertificateList::from_der(&crl.bytes)
-                    .ok()
-                    .and_then(|list| ::der::Encode::to_der(&list.tbs_cert_list.issuer).ok())
-                    .is_some_and(|name| name == issuer);
-            let (valid, added) = self.load(sha256, crl, &mut loaded.accepted_bytes, max_bytes)?;
+            let (by_certificate, added) =
+                self.load(sha256, issuer, crl, &mut loaded.accepted_bytes, max_bytes)?;
             loaded.added |= added;
-            loaded.by_certificate |= valid && for_issuer;
+            loaded.by_certificate |= by_certificate;
         }
         Ok(loaded)
     }
 
     /// Check, account for and load one returned body. A body over its size
     /// caps, or that is not a CRL, is no evidence and is not loaded. Returns
-    /// whether it is a CRL, and whether it added one not already loaded.
+    /// whether it is an answer by certificate (it names no URL and loaded a
+    /// CRL, DER or PEM, of `issuer`), and whether it added a CRL not already
+    /// loaded. The body is decoded only after its size is checked and
+    /// charged.
     fn load(
         &mut self,
         sha256: &str,
+        issuer: &[u8],
         crl: SourcedCrl,
         total: &mut usize,
         max_bytes: usize,
@@ -838,8 +854,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if loaded > 64 {
             return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
         }
+        let by_certificate = url.is_none()
+            && crate::trust::crl_issuers(&crl.bytes)
+                .iter()
+                .any(|name| name == issuer);
         // A body identical to a loaded CRL adds nothing to verify.
-        Ok((true, loaded > prior))
+        Ok((by_certificate, loaded > prior))
     }
 }
 
@@ -1793,6 +1813,17 @@ mod tests {
         assert_eq!(response.crls.len(), 2);
         assert!(response.failures.is_empty());
         assert_eq!(response.crls[1].bytes.len(), 4);
+        // Only the first oversized body is kept: later ones are reported
+        // without their bytes.
+        let points: Vec<String> = (0..3)
+            .map(|i| format!("http://crl.example.invalid/b-{i}.crl"))
+            .collect();
+        let response = fetch_each(&CrlRequest::new(b"", b"", &points, 10), |_, max_bytes| {
+            Ok(SourcedCrl::new(vec![0; max_bytes + 1]))
+        });
+        assert_eq!(response.crls.len(), 1);
+        assert_eq!(response.failures.len(), 2);
+        assert_eq!(response.failures[0].details["requested"], 11);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
@@ -1998,6 +2029,23 @@ mod tests {
         }
         let mut state = Retrieval::new(&store, &budget);
         ask(&mut state, "c", &signer_with_points("c", 2), &mut Answers).unwrap();
+        // The same CRL as PEM is such an answer too.
+        struct Pem;
+        impl CrlSource for Pem {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                // CertificateList has no PEM label of its own: wrap the DER.
+                let pem = ::der::pem::encode_string(
+                    "X509 CRL",
+                    ::der::pem::LineEnding::LF,
+                    include_bytes!("../tests/fixtures/good.crl"),
+                )
+                .unwrap();
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(pem.into_bytes())))
+            }
+        }
+        let mut pem = Retrieval::new(&store, &budget);
+        ask(&mut pem, "p", &signer_with_points("p", 2), &mut Pem).unwrap();
+        assert!(pem.report.failures.is_empty(), "{:?}", pem.report.failures);
         // A CRL of another issuer is no answer for this certificate: its
         // points are still recorded.
         struct Unrelated;

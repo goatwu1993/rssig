@@ -48,7 +48,7 @@ logs nothing.
 | --- | --- | --- |
 | `Warn` | `configuration` | Integrity-only policy, disabled revocation, or permitted SHA-1 content digests; once per verification |
 | `Warn` | the error's stage | The typed failure that ended verification, with its code and message |
-| `Warn` | `revocation` | A certificate with good status is listed by an authenticated CRL that did not count (not current, older than the deciding CRL, or not covering it) |
+| `Warn` | `revocation` | A certificate on the accepted path with good status is listed by an authenticated CRL that did not count (not current, older than the deciding CRL, or not covering it); once per such certificate |
 | `Info` | `cms` | Each verified signer: subject and certificate SHA-256 |
 | `Info` | `revocation` | Each CRL request made through a `CrlSource` |
 | `Debug` | `input`, `cms`, `timestamp`, `certificate_chain`, `revocation` | Detected format and size, CMS signer/certificate counts, digest match, timestamp, validated path length and revocation status, retrieval passes and response sizes |
