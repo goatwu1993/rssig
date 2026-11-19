@@ -28,6 +28,10 @@ timestamps, and local CRL validation already exist.
 - Follow [AGENTS.md](AGENTS.md): committed fixture and manifest provenance,
   declarative case, named in-process Rust test, observed intended failure, then
   implementation. Ordinary tests never regenerate fixtures or execute them.
+- When a task adds or changes a pinned case, record its ID, rationale, and
+  whether it pins acceptance or diagnostics in the task document. Follow the
+  [pinned-expectation rules](AGENTS.md#pinned-expectations) for decision metadata
+  and changes to decided outcomes.
 - Preserve configured-root trust, fail-closed revocation, verification order,
   explicit integrity-only policy, and stable typed JSON diagnostics. New schema
   fields require specification cases and serialized-domain assertions first.
