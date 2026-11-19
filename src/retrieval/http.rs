@@ -226,6 +226,23 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
         location,
     })
 }
+/// The built-in source's URL policy, for a source of its own that fetches
+/// distribution points: `Ok` for a public HTTP URL on port 80 without
+/// credentials or fragments and at most 2,048 bytes, `Denied` for anything
+/// else (another scheme such as `file:` or `https:`, a literal private,
+/// loopback or link-local address, a single-label or local name).
+///
+/// The engine passes a source every listed URI that passes input hygiene
+/// and applies no transport policy itself, so a source that fetches by URL
+/// must screen them. This checks the URL only: the built-in source also
+/// rejects DNS answers that contain nonpublic addresses and re-checks each
+/// redirect target, which a source must do in its own client.
+pub fn check_public_http_url(url: &str) -> Result<(), CrlSourceError> {
+    checked_url(url).map(|_| ()).map_err(|e| {
+        CrlSourceError::new(CrlSourceErrorKind::Denied, e.message).with_url(url.to_owned())
+    })
+}
+
 /// The request whose DNS lookup timed out closes the source: it is itself
 /// the abort, not only the requests after it.
 fn dns_timeout() -> VerificationError {
@@ -479,6 +496,21 @@ mod tests {
             response(huge.as_bytes(), 10).err().unwrap().details["resource"],
             "crl_http_headers"
         );
+    }
+    #[test]
+    fn the_public_url_policy_is_available_to_other_sources() {
+        assert!(check_public_http_url("http://crl.example.com/a.crl").is_ok());
+        for url in [
+            "http://169.254.169.254/latest/meta-data/",
+            "file:///etc/passwd",
+            "https://crl.example.com/a.crl",
+            "http://localhost/a.crl",
+            "http://10.0.0.1/a.crl",
+        ] {
+            let denied = check_public_http_url(url).unwrap_err();
+            assert_eq!(denied.kind, CrlSourceErrorKind::Denied, "{url}");
+            assert_eq!(denied.url.as_deref(), Some(url));
+        }
     }
     #[test]
     fn the_last_request_keeps_its_own_failure() {

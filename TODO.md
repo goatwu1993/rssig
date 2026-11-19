@@ -281,7 +281,14 @@ timestamps, and local CRL validation already exist.
   on a path where two certificates are issued under the same name by
   different keys (a self-issued key-rollover link) it can try one
   certificate's CRL for the other and reject a path the per-certificate check
-  accepted (fails closed, reason `confirmation`). No fixture has that shape.
+  accepted (fails closed, reason `confirmation`). Confirmed with
+  `good-sec06-self-issued-rollover.exe` and `sec06-rollover.crl`
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`, Observed): a
+  valid rollover chain with both correct CRLs is rejected in either `--crl`
+  order, while OpenSSL would accept it. webpki cannot confirm two issuers of
+  one name, so the options are to skip its confirmation for such
+  certificates (relying on rssig's per-key evaluation) or keep rejecting;
+  the owner decides.
   Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A

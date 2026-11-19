@@ -7282,6 +7282,23 @@
       ]
     },
     {
+      "file": "good-sec06-self-issued-rollover.exe",
+      "sha256": "0fd3346a669eb9c10afded9b88c48de51cba880c2a1ac7cdae6627b50aab16cf",
+      "bytes": 2192,
+      "description": "SEC-16 signed inert PE: a self-issued key rollover. The SEC-06 root's name is carried by a second key, certified by the root, and the signer is issued under that name by the second key, so two certificates on the path have issuers of the same name and different keys. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec16-self-issued-rollover-without-revocation-verifies",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
+      ]
+    },
+    {
       "file": "good-sec06-cross-last.exe",
       "sha256": "fba166ffdf7bfe6c97faa79694d5df438c1feb98447c7c673524596bf1c0b1a1",
       "bytes": 2968,
@@ -8011,7 +8028,8 @@
         "sec10-fetch-builtin-source-denies-https",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-cross-revoked-path-beside-covered-path-verifies"
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ]
     },
     {
@@ -8126,7 +8144,9 @@
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies"
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec16-self-issued-rollover-without-revocation-verifies",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ]
     },
     {
@@ -8196,6 +8216,22 @@
         "good-sec06-root-name",
         "bad-sec06-root-name",
         "good-sec06-root-selection"
+      ]
+    },
+    {
+      "file": "sec06-rollover.crl",
+      "sha256": "a91ec23e7f7edb7130c565964390b6b6b0d81daf1bd860363fc55b57ce58eeff",
+      "bytes": 179,
+      "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ]
     },
     {

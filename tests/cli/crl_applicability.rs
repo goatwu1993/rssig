@@ -791,3 +791,35 @@ fn sec10_a_listing_in_an_authenticated_crl_counts_even_with_a_malformed_aki() {
     let output = run_with("sec10-root-malformed-aki-revoked.crl");
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }
+
+/// SEC-16: a self-issued key rollover. The chain verifies without
+/// revocation, and each certificate has a correct CRL from its own issuer
+/// key, but webpki's confirmation picks a CRL by issuer name alone and cannot
+/// confirm two issuers of one name: the path is rejected (fails closed) in
+/// either `--crl` order. Observed behavior, recorded for the owner's decision.
+#[test]
+fn sec16_a_self_issued_rollover_path_is_rejected_at_confirmation() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--time",
+            T,
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("good-sec06-self-issued-rollover.exe", &args)
+    };
+    expect_success(&run(&["--no-revocation"]));
+    for crls in [
+        ["fixtures/sec06-root.crl", "fixtures/sec06-rollover.crl"],
+        ["fixtures/sec06-rollover.crl", "fixtures/sec06-root.crl"],
+    ] {
+        let output = run(&["--crl", crls[0], "--crl", crls[1]]);
+        assert_eq!(output.exit_code, 1);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "certificate_chain_invalid");
+        assert_eq!(error["details"]["reason"], "confirmation");
+    }
+}

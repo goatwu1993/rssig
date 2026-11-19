@@ -717,6 +717,20 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross_no_cert_sign, other.clone(), ca.clone()],
     );
+    // SEC-16: a self-issued key rollover. The root's name is carried by a
+    // second key, certified by the root; the signer is issued under that
+    // name by the second key. Two certificates on the path therefore have
+    // issuers of the same name and different keys, each with its own CRL.
+    let rollover_key = key(45);
+    let rollover = certificate("root", 140, &rollover_key, "root", &root_key, true);
+    let rolled_leaf = certificate("publisher", 141, &leaf_key, "root", &rollover_key, false);
+    write_pe(
+        dir,
+        "good-sec06-self-issued-rollover",
+        &rolled_leaf,
+        core::slice::from_ref(&rollover),
+    );
+    write_crl(dir, &rollover, &rollover_key, "rollover");
     // SEC-10: an expired cross certificate, first, so that webpki's highest
     // ranked error (expiry) comes from a path other than the one that only
     // lacks a root CRL.
@@ -877,7 +891,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 41 + point_forms().len());
+    assert_eq!(count, 42 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {

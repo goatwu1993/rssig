@@ -417,7 +417,9 @@
         "sec10-fetch-by-certificate-answer-requests-no-listed-point",
         "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
         "sec10-role-partition-crl-revocation-alone-is-unsupported",
-        "crl-fetch-invalid-nested-signature-requests-nothing"
+        "crl-fetch-invalid-nested-signature-requests-nothing",
+        "sec16-self-issued-rollover-without-revocation-verifies",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ]
     },
     {
@@ -971,7 +973,8 @@
         "bad-sec06-name-outside",
         "bad-sec06-ca-critical",
         "bad-sec06-leaf-critical",
-        "bad-sec06-wrong-key"
+        "bad-sec06-wrong-key",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ],
       "gap": ""
     },

@@ -32952,6 +32952,83 @@
       }
     },
     {
+      "id": "sec16-self-issued-rollover-without-revocation-verifies",
+      "input": "good-sec06-self-issued-rollover.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--no-revocation"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec16-self-issued-rollover-with-both-crls-is-rejected",
+      "input": "good-sec06-self-issued-rollover.exe",
+      "decision": {
+        "basis": "observed",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1878 and :1918 (crl_akid_check, matching_crl_issuer_and_akid): a CRL is matched to the issuer by name and authority key, so each certificate is checked against its own key's CRL.",
+          "webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, then verifies it under the certificate's issuer key, so two issuers of one name cannot both be confirmed."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--crl",
+        "fixtures/sec06-rollover.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "details": {
+                  "reason": "confirmation"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-fetch-by-certificate-answer-requests-no-listed-point",
       "input": "sec10-leaf-crl-dp.exe",
       "decision": {

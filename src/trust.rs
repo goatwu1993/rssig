@@ -794,6 +794,10 @@ fn evaluate_crls(
     let issuer_name = cert.tbs_certificate.issuer.to_der().ok()?;
     let serial = cert.tbs_certificate.serial_number.as_bytes();
     let lists_points = has_extension(cert, "2.5.29.31");
+    let points_unreadable = cert
+        .tbs_certificate
+        .get::<x509_cert::ext::pkix::CrlDistributionPoints>()
+        .is_err();
     let mut usable = None;
     // Each with its thisUpdate: the newest usable CRL decides, and a listing
     // counts only from a CRL at least as new.
@@ -982,6 +986,19 @@ fn evaluate_crls(
             Some(false) => {}
             // webpki can use it, but its scope cannot be read here: reported,
             // never silently dropped.
+            // The certificate is at fault, not the CRL: its own points
+            // cannot be read, so the CRL's scope cannot be matched.
+            None if points_unreadable => fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
+                        ErrorCode::InvalidCrl,
+                        "certificate cRLDistributionPoints cannot be read, so the CRL's \
+                         distribution point cannot be matched",
+                    )
+                    .detail("reason", "certificate_distribution_points"),
+                )
+            }),
             None => fail(3, &|| {
                 with_crl(
                     revocation_error(

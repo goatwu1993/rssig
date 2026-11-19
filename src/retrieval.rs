@@ -7,7 +7,7 @@ use crate::{
     verify::{VerifyOptions, budget::Budget, verify_inner_budget},
 };
 use ::der::Decode;
-pub use http::HttpCrlSource;
+pub use http::{HttpCrlSource, check_public_http_url};
 use std::collections::{BTreeMap, BTreeSet};
 use x509_cert::{
     Certificate,
@@ -735,18 +735,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 self.source_failure(sha256, failure);
             }
         }
-        if let Some(failure) = whole_request {
-            for point in &unanswered {
-                self.source_failure(sha256, failure.clone().with_url(point.clone()));
-            }
-            return Ok(self
-                .load_all(sha256, issuer, response.crls, max_bytes)?
-                .added);
-        }
         // The bodies are loaded first: what they turn out to be decides how
         // the points the source did not answer are recorded.
         let loaded = self.load_all(sha256, issuer, response.crls, max_bytes)?;
         let returned = loaded.accepted_bytes;
+        if let Some(failure) = whole_request {
+            // Beside an answer by certificate, such a failure is recorded as
+            // it is: the points were not used, so it is not about them.
+            if loaded.by_certificate && failure.kind != CrlSourceErrorKind::Abort {
+                self.source_failure(sha256, failure);
+            } else {
+                for point in &unanswered {
+                    self.source_failure(sha256, failure.clone().with_url(point.clone()));
+                }
+                return Ok(loaded.added);
+            }
+        }
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort, or
         // once the accepted bodies used the request's whole byte allowance,
@@ -830,6 +834,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // screened: one withheld from the report is still not an answer by
         // certificate.
         let without_url = crl.url.is_none();
+        // The URL as the source gave it keys the point's recorded outcome,
+        // even when it is not fit to be reported.
+        let raw_url = crl.url.clone();
         let url = crl.url.filter(|u| hygienic_url(u));
         // A redirect target the source reported but that is not recorded is
         // withheld, never replaced by the requested URL.
@@ -844,7 +851,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         );
         // A body over its caps is not counted against the bodies after it.
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
-            self.skip(sha256, url.as_deref(), e, None);
+            self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
         }
         *total += len;
@@ -869,7 +876,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 ErrorCode::InvalidCrl,
                 format!("decoding retrieved CRL: {e:#}"),
             );
-            self.skip(sha256, url.as_deref(), e, None);
+            self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
@@ -1974,6 +1981,72 @@ mod tests {
         assert_eq!(last.details["omitted"], 200 - MAX_REQUESTS);
         // The strict public discovery still fails at the first such name.
         assert!(crl_distribution_points(&cert).is_err());
+    }
+    #[test]
+    fn a_rejected_body_under_an_unhygienic_spelling_keeps_its_point() {
+        // The body for the point is not a CRL and its URL has a trailing
+        // space: the point's outcome is still kept for later certificates.
+        struct Spaced;
+        impl CrlSource for Spaced {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new();
+                for point in request.distribution_points {
+                    response = response.with_crl(
+                        SourcedCrl::new(b"not a CRL".to_vec()).with_url(format!("{point} ")),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("a", 1);
+        let mut other = cert.clone();
+        other.tbs_certificate.serial_number = x509_cert::serial_number::SerialNumber::from(78u32);
+        ask(&mut state, "a", &cert, &mut Spaced).unwrap();
+        ask(&mut state, "b", &other, &mut Spaced).unwrap();
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == "b" && f.code == ErrorCode::InvalidCrl),
+            "{:?}",
+            state.report.failures
+        );
+    }
+    #[test]
+    fn a_failure_beside_an_answer_by_certificate_is_not_about_the_points() {
+        // The issuer's full CRL, naming no URL, plus a failure naming none:
+        // the points were not used, so they are not failures, they stay
+        // open, and verification runs before anything else is asked.
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                    ))
+                    .with_failure(CrlSourceError::new(
+                        CrlSourceErrorKind::Failed,
+                        "mirror down",
+                    )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut Source).unwrap();
+        assert!(state.reverify);
+        assert_eq!(
+            state.report.failures.len(),
+            1,
+            "{:?}",
+            state.report.failures
+        );
+        assert!(state.report.failures[0].url.is_none());
+        assert!(state.asked.is_empty());
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

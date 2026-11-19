@@ -159,8 +159,10 @@ same certificate supplies it
 stay loaded beside the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
-verifies once when the supplied CRLs settle it, and once more per retrieval
-round. All passes share
+verifies once when the supplied CRLs settle it. A run that reaches a request
+also verifies once without revocation before the first request (the
+whole-input integrity and trust check), and once more per retrieval round: 2
+plus the number of rounds in all. All passes share
 SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
@@ -197,7 +199,10 @@ The parser and `verify-core` remain usable without network dependencies or std.
 - The engine applies no transport rule: every listed URI, of any scheme, is
   passed to the source, which alone decides where it may look and how (HTTP,
   HTTPS, LDAP, a proxy, a cache, a directory of CRLs by issuer), and refuses
-  the rest as `denied`. A custom source therefore owns its own destination
+  the rest as `denied`. A source that fetches by URL must screen them, since they
+  come from the certificates of the file being verified and can name
+  `file:` URLs or internal addresses: `retrieval::check_public_http_url`
+  applies the built-in source's URL policy. A custom source therefore owns its own destination
   safety. Implementations must bound their own I/O, allocation and latency;
   the engine independently checks every size.
 - `fetch_each(&request, |url, max_bytes| ...)` builds a response for a source
@@ -247,7 +252,10 @@ download provenance but returns no successful signature report.
 | Unsupported framing | Chunked transfer and content encodings fail closed |
 | Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, every request fails (`crl_fetch_failed`, recorded as no evidence); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
-The CLI shares one HTTP source across its batch. Limits persist across files.
+The CLI shares one HTTP source across its batch. Limits persist across files:
+the 16 requests, 32 MiB and 30 seconds bound the whole invocation, so once
+earlier files have spent them, each later file that needs a CRL is reported
+`crl_fetch_aborted` without a request, although it may verify when run alone.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.

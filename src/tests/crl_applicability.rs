@@ -333,8 +333,9 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
-        // An expired root CRL that lists the test signer (serial 2): a revocation
-        // still counts beside a fresh CRL that does not list it.
+        // An expired root CRL that lists the test signer (serial 2): a listing
+        // counts only from a current CRL, so beside a fresh CRL that does not
+        // list the signer it is ignored, and alone it is only expired.
         (
             "sec10-root-expired-revoked.crl",
             crl_full(

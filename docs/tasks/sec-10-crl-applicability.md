@@ -433,6 +433,18 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   revocation, so an invalid nested signature, later signer or bundle member
   is the result and no source is asked
   (`crl-fetch-invalid-nested-signature-requests-nothing`).
+- **A self-issued key rollover path is rejected at confirmation.** Observed,
+  acceptance (fails closed); **the owner decides whether to change it**
+  (SEC-16). `good-sec06-self-issued-rollover.exe` verifies without
+  revocation (`sec16-self-issued-rollover-without-revocation-verifies`,
+  Decided), and rssig's own evaluation accepts it with both CRLs, each
+  authenticated under its own key, but webpki's confirmation fails
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
+  `certificate_chain_invalid`, reason `confirmation`), in either `--crl`
+  order. webpki 0.103.16 picks a CRL by issuer name and IDP only and then
+  verifies it under the certificate's issuer key, so two issuers of one name
+  cannot both be confirmed. OpenSSL matches a CRL by name and authority key
+  (`crl_akid_check`, `crypto/x509/x509_vfy.c:1878`, 1918) and would accept.
 - **Scope of a listing, refined after review.** Decided, acceptance, by the
   same OpenSSL (`crl_crldp_check`) and Bouncy Castle (processCRLB2) rules: a
   named partition's listing counts only on a positive match with a fullName
@@ -451,4 +463,6 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   certificate triggers verification before further requests; a URL that
   does not parse is withheld; diagnostics for unusable point names are
   bounded per certificate; the request whose DNS lookup times out is the
-  abort; a withheld URL is not an answer by certificate.
+  abort; a withheld URL is not an answer by certificate. A certificate whose
+  own points cannot be read is reported as `certificate_distribution_points`,
+  not as a fault of the CRL.

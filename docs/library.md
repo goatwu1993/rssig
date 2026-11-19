@@ -659,12 +659,25 @@ A per-URL source migrates by wrapping its old body:
 ```rust
 fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
     Ok(fetch_each(request, |url, max_bytes| {
+        // The URIs come from the certificates of the file being verified:
+        // screen them before fetching.
+        check_public_http_url(url)?;
         let bytes = my_download(url, max_bytes)
             .map_err(|e| CrlSourceError::new(CrlSourceErrorKind::Failed, e.to_string()))?;
         Ok(SourcedCrl::new(bytes))
     }))
 }
 ```
+
+**The source now owns the transport policy.** Before, the engine refused
+non-HTTP and private URLs before calling `fetch`. Now a source is passed every
+listed URI that passes input hygiene (no control characters, whitespace or
+credentials, and it parses as a URL), including `file:` URLs and addresses
+such as `http://169.254.169.254/`. A source that fetches by URL must screen
+them: `rssig::retrieval::check_public_http_url` applies the built-in source's
+URL policy and returns a `Denied` error to pass on. It checks the URL only;
+your HTTP client must also refuse nonpublic DNS answers and re-check redirect
+targets, as `HttpCrlSource` does.
 
 Results: missing evidence is `revocation_unknown` (with each problem in
 `crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;
