@@ -1050,7 +1050,7 @@ fn evaluate_crls(
             // Only when it is otherwise one webpki's rules admit: a scope
             // read from a CRL webpki would reject is not trusted enough to
             // set it aside silently (see below).
-            if authority == Some(false) && crl.webpki_admits {
+            if authority == Some(false) && crl.webpki_admits && crl.authority_key.is_ok() {
                 continue;
             }
             fail(UNUSABLE, &|| {
@@ -1198,11 +1198,9 @@ fn evaluate_crls(
             _ => Outcome::Missing(failure),
         },
     };
-    // With a good status, every listing was set aside; so was a listing in
-    // a CRL without nextUpdate that a newer CRL cleared.
+    // With a good status, every listing was set aside.
     let ignored_listings = match outcome {
         Outcome::Good(_) => listings.len(),
-        Outcome::Missing(_) if revoking_without_next_update.is_some() => listings.len(),
         _ => 0,
     };
     Some(CertificateEvidence {

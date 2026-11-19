@@ -537,6 +537,14 @@ timestamps, and local CRL validation already exist.
     A stray such CRL with the issuer's name makes the path one no source
     can complete. Setting it aside would let another CRL decide, which can
     turn a rejection into acceptance: owner's decision.
+  - An entry with reasonCode removeFromCRL releases the certificate in a
+    CRL without nextUpdate standing alone (as OpenSSL's `cert_crl`), but
+    beside a usable CRL any authenticated listing still revokes (PR #60
+    rule), so the code depends on whether an older usable CRL is supplied.
+    Releasing it there too would turn a revocation into acceptance: owner's
+    decision.
+  - A listing that a newer CRL cleared is not logged: only an accepted
+    path's ignored listings reach the logger.
   - A CRL without nextUpdate is decoded, re-encoded and parsed by webpki a
     second time on every verification pass (each retrieval round included)
     to judge it apart from nextUpdate; that work is not charged to the
