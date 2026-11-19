@@ -252,10 +252,14 @@ download provenance but returns no successful signature report.
 | Unsupported framing | Chunked transfer and content encodings fail closed |
 | Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, every request fails (`crl_fetch_failed`, recorded as no evidence); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
-The CLI shares one HTTP source across its batch. Limits persist across files:
-the 16 requests, 32 MiB and 30 seconds bound the whole invocation, so once
-earlier files have spent them, each later file that needs a CRL is reported
-`crl_fetch_aborted` without a request, although it may verify when run alone.
+The CLI's HTTP limits bound one file, not the batch: the 16 requests, 32 MiB
+and 30 seconds start again for each file, so what earlier files fetched never
+costs a later file its CRL. OpenSSL (`apps/lib/apps.c` `crls_http_cb`: size,
+timeout and redirect count per fetch) and Bouncy Castle (`CrlCache`: timeouts
+per connection, no request or byte counters) likewise charge nothing from one
+validation to the next. One state does persist: after a DNS timeout the source
+stays closed for the rest of the invocation (see below), and each later file
+that needs a CRL is reported `crl_fetch_aborted` without a request.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.

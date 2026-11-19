@@ -84,6 +84,17 @@ impl HttpCrlSource {
     pub fn new() -> Self {
         Self::default()
     }
+    /// Start a new verification's allowances: requests, bytes and lifetime
+    /// are bounded per verification, as in OpenSSL and Bouncy Castle, where
+    /// nothing one validation fetched is charged to the next. A DNS timeout
+    /// still closes the source for good, so that no more than one unfinished
+    /// resolver worker can exist.
+    pub(crate) fn renew(&mut self) {
+        *self = Self {
+            poisoned: self.poisoned,
+            ..Self::default()
+        };
+    }
     fn remaining(&self) -> Result<Duration, VerificationError> {
         // Both mean this source can do no more work, and say so.
         if self.poisoned {
@@ -545,6 +556,22 @@ mod tests {
         );
         let budget = limit("crl_http_requests", MAX_REQUESTS, MAX_REQUESTS, 1);
         assert_eq!(source_error_kind(&budget, false), CrlSourceErrorKind::Abort);
+    }
+    #[test]
+    fn a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout() {
+        let mut source = HttpCrlSource {
+            requests: MAX_REQUESTS,
+            bytes: MAX_TOTAL_BYTES,
+            started: Some(Instant::now() - DEADLINE),
+            poisoned: false,
+        };
+        source.renew();
+        assert_eq!((source.requests, source.bytes), (0, 0));
+        assert!(source.started.is_none());
+        // The unfinished resolver worker still exists: no second one.
+        source.poisoned = true;
+        source.renew();
+        assert!(source.poisoned);
     }
     #[test]
     fn deadlines_request_budgets_and_dns_poison_are_terminal_without_network() {

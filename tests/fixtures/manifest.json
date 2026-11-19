@@ -8235,6 +8235,56 @@
       ]
     },
     {
+      "file": "sec06-root-akid.crl",
+      "sha256": "bccd76ffb872ce98e91e1a094a5a14cd776602c80cef95ca7834dc2526d94fce",
+      "bytes": 214,
+      "description": "SEC-16: empty, correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed"
+      ]
+    },
+    {
+      "file": "sec06-rollover-akid.crl",
+      "sha256": "c9e0532d1cf2849bd4fd082b711b5bca7e7ed542b38c2efaf004431abddd9ecc",
+      "bytes": 212,
+      "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key and carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed"
+      ]
+    },
+    {
+      "file": "sec06-root-akid-revoked-rollover.crl",
+      "sha256": "0f4ccc1555dc0df663d2530de004b3780ad71a5e46a4e65e3b505e665ff66876",
+      "bytes": 240,
+      "description": "SEC-16: correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it and revoking the rollover certificate (serial 140), valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected"
+      ]
+    },
+    {
       "file": "sec06-upper.der",
       "sha256": "107f152b465a61b437f68773ef102807d4cce7f85a87c0f5e8a6c73546a2da65",
       "bytes": 391,

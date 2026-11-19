@@ -793,12 +793,13 @@ fn sec10_a_listing_in_an_authenticated_crl_counts_even_with_a_malformed_aki() {
 }
 
 /// SEC-16: a self-issued key rollover. The chain verifies without
-/// revocation, and each certificate has a correct CRL from its own issuer
-/// key, but webpki's confirmation picks a CRL by issuer name alone and cannot
-/// confirm two issuers of one name: the path is rejected (fails closed) in
-/// either `--crl` order. Observed behavior, recorded for the owner's decision.
+/// revocation. With CRLs that carry no authorityKeyIdentifier nothing tells
+/// the two same-name issuers' CRLs apart: OpenSSL and BoringSSL reject (CRL
+/// signature failure), Bouncy Castle accepts, and rssig rejects (fails
+/// closed) in either `--crl` order. With CRLs that each name their issuer's
+/// key all three accept, and so does rssig.
 #[test]
-fn sec16_a_self_issued_rollover_path_is_rejected_at_confirmation() {
+fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
     let run = |extra: &[&str]| {
         let mut args = vec![
             "verify",
@@ -822,4 +823,29 @@ fn sec16_a_self_issued_rollover_path_is_rejected_at_confirmation() {
         assert_eq!(error["code"], "certificate_chain_invalid");
         assert_eq!(error["details"]["reason"], "confirmation");
     }
+    for crls in [
+        [
+            "fixtures/sec06-root-akid.crl",
+            "fixtures/sec06-rollover-akid.crl",
+        ],
+        [
+            "fixtures/sec06-rollover-akid.crl",
+            "fixtures/sec06-root-akid.crl",
+        ],
+    ] {
+        let output = run(&["--crl", crls[0], "--crl", crls[1]]);
+        expect_success(&output);
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert_eq!(signature["revocation_checked"], true);
+        assert_eq!(signature["chain_trusted"], true);
+    }
+    // The rollover certificate itself is still checked: revoked by the root
+    // key's CRL, it rejects the path.
+    let output = run(&[
+        "--crl",
+        "fixtures/sec06-root-akid-revoked-rollover.crl",
+        "--crl",
+        "fixtures/sec06-rollover-akid.crl",
+    ]);
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }

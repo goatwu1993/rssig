@@ -419,7 +419,10 @@
         "sec10-role-partition-crl-revocation-alone-is-unsupported",
         "crl-fetch-invalid-nested-signature-requests-nothing",
         "sec16-self-issued-rollover-without-revocation-verifies",
-        "sec16-self-issued-rollover-with-both-crls-is-rejected"
+        "sec16-self-issued-rollover-with-both-crls-is-rejected",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed",
+        "sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected"
       ]
     },
     {

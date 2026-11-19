@@ -282,23 +282,58 @@ fn write_pe(dir: &std::path::Path, label: &str, leaf: &Certificate, candidates: 
     std::fs::write(dir.join(format!("{label}.exe")), attach(base, &cms, true)).unwrap();
 }
 fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKey, label: &str) {
+    write_crl_with(dir, issuer, issuer_key, label, false, None);
+}
+/// With `key_identified`, the CRL carries an authorityKeyIdentifier naming
+/// the issuer's subjectKeyIdentifier.
+fn write_crl_with(
+    dir: &std::path::Path,
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    label: &str,
+    key_identified: bool,
+    revoked: Option<u32>,
+) {
     use x509_cert::{
         Version,
         crl::{CertificateList, TbsCertList},
     };
     let algorithm = issuer.signature_algorithm.clone();
+    let mut crl_extensions = vec![Extension {
+        extn_id: "2.5.29.20".parse().unwrap(),
+        critical: false,
+        extn_value: OctetString::new([2, 1, 1]).unwrap(),
+    }];
+    if key_identified {
+        let ski = issuer
+            .tbs_certificate
+            .extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id.to_string() == "2.5.29.14")
+            .expect("issuer subjectKeyIdentifier");
+        // SKI is OCTET STRING { id }; AKI is SEQUENCE { [0] id }.
+        let id = &ski.extn_value.as_bytes()[2..];
+        crl_extensions.push(Extension {
+            extn_id: "2.5.29.35".parse().unwrap(),
+            critical: false,
+            extn_value: OctetString::new(tlv(0x30, &tlv(0x80, id))).unwrap(),
+        });
+    }
     let tbs = TbsCertList {
         version: Version::V2,
         signature: algorithm.clone(),
         issuer: issuer.tbs_certificate.subject.clone(),
         this_update: tm(NOW - 100),
         next_update: Some(tm(NOW + 1000)),
-        revoked_certificates: None,
-        crl_extensions: Some(vec![Extension {
-            extn_id: "2.5.29.20".parse().unwrap(),
-            critical: false,
-            extn_value: OctetString::new([2, 1, 1]).unwrap(),
-        }]),
+        revoked_certificates: revoked.map(|serial| {
+            vec![x509_cert::crl::RevokedCert {
+                serial_number: SerialNumber::from(serial),
+                revocation_date: tm(NOW - 50),
+                crl_entry_extensions: None,
+            }]
+        }),
+        crl_extensions: Some(crl_extensions),
     };
     let sig: Signature = issuer_key.sign(&tbs.to_der().unwrap());
     let crl = CertificateList {
@@ -731,6 +766,20 @@ pub(super) fn write(dir: &std::path::Path) {
         core::slice::from_ref(&rollover),
     );
     write_crl(dir, &rollover, &rollover_key, "rollover");
+    // The same two CRLs, each naming its issuer's key: the case in which
+    // OpenSSL, BoringSSL and Bouncy Castle all tell the two issuers apart.
+    write_crl_with(dir, &root, &root_key, "root-akid", true, None);
+    write_crl_with(dir, &rollover, &rollover_key, "rollover-akid", true, None);
+    // The root key's CRL revoking the rollover certificate, which webpki's
+    // confirmation of such a path does not look at.
+    write_crl_with(
+        dir,
+        &root,
+        &root_key,
+        "root-akid-revoked-rollover",
+        true,
+        Some(140),
+    );
     // SEC-10: an expired cross certificate, first, so that webpki's highest
     // ranked error (expiry) comes from a path other than the one that only
     // lacks a root CRL.

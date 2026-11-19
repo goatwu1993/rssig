@@ -276,19 +276,17 @@ timestamps, and local CRL validation already exist.
   an undecodable issuingDistributionPoint as naming a point. No fixture has an
   off-path candidate.
 - [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Since PR #60 a CRL is
-  authenticated under the issuer key the path uses. Open from the PR #60
-  review: webpki's confirmation pass receives the chosen CRLs as one list, so
-  on a path where two certificates are issued under the same name by
-  different keys (a self-issued key-rollover link) it can try one
-  certificate's CRL for the other and reject a path the per-certificate check
-  accepted (fails closed, reason `confirmation`). Confirmed with
-  `good-sec06-self-issued-rollover.exe` and `sec06-rollover.crl`
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`, Observed): a
-  valid rollover chain with both correct CRLs is rejected in either `--crl`
-  order, while OpenSSL would accept it. webpki cannot confirm two issuers of
-  one name, so the options are to skip its confirmation for such
-  certificates (relying on rssig's per-key evaluation) or keep rejecting;
-  the owner decides.
+  authenticated under the issuer key the path uses. Settled in PR #60 by
+  cross-checking OpenSSL, BoringSSL and Bouncy Castle (see "Decisions made"
+  in [SEC-10](docs/tasks/sec-10-crl-applicability.md)): on a self-issued
+  key-rollover path (two issuers of one name with different keys) CRLs that
+  each name their issuer's key verify, as in all three libraries
+  (`sec16-self-issued-rollover-with-key-identified-crls-verifies`); webpki
+  cannot confirm two issuers of one name, so it confirms the signer only on
+  such a path. CRLs without key identifiers are rejected at confirmation, as
+  OpenSSL and BoringSSL reject them and unlike Bouncy Castle
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Still open:
+  accepting the unidentified case would need the owner's approval.
   Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A

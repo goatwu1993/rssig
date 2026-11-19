@@ -433,18 +433,68 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   revocation, so an invalid nested signature, later signer or bundle member
   is the result and no source is asked
   (`crl-fetch-invalid-nested-signature-requests-nothing`).
-- **A self-issued key rollover path is rejected at confirmation.** Observed,
-  acceptance (fails closed); **the owner decides whether to change it**
-  (SEC-16). `good-sec06-self-issued-rollover.exe` verifies without
-  revocation (`sec16-self-issued-rollover-without-revocation-verifies`,
-  Decided), and rssig's own evaluation accepts it with both CRLs, each
-  authenticated under its own key, but webpki's confirmation fails
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
-  `certificate_chain_invalid`, reason `confirmation`), in either `--crl`
-  order. webpki 0.103.16 picks a CRL by issuer name and IDP only and then
-  verifies it under the certificate's issuer key, so two issuers of one name
-  cannot both be confirmed. OpenSSL matches a CRL by name and authority key
-  (`crl_akid_check`, `crypto/x509/x509_vfy.c:1878`, 1918) and would accept.
+- **A self-issued key rollover path needs CRLs that name their key.**
+  Decided, acceptance, by cross-checking OpenSSL, BoringSSL and Bouncy Castle
+  (SEC-16). `good-sec06-self-issued-rollover.exe` has two certificates whose
+  issuers share one name and have different keys. It verifies without
+  revocation (`sec16-self-issued-rollover-without-revocation-verifies`).
+  - *CRLs with an authorityKeyIdentifier naming their issuer's key*
+    (`sec06-root-akid.crl`, `sec06-rollover-akid.crl`): all three libraries
+    give each certificate its own key's CRL and accept, in either order.
+    OpenSSL `crypto/x509/x509_vfy.c:1869-1889` (`get_crl_score`,
+    `crl_akid_check`), BoringSSL `crypto/x509/x509_vfy.cc:490-515`, Bouncy
+    Castle `RFC3280CertPathUtilities.java:379-390` (`processCRLF`). Run as a
+    maintenance step with OpenSSL 3.0.13 (`openssl verify -crl_check_all
+    -attime 1800000000`): OK in both orders. rssig accepts:
+    `sec16-self-issued-rollover-with-key-identified-crls-verifies` and
+    `sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed`.
+    webpki 0.103.16 picks a CRL by issuer name and IDP only and cannot
+    confirm two issuers of one name, so for such a path (two chosen CRLs of
+    one name, every one naming the key it was authenticated under, with
+    different keys) webpki confirms the signer with the signer's CRL only,
+    and rssig's per-key evaluation decides for the certificates above it.
+    That evaluation still rejects a revoked rollover certificate:
+    `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected`
+    (`sec06-root-akid-revoked-rollover.crl`, RFC 5280 section 6.3.3).
+  - *CRLs without an authorityKeyIdentifier* (`sec06-root.crl`,
+    `sec06-rollover.crl`): the libraries differ. OpenSSL keeps one best CRL
+    per name and has no fallback after its signature fails
+    (`x509_vfy.c:1614-1627`, `:2318-2320`; `v3_purp.c:1353-1354`); the same
+    OpenSSL run reports "CRL signature failure" at depth 0 or 1 depending on
+    order. BoringSSL's `x509_vfy.cc:665-693`, `:755-760` is the same. Bouncy
+    Castle skips a CRL that does not verify and tries the next
+    (`RFC3280CertPathUtilities.java:1716-1721`) and accepts. By the owner's
+    rule the third reference decides: rssig rejects, failing closed, at
+    webpki's confirmation
+    (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
+    `certificate_chain_invalid`, reason `confirmation`), in either order.
+    An earlier note here said OpenSSL would accept this case; the run shows
+    it does not.
+- **Who screens a distribution-point address.** Decided, acceptance for
+  library users: the verification core passes every listed URI to the source
+  after hygiene screening only, and the source decides what to fetch. None of
+  the three libraries screens addresses in its verification core either:
+  OpenSSL's core only calls `lookup_crls` (`x509_vfy.c:2228`) and its sample
+  callback restricts the scheme to `http://` and nothing else
+  (`apps/lib/apps.c:2833`, `:2905-2907`); Bouncy Castle fetches only when
+  enabled and leaves the scheme unrestricted unless an allow-list is set
+  (`CrlCache.java:136-141`, `:185-188`); BoringSSL never fetches
+  (`x509_vfy.cc:697-704`). None refuses private or link-local addresses.
+  rssig's built-in `HttpCrlSource` is stricter than all three (public
+  addresses, `http` only, no redirects, size and time bounds), and
+  `retrieval::check_public_http_url` gives a custom source the same check.
+  Pinned by `sec10-fetch-source-is-asked-for-any-scheme` and
+  `sec10-fetch-builtin-source-denies-https`.
+- **Fetch limits bound one file.** Decided, diagnostics and availability: in
+  OpenSSL the size, timeout and redirect limits are per fetch and nothing is
+  cached or accumulated (`apps/lib/apps.c:2866-2867`; `apps/verify.c:220-232`
+  loops files with one callback); Bouncy Castle has per-connection timeouts,
+  no request or byte counters, and a process-wide cache
+  (`CrlCache.java:41-46`). Neither lets what one validation fetched exhaust
+  the next, so the CLI renews its built-in source's requests, bytes and
+  lifetime for each file. A DNS timeout still closes the source for the
+  invocation, to keep at most one unfinished resolver worker. Unit test
+  `a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout`.
 - **Scope of a listing, refined after review.** Decided, acceptance, by the
   same OpenSSL (`crl_crldp_check`) and Bouncy Castle (processCRLB2) rules: a
   named partition's listing counts only on a positive match with a fullName
