@@ -37,8 +37,8 @@ rule is restated for retrieval.
 
 Two kinds of error, and nothing in between:
 
-- **The engine's own limits end the run**: requests to the source (16 per
-  verification, one per certificate), retained CRLs, combined bytes, URLs per
+- **The engine's own limits end the run**: requests to the source (64 per
+  verification, `MAX_SOURCE_REQUESTS`, one per certificate), retained CRLs, combined bytes, URLs per
   certificate and URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
@@ -161,7 +161,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 16 requests to the source per verification (one per certificate), and and 16 HTTP hops per HTTP source (redirects included) |
+| Requests | At most 64 requests to the source per verification (one per certificate), and and 16 HTTP hops per HTTP source (redirects included) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |

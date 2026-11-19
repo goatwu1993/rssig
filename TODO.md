@@ -267,7 +267,14 @@ timestamps, and local CRL validation already exist.
   on the selected path. It tests only for the extension's presence and treats
   an undecodable issuingDistributionPoint as naming a point. No fixture has an
   off-path candidate.
-- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Deliberately skipped in
+- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Since PR #60 a CRL is
+  authenticated under the issuer key the path uses. Open from the PR #60
+  review: webpki's confirmation pass receives the chosen CRLs as one list, so
+  on a path where two certificates are issued under the same name by
+  different keys (a self-issued key-rollover link) it can try one
+  certificate's CRL for the other and reject a path the per-certificate check
+  accepted (fails closed, reason `confirmation`). No fixture has that shape.
+  Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A
   candidate whose SKI fails to parse is treated as having none. Issuer names

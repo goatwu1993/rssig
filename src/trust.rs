@@ -663,8 +663,8 @@ enum Outcome {
 /// Choose the best CRL for `cert` among those of its issuer on this path, as
 /// OpenSSL's CRL scoring and Bouncy Castle's validity filtering do: a CRL
 /// that is forged for this key, from an issuer without cRLSign, unsupported,
-/// or not current is set aside when another is usable. Only when none is
-/// usable does the most specific of their failures decide.
+/// out of scope, or not current is set aside when another is usable. Only
+/// when none is usable does the most specific of their failures decide.
 fn evaluate_crls(
     cert: &Certificate,
     end_entity: bool,
@@ -675,10 +675,6 @@ fn evaluate_crls(
 ) -> CertificateEvidence {
     let der = cert.to_der().unwrap_or_default();
     let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
-    let context = CrlReportContext {
-        sha256: sha256.clone(),
-    };
-    let report = || &context;
     let Ok(issuer_name) = cert.tbs_certificate.issuer.to_der() else {
         return CertificateEvidence {
             sha256,
@@ -687,30 +683,33 @@ fn evaluate_crls(
         };
     };
     let serial = cert.tbs_certificate.serial_number.as_bytes();
+    let lists_points = has_extension(cert, "2.5.29.31");
     let mut usable = None;
     let mut authenticated_listing = None;
     let mut failure: Option<(u8, VerificationError)> = None;
-    let mut fail = |rank: u8, error: VerificationError| {
+    // A failure's error is built only when it would be kept.
+    let mut fail = |rank: u8, error: &dyn Fn() -> VerificationError| {
         if failure.as_ref().is_none_or(|(best, _)| rank > *best) {
-            failure = Some((rank, error));
+            failure = Some((rank, error()));
         }
     };
     for (index, crl) in crls.iter().enumerate() {
         if crl.issuer != issuer_name {
             continue;
         }
-        let crl_report = || CrlReport::parse(&crl.bytes).ok();
+        let with_crl =
+            |error: VerificationError| error.detail("crl", CrlReport::parse(&crl.bytes).ok());
         let Ok(authority_key) = &crl.authority_key else {
-            fail(
-                3,
-                report()
-                    .error(
+            fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
                         ErrorCode::InvalidCrl,
                         "CRL authorityKeyIdentifier is malformed",
                     )
-                    .detail("reason", "malformed_authority_key_identifier")
-                    .detail("crl", crl_report()),
-            );
+                    .detail("reason", "malformed_authority_key_identifier"),
+                )
+            });
             continue;
         };
         // Authenticate under this path's issuer key. A CRL that names
@@ -725,13 +724,27 @@ fn evaluate_crls(
             {
                 continue;
             }
-            _ => {
-                fail(
-                    5,
-                    report()
-                        .webpki(webpki::Error::InvalidCrlSignatureForPublicKey)
-                        .detail("crl", crl_report()),
-                );
+            Some(false) => {
+                fail(5, &|| {
+                    with_crl(webpki_revocation_error(
+                        &sha256,
+                        webpki::Error::InvalidCrlSignatureForPublicKey,
+                    ))
+                });
+                continue;
+            }
+            // An algorithm the engine cannot verify: unsupported, not forged.
+            None => {
+                fail(3, &|| {
+                    with_crl(
+                        revocation_error(
+                            &sha256,
+                            ErrorCode::InvalidCrl,
+                            "CRL signature algorithm is unsupported",
+                        )
+                        .detail("reason", "unsupported_signature_algorithm"),
+                    )
+                });
                 continue;
             }
         }
@@ -740,90 +753,94 @@ fn evaluate_crls(
             authenticated_listing.get_or_insert(index);
         }
         if !issuer.crl_sign {
-            fail(
-                4,
-                report()
-                    .webpki(webpki::Error::IssuerNotCrlSigner)
-                    .detail("crl", crl_report()),
-            );
+            fail(4, &|| {
+                with_crl(webpki_revocation_error(
+                    &sha256,
+                    webpki::Error::IssuerNotCrlSigner,
+                ))
+            });
             continue;
         }
         // webpki would treat a CRL scoped to a named distribution point as
         // authoritative for a certificate that lists none, so such a
         // partition could clear a certificate it does not cover.
-        if names_distribution_point(&crl.tbs) && !has_extension(cert, "2.5.29.31") {
-            fail(
-                3,
-                report()
-                    .error(
+        if !lists_points && names_distribution_point(&crl.tbs) {
+            fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
                         ErrorCode::InvalidCrl,
                         "CRL is scoped to a distribution point that the certificate does not list",
                     )
-                    .detail("reason", "distribution_point_scope")
-                    .detail("crl", crl_report()),
-            );
+                    .detail("reason", "distribution_point_scope"),
+                )
+            });
+            continue;
+        }
+        // A CRL that webpki can use and whose scope is known not to cover
+        // this certificate (another point or role) is set aside, whatever its
+        // age. One that webpki cannot use is reported below: its scope is not
+        // trusted enough to set it aside silently.
+        let authority = authority_for(&crl.tbs, cert, end_entity);
+        if crl.webpki.is_ok() && authority == Some(false) {
             continue;
         }
         let Some(next_update) = crl.tbs.next_update else {
-            fail(
-                3,
-                report()
-                    .error(ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
-                    .detail("reason", "missing_next_update")
-                    .detail("crl", crl_report()),
-            );
+            fail(3, &|| {
+                with_crl(
+                    revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
+                        .detail("reason", "missing_next_update"),
+                )
+            });
             continue;
         };
         // Feature support is reported before freshness, which a refreshed
         // CRL could not fix.
         if let Err(e) = &crl.webpki {
-            fail(
-                3,
-                report()
-                    .error(
+            fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
                         ErrorCode::InvalidCrl,
                         format!("unsupported or malformed CRL: {e:?}"),
                     )
-                    .detail("reason", crl_rejection_reason(e))
-                    .detail("crl", crl_report()),
-            );
-            continue;
-        }
-        // Freshness only matters for a CRL that could decide this
-        // certificate: one for another distribution point or role is set
-        // aside, whatever its age.
-        if !authoritative_for(&crl.tbs, cert, end_entity) {
+                    .detail("reason", crl_rejection_reason(e)),
+                )
+            });
             continue;
         }
         if crl.tbs.this_update.to_unix_duration().as_secs() > now {
-            fail(
-                2,
-                report()
-                    .error(ErrorCode::CrlNotYetValid, "CRL thisUpdate is in the future")
-                    .detail("crl", crl_report())
-                    .detail("validation_time", now),
-            );
+            fail(2, &|| {
+                with_crl(revocation_error(
+                    &sha256,
+                    ErrorCode::CrlNotYetValid,
+                    "CRL thisUpdate is in the future",
+                ))
+                .detail("validation_time", now)
+            });
             continue;
         }
         if next_update.to_unix_duration().as_secs() <= now {
-            fail(
-                1,
-                report()
-                    .error(ErrorCode::CrlExpired, "CRL has expired")
-                    .detail("crl", crl_report())
-                    .detail("validation_time", now),
-            );
+            fail(1, &|| {
+                with_crl(revocation_error(
+                    &sha256,
+                    ErrorCode::CrlExpired,
+                    "CRL has expired",
+                ))
+                .detail("validation_time", now)
+            });
             continue;
         }
-        usable.get_or_insert(index);
+        if authority == Some(true) {
+            usable.get_or_insert(index);
+        }
     }
     let outcome = match (usable, authenticated_listing) {
         // A current authoritative CRL makes the status known; a listing in
         // any CRL authenticated by this issuer key then revokes, even a stale
         // or partition CRL: revocations do not expire.
         (Some(_), Some(listing)) => Outcome::Revoked(
-            report()
-                .webpki(webpki::Error::CertRevoked)
+            webpki_revocation_error(&sha256, webpki::Error::CertRevoked)
                 .detail("crl", CrlReport::parse(&crls[listing].bytes).ok()),
         ),
         (Some(index), None) => Outcome::Good(index),
@@ -851,17 +868,6 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     }) {
         return Some(error);
     }
-    let mut best: Option<&(u8, VerificationError)> = None;
-    for outcome in outcomes {
-        if let Outcome::Missing(Some(failure)) = &outcome.outcome
-            && best.is_none_or(|b| failure.0 > b.0)
-        {
-            best = Some(failure);
-        }
-    }
-    if let Some((_, error)) = best {
-        return Some(error.clone());
-    }
     // Each certificate in full, so that a CRL source can be asked about it
     // whichever candidate path it was on.
     let mut seen: Vec<&str> = Vec::new();
@@ -879,6 +885,22 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             }
         }
     }
+    // A certificate with no CRL at all is reported first, so that it can be
+    // retrieved; a CRL that exists but cannot be used decides only when no
+    // certificate simply lacks one.
+    if missing.is_empty() {
+        let mut best: Option<&(u8, VerificationError)> = None;
+        for outcome in outcomes {
+            if let Outcome::Missing(Some(failure)) = &outcome.outcome
+                && best.is_none_or(|b| failure.0 > b.0)
+            {
+                best = Some(failure);
+            }
+        }
+        if let Some((_, error)) = best {
+            return Some(error.clone());
+        }
+    }
     Some(
         VerificationError::new(
             ErrorCode::RevocationUnknown,
@@ -889,31 +911,32 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     )
 }
 
-/// Builds revocation errors that name the affected certificate.
-struct CrlReportContext {
-    sha256: String,
+/// A revocation error naming the affected certificate.
+fn revocation_error(
+    certificate: &str,
+    code: ErrorCode,
+    message: impl Into<String>,
+) -> VerificationError {
+    VerificationError::new(code, Stage::Revocation, message)
+        .detail("affected_certificate", certificate)
 }
 
-impl CrlReportContext {
-    fn error(&self, code: ErrorCode, message: impl Into<String>) -> VerificationError {
-        VerificationError::new(code, Stage::Revocation, message)
-            .detail("affected_certificate", &self.sha256)
-    }
-    /// The same error webpki's own check reports, naming the certificate.
-    fn webpki(&self, error: webpki::Error) -> VerificationError {
-        webpki_error(error).detail("affected_certificate", &self.sha256)
-    }
+/// The error webpki's own check reports, naming the affected certificate.
+fn webpki_revocation_error(certificate: &str, error: webpki::Error) -> VerificationError {
+    webpki_error(error).detail("affected_certificate", certificate)
 }
 
-/// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint, or
-/// one whose role flags admit the certificate and that names a fullName URI the
-/// certificate lists (or the certificate lists none). This is webpki 0.103's
-/// rule; webpki re-checks it when confirming the path.
-fn authoritative_for(
+/// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint,
+/// or one whose role flags admit the certificate and that names a fullName
+/// URI the certificate lists (or the certificate lists none). This is webpki
+/// 0.103's rule; webpki re-checks it when confirming the path. `None` when
+/// the scope cannot be read (an undecodable issuingDistributionPoint, or one
+/// without a fullName), which webpki rejects as unsupported.
+fn authority_for(
     tbs: &x509_cert::crl::TbsCertList,
     cert: &Certificate,
     end_entity: bool,
-) -> bool {
+) -> Option<bool> {
     use x509_cert::ext::pkix::{
         CrlDistributionPoints,
         crl::dp::IssuingDistributionPoint,
@@ -926,37 +949,41 @@ fn authoritative_for(
         .flatten()
         .find(|e| e.extn_id.to_string() == "2.5.29.28")
     else {
-        return true;
+        return Some(true);
     };
-    let Ok(idp) = IssuingDistributionPoint::from_der(idp.extn_value.as_bytes()) else {
-        return false;
-    };
+    let idp = IssuingDistributionPoint::from_der(idp.extn_value.as_bytes()).ok()?;
     if idp.only_contains_ca_certs && end_entity || idp.only_contains_user_certs && !end_entity {
-        return false;
+        return Some(false);
     }
     let points = match cert.tbs_certificate.get::<CrlDistributionPoints>() {
-        Ok(None) => return true,
+        Ok(None) => return Some(true),
         Ok(Some((_, points))) => points.0,
-        Err(_) => return false,
+        Err(_) => return Some(false),
     };
-    let uris = |name: &Option<DistributionPointName>| -> Vec<Vec<u8>> {
+    let uris = |name: &Option<DistributionPointName>| -> Option<Vec<Vec<u8>>> {
         match name {
-            Some(DistributionPointName::FullName(names)) => names
-                .iter()
-                .filter_map(|n| match n {
-                    GeneralName::UniformResourceIdentifier(uri) => Some(uri.as_bytes().to_vec()),
-                    _ => None,
-                })
-                .collect(),
-            _ => Vec::new(),
+            Some(DistributionPointName::FullName(names)) => Some(
+                names
+                    .iter()
+                    .filter_map(|n| match n {
+                        GeneralName::UniformResourceIdentifier(uri) => {
+                            Some(uri.as_bytes().to_vec())
+                        }
+                        _ => None,
+                    })
+                    .collect(),
+            ),
+            _ => None,
         }
     };
-    let scope = uris(&idp.distribution_point);
-    points
-        .iter()
-        .filter(|p| p.reasons.is_none() && p.crl_issuer.is_none())
-        .flat_map(|p| uris(&p.distribution_point))
-        .any(|uri| scope.contains(&uri))
+    let scope = uris(&idp.distribution_point)?;
+    Some(
+        points
+            .iter()
+            .filter(|p| p.reasons.is_none() && p.crl_issuer.is_none())
+            .flat_map(|p| uris(&p.distribution_point).unwrap_or_default())
+            .any(|uri| scope.contains(&uri)),
+    )
 }
 
 fn not_before(cert: &Certificate) -> Duration {
@@ -1049,4 +1076,56 @@ fn names_distribution_point(tbs: &x509_cert::crl::TbsCertList) -> bool {
                 .and_then(|idp| idp.children())
                 .map_or(true, |fields| fields.iter().any(|f| f.tag == 0xa0))
         })
+}
+
+#[cfg(test)]
+mod revocation_reporting {
+    use super::*;
+
+    fn evidence(sha: &str, outcome: Outcome) -> CertificateEvidence {
+        let der = include_bytes!("../tests/fixtures/sec06-issuer.der").to_vec();
+        CertificateEvidence {
+            sha256: sha.into(),
+            der,
+            outcome,
+        }
+    }
+    fn failed(rank: u8, code: ErrorCode) -> Outcome {
+        Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
+    }
+
+    #[test]
+    fn a_revocation_then_a_missing_crl_then_the_most_specific_failure_decides() {
+        // A certificate without any CRL outranks one whose CRL is unusable, so
+        // that it can still be retrieved.
+        let error = revocation_failure(&[
+            evidence("a", failed(5, ErrorCode::InvalidCrlSignature)),
+            evidence("b", Outcome::Missing(None)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::RevocationUnknown);
+        assert_eq!(
+            error.details["certificates_without_crl"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        // Without one, the highest-ranked failure decides.
+        let error = revocation_failure(&[
+            evidence("a", failed(1, ErrorCode::CrlExpired)),
+            evidence("b", failed(3, ErrorCode::InvalidCrl)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::InvalidCrl);
+        // A revocation outranks everything.
+        let revoked = webpki_revocation_error("c", webpki::Error::CertRevoked);
+        let error = revocation_failure(&[
+            evidence("a", Outcome::Missing(None)),
+            evidence("c", Outcome::Revoked(revoked)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(error.details["affected_certificate"], "c");
+    }
 }

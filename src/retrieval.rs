@@ -373,7 +373,7 @@ struct Retrieval<'s, 'b, 'l> {
     /// normalized key), with the failure reported for each, if any.
     asked: BTreeMap<String, Option<(VerificationError, Option<CrlSourceErrorKind>)>>,
     /// Requests made to the source, one per certificate; bounded by
-    /// `MAX_REQUESTS`.
+    /// `MAX_SOURCE_REQUESTS`.
     requests: usize,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
@@ -689,10 +689,23 @@ fn retrieve(
                 .get("certificates_without_crl")
                 .and_then(|v| serde_json::from_value(v.clone()).ok());
             let targets = match missing {
-                Some(reports) => reports
-                    .iter()
-                    .map(decode_report)
-                    .collect::<Result<Vec<_>, _>>()?,
+                Some(reports) => {
+                    let mut targets = Vec::new();
+                    for report in &reports {
+                        budget
+                            .decoded_bytes
+                            .charge(report.der_hex.len())
+                            .map_err(|e| {
+                                VerificationError::from_internal(
+                                    e,
+                                    ErrorCode::InvalidCertificate,
+                                    Stage::Certificate,
+                                )
+                            })?;
+                        targets.push(decode_report(report)?);
+                    }
+                    targets
+                }
                 None => match &selected {
                     Some(selected) => selected.clone(),
                     None => selected
@@ -746,6 +759,12 @@ fn retrieve(
 fn decode_report(
     report: &CertificateReport,
 ) -> Result<(String, Vec<u8>, Certificate), VerificationError> {
+    if !report.der_hex.len().is_multiple_of(2) {
+        return Err(error(
+            ErrorCode::InvalidCertificate,
+            "malformed certificate report",
+        ));
+    }
     let der = report
         .der_hex
         .as_bytes()
