@@ -86,7 +86,7 @@ pub(crate) fn fields(node: Node<'_>, count: usize) -> Result<Vec<Node<'_>>> {
 /// decoding the rest. `version_tag` is the optional leading version field's
 /// tag (`0xa0` in a certificate, `0x02` in a CRL) and `index` the issuer's
 /// position after it (2 in a certificate, 1 in a CRL).
-#[cfg(feature = "crl-fetch")]
+#[cfg(feature = "verify-core")]
 pub(crate) fn tbs_issuer(der: &[u8], version_tag: u8, index: usize) -> Option<&[u8]> {
     let fields = one(der, 0x30).ok()?.children().ok()?;
     let tbs = fields.first()?.expect(0x30).ok()?.children().ok()?;
@@ -94,7 +94,7 @@ pub(crate) fn tbs_issuer(der: &[u8], version_tag: u8, index: usize) -> Option<&[
     Some(tbs.get(at)?.expect(0x30).ok()?.full)
 }
 
-#[cfg(all(test, feature = "crl-fetch"))]
+#[cfg(all(test, feature = "verify-core"))]
 mod tests {
     use super::tbs_issuer;
     use ::der::{Decode, Encode};

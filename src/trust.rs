@@ -242,9 +242,16 @@ impl TrustStore {
                         .map_err(crate::compat_error)?,
                 );
             }
+            // Only a CRL whose issuer could be on the chain is decoded in
+            // full; the issuer is read from the top-level fields first. One
+            // whose issuer cannot be read that way is decoded and judged.
             let crls = self
                 .crls
                 .iter()
+                .filter(|bytes| {
+                    crate::der::tbs_issuer(bytes, 0x02, 1)
+                        .is_none_or(|issuer| issuer_names.iter().any(|n| n == issuer))
+                })
                 .map(|bytes| LoadedCrl::load(bytes))
                 .collect::<Result<Vec<_>>>()?;
             if !crls.iter().any(|crl| issuer_names.contains(&crl.issuer)) {
@@ -885,30 +892,33 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             }
         }
     }
-    // A certificate with no CRL at all is reported first, so that it can be
-    // retrieved; a CRL that exists but cannot be used decides only when no
-    // certificate simply lacks one.
-    if missing.is_empty() {
-        let mut best: Option<&(u8, VerificationError)> = None;
-        for outcome in outcomes {
-            if let Outcome::Missing(Some(failure)) = &outcome.outcome
-                && best.is_none_or(|b| failure.0 > b.0)
-            {
-                best = Some(failure);
-            }
-        }
-        if let Some((_, error)) = best {
-            return Some(error.clone());
+    let mut best: Option<&(u8, VerificationError)> = None;
+    for outcome in outcomes {
+        if let Outcome::Missing(Some(failure)) = &outcome.outcome
+            && best.is_none_or(|b| failure.0 > b.0)
+        {
+            best = Some(failure);
         }
     }
-    Some(
-        VerificationError::new(
-            ErrorCode::RevocationUnknown,
-            Stage::Revocation,
-            "no usable authoritative CRL for a certificate on the path",
-        )
-        .detail("certificates_without_crl", missing),
-    )
+    // A certificate with no CRL at all makes the result unknown, so that it
+    // can be retrieved; the most specific unusable CRL is still reported
+    // with it. Only when no certificate simply lacks one does that failure
+    // decide.
+    match best {
+        Some((_, error)) if missing.is_empty() => Some(error.clone()),
+        best => {
+            let error = VerificationError::new(
+                ErrorCode::RevocationUnknown,
+                Stage::Revocation,
+                "no usable authoritative CRL for a certificate on the path",
+            )
+            .detail("certificates_without_crl", missing);
+            Some(match best {
+                Some((_, unusable)) => error.detail("unusable_crl", unusable),
+                None => error,
+            })
+        }
+    }
 }
 
 /// A revocation error naming the affected certificate.
@@ -1110,6 +1120,11 @@ mod revocation_reporting {
                 .unwrap()
                 .len(),
             1
+        );
+        // The unusable CRL is not hidden: it is reported beside the gap.
+        assert_eq!(
+            error.details["unusable_crl"]["code"],
+            "invalid_crl_signature"
         );
         // Without one, the highest-ranked failure decides.
         let error = revocation_failure(&[

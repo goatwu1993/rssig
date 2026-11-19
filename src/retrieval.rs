@@ -519,6 +519,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
                 Some(None) => {}
                 None => {
+                    // The engine bounds the URIs it passes to sources in one
+                    // verification, whatever each source does with them.
+                    if self.asked.len() >= MAX_SOURCE_REQUESTS {
+                        return Err(limit("crl_urls", MAX_SOURCE_REQUESTS, self.asked.len(), 1));
+                    }
                     self.asked.insert(url_key(&raw), None);
                     points.push(raw);
                 }
@@ -591,13 +596,14 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Stage::Revocation,
             format_args!("CRL source returned {len} bytes from {url:?}; not yet authenticated"),
         );
-        *total = total.saturating_add(len);
-        if len > MAX_CRL_BYTES || *total > max_bytes {
+        // A body over its caps is not counted against the bodies after it.
+        if len > MAX_CRL_BYTES || total.saturating_add(len) > max_bytes {
             let cap = MAX_CRL_BYTES.min(max_bytes);
             let e = limit("crl_response_bytes", cap, 0, len);
             self.skip(sha256, url.as_deref(), e, None);
             return Ok(false);
         }
+        *total += len;
         for _ in 0..8 {
             self.budget
                 .decoded_bytes
@@ -1078,20 +1084,31 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
+        // Every certificate lists the same URL: one URI, many requests.
+        let shared = || signer_with_points("shared", 1);
         for i in 0..MAX_SOURCE_REQUESTS {
-            let cert = signer_with_points(&format!("c{i}"), 1);
-            assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut source).unwrap());
+            assert!(!ask(&mut state, &format!("c{i}"), &shared(), &mut source).unwrap());
         }
-        let error = ask(
-            &mut state,
-            "last",
-            &signer_with_points("last", 1),
-            &mut source,
-        )
-        .unwrap_err();
+        let error = ask(&mut state, "last", &shared(), &mut source).unwrap_err();
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.details["resource"], "crl_requests");
         assert_eq!(source.calls, MAX_SOURCE_REQUESTS);
+        // Distinct URIs passed to sources are capped too.
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![Failed]);
+        let error = (0..)
+            .map(|i| {
+                ask(
+                    &mut state,
+                    &format!("u{i}"),
+                    &signer_with_points(&format!("u{i}"), 16),
+                    &mut source,
+                )
+            })
+            .find_map(Result::err)
+            .unwrap();
+        assert_eq!(error.details["resource"], "crl_urls");
+        assert_eq!(source.urls.len(), MAX_SOURCE_REQUESTS);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
@@ -1164,6 +1181,28 @@ mod tests {
                 .unwrap()
                 .find("secret")
                 .is_none()
+        );
+    }
+    #[test]
+    fn an_oversized_body_does_not_count_against_the_bodies_after_it() {
+        struct Two;
+        impl CrlSource for Two {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_crl(SourcedCrl::new(vec![0; MAX_CRL_BYTES + 1]))
+                    .with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                    )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        assert!(ask(&mut state, "a", &signer_with_points("a", 1), &mut Two).unwrap());
+        assert_eq!(state.report.failures.len(), 1);
+        assert_eq!(
+            state.report.failures[0].details["resource"],
+            "crl_response_bytes"
         );
     }
     #[test]

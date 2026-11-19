@@ -38,7 +38,8 @@ rule is restated for retrieval.
 Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests to the source (64 per
-  verification, `MAX_SOURCE_REQUESTS`, one per certificate), retained CRLs, combined bytes, URLs per
+  verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
+  passed to it (64 per verification), retained CRLs, combined bytes, URLs per
   certificate and URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
@@ -76,7 +77,8 @@ response identical to a CRL already loaded adds nothing and does not trigger
 another verification.
 
 When evidence stays missing the result is the verifier's own
-`revocation_unknown`, as without `--fetch-crls`, unless the source aborted:
+`revocation_unknown` (with `details.unusable_crl` naming the most specific CRL
+that exists but could not be used, if any), as without `--fetch-crls`, unless the source aborted:
 then it is `crl_fetch_aborted` (with the verifier's message in
 `details.revocation_unknown`), so that "the source gave up" is distinct from
 "no CRL was available". A good result is still returned if the CRLs gathered
