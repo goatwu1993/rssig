@@ -108,10 +108,14 @@ Two kinds of error, and nothing in between:
   most 16 such entries are kept per certificate, and one more counts the
   rest in `details.omitted`), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
-  the URI has control characters, whitespace or credentials, or does not
-  parse as a URL so that it cannot be screened (never passed to the source,
+  the URI has control characters, whitespace or credentials, or is not an
+  absolute URL so that it cannot be screened (reported with its own message;
+  OpenSSL's `get_dp_url` takes only `http://` URIs, `apps/lib/apps.c:2833`,
+  and Bouncy Castle's `toURL()` fails on a relative one,
+  `CrlCache.java:185`) (never passed to the source,
   logged or recorded; input hygiene, not transport policy; any valid scheme
-  is passed), the response
+  is passed; a source's own `url` detail is dropped, and a source must not
+  put a URL in its message or other details), the response
   is not a CRL or is larger than allowed (not loaded), or the source reports
   `denied`, `failed` or `unknown` (see below).
 - **The source reporting `abort` stops retrieval**: nothing further is
@@ -250,7 +254,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, every request fails (`crl_fetch_failed`, recorded as no evidence); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The CLI's HTTP limits bound one file, not the batch: the 16 requests, 32 MiB
 and 30 seconds start again for each file, so what earlier files fetched never

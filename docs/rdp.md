@@ -110,7 +110,11 @@ For trusted RDP verification, the signer must explicitly contain at least one of
 codeSigning (`1.3.6.1.5.5.7.3.3`), serverAuth (`1.3.6.1.5.5.7.3.1`), or Remote
 Desktop Authentication (`1.3.6.1.4.1.311.54.1.2`). The verifier tries applicable
 purposes in that order, validates the whole selected path for that purpose, and
-reports it in `trust.required_eku`. An unrestricted/absent leaf EKU is not accepted
+reports it in `trust.required_eku`. When no purpose verifies, the first failure is
+reported, except that a purpose which only lacks a current CRL
+(`revocation_unknown`, or a failure naming certificates without or with an expired
+CRL) is reported ahead of another purpose's failure, so that `--fetch-crls` can
+ask for the CRL (`rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted
 by this policy. Digital-signature key usage, configured roots, certificate times,
 and current local CRLs retain their existing checks. Embedded certificates remain
 untrusted candidates. Root enumeration is the only OS trust integration.

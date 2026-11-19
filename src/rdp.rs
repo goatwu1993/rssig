@@ -216,7 +216,20 @@ fn verify_trust(
                     }) {
                         return Err(e);
                     }
-                    if failure.is_none() {
+                    // A usage whose only failure is missing or expired CRLs
+                    // can still verify once a source supplies them: it is
+                    // reported ahead of another usage's failure.
+                    let lacks_crl = |e: &anyhow::Error| {
+                        e.downcast_ref::<VerificationError>().is_some_and(|error| {
+                            error.code == ErrorCode::RevocationUnknown
+                                || error.details.contains_key("certificates_without_crl")
+                                || error.details.contains_key("certificates_with_expired_crl")
+                        })
+                    };
+                    if failure
+                        .as_ref()
+                        .is_none_or(|kept| !lacks_crl(kept) && lacks_crl(&e))
+                    {
                         failure = Some(e)
                     }
                 }

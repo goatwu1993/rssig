@@ -6749,6 +6749,39 @@
       ]
     },
     {
+      "file": "good-rdp-eku-retry-ca.rdp",
+      "sha256": "857b8a41463a9e80c31ca1f3adbf825ed3ab7069167fe4540de2ec3c7336a1f3",
+      "bytes": 2102,
+      "description": "Inert RDP signature whose signer has codeSigning and serverAuth EKUs under a CA whose EKU admits serverAuth only: the codeSigning attempt fails on the path and only the serverAuth attempt can verify.",
+      "provenance": {
+        "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_ca_fixture",
+        "command": "cargo test --locked --lib regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Deterministic test root key, a public test-only P-256 CA key [46; 32] and the existing RDP body and signer key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "rdp-eku-retry-ca-with-crls-verifies",
+        "rdp-eku-retry-ca-missing-crl-is-unknown",
+        "rdp-eku-retry-ca-fetches-the-missing-crl"
+      ]
+    },
+    {
+      "file": "rdp-eku-retry-ca.crl",
+      "sha256": "41dd1e3ba09edde2095920c00f17fe00c26bc70d7939f26adcfee1f7ad2f9115",
+      "bytes": 194,
+      "description": "Empty, correctly signed CRL of the RDP server CA, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_ca_fixture",
+        "command": "cargo test --locked --lib regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Deterministic test root key, a public test-only P-256 CA key [46; 32] and the existing RDP body and signer key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "rdp-eku-retry-ca-with-crls-verifies",
+        "rdp-eku-retry-ca-fetches-the-missing-crl"
+      ]
+    },
+    {
       "file": "good-crl-discovery.exe",
       "sha256": "4499e2e725acb96da92356699c377dd5a2479a022bb5d1f53073b80283f5a44a",
       "bytes": 2232,

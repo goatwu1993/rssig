@@ -499,6 +499,25 @@ relic 02c54d58 and BoringSSL `main`.
     `certificate_chain_invalid`, reason `confirmation`), in either order.
     An earlier note here said OpenSSL would accept this case; the run shows
     it does not.
+- **An RDP signer that only lacks a CRL under one of its usages reports the
+  missing CRL.** Decided by written argument; no reference library has an
+  equivalent, since accepting an RDP signer under any one of several EKUs is
+  rssig's RDP policy (`docs/rdp.md`). The signer of
+  `good-rdp-eku-retry-ca.rdp` has codeSigning and serverAuth under a CA
+  whose EKU admits serverAuth only: the codeSigning attempt fails on the
+  path (`invalid_eku`) and the serverAuth attempt lacks only the CA's CRL.
+  The missing CRL is reported, because a source can supply it
+  (`rdp-eku-retry-ca-missing-crl-is-unknown`, diagnostics), and
+  `--fetch-crls` then verifies the file, as on `main`, where retrieval
+  followed a pass without revocation that succeeded through serverAuth
+  (`rdp-eku-retry-ca-fetches-the-missing-crl`, acceptance). Control:
+  `rdp-eku-retry-ca-with-crls-verifies`.
+- **A URI that is not an absolute URL is never offered to a source.**
+  Decided, diagnostics: OpenSSL's `get_dp_url` returns only `http://` URIs
+  (`apps/lib/apps.c:2833`) and Bouncy Castle's `distributionPoint.toURL()`
+  fails on a relative one (`CrlCache.java:185`). It is recorded as
+  `crl_fetch_denied` with its own message and no `url`. Unit test
+  `a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason`.
 - **Who screens a distribution-point address.** Decided, acceptance for
   library users: the verification core passes every listed URI to the source
   after hygiene screening only, and the source decides what to fetch. None of

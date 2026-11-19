@@ -483,10 +483,105 @@ fn write_eku_retry_fixture(dir: &std::path::Path) {
     std::fs::write(dir.join("good-rdp-multiple-ekus.rdp"), bytes).unwrap();
 }
 
+/// A signer with codeSigning and serverAuth under a CA whose own EKU admits
+/// serverAuth only: the codeSigning attempt fails on the path, and only the
+/// serverAuth attempt can verify, given the CA's CRL.
+fn write_eku_retry_ca_fixture(dir: &std::path::Path) {
+    use x509_cert::crl::{CertificateList, TbsCertList};
+    let id = identity();
+    let ca_key = SigningKey::from_bytes((&[46u8; 32]).into()).unwrap();
+    let ca_name = Name::from_str("CN=rssig test RDP server CA").unwrap();
+    let validity = Validity {
+        not_before: tm(NOW - 10000),
+        not_after: tm(NOW + 10000),
+    };
+    let eku = |usages: &[&[u8]]| x509_cert::ext::Extension {
+        extn_id: "2.5.29.37".parse().unwrap(),
+        critical: false,
+        extn_value: ::der::asn1::OctetString::new(seq(&usages
+            .iter()
+            .map(|usage| oid(usage))
+            .collect::<Vec<_>>()))
+        .unwrap(),
+    };
+    const SERVER_AUTH: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 1];
+    let mut ca = CertificateBuilder::new(
+        Profile::SubCA {
+            issuer: id.root.tbs_certificate.subject.clone(),
+            path_len_constraint: None,
+        },
+        SerialNumber::from(60u32),
+        validity,
+        ca_name.clone(),
+        SubjectPublicKeyInfoOwned::from_key(*ca_key.verifying_key()).unwrap(),
+        &id.root_key,
+    )
+    .unwrap()
+    .build::<p256::ecdsa::DerSignature>()
+    .unwrap();
+    ca.tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .push(eku(&[SERVER_AUTH]));
+    let signature: Signature = id.root_key.sign(&ca.tbs_certificate.to_der().unwrap());
+    ca.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let mut cert = CertificateBuilder::new(
+        Profile::Leaf {
+            issuer: ca_name.clone(),
+            enable_key_agreement: false,
+            enable_key_encipherment: false,
+        },
+        SerialNumber::from(61u32),
+        validity,
+        Name::from_str("CN=rssig test RDP publisher").unwrap(),
+        SubjectPublicKeyInfoOwned::from_key(*id.key.verifying_key()).unwrap(),
+        &ca_key,
+    )
+    .unwrap()
+    .build::<p256::ecdsa::DerSignature>()
+    .unwrap();
+    cert.tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .push(eku(&[&[43, 6, 1, 5, 5, 7, 3, 3], SERVER_AUTH]));
+    let signature: Signature = ca_key.sign(&cert.tbs_certificate.to_der().unwrap());
+    cert.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let bytes = frame(&envelope(
+        &cert,
+        crypto::Hash::Sha256,
+        &ec_signer(&cert, false),
+        &[ca.to_der().unwrap()],
+    ));
+    std::fs::write(dir.join("good-rdp-eku-retry-ca.rdp"), bytes).unwrap();
+    let algorithm = ca.signature_algorithm.clone();
+    let tbs = TbsCertList {
+        version: x509_cert::Version::V2,
+        signature: algorithm.clone(),
+        issuer: ca_name,
+        this_update: tm(NOW - 100),
+        next_update: Some(tm(NOW + 1000)),
+        revoked_certificates: None,
+        crl_extensions: Some(vec![x509_cert::ext::Extension {
+            extn_id: "2.5.29.20".parse().unwrap(),
+            critical: false,
+            extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
+        }]),
+    };
+    let signature: Signature = ca_key.sign(&tbs.to_der().unwrap());
+    let crl = CertificateList {
+        tbs_cert_list: tbs,
+        signature_algorithm: algorithm,
+        signature: BitString::from_bytes(signature.to_der().as_bytes()).unwrap(),
+    };
+    std::fs::write(dir.join("rdp-eku-retry-ca.crl"), crl.to_der().unwrap()).unwrap();
+}
+
 #[test]
 #[ignore = "explicit fixture maintenance only"]
 fn regenerate_rdp_eku_retry_fixture() {
-    write_eku_retry_fixture(
-        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
-    );
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    write_eku_retry_fixture(&dir);
+    write_eku_retry_ca_fixture(&dir);
 }

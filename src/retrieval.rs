@@ -165,10 +165,15 @@ impl CrlSourceError {
         );
         self
     }
-    /// The verification error this failure is reported as.
+    /// The verification error this failure is reported as. `details.url` is
+    /// the engine's to set, from [`Self::with_url`] and only when that URL
+    /// passes its screening, so a `url` detail of the source's is dropped.
+    /// The message and the other details are reported as given: a source
+    /// must not put a URL in them.
     fn into_error(self) -> VerificationError {
         let mut error = error(self.kind.code(), self.message);
         error.details.extend(self.details);
+        error.details.remove("url");
         error
     }
 }
@@ -586,9 +591,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             };
             if !hygienic_url(&raw) {
+                // The URI itself is never recorded; the message says which
+                // screening withheld it.
+                let clean = !raw.chars().any(|c| c.is_control() || c.is_whitespace());
                 let e = error(
                     ErrorCode::CrlFetchDenied,
-                    "distribution point URI has control characters, whitespace or credentials",
+                    if clean && url::Url::parse(&raw).is_err() {
+                        "distribution point URI is not an absolute URL"
+                    } else {
+                        "distribution point URI has control characters, whitespace or credentials"
+                    },
                 );
                 self.skip(sha256, None, e, None);
                 continue;
@@ -2072,6 +2084,32 @@ mod tests {
         // A refusal costs the engine one request for the certificate, not
         // one per URI.
         assert_eq!(state.requests, 1);
+    }
+    #[test]
+    fn a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason() {
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let uris = ["crl.example.invalid/ca.crl".to_string()];
+        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
+        // As in OpenSSL (http:// prefix only) and Bouncy Castle (toURL fails
+        // on a relative URI), it is never offered to a source.
+        assert!(source.urls.is_empty());
+        let failure = &state.report.failures[0];
+        assert_eq!(failure.code, ErrorCode::CrlFetchDenied);
+        assert!(failure.url.is_none());
+        assert!(failure.problem.detail.contains("not an absolute URL"));
+    }
+    #[test]
+    fn a_sources_own_url_detail_is_not_reported() {
+        let error = CrlSourceError::new(CrlSourceErrorKind::Failed, "failed")
+            .with_url("http://user:secret@crl.example.invalid/a.crl")
+            .detail("url", "http://user:secret@crl.example.invalid/a.crl")
+            .detail("status", 500)
+            .into_error();
+        assert!(!error.details.contains_key("url"));
+        assert_eq!(error.details["status"], 500);
     }
     #[test]
     fn uris_are_deduplicated_per_verification_and_screened_for_hygiene() {
