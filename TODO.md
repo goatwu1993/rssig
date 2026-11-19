@@ -460,6 +460,59 @@ timestamps, and local CRL validation already exist.
   source with an invalid signature and a sorted issuer key, and a portable
   `crl_certificate_responses` implementation hashing the original bytes
   disagrees. Add a fixture with such a name before changing it.
+- [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of
+  PR #60 was concluded with these items not changed in that PR. Reasons and
+  references are in
+  [SEC-10](docs/tasks/sec-10-crl-applicability.md) ("Case reasons (PR #60)").
+  Owner decision needed:
+  - A supplied CRL that is unusable for a reason other than expiry (bad
+    signature, `invalid_crl`, not yet valid) is not refreshed by
+    `--fetch-crls`, and a path with one is not named for retrieval
+    (`sec10-fetch-unusable-supplied-crl-not-fetched`, Observed). Bouncy
+    Castle would fetch; OpenSSL and BoringSSL do not fetch at all.
+  - A CRL without nextUpdate that lists a certificate, alone, is
+    `invalid_crl` (`missing_next_update`) rather than `certificate_revoked`
+    (`sec10-no-next-update-crl-revocation-alone-is-invalid`); both reject.
+  Retrieval and the built-in HTTP source:
+  - The CLI's fetch limits are per file, so a batch is bounded only by its
+    file count (up to 16 requests, 32 MiB and 30 s each). Consider an
+    optional batch-wide cap.
+  - A DNS timeout closes the built-in source for the rest of the run, even
+    when only a short remaining deadline caused it. Reopening once the
+    stale resolver finished was reverted (timing-dependent results, and
+    `HttpCrlSource` stopped being `Sync`); find a deterministic,
+    `Sync`-safe way.
+  - `retrieval_trust_bytes` and the other engine limits end the whole
+    verification with `resource_limit_exceeded`, rather than recording the
+    remaining points and finishing with the evidence gathered.
+  - With `fetch_each`, the first over-allowance body of a request is the
+    engine's `resource_limit_exceeded` and later ones the source's
+    `crl_fetch_failed`; the allowance counts accepted bodies only.
+  - A URL-less failure beside an answer by certificate is recorded without
+    the points it concerned.
+  - The built-in URL check lists reserved labels; other private-use suffixes
+    (`.lan`, `.corp`, `.localdomain`) rely on the DNS-answer address check.
+  Report shape:
+  - `CrlRetrievalArtifact.url`/`final_url` are omitted when absent while
+    `CrlRetrievalFailure.url` serializes as `null`; pick one (with
+    PRODUCT-03).
+  - On the RDP fallback path (a revocation that is another error type's
+    source), the merged error loses the outer error's cause messages.
+  - Distribution-point URIs are compared byte for byte (webpki's rule), so a
+    scheme or host that differs only in case does not match.
+  Specification coverage (with TEST-05): the spec's injected CRL source maps
+  URLs or certificates to bodies and error kinds, so it cannot express
+  URL-less failures, whole-request errors, several entries per request, a
+  point shared by certificates of two issuers, or the built-in source's
+  deadline and byte-cap behavior. Those are unit-tested only
+  (`docs/testing.md`); extend the case format before pinning them
+  portably.
+  Not from this PR's changes, found during its review:
+  - `rssig::cli::command()` is a hidden public function kept for the spec
+    runner (#59).
+  - `tests/manifest.rs` `fixtures_are_never_indexed_as_sources` creates its
+    scratch directory without the drop guard its sibling test uses.
+  - The strict root decoding in the CRL prefilter (see SEC-17).
 
 ## P1 — Clean parse/verify interfaces
 

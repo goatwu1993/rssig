@@ -241,6 +241,10 @@ Change these only with a new decision and paired fixtures.
 
 ## Known limitations tracked elsewhere
 
+The review of PR #60 is concluded; everything it left open is listed under
+SEC-23 in `TODO.md`, with SEC-11, SEC-17, SEC-18 and SEC-22 for the larger
+items.
+
 - **SEC-11:** excluded CRLs are still reported as supplied.
 - **SEC-15:** applicability and the scope rule consider every embedded
   candidate.
