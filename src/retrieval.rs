@@ -434,11 +434,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         source_error: Option<CrlSourceErrorKind>,
     ) {
         if url.is_some()
-            && self
-                .report
-                .failures
-                .iter()
-                .any(|f| f.certificate_sha256 == certificate && f.url.as_deref() == url)
+            && self.report.failures.iter().any(|f| {
+                f.certificate_sha256 == certificate
+                    && f.url.as_deref().map(url_key) == url.map(url_key)
+            })
         {
             return;
         }
@@ -563,7 +562,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 // nothing, for this certificate and any later one listing it.
                 // The URL the source named keeps its own entry; every other
                 // point of the request is recorded with the same error.
-                for point in points.iter().filter(|p| e.url.as_ref() != Some(p)) {
+                let named = e.url.as_deref().map(url_key);
+                for point in points.iter().filter(|p| named != Some(url_key(p))) {
                     self.source_failure(sha256, e.clone().with_url(point.clone()));
                 }
                 if points.is_empty() || e.url.is_some() {
@@ -585,24 +585,14 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             })
             .cloned()
             .collect();
-        // A source that answered by other means (a CRL without a URL, found
-        // by issuer) has not ignored the points.
-        let by_issuer = response.crls.iter().any(|c| c.url.is_none());
         for failure in response.failures {
             self.source_failure(sha256, failure);
         }
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort the
-        // rest were never tried, and the abort explains them.
-        if by_issuer {
-            // The points it passed over stay open: a later certificate
-            // listing one carries it to the source again.
-            for point in &unanswered {
-                if matches!(self.asked.get(&url_key(point)), Some(None)) {
-                    self.asked.remove(&url_key(point));
-                }
-            }
-        } else if !self.aborted {
+        // rest were never tried, and the abort explains them. A source that
+        // also answered by issuer still passed over these points.
+        if !self.aborted {
             for point in &unanswered {
                 let e = error(
                     ErrorCode::CrlFetchFailed,
@@ -733,7 +723,9 @@ fn retrieve(
             let missing: Option<Vec<CertificateReport>> = unknown
                 .details
                 .get("certificates_without_crl")
-                .and_then(|v| serde_json::from_value(v.clone()).ok());
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                // An empty list names nothing to ask about: fall back.
+                .filter(|reports: &Vec<CertificateReport>| !reports.is_empty());
             let targets = match missing {
                 Some(reports) => {
                     let mut targets = Vec::new();
@@ -1239,11 +1231,15 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         assert!(ask(&mut state, "a", &signer_with_points("a", 1), &mut Two).unwrap());
-        assert_eq!(state.report.failures.len(), 1);
-        assert_eq!(
-            state.report.failures[0].details["resource"],
-            "crl_response_bytes"
-        );
+        // Only the oversized body is rejected; the listed point it passed
+        // over is reported separately.
+        let resources: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .filter_map(|f| f.details.get("resource"))
+            .collect();
+        assert_eq!(resources, ["crl_response_bytes"]);
     }
     #[test]
     fn no_listed_point_disappears_from_the_report() {
@@ -1311,7 +1307,7 @@ mod tests {
         assert!(state.report.failures.iter().all(|f| f.message == "down"));
     }
     #[test]
-    fn points_passed_over_by_an_issuer_answer_stay_open() {
+    fn points_passed_over_by_an_issuer_answer_are_recorded_once() {
         struct ByIssuer(Vec<usize>);
         impl CrlSource for ByIssuer {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -1326,8 +1322,18 @@ mod tests {
         let cert = signer_with_points("a", 2);
         ask(&mut state, "a", &cert, &mut source).unwrap();
         ask(&mut state, "b", &cert, &mut source).unwrap();
-        // The second certificate carries the points the first answer ignored.
-        assert_eq!(source.0, [2, 2]);
+        // Each URI goes to the source once per verification; both
+        // certificates report the points the answer passed over.
+        assert_eq!(source.0, [2, 0]);
+        for certificate in ["a", "b"] {
+            let urls = state
+                .report
+                .failures
+                .iter()
+                .filter(|f| f.certificate_sha256 == certificate && f.url.is_some())
+                .count();
+            assert_eq!(urls, 2, "{certificate}: {:?}", state.report.failures);
+        }
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {
