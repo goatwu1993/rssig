@@ -6760,7 +6760,8 @@
         "crl-fetch-source-denied-is-no-evidence",
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
-        "crl-fetch-source-abort-is-reported"
+        "crl-fetch-source-abort-is-reported",
+        "crl-fetch-untrusted-chain-requests-nothing"
       ]
     },
     {

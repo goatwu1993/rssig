@@ -220,21 +220,6 @@ impl TrustStore {
         // under that path's real issuer key, and the best usable one decides.
         // webpki then confirms the accepted path with only the chosen CRLs.
         let crls = if revocation {
-            // Without any applicable CRL, every certificate of this chain
-            // lacks one: they are listed so that retrieval asks about these
-            // and not about another chain's.
-            let chain_without_crl = || -> Vec<CertificateReport> {
-                core::iter::once(signer)
-                    .chain(certificates)
-                    .filter(|c| c.tbs_certificate.issuer != c.tbs_certificate.subject)
-                    .filter_map(|c| CertificateReport::parse(c).ok())
-                    .collect()
-            };
-            if self.crls.is_empty() {
-                return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates")
-                    .detail("certificates_without_crl", chain_without_crl())
-                    .into());
-            }
             let mut issuer_names = Vec::new();
             for root in &self.roots {
                 let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
@@ -266,15 +251,9 @@ impl TrustStore {
                 })
                 .map(|bytes| LoadedCrl::load(bytes))
                 .collect::<Result<Vec<_>>>()?;
-            if !crls.iter().any(|crl| issuer_names.contains(&crl.issuer)) {
-                return Err(VerificationError::new(
-                    ErrorCode::RevocationUnknown,
-                    Stage::Revocation,
-                    "no supplied CRL applies to the certificate chain",
-                )
-                .detail("certificates_without_crl", chain_without_crl())
-                .into());
-            }
+            // With no applicable CRL at all, the path is still built: an
+            // untrusted chain fails as such, and a trusted one reports every
+            // certificate on it as without a CRL.
             crls
         } else {
             Vec::new()

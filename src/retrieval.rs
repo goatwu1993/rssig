@@ -459,7 +459,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         let kind = e.kind;
         let url = e.url.clone();
         self.skip(certificate, url.as_deref(), e.into_error(), Some(kind));
-        if kind == CrlSourceErrorKind::Abort {
+        if kind == CrlSourceErrorKind::Abort && !self.aborted {
             self.aborted = true;
             self.budget.log.info(
                 Stage::Revocation,
@@ -532,20 +532,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if self.requests >= MAX_SOURCE_REQUESTS {
             return Err(limit("crl_requests", MAX_SOURCE_REQUESTS, self.requests, 1));
         }
-        if self.store.retrieval_crl_count() >= 64 {
-            return Err(limit(
-                "retrieval_crl_artifacts",
-                64,
-                self.store.retrieval_crl_count(),
-                1,
-            ));
-        }
+        // The retained-CRL limit is enforced as CRLs are loaded, so a request
+        // that adds nothing new does not hit it.
         let used = self.base.retrieval_bytes() + self.downloaded;
         let max_bytes = MAX_TOTAL_BYTES.saturating_sub(used);
         if max_bytes == 0 {
             return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
         }
-        let issuer = crate::der::tbs_issuer(der, 0xa0, 2).unwrap_or_default();
+        let decoded_issuer;
+        let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
+            Some(issuer) => issuer,
+            None => {
+                decoded_issuer =
+                    ::der::Encode::to_der(&cert.tbs_certificate.issuer).unwrap_or_default();
+                &decoded_issuer
+            }
+        };
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
         self.requests += 1;
         self.budget.log.info(
@@ -559,7 +561,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Err(e) => {
                 // The whole request failed: every point it carried yielded
                 // nothing, for this certificate and any later one listing it.
-                if points.is_empty() {
+                if points.is_empty() || e.url.is_some() {
                     self.source_failure(sha256, e);
                 } else {
                     for point in &points {

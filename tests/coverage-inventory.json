@@ -457,7 +457,8 @@
         "sec10-fetch-source-abort-stops-requests",
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-fetch-builtin-source-denies-https",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-fetch-untrusted-chain-requests-nothing"
       ]
     },
     {

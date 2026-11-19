@@ -354,7 +354,11 @@ timestamps, and local CRL validation already exist.
   (null if the report parser fails) but with `?` on the nextUpdate and
   freshness paths (a report-parse error replaces the typed error); make them
   consistent.
-- [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
+- [x] **SEC-20: Revisit revocation_unknown precedence over path errors.**
+  Done in PR #60: with no applicable CRL the path is still built, so an
+  untrusted chain is `untrusted_root` and, with `--fetch-crls`, nothing is
+  requested for it (`crl-fetch-untrusted-chain-requests-nothing`). Original
+  notes follow.
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain
   errors. This extends the existing empty-CRL-set precedence. Revisit together
