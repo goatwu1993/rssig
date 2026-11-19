@@ -137,6 +137,39 @@ One box per item in the scope above.
   repository owner as a one-time exception to the AGENTS.md rule; each
   failure is still pinned with the bad CRL alone.
 
+- Compared with OpenSSL and Bouncy Castle (AGENTS.md, "Pinned
+  expectations"); source at OpenSSL `crypto/x509/x509_vfy.c` and bc-java
+  `prov/.../jce/provider/RFC3280CertPathUtilities.java`,
+  `pkix/.../X509RevocationChecker.java`:
+  - **Decided, acceptance.** A CA-only CRL (onlyContainsCACerts) that names a
+    distribution point, as the only CRL of an end-entity certificate listing
+    none, is `invalid_crl` (`distribution_point_scope`), not set aside.
+    OpenSSL keeps it as a near match and fails with
+    `X509_V_ERR_DIFFERENT_CRL_SCOPE` (`crl_crldp_check`, `check_crl`); Bouncy
+    Castle rejects it in processCRLB2 with a distribution-point name mismatch.
+    With a full CRL of the issuer present, all three use the full CRL.
+    Case: `sec10-fetch-no-listed-point-role-excluded-scope-rejected`.
+  - **Decided, acceptance.** A listing in a CRL whose signature cannot be
+    verified (bad or unsupported) never counts as a revocation. OpenSSL fails
+    the CRL in `check_crl` before `cert_crl` reads entries; Bouncy Castle
+    skips it in processCRLG before processCRLJ reads entries. Here it is
+    `invalid_crl` (`unsupported_signature_algorithm`) or
+    `invalid_crl_signature`, set aside when another CRL is usable.
+  - **Decided, acceptance.** One certificate's distribution points never end
+    the run: an over-long URI is skipped and the URIs past the first 16 are
+    recorded as one `crl_urls` failure. OpenSSL's verifier has no such limit
+    (an unmatched point means no CRL); Bouncy Castle has none either and
+    skips a point that fails. The per-verification limits stay engine limits.
+    Unit test `a_certificate_over_the_url_limits_is_skipped_point_by_point`.
+  - **Decided by choice, diagnostics only.** Across candidate paths, a CA
+    issued after the lifetime signing time on one path outranks a revocation
+    on another (`sec09-lifetime-rollover-revoked-issuer`); both reject. The
+    libraries do not agree and neither has lifetime signing: OpenSSL builds
+    one chain, preferring currently valid issuers, and checks revocation
+    before validity on it; Bouncy Castle tries every path and reports the
+    last failure, checking validity before revocation per certificate. The
+    SEC-14 precedence is kept.
+
 Change these only with a new decision and paired fixtures.
 
 - A CRL that does not apply to the chain is excluded; one that applies must be

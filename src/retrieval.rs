@@ -253,10 +253,13 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
 
 /// Each listed name of `cert`'s cRLDistributionPoints: a URI, or
 /// `crl_fetch_denied` for a point with reasons, a cRLIssuer, a relative name or
-/// a non-URI name. A malformed extension and the URL count and length limits
-/// are errors for the whole certificate. With `strict`, the first unsupported
-/// point is that error, before any later limit, as [`crl_distribution_points`]
-/// has always reported it.
+/// a non-URI name. A malformed extension is an error for the whole
+/// certificate. With `strict`, the first unsupported point and the URL count
+/// and length limits are errors too, as [`crl_distribution_points`] has always
+/// reported them. Otherwise, as OpenSSL and Bouncy Castle never fail a chain
+/// over one certificate's points, an over-long URI is one skipped point and
+/// the URIs past the count limit are one recorded failure: the first ones
+/// still go to the source.
 fn listed_points(
     cert: &Certificate,
     strict: bool,
@@ -299,10 +302,20 @@ fn listed_points(
                 continue;
             };
             if urls >= MAX_REQUESTS {
-                return Err(limit("crl_urls", MAX_REQUESTS, urls, 1));
+                let e = limit("crl_urls", MAX_REQUESTS, urls, 1);
+                if strict {
+                    return Err(e);
+                }
+                listed.push(Err(e));
+                return Ok(listed);
             }
             if uri.as_str().len() > 2048 {
-                return Err(limit("crl_url_bytes", 2048, 0, uri.as_str().len()));
+                let e = limit("crl_url_bytes", 2048, 0, uri.as_str().len());
+                if strict {
+                    return Err(e);
+                }
+                listed.push(Err(e));
+                continue;
             }
             urls += 1;
             listed.push(Ok(uri.as_str().into()));
@@ -514,8 +527,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         self.in_flight.clear();
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
-            // The engine's own per-certificate URL limits end the run.
-            Err(e) if e.code == ErrorCode::ResourceLimitExceeded => return Err(e),
             // A malformed extension: webpki skips it offline, so it is no
             // evidence here, not a rejection.
             Err(e) => {
@@ -1599,6 +1610,32 @@ mod tests {
                 .iter()
                 .all(|f| f.code == ErrorCode::CrlFetchAborted)
         );
+    }
+    #[test]
+    fn a_certificate_over_the_url_limits_is_skipped_point_by_point() {
+        // As OpenSSL and Bouncy Castle: one certificate's points never end
+        // the run. An over-long URI is skipped and recorded; past 16, the
+        // rest are recorded as not passed, and the first 16 still go out.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let long = format!("http://crl.example.invalid/{}.crl", "x".repeat(2100));
+        let mut uris: Vec<String> = (0..17)
+            .map(|i| format!("http://crl.example.invalid/many-{i}.crl"))
+            .collect();
+        uris.insert(0, long);
+        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
+        assert_eq!(source.urls.len(), MAX_REQUESTS);
+        let resources: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .filter_map(|f| f.details.get("resource").and_then(|r| r.as_str()))
+            .collect();
+        assert_eq!(resources, ["crl_url_bytes", "crl_urls"]);
+        // The strict public discovery still reports the limit as an error.
+        assert!(crl_distribution_points(&signer_with_uris(&uris)).is_err());
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

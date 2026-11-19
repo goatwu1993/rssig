@@ -75,10 +75,13 @@ Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests to the source (64 per
   verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
-  passed to it (64 per verification, `crl_source_urls`; the 16 per certificate are `crl_urls`), CRL bodies and failures in one response
-  (64, `MAX_RESPONSE_ENTRIES`), retained CRLs, combined bytes, URLs per
-  certificate and URL length, and the SEC-02 work budget.
+  passed to it (64 per verification, `crl_source_urls`), CRL bodies and
+  failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
+  combined bytes, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
+  a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
+  first 16 (one `crl_urls` entry; the first 16 still go to the source), as
+  OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
   the URI has control characters, whitespace or credentials (never passed to
