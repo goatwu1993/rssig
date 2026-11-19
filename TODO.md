@@ -250,7 +250,10 @@ timestamps, and local CRL validation already exist.
     `src/tests.rs`, SEC-08/09 and RDP fixture modules without changing committed
     bytes; keep per-task regeneration commands (as SEC-08 does) consistent with
     `regenerate_cli_fixtures`.
-- [ ] **SEC-15: Select CRLs against the selected chain, not every candidate.**
+- [x] **SEC-15: Select CRLs against the selected chain, not every candidate.**
+  Done in PR #60: CRLs are evaluated per certificate on each candidate path,
+  authenticated under the issuer key that path uses, and the scope rule applies
+  to that certificate only. Original notes follow.
   Deliberately skipped in PRs #44 to #46. CRL applicability currently matches
   each CRL's issuer name (and AKI) against every configured root and every
   embedded candidate certificate, not the path webpki selects. An untrusted
@@ -289,18 +292,21 @@ timestamps, and local CRL validation already exist.
   map entry per revoked certificate that is not charged beyond the existing
   8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
   budget effect for large CRLs.
-  `--fetch-crls` no longer restates the authority rule: retrieval follows the
-  verifier's result (see [CRL retrieval](docs/crl-retrieval.md)), which removed
-  the per-certificate CRL decoding added in PR #55. What remains: a run
-  verifies two or three times against one budget, and no case exhausts it on
-  that path. In the second retrieval step a certificate that a supplied CRL
-  already covers can still be fetched for; a failed request is skipped, but a
-  fetched CRL that is stale or unusable fails the run closed, because the
-  verifier does not report which certificate lacked evidence. Having it report
-  the certificates without authoritative evidence would remove the second step
-  and the issuer-name split, but webpki does not expose that. No fixture has
-  that shape.
-- [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
+  `--fetch-crls` asks the source only about the certificates the verifier
+  reports without a usable CRL (`details.certificates_without_crl`), as
+  OpenSSL's `get_crl` and Bouncy Castle look up CRLs for the certificate being
+  checked (PR #60). What remains: a run verifies the input up to once per
+  retrieval round plus once without revocation, against one budget, and no
+  case exhausts it on that path. The per-certificate CRL evaluation decodes
+  each loaded CRL once per verification, but verifies CRL signatures with its
+  own OID table outside the budgeted algorithm adapter; reuse the adapter.
+- [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Partly
+  decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
+  stale, delta, indirect, unsupported or out-of-scope CRL is set aside when
+  another CRL of the issuer is usable and authoritative (full-plus-delta and
+  old-beside-current deployments verify). Still open: real delta support, and
+  reporting which CRLs were set aside (SEC-11). Original notes follow.
+  Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
   supplied CRL covers the same issuer, so a normal full-plus-delta CRL
@@ -346,7 +352,10 @@ timestamps, and local CRL validation already exist.
   is returned before path building, so it hides untrusted_root and other chain
   errors. This extends the existing empty-CRL-set precedence. Revisit together
   with SEC-14's error-precedence notes if consumers need the chain error first.
-- [ ] **SEC-21: Bind listed-serial revocation to the verified path.** From PR
+- [x] **SEC-21: Bind listed-serial revocation to the verified path.**
+  Done in PR #60: a listing counts only in a CRL that verifies under the path
+  issuer's key, from an issuer with cRLSign (anchors exempt); an unmappable
+  signature algorithm is `invalid_crl_signature`. Original notes follow. From PR
   #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
   callback matches a listing by issuer name and serial only. It accepts a CRL
   whose signature verified under any name-matching candidate key, or whose

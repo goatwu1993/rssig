@@ -1,5 +1,7 @@
-//! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
-//! a CRL from a chain issuer that is stale or structurally invalid fails closed.
+//! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded. A CRL
+//! from a chain issuer that is stale or structurally invalid fails closed when it
+//! is the only one for the certificate, and is set aside when another CRL of
+//! that issuer is usable (the best CRL decides, as in OpenSSL and Bouncy Castle).
 //! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
 //! KeyUsage. The distribution-point tests use SEC-06 signers and one intermediate
 //! that list CRL distribution points in several forms, issuer and root CRLs
@@ -27,6 +29,50 @@ fn run_with(extra: &str) -> Output {
     )
 }
 
+/// The chain issuer's CRL `crl` alone, without `good.crl`.
+fn run_alone(crl: &str) -> Output {
+    run_fixture(
+        "good-countersignature.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            &format!("fixtures/{crl}"),
+            "--time",
+            T,
+        ],
+    )
+}
+
+#[test]
+fn sec10_an_unusable_chain_issuer_crl_is_set_aside_beside_a_usable_one() {
+    for extra in [
+        "sec10-root-no-next-update.crl",
+        "expired.crl",
+        "sec10-root-aki-expired.crl",
+        "sec10-root-malformed-aki.crl",
+        "sec10-root-signed-other-aki-expired.crl",
+        "sec10-root-unknown-critical-extension.crl",
+        "sec10-root-delta.crl",
+        "sec10-root-indirect.crl",
+        "sec10-root-entry-critical-extension.crl",
+        "sec10-root-delta-expired.crl",
+        "sec10-root-idp-user-certs.crl",
+        "sec10-root-idp-ca-certs.crl",
+        "sec10-root-aki-issuer-serial-expired.crl",
+        "sec10-root-idp-named-point.crl",
+    ] {
+        let output = run_with(extra);
+        expect_success(&output);
+        assert_eq!(
+            output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"], "good",
+            "{extra}"
+        );
+    }
+}
+
 #[test]
 fn sec10_unrelated_issuer_crls_are_excluded_whatever_their_fault() {
     for extra in [
@@ -45,7 +91,7 @@ fn sec10_unrelated_issuer_crls_are_excluded_whatever_their_fault() {
 
 #[test]
 fn sec10_chain_issuer_crl_without_next_update_is_a_typed_revocation_failure() {
-    let output = run_with("sec10-root-no-next-update.crl");
+    let output = run_alone("sec10-root-no-next-update.crl");
     expect_failure(
         &output,
         1,
@@ -58,7 +104,7 @@ fn sec10_chain_issuer_crl_without_next_update_is_a_typed_revocation_failure() {
 
 #[test]
 fn sec10_chain_issuer_stale_crl_still_fails_closed() {
-    let output = run_with("expired.crl");
+    let output = run_alone("expired.crl");
     expect_failure(
         &output,
         1,
@@ -107,7 +153,7 @@ fn sec10_crl_naming_another_authority_key_is_excluded() {
 
 #[test]
 fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
-    let output = run_with("sec10-root-aki-expired.crl");
+    let output = run_alone("sec10-root-aki-expired.crl");
     expect_failure(
         &output,
         1,
@@ -120,7 +166,7 @@ fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
 
 #[test]
 fn sec10_malformed_authority_key_identifier_fails_closed() {
-    let output = run_with("sec10-root-malformed-aki.crl");
+    let output = run_alone("sec10-root-malformed-aki.crl");
     expect_failure(
         &output,
         1,
@@ -135,7 +181,7 @@ fn sec10_malformed_authority_key_identifier_fails_closed() {
 fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
     // Signed by the root's own key, so a differing authorityKeyIdentifier
     // cannot make it irrelevant: the stale CRL still fails closed.
-    let output = run_with("sec10-root-signed-other-aki-expired.crl");
+    let output = run_alone("sec10-root-signed-other-aki-expired.crl");
     expect_failure(
         &output,
         1,
@@ -171,7 +217,7 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
         ("sec10-root-delta-expired.crl", "delta_crl"),
         ("sec10-root-indirect.crl", "indirect_crl"),
     ] {
-        let output = run_with(file);
+        let output = run_alone(file);
         expect_failure(
             &output,
             1,
@@ -227,7 +273,7 @@ fn sec10_path_building_falls_back_to_the_issuer_with_crl_sign() {
 fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
     // authorityCertIssuer/serial alone cannot exclude a CRL: the stale CRL
     // from the chain issuer's name still fails closed.
-    let output = run_with("sec10-root-aki-issuer-serial-expired.crl");
+    let output = run_alone("sec10-root-aki-issuer-serial-expired.crl");
     expect_failure(
         &output,
         1,
@@ -242,7 +288,7 @@ fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
 fn sec10_named_distribution_point_crl_without_matching_certificate_point_fails_closed() {
     // The signer lists no CRL distribution points, so a CRL scoped to a named
     // point may be a partition that does not cover it.
-    let output = run_with("sec10-root-idp-named-point.crl");
+    let output = run_alone("sec10-root-idp-named-point.crl");
     expect_failure(
         &output,
         1,
@@ -582,4 +628,15 @@ fn sec10_crl_this_update_is_an_inclusive_lower_bound() {
 fn sec10_crl_next_update_is_an_exclusive_upper_bound() {
     fresh_at(CRL_NEXT_UPDATE - 1);
     stale_at(CRL_NEXT_UPDATE, "crl_expired", "CRL expired");
+}
+
+#[test]
+fn sec10_a_revocation_in_a_stale_crl_still_counts_beside_a_fresh_one() {
+    // The fresh CRL makes the status known; the expired one, authenticated by
+    // the same root key, lists the signer. Revocations do not expire.
+    let output = run_with("sec10-root-expired-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+    // Alone, the stale CRL is not usable evidence: expired, not revoked.
+    let output = run_alone("sec10-root-expired-revoked.crl");
+    revocation_failure(&output, "crl_expired", "CRL expired");
 }

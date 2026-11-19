@@ -291,6 +291,24 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
+        // An expired root CRL that lists the test signer (serial 2): a revocation
+        // still counts beside a fresh CRL that does not list it.
+        (
+            "sec10-root-expired-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         (
             "sec10-unrelated-expired.crl",
             crl(other, &other_key, NOW - 200, Some(NOW - 1)),

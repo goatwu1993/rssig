@@ -417,17 +417,15 @@ fn sec10_fetch_follows_the_verification_result() {
         // provider is not asked, although it could answer.
         ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[], Some(("invalid_crl", "issuing_distribution_point"))),
-        // Both selected certificates list a point. Only the issuer has no supplied CRL
-        // naming its issuer, so only its point is requested; verification then
-        // succeeds and the signer's point is never requested.
+        // Both selected certificates list a point. The verifier reports only the
+        // issuer as lacking a CRL, so only its point is requested.
         ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
-        // A name-matching CRL that is not authoritative for the signer: its point is
-        // requested second, after the certainly missing one did not settle the status.
-        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec10-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "sec10-issuer-idp-match.crl")], &[CA_POINT, LEAF_POINT], None),
-        // The signer is covered and its issuer is not; both issuers are named, so both
-        // points are requested in the second step. The signer's request fails, which
-        // yields no evidence but does not abort: verification decides, and succeeds.
-        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "sec10-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[LEAF_POINT, CA_POINT], None),
+        // A partition that is not authoritative for the signer, and no root CRL: both
+        // certificates lack a CRL and are asked about in path order, in one round.
+        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec10-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT, CA_POINT], None),
+        // The signer is covered and its issuer is not (a user-only root partition):
+        // only the issuer is asked about; the signer's point is never requested.
+        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "sec10-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
         // A reason-partitioned point beside a plain one: the plain URI is still requested,
         // and the partitioned point is listed in the report's failures.
         ("sec10-leaf-crl-dp-mixed.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-other.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT], None),
@@ -508,11 +506,11 @@ fn sec10_fetch_follows_the_verification_result() {
     }
 }
 
-/// SEC-10: a first-step certificate whose point fails stays uncovered, and the
-/// second step is still requested: a second-step response could carry its
-/// issuer's CRL. Both failures are recorded; the status is the verifier's.
+/// SEC-10: only the certificate the verifier reports as lacking a CRL is asked
+/// about. The signer is covered by a supplied CRL and is never asked; the
+/// issuer's point fails, so the status stays unknown with that failure.
 #[test]
-fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
+fn sec10_fetch_asks_only_the_certificate_without_a_crl() {
     struct Unreachable(Vec<String>);
     impl rssig::retrieval::CrlSource for Unreachable {
         fn crls(
@@ -548,29 +546,22 @@ fn sec10_fetch_still_tries_the_second_step_when_the_first_leaves_a_gap() {
     let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
     assert!(err.is_empty());
     assert_eq!(code, 1);
-    assert_eq!(
-        source.0,
-        [
-            "http://crl.invalid/sec10-issuer.crl",
-            "http://crl.invalid/sec10-a.crl"
-        ]
-    );
+    assert_eq!(source.0, ["http://crl.invalid/sec10-issuer.crl"]);
     let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
     let error = &report["results"][0]["error"];
     assert_eq!(error["code"], "revocation_unknown");
     let failures = error["details"]["crl_retrieval"]["failures"]
         .as_array()
         .unwrap();
-    assert_eq!(failures.len(), 2);
+    assert_eq!(failures.len(), 1);
     assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-issuer.crl");
-    assert_eq!(failures[1]["url"], "http://crl.invalid/sec10-a.crl");
-    assert!(failures.iter().all(|f| f["code"] == "crl_fetch_failed"));
+    assert_eq!(failures[0]["code"], "crl_fetch_failed");
 }
 
-/// SEC-10: in the second step a certificate may already be covered, so a bad
-/// response for its point is recorded and skipped instead of ending the run.
+/// SEC-10: a response that is not a CRL, and a failed request, are no evidence;
+/// another listed point of the same certificate still supplies its CRL.
 #[test]
-fn sec10_fetch_second_step_skips_a_bad_response() {
+fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
     struct Source(Vec<String>);
     impl rssig::retrieval::CrlSource for Source {
         fn crls(
@@ -579,10 +570,15 @@ fn sec10_fetch_second_step_skips_a_bad_response() {
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
             Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
                 self.0.push(url.into());
-                let file = if url.ends_with("sec10-a.crl") {
-                    "sec06-root.der" // a certificate, not a CRL
-                } else {
-                    "sec06-root.crl"
+                let file = match url {
+                    "http://crl.invalid/sec10-c.crl" => "sec06-root.der", // a certificate
+                    "http://crl.invalid/sec10-e.crl" => "sec10-issuer-idp-second-point.crl",
+                    _ => {
+                        return Err(rssig::retrieval::CrlSourceError::new(
+                            rssig::domain::CrlSourceErrorKind::Failed,
+                            "unreachable",
+                        ));
+                    }
                 };
                 let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
                 Ok(rssig::retrieval::SourcedCrl::new(
@@ -602,11 +598,9 @@ fn sec10_fetch_second_step_skips_a_bad_response() {
         "--time".to_owned(),
         "1800000000".to_owned(),
         "--crl".to_owned(),
-        path("sec06-issuer.crl"),
-        "--crl".to_owned(),
-        path("sec10-sec06-root-idp-user.crl"),
+        path("sec06-root.crl"),
         "--fetch-crls".to_owned(),
-        path("sec10-chain-crl-dp.exe"),
+        path("sec10-leaf-crl-dp-multi.exe"),
     ];
     let mut source = Source(Vec::new());
     let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -618,25 +612,25 @@ fn sec10_fetch_second_step_skips_a_bad_response() {
     assert_eq!(
         source.0,
         [
-            "http://crl.invalid/sec10-a.crl",
-            "http://crl.invalid/sec10-issuer.crl"
+            "http://crl.invalid/sec10-c.crl",
+            "http://crl.invalid/sec10-d.crl",
+            "http://crl.invalid/sec10-e.crl"
         ]
     );
     let failures = result["crl_retrieval"]["failures"].as_array().unwrap();
-    assert_eq!(failures.len(), 1);
-    assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-a.crl");
-    assert_eq!(failures[0]["code"], "invalid_crl");
-    assert_eq!(failures[0]["stage"], "revocation");
-    assert_eq!(failures[0]["title"], "Invalid CRL");
+    assert_eq!(failures.len(), 2);
+    assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-d.crl");
+    assert_eq!(failures[0]["source_error"], "failed");
+    let bad = &failures[1];
+    assert_eq!(bad["url"], "http://crl.invalid/sec10-c.crl");
+    assert_eq!(bad["code"], "invalid_crl");
+    assert_eq!(bad["stage"], "revocation");
+    assert_eq!(bad["title"], "Invalid CRL");
     assert!(
-        failures[0]["type"]
+        bad["type"]
             .as_str()
             .unwrap()
             .ends_with("problems.md#invalid_crl")
-    );
-    assert_eq!(
-        failures[0]["details"]["url"],
-        "http://crl.invalid/sec10-a.crl"
     );
     assert_eq!(
         result["signatures"][0]["trust"]["revocation"]["status"],

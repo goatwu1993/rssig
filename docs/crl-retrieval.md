@@ -14,25 +14,26 @@ remain offline. Local `--crl` files can be combined with retrieval. Retrieval
 never decides whether a CRL applies; verification does. No CRL applicability
 rule is restated for retrieval.
 
-1. Verify signatures and candidate trust paths with revocation omitted, and
-   collect the selected leaf, intermediate and timestamp certificates,
-   including bundle children; configured anchors are excluded. Integrity and
-   trust failures end the run here, before any request.
-2. Ask the source for CRLs for each selected certificate whose issuer no
-   supplied CRL even names: such a certificate certainly lacks evidence. The
-   source is asked once per certificate, as OpenSSL's `get_crl` is, and given
-   the certificate, its issuer name and its listed URIs.
-3. Verify with revocation required, against the supplied and any fetched CRLs
-   (skipped when there is no CRL at all). A good result, or any failure but
-   `revocation_unknown`, is final: a stale, forged, unusable or revoking local
-   CRL is reported as it is without `--fetch-crls`, not replaced or ignored.
-4. If the status is still unknown, ask about the remaining certificates, whose issuer a supplied CRL names but which may not be
-   authoritative for them, and verify again. This step runs even when a step-2
-   certificate is still uncovered, since a response here can carry its
-   issuer's CRL too (`sec10-fetch-uncovered-first-step-still-tries-second`).
+1. Verify with revocation required, against the supplied CRLs. A good
+   result, or any failure but `revocation_unknown`, is final: a stale, forged,
+   unusable or revoking local CRL is reported as it is without `--fetch-crls`,
+   unless another CRL of the same issuer is usable (the best CRL decides). An
+   unknown status names, in `details.certificates_without_crl`, every
+   certificate on the path without a usable CRL.
+2. Find the selected leaf, intermediate and timestamp certificates, including
+   bundle children, by verifying once with revocation omitted; configured
+   anchors are excluded. Integrity and trust failures end the run here, before
+   any request.
+3. Ask the source about exactly the certificates without a usable CRL, once
+   each, as OpenSSL's `get_crl` and Bouncy Castle look up CRLs for the
+   certificate being checked; a certificate that a supplied CRL covers is
+   never asked about (`sec10-fetch-covered-signer-is-not-asked`,
+   `sec10-fetch-asks-only-the-uncovered-certificate`). When no CRL applied at
+   all, every selected certificate lacks one.
+4. Verify again with what was added, and repeat steps 3 and 4 while a round
+   adds a CRL and another certificate is still reported without one.
 5. If evidence is still missing, the result is the verifier's own
-   `revocation_unknown`; when no verification has run yet (no CRL at all), one
-   runs now.
+   `revocation_unknown`, or `crl_fetch_aborted` when the source aborted.
 
 Two kinds of error, and nothing in between:
 
@@ -82,19 +83,16 @@ then it is `crl_fetch_aborted` (with the verifier's message in
 before the abort are enough. `crl_fetch_denied` and `crl_fetch_failed` appear
 only inside `crl_retrieval.failures`, never as the result.
 
-A certificate that a supplied CRL covers is not fetched for while another
-chain lacks evidence (`sec10-fetch-covered-signer-point-not-requested`); it is
-in step 4 if a name-matching CRL elsewhere was not enough
-(`sec10-fetch-name-matched-signer-point-requested-second`), and a failure of
-that request, or a response that is not a CRL, does not matter if verification
-then succeeds (`sec10-fetch-covered-point-failure-skipped`,
-`sec10-fetch-covered-point-bad-response-skipped`). Supplied CRLs stay loaded
-beside the fetched ones.
+Certificates that all lack a CRL are asked about in path order, in one round
+(`sec10-fetch-asks-each-certificate-without-crl`). A response that is not a
+CRL, or a failed request, is no evidence while another listed point of the
+same certificate supplies it
+(`sec10-fetch-bad-response-is-no-evidence-beside-another-point`). Supplied CRLs
+stay loaded beside the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run
-verifies two or three times: the discovery pass, then once after step 2 (or
-in step 5 when there is no CRL at all), and once more if step 4 fetches a new
-CRL. All passes share
+verifies once when the supplied CRLs settle it, and otherwise once without
+revocation plus once per retrieval round. All passes share
 SEC-02 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path

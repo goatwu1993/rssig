@@ -89,7 +89,8 @@
       "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
       "cases": [
         "crl-fetch-injected-expired",
-        "sec10-root-expired-crl-still-rejected"
+        "sec10-root-expired-crl-still-rejected",
+        "sec10-root-expired-crl-still-rejected-beside-good-crl"
       ]
     },
     {
@@ -129,7 +130,23 @@
         "sec10-root-aki-issuer-serial-crl-name-matched",
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "sec10-competing-crls-revoked-first-revoked",
+        "sec10-root-crl-no-next-update-beside-good-crl",
+        "sec10-root-expired-crl-still-rejected-beside-good-crl",
+        "sec10-root-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-crl-malformed-aki-beside-good-crl",
+        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-crl-unsupported-beside-good-crl",
+        "sec10-root-indirect-crl-unsupported-beside-good-crl",
+        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-alone-is-expired"
       ]
     },
     {
@@ -231,7 +248,22 @@
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
         "sec10-crl-next-update-exact",
-        "sec10-fetch-excluded-name-match-fetches-listed-point"
+        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "sec10-root-crl-no-next-update-beside-good-crl",
+        "sec10-root-expired-crl-still-rejected-beside-good-crl",
+        "sec10-root-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-crl-malformed-aki-beside-good-crl",
+        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-crl-unsupported-beside-good-crl",
+        "sec10-root-indirect-crl-unsupported-beside-good-crl",
+        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+        "sec10-stale-crl-revocation-beside-fresh-crl-revokes"
       ]
     },
     {
@@ -270,7 +302,23 @@
         "crl-fetch-source-denied-is-no-evidence",
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
-        "crl-fetch-source-abort-is-reported"
+        "crl-fetch-source-abort-is-reported",
+        "sec10-root-crl-no-next-update-beside-good-crl",
+        "sec10-root-expired-crl-still-rejected-beside-good-crl",
+        "sec10-root-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-crl-malformed-aki-beside-good-crl",
+        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-crl-unsupported-beside-good-crl",
+        "sec10-root-indirect-crl-unsupported-beside-good-crl",
+        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-alone-is-expired"
       ]
     },
     {
@@ -7561,10 +7609,9 @@
         "sec10-fetch-ca-ca-scope-idp-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-fetch-covered-signer-is-not-asked",
         "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-asks-only-the-uncovered-certificate",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme"
       ]
@@ -7929,11 +7976,11 @@
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second",
-        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-fetch-asks-each-certificate-without-crl",
+        "sec10-fetch-covered-signer-is-not-asked",
         "sec10-leaf-crl-dp-mixed-full-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-fetch-builtin-source-denies-https"
@@ -8038,12 +8085,12 @@
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second",
-        "sec10-fetch-covered-point-failure-skipped",
+        "sec10-fetch-asks-each-certificate-without-crl",
+        "sec10-fetch-covered-signer-is-not-asked",
         "sec10-leaf-crl-dp-mixed-full-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-asks-only-the-uncovered-certificate",
+        "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
         "sec10-fetch-source-abort-stops-requests",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
@@ -9253,7 +9300,20 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-crl-no-next-update"
+        "sec10-root-crl-no-next-update",
+        "sec10-root-crl-no-next-update-beside-good-crl"
+      ]
+    },
+    {
+      "file": "sec10-root-expired-revoked.crl",
+      "sha256": "4094a1192f39d0307ad1dbf2334b637319d9e1202fee9ececc9da758526e3711",
+      "bytes": 208,
+      "description": "SEC-10: Correctly signed root CRL, expired (nextUpdate one second before the pinned time), revoking serial 2, the test signer. A revocation in an authenticated CRL counts beside a fresh CRL that does not list it; alone it is only expired. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-alone-is-expired"
       ]
     },
     {
@@ -9310,7 +9370,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-aki-crl-still-rejected"
+        "sec10-root-aki-crl-still-rejected",
+        "sec10-root-aki-crl-still-rejected-beside-good-crl"
       ]
     },
     {
@@ -9321,7 +9382,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-crl-malformed-aki"
+        "sec10-root-crl-malformed-aki",
+        "sec10-root-crl-malformed-aki-beside-good-crl"
       ]
     },
     {
@@ -9332,7 +9394,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-signed-other-aki-crl-still-rejected"
+        "sec10-root-signed-other-aki-crl-still-rejected",
+        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl"
       ]
     },
     {
@@ -9354,7 +9417,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-unknown-critical-extension-crl-unsupported"
+        "sec10-root-unknown-critical-extension-crl-unsupported",
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9365,7 +9429,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-delta-crl-unsupported"
+        "sec10-root-delta-crl-unsupported",
+        "sec10-root-delta-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9376,7 +9441,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-indirect-crl-unsupported"
+        "sec10-root-indirect-crl-unsupported",
+        "sec10-root-indirect-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9398,7 +9464,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-entry-critical-extension-crl-unsupported"
+        "sec10-root-entry-critical-extension-crl-unsupported",
+        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9409,7 +9476,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-delta-expired-crl-reports-feature"
+        "sec10-root-delta-expired-crl-reports-feature",
+        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl"
       ]
     },
     {
@@ -9453,7 +9521,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-user-certs-crl-unsupported"
+        "sec10-root-idp-user-certs-crl-unsupported",
+        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9464,7 +9533,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-ca-certs-crl-unsupported"
+        "sec10-root-idp-ca-certs-crl-unsupported",
+        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl"
       ]
     },
     {
@@ -9475,7 +9545,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-aki-issuer-serial-crl-name-matched"
+        "sec10-root-aki-issuer-serial-crl-name-matched",
+        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl"
       ]
     },
     {
@@ -9486,7 +9557,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-named-point-crl-rejected"
+        "sec10-root-idp-named-point-crl-rejected",
+        "sec10-root-idp-named-point-crl-rejected-beside-good-crl"
       ]
     },
     {
@@ -9556,7 +9628,7 @@
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
-        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
@@ -9587,7 +9659,7 @@
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-other-idp-fetched-revoked",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-name-matched-signer-point-requested-second",
+        "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-mixed-point-requests-plain-uri"
       ]
     },
@@ -9625,7 +9697,8 @@
       "cases": [
         "sec10-crl-dp-multi-second-point-matches",
         "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-multi-full-crl"
+        "sec10-crl-dp-multi-full-crl",
+        "sec10-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
@@ -9729,10 +9802,9 @@
       "cases": [
         "sec10-chain-crl-dp-full-crls",
         "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-name-matched-signer-point-requested-second",
-        "sec10-fetch-covered-point-failure-skipped",
-        "sec10-fetch-uncovered-first-step-still-tries-second",
-        "sec10-fetch-covered-point-bad-response-skipped",
+        "sec10-fetch-asks-each-certificate-without-crl",
+        "sec10-fetch-covered-signer-is-not-asked",
+        "sec10-fetch-asks-only-the-uncovered-certificate",
         "sec10-fetch-source-abort-stops-requests"
       ]
     },
@@ -9780,7 +9852,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-multi-second-point-matches"
+        "sec10-crl-dp-multi-second-point-matches",
+        "sec10-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
@@ -9831,8 +9904,7 @@
       "cases": [
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-covered-point-failure-skipped",
-        "sec10-fetch-covered-point-bad-response-skipped"
+        "sec10-fetch-covered-signer-is-not-asked"
       ]
     },
     {

@@ -108,8 +108,8 @@ One box per item in the scope above.
   `sec10-fetch-ca-user-scope-idp-fetches-listed-point`,
   `sec10-fetch-excluded-name-match-fetches-listed-point`,
   `sec10-fetch-covered-signer-point-not-requested`,
-  `sec10-fetch-name-matched-signer-point-requested-second`,
-  `sec10-fetch-covered-point-failure-skipped`, and the
+  `sec10-fetch-asks-each-certificate-without-crl`,
+  `sec10-fetch-covered-signer-is-not-asked`, and the
   `sec10-fetch-*-not-fetched` controls; named tests in
   `tests/cli/crl_fetch.rs`.
   A supplied CRL that verification rejects is reported as it is offline and
@@ -126,6 +126,13 @@ One box per item in the scope above.
   Limits: see evidence limits.
 
 ## Decisions made
+
+- The best CRL decides, checked per certificate on each path (PR #60):
+  revocation is evaluated by rssig for every certificate on a candidate path,
+  as OpenSSL and Bouncy Castle do, and webpki confirms the accepted path with
+  only the chosen CRLs. An unusable CRL is set aside when another CRL of the
+  issuer is usable; the former `sec10-root-*` cases now pin each failure with
+  the bad CRL alone and success beside `good.crl`.
 
 Change these only with a new decision and paired fixtures.
 
@@ -180,9 +187,9 @@ Change these only with a new decision and paired fixtures.
 - `--fetch-crls` requests points in two steps (certificates whose issuer no
   supplied CRL names, then the rest), pinned on `sec10-chain-crl-dp.exe` by
   `sec10-fetch-covered-signer-point-not-requested`,
-  `sec10-fetch-name-matched-signer-point-requested-second`,
-  `sec10-fetch-covered-point-failure-skipped` and
-  `sec10-fetch-uncovered-first-step-still-tries-second`; the first, third and
+  `sec10-fetch-asks-each-certificate-without-crl`,
+  `sec10-fetch-covered-signer-is-not-asked` and
+  `sec10-fetch-asks-only-the-uncovered-certificate`; the first, third and
   fourth failed
   before the change that introduced them. In the second step a certificate
   that a supplied CRL does cover can still be fetched for; a failed request is

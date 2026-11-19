@@ -1,4 +1,9 @@
-use alloc::{format, string::ToString, vec, vec::Vec};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 mod error;
 mod loading;
 use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
@@ -52,24 +57,6 @@ impl TrustStore {
                 .context("loaded roots/CRLs exceed 32 MiB")?;
         }
         Ok(())
-    }
-    /// Issuer name DER of each supplied CRL, read from the top-level
-    /// tbsCertList fields without decoding the CRL; only those bytes are
-    /// charged. A CRL whose issuer cannot be read this way names nothing
-    /// here; verification reports it. A name match is necessary for a CRL
-    /// to apply to a certificate, never sufficient.
-    #[cfg(feature = "crl-fetch")]
-    pub(crate) fn crl_issuers(&self, budget: &Budget) -> Result<Vec<Vec<u8>>> {
-        let mut issuers = Vec::new();
-        for name in self
-            .crls
-            .iter()
-            .filter_map(|bytes| crate::der::tbs_issuer(bytes, 0x02, 1))
-        {
-            budget.decoded_bytes.charge(name.len())?;
-            issuers.push(name.to_vec());
-        }
-        Ok(issuers)
     }
     #[cfg(feature = "crl-fetch")]
     pub(crate) fn retrieval_crl_count(&self) -> usize {
@@ -227,200 +214,61 @@ impl TrustStore {
             .map(|c| c.to_der().map(CertificateDer::from))
             .collect::<core::result::Result<_, _>>()
             .map_err(crate::compat_error)?;
-        let mut parsed_crls = Vec::new();
-        // Revoked serials per issuer name, from every applicable CRL whose
-        // signature verifies under a name-matching candidate key.
-        let mut revoked_serials: Vec<(Vec<u8>, Vec<Vec<u8>>)> = Vec::new();
-        if revocation {
+        // Revocation is checked here, certificate by certificate on each
+        // candidate path, as OpenSSL's check_cert_crl and Bouncy Castle's
+        // X509RevocationChecker do: each certificate's CRLs are authenticated
+        // under that path's real issuer key, and the best usable one decides.
+        // webpki then confirms the accepted path with only the chosen CRLs.
+        let crls = if revocation {
             if self.crls.is_empty() {
                 return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
             }
-            // A CRL cannot apply to this chain unless a root or candidate
-            // certificate has its issuer name and, when the CRL names an
-            // authority key, the same subject key. Such CRLs are excluded
-            // rather than rejecting the request; a CRL from a chain issuer
-            // must be usable or fail closed. A candidate without a subject key
-            // identifier cannot disprove a match, and a differing key
-            // identifier excludes a CRL only if the CRL's signature also fails
-            // under every name-matching candidate key.
-            let mut issuers = Vec::new();
+            let mut issuer_names = Vec::new();
             for root in &self.roots {
                 let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
-                issuers.push(issuer_identity(&root)?);
+                issuer_names.push(
+                    root.tbs_certificate
+                        .subject
+                        .to_der()
+                        .map_err(crate::compat_error)?,
+                );
             }
             for certificate in certificates {
-                issuers.push(issuer_identity(certificate)?);
+                issuer_names.push(
+                    certificate
+                        .tbs_certificate
+                        .subject
+                        .to_der()
+                        .map_err(crate::compat_error)?,
+                );
             }
-            for bytes in &self.crls {
-                let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
-                // Verify over the CRL's original TBS bytes, never a re-encoding.
-                let signed = crate::der::one(bytes, 0x30)
-                    .and_then(|outer| outer.children())
-                    .map_err(crate::compat_error)?
-                    .first()
-                    .map(|tbs| tbs.full)
-                    .context("CRL lacks tbsCertList")?;
-                let tbs = crl.tbs_cert_list;
-                let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
-                let named: Vec<_> = issuers.iter().filter(|i| i.name == issuer).collect();
-                if named.is_empty() {
-                    continue;
-                }
-                let authority_key = match tbs
-                    .crl_extensions
-                    .iter()
-                    .flatten()
-                    .find(|e| e.extn_id == AuthorityKeyIdentifier::OID)
-                {
-                    None => None,
-                    Some(e) => {
-                        AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes())
-                            .map_err(|_| {
-                                VerificationError::new(
-                                    ErrorCode::InvalidCrl,
-                                    Stage::Revocation,
-                                    "CRL authorityKeyIdentifier is malformed",
-                                )
-                                .detail("reason", "malformed_authority_key_identifier")
-                                .detail("crl", CrlReport::parse(bytes).ok())
-                            })?
-                            .key_identifier
-                    }
-                };
-                let applies = named.iter().any(|i| match (&authority_key, &i.key_id) {
-                    (Some(wanted), Some(have)) => wanted.as_bytes() == have.as_slice(),
-                    _ => true,
-                }) || (authority_key.is_some()
-                    && named.iter().any(|i| {
-                        signed_by(
-                            &i.spki,
-                            &crl.signature_algorithm.oid,
-                            signed,
-                            &crl.signature,
-                        )
-                        .unwrap_or(true)
-                    }));
-                if !applies {
-                    continue;
-                }
-                // webpki treats a CRL scoped to a named distribution point as
-                // authoritative for a certificate that lists no distribution
-                // points, so such a partition could clear a certificate it does
-                // not cover. Fail closed instead.
-                if names_distribution_point(&tbs)
-                    && core::iter::once(signer)
-                        .chain(certificates)
-                        .filter(|c| {
-                            c.tbs_certificate.issuer.to_der().ok().as_deref() == Some(&issuer)
-                        })
-                        .any(|c| !has_extension(c, "2.5.29.31"))
-                {
-                    return Err(VerificationError::new(
-                        ErrorCode::InvalidCrl,
-                        Stage::Revocation,
-                        "CRL is scoped to a distribution point that a covered certificate does not list",
-                    )
-                    .detail("reason", "distribution_point_scope")
-                    .detail("crl", CrlReport::parse(bytes).ok())
-                    .into());
-                }
-                let Some(next_update) = tbs.next_update else {
-                    return Err(VerificationError::new(
-                        ErrorCode::InvalidCrl,
-                        Stage::Revocation,
-                        "CRL lacks nextUpdate",
-                    )
-                    .detail("reason", "missing_next_update")
-                    .detail("crl", CrlReport::parse(bytes)?)
-                    .into());
-                };
-                // Parse every entry now: webpki otherwise reads entries lazily,
-                // so an unsupported entry could fail later as a chain error, or
-                // never be read when another CRL for the same issuer is found
-                // first. Feature support is reported before freshness, which a
-                // refreshed CRL could not fix, as is a missing nextUpdate above.
-                let usable = webpki::BorrowedCertRevocationList::from_der(bytes)
-                    .and_then(|crl| crl.to_owned())
-                    .map_err(|e| {
-                        VerificationError::new(
-                            ErrorCode::InvalidCrl,
-                            Stage::Revocation,
-                            format!("unsupported or malformed CRL: {e:?}"),
-                        )
-                        .detail("reason", crl_rejection_reason(&e))
-                        .detail("crl", CrlReport::parse(bytes).ok())
-                    })?;
-                if tbs.this_update.to_unix_duration().as_secs() > now {
-                    return Err(VerificationError::new(
-                        ErrorCode::CrlNotYetValid,
-                        Stage::Revocation,
-                        "CRL thisUpdate is in the future",
-                    )
-                    .detail("crl", CrlReport::parse(bytes)?)
-                    .detail("validation_time", now)
-                    .into());
-                }
-                if next_update.to_unix_duration().as_secs() <= now {
-                    return Err(VerificationError::new(
-                        ErrorCode::CrlExpired,
-                        Stage::Revocation,
-                        "CRL has expired",
-                    )
-                    .detail("crl", CrlReport::parse(bytes)?)
-                    .detail("validation_time", now)
-                    .into());
-                }
-                // webpki consults only the first authoritative CRL per
-                // certificate, so a revocation listed by a later CRL for the
-                // same issuer would be missed. The path callback checks them all.
-                if named.iter().any(|i| {
-                    signed_by(
-                        &i.spki,
-                        &crl.signature_algorithm.oid,
-                        signed,
-                        &crl.signature,
-                    )
-                    .unwrap_or(true)
-                }) {
-                    let serials = tbs
-                        .revoked_certificates
-                        .iter()
-                        .flatten()
-                        .map(|r| r.serial_number.as_bytes().to_vec())
-                        .collect();
-                    revoked_serials.push((issuer.clone(), serials));
-                }
-                parsed_crls.push(webpki::CertRevocationList::from(usable));
+            let crls = self
+                .crls
+                .iter()
+                .map(|bytes| LoadedCrl::load(bytes))
+                .collect::<Result<Vec<_>>>()?;
+            if !crls.iter().any(|crl| issuer_names.contains(&crl.issuer)) {
+                return Err(VerificationError::new(
+                    ErrorCode::RevocationUnknown,
+                    Stage::Revocation,
+                    "no supplied CRL applies to the certificate chain",
+                )
+                .into());
             }
-        }
-        if revocation && parsed_crls.is_empty() {
-            return Err(VerificationError::new(
-                ErrorCode::RevocationUnknown,
-                Stage::Revocation,
-                "no supplied CRL applies to the certificate chain",
-            )
-            .into());
-        }
-        let crl_refs: Vec<_> = parsed_crls.iter().collect();
-        let revocation_enabled = revocation;
-        let revocation = if revocation {
-            Some(
-                webpki::RevocationOptionsBuilder::new(&crl_refs)
-                    .map_err(|e| anyhow::anyhow!("CRLs required: {e:?}"))?
-                    .with_depth(webpki::RevocationCheckDepth::Chain)
-                    .with_status_policy(webpki::UnknownStatusPolicy::Deny)
-                    .with_expiration_policy(webpki::ExpirationPolicy::Enforce)
-                    .build(),
-            )
+            crls
         } else {
-            None
+            Vec::new()
         };
+        let revocation_enabled = revocation;
+        // Per candidate path: the revocation outcomes it produced, and the
+        // CRLs chosen for an accepted path.
+        let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
+        let chosen: core::cell::RefCell<Vec<usize>> = Default::default();
         // Rejecting a candidate path here is non-fatal: webpki tries other
         // issuers and reports the most specific rejection by its error rank.
         let invalid_ca_usage = core::cell::Cell::new(false);
         let issued_after_signing = core::cell::OnceCell::new();
         let check_path_policy = |path: &webpki::VerifiedPath<'_>| {
-            let mut lacks_cert_sign = false;
             let mut path_certificates = vec![signer.clone()];
             for intermediate in path.intermediate_certificates() {
                 for _ in 0..8 {
@@ -429,17 +277,54 @@ impl TrustStore {
                         .charge(intermediate.der().as_ref().len())
                         .map_err(|_| webpki::Error::BadDer)?;
                 }
-                let cert = Certificate::from_der(intermediate.der().as_ref())
+                path_certificates.push(
+                    Certificate::from_der(intermediate.der().as_ref())
+                        .map_err(|_| webpki::Error::BadDer)?,
+                );
+            }
+            // Revocation first, as webpki checked it while verifying the
+            // path's signatures, before any other path policy.
+            if revocation_enabled {
+                // Each certificate's issuer on this path: the next
+                // certificate, or the configured root behind the anchor.
+                let anchor = self
+                    .anchor_certificate(path.anchor())
+                    .ok_or(webpki::Error::UnknownIssuer)?;
+                // Every certificate is evaluated, so that an unknown status
+                // names every certificate without a usable CRL at once.
+                let mut path_chosen = Vec::new();
+                let mut rejected = None;
+                for (depth, cert) in path_certificates.iter().enumerate() {
+                    let issuer = match path_certificates.get(depth + 1) {
+                        Some(next) => IssuerKey::of(next, false),
+                        None => IssuerKey::of(&anchor, true),
+                    }
                     .map_err(|_| webpki::Error::BadDer)?;
-                path_certificates.push(cert.clone());
-                if let Some(at) = issued_after(&cert, lifetime_signed_at) {
+                    let evidence = evaluate_crls(cert, depth == 0, &issuer, &crls, now);
+                    match &evidence.outcome {
+                        Outcome::Good(index) => path_chosen.push(*index),
+                        Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
+                        Outcome::Missing(_) => {
+                            rejected.get_or_insert(webpki::Error::UnknownRevocationStatus);
+                        }
+                    }
+                    outcomes.borrow_mut().push(evidence);
+                }
+                if let Some(error) = rejected {
+                    return Err(error);
+                }
+                *chosen.borrow_mut() = path_chosen;
+            }
+            let mut lacks_cert_sign = false;
+            for cert in &path_certificates[1..] {
+                if let Some(at) = issued_after(cert, lifetime_signed_at) {
                     // Ranked like webpki's own validity errors. Keep the first
                     // rejection, which webpki also keeps among equal ranks.
                     let error = webpki::Error::CertNotValidYet {
                         time: UnixTime::since_unix_epoch(Duration::from_secs(at)),
-                        not_before: UnixTime::since_unix_epoch(not_before(&cert)),
+                        not_before: UnixTime::since_unix_epoch(not_before(cert)),
                     };
-                    let _ = issued_after_signing.set(cert);
+                    let _ = issued_after_signing.set(cert.clone());
                     return Err(error);
                 }
                 if let Some((_, ku)) = cert
@@ -462,20 +347,6 @@ impl TrustStore {
                 invalid_ca_usage.set(true);
                 return Err(webpki::Error::UnknownIssuer);
             }
-            for cert in &path_certificates {
-                let issuer = cert
-                    .tbs_certificate
-                    .issuer
-                    .to_der()
-                    .map_err(|_| webpki::Error::BadDer)?;
-                let serial = cert.tbs_certificate.serial_number.as_bytes();
-                if revoked_serials
-                    .iter()
-                    .any(|(name, serials)| *name == issuer && serials.iter().any(|s| s == serial))
-                {
-                    return Err(webpki::Error::CertRevoked);
-                }
-            }
             Ok(())
         };
         // An absent EKU in a CA is unrestricted. The leaf is required to have
@@ -497,7 +368,7 @@ impl TrustStore {
             &intermediates,
             UnixTime::since_unix_epoch(Duration::from_secs(validation_time)),
             webpki::KeyUsage::required_if_present(eku),
-            revocation,
+            None,
             Some(&check_path_policy),
         );
         budget.crypto.check()?;
@@ -521,7 +392,15 @@ impl TrustStore {
                 // Every candidate path failed; report the issuer that postdates signing.
                 return not_valid_at_signing(cert, at);
             }
-            let mut error = if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
+            let revocation_error = matches!(
+                e,
+                webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
+            )
+            .then(|| revocation_failure(&outcomes.borrow()))
+            .flatten();
+            let mut error = if let Some(error) = revocation_error {
+                error
+            } else if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
                 VerificationError::new(
                     ErrorCode::InvalidKeyUsage,
                     Stage::CertificateChain,
@@ -541,6 +420,51 @@ impl TrustStore {
             }
             error
         })?;
+        // webpki confirms the accepted path's revocation status with only the
+        // CRLs chosen for it, under its own rules and our crypto adapter. A
+        // disagreement rejects; it never accepts what the check above did not.
+        if revocation_enabled {
+            let mut picked = chosen.borrow().clone();
+            picked.sort_unstable();
+            picked.dedup();
+            let picked: Vec<webpki::CertRevocationList<'_>> = picked
+                .iter()
+                .filter_map(|&index| crls[index].webpki.clone().ok())
+                .map(webpki::CertRevocationList::from)
+                .collect();
+            let picked_refs: Vec<_> = picked.iter().collect();
+            let options = webpki::RevocationOptionsBuilder::new(&picked_refs)
+                .map_err(|e| anyhow::anyhow!("CRLs required: {e:?}"))?
+                .with_depth(webpki::RevocationCheckDepth::Chain)
+                .with_status_policy(webpki::UnknownStatusPolicy::Deny)
+                .with_expiration_policy(webpki::ExpirationPolicy::Enforce)
+                .build();
+            // Only the accepted path is offered, so there is no search: the
+            // path work is covered by the reservation above, and its signature
+            // and CRL checks are charged through the budgeted algorithms.
+            let path_intermediates: Vec<CertificateDer<'static>> = path
+                .intermediate_certificates()
+                .map(|c| c.der().clone().into_owned())
+                .collect();
+            let path_anchor = [path.anchor().clone()];
+            let confirmed = leaf.verify_for_usage(
+                &algorithm_refs,
+                &path_anchor,
+                &path_intermediates,
+                UnixTime::since_unix_epoch(Duration::from_secs(validation_time)),
+                webpki::KeyUsage::required_if_present(eku),
+                Some(options),
+                None,
+            );
+            budget.crypto.check()?;
+            budget.hash_bytes.check()?;
+            confirmed.map_err(|e| {
+                webpki_error(e)
+                    .detail("certificate", &leaf_report)
+                    .detail("required_eku", eku_oid.to_string())
+                    .detail("reason", "confirmation")
+            })?;
+        }
         let mut chain = vec![leaf_report];
         for intermediate in path.intermediate_certificates() {
             chain.push(CertificateReport::parse(
@@ -586,6 +510,411 @@ impl TrustStore {
     }
 }
 
+impl TrustStore {
+    /// The configured root behind a path's anchor.
+    fn anchor_certificate(
+        &self,
+        anchor: &rustls_pki_types::TrustAnchor<'_>,
+    ) -> Option<Certificate> {
+        self.roots.iter().find_map(|root| {
+            let candidate = webpki::anchor_from_trusted_cert(root).ok()?;
+            (candidate.subject == anchor.subject
+                && candidate.subject_public_key_info == anchor.subject_public_key_info)
+                .then(|| Certificate::from_der(root.as_ref()).ok())
+                .flatten()
+        })
+    }
+}
+
+/// A supplied or retrieved CRL, decoded once per verification.
+struct LoadedCrl {
+    bytes: Vec<u8>,
+    tbs: x509_cert::crl::TbsCertList,
+    /// The original tbsCertList bytes, never a re-encoding.
+    signed: Vec<u8>,
+    algorithm: ::der::asn1::ObjectIdentifier,
+    signature: ::der::asn1::BitString,
+    issuer: Vec<u8>,
+    /// The authorityKeyIdentifier keyIdentifier; `Err` when malformed.
+    authority_key: core::result::Result<Option<Vec<u8>>, ()>,
+    revoked: Vec<Vec<u8>>,
+    /// webpki's own parse, which also rejects unsupported features.
+    webpki: core::result::Result<webpki::OwnedCertRevocationList, webpki::Error>,
+}
+
+impl LoadedCrl {
+    fn load(bytes: &[u8]) -> Result<Self> {
+        let crl = CertificateList::from_der(bytes).map_err(crate::compat_error)?;
+        let signed = crate::der::one(bytes, 0x30)
+            .and_then(|outer| outer.children())
+            .map_err(crate::compat_error)?
+            .first()
+            .map(|tbs| tbs.full.to_vec())
+            .context("CRL lacks tbsCertList")?;
+        let tbs = crl.tbs_cert_list;
+        let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
+        let authority_key = match tbs
+            .crl_extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id == AuthorityKeyIdentifier::OID)
+        {
+            None => Ok(None),
+            Some(e) => AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes())
+                .map(|aki| aki.key_identifier.map(|k| k.as_bytes().to_vec()))
+                .map_err(|_| ()),
+        };
+        let revoked = tbs
+            .revoked_certificates
+            .iter()
+            .flatten()
+            .map(|r| r.serial_number.as_bytes().to_vec())
+            .collect();
+        // Parse every entry now: webpki otherwise reads entries lazily, so an
+        // unsupported entry could go unnoticed.
+        let webpki =
+            webpki::BorrowedCertRevocationList::from_der(bytes).and_then(|crl| crl.to_owned());
+        Ok(Self {
+            bytes: bytes.to_vec(),
+            signed,
+            algorithm: crl.signature_algorithm.oid,
+            signature: crl.signature,
+            issuer,
+            authority_key,
+            revoked,
+            webpki,
+            tbs,
+        })
+    }
+}
+
+/// The key, identifier and CRL-signing permission of a certificate's issuer
+/// on one path.
+struct IssuerKey {
+    spki: Vec<u8>,
+    key_id: Option<Vec<u8>>,
+    /// Configured anchors are keys: their KeyUsage does not restrict CRL
+    /// signing (webpki does not track anchor KeyUsage either).
+    crl_sign: bool,
+}
+
+impl IssuerKey {
+    fn of(cert: &Certificate, anchor: bool) -> Result<Self> {
+        use x509_cert::ext::pkix::KeyUsage;
+        let identity = issuer_identity(cert)?;
+        let crl_sign = anchor
+            || cert
+                .tbs_certificate
+                .get::<KeyUsage>()
+                .map_err(crate::compat_error)?
+                .is_none_or(|(_, ku)| ku.crl_sign());
+        Ok(Self {
+            spki: identity.spki,
+            key_id: identity.key_id,
+            crl_sign,
+        })
+    }
+}
+
+/// What one certificate's CRLs established on one candidate path.
+struct CertificateEvidence {
+    sha256: String,
+    outcome: Outcome,
+}
+
+enum Outcome {
+    /// The index of the usable, authoritative CRL chosen for it.
+    Good(usize),
+    Revoked(VerificationError),
+    /// No usable authoritative CRL; the most specific reason, if a CRL of
+    /// its issuer was found but could not be used.
+    Missing(Option<(u8, VerificationError)>),
+}
+
+/// Choose the best CRL for `cert` among those of its issuer on this path, as
+/// OpenSSL's CRL scoring and Bouncy Castle's validity filtering do: a CRL
+/// that is forged for this key, from an issuer without cRLSign, unsupported,
+/// or not current is set aside when another is usable. Only when none is
+/// usable does the most specific of their failures decide.
+fn evaluate_crls(
+    cert: &Certificate,
+    end_entity: bool,
+    issuer: &IssuerKey,
+    crls: &[LoadedCrl],
+    now: u64,
+) -> CertificateEvidence {
+    let der = cert.to_der().unwrap_or_default();
+    let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
+    let report = || CrlReportContext::new(cert);
+    let Ok(issuer_name) = cert.tbs_certificate.issuer.to_der() else {
+        return CertificateEvidence {
+            sha256,
+            outcome: Outcome::Missing(None),
+        };
+    };
+    let serial = cert.tbs_certificate.serial_number.as_bytes();
+    let mut usable = None;
+    let mut authenticated_listing = None;
+    let mut failure: Option<(u8, VerificationError)> = None;
+    let mut fail = |rank: u8, error: VerificationError| {
+        if failure.as_ref().is_none_or(|(best, _)| rank > *best) {
+            failure = Some((rank, error));
+        }
+    };
+    for (index, crl) in crls.iter().enumerate() {
+        if crl.issuer != issuer_name {
+            continue;
+        }
+        let crl_report = || CrlReport::parse(&crl.bytes).ok();
+        let Ok(authority_key) = &crl.authority_key else {
+            fail(
+                3,
+                report()
+                    .error(
+                        ErrorCode::InvalidCrl,
+                        "CRL authorityKeyIdentifier is malformed",
+                    )
+                    .detail("reason", "malformed_authority_key_identifier")
+                    .detail("crl", crl_report()),
+            );
+            continue;
+        };
+        // Authenticate under this path's issuer key. A CRL that names
+        // another key of the same name, and is not signed by this one, is
+        // not this issuer's: it is set aside without a failure.
+        match signed_by(&issuer.spki, &crl.algorithm, &crl.signed, &crl.signature) {
+            Some(true) => {}
+            Some(false)
+                if authority_key.is_some()
+                    && issuer.key_id.is_some()
+                    && authority_key != &issuer.key_id =>
+            {
+                continue;
+            }
+            _ => {
+                fail(
+                    5,
+                    report()
+                        .webpki(webpki::Error::InvalidCrlSignatureForPublicKey)
+                        .detail("crl", crl_report()),
+                );
+                continue;
+            }
+        }
+        // Authenticated: a listing here counts, whatever else is wrong with it.
+        if crl.revoked.iter().any(|s| s.as_slice() == serial) {
+            authenticated_listing.get_or_insert(index);
+        }
+        if !issuer.crl_sign {
+            fail(
+                4,
+                report()
+                    .webpki(webpki::Error::IssuerNotCrlSigner)
+                    .detail("crl", crl_report()),
+            );
+            continue;
+        }
+        // webpki would treat a CRL scoped to a named distribution point as
+        // authoritative for a certificate that lists none, so such a
+        // partition could clear a certificate it does not cover.
+        if names_distribution_point(&crl.tbs) && !has_extension(cert, "2.5.29.31") {
+            fail(
+                3,
+                report()
+                    .error(
+                        ErrorCode::InvalidCrl,
+                        "CRL is scoped to a distribution point that the certificate does not list",
+                    )
+                    .detail("reason", "distribution_point_scope")
+                    .detail("crl", crl_report()),
+            );
+            continue;
+        }
+        let Some(next_update) = crl.tbs.next_update else {
+            fail(
+                3,
+                report()
+                    .error(ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
+                    .detail("reason", "missing_next_update")
+                    .detail("crl", crl_report()),
+            );
+            continue;
+        };
+        // Feature support is reported before freshness, which a refreshed
+        // CRL could not fix.
+        if let Err(e) = &crl.webpki {
+            fail(
+                3,
+                report()
+                    .error(
+                        ErrorCode::InvalidCrl,
+                        format!("unsupported or malformed CRL: {e:?}"),
+                    )
+                    .detail("reason", crl_rejection_reason(e))
+                    .detail("crl", crl_report()),
+            );
+            continue;
+        }
+        if crl.tbs.this_update.to_unix_duration().as_secs() > now {
+            fail(
+                2,
+                report()
+                    .error(ErrorCode::CrlNotYetValid, "CRL thisUpdate is in the future")
+                    .detail("crl", crl_report())
+                    .detail("validation_time", now),
+            );
+            continue;
+        }
+        if next_update.to_unix_duration().as_secs() <= now {
+            fail(
+                1,
+                report()
+                    .error(ErrorCode::CrlExpired, "CRL has expired")
+                    .detail("crl", crl_report())
+                    .detail("validation_time", now),
+            );
+            continue;
+        }
+        if !authoritative_for(&crl.tbs, cert, end_entity) {
+            continue;
+        }
+        usable.get_or_insert(index);
+    }
+    let outcome = match (usable, authenticated_listing) {
+        // A current authoritative CRL makes the status known; a listing in
+        // any CRL authenticated by this issuer key then revokes, even a stale
+        // or partition CRL: revocations do not expire.
+        (Some(_), Some(listing)) => Outcome::Revoked(
+            report()
+                .webpki(webpki::Error::CertRevoked)
+                .detail("crl", CrlReport::parse(&crls[listing].bytes).ok()),
+        ),
+        (Some(index), None) => Outcome::Good(index),
+        // Without one, the status is unknown, even if a CRL lists it.
+        (None, _) => Outcome::Missing(failure),
+    };
+    CertificateEvidence { sha256, outcome }
+}
+
+/// The error for a revocation rejection, from what the candidate paths
+/// established: a revocation first, then the most specific reason a CRL could
+/// not be used, else unknown status naming every certificate that lacked a
+/// usable CRL.
+fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
+    if outcomes.is_empty() {
+        return None;
+    }
+    if let Some(error) = outcomes.iter().find_map(|o| match &o.outcome {
+        Outcome::Revoked(error) => Some(error.clone()),
+        _ => None,
+    }) {
+        return Some(error);
+    }
+    let mut best: Option<&(u8, VerificationError)> = None;
+    for outcome in outcomes {
+        if let Outcome::Missing(Some(failure)) = &outcome.outcome
+            && best.is_none_or(|b| failure.0 > b.0)
+        {
+            best = Some(failure);
+        }
+    }
+    if let Some((_, error)) = best {
+        return Some(error.clone());
+    }
+    let mut missing: Vec<&str> = Vec::new();
+    for outcome in outcomes {
+        if matches!(outcome.outcome, Outcome::Missing(None))
+            && !missing.contains(&outcome.sha256.as_str())
+        {
+            missing.push(&outcome.sha256);
+        }
+    }
+    Some(
+        VerificationError::new(
+            ErrorCode::RevocationUnknown,
+            Stage::Revocation,
+            "no usable authoritative CRL for a certificate on the path",
+        )
+        .detail("certificates_without_crl", missing),
+    )
+}
+
+/// Builds revocation errors that name the affected certificate.
+struct CrlReportContext {
+    sha256: String,
+}
+
+impl CrlReportContext {
+    fn new(cert: &Certificate) -> Self {
+        let der = cert.to_der().unwrap_or_default();
+        Self {
+            sha256: crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der)),
+        }
+    }
+    fn error(&self, code: ErrorCode, message: impl Into<String>) -> VerificationError {
+        VerificationError::new(code, Stage::Revocation, message)
+            .detail("affected_certificate", &self.sha256)
+    }
+    /// The same error webpki's own check reports, naming the certificate.
+    fn webpki(&self, error: webpki::Error) -> VerificationError {
+        webpki_error(error).detail("affected_certificate", &self.sha256)
+    }
+}
+
+/// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint, or
+/// one whose role flags admit the certificate and that names a fullName URI the
+/// certificate lists (or the certificate lists none). This is webpki 0.103's
+/// rule; webpki re-checks it when confirming the path.
+fn authoritative_for(
+    tbs: &x509_cert::crl::TbsCertList,
+    cert: &Certificate,
+    end_entity: bool,
+) -> bool {
+    use x509_cert::ext::pkix::{
+        CrlDistributionPoints,
+        crl::dp::IssuingDistributionPoint,
+        name::{DistributionPointName, GeneralName},
+    };
+    // By OID string: x509-cert 0.2 associates the wrong OID with this type.
+    let Some(idp) = tbs
+        .crl_extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.28")
+    else {
+        return true;
+    };
+    let Ok(idp) = IssuingDistributionPoint::from_der(idp.extn_value.as_bytes()) else {
+        return false;
+    };
+    if idp.only_contains_ca_certs && end_entity || idp.only_contains_user_certs && !end_entity {
+        return false;
+    }
+    let points = match cert.tbs_certificate.get::<CrlDistributionPoints>() {
+        Ok(None) => return true,
+        Ok(Some((_, points))) => points.0,
+        Err(_) => return false,
+    };
+    let uris = |name: &Option<DistributionPointName>| -> Vec<Vec<u8>> {
+        match name {
+            Some(DistributionPointName::FullName(names)) => names
+                .iter()
+                .filter_map(|n| match n {
+                    GeneralName::UniformResourceIdentifier(uri) => Some(uri.as_bytes().to_vec()),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    };
+    let scope = uris(&idp.distribution_point);
+    points
+        .iter()
+        .filter(|p| p.reasons.is_none() && p.crl_issuer.is_none())
+        .flat_map(|p| uris(&p.distribution_point))
+        .any(|uri| scope.contains(&uri))
+}
+
 fn not_before(cert: &Certificate) -> Duration {
     cert.tbs_certificate.validity.not_before.to_unix_duration()
 }
@@ -596,18 +925,12 @@ fn issued_after(cert: &Certificate, signed_at: Option<u64>) -> Option<u64> {
 }
 
 struct IssuerIdentity {
-    name: Vec<u8>,
     key_id: Option<Vec<u8>>,
     spki: Vec<u8>,
 }
 
-/// Subject name DER, the subject key identifier bytes when present, and the SPKI DER.
+/// The subject key identifier bytes when present, and the SPKI DER.
 fn issuer_identity(cert: &Certificate) -> Result<IssuerIdentity> {
-    let name = cert
-        .tbs_certificate
-        .subject
-        .to_der()
-        .map_err(crate::compat_error)?;
     let key_id = cert
         .tbs_certificate
         .extensions
@@ -621,7 +944,7 @@ fn issuer_identity(cert: &Certificate) -> Result<IssuerIdentity> {
         .subject_public_key_info
         .to_der()
         .map_err(crate::compat_error)?;
-    Ok(IssuerIdentity { name, key_id, spki })
+    Ok(IssuerIdentity { key_id, spki })
 }
 
 /// Whether the CRL signature verifies under `spki`. `None` when the signature

@@ -321,15 +321,12 @@ fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<&'a CertificateR
     }
 }
 
-/// Verify signatures and configured-root paths without revocation to find the
-/// selected certificates, then retrieve CRLs in two steps and verify with
-/// required revocation after each: first for certificates whose issuer no
-/// supplied CRL names (with no such certificate, the first verification uses
-/// the supplied CRLs alone, before any request), then, only if the status is
-/// still `revocation_unknown`, for the rest. A good result or any other failure
-/// is final. Whether a CRL applies is decided only by verification; retrieval
-/// compares issuer names to order requests. See `docs/crl-retrieval.md`. The
-/// passes share one SEC-02 work budget. The input store is never modified.
+/// Verify with required revocation against the supplied CRLs; while the
+/// result is `revocation_unknown`, ask the source about exactly the
+/// certificates the verifier reports without a usable CRL, and verify again.
+/// A good result or any other failure is final. Whether a CRL applies is
+/// decided only by verification. See `docs/crl-retrieval.md`. The passes share
+/// one SEC-02 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
     bytes: &[u8],
     filename: Option<&str>,
@@ -639,9 +636,6 @@ fn retrieve(
         ));
     }
     let format = crate::format::detect(bytes, filename)?;
-    let log = &budget.log;
-    let internal =
-        |e| VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate);
     let mut state = Retrieval::new(base, budget);
     let result = (|| {
         if base.retrieval_bytes() > MAX_TOTAL_BYTES {
@@ -652,84 +646,53 @@ fn retrieve(
                 base.retrieval_bytes(),
             ));
         }
-        log.debug(
-            Stage::Revocation,
-            format_args!(
-                "CRL retrieval: verifying without revocation to discover distribution points"
-            ),
-        );
-        let preliminary = VerifyOptions {
-            check_revocation: false,
-            ..*options
-        };
-        let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(internal)?;
-        let mut selected = Vec::new();
-        collect(&pending, &mut selected);
-        // A certificate whose issuer no supplied CRL even names certainly
-        // lacks evidence, so its points are requested first. The others are
-        // requested only if verification then still reports unknown status:
-        // the verifier does not say which certificate lacked evidence, and a
-        // name-matching CRL may or may not be authoritative for it.
-        let named = base.crl_issuers(budget).map_err(crl_internal)?;
-        let mut seen = BTreeSet::new();
-        let mut stages = [Vec::new(), Vec::new()];
-        for cert_report in selected {
-            if !seen.insert(&cert_report.sha256) {
-                continue;
+        // The verifier decides first, with the supplied CRLs: a good result
+        // or any failure but unknown status is final, and an unknown status
+        // names the certificates that lacked a usable CRL.
+        let mut result = verify_with(bytes, options, &state.store, format, budget);
+        let mut selected: Option<Vec<(String, Vec<u8>, Certificate)>> = None;
+        let mut asked = BTreeSet::new();
+        loop {
+            let unknown = match &result {
+                Err(e) if e.code == ErrorCode::RevocationUnknown => e,
+                _ => break,
+            };
+            if state.aborted {
+                break;
             }
-            budget
-                .decoded_bytes
-                .charge(cert_report.der_hex.len())
-                .map_err(internal)?;
-            let der = cert_report
-                .der_hex
-                .as_bytes()
-                .as_chunks::<2>()
-                .0
-                .iter()
-                .map(|pair| {
-                    u8::from_str_radix(std::str::from_utf8(pair).expect("generated DER hex"), 16)
-                        .expect("generated DER hex")
-                })
-                .collect::<Vec<_>>();
-            let named_issuer = crate::der::tbs_issuer(&der, 0xa0, 2)
-                .is_some_and(|issuer| named.iter().any(|n| n == issuer));
-            let cert = Certificate::from_der(&der)
-                .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
-            stages[usize::from(named_issuer)].push((&cert_report.sha256, der, cert));
-        }
-        // Step 1 fetches for certificates no supplied CRL names, step 2 for
-        // the rest. Verification follows each step that has any CRL to use
-        // (after step 1 that includes the supplied CRLs alone); a good result
-        // or any failure but unknown status is final.
-        let mut verdict = None;
-        for (step, certificates) in stages.iter().enumerate() {
+            // The selected certificates, found once by verifying without
+            // revocation; integrity and trust failures end the run here.
+            let selected = match &mut selected {
+                Some(selected) => selected,
+                None => selected.insert(selected_certificates(bytes, options, format, budget)?),
+            };
+            // Ask about exactly the certificates without a usable CRL, as
+            // OpenSSL and Bouncy Castle look up CRLs for the certificate being
+            // checked. Without that list (no CRL applied at all), every
+            // selected certificate lacks one.
+            let missing: Option<Vec<String>> = unknown
+                .details
+                .get("certificates_without_crl")
+                .and_then(|v| serde_json::from_value(v.clone()).ok());
             let mut added = false;
-            for (sha256, der, cert) in certificates {
+            let mut any = false;
+            for (sha256, der, cert) in selected.iter() {
+                if missing.as_ref().is_some_and(|m| !m.contains(sha256))
+                    || !asked.insert(sha256.clone())
+                {
+                    continue;
+                }
+                any = true;
+                added |= state.request(sha256, der, cert, source)?;
                 if state.aborted {
                     break;
                 }
-                added |= state.request(sha256, der, cert, source)?;
             }
-            let verify = if step == 0 {
-                state.store.retrieval_crl_count() > 0
-            } else {
-                added
-            };
-            if verify {
-                match verify_with(bytes, options, &state.store, format, budget) {
-                    Err(e) if e.code == ErrorCode::RevocationUnknown => verdict = Some(e),
-                    result => return result,
-                }
+            if !any || !added {
+                break;
             }
+            result = verify_with(bytes, options, &state.store, format, budget);
         }
-        // Still unknown. The result is always the verifier's own: if no
-        // verification ran yet (no CRL at all), it runs now. Points that
-        // yielded no evidence, and why, are in the report's failures.
-        let result = match verdict {
-            Some(e) => Err(e),
-            None => verify_with(bytes, options, &state.store, format, budget),
-        };
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
         match result {
@@ -748,6 +711,55 @@ fn retrieve(
         }
         Err(e) => Err(e.detail("crl_retrieval", state.report)),
     }
+}
+
+/// The selected non-anchor certificates of every signature, timestamp and
+/// bundle child, each once, from a verification without revocation.
+fn selected_certificates(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    format: crate::format::Format,
+    budget: &Budget,
+) -> Result<Vec<(String, Vec<u8>, Certificate)>, VerificationError> {
+    let internal =
+        |e| VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate);
+    budget.log.debug(
+        Stage::Revocation,
+        format_args!("CRL retrieval: verifying without revocation to find the certificates"),
+    );
+    let preliminary = VerifyOptions {
+        check_revocation: false,
+        ..*options
+    };
+    let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(internal)?;
+    let mut reports = Vec::new();
+    collect(&pending, &mut reports);
+    let mut seen = BTreeSet::new();
+    let mut selected = Vec::new();
+    for report in reports {
+        if !seen.insert(report.sha256.clone()) {
+            continue;
+        }
+        budget
+            .decoded_bytes
+            .charge(report.der_hex.len())
+            .map_err(internal)?;
+        let der = report
+            .der_hex
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| {
+                u8::from_str_radix(std::str::from_utf8(pair).expect("generated DER hex"), 16)
+                    .expect("generated DER hex")
+            })
+            .collect::<Vec<_>>();
+        let cert = Certificate::from_der(&der)
+            .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
+        selected.push((report.sha256.clone(), der, cert));
+    }
+    Ok(selected)
 }
 
 /// One verification with revocation required against `store`.
