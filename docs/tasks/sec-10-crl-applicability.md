@@ -949,7 +949,7 @@ applies (version, crlExtensions, cRLNumber, issuingDistributionPoint,
 deltas, every entry, the signature AlgorithmIdentifier match). The
 signature was already authenticated over the original bytes. A first
 version copied those rules by hand and kept missing some; review found
-them one by one. In addition, as OpenSSL's `cert_crl` and unlike webpki, an
+them one by one. In addition, as OpenSSL's `cert_crl` and Bouncy Castle (unlike webpki and BoringSSL), an
 entry with reasonCode removeFromCRL does not revoke (any revoking entry for the serial counts). Only a CRL that re-encodes to exactly its original bytes is judged this way; any other is not admitted, which fails closed. References to OpenSSL line numbers in these SEC-23 cases are to the 3.3 branch. It does not revoke
 either when a newer authenticated full CRL of the issuer
 covering the certificate leaves it out, as a listing beside a newer CRL
@@ -963,7 +963,7 @@ alone; both reject), and an older one does not
 (`sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`,
 Decided, diagnostics). Only a current, complete, direct CRL clears: an
 expired or not-yet-valid one, or a delta, indirect or reason-partitioned
-one, would not be preferred by OpenSSL or Bouncy Castle; nor one whose
+one, would not be preferred by OpenSSL or BoringSSL; nor one whose
 scope match cannot be read. The newest such CRL decides even if it lists
 the certificate too: a newer entry released by removeFromCRL leaves an
 older listing without effect, as OpenSSL reads only the newest
@@ -979,6 +979,17 @@ The detail was first named `certificates_with_unusable_crl`; it is
 `certificates_with_replaceable_crl`, as it names only certificates whose CRL
 a source's CRL could replace (forged, no-cRLSign and no-nextUpdate CRLs are
 reported through `unusable_crl` only).
+
+The references differ on clearing: OpenSSL and BoringSSL keep only the
+newest of equally scored CRLs (`get_crl_sk`, OpenSSL `x509_vfy.c:1150-1164`,
+BoringSSL `x509_vfy.cc:675-685`), while Bouncy Castle walks its CRL set in
+no fixed order and stops at the first listing or once all reasons are
+covered (`RFC3280CertPathUtilities.java:708`), so it may revoke from the
+older CRL. BoringSSL decides: the newest CRL decides. OpenSSL and Bouncy
+Castle release a removeFromCRL entry (OpenSSL `x509_vfy.c:1686-1689`,
+Bouncy Castle `RFC3280CertPathUtilities.java:794`); BoringSSL's `cert_crl`
+(`x509_vfy.cc:768-790`) revokes on any entry. The two that agree are
+followed.
 
 Beside a usable CRL the PR #60 rule is unchanged: any authenticated,
 current, covering listing counts, whatever else is wrong with its CRL, since

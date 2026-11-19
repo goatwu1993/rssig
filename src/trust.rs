@@ -1778,8 +1778,9 @@ fn webpki_admits_without_next_update(crl: &CertificateList, original: &[u8]) -> 
 }
 
 /// Whether the CRL lists `serial` with an entry that revokes: as OpenSSL
-/// (`cert_crl`), not webpki (which revokes on any entry), an entry with
-/// reasonCode removeFromCRL (8) releases the certificate.
+/// (`cert_crl`) and Bouncy Castle (step k), which agree, an entry with
+/// reasonCode removeFromCRL (8) releases the certificate; webpki and
+/// BoringSSL revoke on any entry.
 fn lists_revoking(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
     // Any entry for the serial that revokes counts, as the listing does.
     tbs.revoked_certificates
