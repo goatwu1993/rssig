@@ -710,7 +710,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // once the response used the request's whole byte allowance, the
         // points never tried are recorded as such.
         let returned: usize = response.crls.iter().map(|c| c.bytes.len()).sum();
-        for point in &unanswered {
+        // A source that answered with a CRL naming no URL looked the CRL up
+        // by certificate or issuer, as OpenSSL's `lookup_crls` does: the
+        // points it did not use are not failures. They stay asked, so each
+        // URI still goes to a source once per verification.
+        let by_certificate = !self.aborted && response.crls.iter().any(|c| c.url.is_none());
+        for point in unanswered.iter().filter(|_| !by_certificate) {
             let e = if self.aborted {
                 error(
                     ErrorCode::CrlFetchAborted,
@@ -854,9 +859,13 @@ fn retrieve(
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
+                // A revocation naming another path's gap, or an expired CRL
+                // naming the certificates a source could refresh.
                 Err(e)
-                    if e.code == ErrorCode::CertificateRevoked
-                        && e.details.contains_key("certificates_without_crl") =>
+                    if matches!(
+                        e.code,
+                        ErrorCode::CertificateRevoked | ErrorCode::CrlExpired
+                    ) && e.details.contains_key("certificates_without_crl") =>
                 {
                     e
                 }
@@ -940,7 +949,12 @@ fn retrieve(
         match result {
             // A revocation is definite evidence and keeps its code; that
             // another path might have verified is marked.
-            Err(e) if e.code == ErrorCode::CertificateRevoked && cut_short(&e) => {
+            Err(e)
+                if matches!(
+                    e.code,
+                    ErrorCode::CertificateRevoked | ErrorCode::CrlExpired
+                ) && cut_short(&e) =>
+            {
                 Err(e.detail("retrieval_aborted", true))
             }
             Err(e) if e.code == ErrorCode::RevocationUnknown && cut_short(&e) => {
@@ -1005,7 +1019,7 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
         Some(_) => Uncovered::Final,
         // A revocation is definite evidence: only the certificates it names
         // are worth asking about, never every selected one.
-        None if unknown.code == ErrorCode::CertificateRevoked => Uncovered::Final,
+        None if unknown.code != ErrorCode::RevocationUnknown => Uncovered::Final,
         None => Uncovered::Unlisted,
     }
 }
@@ -1874,7 +1888,7 @@ mod tests {
         assert!(state.report.failures.iter().all(|f| f.message == "down"));
     }
     #[test]
-    fn points_passed_over_by_an_issuer_answer_are_recorded_once() {
+    fn points_passed_over_by_an_issuer_answer_are_not_failures() {
         struct ByIssuer(Vec<usize>);
         impl CrlSource for ByIssuer {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -1890,18 +1904,16 @@ mod tests {
         ask(&mut state, "a", &cert, &mut source).unwrap();
         ask(&mut state, "b", &cert, &mut source).unwrap();
         // Each URI goes to the source once per verification, and the second
-        // certificate of the same issuer, with nothing new, is not asked;
-        // both certificates report the points the answer passed over.
+        // certificate of the same issuer, with nothing new, is not asked.
+        // The source answered by certificate, so the points it did not use
+        // are no failures; only its body, which is not a CRL, is one.
         assert_eq!(source.0, [2]);
-        for certificate in ["a", "b"] {
-            let urls = state
-                .report
-                .failures
-                .iter()
-                .filter(|f| f.certificate_sha256 == certificate && f.url.is_some())
-                .count();
-            assert_eq!(urls, 2, "{certificate}: {:?}", state.report.failures);
-        }
+        assert!(
+            state.report.failures.iter().all(|f| f.url.is_none()),
+            "{:?}",
+            state.report.failures
+        );
+        assert_eq!(state.report.failures.len(), 1);
     }
     #[test]
     fn a_response_with_too_many_entries_ends_the_run() {

@@ -17,8 +17,9 @@ rule is restated for retrieval.
 1. Verify with revocation required, against the supplied CRLs. The path is
    always built first, so integrity and trust failures end the run before
    any request (`crl-fetch-untrusted-chain-requests-nothing`). A good result,
-   or any failure but `revocation_unknown`, is final: a stale, forged,
-   unusable or revoking local CRL is reported as it is without
+   or any failure but `revocation_unknown`, is final, with the two
+   exceptions below (a revocation naming another path's gap, and an expired
+   CRL): a forged, unusable or revoking local CRL is reported as it is without
    `--fetch-crls`, unless another CRL of the same issuer is usable (the best
    CRL decides). An unknown status names, in
    `details.certificates_without_crl`, every certificate on a tried path that
@@ -42,8 +43,13 @@ rule is restated for retrieval.
    a path verify, so retrieval asks nothing and the result is the same as
    without it (`sec10-fetch-path-failing-key-usage-asks-nothing`). The same
    empty list marks a certificate the verifier could not name. A
-   certificate whose only CRL is stale or unusable is never offered to a
-   source. A path that passes every check but lacks CRLs is reported
+   certificate whose only CRLs have expired is offered to the source too, as
+   Bouncy Castle drops expired CRLs and fetches from the certificate's
+   points: `crl_expired` names it in `details.certificates_without_crl`, a
+   fresh CRL verifies (`crl-stale-local-refreshed-by-provider`), and without
+   one `crl_expired` stands (`crl-stale-local-asks-provider`). One whose only
+   CRL is unusable for another reason is not offered
+   (`sec10-fetch-unusable-supplied-crl-not-fetched`). A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an
    expired cross certificate
    (`sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
@@ -54,9 +60,9 @@ rule is restated for retrieval.
    `get_crl` and Bouncy Castle look up CRLs for the certificate being
    checked; a certificate that a supplied CRL covers is never asked about
    (`sec10-fetch-covered-signer-is-not-asked`,
-   `sec10-fetch-asks-only-the-uncovered-certificate`). A certificate whose
-   only CRL is stale or unusable is not asked about: that CRL is reported as
-   it is, as without `--fetch-crls` (`crl-stale-local-provider-unused`).
+   `sec10-fetch-asks-only-the-uncovered-certificate`). A source that answers
+   with a CRL naming no URL looked it up by certificate or issuer: the
+   points it did not use are not recorded as failures.
    CRLs are per issuer, so a certificate with no point left to pass on,
    whose issuer was already asked about, is not asked again and does not
    spend the request cap. A list that is present but empty (a certificate

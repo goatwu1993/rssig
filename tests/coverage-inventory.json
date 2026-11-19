@@ -399,7 +399,7 @@
         "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
@@ -436,7 +436,7 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused",
+        "crl-stale-local-asks-provider",
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-other-idp-fetched-revoked",
         "sec10-fetch-other-idp-fetched-other-unknown",
@@ -467,7 +467,8 @@
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-fetch-builtin-source-denies-https",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "crl-fetch-untrusted-chain-requests-nothing"
+        "crl-fetch-untrusted-chain-requests-nothing",
+        "crl-stale-local-refreshed-by-provider"
       ]
     },
     {

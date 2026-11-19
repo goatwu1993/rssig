@@ -24596,7 +24596,7 @@
       "crl_responses": {}
     },
     {
-      "id": "crl-stale-local-provider-unused",
+      "id": "crl-stale-local-asks-provider",
       "input": "good-crl-discovery.exe",
       "command": [
         "verify",
@@ -24611,7 +24611,9 @@
       ],
       "expect": {
         "exit_code": 1,
-        "crl_requests": [],
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
         "json": {
           "ok": false,
           "results": [
@@ -24619,13 +24621,69 @@
               "ok": false,
               "error": {
                 "code": "crl_expired",
-                "stage": "revocation"
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
               }
             }
           ]
         }
       },
       "crl_responses": {}
+    },
+    {
+      "id": "crl-stale-local-refreshed-by-provider",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "good.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.example.invalid/test.crl"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
     },
     {
       "id": "good-sec06-basic",
@@ -34788,7 +34846,7 @@
       }
     },
     {
-      "id": "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+      "id": "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -34803,16 +34861,22 @@
         "fixtures/sec10-root-expired-revoked.crl"
       ],
       "expect": {
-        "exit_code": 1,
+        "exit_code": 0,
         "json": {
-          "ok": false,
+          "ok": true,
           "results": [
             {
-              "ok": false,
-              "error": {
-                "code": "certificate_revoked",
-                "stage": "revocation"
-              }
+              "ok": true,
+              "signatures": [
+                {
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }

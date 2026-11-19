@@ -729,11 +729,16 @@ fn sec10_crl_next_update_is_an_exclusive_upper_bound() {
 }
 
 #[test]
-fn sec10_a_revocation_in_a_stale_crl_still_counts_beside_a_fresh_one() {
-    // The fresh CRL makes the status known; the expired one, authenticated by
-    // the same root key, lists the signer. Revocations do not expire.
+fn sec10_a_revocation_in_a_stale_crl_does_not_count_beside_a_fresh_one() {
+    // The fresh CRL decides and does not list the signer. The expired one
+    // does, but a listing counts only from a current CRL, as in OpenSSL and
+    // Bouncy Castle: it may be a hold that was since released.
     let output = run_with("sec10-root-expired-revoked.crl");
-    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
     // Alone, the stale CRL is not usable evidence: expired, not revoked.
     let output = run_alone("sec10-root-expired-revoked.crl");
     revocation_failure(&output, "crl_expired", "CRL expired");

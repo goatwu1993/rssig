@@ -295,15 +295,17 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
 - **A CA-only CRL naming a point is rejected for an end entity.** Decided,
   acceptance; see the comparison above:
   `sec10-fetch-no-listed-point-role-excluded-scope-rejected`.
-- **Revocations in a stale or malformed-AKI CRL count beside a usable CRL.**
-  **Observed; conflicts with OpenSSL and Bouncy Castle, raised with the owner.**
-  OpenSSL uses only the best-scored (current) CRL; Bouncy Castle's
-  `PKIXCRLUtil.findCRLs` drops CRLs whose nextUpdate has passed. Both would
-  report the certificate good from the fresh CRL. Acceptance (fails closed):
-  `sec10-stale-crl-revocation-beside-fresh-crl-revokes`,
-  `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes` (the
-  malformed-AKI case is not yet compared). `sec10-stale-crl-revocation-alone-is-expired`
-  agrees with both (no usable CRL: `crl_expired`).
+- **A listing counts only from a current CRL.** Decided, acceptance
+  (owner delegated the call, PR #60). OpenSSL reads entries only from the
+  best-scored, current CRL; Bouncy Castle's `PKIXCRLUtil.findCRLs` drops CRLs
+  whose nextUpdate has passed before any entry is read. A revocation in an
+  expired CRL beside a fresh CRL that omits the serial therefore verifies
+  (`sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`, formerly
+  `-revokes`), and alone it is `crl_expired`
+  (`sec10-stale-crl-revocation-alone-is-expired`).
+- **A listing in a current CRL with a malformed AKI counts.** Observed,
+  acceptance (fails closed); not yet compared with either library:
+  `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`.
 - **Cross-certified paths.** A path that verifies with its CRLs is accepted
   whatever another path does: Decided, acceptance, as Bouncy Castle's builder
   tries every candidate path and accepts one that validates
@@ -330,11 +332,19 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-fetch-excluded-name-match-fetches-listed-point`,
   `sec10-fetch-mixed-point-requests-plain-uri`,
   `sec10-fetch-bad-response-is-no-evidence-beside-another-point`.
-- **A stale or unusable supplied CRL is not refreshed.** **Observed; raised
-  with the owner.** Bouncy Castle drops CRLs past nextUpdate and, with CRL
-  fetching enabled, fetches from the certificate's points; OpenSSL does not
-  fetch. `sec10-fetch-unusable-supplied-crl-not-fetched` (and `main`'s
-  `crl-stale-local-provider-unused`).
+- **An expired supplied CRL is refreshed.** Decided, acceptance (owner
+  delegated the call, PR #60). Bouncy Castle drops CRLs past nextUpdate and,
+  with CRL fetching enabled, fetches from the certificate's points; OpenSSL
+  does not fetch. `crl-stale-local-refreshed-by-provider` (added) verifies
+  with the fetched CRL; `crl-stale-local-asks-provider` (on `main` as
+  `crl-stale-local-provider-unused`, which expected no request) now expects
+  the request and, without an answer, the same `crl_expired`.
+- **A supplied CRL unusable for another reason is not refreshed.** Observed,
+  diagnostics: `sec10-fetch-unusable-supplied-crl-not-fetched`. Bouncy Castle
+  would fetch here too; kept narrow until compared case by case.
+- **A source answering by certificate leaves no per-point failures.**
+  Decided, diagnostics (owner delegated the call): OpenSSL's `lookup_crls`
+  and Bouncy Castle's store lookups have no per-point outcome.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds
   denied/failed/abort/unknown), diagnostics. Changed:

@@ -106,7 +106,7 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
 }
 
 #[test]
-fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
+fn usable_supplied_crls_and_offline_mode_do_not_call_the_provider() {
     struct NoCalls;
     impl rssig::retrieval::CrlSource for NoCalls {
         fn crls(
@@ -124,7 +124,7 @@ fn supplied_crls_and_offline_mode_do_not_call_the_provider() {
     for (fetch, crl, expected) in [
         (false, "good.crl", 0),
         (true, "good.crl", 0),
-        (true, "expired.crl", 1),
+        (false, "expired.crl", 1),
     ] {
         let crl = base.join(crl);
         let mut args = vec![
@@ -1023,5 +1023,78 @@ fn sec10_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
     assert_eq!(
         report["results"][0]["signatures"][0]["trust"]["chain"][1]["sha256"],
         issuer
+    );
+}
+
+/// A certificate whose only supplied CRL has expired is offered to the source,
+/// as Bouncy Castle drops expired CRLs and fetches from the certificate's
+/// points: a fresh CRL verifies, and without one the result stays
+/// `crl_expired`, naming the certificate.
+#[test]
+fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
+    struct Source(Option<Vec<u8>>, Vec<String>);
+    impl rssig::retrieval::CrlSource for Source {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            Ok(rssig::retrieval::fetch_each(request, |url, _| {
+                self.1.push(url.to_owned());
+                self.0
+                    .clone()
+                    .map(rssig::retrieval::SourcedCrl::new)
+                    .ok_or_else(|| {
+                        rssig::retrieval::CrlSourceError::new(
+                            rssig::domain::CrlSourceErrorKind::Failed,
+                            "down",
+                        )
+                    })
+            }))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("root.der"),
+        "--crl".to_owned(),
+        path("expired.crl"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--fetch-crls".to_owned(),
+        path("good-crl-discovery.exe"),
+    ];
+    let point = "http://crl.example.invalid/test.crl";
+    let mut source = Source(
+        Some(std::fs::read(base.join("good.crl")).unwrap()),
+        Vec::new(),
+    );
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        rssig::cli::run_with_crl_source(args.clone(), &mut out, &mut err, &mut source).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(code, 0, "{report}");
+    assert_eq!(source.1, [point]);
+    let mut source = Source(None, Vec::new());
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    assert_eq!(code, 1);
+    assert_eq!(source.1, [point]);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "crl_expired");
+    // The signer and the timestamp signer share the expired CRL.
+    assert!(
+        !error["details"]["certificates_without_crl"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        error["details"]["crl_retrieval"]["failures"][0]["code"],
+        "crl_fetch_failed"
     );
 }

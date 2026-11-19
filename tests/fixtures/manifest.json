@@ -145,7 +145,7 @@
         "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
@@ -264,8 +264,9 @@
         "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "crl-stale-local-refreshed-by-provider"
       ]
     },
     {
@@ -319,7 +320,7 @@
         "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
@@ -6755,13 +6756,14 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused",
+        "crl-stale-local-asks-provider",
         "sec10-fetch-excluded-name-match-fetches-listed-point",
         "crl-fetch-source-denied-is-no-evidence",
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
         "crl-fetch-source-abort-is-reported",
-        "crl-fetch-untrusted-chain-requests-nothing"
+        "crl-fetch-untrusted-chain-requests-nothing",
+        "crl-stale-local-refreshed-by-provider"
       ]
     },
     {
@@ -9326,11 +9328,11 @@
       "file": "sec10-root-expired-revoked.crl",
       "sha256": "4094a1192f39d0307ad1dbf2334b637319d9e1202fee9ececc9da758526e3711",
       "bytes": 208,
-      "description": "SEC-10: Correctly signed root CRL, expired (nextUpdate one second before the pinned time), revoking serial 2, the test signer. A revocation in an authenticated CRL counts beside a fresh CRL that does not list it; alone it is only expired. Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed root CRL, expired (nextUpdate one second before the pinned time), revoking serial 2, the test signer. A listing counts only from a current CRL: beside a fresh CRL that does not list the signer it is ignored; alone it is only expired. Deterministic public test keys.",
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired"
       ]
     },
