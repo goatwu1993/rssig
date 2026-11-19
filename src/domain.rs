@@ -560,7 +560,9 @@ impl CrlSourceErrorKind {
 /// other codes are possible: `invalid_crl` for a response that is not a CRL,
 /// `invalid_certificate` for a malformed cRLDistributionPoints extension, or
 /// `resource_limit_exceeded` for a response body the engine itself rejects as
-/// over its size cap. A source's own limits (the built-in HTTP source's
+/// over its size cap (with `fetch_each`, only the first such body of a
+/// request reaches the engine; later ones are the source's `failed`, with
+/// `details.resource`). A source's own limits (the built-in HTTP source's
 /// response size, header size or redirect count) are that source's failures:
 /// `crl_fetch_failed` with `details.resource` naming the limit. Verification
 /// still decides whether the missing evidence mattered.

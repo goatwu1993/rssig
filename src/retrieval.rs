@@ -838,7 +838,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             // is one beside a URL-less abort in this response: the points
             // left were not tried, as recorded below.
             let aborted_elsewhere = whole_abort && failure.kind != CrlSourceErrorKind::Abort;
-            if loaded.by_certificate && failure.kind != CrlSourceErrorKind::Abort
+            // An answer by certificate counts only without an abort (see
+            // `by_certificate` below), so with one it does not change this.
+            if loaded.by_certificate && !self.aborted && failure.kind != CrlSourceErrorKind::Abort
                 || aborted_elsewhere
             {
                 self.source_failure(sha256, failure);
@@ -2094,6 +2096,31 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         ask(&mut state, "a", &signer_with_points("p", 2), &mut Source).unwrap();
+        let second = state
+            .report
+            .failures
+            .iter()
+            .find(|f| f.url.as_deref() == Some("http://crl.example.invalid/p-1.crl"))
+            .unwrap();
+        assert_eq!(second.code, ErrorCode::CrlFetchDenied);
+        // The same with a body answering by certificate beside them: the
+        // result does not depend on that body.
+        struct WithBody;
+        impl CrlSource for WithBody {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                    ))
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "policy"))
+                    .with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Abort, "stop")
+                            .with_url(request.distribution_points[0].clone()),
+                    ))
+            }
+        }
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("p", 2), &mut WithBody).unwrap();
         let second = state
             .report
             .failures

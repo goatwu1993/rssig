@@ -302,8 +302,9 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         add(error, gaps);
         return Some(revoked);
     }
-    // Otherwise (another typed error as context), the revocation is
-    // reported at the top with the names.
+    // Otherwise (the revocation is the source of another error type, not an
+    // anyhow context), it is reported at the top with the names, without the
+    // outer error's messages in its causes.
     let mut error = revoked
         .chain()
         .find_map(|cause| cause.downcast_ref::<VerificationError>())?

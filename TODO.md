@@ -332,6 +332,11 @@ timestamps, and local CRL validation already exist.
     candidate path, uncharged; compute it once per certificate.
   - Every configured root is decoded twice per verification (issuer names
     and anchor certificates); decode it once.
+  With revocation on, building the CRL prefilter's issuer names uses `?` on
+  each configured root's x509-cert decoding (`src/trust.rs`, as on `main`),
+  so one root webpki accepts but x509-cert rejects fails every verification
+  with CRLs; skip such a root, as the anchor list already does, with a
+  fixture.
   Retrieval skips a certificate whose listed points were all asked and
   whose issuer, authority key and role (CA or end entity) were already asked
   about, so a certificate that an earlier scoped or partial answer did not
