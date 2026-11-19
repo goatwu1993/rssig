@@ -839,8 +839,6 @@
     },
     "invalid_key_usage": {
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
         "sec10-fetch-path-failing-key-usage-asks-nothing",
         "ca-key-usage",
         "bad-signer-key-usage",
@@ -852,6 +850,8 @@
     },
     "certificate_revoked": {
       "cases": [
+        "rdp-eku-retry-ca-revoked-usage-is-revoked",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",
         "msi-revoked",
         "cab-revoked",
@@ -943,6 +943,7 @@
     },
     "invalid_crl": {
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "sec10-root-crl-no-next-update",
         "sec10-root-crl-malformed-aki",
         "sec10-root-unknown-critical-extension-crl-unsupported",

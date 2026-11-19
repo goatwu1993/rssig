@@ -23748,6 +23748,46 @@
       }
     },
     {
+      "id": "rdp-eku-retry-ca-revoked-usage-is-revoked",
+      "input": "good-rdp-eku-retry-ca.rdp",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md).",
+          "Written argument, as for candidate paths (sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/rdp-eku-retry-ca-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec03-input",
       "input": "good-pe64.exe",
       "command": [
@@ -33625,16 +33665,16 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
+      "id": "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
       "input": "bad-sec06-ca-ku.exe",
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
         "references": [
-          "Before PR #60, --fetch-crls ran a pass without revocation first, so a chain that fails path policy reported that failure (invalid_key_usage) whatever its CRLs said; this keeps that result when retrieval asks nothing.",
-          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain and the chain checks run before check_revocation (:276), so a CA without keyCertSign is reported before any CRL is read.",
-          "Diagnostics only: both results reject, and without --fetch-crls the revocation error is still reported first (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage)."
+          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code, so the result does not depend on whether fetching is enabled.",
+          "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
+          "Diagnostics only: both results reject."
         ]
       },
       "crl_responses": {},
@@ -33660,8 +33700,11 @@
             {
               "ok": false,
               "error": {
-                "code": "invalid_key_usage",
-                "stage": "certificate_chain"
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "distribution_point_scope"
+                }
               }
             }
           ]
@@ -33669,16 +33712,16 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
+      "id": "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
       "input": "bad-sec06-ca-ku.exe",
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
         "references": [
-          "Before PR #60, --fetch-crls ran a pass without revocation first, so a chain that fails path policy reported that failure (invalid_key_usage) whatever its CRLs said; this keeps that result when retrieval asks nothing.",
-          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain and the chain checks run before check_revocation (:276), so a CA without keyCertSign is reported before any CRL is read.",
-          "Diagnostics only: both results reject, and without --fetch-crls the revocation error is still reported first (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage)."
+          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code, so the result does not depend on whether fetching is enabled.",
+          "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
+          "Diagnostics only: both results reject."
         ]
       },
       "crl_responses": {},
@@ -33704,8 +33747,8 @@
             {
               "ok": false,
               "error": {
-                "code": "invalid_key_usage",
-                "stage": "certificate_chain"
+                "code": "certificate_revoked",
+                "stage": "revocation"
               }
             }
           ]

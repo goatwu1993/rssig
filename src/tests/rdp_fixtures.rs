@@ -555,27 +555,40 @@ fn write_eku_retry_ca_fixture(dir: &std::path::Path) {
         &[ca.to_der().unwrap()],
     ));
     std::fs::write(dir.join("good-rdp-eku-retry-ca.rdp"), bytes).unwrap();
-    let algorithm = ca.signature_algorithm.clone();
-    let tbs = TbsCertList {
-        version: x509_cert::Version::V2,
-        signature: algorithm.clone(),
-        issuer: ca_name,
-        this_update: tm(NOW - 100),
-        next_update: Some(tm(NOW + 1000)),
-        revoked_certificates: None,
-        crl_extensions: Some(vec![x509_cert::ext::Extension {
-            extn_id: "2.5.29.20".parse().unwrap(),
-            critical: false,
-            extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
-        }]),
-    };
-    let signature: Signature = ca_key.sign(&tbs.to_der().unwrap());
-    let crl = CertificateList {
-        tbs_cert_list: tbs,
-        signature_algorithm: algorithm,
-        signature: BitString::from_bytes(signature.to_der().as_bytes()).unwrap(),
-    };
-    std::fs::write(dir.join("rdp-eku-retry-ca.crl"), crl.to_der().unwrap()).unwrap();
+    // The CA's CRL, empty, and the same CRL revoking the signer (serial 61):
+    // the serverAuth usage is then revoked while codeSigning fails its EKU.
+    for (name, revoked) in [
+        ("rdp-eku-retry-ca.crl", None),
+        ("rdp-eku-retry-ca-revoked.crl", Some(61u32)),
+    ] {
+        let algorithm = ca.signature_algorithm.clone();
+        let tbs = TbsCertList {
+            version: x509_cert::Version::V2,
+            signature: algorithm.clone(),
+            issuer: ca_name.clone(),
+            this_update: tm(NOW - 100),
+            next_update: Some(tm(NOW + 1000)),
+            revoked_certificates: revoked.map(|serial| {
+                vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(serial),
+                    revocation_date: tm(NOW - 50),
+                    crl_entry_extensions: None,
+                }]
+            }),
+            crl_extensions: Some(vec![x509_cert::ext::Extension {
+                extn_id: "2.5.29.20".parse().unwrap(),
+                critical: false,
+                extn_value: ::der::asn1::OctetString::new([2, 1, 1]).unwrap(),
+            }]),
+        };
+        let signature: Signature = ca_key.sign(&tbs.to_der().unwrap());
+        let crl = CertificateList {
+            tbs_cert_list: tbs,
+            signature_algorithm: algorithm,
+            signature: BitString::from_bytes(signature.to_der().as_bytes()).unwrap(),
+        };
+        std::fs::write(dir.join(name), crl.to_der().unwrap()).unwrap();
+    }
 }
 
 #[test]

@@ -111,8 +111,8 @@ codeSigning (`1.3.6.1.5.5.7.3.3`), serverAuth (`1.3.6.1.5.5.7.3.1`), or Remote
 Desktop Authentication (`1.3.6.1.4.1.311.54.1.2`). The verifier tries applicable
 purposes in that order, validates the whole selected path for that purpose, and
 reports it in `trust.required_eku`. When no purpose verifies, a revocation under any
-purpose is reported, naming the certificates another purpose only lacks a CRL
-for; otherwise the first failure is reported, except that a purpose which only lacks a current CRL
+purpose is reported, naming once each certificate another purpose reports
+without a CRL (not one whose only CRL expired, as for candidate paths); otherwise the first failure is reported, except that a purpose which only lacks a current CRL
 (an unknown status or expired CRL that names the certificates to ask about; an
 empty list names nothing) is reported ahead of another purpose's failure, so that `--fetch-crls` can
 ask for the CRL (`rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted

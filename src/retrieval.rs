@@ -1020,7 +1020,17 @@ fn retrieve(
                 // every certificate on it had a usable CRL, so no source can
                 // help, and asking about covered certificates is refused.
                 // Unit-tested only: no fixture makes the two disagree.
-                Uncovered::Final => break,
+                // An unknown status that names nothing also arises when no
+                // path passes path policy: no CRL can help and the status is
+                // no evidence, so the input is checked without revocation and
+                // that failure is the result. A definite CRL failure or
+                // revocation keeps its code, as without `--fetch-crls`.
+                Uncovered::Final => {
+                    if unknown.code == ErrorCode::RevocationUnknown && !authenticated {
+                        authenticate(bytes, options, &state.store, format, budget)?;
+                    }
+                    break;
+                }
                 Uncovered::Listed(reports) => {
                     let mut targets = Vec::new();
                     // A certificate already asked about is neither decoded
@@ -1068,18 +1078,6 @@ fn retrieve(
                 break;
             }
             result = verify_with(bytes, options, &state.store, format, budget);
-        }
-        // Nothing was asked and revocation decided: as before PR #60, when a
-        // pass without revocation ran first, the input is checked without
-        // revocation, and a failure there (a chain that fails path policy,
-        // for example) is the result. A chain that verifies keeps its
-        // revocation result.
-        if let Err(e) = &result
-            && e.stage == Stage::Revocation
-            && asked.is_empty()
-            && !authenticated
-        {
-            authenticate(bytes, options, &state.store, format, budget)?;
         }
         // A certificate still named after its source answered by certificate:
         // that answer did not settle its status, so the listed points the
@@ -1290,7 +1288,9 @@ fn authenticate(
 ) -> Result<(), VerificationError> {
     budget.log.debug(
         Stage::Revocation,
-        format_args!("CRL retrieval: verifying without revocation before the first request"),
+        format_args!(
+            "CRL retrieval: verifying without revocation (integrity and trust of the whole input)"
+        ),
     );
     let options = VerifyOptions {
         trust: Some(store),

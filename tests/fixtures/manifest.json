@@ -227,6 +227,7 @@
       "bytes": 183,
       "description": "Authentic current root-issued CRL with no revoked serials.",
       "cases": [
+        "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "crl-fetch-injected-good",
         "sec10-root-crl-no-next-update",
         "sec10-unrelated-expired-crl-excluded",
@@ -6761,6 +6762,7 @@
         "license": "Apache-2.0"
       },
       "cases": [
+        "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "rdp-eku-retry-ca-with-crls-verifies",
         "rdp-eku-retry-ca-missing-crl-is-unknown",
         "rdp-eku-retry-ca-fetches-the-missing-crl"
@@ -6780,6 +6782,21 @@
       "cases": [
         "rdp-eku-retry-ca-with-crls-verifies",
         "rdp-eku-retry-ca-fetches-the-missing-crl"
+      ]
+    },
+    {
+      "file": "rdp-eku-retry-ca-revoked.crl",
+      "sha256": "dca9d2529a9594c8009e10b9f8451d9b7f56d2d16b24992bd4ca3786e20a63b8",
+      "bytes": 218,
+      "description": "Correctly signed CRL of the RDP server CA revoking the signer of good-rdp-eku-retry-ca.rdp (serial 61), valid at 1800000000: the serverAuth usage is revoked while codeSigning fails its EKU.",
+      "provenance": {
+        "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_ca_fixture",
+        "command": "cargo test --locked --lib regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Deterministic test root key, a public test-only P-256 CA key [46; 32] and the existing RDP body and signer key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "rdp-eku-retry-ca-revoked-usage-is-revoked"
       ]
     },
     {
@@ -7010,8 +7027,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "bad-sec06-ca-ku",
         "sec10-fetch-path-failing-key-usage-asks-nothing"
       ]
@@ -7624,8 +7641,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -10146,7 +10163,7 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-covered-signer-is-not-asked"
@@ -10160,7 +10177,7 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",

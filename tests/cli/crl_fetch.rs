@@ -791,6 +791,47 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
     );
 }
 
+/// SEC-10: the only path's intermediate lacks keyCertSign, and its root CRL
+/// is unusable or revokes it. That is definite evidence, so with retrieval
+/// it keeps its code, as without it: no source is asked and the result does
+/// not depend on fetching.
+#[test]
+fn sec10_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    for (crl, code) in [
+        ("sec10-sec06-root-idp-user.crl", "invalid_crl"),
+        ("sec10-sec06-root-revoked-issuer.crl", "certificate_revoked"),
+    ] {
+        let mut results = Vec::new();
+        for fetch in [false, true] {
+            let mut args = vec![
+                "rssig".to_owned(),
+                "verify".to_owned(),
+                "--no-system-roots".to_owned(),
+                "--roots".to_owned(),
+                path("sec06-root.der"),
+                "--time".to_owned(),
+                "1800000000".to_owned(),
+                "--crl".to_owned(),
+                path("sec06-issuer.crl"),
+                "--crl".to_owned(),
+                path(crl),
+            ];
+            if fetch {
+                args.push("--fetch-crls".to_owned());
+            }
+            args.push(path("bad-sec06-ca-ku.exe"));
+            let (mut out, mut err) = (Vec::new(), Vec::new());
+            let exit = rssig::cli::run_with_writers(args, &mut out, &mut err).unwrap();
+            assert_eq!(exit, 1);
+            let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+            results.push(report["results"][0]["error"]["code"].clone());
+        }
+        assert_eq!(results, [code, code], "{crl}");
+    }
+}
+
 /// SEC-10: the only path's intermediate lacks keyCertSign and its root CRL.
 /// No CRL could make that path verify, so nothing is named for retrieval:
 /// the source is never asked, and with retrieval the path failure itself is

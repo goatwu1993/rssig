@@ -413,13 +413,13 @@ relic 02c54d58 and BoringSSL `main`.
   own failure (`invalid_key_usage`), as before PR #60, where that check ran
   first; still no request is made. Without `--fetch-crls` the result is
   `revocation_unknown` with an empty list, as before PR #60.
-  The same holds whatever revocation error such a chain gets, when
-  retrieval asks nothing: an unusable CRL or a revoked issuer on a path that
-  fails path policy reports `invalid_key_usage` with `--fetch-crls`
-  (`sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure`,
-  `sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure`;
-  Decided, diagnostics: both reject). A chain that verifies without
-  revocation keeps its revocation result.
+  Only that unknown status, which is no evidence, is followed by the check
+  without revocation. A definite CRL failure or revocation on such a chain
+  keeps its code with `--fetch-crls`, as without it, so the result does not
+  depend on fetching
+  (`sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure`,
+  `sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked`;
+  Decided, diagnostics: both reject).
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
@@ -595,6 +595,12 @@ relic 02c54d58 and BoringSSL `main`.
     names another path's gaps, so `--fetch-crls` can still complete that
     usage. Otherwise a usage that only lacks CRLs is reported first. Unit
     test `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
+    Every certificate any other usage reports without a CRL is named once
+    (deduplicated by SHA-256), including another revocation's; one whose only
+    CRL expired is not, as for candidate paths. Spec case
+    `rdp-eku-retry-ca-revoked-usage-is-revoked` (Decided, diagnostics): the
+    serverAuth usage is revoked and codeSigning fails its EKU; the revocation
+    is reported, where the first usage's `invalid_eku` was before.
   - A delta CRL answered by certificate is not a full CRL, so it does not ask
     for another verification pass (`a_new_full_crl_by_certificate_asks_for_verification_first`).
   - Re-offered points are bounded by `crl_requests` (64 source requests per
