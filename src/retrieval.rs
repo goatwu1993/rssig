@@ -176,7 +176,9 @@ impl CrlSourceError {
 /// Builds a [`CrlResponse`] for a source that works URL by URL: calls `fetch`
 /// for each of the request's distribution points in order, with the bytes
 /// still allowed (at most [`MAX_CRL_BYTES`] each), and stops at the first
-/// `Abort`. Each answer becomes a [`SourcedCrl`] or a failure with its URL.
+/// `Abort` or once the request's byte allowance is spent; the points left are
+/// not answered, and the engine records them as not tried. Each answer
+/// becomes a [`SourcedCrl`] or a failure with its URL.
 pub fn fetch_each(
     request: &CrlRequest<'_>,
     mut fetch: impl FnMut(&str, usize) -> Result<SourcedCrl, CrlSourceError>,
@@ -184,15 +186,10 @@ pub fn fetch_each(
     let mut response = CrlResponse::new();
     let mut remaining = request.max_bytes;
     for url in request.distribution_points {
+        // The allowance is spent: the rest are not tried, and the engine
+        // records them as such.
         if remaining == 0 {
-            response.failures.push(
-                CrlSourceError::new(
-                    CrlSourceErrorKind::Failed,
-                    "the byte allowance for this request is spent",
-                )
-                .with_url(url.clone()),
-            );
-            continue;
+            break;
         }
         match fetch(url, remaining.min(MAX_CRL_BYTES)) {
             Ok(mut crl) => {
@@ -608,23 +605,25 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // whose issuer, authority key and role (CA or end entity) were
         // already asked about, needs no request of its own (its points'
         // outcomes were recorded above) and does not spend the cap.
-        let authority_key = cert
+        // No authorityKeyIdentifier: the issuer name alone. One that cannot
+        // be read, or names no key, cannot be told from another key of the
+        // same name: such a certificate is always asked about.
+        let authority_key = match cert
             .tbs_certificate
             .get::<x509_cert::ext::pkix::AuthorityKeyIdentifier>()
-            .ok()
-            .flatten()
-            .and_then(|(_, aki)| aki.key_identifier)
-            .map(|k| k.as_bytes().to_vec())
-            .unwrap_or_default();
+        {
+            Ok(None) => Some(Vec::new()),
+            Ok(Some((_, aki))) => aki.key_identifier.map(|k| k.as_bytes().to_vec()),
+            Err(_) => None,
+        };
         let is_ca = cert
             .tbs_certificate
             .get::<x509_cert::ext::pkix::BasicConstraints>()
             .ok()
             .flatten()
             .is_some_and(|(_, constraints)| constraints.ca);
-        let new_issuer = self
-            .asked_issuers
-            .insert((issuer.to_vec(), authority_key, is_ca));
+        let new_issuer = authority_key
+            .is_none_or(|key| self.asked_issuers.insert((issuer.to_vec(), key, is_ca)));
         if points.is_empty() && !new_issuer {
             return Ok(false);
         }
@@ -707,14 +706,24 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return self.load_all(sha256, response.crls, max_bytes);
         }
         // A point the source neither answered nor reported is recorded, so
-        // that no listed point disappears from the report; after an abort the
+        // that no listed point disappears from the report; after an abort, or
+        // once the response used the request's whole byte allowance, the
         // points never tried are recorded as such.
+        let returned: usize = response.crls.iter().map(|c| c.bytes.len()).sum();
         for point in &unanswered {
             let e = if self.aborted {
                 error(
                     ErrorCode::CrlFetchAborted,
                     "not tried: the CRL source aborted retrieval",
                 )
+            } else if returned >= max_bytes {
+                error(
+                    ErrorCode::ResourceLimitExceeded,
+                    "not tried: the byte allowance for this request is spent",
+                )
+                .detail("resource", "crl_response_bytes")
+                .detail("limit", max_bytes)
+                .detail("used", returned)
             } else {
                 error(
                     ErrorCode::CrlFetchFailed,
@@ -1636,6 +1645,69 @@ mod tests {
         assert_eq!(resources, ["crl_url_bytes", "crl_urls"]);
         // The strict public discovery still reports the limit as an error.
         assert!(crl_distribution_points(&signer_with_uris(&uris)).is_err());
+    }
+    #[test]
+    fn points_left_when_the_byte_allowance_is_spent_are_not_tried() {
+        // The first body fills the request's whole allowance: the other
+        // points are never fetched, and say so, not "failed".
+        struct Fills(usize);
+        impl CrlSource for Fills {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(fetch_each(request, |_, max_bytes| {
+                    self.0 += 1;
+                    Ok(SourcedCrl::new(vec![0; max_bytes]))
+                }))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Fills(0);
+        let request_points = signer_with_points("a", 3);
+        // A request allowance equal to one CRL's cap.
+        let der = ::der::Encode::to_der(&request_points).unwrap();
+        let points: Vec<String> = (0..3)
+            .map(|i| format!("http://crl.example.invalid/a-{i}.crl"))
+            .collect();
+        let issuer = crate::der::tbs_issuer(&der, 0xa0, 2).unwrap().to_vec();
+        let response = source
+            .crls(&CrlRequest::new(&der, &issuer, &points, 10))
+            .unwrap();
+        assert_eq!(source.0, 1);
+        // fetch_each reports no failure for the points it never tried.
+        assert!(response.failures.is_empty());
+        // Through the engine, with a 10-byte allowance left for the request:
+        // those points are recorded as not tried.
+        state.downloaded = MAX_TOTAL_BYTES - state.base.retrieval_bytes() - 10;
+        ask(&mut state, "a", &request_points, &mut Fills(0)).unwrap();
+        let not_tried = state
+            .report
+            .failures
+            .iter()
+            .filter(|f| f.message.starts_with("not tried"))
+            .count();
+        assert_eq!(not_tried, 2, "{:?}", state.report.failures);
+    }
+    #[test]
+    fn a_certificate_with_an_unreadable_authority_key_is_always_asked() {
+        // Its issuer key cannot be told from another of the same name, so a
+        // request for that name does not stand in for it.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let plain = signer_with_uris(&[]);
+        let mut broken = plain.clone();
+        let extensions = broken.tbs_certificate.extensions.as_mut().unwrap();
+        let aki = extensions
+            .iter_mut()
+            .find(|e| e.extn_id.to_string() == "2.5.29.35")
+            .expect("the signer has an authorityKeyIdentifier");
+        aki.extn_value = ::der::asn1::OctetString::new(vec![0x04, 0x00]).unwrap();
+        ask(&mut state, "plain", &plain, &mut source).unwrap();
+        ask(&mut state, "broken", &broken, &mut source).unwrap();
+        ask(&mut state, "broken2", &broken, &mut source).unwrap();
+        assert_eq!(source.calls, 3);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

@@ -251,3 +251,106 @@ Change these only with a new decision and paired fixtures.
 - **SEC-21:** listed serials are not bound to the path's issuer key.
 - **TEST-11:** fixture builders and provenance.
 - **PRODUCT-04:** CRL policy document.
+
+## Case reasons (PR #60)
+
+Every case PR #60 added or changed, with why its result is right (AGENTS.md,
+"Pinned expectations"). **Decided** cases change only with the owner's
+approval; **Observed** ones pin current behavior and may change when a better
+result is argued. **Acceptance** pins whether a file verifies or is rejected;
+**diagnostics** pins which error, detail or request.
+
+- **The best CRL decides.** Decided, acceptance; owner-approved exception.
+  Bouncy Castle's `checkCRL` skips a CRL that fails a check and goes on to the
+  next (`lastException`); OpenSSL's `get_crl_sk` scores CRLs and uses the best
+  (`CRL_SCORE_TIME`, `CRL_SCORE_SCOPE`, `CRL_SCORE_NOCRITICAL`). A usable CRL
+  beside an unusable one therefore verifies, and the unusable one alone keeps
+  its error.
+  - Verify beside `good.crl` (added): `sec10-root-crl-no-next-update-beside-good-crl`,
+    `sec10-root-expired-crl-still-rejected-beside-good-crl`,
+    `sec10-root-aki-crl-still-rejected-beside-good-crl`,
+    `sec10-root-crl-malformed-aki-beside-good-crl`,
+    `sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl`,
+    `sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl`,
+    `sec10-root-delta-crl-unsupported-beside-good-crl`,
+    `sec10-root-indirect-crl-unsupported-beside-good-crl`,
+    `sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl`,
+    `sec10-root-delta-expired-crl-reports-feature-beside-good-crl`,
+    `sec10-root-idp-user-certs-crl-unsupported-beside-good-crl`,
+    `sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl`,
+    `sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl`,
+    `sec10-root-idp-named-point-crl-rejected-beside-good-crl`.
+  - The same CRLs alone keep their exact error (changed to drop `good.crl`):
+    the fourteen `sec10-root-*` cases of the same names without
+    `-beside-good-crl`.
+  - Full-CRL controls for the new fixtures (acceptance): `sec10-chain-crl-dp-full-crls`,
+    `sec10-leaf-crl-dp-mixed-full-crl`, `sec10-leaf-crl-dp-https-full-crl`.
+- **A partition for another point is no evidence.** Decided, diagnostics.
+  Bouncy Castle's processCRLB2 rejects a CRL whose distribution point does not
+  match; OpenSSL gives it no `CRL_SCORE_SCOPE`. The certificate is without a
+  CRL, so the status is unknown and retrieval fetches its point:
+  `sec10-expired-partition-for-another-point-leaves-status-unknown`,
+  `sec10-fetch-expired-partition-for-another-point-still-fetches`,
+  `sec10-crl-dp-other-idp-unknown` (details updated).
+- **A CA-only CRL naming a point is rejected for an end entity.** Decided,
+  acceptance; see the comparison above:
+  `sec10-fetch-no-listed-point-role-excluded-scope-rejected`.
+- **Revocations in a stale or malformed-AKI CRL count beside a usable CRL.**
+  **Observed; conflicts with OpenSSL and Bouncy Castle, raised with the owner.**
+  OpenSSL uses only the best-scored (current) CRL; Bouncy Castle's
+  `PKIXCRLUtil.findCRLs` drops CRLs whose nextUpdate has passed. Both would
+  report the certificate good from the fresh CRL. Acceptance (fails closed):
+  `sec10-stale-crl-revocation-beside-fresh-crl-revokes`,
+  `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes` (the
+  malformed-AKI case is not yet compared). `sec10-stale-crl-revocation-alone-is-expired`
+  agrees with both (no usable CRL: `crl_expired`).
+- **Cross-certified paths.** A path that verifies with its CRLs is accepted
+  whatever another path does: Decided, acceptance, as Bouncy Castle's builder
+  tries every candidate path and accepts one that validates
+  (`sec10-cross-revoked-path-beside-covered-path-verifies`,
+  `sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+  `sec10-fetch-completes-the-path-beside-an-expired-path`). Which error a
+  rejected chain reports, and what retrieval is asked: Decided by the written
+  argument in `docs/crl-retrieval.md` (only a path that passes every other
+  check and lacks CRLs can be completed), diagnostics
+  (`sec10-cross-revoked-path-beside-path-without-crl-names-it`,
+  `sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl`,
+  `sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
+  `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`,
+  `sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
+  `sec10-fetch-path-failing-key-usage-asks-nothing`).
+- **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
+  diagnostics (which requests are made; the verification result is the same
+  either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
+  `checkCRLs` look up CRLs for the certificate being checked:
+  `sec10-fetch-covered-signer-point-not-requested`,
+  `sec10-fetch-asks-each-certificate-without-crl`,
+  `sec10-fetch-covered-signer-is-not-asked`,
+  `sec10-fetch-asks-only-the-uncovered-certificate`,
+  `sec10-fetch-excluded-name-match-fetches-listed-point`,
+  `sec10-fetch-mixed-point-requests-plain-uri`,
+  `sec10-fetch-bad-response-is-no-evidence-beside-another-point`.
+- **A stale or unusable supplied CRL is not refreshed.** **Observed; raised
+  with the owner.** Bouncy Castle drops CRLs past nextUpdate and, with CRL
+  fetching enabled, fetches from the certificate's points; OpenSSL does not
+  fetch. `sec10-fetch-unusable-supplied-crl-not-fetched` (and `main`'s
+  `crl-stale-local-provider-unused`).
+- **Missing evidence is `revocation_unknown`; a source has four kinds.**
+  Decided by the owner in PR #60's design ("single error code", four kinds
+  denied/failed/abort/unknown), diagnostics. Changed:
+  `crl-fetch-private`, `crl-fetch-injected-unavailable`,
+  `sec10-fetch-reasons-point-denied`, `sec10-fetch-crl-issuer-point-denied`,
+  `sec10-fetch-dns-name-point-denied` (`crl_fetch_denied`/`crl_fetch_failed`
+  to `revocation_unknown`, cause in `crl_retrieval.failures`). Added:
+  `crl-fetch-source-denied-is-no-evidence`,
+  `crl-fetch-source-failed-is-no-evidence`,
+  `crl-fetch-source-unknown-is-no-evidence`,
+  `crl-fetch-source-abort-is-reported`, `sec10-fetch-source-abort-stops-requests`.
+- **The source decides transport.** Decided (owner: the CLI's default HTTP
+  source, library users provide their own), acceptance for the injected
+  source, diagnostics for the built-in refusal:
+  `sec10-fetch-source-is-asked-for-any-scheme`,
+  `sec10-fetch-builtin-source-denies-https`.
+- **An untrusted chain is never fetched for.** Decided, acceptance and
+  privacy: path validation fails before any request, as `main`'s preliminary
+  pass did: `crl-fetch-untrusted-chain-requests-nothing`.

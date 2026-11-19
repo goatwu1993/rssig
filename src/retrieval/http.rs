@@ -85,16 +85,21 @@ impl HttpCrlSource {
         Self::default()
     }
     fn remaining(&self) -> Result<Duration, VerificationError> {
+        // Both mean this source can do no more work, and say so.
         if self.poisoned {
             return Err(error(
                 ErrorCode::CrlFetchFailed,
                 "CRL source is closed after a DNS timeout",
-            ));
+            )
+            .detail("source_spent", true));
         }
         DEADLINE
             .checked_sub(self.started.expect("fetch started").elapsed())
             .filter(|d| !d.is_zero())
-            .ok_or_else(|| error(ErrorCode::CrlFetchFailed, "CRL retrieval deadline exceeded"))
+            .ok_or_else(|| {
+                error(ErrorCode::CrlFetchFailed, "CRL retrieval deadline exceeded")
+                    .detail("source_spent", true)
+            })
     }
     fn resolve(&mut self, url: &Url) -> Result<SocketAddr, VerificationError> {
         let host = url
@@ -224,6 +229,23 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
         location,
     })
 }
+/// The kind of a failed request. `Abort` only when the source was spent
+/// before it, or this request ran out of the source's own requests, bytes or
+/// time: a request that failed for its own reason keeps that reason, even if
+/// it was the last the source could make (the next one then aborts).
+fn source_error_kind(e: &VerificationError, spent_before: bool) -> CrlSourceErrorKind {
+    let ran_out = matches!(
+        e.details.get("resource").and_then(|r| r.as_str()),
+        Some("crl_http_requests" | "crl_network_bytes")
+    ) || e.details.get("source_spent") == Some(&serde_json::Value::Bool(true));
+    match e.code {
+        _ if spent_before || ran_out => CrlSourceErrorKind::Abort,
+        ErrorCode::CrlFetchDenied => CrlSourceErrorKind::Denied,
+        ErrorCode::CrlFetchFailed | ErrorCode::ResourceLimitExceeded => CrlSourceErrorKind::Failed,
+        _ => CrlSourceErrorKind::Unknown,
+    }
+}
+
 impl CrlSource for HttpCrlSource {
     /// Requests the certificate's listed distribution points in order (see
     /// [`fetch_each`]). Reports a URL its policy refuses as `Denied`, a
@@ -241,26 +263,13 @@ impl CrlSource for HttpCrlSource {
 
 impl HttpCrlSource {
     fn fetch_one(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
+        // Whether the source was already spent before this request: then
+        // nothing this request reports is about its own URL.
+        let spent_before = self.requests >= MAX_REQUESTS
+            || self.bytes >= MAX_TOTAL_BYTES
+            || self.started.is_some() && self.remaining().is_err();
         self.fetch_http(raw, max_bytes).map_err(|e| {
-            let source_spent = matches!(
-                e.details.get("resource").and_then(|r| r.as_str()),
-                Some("crl_http_requests" | "crl_network_bytes")
-            );
-            // A source this request left with no requests, bytes or time is
-            // done, whatever ended the request: even a refusal after network
-            // work is then an abort.
-            let exhausted = source_spent
-                || self.requests >= MAX_REQUESTS
-                || self.bytes >= MAX_TOTAL_BYTES
-                || self.started.is_some() && self.remaining().is_err();
-            let kind = match e.code {
-                _ if exhausted => CrlSourceErrorKind::Abort,
-                ErrorCode::CrlFetchDenied => CrlSourceErrorKind::Denied,
-                ErrorCode::CrlFetchFailed | ErrorCode::ResourceLimitExceeded => {
-                    CrlSourceErrorKind::Failed
-                }
-                _ => CrlSourceErrorKind::Unknown,
-            };
+            let kind = source_error_kind(&e, spent_before);
             let mut source_error = CrlSourceError::new(kind, e.message);
             source_error.details = e.details;
             source_error
@@ -465,6 +474,35 @@ mod tests {
             response(huge.as_bytes(), 10).err().unwrap().details["resource"],
             "crl_http_headers"
         );
+    }
+    #[test]
+    fn the_last_request_keeps_its_own_failure() {
+        // The 16th request returns 404: the source is now spent, but that
+        // URL failed for its own reason. Only the next request aborts.
+        let not_found = error(ErrorCode::CrlFetchFailed, "HTTP 404");
+        assert_eq!(
+            source_error_kind(&not_found, false),
+            CrlSourceErrorKind::Failed
+        );
+        let refused = error(ErrorCode::CrlFetchDenied, "redirect refused");
+        assert_eq!(
+            source_error_kind(&refused, false),
+            CrlSourceErrorKind::Denied
+        );
+        // Spent before the request, or ran out during it: abort.
+        assert_eq!(source_error_kind(&refused, true), CrlSourceErrorKind::Abort);
+        let deadline = HttpCrlSource {
+            started: Some(Instant::now() - DEADLINE),
+            ..HttpCrlSource::new()
+        }
+        .remaining()
+        .unwrap_err();
+        assert_eq!(
+            source_error_kind(&deadline, false),
+            CrlSourceErrorKind::Abort
+        );
+        let budget = limit("crl_http_requests", MAX_REQUESTS, MAX_REQUESTS, 1);
+        assert_eq!(source_error_kind(&budget, false), CrlSourceErrorKind::Abort);
     }
     #[test]
     fn deadlines_request_budgets_and_dns_poison_are_terminal_without_network() {
