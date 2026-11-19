@@ -790,3 +790,60 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
         "abort"
     );
 }
+
+/// SEC-10: the only path's intermediate lacks keyCertSign and its root CRL.
+/// No CRL could make that path verify, so nothing is named for retrieval and
+/// the source is never asked: retrieval reports the path policy failure, as
+/// verification without revocation finds it.
+#[test]
+fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
+    struct Counts(usize);
+    impl rssig::retrieval::CrlSource for Counts {
+        fn crls(
+            &mut self,
+            _: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            self.0 += 1;
+            Ok(rssig::retrieval::CrlResponse::new())
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = |fetch: bool| {
+        let mut args = vec![
+            "rssig".to_owned(),
+            "verify".to_owned(),
+            "--no-system-roots".to_owned(),
+            "--roots".to_owned(),
+            path("sec06-root.der"),
+            "--time".to_owned(),
+            "1800000000".to_owned(),
+            "--crl".to_owned(),
+            path("sec06-issuer.crl"),
+        ];
+        if fetch {
+            args.push("--fetch-crls".to_owned());
+        }
+        args.push(path("bad-sec06-ca-ku.exe"));
+        args
+    };
+    // Offline: revocation is reported first, as on main, naming nothing.
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    assert_eq!(
+        rssig::cli::run_with_writers(args(false), &mut out, &mut err).unwrap(),
+        1
+    );
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    assert!(error["details"].get("certificates_without_crl").is_none());
+    // With retrieval: no request, and the path policy failure decides.
+    let mut source = Counts(0);
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        rssig::cli::run_with_crl_source(args(true), &mut out, &mut err, &mut source).unwrap();
+    assert_eq!(code, 1);
+    assert_eq!(source.0, 0);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(report["results"][0]["error"]["code"], "invalid_key_usage");
+}

@@ -6961,7 +6961,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-ca-ku"
+        "bad-sec06-ca-ku",
+        "sec10-fetch-path-failing-key-usage-reports-key-usage"
       ]
     },
     {

@@ -35,7 +35,12 @@ rule is restated for retrieval.
    path that would fail another check, such as a missing keyCertSign, is
    neither named nor considered for an unknown status
    (`sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
-   `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`), and a
+   `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`), and its
+   revocation does not hide such a path's own CRL failure. When no path
+   passes the other path policy, revocation is still reported first, as on
+   `main`, but nothing is named: retrieval then verifies without revocation
+   and reports the path policy failure
+   (`sec10-fetch-path-failing-key-usage-reports-key-usage`). A
    certificate whose only CRL is stale or unusable is never offered to a
    source. A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an

@@ -240,15 +240,14 @@ impl TrustStore {
                 );
             }
             // Only a CRL whose issuer could be on the chain is decoded in
-            // full; the issuer is read from the top-level fields first. One
+            // full; the issuer is read from the top-level fields first and
+            // compared re-encoded, as the chain's names are (der sorts a SET
+            // OF while decoding, so raw and re-encoded bytes can differ). One
             // whose issuer cannot be read that way is decoded and judged.
             let crls = self
                 .crls
                 .iter()
-                .filter(|bytes| {
-                    crate::der::tbs_issuer(bytes, 0x02, 1)
-                        .is_none_or(|issuer| issuer_names.iter().any(|n| n == issuer))
-                })
+                .filter(|bytes| crl_may_apply(bytes, &issuer_names))
                 .map(|bytes| LoadedCrl::load(bytes))
                 .collect::<Result<Vec<_>>>()?;
             // With no applicable CRL at all, the path is still built: an
@@ -411,12 +410,14 @@ impl TrustStore {
             // revocation status, but a path that passes every path policy
             // and only lacks CRLs is the one a CRL could complete: it
             // outranks every other path's error, including a CA issued after
-            // the lifetime signing time.
+            // the lifetime signing time. A definite revocation does not: a
+            // higher-ranked error on another path still decides, as pinned
+            // by `sec09-lifetime-rollover-revoked-issuer` (SEC-14).
             let revocation = matches!(
                 e,
                 webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
             );
-            let completable = if revocation {
+            let viable = if revocation {
                 None
             } else {
                 completable_path(&outcomes.borrow())
@@ -432,7 +433,7 @@ impl TrustStore {
                 Some(at),
                 Some(cert),
             ) = (&e, lifetime_signed_at, issued_after_signing.get())
-                && completable.is_none()
+                && viable.is_none()
                 && time.as_secs() == at
                 && rejected.as_secs() == not_before(cert).as_secs()
             {
@@ -442,7 +443,7 @@ impl TrustStore {
             let revocation_error = if revocation {
                 revocation_failure(&outcomes.borrow())
             } else {
-                completable
+                viable
             };
             let mut error = if let Some(error) = revocation_error {
                 error
@@ -649,6 +650,17 @@ impl IssuerKey {
             crl_sign,
         })
     }
+}
+
+/// Whether a supplied CRL's issuer could be on the chain, read from its
+/// top-level fields without decoding it in full, and compared re-encoded as
+/// the chain's names are. One whose issuer cannot be read is kept, to be
+/// decoded and judged.
+fn crl_may_apply(bytes: &[u8], issuer_names: &[Vec<u8>]) -> bool {
+    crate::der::tbs_issuer(bytes, 0x02, 1)
+        .and_then(|raw| x509_cert::name::Name::from_der(raw).ok())
+        .and_then(|name| name.to_der().ok())
+        .is_none_or(|issuer| issuer_names.contains(&issuer))
 }
 
 /// A path policy failure other than revocation, judged without side effects.
@@ -930,24 +942,35 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     if outcomes.is_empty() {
         return None;
     }
-    let revoked_paths: Vec<usize> = outcomes
+    let viable: Vec<&CertificateEvidence> = outcomes.iter().filter(|o| o.path_viable).collect();
+    if viable.is_empty() {
+        // No path passes the other path policy. Revocation is still reported
+        // first, as webpki checked it first, but nothing is named for
+        // retrieval: no CRL could make such a path verify.
+        let all: Vec<&CertificateEvidence> = outcomes.iter().collect();
+        if let Some(revoked) = first_revocation(&all) {
+            return Some(revoked);
+        }
+        return unknown_status(&all).map(|mut error| {
+            error.details.remove("certificates_without_crl");
+            error
+        });
+    }
+    let revoked_paths: Vec<usize> = viable
         .iter()
         .filter(|o| matches!(o.outcome, Outcome::Revoked(_)))
         .map(|o| o.path)
         .collect();
-    let first_revocation = outcomes.iter().find_map(|o| match &o.outcome {
-        Outcome::Revoked(error) => Some(error.clone()),
-        _ => None,
-    });
-    if let Some(revoked) = first_revocation {
+    if let Some(revoked) = first_revocation(&viable) {
         // A revocation decides. Another path that passes every other path
         // policy and has certificates with no CRL at all could still verify
         // with one: they are named, so that a CRL source can be asked about
         // them. A certificate whose only CRL is stale or unusable is not, as
         // such a certificate is never offered to a source.
-        let open: Vec<&CertificateEvidence> = outcomes
+        let open: Vec<&CertificateEvidence> = viable
             .iter()
-            .filter(|o| o.path_viable && !revoked_paths.contains(&o.path))
+            .copied()
+            .filter(|o| !revoked_paths.contains(&o.path))
             .collect();
         let (_, missing) = without_crl(&open);
         return Some(if missing.is_empty() {
@@ -956,12 +979,14 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             revoked.detail("certificates_without_crl", missing)
         });
     }
-    let viable: Vec<&CertificateEvidence> = outcomes.iter().filter(|o| o.path_viable).collect();
-    if viable.is_empty() {
-        unknown_status(&outcomes.iter().collect::<Vec<_>>())
-    } else {
-        unknown_status(&viable)
-    }
+    unknown_status(&viable)
+}
+
+fn first_revocation(outcomes: &[&CertificateEvidence]) -> Option<VerificationError> {
+    outcomes.iter().find_map(|o| match &o.outcome {
+        Outcome::Revoked(error) => Some(error.clone()),
+        _ => None,
+    })
 }
 
 /// The unknown status of a path that passes every path policy, has no
@@ -1317,6 +1342,7 @@ mod revocation_reporting {
 
     #[test]
     fn only_paths_that_pass_other_policy_decide_an_unknown_status() {
+        let revoked = || Outcome::Revoked(webpki_revocation_error("r", webpki::Error::CertRevoked));
         // Path 0 could verify but its CRL is unusable; path 1 fails other
         // path policy and lacks a CRL. The usable path's failure decides,
         // and path 1's certificate is not offered for retrieval.
@@ -1333,6 +1359,50 @@ mod revocation_reporting {
         second.path_viable = false;
         let error = revocation_failure(&[first, second]).unwrap();
         assert_eq!(error.code, ErrorCode::RevocationUnknown);
+        // ... but names nothing for retrieval: no CRL could make it verify.
+        assert!(!error.details.contains_key("certificates_without_crl"));
+        // A revocation on a path failing other policy does not hide the
+        // usable path's own failure.
+        let mut blocked = on_path(1, "r", revoked());
+        blocked.path_viable = false;
+        let error =
+            revocation_failure(&[on_path(0, "a", failed(1, ErrorCode::CrlExpired)), blocked])
+                .unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+    }
+
+    #[test]
+    fn a_crl_issuer_written_out_of_der_order_still_matches_the_chain() {
+        fn tlv(tag: u8, body: &[u8]) -> Vec<u8> {
+            let mut out = vec![tag, body.len() as u8];
+            out.extend_from_slice(body);
+            out
+        }
+        let atv = |oid_last: u8, value: &[u8]| {
+            tlv(
+                0x30,
+                &[tlv(0x06, &[0x55, 0x04, oid_last]), tlv(0x0c, value)].concat(),
+            )
+        };
+        // One RDN with O before CN: valid BER, not DER order.
+        let (cn, o) = (atv(0x03, b"b"), atv(0x0a, b"a"));
+        let raw = tlv(0x30, &tlv(0x31, &[o.clone(), cn.clone()].concat()));
+        let sorted = tlv(0x30, &tlv(0x31, &[cn, o].concat()));
+        // tbsCertList: version, signature algorithm, issuer.
+        let algorithm = tlv(
+            0x30,
+            &tlv(0x06, &[0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02]),
+        );
+        let tbs = tlv(0x30, &[tlv(0x02, &[1]), algorithm, raw.clone()].concat());
+        let crl = tlv(0x30, &tbs);
+        // The chain's names are re-encoded, so sorted.
+        let reencoded = x509_cert::name::Name::from_der(&raw)
+            .unwrap()
+            .to_der()
+            .unwrap();
+        assert_eq!(reencoded, sorted);
+        assert!(crl_may_apply(&crl, &[sorted]));
+        assert!(!crl_may_apply(&crl, &[b"other".to_vec()]));
     }
 
     #[test]

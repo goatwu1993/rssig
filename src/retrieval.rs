@@ -539,9 +539,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
         // The issuer name is the key for a source that stores CRLs by
         // issuer; a certificate without a readable one is not asked about,
-        // and each of its listed points is recorded with that reason. No
-        // committed input reaches this: a decoded name always re-encodes
-        // (docs/testing.md).
+        // and each of its listed points is recorded with that reason. The
+        // raw bytes are preferred: a re-encoding can differ from them (der
+        // sorts a SET OF while decoding). No committed input reaches the
+        // failure branch: a decoded name re-encodes (docs/testing.md).
         let decoded_issuer;
         let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
             Some(issuer) => issuer,

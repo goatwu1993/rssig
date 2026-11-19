@@ -32648,6 +32648,38 @@
       }
     },
     {
+      "id": "sec10-fetch-path-failing-key-usage-reports-key-usage",
+      "input": "bad-sec06-ca-ku.exe",
+      "crl_responses": {},
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      }
+    },
+    {
       "id": "sec10-crl-this-update-one-second-ahead",
       "input": "good-pe64.exe",
       "command": [
