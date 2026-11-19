@@ -576,7 +576,7 @@ relic 02c54d58 and BoringSSL `main`.
     reuses one source across verifications, like the CLI across files, never
     has an earlier verification's allowances charged to a later one. Unit
     tests `a_source_is_told_when_a_verification_begins` and
-    `a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout`.
+    `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
   - Re-offered points are bounded by `crl_requests` (64 source requests per
     verification), not by `crl_source_urls`
     (`re_offered_points_are_bounded_by_the_request_limit`).
@@ -636,7 +636,7 @@ relic 02c54d58 and BoringSSL `main`.
   the next, so the engine renews a source's allowances for each verification
   (`CrlSource::begin_verification`), which the CLI relies on. A DNS timeout still closes the source for the
   invocation, to keep at most one unfinished resolver worker. Unit test
-  `a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout`.
+  `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
 - **Scope of a listing, refined after review.** Decided, acceptance, by the
   same OpenSSL (`crl_crldp_check`) and Bouncy Castle (processCRLB2) rules: a
   named partition's listing counts only on a positive match with a fullName

@@ -580,7 +580,7 @@ mod tests {
         assert_eq!(source_error_kind(&budget, false), CrlSourceErrorKind::Abort);
     }
     #[test]
-    fn a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout() {
+    fn a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good() {
         let mut source = HttpCrlSource {
             requests: MAX_REQUESTS,
             bytes: MAX_TOTAL_BYTES,

@@ -1947,5 +1947,12 @@ mod revocation_reporting {
         let mut first_bare = issuer(None, vec![vec![1, 2]]);
         first_bare.undisprovable = true;
         assert!(first_bare.names(&[1, 2]));
+        // Either order of a bare root and one with an identifier gives the
+        // same answer: a CRL naming a different key is not disproved.
+        assert!(!names_another_key(Some(&vec![9]), &first_bare));
+        let mut bare_later = issuer(Some(vec![1, 2]), vec![]);
+        bare_later.undisprovable = true;
+        assert!(!names_another_key(Some(&vec![9]), &bare_later));
+        assert!(bare_later.names(&[1, 2]));
     }
 }
