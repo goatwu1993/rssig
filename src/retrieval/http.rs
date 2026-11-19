@@ -246,11 +246,16 @@ impl HttpCrlSource {
                 e.details.get("resource").and_then(|r| r.as_str()),
                 Some("crl_http_requests" | "crl_network_bytes")
             );
+            // A source this request left with no requests, bytes or time is
+            // done, whatever ended the request: even a refusal after network
+            // work is then an abort.
+            let exhausted = source_spent
+                || self.requests >= MAX_REQUESTS
+                || self.bytes >= MAX_TOTAL_BYTES
+                || self.started.is_some() && self.remaining().is_err();
             let kind = match e.code {
+                _ if exhausted => CrlSourceErrorKind::Abort,
                 ErrorCode::CrlFetchDenied => CrlSourceErrorKind::Denied,
-                _ if source_spent || self.started.is_some() && self.remaining().is_err() => {
-                    CrlSourceErrorKind::Abort
-                }
                 ErrorCode::CrlFetchFailed | ErrorCode::ResourceLimitExceeded => {
                     CrlSourceErrorKind::Failed
                 }
@@ -499,6 +504,19 @@ mod tests {
                 .expect_err("denied")
                 .kind,
             CrlSourceErrorKind::Denied
+        );
+        // ... unless the source has no requests left: a refusal then still
+        // leaves it unable to do more work.
+        let mut source = HttpCrlSource {
+            requests: MAX_REQUESTS,
+            ..HttpCrlSource::new()
+        };
+        assert_eq!(
+            source
+                .fetch_one("http://127.0.0.1/x", 10)
+                .expect_err("denied")
+                .kind,
+            CrlSourceErrorKind::Abort
         );
     }
 }

@@ -956,7 +956,11 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             return Some(revoked);
         }
         return unknown_status(&all).map(|error| {
-            error.detail("certificates_without_crl", Vec::<CertificateReport>::new())
+            if error.code == ErrorCode::RevocationUnknown {
+                error.detail("certificates_without_crl", Vec::<CertificateReport>::new())
+            } else {
+                error
+            }
         });
     }
     let revoked_paths: Vec<usize> = viable
@@ -1378,6 +1382,12 @@ mod revocation_reporting {
             error.details["certificates_without_crl"],
             serde_json::json!([])
         );
+        // A specific CRL failure on such paths carries no such list.
+        let mut first = on_path(0, "a", failed(1, ErrorCode::CrlExpired));
+        first.path_viable = false;
+        let error = revocation_failure(&[first]).unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        assert!(!error.details.contains_key("certificates_without_crl"));
         // A revocation on a path failing other policy does not hide the
         // usable path's own failure.
         let mut blocked = on_path(1, "r", revoked());
