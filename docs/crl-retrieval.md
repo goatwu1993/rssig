@@ -262,15 +262,18 @@ download provenance but returns no successful signature report.
 | Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The built-in source's HTTP limits bound one verification, not a batch or a
-reused instance (the engine calls `CrlSource::begin_verification` first), so
-in the CLI they bound one file: the 16 requests, 32 MiB
-and 30 seconds start again for each file, so what earlier files fetched never
-costs a later file its CRL. OpenSSL (`apps/lib/apps.c` `crls_http_cb`: size,
-timeout and redirect count per fetch) and Bouncy Castle (`CrlCache`: timeouts
-per connection, no request or byte counters) likewise charge nothing from one
-validation to the next. One state does persist: after a DNS timeout the source
-stays closed for the rest of the invocation (see below), and each later file
-that needs a CRL is reported `crl_fetch_aborted` without a request.
+reused instance: the engine calls `CrlSource::begin_verification` first, so in
+the CLI the 16 requests, 32 MiB and 30 seconds start again for each file and
+what earlier files fetched never costs a later file its CRL. OpenSSL
+(`apps/lib/apps.c` `crls_http_cb`: size, timeout and redirect count per fetch)
+and Bouncy Castle (`CrlCache`: timeouts per connection, no request or byte
+counters) likewise charge nothing from one validation to the next, and the
+owner chose this over a batch-wide bound. A batch is therefore bounded by its
+file count (a slow CRL host can cost each file up to 30 seconds), so a batch
+over untrusted files should be split or run under the caller's own timeout.
+One state does persist: after a DNS timeout the source stays closed for the
+rest of the invocation (see below), and each later file that needs a CRL is
+reported `crl_fetch_aborted` without a request.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.

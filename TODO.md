@@ -332,6 +332,11 @@ timestamps, and local CRL validation already exist.
     candidate path, uncharged; compute it once per certificate.
   - Every configured root is decoded twice per verification (issuer names
     and anchor certificates); decode it once.
+  Retrieval skips a certificate whose listed points were all asked and
+  whose issuer, authority key and role (CA or end entity) were already asked
+  about, so a certificate that an earlier scoped or partial answer did not
+  cover can stay `revocation_unknown` without a request of its own; re-ask
+  when the earlier answer added no CRL covering it, with a paired fixture.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Partly
   decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
   stale, delta, indirect, unsupported or out-of-scope CRL is set aside when

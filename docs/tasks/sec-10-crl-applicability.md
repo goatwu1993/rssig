@@ -410,9 +410,9 @@ relic 02c54d58 and BoringSSL `main`.
   unknown status that names nothing to ask is followed by the check of the
   whole input without revocation, so
   `sec10-fetch-path-failing-key-usage-asks-nothing` now reports the path's
-  own failure (`invalid_key_usage`), as on `main`, where that check ran
+  own failure (`invalid_key_usage`), as before PR #60, where that check ran
   first; still no request is made. Without `--fetch-crls` the result is
-  `revocation_unknown` with an empty list, as on `main`.
+  `revocation_unknown` with an empty list, as before PR #60.
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
@@ -434,7 +434,7 @@ relic 02c54d58 and BoringSSL `main`.
   delegated the call, PR #60). Bouncy Castle drops CRLs past nextUpdate and,
   with CRL fetching enabled, fetches from the certificate's points; OpenSSL
   does not fetch. `crl-stale-local-refreshed-by-provider` (added) verifies
-  with the fetched CRL; `crl-stale-local-asks-provider` (on `main` as
+  with the fetched CRL; `crl-stale-local-asks-provider` (before PR #60 as
   `crl-stale-local-provider-unused`, which expected no request) now expects
   the request and, without an answer, the same `crl_expired`.
 - **A supplied CRL unusable for another reason is not refreshed.** Observed,
@@ -537,7 +537,7 @@ relic 02c54d58 and BoringSSL `main`.
   `only_a_named_missing_crl_ranks_a_usage_failure_as_completable`).
   The missing CRL is reported, because a source can supply it
   (`rdp-eku-retry-ca-missing-crl-is-unknown`, diagnostics), and
-  `--fetch-crls` then verifies the file, as on `main`, where retrieval
+  `--fetch-crls` then verifies the file, as before PR #60, where retrieval
   followed a pass without revocation that succeeded through serverAuth
   (`rdp-eku-retry-ca-fetches-the-missing-crl`, acceptance). Control:
   `rdp-eku-retry-ca-with-crls-verifies`.
