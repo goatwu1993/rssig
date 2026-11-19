@@ -229,7 +229,9 @@ impl CrlSource for HttpCrlSource {
     /// [`fetch_each`]). Reports a URL its policy refuses as `Denied`, a
     /// request that did not work as `Failed`, and its own spent request or
     /// byte budget, deadline or DNS timeout as `Abort`: after those this
-    /// source can do no more work. A refused URL costs no request.
+    /// source can do no more work. A URL refused before any network work
+    /// costs no request; one refused after it (a nonpublic DNS answer, a
+    /// redirect to a refused URL, an encoded response) does.
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
         Ok(fetch_each(request, |url, max_bytes| {
             self.fetch_one(url, max_bytes)
@@ -260,7 +262,8 @@ impl HttpCrlSource {
         })
     }
     fn fetch_http(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, VerificationError> {
-        // Refused before any work, so a refused URL costs no request.
+        // Refused before any work, so this refusal costs no request; later
+        // refusals (DNS answer, redirect, response) come after one is spent.
         let mut url = checked_url(raw)?;
         let requested = url.clone();
         self.started.get_or_insert_with(Instant::now);

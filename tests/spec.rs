@@ -188,6 +188,11 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 .by_certificate
                 .and_then(|answers| answers.get(&certificate))
                 .map(|name| std::fs::read(self.fixtures.join(name)).unwrap());
+            // A well-behaved source: within the allowance, and nothing more
+            // after it aborted.
+            if let Some(bytes) = &by_certificate {
+                assert!(bytes.len() <= request.max_bytes);
+            }
             let response = rssig::retrieval::fetch_each(request, |url, max_bytes| {
                 use rssig::domain::CrlSourceErrorKind;
                 use rssig::retrieval::CrlSourceError;
@@ -209,9 +214,15 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 assert!(bytes.len() <= max_bytes);
                 Ok(rssig::retrieval::SourcedCrl::new(bytes))
             });
+            let aborted = response
+                .failures
+                .iter()
+                .any(|f| f.kind == rssig::domain::CrlSourceErrorKind::Abort);
             Ok(match by_certificate {
-                Some(bytes) => response.with_crl(rssig::retrieval::SourcedCrl::new(bytes)),
-                None => response,
+                Some(bytes) if !aborted => {
+                    response.with_crl(rssig::retrieval::SourcedCrl::new(bytes))
+                }
+                _ => response,
             })
         }
     }

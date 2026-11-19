@@ -663,10 +663,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // A failure without a URL is about the whole request, as an `Err`
         // is: it answers every point no CRL or failure named, so each is
         // recorded with it and none as "returned nothing".
+        // The first such failure answers the points; every other one is
+        // still recorded as it is, and an `Abort` among them stops retrieval.
         let mut whole_request = None;
         for failure in response.failures {
-            if failure.url.is_none() && !unanswered.is_empty() {
-                whole_request.get_or_insert(failure);
+            if failure.url.is_none() && !unanswered.is_empty() && whole_request.is_none() {
+                whole_request = Some(failure);
             } else {
                 self.source_failure(sha256, failure);
             }
@@ -718,7 +720,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         max_bytes: usize,
     ) -> Result<bool, VerificationError> {
         let url = crl.url.filter(|u| hygienic_url(u));
-        let final_url = crl.final_url.filter(|u| hygienic_url(u));
+        // A redirect target the source reported but that is not recorded is
+        // withheld, never replaced by the requested URL.
+        let final_url = match crl.final_url {
+            Some(target) => hygienic_url(&target).then_some(target),
+            None => url.clone(),
+        };
         let len = crl.bytes.len();
         self.budget.log.debug(
             Stage::Revocation,
@@ -740,7 +747,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         self.downloaded += len;
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
-            final_url: final_url.or_else(|| url.clone()),
+            final_url,
             url: url.clone(),
             sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
             bytes: len,
@@ -1445,6 +1452,61 @@ mod tests {
                 (true, ErrorCode::CrlFetchDenied)
             ]
         );
+    }
+    #[test]
+    fn every_failure_without_a_url_counts_and_an_abort_among_them_stops() {
+        struct FailsThenAborts;
+        impl CrlSource for FailsThenAborts {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Failed, "down"))
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "deadline")))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 2),
+            &mut FailsThenAborts,
+        )
+        .unwrap();
+        assert!(state.aborted);
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.source_error == Some(CrlSourceErrorKind::Abort))
+        );
+    }
+    #[test]
+    fn a_withheld_redirect_target_is_not_replaced_by_the_requested_url() {
+        struct Redirected;
+        impl CrlSource for Redirected {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(
+                    SourcedCrl::new(include_bytes!("../tests/fixtures/good.crl").to_vec())
+                        .with_url(request.distribution_points[0].clone())
+                        .with_final_url("http://user:pw@crl.example.invalid/b.crl"),
+                ))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 1),
+            &mut Redirected,
+        )
+        .unwrap();
+        let artifact = &state.report.artifacts[0];
+        assert!(artifact.url.is_some());
+        assert_eq!(artifact.final_url, None);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

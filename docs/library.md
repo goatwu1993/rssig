@@ -673,7 +673,7 @@ Report types (`rssig::domain`), Rust and JSON:
 | Before | Now |
 |---|---|
 | `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL |
-| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect |
+| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect, and absent when the reported target is withheld (credentials, whitespace or control characters) |
 | (none) | `CrlRetrievalArtifact.certificate_sha256: Option<String>`: the certificate the CRL was asked for |
 | `CrlRetrievalReport { artifacts }` | adds `failures: Vec<CrlRetrievalFailure>`, omitted from JSON when empty; each names its certificate, URL, code and `source_error` kind |
 
