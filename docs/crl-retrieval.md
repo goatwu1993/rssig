@@ -155,8 +155,8 @@ The parser and `verify-core` remain usable without network dependencies or std.
   fails at the first unsupported point; retrieval itself skips such points one
   by one.
 - `CrlSource` is the single interface through which the engine obtains CRLs,
-  asked once per certificate: `crls(&CrlRequest)` receives the certificate
-  (DER), its issuer name (DER, the key for a store of CRLs by issuer, like
+  asked once per certificate (see step 2 for the one exception): `crls(&CrlRequest)` receives the certificate
+  (DER, as rssig re-encodes it), its issuer name (DER, the key for a store of CRLs by issuer, like
   OpenSSL's `lookup_crls`), its supported listed URIs in order (a hint:
   without URIs already asked about in this verification, deduplicated after
   normalization) and a byte budget for the whole response. It returns a

@@ -26,7 +26,8 @@ pub const MAX_SOURCE_REQUESTS: usize = 64;
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
 /// The single interface through which the engine obtains CRLs, asked once per
-/// certificate, like OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by
+/// certificate (except one with no new point whose issuer name, authority key
+/// and CA role were already asked about: CRLs are per issuer key and role), like OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by
 /// issuer name). A source returns untrusted bytes, never a trust or revocation
 /// verdict: the engine authenticates every CRL and applies no transport rule
 /// of its own. Where CRLs come from, and how (HTTP, HTTPS, LDAP, a proxy, a
@@ -388,6 +389,9 @@ struct Retrieval<'s, 'b, 'l> {
     aborted: bool,
     /// The certificate whose request the source aborted.
     aborted_for: Option<String>,
+    /// The normalized points the current request carries: only their
+    /// recorded outcome may change while it is answered.
+    in_flight: BTreeSet<String>,
     budget: &'b Budget<'l>,
 }
 
@@ -407,6 +411,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             asked_issuers: BTreeSet::new(),
             aborted: false,
             aborted_for: None,
+            in_flight: BTreeSet::new(),
             budget,
         }
     }
@@ -435,7 +440,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             format_args!("CRL evidence missing: {:?}", e.message),
         );
         self.record(certificate, url, &e, kind);
-        if let Some(entry) = key.and_then(|key| self.asked.get_mut(&key)) {
+        // Only a point of the current request takes this outcome: a source
+        // naming another URL does not change what that URL yielded.
+        if let Some(entry) = key
+            .filter(|key| self.in_flight.contains(key))
+            .and_then(|key| self.asked.get_mut(&key))
+        {
             *entry = Some((e, kind));
         }
     }
@@ -501,6 +511,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if self.aborted {
             return Ok(false);
         }
+        self.in_flight.clear();
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // The engine's own per-certificate URL limits end the run.
@@ -551,6 +562,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             }
         }
+        self.in_flight = points.iter().map(|p| url_key(p)).collect();
         // The issuer name is the key for a source that stores CRLs by
         // issuer; a certificate without a readable one is not asked about,
         // and each of its listed points is recorded with that reason. The
@@ -845,7 +857,9 @@ fn retrieve(
                 Uncovered::Final => break,
                 Uncovered::Listed(reports) => {
                     let mut targets = Vec::new();
-                    for report in &reports {
+                    // A certificate already asked about is neither decoded
+                    // nor charged again.
+                    for report in reports.iter().filter(|r| !asked.contains(&r.sha256)) {
                         budget
                             .decoded_bytes
                             .charge(report.der_hex.len())
@@ -1517,6 +1531,44 @@ mod tests {
         let artifact = &state.report.artifacts[0];
         assert!(artifact.url.is_some());
         assert_eq!(artifact.final_url, None);
+    }
+    #[test]
+    fn a_failure_naming_a_url_outside_the_request_does_not_change_its_outcome() {
+        // A's request is answered with a CRL for its point; B's request then
+        // fails naming A's point, which B did not carry. C, listing A's
+        // point, must not inherit that unrelated failure.
+        struct Source(usize);
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
+                match self.0 {
+                    1 => Ok(CrlResponse::new().with_crl(
+                        SourcedCrl::new(include_bytes!("../tests/fixtures/good.crl").to_vec())
+                            .with_url(request.distribution_points[0].clone()),
+                    )),
+                    _ => Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                        .with_url("http://crl.example.invalid/a-0.crl")),
+                }
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Source(0);
+        ask(&mut state, "a", &signer_with_points("a", 1), &mut source).unwrap();
+        ask(&mut state, "b", &signer_with_points("b", 1), &mut source).unwrap();
+        let mut c = signer_with_points("a", 1);
+        c.tbs_certificate.serial_number = x509_cert::serial_number::SerialNumber::from(77u32);
+        ask(&mut state, "c", &c, &mut source).unwrap();
+        assert!(
+            !state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == "c"),
+            "{:?}",
+            state.report.failures
+        );
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

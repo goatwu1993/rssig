@@ -642,7 +642,9 @@ and no dependency or native crypto provider is added.
 #### CRL sources (`--fetch-crls`, `crl-fetch` feature)
 
 `CrlSource` is now asked once per certificate rather than once per URL, and
-returns restricted errors. Old to new:
+returns restricted errors. A certificate with no new point, whose issuer name,
+authority key and CA role were already asked about, is not asked again: CRLs
+are per issuer key and role. Old to new:
 
 | Before | Now |
 |---|---|
