@@ -414,7 +414,9 @@
         "sec10-fetch-path-failing-key-usage-asks-nothing",
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
         "sec10-superseded-crl-revocation-alone-revokes",
-        "sec10-fetch-by-certificate-answer-requests-no-listed-point"
+        "sec10-fetch-by-certificate-answer-requests-no-listed-point",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -855,7 +857,8 @@
         "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
-        "sec10-superseded-crl-revocation-alone-revokes"
+        "sec10-superseded-crl-revocation-alone-revokes",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes"
       ],
       "gap": ""
     },
@@ -948,7 +951,8 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
-        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ],
       "gap": ""
     },

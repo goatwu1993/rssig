@@ -840,11 +840,15 @@ fn evaluate_crls(
         // score and Bouncy Castle's processCRLB2 rejects it, so neither reads
         // its entries.
         let authority = authority_for(&crl.tbs, cert, end_entity);
-        // Nor one whose scope cannot be read: OpenSSL scores an invalid
-        // issuingDistributionPoint as unusable (`IDP_INVALID`) and Bouncy
-        // Castle skips a CRL whose extension does not parse.
-        let covers =
-            authority == Some(true) && (lists_points || !names_distribution_point(&crl.tbs));
+        // Nor one whose issuingDistributionPoint does not decode: OpenSSL
+        // scores it unusable (`IDP_INVALID`) and Bouncy Castle skips a CRL
+        // whose extension does not parse. A well-formed one that admits the
+        // certificate's role and names no point is in scope for both
+        // (`crl->idp->distpoint == NULL` in `crl_crldp_check`; processCRLB2
+        // compares names only when the IDP has one), so its listing counts.
+        let covers = authority != Some(false)
+            && idp_decodes(&crl.tbs)
+            && (lists_points || !names_distribution_point(&crl.tbs));
         let lists = crl.revoked.iter().any(|s| s.as_slice() == serial);
         if lists {
             listings.push(index);
@@ -1199,6 +1203,16 @@ fn revocation_error(
 /// The error webpki's own check reports, naming the affected certificate.
 fn webpki_revocation_error(certificate: &str, error: webpki::Error) -> VerificationError {
     webpki_error(error).detail("affected_certificate", certificate)
+}
+
+/// Whether the CRL has no issuingDistributionPoint, or one that decodes.
+fn idp_decodes(tbs: &x509_cert::crl::TbsCertList) -> bool {
+    use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
+    tbs.crl_extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.28")
+        .is_none_or(|e| IssuingDistributionPoint::from_der(e.extn_value.as_bytes()).is_ok())
 }
 
 /// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint,

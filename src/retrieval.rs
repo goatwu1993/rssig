@@ -346,30 +346,6 @@ fn listed_points(
     Ok(listed)
 }
 
-/// Selected-path certificates below the anchor.
-fn collect<'a>(bundle: &'a VerificationBundle, output: &mut Vec<&'a CertificateReport>) {
-    let mut path = |trust: &'a TrustReport| {
-        output.extend(trust.chain.iter().take(trust.chain.len().saturating_sub(1)));
-    };
-    for signature in &bundle.signatures {
-        if let Some(trust) = &signature.trust {
-            path(trust);
-        }
-        if let Some(timestamp) = &signature.timestamp_verification
-            && let Some(trust) = &timestamp.trust
-        {
-            path(trust);
-        }
-    }
-    if let Some(appx) = &bundle.appx
-        && let Some(packages) = &appx.bundle_packages
-    {
-        for package in packages {
-            collect(&package.verification, output);
-        }
-    }
-}
-
 /// Verify with required revocation against the supplied CRLs; while the
 /// result is `revocation_unknown`, ask the source about exactly the
 /// certificates the verifier reports without a usable CRL, and verify again.
@@ -424,6 +400,10 @@ struct Retrieval<'s, 'b, 'l> {
     aborted: bool,
     /// The certificate whose request the source aborted.
     aborted_for: Option<String>,
+    /// How many URIs were passed to sources in this verification, counting
+    /// one passed again after an answer by certificate left it unused;
+    /// bounded by `MAX_SOURCE_REQUESTS`.
+    urls_passed: usize,
     /// The normalized points the current request carries: only their
     /// recorded outcome may change while it is answered.
     in_flight: BTreeSet<String>,
@@ -446,6 +426,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             asked_issuers: BTreeSet::new(),
             aborted: false,
             aborted_for: None,
+            urls_passed: 0,
             in_flight: BTreeSet::new(),
             budget,
         }
@@ -582,14 +563,15 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 None => {
                     // The engine bounds the URIs it passes to sources in one
                     // verification, whatever each source does with them.
-                    if self.asked.len() >= MAX_SOURCE_REQUESTS {
+                    if self.urls_passed >= MAX_SOURCE_REQUESTS {
                         return Err(limit(
                             "crl_source_urls",
                             MAX_SOURCE_REQUESTS,
-                            self.asked.len(),
+                            self.urls_passed,
                             1,
                         ));
                     }
+                    self.urls_passed += 1;
                     self.asked.insert(url_key(&raw), None);
                     points.push(raw);
                 }
@@ -616,11 +598,14 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                         ErrorCode::InvalidCertificate,
                         "certificate issuer name cannot be read for a CRL request",
                     );
+                    // Reported for this certificate only: no source was given
+                    // the points, so they stay open for other certificates.
                     if points.is_empty() {
-                        self.skip(sha256, None, e.clone(), None);
+                        self.record(sha256, None, &e, None);
                     }
                     for point in &points {
-                        self.skip(sha256, Some(point), e.clone(), None);
+                        self.record(sha256, Some(point), &e, None);
+                        self.asked.remove(&url_key(point));
                     }
                     return Ok(false);
                 }
@@ -744,11 +729,17 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // the points never tried are recorded as such.
         // A source that answered with a CRL naming no URL looked the CRL up
         // by certificate or issuer, as OpenSSL's `lookup_crls` does: the
-        // points it did not use are not failures. They stay asked, so each
-        // URI still goes to a source once per verification. Only a body that
+        // points it did not use are not failures. Only a body that
         // loaded as a CRL of this certificate's issuer counts as such an
         // answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
         let by_certificate = !self.aborted && loaded.by_certificate;
+        if by_certificate {
+            // No source used these points: a later certificate listing one
+            // still offers it. Each offer counts toward `crl_source_urls`.
+            for point in &unanswered {
+                self.asked.remove(&url_key(point));
+            }
+        }
         for point in unanswered.iter().filter(|_| !by_certificate) {
             let e = if self.aborted {
                 error(
@@ -900,7 +891,6 @@ fn retrieve(
         // another path that could still verify with a CRL: then those are
         // asked about, and the revocation stands if none is found.
         let mut result = verify_with(bytes, options, &state.store, format, budget);
-        let mut selected: Option<Vec<(String, Vec<u8>, Certificate)>> = None;
         let mut asked = BTreeSet::new();
         loop {
             let unknown = match &result {
@@ -923,11 +913,9 @@ fn retrieve(
             // Ask about exactly the certificates the verifier reports without
             // a usable CRL, as OpenSSL and Bouncy Castle look up CRLs for the
             // certificate being checked. The report carries each certificate,
-            // whichever candidate path it was on. Without that list (an
-            // unknown status from webpki itself, not from rssig's per-
-            // certificate evaluation), the selected certificates are found
-            // once by verifying without revocation, where integrity and
-            // trust failures end the run.
+            // whichever candidate path it was on. A result that names none
+            // is final: asking about every selected certificate would ask
+            // about covered ones.
             let targets = match uncovered(unknown) {
                 // webpki rejected the path rssig's own evaluation accepted:
                 // every certificate on it had a usable CRL, so no source can
@@ -953,12 +941,6 @@ fn retrieve(
                     }
                     targets
                 }
-                Uncovered::Unlisted => match &selected {
-                    Some(selected) => selected.clone(),
-                    None => selected
-                        .insert(selected_certificates(bytes, options, format, budget)?)
-                        .clone(),
-                },
             };
             let mut added = false;
             let mut any = false;
@@ -988,7 +970,6 @@ fn retrieve(
                         !asked.contains(&report.sha256)
                             || state.aborted_for.as_deref() == Some(report.sha256.as_str())
                     }),
-                    Uncovered::Unlisted => true,
                     Uncovered::Final => false,
                 }
         };
@@ -1054,11 +1035,8 @@ struct Loaded {
 enum Uncovered {
     /// The certificates the verifier reports without a usable CRL.
     Listed(Vec<CertificateReport>),
-    /// No source can help: the status is final.
+    /// No source can help, or nothing is named: the status is final.
     Final,
-    /// Not named: the selected certificates, found by verifying without
-    /// revocation.
-    Unlisted,
 }
 
 fn uncovered(unknown: &VerificationError) -> Uncovered {
@@ -1089,8 +1067,7 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
         None if !expired.is_empty() => Uncovered::Listed(expired),
         // Any other result is definite evidence: only the certificates it
         // names are worth asking about, never every selected one.
-        None if unknown.code != ErrorCode::RevocationUnknown => Uncovered::Final,
-        None => Uncovered::Unlisted,
+        None => Uncovered::Final,
     }
 }
 
@@ -1127,43 +1104,6 @@ fn decode_report(
     Ok((report.sha256.clone(), der, cert))
 }
 
-/// The selected non-anchor certificates of every signature, timestamp and
-/// bundle child, each once, from a verification without revocation.
-fn selected_certificates(
-    bytes: &[u8],
-    options: &VerifyOptions<'_>,
-    format: crate::format::Format,
-    budget: &Budget,
-) -> Result<Vec<(String, Vec<u8>, Certificate)>, VerificationError> {
-    let internal =
-        |e| VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate);
-    budget.log.debug(
-        Stage::Revocation,
-        format_args!("CRL retrieval: verifying without revocation to find the certificates"),
-    );
-    let preliminary = VerifyOptions {
-        check_revocation: false,
-        ..*options
-    };
-    let pending = verify_inner_budget(bytes, &preliminary, format, budget).map_err(internal)?;
-    let mut reports = Vec::new();
-    collect(&pending, &mut reports);
-    let mut seen = BTreeSet::new();
-    let mut selected = Vec::new();
-    for report in reports {
-        if !seen.insert(report.sha256.clone()) {
-            continue;
-        }
-        budget
-            .decoded_bytes
-            .charge(report.der_hex.len())
-            .map_err(internal)?;
-        selected.push(decode_report(report)?);
-    }
-    Ok(selected)
-}
-
-/// One verification with revocation required against `store`.
 fn verify_with(
     bytes: &[u8],
     options: &VerifyOptions<'_>,
@@ -1272,33 +1212,6 @@ mod tests {
                 .code,
             ErrorCode::Configuration
         );
-    }
-    #[test]
-    fn selected_paths_include_intermediates_timestamps_and_bundle_children() {
-        let mut store = store();
-        store
-            .add_crl(include_bytes!("../tests/fixtures/good.crl"))
-            .unwrap();
-        store
-            .add_crl(include_bytes!("../tests/fixtures/good-intermediate.crl"))
-            .unwrap();
-        for bytes in [
-            include_bytes!("../tests/fixtures/good-intermediate.exe").as_slice(),
-            include_bytes!("../tests/fixtures/good-rfc3161.exe").as_slice(),
-            include_bytes!("../tests/fixtures/good.msixbundle").as_slice(),
-        ] {
-            let options = VerifyOptions::trusted(&store, 1800000000);
-            let result = verify_with_crl_source(bytes, None, &options, &mut Never).unwrap();
-            assert!(result.crl_retrieval.as_ref().unwrap().artifacts.is_empty());
-            let mut selected = Vec::new();
-            collect(&result, &mut selected);
-            assert!(selected.len() >= 2);
-            assert!(
-                selected
-                    .iter()
-                    .all(|c| c.subject.common_names != ["rssig test root"])
-            );
-        }
     }
     #[test]
     fn provider_overflow_is_rejected_without_loading_or_trusting_the_artifact() {
@@ -1826,6 +1739,38 @@ mod tests {
         assert_eq!(response.failures[0].details["requested"], 11);
     }
     #[test]
+    fn points_unused_by_an_answer_by_certificate_are_offered_again() {
+        // Certificate A is answered by its issuer's CRL, naming no URL; B, of
+        // another issuer, lists the same points and still carries them.
+        struct Source(Vec<usize>);
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0.push(request.distribution_points.len());
+                Ok(match self.0.len() {
+                    1 => CrlResponse::new().with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                    )),
+                    _ => fetch_each(request, |_, _| {
+                        Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down"))
+                    }),
+                })
+            }
+        }
+        use core::str::FromStr;
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Source(Vec::new());
+        let a = signer_with_points("shared", 2);
+        let mut b = a.clone();
+        b.tbs_certificate.issuer = x509_cert::name::Name::from_str("CN=another issuer").unwrap();
+        ask(&mut state, "a", &a, &mut source).unwrap();
+        ask(&mut state, "b", &b, &mut source).unwrap();
+        assert_eq!(source.0, [2, 2]);
+        // Each offer counts toward the per-verification URI limit.
+        assert_eq!(state.urls_passed, 4);
+    }
+    #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
         let store = store();
         let budget = Budget::default();
@@ -2127,7 +2072,7 @@ mod tests {
             uncovered(&unknown().detail("reason", "confirmation")),
             Uncovered::Final
         ));
-        assert!(matches!(uncovered(&unknown()), Uncovered::Unlisted));
+        assert!(matches!(uncovered(&unknown()), Uncovered::Final));
         // The verifier's own list, empty: a certificate it could not name.
         assert!(matches!(
             uncovered(

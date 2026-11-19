@@ -299,9 +299,18 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-crl-dp-other-partition-revocation-is-ignored` and `-first` and
   verify. Comparing thisUpdate across partitions would have made the result
   depend on issuance order. The same holds for a CRL whose
-  issuingDistributionPoint cannot be read: OpenSSL scores it unusable
+  issuingDistributionPoint does not decode: OpenSSL scores it unusable
   (`IDP_INVALID` in `get_crl_score`) and Bouncy Castle skips a CRL whose
   extension does not parse, so its entries are not read here either.
+- **A revocation in a role partition without a point name counts.** Decided,
+  acceptance. An issuingDistributionPoint with only onlyContainsUserCerts
+  (or onlyContainsCACerts) that admits the certificate is in scope in
+  OpenSSL (`crl->idp->distpoint == NULL` in `crl_crldp_check`) and Bouncy
+  Castle (processCRLB2 compares names only when the IDP has one), so both
+  read its entries:
+  `sec10-role-partition-crl-revocation-beside-full-crl-revokes`. Alone it is
+  still `invalid_crl`, because webpki cannot use that form
+  (`sec10-role-partition-crl-revocation-alone-is-unsupported`, Observed).
 - **A partition for another point is no evidence.** Decided, diagnostics.
   Bouncy Castle's processCRLB2 rejects a CRL whose distribution point does not
   match; OpenSSL gives it no `CRL_SCORE_SCOPE`. The certificate is without a

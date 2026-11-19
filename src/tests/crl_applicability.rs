@@ -284,6 +284,29 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-idp-ca-certs.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x82, 1, 0xff]),
         ),
+        // The user-certificate partition without a distribution point,
+        // listing the test signer (serial 2): in scope for an end entity in
+        // OpenSSL and Bouncy Castle, so its listing counts beside a full CRL.
+        (
+            "sec10-root-idp-user-certs-revoked.crl",
+            crl_full(
+                "CN=rssig test root",
+                &identity().root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![x509_cert::ext::Extension {
+                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.28"),
+                    critical: true,
+                    extn_value: ::der::asn1::OctetString::new([0x30, 3, 0x81, 1, 0xff]).unwrap(),
+                }],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         // A named distribution point; the test certificates list none, so the
         // CRL may be a partition that does not cover them.
         (

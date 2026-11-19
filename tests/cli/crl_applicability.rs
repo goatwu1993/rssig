@@ -759,6 +759,18 @@ fn sec10_a_revocation_in_a_superseded_crl_does_not_count_beside_a_newer_one() {
 }
 
 #[test]
+fn sec10_a_revocation_in_a_role_partition_without_a_point_counts() {
+    // A user-certificate partition with no distribution point name is in
+    // scope for the signer in OpenSSL (`crl_crldp_check`) and Bouncy Castle
+    // (processCRLB2), so its listing counts beside the full good.crl.
+    let output = run_with("sec10-root-idp-user-certs-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+    // Alone it cannot decide here: webpki does not support the form.
+    let output = run_alone("sec10-root-idp-user-certs-revoked.crl");
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+}
+
+#[test]
 fn sec10_an_expired_partition_for_another_point_does_not_decide_the_signer() {
     // Not authoritative for the signer, so its age is irrelevant: the status
     // is unknown and the signer is named, not crl_expired.

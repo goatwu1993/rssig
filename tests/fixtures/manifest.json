@@ -149,7 +149,9 @@
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-superseded-crl-revocation-alone-revokes"
+        "sec10-superseded-crl-revocation-alone-revokes",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -269,7 +271,8 @@
         "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
         "crl-stale-local-refreshed-by-provider",
-        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored"
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes"
       ]
     },
     {
@@ -327,7 +330,9 @@
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-superseded-crl-revocation-alone-revokes"
+        "sec10-superseded-crl-revocation-alone-revokes",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -9352,6 +9357,18 @@
       "cases": [
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
         "sec10-superseded-crl-revocation-alone-revokes"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-user-certs-revoked.crl",
+      "sha256": "67bd57d7c7775f5bcd06d256e4b7eac5068304fa3aa8e7d7b64bd427d483485f",
+      "bytes": 226,
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root with an issuingDistributionPoint of onlyContainsUserCerts TRUE and no distributionPoint, revoking serial 2, the test signer. In scope for an end entity in OpenSSL and Bouncy Castle, so its listing counts beside a full CRL; alone webpki cannot use it. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {

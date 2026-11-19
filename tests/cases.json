@@ -35099,6 +35099,69 @@
       }
     },
     {
+      "id": "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-role-partition-crl-revocation-alone-is-unsupported",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "issuing_distribution_point"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-expired-partition-for-another-point-leaves-status-unknown",
       "input": "sec10-leaf-crl-dp.exe",
       "command": [
