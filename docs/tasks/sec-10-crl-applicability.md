@@ -422,6 +422,20 @@ relic 02c54d58 and BoringSSL `main`.
   the offline one only for an unknown status (including one that also
   carries `unusable_crl` because another certificate on the path lacks a
   CRL), which becomes the path failure; both reject.
+- **A revocation on one path names another path's expired-only CRLs.**
+  Decided (Bouncy Castle, following the owner's delegated call to refresh
+  expired CRLs), acceptance with `--fetch-crls`: a revocation on one
+  candidate path also names, in `details.certificates_with_expired_crl`,
+  the certificates of another viable path whose only CRLs have expired, so a
+  source can refresh them and that path verifies, as Bouncy Castle tries
+  every path and fetches past an expired CRL (`PKIXCertPathBuilderSpi.java:135-270`,
+  `PKIXCRLUtil.java:42-45`); OpenSSL has no equivalent (one chain, no fetch).
+  `sec10-cross-revoked-path-beside-path-with-expired-crl-names-it`
+  (diagnostics), `sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`
+  (acceptance). The revoked path's own certificates are not named. The same
+  holds across an RDP signer's usages. Before, such a certificate was not
+  named, and the revocation stood although a refresh could complete the
+  other path.
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
@@ -598,8 +612,9 @@ relic 02c54d58 and BoringSSL `main`.
     usage. Otherwise a usage that only lacks CRLs is reported first. Unit
     test `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
     Every certificate any other usage reports without a CRL is named once
-    (deduplicated by SHA-256), including another revocation's; one whose only
-    CRL expired is not, as for candidate paths. Spec case
+    (deduplicated by SHA-256), including another revocation's, and so is one
+    whose only CRL expired (`certificates_with_expired_crl`), as for
+    candidate paths. Spec case
     `rdp-eku-retry-ca-revoked-usage-is-revoked` (Decided, diagnostics): the
     serverAuth usage is revoked and codeSigning fails its EKU; the revocation
     is reported, where the first usage's `invalid_eku` was before.

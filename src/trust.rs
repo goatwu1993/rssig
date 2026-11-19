@@ -1170,21 +1170,26 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         .collect();
     if let Some(revoked) = first_revocation(&viable) {
         // A revocation decides. Another path that passes every other path
-        // policy and has certificates with no CRL at all could still verify
-        // with one: they are named, so that a CRL source can be asked about
-        // them. A certificate whose only CRL is stale or unusable is not
-        // named here: the revocation stands whatever a refresh would say.
+        // policy and has certificates with no CRL at all, or whose only CRLs
+        // have expired, could still verify with a current one: they are
+        // named, so that a CRL source can be asked about them, as Bouncy
+        // Castle tries every path and fetches past an expired CRL. One whose
+        // only CRL is unusable for another reason is not named.
         let open: Vec<&CertificateEvidence> = viable
             .iter()
             .copied()
             .filter(|o| !revoked_paths.contains(&o.path))
             .collect();
         let (_, missing) = without_crl(&open);
-        return Some(if missing.is_empty() {
-            revoked
-        } else {
-            revoked.detail("certificates_without_crl", missing)
-        });
+        let expired = with_expired_crl(&open);
+        let mut revoked = revoked;
+        if !missing.is_empty() {
+            revoked = revoked.detail("certificates_without_crl", missing);
+        }
+        if !expired.is_empty() {
+            revoked = revoked.detail("certificates_with_expired_crl", expired);
+        }
+        return Some(revoked);
     }
     unknown_status(&viable)
 }

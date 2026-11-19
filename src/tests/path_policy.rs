@@ -294,6 +294,26 @@ fn write_crl_with(
     key_identified: bool,
     revoked: Option<u32>,
 ) {
+    write_crl_at(
+        dir,
+        issuer,
+        issuer_key,
+        label,
+        key_identified,
+        revoked,
+        (NOW - 100, NOW + 1000),
+    );
+}
+/// `window` is (thisUpdate, nextUpdate).
+fn write_crl_at(
+    dir: &std::path::Path,
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    label: &str,
+    key_identified: bool,
+    revoked: Option<u32>,
+    window: (u64, u64),
+) {
     use x509_cert::{
         Version,
         crl::{CertificateList, TbsCertList},
@@ -324,8 +344,8 @@ fn write_crl_with(
         version: Version::V2,
         signature: algorithm.clone(),
         issuer: issuer.tbs_certificate.subject.clone(),
-        this_update: tm(NOW - 100),
-        next_update: Some(tm(NOW + 1000)),
+        this_update: tm(window.0),
+        next_update: Some(tm(window.1)),
         revoked_certificates: revoked.map(|serial| {
             vec![x509_cert::crl::RevokedCert {
                 serial_number: SerialNumber::from(serial),
@@ -768,6 +788,17 @@ pub(super) fn write(dir: &std::path::Path) {
     write_crl(dir, &rollover, &rollover_key, "rollover");
     // The same two CRLs, each naming its issuer's key: the case in which
     // OpenSSL, BoringSSL and Bouncy Castle all tell the two issuers apart.
+    // SEC-10: the root's CRL, expired: on a cross-certified file the root
+    // path's only CRL then needs a refresh while the other path is revoked.
+    write_crl_at(
+        dir,
+        &root,
+        &root_key,
+        "root-expired",
+        false,
+        None,
+        (NOW - 2000, NOW - 1000),
+    );
     write_crl_with(dir, &root, &root_key, "root-akid", true, None);
     write_crl_with(dir, &rollover, &rollover_key, "rollover-akid", true, None);
     // The root key's CRL revoking the rollover certificate, which webpki's

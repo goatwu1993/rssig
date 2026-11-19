@@ -33187,6 +33187,116 @@
       }
     },
     {
+      "id": "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+      "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45 drops a CRL past nextUpdate, and with CRL distribution point fetching enabled (CertPathValidatorUtilities.java:571) a fresh CRL is fetched from the certificate's points.",
+          "OpenSSL builds one chain (crypto/x509/x509_vfy.c:3925 build_chain) and does not fetch, so it has no equivalent; the owner's delegated call to refresh expired CRLs follows Bouncy Castle (crl-stale-local-refreshed-by-provider)."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--crl",
+        "fixtures/sec06-root-expired.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "details": {
+                  "certificates_with_expired_crl": [
+                    {
+                      "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+      "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45 drops a CRL past nextUpdate, and with CRL distribution point fetching enabled (CertPathValidatorUtilities.java:571) a fresh CRL is fetched from the certificate's points.",
+          "OpenSSL builds one chain (crypto/x509/x509_vfy.c:3925 build_chain) and does not fetch, so it has no equivalent; the owner's delegated call to refresh expired CRLs follows Bouncy Castle (crl-stale-local-refreshed-by-provider)."
+        ]
+      },
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--crl",
+        "fixtures/sec06-root-expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
       "input": "sec10-sec06-cross-expired-first.exe",
       "decision": {

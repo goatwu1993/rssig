@@ -850,6 +850,7 @@
     },
     "certificate_revoked": {
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",

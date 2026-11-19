@@ -1006,7 +1006,8 @@ fn retrieve(
                 // naming the certificates a source could refresh.
                 Err(e)
                     if e.code == ErrorCode::CertificateRevoked
-                        && e.details.contains_key("certificates_without_crl")
+                        && (e.details.contains_key("certificates_without_crl")
+                            || e.details.contains_key("certificates_with_expired_crl"))
                         || e.code == ErrorCode::CrlExpired
                             && e.details.contains_key("certificates_with_expired_crl") =>
                 {

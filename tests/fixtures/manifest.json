@@ -7329,6 +7329,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-cross-first",
         "good-sec06-cross-other-root",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
@@ -7641,6 +7643,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "good-sec06-basic",
@@ -7904,6 +7908,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-cross-other-root",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies"
@@ -7987,6 +7993,7 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -8101,6 +8108,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -8288,6 +8297,23 @@
       },
       "cases": [
         "sec16-self-issued-rollover-with-both-crls-is-rejected"
+      ]
+    },
+    {
+      "file": "sec06-root-expired.crl",
+      "sha256": "62e265cf033bc00a2070fd771184f65810c4b9b6bd089559fe6ebf810acd6b6b",
+      "bytes": 179,
+      "description": "SEC-10: empty, correctly signed CRL of the SEC-06 root, expired at 1800000000 (nextUpdate 1000 seconds before): on good-sec06-cross-first.exe the root path's only CRL then needs a refresh while the cross path is revoked; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -10193,6 +10219,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",

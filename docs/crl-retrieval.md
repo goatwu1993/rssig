@@ -33,9 +33,12 @@ rule is restated for retrieval.
    decides. When another tried path passes every other path policy and has
    certificates with no CRL at all, the revocation also names them in
    `details.certificates_without_crl`
-   (`sec10-cross-revoked-path-beside-path-without-crl-names-it`): those are
-   asked about, the other path verifies if one is found
-   (`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`),
+   (`sec10-cross-revoked-path-beside-path-without-crl-names-it`), and those
+   whose only CRLs have expired in `details.certificates_with_expired_crl`
+   (`sec10-cross-revoked-path-beside-path-with-expired-crl-names-it`): those
+   are asked about, the other path verifies if one is found
+   (`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+   `sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`),
    and otherwise the revocation stands
    (`sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl`). A
    path that would fail another check, such as a missing keyCertSign, is
