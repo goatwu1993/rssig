@@ -410,7 +410,6 @@ timestamps, and local CRL validation already exist.
   reverted it). Identify the listing CRL in `details` instead of reusing
   webpki's `CertRevoked` message. Paired fixtures: same-name rollover issuers,
   an issuer without cRLSign, an unmappable algorithm.
-
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.**
   From the PR #60 review. `--fetch-crls` learns which certificates lack a
   usable CRL by reading `certificates_without_crl` back out of the error's JSON
