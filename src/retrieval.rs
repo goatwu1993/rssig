@@ -395,7 +395,10 @@ struct Retrieval<'s, 'b, 'l> {
     /// (DER), authority key identifier and whether the certificate is a CA:
     /// an issuer's CRLs can differ by key and be split between CA and
     /// end-entity certificates.
-    asked_issuers: BTreeSet<(Vec<u8>, Vec<u8>, bool)>,
+    asked_issuers: BTreeSet<IssuerKey>,
+    /// Those of them a source answered by certificate, with a CRL of that
+    /// issuer naming no URL.
+    answered_by_certificate: BTreeSet<IssuerKey>,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
     /// The certificate whose request the source aborted.
@@ -424,6 +427,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             asked: BTreeMap::new(),
             requests: 0,
             asked_issuers: BTreeSet::new(),
+            answered_by_certificate: BTreeSet::new(),
             aborted: false,
             aborted_for: None,
             urls_passed: 0,
@@ -528,6 +532,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return Ok(false);
         }
         self.in_flight.clear();
+        // An issuer key and role a source already answered by certificate
+        // needs no further request: that answer serves every such
+        // certificate, and its points are neither offered nor counted.
+        if let Some(issuer) = crate::der::tbs_issuer(der, 0xa0, 2)
+            && self
+                .answered_by_certificate
+                .contains(&issuer_key(issuer, cert))
+        {
+            return Ok(false);
+        }
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // A malformed extension: webpki skips it offline, so it is no
@@ -619,23 +633,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // that one that cannot be read, or names its issuer by name and
         // serial, is told apart from other keys of the same name and still
         // asked about only once.
-        let authority_key: Vec<u8> = cert
-            .tbs_certificate
-            .extensions
-            .iter()
-            .flatten()
-            .find(|e| e.extn_id.to_string() == "2.5.29.35")
-            .map(|e| e.extn_value.as_bytes().to_vec())
-            .unwrap_or_default();
-        let is_ca = cert
-            .tbs_certificate
-            .get::<x509_cert::ext::pkix::BasicConstraints>()
-            .ok()
-            .flatten()
-            .is_some_and(|(_, constraints)| constraints.ca);
-        let new_issuer = self
-            .asked_issuers
-            .insert((issuer.to_vec(), authority_key, is_ca));
+        let key = issuer_key(issuer, cert);
+        let new_issuer = self.asked_issuers.insert(key.clone());
         if points.is_empty() && !new_issuer {
             return Ok(false);
         }
@@ -734,6 +733,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
         let by_certificate = !self.aborted && loaded.by_certificate;
         if by_certificate {
+            self.answered_by_certificate.insert(key);
             // No source used these points: a later certificate listing one
             // still offers it. Each offer counts toward `crl_source_urls`.
             for point in &unanswered {
@@ -1017,6 +1017,31 @@ fn body_over_allowance(len: usize, total: usize, max_bytes: usize) -> Option<Ver
     } else {
         None
     }
+}
+
+/// An issuer as retrieval tells them apart: its name (DER), the
+/// certificate's authorityKeyIdentifier extension as raw bytes (none: empty,
+/// so that one that cannot be read, or names its issuer by name and serial,
+/// is its own key), and whether the certificate is a CA, as an issuer's CRLs
+/// can differ by key and be split between CA and end-entity certificates.
+type IssuerKey = (Vec<u8>, Vec<u8>, bool);
+
+fn issuer_key(issuer: &[u8], cert: &Certificate) -> IssuerKey {
+    let authority_key = cert
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.35")
+        .map(|e| e.extn_value.as_bytes().to_vec())
+        .unwrap_or_default();
+    let is_ca = cert
+        .tbs_certificate
+        .get::<x509_cert::ext::pkix::BasicConstraints>()
+        .ok()
+        .flatten()
+        .is_some_and(|(_, constraints)| constraints.ca);
+    (issuer.to_vec(), authority_key, is_ca)
 }
 
 /// What one response's bodies turned out to be.
@@ -1769,6 +1794,30 @@ mod tests {
         assert_eq!(source.0, [2, 2]);
         // Each offer counts toward the per-verification URI limit.
         assert_eq!(state.urls_passed, 4);
+    }
+    #[test]
+    fn an_issuer_answered_by_certificate_is_not_asked_again() {
+        // Many certificates of one issuer listing the same points: the first
+        // answer by certificate serves them all, and none spends the cap.
+        struct Source(usize);
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Source(0);
+        let cert = signer_with_points("shared", 2);
+        for i in 0..=MAX_SOURCE_REQUESTS {
+            ask(&mut state, &format!("c{i}"), &cert, &mut source).unwrap();
+        }
+        assert_eq!(source.0, 1);
+        assert!(state.report.failures.is_empty());
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

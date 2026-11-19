@@ -307,8 +307,7 @@ timestamps, and local CRL validation already exist.
   reports without a usable CRL (`details.certificates_without_crl`), as
   OpenSSL's `get_crl` and Bouncy Castle look up CRLs for the certificate being
   checked (PR #60). What remains: a run verifies the input up to once per
-  retrieval round plus once without revocation, against one budget, and no
-  case exhausts it on that path. The per-certificate CRL evaluation decodes
+  retrieval round, against one budget, and no case exhausts it on that path. The per-certificate CRL evaluation decodes
   each loaded CRL once per verification, but verifies CRL signatures with its
   own OID table outside the budgeted algorithm adapter; reuse the adapter.
   Repeated work found in the PR #60 review (results unchanged, bounded by
@@ -425,9 +424,9 @@ timestamps, and local CRL validation already exist.
   From the PR #60 review. `--fetch-crls` learns which certificates lack a
   usable CRL by reading `certificates_without_crl` back out of the error's JSON
   `details` and hex-decoding each `der_hex`. If that schema changes and the
-  list no longer deserializes, retrieval quietly falls back to verifying
-  without revocation and asking about every selected certificate, which
-  changes request order and counts. Carry the uncovered certificates' DER
+  list no longer deserializes, retrieval treats the result as final and
+  quietly asks nothing (the same holds for `certificates_with_expired_crl`),
+  so `--fetch-crls` stops fetching with no error. Carry the uncovered certificates' DER
   beside the error inside the crate, keep the JSON field for consumers, and
   pin the request sequence with a test.
   Carry the original certificate bytes through that channel too. Today
