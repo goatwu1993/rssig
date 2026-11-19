@@ -837,7 +837,8 @@ fetches from the certificate's distribution points.
 | unknown critical extension, delta, indirect, reasons partition | second source | fetches | asked about |
 | bad signature, unsupported signature algorithm | reported, no lookup | fetches | not asked (BoringSSL decides) |
 | issuer without cRLSign | reported | fetches | not asked: a fetched CRL has the same issuer |
-| malformed (extensions, authorityKeyIdentifier, CRL number, version), or the certificate's own points unreadable | no equivalent | fetches | not asked: written choice, kept as before |
+| malformed (extensions, authorityKeyIdentifier, CRL number, version, entry extensions) | BoringSSL drops it when decoding (`x_crl.cc:122-160`); OpenSSL flags it `EXFLAG_INVALID`, which verification never tests, and an invalid issuingDistributionPoint scores 0 (`x509_vfy.c:1292`): either way the store is still consulted | fetches | asked about: the three agree |
+| the certificate's own points unreadable, or a point-scoped CRL for a certificate that lists none | no equivalent | fetches | not asked: no point to ask about |
 | no nextUpdate | usable | usable | not asked: `invalid_crl`, the separate open question in SEC-23 |
 
 A certificate whose only CRLs are unusable for one of the "asked about"
@@ -867,6 +868,12 @@ path is not one a source could complete.
   `crl-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
 
+- **Decided, acceptance:** a malformed CRL does not stop the search for
+  another, alone or beside an expired one
+  (`crl-malformed-aki-local-refreshed-by-provider`,
+  `crl-malformed-aki-beside-expired-local-refreshed-by-provider`); without
+  an answer its failure stands and names the certificate
+  (`crl-malformed-aki-beside-expired-local-asks-provider`, diagnostics).
 - **Decided, diagnostics:** the list's placement beside other evidence,
   on the `sec06` chain with the root's CRL not yet valid
   (`sec06-root-not-yet-valid.crl`): a revocation on the cross path names
@@ -886,10 +893,10 @@ path is not one a source could complete.
   can tell that the CRL was never refreshed because the source stopped.
 
 Among a certificate's unusable CRLs, the one with the highest rank is
-reported, and one that cannot be replaced now ranks above one that can. This
-is a behaviour change, not only wording: a certificate with a scope-mismatched
-CRL beside a malformed one of the same issuer was asked about before (the
-two tied and the first won) and now is not, since the malformed CRL's
-failure stands whatever is fetched. A CRL scoped to a distribution point the
+reported, and one that cannot be replaced ranks above one that can, so a
+certificate with any such CRL is not asked about. A malformed CRL was first
+ranked that way too (a "written choice"); compared with the references it
+is replaceable: BoringSSL drops it when decoding, OpenSSL never tests the
+invalid flag and still consults the store, and Bouncy Castle fetches. A CRL scoped to a distribution point the
 certificate does not list, when it lists none, is not replaceable either: a
 source is asked about the points the certificate lists.

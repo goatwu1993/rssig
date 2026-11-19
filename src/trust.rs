@@ -975,7 +975,7 @@ fn evaluate_crls(
             authenticated_listing = Some((index, this_update));
         }
         if crl.authority_key.is_err() {
-            fail(UNUSABLE, &|| {
+            fail(REPLACEABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1030,16 +1030,10 @@ fn evaluate_crls(
             });
             continue;
         };
-        // Feature support is reported before freshness. A feature OpenSSL
-        // scores below a valid CRL (and then looks for another) is
-        // replaceable; a malformed CRL is not.
+        // Feature support is reported before freshness. Whatever webpki
+        // rejects, unsupported or malformed, a source's CRL can replace.
         if let Err(e) = &crl.webpki {
-            let rank = if replaceable_rejection(e) {
-                REPLACEABLE
-            } else {
-                UNUSABLE
-            };
-            fail(rank, &|| {
+            fail(REPLACEABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,
@@ -1375,14 +1369,16 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
 /// The ranks of unusable-CRL failures; the highest among a certificate's
 /// CRLs is reported. Up to `REPLACEABLE`, a CRL from a source can replace
 /// the unusable one: it has expired, is not yet valid, has an
-/// issuingDistributionPoint that cannot be used, or uses a feature that is
-/// not supported. OpenSSL and
-/// BoringSSL score such a CRL below a valid one and then look the issuer's
-/// CRLs up in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle
-/// fetches after any CRL failure. Above it, the failure stands whatever is
-/// fetched: OpenSSL and BoringSSL do not score the signature and report its
-/// failure without another lookup, an issuer without cRLSign signs no usable
-/// CRL, and a malformed CRL has no reference that replaces it.
+/// issuingDistributionPoint that cannot be used, uses a feature that is not
+/// supported, or is malformed. OpenSSL and BoringSSL score such a CRL below a
+/// valid one, or drop it when decoding, and then look the issuer's CRLs up
+/// in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle fetches after
+/// any CRL failure. Above it, the failure stands whatever is fetched: OpenSSL
+/// and BoringSSL do not score the signature and report its failure (or an
+/// unsupported signature algorithm) without another lookup; an issuer
+/// without cRLSign signs no usable CRL; a CRL without nextUpdate is the open
+/// question in SEC-23; and a certificate whose own points cannot be read, or
+/// that lists none, gives a source nothing to be asked about.
 const EXPIRED: u8 = 1;
 const NOT_YET_VALID: u8 = 2;
 const REPLACEABLE: u8 = 3;
@@ -1393,21 +1389,6 @@ const FORGED: u8 = 6;
 /// The detail naming certificates whose only CRLs are unusable for a reason
 /// other than expiry that a CRL from a source could replace.
 pub(crate) const WITH_UNUSABLE_CRL: &str = "certificates_with_unusable_crl";
-
-/// Whether webpki rejected the CRL for a feature OpenSSL gives no valid
-/// score (delta, indirect, reasons, an unusable issuingDistributionPoint, an
-/// unhandled critical extension), rather than for being malformed.
-fn replaceable_rejection(error: &webpki::Error) -> bool {
-    use webpki::Error as W;
-    matches!(
-        error,
-        W::UnsupportedCriticalExtension
-            | W::UnsupportedDeltaCrl
-            | W::UnsupportedIndirectCrl
-            | W::UnsupportedCrlIssuingDistributionPoint
-            | W::UnsupportedRevocationReasonsPartitioning
-    )
-}
 
 /// The failure for paths without a revocation: unknown status naming every
 /// certificate without any CRL, else the most specific unusable CRL.
@@ -1747,32 +1728,6 @@ mod revocation_reporting {
         assert!(!error.details.contains_key(WITH_UNUSABLE_CRL));
     }
 
-    /// The webpki rejections a source's CRL could replace (OpenSSL gives such
-    /// a CRL no valid score); every other rejection stands.
-    #[test]
-    fn only_features_openssl_scores_below_valid_are_replaceable() {
-        use webpki::Error as W;
-        for replaceable in [
-            W::UnsupportedCriticalExtension,
-            W::UnsupportedDeltaCrl,
-            W::UnsupportedIndirectCrl,
-            W::UnsupportedCrlIssuingDistributionPoint,
-            W::UnsupportedRevocationReasonsPartitioning,
-        ] {
-            assert!(replaceable_rejection(&replaceable), "{replaceable:?}");
-        }
-        for fixed in [
-            W::UnsupportedCrlVersion,
-            W::MalformedExtensions,
-            W::UnsupportedRevocationReason,
-            W::InvalidCrlNumber,
-        ] {
-            assert!(!replaceable_rejection(&fixed), "{fixed:?}");
-        }
-    }
-
-    /// A CRL a source could replace names its certificate on the error that
-    /// stands; one that cannot be replaced does not, and its path is stuck.
     #[test]
     fn only_a_replaceable_crl_failure_names_its_certificate() {
         for (rank, code) in [

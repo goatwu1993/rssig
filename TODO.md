@@ -466,9 +466,10 @@ timestamps, and local CRL validation already exist.
   references are in
   [SEC-10](docs/tasks/sec-10-crl-applicability.md) ("Case reasons (PR #60)").
   Decided since: a supplied CRL that is not yet valid, scoped elsewhere or
-  uses an unsupported feature is refreshed by `--fetch-crls`, as an expired
-  one is; one with a bad signature, from an issuer without cRLSign, or
-  malformed is not (SEC-10, "Case reasons (refresh of an unusable supplied
+  uses an unsupported feature, or is malformed, is refreshed by
+  `--fetch-crls`, as an expired one is; one with a bad signature or an
+  unsupported signature algorithm, or from an issuer without cRLSign, is
+  not (SEC-10, "Case reasons (refresh of an unusable supplied
   CRL)").
   Owner decision needed:
   - A CRL without nextUpdate that lists a certificate, alone, is
@@ -510,20 +511,12 @@ timestamps, and local CRL validation already exist.
   portably.
   Left open by the refresh of unusable supplied CRLs (SEC-10, "Case reasons
   (refresh of an unusable supplied CRL)"):
-  - A certificate with a malformed or unsupported-version CRL beside an
-    expired one is not asked about, because the unreplaceable failure
-    outranks the replaceable one; the best-CRL rule would allow a fetched
-    CRL to decide. Decide whether a sibling that cannot be replaced should
-    block the refresh.
   - The three gap keys (`certificates_without_crl`,
     `certificates_with_expired_crl`, `certificates_with_unusable_crl`) are
     string literals in `src/trust.rs`, `src/retrieval.rs` and `src/rdp.rs`,
     and `choose_usage_failure` sizes its merge from the RDP-only `KEYS`.
     Define them once with a shared list (this is part of SEC-22's typed
     channel), so that a fourth key cannot be missed in one place.
-  - `replaceable_rejection` is an allow-list over webpki rejections: a new
-    `webpki::Error` variant on a dependency bump defaults to not
-    replaceable, and the unit test pins only the variants known today.
   - `unknown_status` names every outcome passed to it, and relies on its
     callers to exclude paths no source could complete (`completable_first`,
     or the key strip in the no-viable-path branch of

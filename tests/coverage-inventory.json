@@ -486,6 +486,8 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
+        "crl-malformed-aki-local-refreshed-by-provider",
+        "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "sec10-fetch-completes-missing-and-not-yet-valid-crl",
         "crl-stale-local-source-abort-is-marked",
@@ -975,7 +977,8 @@
         "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
         "crl-no-next-update-local-asks-nothing",
         "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported"
+        "sec10-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-malformed-aki-beside-expired-local-asks-provider"
       ],
       "gap": ""
     },

@@ -24,7 +24,7 @@ rule is restated for retrieval.
    (`crl-fetch-invalid-nested-signature-requests-nothing`). A good result,
    or any failure but `revocation_unknown`, is final, with the exceptions
    below (a revocation naming another path's gap, and an expired or
-   replaceable CRL): a forged, malformed or revoking local CRL is reported as it is without
+   replaceable CRL): a forged or revoking local CRL is reported as it is without
    `--fetch-crls`, unless another CRL of the same issuer is usable (the best
    CRL decides). An unknown status names, in
    `details.certificates_without_crl`, every certificate on a tried path that
@@ -80,8 +80,12 @@ rule is restated for retrieval.
    certificate with a CRL that cannot be replaced is not offered: a bad
    signature (`crl-forged-local-asks-nothing`; OpenSSL and BoringSSL report
    it without another lookup), an unsupported signature algorithm, an issuer
-   without cRLSign, a malformed CRL, or one without nextUpdate
-   (`crl-no-next-update-local-asks-nothing`). The reasons are in
+   without cRLSign, or one without nextUpdate
+   (`crl-no-next-update-local-asks-nothing`). A malformed CRL is replaceable,
+   alone or beside an expired one: BoringSSL drops it when decoding and
+   OpenSSL still consults its store
+   (`crl-malformed-aki-local-refreshed-by-provider`,
+   `crl-malformed-aki-beside-expired-local-refreshed-by-provider`). The reasons are in
    [SEC-10](tasks/sec-10-crl-applicability.md) ("Case reasons (refresh of an
    unusable supplied CRL)"). A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an

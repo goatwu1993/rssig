@@ -25121,6 +25121,190 @@
       }
     },
     {
+      "id": "crl-malformed-aki-local-refreshed-by-provider",
+      "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
+          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
+          "OpenSSL crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
+        ]
+      },
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "good.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-malformed-aki.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.example.invalid/test.crl"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
+      "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
+          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
+          "OpenSSL crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
+        ]
+      },
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "good.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-malformed-aki.crl",
+        "--crl",
+        "fixtures/expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.example.invalid/test.crl"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-malformed-aki-beside-expired-local-asks-provider",
+      "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
+          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
+          "OpenSSL crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
+        ]
+      },
+      "crl_responses": {},
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-malformed-aki.crl",
+        "--crl",
+        "fixtures/expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "malformed_authority_key_identifier",
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  },
+                  "certificates_with_unusable_crl": [
+                    {
+                      "subject": {
+                        "display": "CN=rssig test publisher"
+                      }
+                    },
+                    {}
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "crl-no-next-update-local-asks-nothing",
       "input": "good-crl-discovery.exe",
       "decision": {
