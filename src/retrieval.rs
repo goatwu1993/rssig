@@ -48,7 +48,9 @@ pub trait CrlSource {
     /// source, before any request. A source that keeps allowances for one
     /// verification (requests, bytes, a deadline) starts them afresh here, so
     /// that reusing it across files or calls never charges one to the next.
-    /// [`HttpCrlSource`] does; the default does nothing.
+    /// [`HttpCrlSource`] does; the default does nothing. A source that
+    /// delegates to another (a cache in front of [`HttpCrlSource`], say) must
+    /// forward this call, or the inner source's allowances are never renewed.
     fn begin_verification(&mut self) {}
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError>;
 }
@@ -459,10 +461,10 @@ struct Retrieval<'s, 'b, 'l> {
     /// The normalized points the current request carries: only their
     /// recorded outcome may change while it is answered.
     in_flight: BTreeSet<String>,
-    /// Per certificate, the listed points its source left unused when it
-    /// answered by certificate: recorded if that answer does not settle
-    /// the certificate's status.
-    unused_points: BTreeMap<String, Vec<String>>,
+    /// Per certificate, in request order, the listed points its source left
+    /// unused when it answered by certificate: recorded only for a
+    /// certificate the failed result still names (its status unsettled).
+    unused_points: Vec<(String, Vec<String>)>,
     budget: &'b Budget<'l>,
 }
 
@@ -486,7 +488,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             urls_passed: 0,
             urls_counted: BTreeSet::new(),
             in_flight: BTreeSet::new(),
-            unused_points: BTreeMap::new(),
+            unused_points: Vec::new(),
             budget,
         }
     }
@@ -570,21 +572,27 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
     }
 
-    /// Records, for every certificate whose source answered by certificate,
-    /// the listed points it left unused: with the failure a request for
-    /// another certificate reported for the point, if any, and otherwise as
-    /// not requested, which is always true. Called only when retrieval fails,
-    /// however it ends, so that no listed point disappears from that report.
-    fn report_unused_points(&mut self) {
-        for (certificate, points) in core::mem::take(&mut self.unused_points) {
+    /// Records, for each certificate the final result still names (its
+    /// source's answer by certificate did not settle its status), the listed
+    /// points that answer left unused: with the failure a request for another
+    /// certificate reported for the point, nothing if such a request was
+    /// answered, and otherwise as not requested. A certificate whose status
+    /// was settled leaves no per-point failure.
+    fn report_unused_points(&mut self, named: &[String]) {
+        let held = core::mem::take(&mut self.unused_points);
+        for (certificate, points) in held {
+            if !named.contains(&certificate) {
+                continue;
+            }
             for point in points {
                 match self.asked.get(&url_key(&point)).cloned() {
                     Some(Some((e, kind))) => self.record(&certificate, Some(&point), &e, kind),
-                    _ => {
+                    Some(None) => {}
+                    None => {
                         let e = error(
                             ErrorCode::CrlFetchFailed,
                             "not requested: the CRL source answered for the certificate \
-                             without using this point",
+                             without using this point, and its answer did not settle the status",
                         );
                         self.record(&certificate, Some(&point), &e, None);
                     }
@@ -703,7 +711,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     }
                     for point in &points {
                         self.record(sha256, Some(point), &e, None);
-                        self.asked.remove(&url_key(point));
                     }
                     // No source was given them: they cost no URI allowance.
                     for key in &newly_counted {
@@ -854,8 +861,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 self.asked.remove(&url_key(point));
             }
             if !unanswered.is_empty() {
+                self.unused_points.retain(|(held, _)| held != sha256);
                 self.unused_points
-                    .insert(sha256.to_owned(), unanswered.clone());
+                    .push((sha256.to_owned(), unanswered.clone()));
             }
         }
         for point in unanswered.iter().filter(|_| !by_certificate) {
@@ -1157,10 +1165,15 @@ fn retrieve(
             result => result,
         }
     })();
-    // A failed retrieval, however it ended, reports every point a source
-    // answering by certificate left unused.
-    if result.is_err() {
-        state.report_unused_points();
+    // A certificate the failed result still names, whose source answered by
+    // certificate, reports the points that answer left unused. A run ended
+    // by an engine limit or a failed check reports what was recorded until
+    // then: that error is the result.
+    if let Err(e) = &result
+        && let Uncovered::Listed(reports) = uncovered(e)
+    {
+        let named: Vec<String> = reports.iter().map(|r| r.sha256.clone()).collect();
+        state.report_unused_points(&named);
     }
     match result {
         Ok(mut verified) => {
@@ -2067,11 +2080,11 @@ mod tests {
         let mut b = a.clone();
         b.tbs_certificate.issuer = x509_cert::name::Name::from_str("CN=another issuer").unwrap();
         ask(&mut state, "a", &a, &mut Source(0)).unwrap();
-        assert!(state.unused_points.contains_key("a"));
+        assert!(state.unused_points.iter().any(|(held, _)| held == "a"));
         let mut source = Source(1);
         ask(&mut state, "b", &b, &mut source).unwrap();
         // A's point is reported with the failure it got for B.
-        state.report_unused_points();
+        state.report_unused_points(&["a".to_string()]);
         let a_entries: Vec<_> = state
             .report
             .failures
@@ -2086,27 +2099,29 @@ mod tests {
                 "down".to_string()
             )]
         );
-        assert!(state.unused_points.is_empty());
-        // Otherwise it is not requested, whatever else happened (an abort,
-        // or the point still in flight when the run ended).
-        for in_flight in [false, true] {
-            let mut state = Retrieval::new(&store, &budget);
-            ask(&mut state, "a", &a, &mut Source(0)).unwrap();
-            state.aborted = true;
-            if in_flight {
-                state
-                    .asked
-                    .insert(url_key("http://crl.example.invalid/shared-0.crl"), None);
-            }
-            state.report_unused_points();
-            assert_eq!(state.report.failures.len(), 1);
-            assert_eq!(state.report.failures[0].code, ErrorCode::CrlFetchFailed);
-            assert!(
-                state.report.failures[0]
-                    .message
-                    .starts_with("not requested")
-            );
-        }
+        // Never requested: reported as such, for a named certificate only.
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
+        state.report_unused_points(&["a".to_string()]);
+        assert_eq!(state.report.failures.len(), 1);
+        assert!(
+            state.report.failures[0]
+                .message
+                .starts_with("not requested")
+        );
+        // A certificate whose status was settled (not named) leaves none.
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
+        state.report_unused_points(&["other".to_string()]);
+        assert!(state.report.failures.is_empty());
+        // A point answered for another certificate leaves none either.
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
+        state
+            .asked
+            .insert(url_key("http://crl.example.invalid/shared-0.crl"), None);
+        state.report_unused_points(&["a".to_string()]);
+        assert!(state.report.failures.is_empty());
     }
     #[test]
     fn re_offered_points_are_bounded_by_the_request_limit() {

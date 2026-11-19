@@ -680,12 +680,14 @@ relic 02c54d58 and BoringSSL `main`.
     requested only if no request carried it. The shared-point variant has no
     spec case: no committed file has two certificates of different issuers
     listing one URI; the unit test checks the serialized failure entries.
-    One rule, whenever retrieval fails however it ends (including an
-    abort, an engine limit or a failed check): every point a source
-    answering by certificate left unused is reported, with the failure a
-    request for another certificate gave it, or as "not requested: the CRL
-    source answered for the certificate without using this point", which is
-    always true. The entry codes and URLs are pinned by
+    Only a certificate the failed result still names (its status not
+    settled) reports the points its source's answer by certificate left
+    unused, in request order: with the failure a request for another
+    certificate gave the point, nothing if such a request was answered, and
+    otherwise as not requested. A certificate whose status was settled
+    leaves no per-point failure (the Decided rule above). A run ended by an
+    engine limit or a failed check reports what was recorded until then:
+    that error is the result. Codes and URLs are pinned by
     `sec10-fetch-by-certificate-unusable-answer-records-unused-points`;
     message texts are diagnostics prose, not matched by consumers.
 - **Retrieval bookkeeping (unit-tested).** A request marks its points as
@@ -695,6 +697,14 @@ relic 02c54d58 and BoringSSL `main`.
   still read to its end (`a_body_ending_exactly_at_the_byte_cap_still_reads_its_end`),
   with the byte limit reported ahead of the deadline. A URL that does not
   parse is reported as not an absolute URL.
+- **Deadline during I/O.** Each DNS, connect, read and write wait is cut
+  to the time left, so an I/O failure once the deadline has passed is
+  reported as the deadline (`abort`), not as the request's own failure.
+- **Declined after review:** not closing the built-in source after a DNS
+  timeout caused only by a short remaining deadline. The close is what
+  keeps at most one unfinished resolver thread per source (std has no
+  cancellable DNS); reopening would allow one per file. A delegating source
+  must forward `begin_verification` (documented on the trait).
 - **Declined after review:** naming the gaps of a path whose other
   certificate has a supplied CRL that is unusable for a reason other than
   expiry. Such a certificate is never asked about (Observed,

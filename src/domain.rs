@@ -589,7 +589,10 @@ pub struct CrlRetrievalReport {
     /// they were asked for, in request order. Within a request: points
     /// refused before asking, then the source's own failures in response
     /// order, then bodies rejected on load, then points it did not answer
-    /// (after an abort, the points not tried, as `crl_fetch_aborted`).
+    /// (after an abort, the points not tried, as `crl_fetch_aborted`). Last,
+    /// for a failed retrieval, the points a source answering by certificate
+    /// left unused for a certificate still without a usable CRL, in the
+    /// order those certificates were asked about.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failures: Vec<CrlRetrievalFailure>,
 }
