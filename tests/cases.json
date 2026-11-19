@@ -23930,7 +23930,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "command": [
         "verify",
@@ -24148,7 +24153,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -30266,7 +30276,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30384,7 +30398,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30477,7 +30495,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30514,7 +30536,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30551,7 +30577,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30615,7 +30645,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30652,7 +30686,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30689,7 +30727,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30753,7 +30795,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30790,7 +30836,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30954,7 +31004,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -30991,7 +31045,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -31028,7 +31086,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -31065,7 +31127,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
+        ]
       },
       "command": [
         "verify",
@@ -32564,7 +32630,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "command": [
         "verify",
@@ -32609,7 +32680,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -32660,7 +32736,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
+        ]
       },
       "command": [
         "verify",
@@ -32707,7 +32787,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "command": [
         "verify",
@@ -32745,7 +32830,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "command": [
         "verify",
@@ -32786,7 +32876,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
+        ]
       },
       "crl_responses": {},
       "crl_certificate_responses": {
@@ -32851,7 +32945,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "command": [
         "verify",
@@ -32894,7 +32993,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
+        ]
       },
       "crl_responses": {},
       "crl_certificate_responses": {
@@ -32957,7 +33060,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "RFC 5280 section 6.1: self-issued certificates (same subject and issuer name, different keys) are valid on a path and support key rollover.",
+          "OpenSSL crypto/x509/x509_vfy.c:755 and :802 (self-issued intermediates are accepted). Run with OpenSSL 3.0.13, `openssl verify -attime 1800000000` without CRL checks: OK."
+        ]
       },
       "command": [
         "verify",
@@ -32998,7 +33105,7 @@
           "BoringSSL crypto/x509/x509_vfy.cc:490-515, :665-693 and :755-760: the same logic. Rejects.",
           "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1721 (checkCRL skips a CRL that does not verify and tries the next). Accepts.",
           "webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, then verifies it under the certificate's issuer key. Rejects.",
-          "The references differ; the owner's rule takes the third reference (BoringSSL), which rejects, and rejecting fails closed."
+          "The references differ; the owner chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects, and rejecting fails closed."
         ]
       },
       "command": [
@@ -33222,7 +33329,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
+          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
+          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -33785,7 +33897,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "command": [
         "verify",
@@ -33835,7 +33952,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "command": [
         "verify",
@@ -33885,7 +34007,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "command": [
         "verify",
@@ -33935,7 +34062,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
@@ -34084,7 +34215,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
+        ]
       },
       "command": [
         "verify",
@@ -34128,7 +34263,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
@@ -34187,7 +34326,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
@@ -34256,7 +34399,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
@@ -34317,7 +34464,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
+        ]
       },
       "command": [
         "verify",
@@ -34359,7 +34510,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
@@ -34426,7 +34581,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -34477,7 +34636,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-c.crl": "sec06-root.der",
@@ -34555,7 +34718,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -34607,7 +34775,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -34659,7 +34832,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -34711,7 +34889,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -34763,7 +34946,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
+          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -34815,7 +35003,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
+        ]
       },
       "command": [
         "verify",
@@ -34857,7 +35049,12 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches."
+        ]
       },
       "crl_responses": {
         "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
@@ -34916,7 +35113,12 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches."
+        ]
       },
       "command": [
         "verify",
@@ -36005,7 +36207,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain, which requires a trust anchor, runs before check_revocation (:276), so no CRL is looked up for a chain that does not reach a trusted root.",
+          "Verifying the whole input (nested signatures, later signers, bundle members) before any request has no reference equivalent; it is a written privacy argument in docs/crl-retrieval.md: an input that cannot verify must not cause network requests."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -36039,7 +36245,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain, which requires a trust anchor, runs before check_revocation (:276), so no CRL is looked up for a chain that does not reach a trusted root.",
+          "Verifying the whole input (nested signatures, later signers, bundle members) before any request has no reference equivalent; it is a written privacy argument in docs/crl-retrieval.md: an input that cannot verify must not cause network requests."
+        ]
       },
       "crl_responses": {},
       "command": [

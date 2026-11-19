@@ -285,8 +285,8 @@ timestamps, and local CRL validation already exist.
   cannot confirm two issuers of one name, so it confirms the signer only on
   such a path. CRLs without key identifiers are rejected at confirmation, as
   OpenSSL and BoringSSL reject them and unlike Bouncy Castle
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Still open:
-  accepting the unidentified case would need the owner's approval.
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`); the owner chose
+  that tiebreaker, so it is Decided.
   Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A

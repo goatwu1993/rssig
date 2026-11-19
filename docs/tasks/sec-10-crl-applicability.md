@@ -260,14 +260,24 @@ Every case PR #60 added or changed, with why its result is right (AGENTS.md,
 "Pinned expectations"). **Decided** cases change only with the owner's
 approval; **Observed** ones pin current behavior and may change when a better
 result is argued. **Acceptance** pins whether a file verifies or is rejected;
-**diagnostics** pins which error, detail or request.
+**diagnostics** pins which error, detail or request. Every Decided case also
+carries its sources on the case itself, in `decision.references` in
+`tests/cases.json`; line numbers are for OpenSSL 3a3f1356, bc-java e03fee0b,
+relic 02c54d58 and BoringSSL `main`.
 
 - **The best CRL decides.** Decided, acceptance; owner-approved exception.
   Bouncy Castle's `checkCRL` skips a CRL that fails a check and goes on to the
   next (`lastException`); OpenSSL's `get_crl_sk` scores CRLs and uses the best
   (`CRL_SCORE_TIME`, `CRL_SCORE_SCOPE`, `CRL_SCORE_NOCRITICAL`). A usable CRL
   beside an unusable one therefore verifies, and the unusable one alone keeps
-  its error.
+  its error. Sources: OpenSSL `crypto/x509/x509_vfy.c:1592-1633`
+  (`get_crl_sk`), `:1801-1861` (`get_crl_score`), `:2257-2320` (`check_crl`);
+  Bouncy Castle
+  `prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721`
+  (`checkCRL`; `lastException` at `:1718`, thrown at `:1721`). A full CRL (no
+  issuingDistributionPoint) is in scope for any certificate: OpenSSL
+  `x509_vfy.c:2146-2200` (`crl_crldp_check`), Bouncy Castle
+  `RFC3280CertPathUtilities.java:105-195` (`processCRLB2`).
   - Verify beside `good.crl` (added): `sec10-root-crl-no-next-update-beside-good-crl`,
     `sec10-root-expired-crl-still-rejected-beside-good-crl`,
     `sec10-root-aki-crl-still-rejected-beside-good-crl`,
@@ -361,13 +371,16 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   - relic checks no CRLs: chain validation is Go's `x509.VerifyOptions`
     (`lib/pkcs7/verify.go:177`).
   Compared at OpenSSL 3a3f1356, bc-java e03fee0b, relic 02c54d58 and
-  BoringSSL `main` (commit not captured). The same references are on the
-  case itself, in its `decision` field in `tests/cases.json`.
+  BoringSSL `main` (commit not captured).
   rssig: `invalid_crl` alone; beside a usable CRL its listing revokes when
   it is at least as new, which is closest to OpenSSL.
 - **Cross-certified paths.** A path that verifies with its CRLs is accepted
   whatever another path does: Decided, acceptance, as Bouncy Castle's builder
   tries every candidate path and accepts one that validates
+  (`prov/.../jce/provider/PKIXCertPathBuilderSpi.java:135-270`; a failed
+  candidate only sets `certPathException`, `:268`), while OpenSSL builds one
+  chain (`x509_vfy.c:3925` `build_chain`) and has no second path to fall
+  back on
   (`sec10-cross-revoked-path-beside-covered-path-verifies`,
   `sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
   `sec10-fetch-completes-the-path-beside-an-expired-path`). Which error a
@@ -383,7 +396,10 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
-  `checkCRLs` look up CRLs for the certificate being checked:
+  `checkCRLs` look up CRLs for the certificate being checked (OpenSSL
+  `x509_vfy.c:2206-2254` `get_crl_delta`, `lookup_crls` at `:2228`, called
+  from `check_cert_crl` `:1444-1537`; Bouncy Castle
+  `RFC3280CertPathUtilities.java:1754-1880`):
   `sec10-fetch-covered-signer-point-not-requested`,
   `sec10-fetch-asks-each-certificate-without-crl`,
   `sec10-fetch-covered-signer-is-not-asked`,
@@ -412,7 +428,12 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-fetch-by-certificate-answer-requests-no-listed-point`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds
-  denied/failed/abort/unknown), diagnostics. Changed:
+  denied/failed/abort/unknown), diagnostics. The single code matches the
+  references: OpenSSL reports `X509_V_ERR_UNABLE_TO_GET_CRL` however the CRL
+  could not be obtained (`x509_vfy.c:1489`, `:1527`), and Bouncy Castle one
+  "No CRLs found for issuer" error with lookup diagnostics in its message
+  (`prov/.../jce/provider/CertPathValidatorUtilities.java:1340`). The four
+  kinds have no reference equivalent. Changed:
   `crl-fetch-private`, `crl-fetch-injected-unavailable`,
   `sec10-fetch-reasons-point-denied`, `sec10-fetch-crl-issuer-point-denied`,
   `sec10-fetch-dns-name-point-denied` (`crl_fetch_denied`/`crl_fetch_failed`
@@ -425,10 +446,14 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   source, library users provide their own), acceptance for the injected
   source, diagnostics for the built-in refusal:
   `sec10-fetch-source-is-asked-for-any-scheme`,
-  `sec10-fetch-builtin-source-denies-https`.
+  `sec10-fetch-builtin-source-denies-https`. Sources under "Who screens a
+  distribution-point address" below.
 - **An untrusted chain is never fetched for.** Decided, acceptance and
   privacy: path validation fails before any request, as `main`'s preliminary
-  pass did: `crl-fetch-untrusted-chain-requests-nothing`. The same holds for
+  pass did, and as OpenSSL's `verify_chain` runs `build_chain` (which needs
+  a trust anchor) before `check_revocation` (`x509_vfy.c:266-284`):
+  `crl-fetch-untrusted-chain-requests-nothing`. Checking the whole input
+  first has no reference equivalent (a written privacy argument). The same holds for
   the whole input: before the first request it is verified once without
   revocation, so an invalid nested signature, later signer or bundle member
   is the result and no source is asked
@@ -437,7 +462,10 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   Decided, acceptance, by cross-checking OpenSSL, BoringSSL and Bouncy Castle
   (SEC-16). `good-sec06-self-issued-rollover.exe` has two certificates whose
   issuers share one name and have different keys. It verifies without
-  revocation (`sec16-self-issued-rollover-without-revocation-verifies`).
+  revocation (`sec16-self-issued-rollover-without-revocation-verifies`;
+  RFC 5280 section 6.1 allows self-issued certificates for key rollover, and
+  OpenSSL 3.0.13 `openssl verify -attime 1800000000` without CRL checks
+  reports OK).
   - *CRLs with an authorityKeyIdentifier naming their issuer's key*
     (`sec06-root-akid.crl`, `sec06-rollover-akid.crl`): all three libraries
     give each certificate its own key's CRL and accept, in either order.
@@ -463,8 +491,9 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
     OpenSSL run reports "CRL signature failure" at depth 0 or 1 depending on
     order. BoringSSL's `x509_vfy.cc:665-693`, `:755-760` is the same. Bouncy
     Castle skips a CRL that does not verify and tries the next
-    (`RFC3280CertPathUtilities.java:1716-1721`) and accepts. By the owner's
-    rule the third reference decides: rssig rejects, failing closed, at
+    (`RFC3280CertPathUtilities.java:1716-1721`) and accepts. The owner
+    chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects,
+    so rssig rejects, failing closed, at
     webpki's confirmation
     (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
     `certificate_chain_invalid`, reason `confirmation`), in either order.
