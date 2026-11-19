@@ -802,7 +802,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             // verification decides, before anything else is asked.
             self.reverify = loaded.full_added;
             // No source used these points: a later certificate listing one
-            // still offers it. Each offer counts toward `crl_source_urls`.
+            // still offers it. A distinct URI counts once toward
+            // `crl_source_urls`; every offer costs a source request, which
+            // `crl_requests` bounds (64 per verification).
             for point in &unanswered {
                 self.asked.remove(&url_key(point));
             }

@@ -573,6 +573,10 @@ relic 02c54d58 and BoringSSL `main`.
     source across verifications renews it before each, as the CLI does for
     every file (`docs/library.md`).
   - `check_public_http_url` has a fuzz target, `check_url`.
+  - The built-in source's reserved-name check (`local`, `internal`,
+    `localhost`, `home.arpa`) matches whole labels: `foo.local` is denied,
+    `crl.foolocal` is not (a suffix match denied public names). Unit test
+    `denies_nonpublic_ambiguous_or_unsupported_destinations`.
 - **Who screens a distribution-point address.** Decided, acceptance for
   library users: the verification core passes every listed URI to the source
   after hygiene screening only, and the source decides what to fetch. None of

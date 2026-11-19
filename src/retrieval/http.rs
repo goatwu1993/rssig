@@ -61,7 +61,14 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             if !name.contains('.')
                 || ["localhost", "local", "internal", "home.arpa"]
                     .iter()
-                    .any(|suffix| name.trim_end_matches('.').ends_with(suffix)) =>
+                    .any(|reserved| {
+                        // Whole labels: `foo.local` is reserved, `foolocal` is not.
+                        let name = name.trim_end_matches('.');
+                        name == *reserved
+                            || name
+                                .strip_suffix(reserved)
+                                .is_some_and(|rest| rest.ends_with('.'))
+                    }) =>
         {
             return Err(denied());
         }
@@ -456,6 +463,9 @@ mod tests {
             "http://example.com/#x",
             "http://localhost./",
             "http://foo.local/",
+            "http://local/",
+            "http://a.b.internal./",
+            "http://x.home.arpa/",
             "http://example.com/\r\nx",
         ] {
             assert!(checked_url(url).is_err(), "{url}");
@@ -464,6 +474,10 @@ mod tests {
             "http://example.com/test.crl",
             "http://8.8.8.8/x",
             "http://[2001:4860:4860::8888]/x",
+            // A reserved name is matched as a whole label, not a suffix.
+            "http://crl.foolocal/x",
+            "http://pki.theinternal/x",
+            "http://crl.notlocalhost/x",
         ] {
             assert!(checked_url(url).is_ok(), "{url}");
         }

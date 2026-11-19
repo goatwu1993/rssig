@@ -327,7 +327,7 @@ impl TrustStore {
                     match identity.key_id {
                         Some(id) => anchor_key.other_key_ids.push(id),
                         // One that names no key cannot disprove a match.
-                        None => anchor_key.key_id = None,
+                        None => anchor_key.undisprovable = true,
                     }
                 }
                 // Every certificate is evaluated, so that an unknown status
@@ -377,8 +377,8 @@ impl TrustStore {
                     match &evidence.outcome {
                         Outcome::Good(index) => {
                             let named = crls[*index].authority_key.as_ref();
-                            let names_issuer = issuer.key_id.is_some()
-                                && matches!(named, Ok(Some(named)) if issuer.names(named));
+                            let names_issuer =
+                                matches!(named, Ok(Some(named)) if issuer.names(named));
                             path_chosen.push((*index, names_issuer));
                         }
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -726,6 +726,9 @@ struct IssuerKey {
     key_id: Option<Vec<u8>>,
     /// Identifiers of other configured roots that are this same anchor.
     other_key_ids: Vec<Vec<u8>>,
+    /// Another configured root that is this same anchor names no key, so a
+    /// CRL naming a different one cannot be disproved.
+    undisprovable: bool,
     /// Configured anchors are keys: their KeyUsage does not restrict CRL
     /// signing (webpki does not track anchor KeyUsage either).
     crl_sign: bool,
@@ -745,6 +748,7 @@ impl IssuerKey {
             spki: identity.spki,
             key_id: identity.key_id,
             other_key_ids: Vec::new(),
+            undisprovable: false,
             crl_sign,
         })
     }
@@ -932,7 +936,10 @@ fn evaluate_crls(
         // read): a stale CRL's entry may be a hold that was since released.
         // One without nextUpdate claims no expiry and is current, as in
         // OpenSSL (`ossl_x509_check_crl_time`), Bouncy Castle (`PKIXCRLUtil`)
-        // and BoringSSL; it is still unusable as evidence of good status.
+        // and BoringSSL, so its listing revokes beside another usable CRL.
+        // It is still unusable as evidence (RFC 5280 requires nextUpdate):
+        // alone it leaves the status `invalid_crl`, whose rejection is the
+        // same either way.
         // The newest listing is kept, to be compared with the deciding CRL.
         let this_update = crl.tbs.this_update.to_unix_duration().as_secs();
         let current = this_update <= now
@@ -1115,7 +1122,10 @@ fn evaluate_crls(
 /// only when both identifiers are present and differ: an issuer without a
 /// subjectKeyIdentifier cannot disprove a match, so the CRL counts as forged.
 fn names_another_key(crl_key: Option<&Vec<u8>>, issuer: &IssuerKey) -> bool {
-    matches!(crl_key, Some(named) if issuer.key_id.is_some() && !issuer.names(named))
+    matches!(
+        crl_key,
+        Some(named) if !issuer.undisprovable && issuer.key_id.is_some() && !issuer.names(named)
+    )
 }
 
 /// The error for a revocation rejection, from what the candidate paths
@@ -1902,6 +1912,7 @@ mod revocation_reporting {
             spki: Vec::new(),
             key_id,
             other_key_ids: others,
+            undisprovable: false,
             crl_sign: true,
         };
         assert!(names_another_key(
@@ -1921,5 +1932,15 @@ mod revocation_reporting {
         let same_key = issuer(Some(vec![3]), vec![vec![1, 2]]);
         assert!(!names_another_key(Some(&named), &same_key));
         assert!(same_key.names(&[3]) && same_key.names(&[1, 2]) && !same_key.names(&[9]));
+        // One same-key root with no identifier: a different one cannot be
+        // disproved, but the identifiers that are known still match.
+        let mut partial = issuer(Some(vec![3]), vec![vec![1, 2]]);
+        partial.undisprovable = true;
+        assert!(!names_another_key(Some(&vec![9]), &partial));
+        assert!(partial.names(&[1, 2]));
+        // The first root has no identifier but a later one does.
+        let mut first_bare = issuer(None, vec![vec![1, 2]]);
+        first_bare.undisprovable = true;
+        assert!(first_bare.names(&[1, 2]));
     }
 }
