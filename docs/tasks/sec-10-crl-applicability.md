@@ -951,6 +951,14 @@ covering the certificate leaves it out, as a listing beside a newer CRL
 does not count; and not from an issuer without cRLSign. A malformed
 authorityKeyIdentifier does not stop it, as decided for a listing beside
 another CRL. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
+A newer such CRL that leaves the signer out clears the listing
+(`sec10-no-next-update-crl-revocation-cleared-by-newer-crl`, Decided,
+acceptance: the result is `invalid_crl`, as for the CRL without nextUpdate
+alone), and an older one does not
+(`sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`,
+Decided, diagnostics). Only a current, complete, direct CRL clears: an
+expired or not-yet-valid one, or a delta, indirect or reason-partitioned
+one, would not be preferred by OpenSSL or Bouncy Castle.
 
 Kept, stricter than the references: the same CRL without a listing is not
 evidence of good status. It stays `invalid_crl` (`missing_next_update`), as

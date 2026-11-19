@@ -368,6 +368,13 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
+        // SEC-23: the same, newer than sec10-root-no-next-update-revoked.crl:
+        // a current, complete CRL that leaves the signer out, so that older
+        // listing may be a released hold and does not revoke.
+        (
+            "sec10-root-no-next-update-newer.crl",
+            crl(root, root_key, NOW - 10, None),
+        ),
         // A root CRL without nextUpdate that lists the test signer and is
         // newer than good.crl: it claims no expiry, so it is not stale. It is
         // unusable (RFC 5280 requires nextUpdate) but its listing counts.

@@ -866,6 +866,7 @@
         "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
         "sec10-no-next-update-crl-revocation-alone-revokes",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
         "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",
@@ -980,7 +981,8 @@
         "crl-no-next-update-local-asks-nothing",
         "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
         "sec10-role-partition-crl-revocation-alone-is-unsupported",
-        "crl-malformed-aki-beside-expired-local-asks-provider"
+        "crl-malformed-aki-beside-expired-local-asks-provider",
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl"
       ],
       "gap": ""
     },

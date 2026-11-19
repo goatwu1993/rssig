@@ -973,7 +973,14 @@ fn evaluate_crls(
         if lists {
             listings.push(index);
         }
-        if covers && !lists && !is_delta(&crl.tbs) && newest_clear.is_none_or(|n| this_update > n) {
+        // Only a CRL OpenSSL or Bouncy Castle would prefer can clear it: a
+        // current, complete and direct one.
+        if covers
+            && !lists
+            && current
+            && complete_direct_crl(&crl.tbs)
+            && newest_clear.is_none_or(|n| this_update > n)
+        {
             newest_clear = Some(this_update);
         }
         // A listing in a CRL whose only defect is a missing nextUpdate
@@ -992,13 +999,37 @@ fn evaluate_crls(
         {
             revoking_without_next_update = Some((index, this_update));
         }
+        // A CRL webpki cannot parse (no nextUpdate) gets webpki's other
+        // checks here, beside another CRL as alone.
         if current
             && covers
             && lists
+            && (crl.tbs.next_update.is_some() || revokes_without_next_update(&crl.tbs, serial))
             && authenticated_listing.is_none_or(|(_, newest)| this_update > newest)
         {
             authenticated_listing = Some((index, this_update));
         }
+        // A failure no fetched CRL can fix is recorded before the ones it
+        // can, so that the certificate is not offered to a source: an issuer
+        // without cRLSign, then a missing nextUpdate.
+        if !issuer.crl_sign {
+            fail(NO_CRL_SIGN, &|| {
+                with_crl(webpki_revocation_error(
+                    &sha256,
+                    webpki::Error::IssuerNotCrlSigner,
+                ))
+            });
+            continue;
+        }
+        let Some(next_update) = crl.tbs.next_update else {
+            fail(UNUSABLE, &|| {
+                with_crl(
+                    revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
+                        .detail("reason", "missing_next_update"),
+                )
+            });
+            continue;
+        };
         if crl.authority_key.is_err() {
             fail(REPLACEABLE, &|| {
                 with_crl(
@@ -1009,15 +1040,6 @@ fn evaluate_crls(
                     )
                     .detail("reason", "malformed_authority_key_identifier"),
                 )
-            });
-            continue;
-        }
-        if !issuer.crl_sign {
-            fail(NO_CRL_SIGN, &|| {
-                with_crl(webpki_revocation_error(
-                    &sha256,
-                    webpki::Error::IssuerNotCrlSigner,
-                ))
             });
             continue;
         }
@@ -1047,15 +1069,6 @@ fn evaluate_crls(
         if crl.webpki.is_ok() && authority == Some(false) {
             continue;
         }
-        let Some(next_update) = crl.tbs.next_update else {
-            fail(UNUSABLE, &|| {
-                with_crl(
-                    revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
-                        .detail("reason", "missing_next_update"),
-                )
-            });
-            continue;
-        };
         // Feature support is reported before freshness. Whatever webpki
         // rejects, unsupported or malformed, a source's CRL can replace.
         if let Err(e) = &crl.webpki {
@@ -1697,36 +1710,39 @@ fn crl_rejection_reason(error: &webpki::Error) -> &'static str {
     }
 }
 
-/// Whether the CRL carries a deltaCRLIndicator.
-fn is_delta(tbs: &x509_cert::crl::TbsCertList) -> bool {
+/// Whether the CRL is one webpki's rules admit apart from its times: v2, and
+/// complete and direct (no deltaCRLIndicator; no indirect, reason-partitioned
+/// or attribute-only issuingDistributionPoint; no other critical CRL
+/// extension). OpenSSL's `get_crl_score` gives the others no valid score.
+fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
+    use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
+    if tbs.version != x509_cert::Version::V2 {
+        return false;
+    }
     tbs.crl_extensions
         .iter()
         .flatten()
-        .any(|e| e.extn_id.to_string() == "2.5.29.27")
+        .all(|e| match e.extn_id.to_string().as_str() {
+            "2.5.29.27" => false,
+            "2.5.29.28" => {
+                IssuingDistributionPoint::from_der(e.extn_value.as_bytes()).is_ok_and(|idp| {
+                    !idp.indirect_crl
+                        && idp.only_some_reasons.is_none()
+                        && !idp.only_contains_attribute_certs
+                })
+            }
+            "2.5.29.20" | "2.5.29.35" => true,
+            _ => !e.critical,
+        })
 }
 
 /// Whether a CRL that webpki cannot parse only because it lacks nextUpdate
 /// revokes `serial` under webpki's other rules, which OpenSSL also applies
-/// (`get_crl_score`, `cert_crl`): a complete, direct CRL (no
-/// deltaCRLIndicator; no indirect, reason-partitioned or attribute-only
-/// issuingDistributionPoint; no other critical CRL extension) whose entry
-/// for the serial has no critical extension and is not removeFromCRL.
+/// (`get_crl_score`, `cert_crl`): a complete, direct v2 CRL whose entry for
+/// the serial has no critical extension and is not removeFromCRL.
 fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
-    use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
-    for e in tbs.crl_extensions.iter().flatten() {
-        match e.extn_id.to_string().as_str() {
-            "2.5.29.27" => return false,
-            "2.5.29.28" => match IssuingDistributionPoint::from_der(e.extn_value.as_bytes()) {
-                Ok(idp)
-                    if !idp.indirect_crl
-                        && idp.only_some_reasons.is_none()
-                        && !idp.only_contains_attribute_certs => {}
-                _ => return false,
-            },
-            "2.5.29.20" | "2.5.29.35" => {}
-            _ if e.critical => return false,
-            _ => {}
-        }
+    if !complete_direct_crl(tbs) {
+        return false;
     }
     let Some(entry) = tbs
         .revoked_certificates
@@ -1827,6 +1843,10 @@ mod revocation_reporting {
                 "{oid} {value:?}"
             );
         }
+        // webpki rejects a v1 CRL.
+        let mut v1 = base.clone();
+        v1.version = x509_cert::Version::V1;
+        assert!(!revokes_without_next_update(&v1, &serial));
         // A non-critical unknown extension is ignorable.
         let tbs = with_crl_extension(extension("1.2.3.4", false, &[5, 0]));
         assert!(revokes_without_next_update(&tbs, &serial));

@@ -216,7 +216,9 @@
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
         "sec10-crl-next-update-exact",
-        "sec10-no-next-update-crl-revocation-alone-revokes"
+        "sec10-no-next-update-crl-revocation-alone-revokes",
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
@@ -356,7 +358,9 @@
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-asks-provider",
-        "sec10-no-next-update-crl-revocation-alone-revokes"
+        "sec10-no-next-update-crl-revocation-alone-revokes",
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
@@ -9575,7 +9579,19 @@
       "cases": [
         "sec10-root-crl-no-next-update",
         "sec10-root-crl-no-next-update-beside-good-crl",
-        "crl-no-next-update-local-asks-nothing"
+        "crl-no-next-update-local-asks-nothing",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+      ]
+    },
+    {
+      "file": "sec10-root-no-next-update-newer.crl",
+      "sha256": "4be2e327df39c2371c88dc837f9a6b3cbdecc84bbac1224f5e7fd65779ec908f",
+      "bytes": 167,
+      "description": "SEC-23: empty, correctly signed root CRL without nextUpdate, newer than sec10-root-no-next-update-revoked.crl: a current, complete CRL that leaves the signer out, so the older listing does not revoke; supporting revocation evidence, not an individual verification claim.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl"
       ]
     },
     {
@@ -9600,7 +9616,9 @@
       "cases": [
         "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
         "sec10-no-next-update-crl-revocation-alone-is-invalid",
-        "sec10-no-next-update-crl-revocation-alone-revokes"
+        "sec10-no-next-update-crl-revocation-alone-revokes",
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {

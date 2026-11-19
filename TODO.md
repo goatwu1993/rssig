@@ -517,6 +517,16 @@ timestamps, and local CRL validation already exist.
     and `choose_usage_failure` sizes its merge from the RDP-only `KEYS`.
     Define them once with a shared list (this is part of SEC-22's typed
     channel), so that a fourth key cannot be missed in one place.
+  - When no path a source could complete has a gap, `unknown_status` falls
+    back to every path and names the certificates on stuck paths too (one
+    with a forged or no-cRLSign CRL), so `--fetch-crls` asks about them in
+    vain. `main` pins this on purpose (unit test
+    `a_revocation_then_a_missing_crl_then_the_most_specific_failure_decides`:
+    a certificate without any CRL is named "so that it can still be
+    retrieved"); changing it is the owner's call.
+  - The cRLSign requirement for a revocation by a CRL without nextUpdate has
+    only code review behind it: no fixture has an intermediate without
+    cRLSign issuing such a CRL.
   - `unknown_status` names every outcome passed to it, and relies on its
     callers to exclude paths no source could complete (`completable_first`,
     or the key strip in the no-viable-path branch of
