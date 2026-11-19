@@ -1315,8 +1315,10 @@ fn with_expired_crl(outcomes: &[&CertificateEvidence]) -> Vec<CertificateReport>
 }
 
 /// The certificates whose only CRLs are unusable for another reason a
-/// source's CRL could replace (not yet valid, another scope, an unsupported
-/// feature), once each.
+/// source's CRL could replace (not yet valid, an issuingDistributionPoint that
+/// cannot be used, an unsupported feature), once each. A CRL known to cover
+/// another scope is set aside without a failure, and its certificate is
+/// named as one without a CRL.
 fn with_replaceable_crl(outcomes: &[&CertificateEvidence]) -> Vec<CertificateReport> {
     reports(outcomes, |o| {
         matches!(o, Outcome::Missing(Some((rank, _))) if *rank > EXPIRED && *rank <= REPLACEABLE)
@@ -1372,8 +1374,9 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
 
 /// The ranks of unusable-CRL failures; the highest among a certificate's
 /// CRLs is reported. Up to `REPLACEABLE`, a CRL from a source can replace
-/// the unusable one: it has expired, is not yet valid, is scoped to another
-/// distribution point, or uses a feature that is not supported. OpenSSL and
+/// the unusable one: it has expired, is not yet valid, has an
+/// issuingDistributionPoint that cannot be used, or uses a feature that is
+/// not supported. OpenSSL and
 /// BoringSSL score such a CRL below a valid one and then look the issuer's
 /// CRLs up in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle
 /// fetches after any CRL failure. Above it, the failure stands whatever is
@@ -1715,6 +1718,30 @@ mod revocation_reporting {
     }
     fn failed(rank: u8, code: ErrorCode) -> Outcome {
         Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
+    }
+
+    /// The webpki rejections a source's CRL could replace (OpenSSL gives such
+    /// a CRL no valid score); every other rejection stands.
+    #[test]
+    fn only_features_openssl_scores_below_valid_are_replaceable() {
+        use webpki::Error as W;
+        for replaceable in [
+            W::UnsupportedCriticalExtension,
+            W::UnsupportedDeltaCrl,
+            W::UnsupportedIndirectCrl,
+            W::UnsupportedCrlIssuingDistributionPoint,
+            W::UnsupportedRevocationReasonsPartitioning,
+        ] {
+            assert!(replaceable_rejection(&replaceable), "{replaceable:?}");
+        }
+        for fixed in [
+            W::UnsupportedCrlVersion,
+            W::MalformedExtensions,
+            W::UnsupportedRevocationReason,
+            W::InvalidCrlNumber,
+        ] {
+            assert!(!replaceable_rejection(&fixed), "{fixed:?}");
+        }
     }
 
     /// A CRL a source could replace names its certificate on the error that

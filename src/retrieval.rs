@@ -1164,7 +1164,10 @@ fn retrieve(
             Err(e)
                 if matches!(
                     e.code,
-                    ErrorCode::CertificateRevoked | ErrorCode::CrlExpired
+                    ErrorCode::CertificateRevoked
+                        | ErrorCode::CrlExpired
+                        | ErrorCode::CrlNotYetValid
+                        | ErrorCode::InvalidCrl
                 ) && cut_short(&e) =>
             {
                 Err(e.detail("retrieval_aborted", true))

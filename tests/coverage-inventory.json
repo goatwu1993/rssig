@@ -486,7 +486,9 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
-        "crl-stale-local-source-abort-is-marked"
+        "crl-stale-local-source-abort-is-marked",
+        "crl-not-yet-valid-local-source-abort-is-marked",
+        "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {

@@ -832,7 +832,8 @@ fetches from the certificate's distribution points.
 |---|---|---|---|
 | expired | second source | fetches | asked about (`certificates_with_expired_crl`) |
 | not yet valid | second source | fetches after a failure | asked about |
-| another scope, or an issuingDistributionPoint that cannot be used | second source | fetches | asked about |
+| an issuingDistributionPoint that cannot be used | second source | fetches | asked about (`certificates_with_unusable_crl`) |
+| another scope that is known (a partition for another point or role) | second source | fetches | set aside; its certificate is listed under `certificates_without_crl` and asked about, as before |
 | unknown critical extension, delta, indirect, reasons partition | second source | fetches | asked about |
 | bad signature, unsupported signature algorithm | reported, no lookup | fetches | not asked (BoringSSL decides) |
 | issuer without cRLSign | reported | fetches | not asked: a fetched CRL has the same issuer |
@@ -865,6 +866,12 @@ path is not one a source could complete.
   without an answer the original error stands, naming the certificate.
   `crl-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
+
+- **Decided, diagnostics:** a source abort is marked
+  `retrieval_aborted: true` on `crl_not_yet_valid` and `invalid_crl` as on
+  `crl_expired` (`crl-not-yet-valid-local-source-abort-is-marked`,
+  `crl-unknown-critical-extension-local-source-abort-is-marked`), so a consumer
+  can tell that the CRL was never refreshed because the source stopped.
 
 Among a certificate's unusable CRLs, the one with the highest rank is
 reported, and one that cannot be replaced now ranks above one that can. This

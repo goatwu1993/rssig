@@ -261,7 +261,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         }
         return chosen;
     };
-    let mut gaps: [Vec<serde_json::Value>; 3] = Default::default();
+    let mut gaps: [Vec<serde_json::Value>; KEYS.len()] = Default::default();
     for e in &failures {
         for error in e
             .chain()
@@ -284,7 +284,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         }
     }
     let mut revoked = failures.into_iter().nth(position)?;
-    let add = |error: &mut VerificationError, gaps: [Vec<serde_json::Value>; 3]| {
+    let add = |error: &mut VerificationError, gaps: [Vec<serde_json::Value>; KEYS.len()]| {
         for (key, list) in KEYS.iter().zip(gaps) {
             if !list.is_empty() {
                 error
@@ -416,6 +416,31 @@ mod tests {
             details(&chosen)["certificates_with_expired_crl"],
             serde_json::json!([report("e")])
         );
+        // A certificate whose only CRL a source's CRL could replace is named
+        // too, once each, beside the other lists.
+        let replaceable = || {
+            anyhow::Error::from(
+                error(ErrorCode::CrlNotYetValid)
+                    .detail(crate::trust::WITH_UNUSABLE_CRL, vec![report("u")]),
+            )
+        };
+        let chosen = choose_usage_failure(vec![
+            revoked(vec![]),
+            replaceable(),
+            replaceable(),
+            unknown(vec![report("a")]),
+        ])
+        .unwrap();
+        assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
+        assert_eq!(
+            details(&chosen)[crate::trust::WITH_UNUSABLE_CRL],
+            serde_json::json!([report("u")])
+        );
+        assert_eq!(
+            details(&chosen)["certificates_without_crl"],
+            serde_json::json!([report("a")])
+        );
+        assert_eq!(completable_by_crl(&replaceable()), 2);
         // A revocation under added context takes the names and keeps it.
         let wrapped = revoked(vec![]).context("usage");
         let chosen = choose_usage_failure(vec![wrapped, unknown(vec![report("a")])]).unwrap();

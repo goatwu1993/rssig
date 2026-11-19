@@ -345,7 +345,9 @@
         "crl-not-yet-valid-local-asks-provider",
         "crl-forged-local-asks-nothing",
         "crl-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-no-next-update-local-asks-nothing"
+        "crl-no-next-update-local-asks-nothing",
+        "crl-not-yet-valid-local-source-abort-is-marked",
+        "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
@@ -509,7 +511,8 @@
       "paired_good": "good.crl",
       "cases": [
         "crl-not-yet-valid-local-refreshed-by-provider",
-        "crl-not-yet-valid-local-asks-provider"
+        "crl-not-yet-valid-local-asks-provider",
+        "crl-not-yet-valid-local-source-abort-is-marked"
       ]
     },
     {
@@ -6846,7 +6849,9 @@
         "crl-not-yet-valid-local-asks-provider",
         "crl-forged-local-asks-nothing",
         "crl-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-no-next-update-local-asks-nothing"
+        "crl-no-next-update-local-asks-nothing",
+        "crl-not-yet-valid-local-source-abort-is-marked",
+        "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
@@ -9711,7 +9716,8 @@
       "cases": [
         "sec10-root-unknown-critical-extension-crl-unsupported",
         "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
-        "crl-unknown-critical-extension-local-refreshed-by-provider"
+        "crl-unknown-critical-extension-local-refreshed-by-provider",
+        "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
