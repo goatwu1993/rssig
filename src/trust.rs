@@ -706,9 +706,7 @@ fn evaluate_crls(
         let named_key = crl.authority_key.as_ref().ok().and_then(Option::as_ref);
         match verify_signature(index, crl) {
             Ok(Some(true)) => {}
-            Ok(Some(false))
-                if named_key.is_some_and(|named| issuer.key_id.as_ref() != Some(named)) =>
-            {
+            Ok(Some(false)) if names_another_key(named_key, issuer.key_id.as_deref()) => {
                 continue;
             }
             Ok(Some(false)) => {
@@ -870,6 +868,13 @@ fn evaluate_crls(
     }
 }
 
+/// A CRL that fails under this issuer's key is set aside as another key's
+/// only when both identifiers are present and differ: an issuer without a
+/// subjectKeyIdentifier cannot disprove a match, so the CRL counts as forged.
+fn names_another_key(crl_key: Option<&Vec<u8>>, issuer_key: Option<&[u8]>) -> bool {
+    matches!((crl_key, issuer_key), (Some(named), Some(own)) if named.as_slice() != own)
+}
+
 /// The error for a revocation rejection, from what the candidate paths
 /// established: a revocation first, then the most specific reason a CRL could
 /// not be used, else unknown status naming every certificate that lacked a
@@ -893,6 +898,8 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
             && !seen.contains(&outcome.sha256.as_str())
         {
             seen.push(&outcome.sha256);
+            // A certificate whose report cannot be built still counts as
+            // uncovered; it is only not offered for retrieval by name.
             if let Some(report) = Certificate::from_der(&outcome.der)
                 .ok()
                 .and_then(|c| CertificateReport::parse(&c).ok())
@@ -914,7 +921,7 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     // with it. Only when no certificate simply lacks one does that failure
     // decide.
     match best {
-        Some((_, error)) if missing.is_empty() => Some(error.clone()),
+        Some((_, error)) if seen.is_empty() => Some(error.clone()),
         best => {
             let error = VerificationError::new(
                 ErrorCode::RevocationUnknown,
@@ -1151,5 +1158,16 @@ mod revocation_reporting {
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
         assert_eq!(error.details["affected_certificate"], "c");
+    }
+
+    #[test]
+    fn only_a_differing_key_identifier_sets_a_failed_crl_aside() {
+        let named = vec![1u8, 2];
+        assert!(names_another_key(Some(&named), Some(&[3u8][..])));
+        assert!(!names_another_key(Some(&named), Some(&[1u8, 2][..])));
+        // An issuer without a subjectKeyIdentifier cannot disprove the match.
+        assert!(!names_another_key(Some(&named), None));
+        assert!(!names_another_key(None, Some(&[3u8][..])));
+        assert!(!names_another_key(None, None));
     }
 }
