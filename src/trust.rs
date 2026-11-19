@@ -999,12 +999,14 @@ fn evaluate_crls(
         {
             revoking_without_next_update = Some((index, this_update));
         }
-        // A CRL webpki cannot parse (no nextUpdate) gets webpki's other
-        // checks here, beside another CRL as alone.
+        // Beside a usable CRL, any authenticated, current, covering listing
+        // counts, whatever else is wrong with its CRL: rejecting is the safe
+        // side (decided in PR #60). Alone, a CRL without nextUpdate revokes
+        // only under webpki's other rules (above), since the alternative is
+        // a CRL failure that also rejects.
         if current
             && covers
             && lists
-            && (crl.tbs.next_update.is_some() || revokes_without_next_update(&crl.tbs, serial))
             && authenticated_listing.is_none_or(|(_, newest)| this_update > newest)
         {
             authenticated_listing = Some((index, this_update));
@@ -1022,6 +1024,12 @@ fn evaluate_crls(
             continue;
         }
         let Some(next_update) = crl.tbs.next_update else {
+            // One known to cover another scope (a partition for another
+            // point or role) is set aside, as a usable one is below: it says
+            // nothing about this certificate.
+            if authority == Some(false) {
+                continue;
+            }
             fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
@@ -1752,12 +1760,24 @@ fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8])
     else {
         return false;
     };
-    entry.crl_entry_extensions.iter().flatten().all(|e| {
-        // reasonCode ENUMERATED removeFromCRL (8) releases the entry.
-        let remove =
-            e.extn_id.to_string() == "2.5.29.21" && e.extn_value.as_bytes() == [0x0a, 1, 8];
-        !e.critical && !remove
-    })
+    // As webpki: reasonCode and invalidityDate are understood (critical or
+    // not); a certificateIssuer makes the CRL indirect; any other critical
+    // entry extension is unsupported. A reasonCode must be a single-byte
+    // ENUMERATED with a defined value, and removeFromCRL (8) releases the
+    // entry rather than revoking.
+    entry
+        .crl_entry_extensions
+        .iter()
+        .flatten()
+        .all(|e| match e.extn_id.to_string().as_str() {
+            "2.5.29.21" => matches!(
+                e.extn_value.as_bytes(),
+                [0x0a, 1, reason] if *reason <= 10 && *reason != 7 && *reason != 8
+            ),
+            "2.5.29.24" => true,
+            "2.5.29.29" => false,
+            _ => !e.critical,
+        })
 }
 
 fn has_extension(cert: &Certificate, oid: &str) -> bool {
@@ -1864,6 +1884,23 @@ mod revocation_reporting {
         assert!(revokes_without_next_update(&held, &serial));
         let critical = with_entry_extension(extension("1.2.3.4", true, &[5, 0]));
         assert!(!revokes_without_next_update(&critical, &serial));
+        // webpki understands a critical reasonCode and invalidityDate.
+        let compromised = with_entry_extension(extension("2.5.29.21", true, &[0x0a, 1, 1]));
+        assert!(revokes_without_next_update(&compromised, &serial));
+        let invalidity = with_entry_extension(extension(
+            "2.5.29.24",
+            true,
+            &[
+                0x18, 15, b'2', b'0', b'2', b'7', b'0', b'1', b'0', b'1', b'0', b'0', b'0', b'0',
+                b'0', b'0', b'Z',
+            ],
+        ));
+        assert!(revokes_without_next_update(&invalidity, &serial));
+        // An undefined reason, and a certificateIssuer (indirect), do not.
+        let unused = with_entry_extension(extension("2.5.29.21", false, &[0x0a, 1, 7]));
+        assert!(!revokes_without_next_update(&unused, &serial));
+        let indirect = with_entry_extension(extension("2.5.29.29", false, &[0x30, 0]));
+        assert!(!revokes_without_next_update(&indirect, &serial));
     }
 
     /// A revocation beside a path with a replaceable CRL names that path's

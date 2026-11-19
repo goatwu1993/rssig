@@ -524,6 +524,10 @@ timestamps, and local CRL validation already exist.
     `a_revocation_then_a_missing_crl_then_the_most_specific_failure_decides`:
     a certificate without any CRL is named "so that it can still be
     retrieved"); changing it is the owner's call.
+  - Beside a usable CRL, a newer complete CRL without nextUpdate that leaves
+    the certificate out does not clear an older listing (it does when no CRL
+    is usable). OpenSSL's best-scored newest CRL would give good status.
+    Clearing it would loosen an acceptance pin: owner's decision.
   - The cRLSign requirement for a revocation by a CRL without nextUpdate has
     only code review behind it: no fixture has an intermediate without
     cRLSign issuing such a CRL.

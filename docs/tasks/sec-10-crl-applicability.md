@@ -960,6 +960,25 @@ Decided, diagnostics). Only a current, complete, direct CRL clears: an
 expired or not-yet-valid one, or a delta, indirect or reason-partitioned
 one, would not be preferred by OpenSSL or Bouncy Castle.
 
+Beside a usable CRL the PR #60 rule is unchanged: any authenticated,
+current, covering listing counts, whatever else is wrong with its CRL, since
+counting it rejects. The webpki-rule check applies only to a CRL without
+nextUpdate standing alone, where the alternative is a CRL failure that also
+rejects, so the check only decides the code and whether a source is asked.
+Named test `sec10_a_crl_without_next_update_revokes_unless_a_newer_crl_clears_it`.
+
+Recorded, not changed:
+- Without `--fetch-crls`, a path whose only gap is a replaceable CRL is
+  reported ahead of another path's error that webpki ranks higher (for
+  example a certificate not valid at the lifetime signing time), naming its
+  certificate in `certificates_with_unusable_crl`. That is what `main`
+  already does for an expired CRL (`completable_path`); the replaceable
+  failures follow the same rule.
+- Beside a usable CRL, a newer complete CRL without nextUpdate that leaves
+  the certificate out does not clear an older listing, though it does when
+  no CRL is usable. Clearing it there would turn a revocation into
+  acceptance, which needs the owner's decision (tracked in SEC-23).
+
 Kept, stricter than the references: the same CRL without a listing is not
 evidence of good status. It stays `invalid_crl` (`missing_next_update`), as
 RFC 5280 section 5.1.2.5 requires nextUpdate in conforming CRLs, and a CRL
