@@ -172,6 +172,10 @@ timestamps, and local CRL validation already exist.
   `sec10-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
   A `certificate_revoked` result does not identify which supplied CRL listed
   the certificate.
+  From the PR #60 review: a retrieved body that is not a CRL (for example an
+  HTML error page) is listed in `crl_retrieval.artifacts` as well as reported
+  as an `invalid_crl` failure, so counting artifacts overcounts retrieved CRLs.
+  Decide whether artifacts mean "bytes received" or "CRLs loaded".
 - [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
   all-required-signatures policy, primary/nested ordering, first-failure
   precedence, and bundle/child identity and signer binding. Test a valid first
@@ -307,12 +311,31 @@ timestamps, and local CRL validation already exist.
   case exhausts it on that path. The per-certificate CRL evaluation decodes
   each loaded CRL once per verification, but verifies CRL signatures with its
   own OID table outside the budgeted algorithm adapter; reuse the adapter.
+  Repeated work found in the PR #60 review (results unchanged, bounded by
+  existing limits):
+  - `LoadedCrl::load` copies each applicable CRL's bytes and tbsCertList and
+    builds an owned webpki CRL on every verification and retrieval round; the
+    confirmation pass clones it again. Borrow from the store instead.
+  - The CRL signature cache key clones the issuer SPKI on every lookup, even
+    on a hit; key it by CRL and issuer index.
+  - The path callback re-encodes and hashes every certificate on every
+    candidate path, uncharged; compute it once per certificate.
+  - Every configured root is decoded twice per verification (issuer names
+    and anchor certificates); decode it once.
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Partly
   decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
   stale, delta, indirect, unsupported or out-of-scope CRL is set aside when
   another CRL of the issuer is usable and authoritative (full-plus-delta and
   old-beside-current deployments verify). Still open: real delta support, and
-  reporting which CRLs were set aside (SEC-11). Original notes follow.
+  reporting which CRLs were set aside (SEC-11).
+  Open from the PR #60 review: a listing counts as a revocation once the CRL
+  verifies under the path issuer's key, before delta, indirect or other
+  unsupported features are checked, and entry extensions are ignored. A delta
+  CRL entry with reason `removeFromCRL` (a hold lifted), or an indirect CRL
+  entry whose `certificateIssuer` names another CA with the same serial,
+  therefore rejects as `certificate_revoked` a certificate the full CRL
+  leaves good. This fails closed. Decide it with real delta support and pin it
+  with a full-plus-delta `removeFromCRL` fixture. Original notes follow.
   Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
@@ -387,6 +410,16 @@ timestamps, and local CRL validation already exist.
   reverted it). Identify the listing CRL in `details` instead of reusing
   webpki's `CertRevoked` message. Paired fixtures: same-name rollover issuers,
   an issuer without cRLSign, an unmappable algorithm.
+
+- [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.**
+  From the PR #60 review. `--fetch-crls` learns which certificates lack a
+  usable CRL by reading `certificates_without_crl` back out of the error's JSON
+  `details` and hex-decoding each `der_hex`. If that schema changes and the
+  list no longer deserializes, retrieval quietly falls back to verifying
+  without revocation and asking about every selected certificate, which
+  changes request order and counts. Carry the uncovered certificates' DER
+  beside the error inside the crate, keep the JSON field for consumers, and
+  pin the request sequence with a test.
 
 ## P1 — Clean parse/verify interfaces
 
