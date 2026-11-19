@@ -1452,7 +1452,7 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
             .detail("certificates_without_crl", missing);
             let error = named(error);
             Some(match best {
-                Some((_, unusable)) => error.detail("unusable_crl", unusable),
+                Some((_, failure)) => error.detail("unusable_crl", failure),
                 None => error,
             })
         }
@@ -1718,6 +1718,33 @@ mod revocation_reporting {
     }
     fn failed(rank: u8, code: ErrorCode) -> Outcome {
         Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
+    }
+
+    /// A revocation beside a path with a replaceable CRL names that path's
+    /// certificate, and not one beside a path whose CRL cannot be replaced.
+    #[test]
+    fn a_revocation_names_a_path_with_a_replaceable_crl() {
+        let revoked = || {
+            Outcome::Revoked(revocation_error(
+                "r",
+                ErrorCode::CertificateRevoked,
+                "revoked",
+            ))
+        };
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "u", failed(NOT_YET_VALID, ErrorCode::CrlNotYetValid)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert!(error.details.contains_key(WITH_UNUSABLE_CRL));
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "f", failed(FORGED, ErrorCode::InvalidCrlSignature)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert!(!error.details.contains_key(WITH_UNUSABLE_CRL));
     }
 
     /// The webpki rejections a source's CRL could replace (OpenSSL gives such

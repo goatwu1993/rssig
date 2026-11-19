@@ -64,10 +64,10 @@ rule is restated for retrieval.
    one `crl_expired` stands (`crl-stale-local-asks-provider`). So is one
    whose only CRLs are unusable for another reason that a source's CRL could
    replace: not yet valid, with an issuingDistributionPoint that cannot be
-   used, or using an unsupported feature (a CRL known to cover another point
-   is set aside without a failure, and its certificate is listed as one
-   without a CRL, as before) (an unknown critical extension, a delta, indirect or
-   reasons-partitioned CRL). OpenSSL and BoringSSL look the issuer's CRLs up
+   used, or using an unsupported feature (an unknown critical extension, a
+   delta, indirect or reasons-partitioned CRL). A CRL known to cover another
+   point is not a failure: it is set aside and its certificate is listed as
+   one without a CRL, as before. OpenSSL and BoringSSL look the issuer's CRLs up
    again for these, and Bouncy Castle fetches. The error that stands
    (`crl_not_yet_valid`, `invalid_crl`, an unknown status or another path's
    revocation) names it in `details.certificates_with_unusable_crl`; a usable
