@@ -576,7 +576,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     /// source's answer by certificate did not settle its status), the listed
     /// points that answer left unused: with the failure a request for another
     /// certificate reported for the point, nothing if such a request was
-    /// answered, and otherwise as not requested. A certificate whose status
+    /// answered, and otherwise as not used. A certificate whose status
     /// was settled leaves no per-point failure.
     fn report_unused_points(&mut self, named: &[String]) {
         let held = core::mem::take(&mut self.unused_points);
@@ -591,7 +591,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     None => {
                         let e = error(
                             ErrorCode::CrlFetchFailed,
-                            "not requested: the CRL source answered for the certificate \
+                            "not used: the CRL source answered for the certificate \
                              without using this point, and its answer did not settle the status",
                         );
                         self.record(&certificate, Some(&point), &e, None);
@@ -828,8 +828,13 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         let returned = loaded.accepted_bytes;
         if let Some(failure) = whole_request {
             // Beside an answer by certificate, such a failure is recorded as
-            // it is: the points were not used, so it is not about them.
-            if loaded.by_certificate && failure.kind != CrlSourceErrorKind::Abort {
+            // it is: the points were not used, so it is not about them. So
+            // is one beside an abort the source reported elsewhere in this
+            // response: the points left were not tried, as recorded below.
+            let aborted_elsewhere = self.aborted && failure.kind != CrlSourceErrorKind::Abort;
+            if loaded.by_certificate && failure.kind != CrlSourceErrorKind::Abort
+                || aborted_elsewhere
+            {
                 self.source_failure(sha256, failure);
             } else {
                 for point in &unanswered {
@@ -2040,6 +2045,33 @@ mod tests {
         }
     }
     #[test]
+    fn points_left_after_an_abort_among_url_less_failures_are_not_tried() {
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "no"))
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "stop")))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("p", 2), &mut Source).unwrap();
+        assert!(state.aborted);
+        let points: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .filter(|f| f.url.is_some())
+            .map(|f| f.code)
+            .collect();
+        assert_eq!(
+            points,
+            [ErrorCode::CrlFetchAborted, ErrorCode::CrlFetchAborted]
+        );
+    }
+    #[test]
     fn a_certificate_named_twice_is_one_target() {
         use ::der::Decode;
         let cert =
@@ -2054,7 +2086,7 @@ mod tests {
         assert_eq!(reports.len(), 1);
     }
     #[test]
-    fn a_point_requested_later_is_not_reported_as_not_requested() {
+    fn a_point_requested_later_is_reported_with_its_outcome() {
         // Certificate A is answered by its issuer's CRL without a URL and
         // leaves its point unused; certificate B, of another issuer, lists
         // the same point, which is then requested.
@@ -2104,11 +2136,7 @@ mod tests {
         ask(&mut state, "a", &a, &mut Source(0)).unwrap();
         state.report_unused_points(&["a".to_string()]);
         assert_eq!(state.report.failures.len(), 1);
-        assert!(
-            state.report.failures[0]
-                .message
-                .starts_with("not requested")
-        );
+        assert!(state.report.failures[0].message.starts_with("not used"));
         // A certificate whose status was settled (not named) leaves none.
         let mut state = Retrieval::new(&store, &budget);
         ask(&mut state, "a", &a, &mut Source(0)).unwrap();

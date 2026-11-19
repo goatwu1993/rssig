@@ -110,6 +110,9 @@ pub struct HttpCrlSource {
     bytes: usize,
     started: Option<Instant>,
     poisoned: bool,
+    /// The channel of a resolver that timed out: once it has an answer or
+    /// is closed, that thread has finished and the source may reopen.
+    stale_dns: Option<mpsc::Receiver<std::io::Result<Vec<SocketAddr>>>>,
 }
 impl HttpCrlSource {
     pub fn new() -> Self {
@@ -119,11 +122,21 @@ impl HttpCrlSource {
     /// are bounded per verification, as in OpenSSL and Bouncy Castle, where
     /// nothing one validation fetched is charged to the next. The engine
     /// calls this through [`CrlSource::begin_verification`]. A DNS timeout
-    /// still closes the source for good, so that no more than one unfinished
+    /// closes the source until that resolver has finished, so that no more than one unfinished
     /// resolver worker can exist.
     fn renew(&mut self) {
+        // A source closed by a DNS timeout reopens only once that resolver
+        // has finished, so at most one unfinished resolver thread exists.
+        // Without a handle (none was kept) it cannot be known: stay closed.
+        let had_handle = self.stale_dns.is_some();
+        let stale = self
+            .stale_dns
+            .take()
+            .filter(|rx| matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+        let poisoned = self.poisoned && (stale.is_some() || !had_handle);
         *self = Self {
-            poisoned: self.poisoned,
+            poisoned,
+            stale_dns: stale,
             ..Self::default()
         };
     }
@@ -169,6 +182,7 @@ impl HttpCrlSource {
             })?,
             Err(_) => {
                 self.poisoned = true;
+                self.stale_dns = Some(rx);
                 return Err(dns_timeout());
             }
         };
@@ -213,10 +227,13 @@ impl HttpCrlSource {
     }
 }
 fn io_error(e: std::io::Error) -> VerificationError {
+    // The marker only classifies (a wait cut by the deadline) and is not
+    // reported.
     error(
         ErrorCode::CrlFetchFailed,
         format!("CRL HTTP I/O failed: {e}"),
     )
+    .detail("io_error", true)
 }
 
 struct Headers {
@@ -377,15 +394,17 @@ impl HttpCrlSource {
     /// the time left), so the source is spent: `Abort`.
     fn classify(&self, e: VerificationError, spent_before: bool) -> CrlSourceError {
         let deadline_passed = self.started.is_some() && self.remaining().is_err();
-        let kind = if deadline_passed && e.code == ErrorCode::CrlFetchFailed {
+        let io = e.details.get("io_error") == Some(&serde_json::Value::Bool(true));
+        let kind = if deadline_passed && io {
             CrlSourceErrorKind::Abort
         } else {
             source_error_kind(&e, spent_before)
         };
         let mut source_error = CrlSourceError::new(kind, e.message);
         source_error.details = e.details;
-        // The marker only classifies; the kind says the same.
+        // The markers only classify; the kind says the same.
         source_error.details.remove("source_spent");
+        source_error.details.remove("io_error");
         source_error
     }
     fn fetch_http(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, VerificationError> {
@@ -675,6 +694,22 @@ mod tests {
             source.classify(timed_out, false).kind,
             CrlSourceErrorKind::Abort
         );
+        // A request that completed and failed for its own reason (an HTTP
+        // status) keeps that reason, even past the deadline.
+        source.started = Some(Instant::now() - DEADLINE);
+        let status = error(ErrorCode::CrlFetchFailed, "CRL HTTP status 404");
+        assert_eq!(
+            source.classify(status, false).kind,
+            CrlSourceErrorKind::Failed
+        );
+        // The I/O marker is not part of the reported failure.
+        let timed_out = io_error(std::io::Error::from(std::io::ErrorKind::TimedOut));
+        assert!(
+            !source
+                .classify(timed_out, false)
+                .details
+                .contains_key("io_error")
+        );
         // With time left, an I/O failure is the request's own.
         source.started = Some(Instant::now());
         let timed_out = io_error(std::io::Error::from(std::io::ErrorKind::TimedOut));
@@ -682,6 +717,33 @@ mod tests {
             source.classify(timed_out, false).kind,
             CrlSourceErrorKind::Failed
         );
+    }
+    #[test]
+    fn a_source_reopens_once_its_timed_out_resolver_has_finished() {
+        // The resolver is still running: the source stays closed.
+        let (tx, rx) = mpsc::sync_channel::<std::io::Result<Vec<SocketAddr>>>(1);
+        let mut source = HttpCrlSource {
+            poisoned: true,
+            stale_dns: Some(rx),
+            ..HttpCrlSource::new()
+        };
+        CrlSource::begin_verification(&mut source);
+        assert!(source.poisoned);
+        // It has finished (sent its answer, or ended): the next verification
+        // may start a resolver again, so at most one is ever unfinished.
+        tx.send(Ok(Vec::new())).unwrap();
+        CrlSource::begin_verification(&mut source);
+        assert!(!source.poisoned);
+        assert!(source.stale_dns.is_none());
+        let (tx, rx) = mpsc::sync_channel::<std::io::Result<Vec<SocketAddr>>>(1);
+        drop(tx);
+        let mut source = HttpCrlSource {
+            poisoned: true,
+            stale_dns: Some(rx),
+            ..HttpCrlSource::new()
+        };
+        CrlSource::begin_verification(&mut source);
+        assert!(!source.poisoned);
     }
     #[test]
     fn a_source_closed_by_a_dns_timeout_aborts_every_request_even_after_a_new_verification() {
@@ -720,6 +782,7 @@ mod tests {
             bytes: MAX_TOTAL_BYTES,
             started: Some(Instant::now() - DEADLINE),
             poisoned: false,
+            stale_dns: None,
         };
         // The engine does this at the start of each verification.
         CrlSource::begin_verification(&mut source);

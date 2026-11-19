@@ -263,7 +263,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for good), the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source until that lookup has finished), the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The built-in source's HTTP limits bound one verification, not a batch or a
 reused instance: the engine calls `CrlSource::begin_verification` first, so in
@@ -275,16 +275,17 @@ counters) likewise charge nothing from one validation to the next, and the
 owner chose this over a batch-wide bound. A batch is therefore bounded by its
 file count (a slow CRL host can cost each file up to 30 seconds), so a batch
 over untrusted files should be split or run under the caller's own timeout.
-One state does persist: after a DNS timeout the source stays closed for the
-rest of the invocation (see below), and each later file that needs a CRL is
-reported `crl_fetch_aborted` without a request.
+One state can persist: after a DNS timeout the source stays closed until that
+lookup has finished (see below), and a later file that needs a CRL while it
+still runs is reported `crl_fetch_aborted` without a request.
 There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.
 
 The OS resolver has no cancellable std API. DNS runs in a worker with a bounded
-wait; a timeout permanently closes the source to further requests. At most one
-unfinished resolver worker can remain for that source. It cannot open a socket
+wait; a timeout closes the source to further requests until that worker has
+finished, checked when the next verification begins. At most one unfinished
+resolver worker can remain for that source. It cannot open a socket
 or fetch a CRL itself. This bounds the CLI wait but does not cancel the platform
 resolver's internal work. IP restrictions describe the built-in address policy,
 not a replacement for an application's network routing/firewall policy.
