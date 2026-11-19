@@ -59,6 +59,7 @@ pub enum ErrorCode {
     RevocationUnknown,
     CrlFetchFailed,
     CrlFetchDenied,
+    CrlFetchAborted,
     InvalidCrl,
     InvalidCertificate,
     CertificateChainInvalid,
@@ -166,6 +167,7 @@ impl ErrorCode {
             Self::InvalidCrlSignature => "Invalid CRL signature",
             Self::CrlFetchFailed => "CRL retrieval failed",
             Self::CrlFetchDenied => "CRL retrieval denied",
+            Self::CrlFetchAborted => "CRL retrieval aborted",
             Self::RevocationUnknown => "Revocation status unknown",
             Self::InvalidCrl => "Invalid CRL",
             Self::InvalidCertificate => "Invalid certificate",
@@ -511,15 +513,90 @@ pub struct AppxReport {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrlRetrievalArtifact {
-    pub url: String,
-    pub final_url: String,
+    /// The certificate the source was asked about.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certificate_sha256: Option<String>,
+    /// Where the source obtained it, when from a URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Where it actually came from: `url` unless a redirect changed it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub final_url: Option<String>,
     pub sha256: String,
     pub bytes: usize,
+}
+/// How a CRL source reports a request that produced no CRL. The source
+/// chooses; the engine decides what each means for the run.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum CrlSourceErrorKind {
+    /// The source refused this URL by its policy (`crl_fetch_denied`).
+    Denied,
+    /// The request was made and did not produce a response
+    /// (`crl_fetch_failed`).
+    Failed,
+    /// The source can do no more work in this verification, for example its
+    /// time or byte budget is spent or it was cancelled (`crl_fetch_aborted`).
+    /// No further URL is requested.
+    Abort,
+    /// Anything else the source cannot classify (`crl_fetch_failed`).
+    Unknown,
+}
+impl CrlSourceErrorKind {
+    /// The error code a failure of this kind is reported with.
+    pub fn code(self) -> ErrorCode {
+        match self {
+            Self::Denied => ErrorCode::CrlFetchDenied,
+            Self::Failed | Self::Unknown => ErrorCode::CrlFetchFailed,
+            Self::Abort => ErrorCode::CrlFetchAborted,
+        }
+    }
+}
+/// A listed distribution point that yielded no evidence, with the error that
+/// explains it. Usually `crl_fetch_denied` (not discovered, `url` absent, or
+/// denied by transport policy), `crl_fetch_failed` or `crl_fetch_aborted`
+/// (from the source; `source_error` then says which kind it reported), but
+/// other codes are possible: `invalid_crl` for a response that is not a CRL,
+/// `invalid_certificate` for a malformed cRLDistributionPoints extension, or
+/// `resource_limit_exceeded` for a response body the engine itself rejects as
+/// over its size cap (with `fetch_each`, only the first such body of a
+/// request reaches the engine; later ones are the source's `failed`, with
+/// `details.resource`). A source's own limits (the built-in HTTP source's
+/// response size, header size or redirect count) are that source's failures:
+/// `crl_fetch_failed` with `details.resource` naming the limit. Verification
+/// still decides whether the missing evidence mattered.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrlRetrievalFailure {
+    /// RFC 7807 `type`, `title` and `detail`, as on every serialized error.
+    #[serde(flatten)]
+    pub problem: Box<ProblemDetails>,
+    /// SHA-256 of the certificate that lists the point.
+    pub certificate_sha256: String,
+    pub url: Option<String>,
+    pub code: ErrorCode,
+    pub stage: Stage,
+    pub message: String,
+    pub details: BTreeMap<String, Value>,
+    pub causes: Vec<String>,
+    /// The kind a `CrlSource` reported, when the failure came from one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_error: Option<CrlSourceErrorKind>,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CrlRetrievalReport {
     /// Retrieved artifacts are untrusted evidence; this is not per-CRL verification status.
     pub artifacts: Vec<CrlRetrievalArtifact>,
+    /// Listed points that yielded no evidence, grouped by the certificate
+    /// they were asked for, in request order. Within a request: points
+    /// refused before asking, then the source's own failures in response
+    /// order, then bodies rejected on load, then points it did not answer
+    /// (after an abort, the points not tried, as `crl_fetch_aborted`). Last,
+    /// for a failed retrieval, the points a source answering by certificate
+    /// left unused for a certificate still without a usable CRL, in the
+    /// order those certificates were asked about.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failures: Vec<CrlRetrievalFailure>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VerificationBundle {

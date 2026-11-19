@@ -639,6 +639,72 @@ and `code()` with fallback arms; `?` still converts the error into `anyhow` if d
 SEC-07 deliberately tightens silent exclusion/partial-load behavior; correct a
 rejected input or explicitly configure a controlled store. No signatures change,
 and no dependency or native crypto provider is added.
+#### CRL sources (`--fetch-crls`, `crl-fetch` feature)
+
+`CrlSource` is now asked once per certificate rather than once per URL, and
+returns restricted errors. A certificate with no new point, whose issuer name,
+authority key and CA role were already asked about, is not asked again: CRLs
+are per issuer key and role. Old to new:
+
+| Before | Now |
+|---|---|
+| `fn fetch(&mut self, url: &str, max_bytes: usize) -> Result<FetchedCrl, VerificationError>` | `fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError>` |
+| one call per listed URL | one call per certificate; `request.distribution_points` lists its URIs |
+| `FetchedCrl { bytes, final_url }` | `SourcedCrl::new(bytes).with_url(url).with_final_url(target)` inside `CrlResponse` |
+| any `VerificationError` code | `CrlSourceError::new(kind, message)` with `CrlSourceErrorKind::{Denied, Failed, Abort, Unknown}` |
+| the engine refused non-HTTP and private URLs | the source decides; `HttpCrlSource` keeps that policy |
+
+A per-URL source migrates by wrapping its old body:
+
+```rust
+fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+    Ok(fetch_each(request, |url, max_bytes| {
+        // The URIs come from the certificates of the file being verified:
+        // screen them before fetching.
+        check_public_http_url(url)?;
+        let bytes = my_download(url, max_bytes)
+            .map_err(|e| CrlSourceError::new(CrlSourceErrorKind::Failed, e.to_string()))?;
+        Ok(SourcedCrl::new(bytes))
+    }))
+}
+```
+
+**The source now owns the transport policy.** Before, the engine refused
+non-HTTP and private URLs before calling `fetch`. Now a source is passed every
+listed URI that passes input hygiene (no control characters, whitespace or
+credentials, and it parses as a URL), including `file:` URLs and addresses
+such as `http://169.254.169.254/`. A source that fetches by URL must screen
+them: `rssig::retrieval::check_public_http_url` applies the built-in source's
+URL policy and returns a `Denied` error to pass on. It checks the URL only;
+your HTTP client must also refuse nonpublic DNS answers and re-check redirect
+targets, as `HttpCrlSource` does.
+
+**Reusing a source.** The engine calls `CrlSource::begin_verification()` once
+at the start of each verification that may ask the source. `HttpCrlSource`
+uses it to start its allowances (16 requests, 32 MiB, 30 seconds from its first
+fetch) afresh, so one instance can serve many files; the CLI relies on this.
+A source of your own that keeps per-verification allowances should do the
+same; the default does nothing, and a source that delegates to another must
+forward it. A DNS timeout closes the built-in source for good, whatever a
+later verification does.
+
+Results: missing evidence is `revocation_unknown` (with each problem in
+`crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;
+`crl_fetch_denied` and `crl_fetch_failed` are no longer results.
+
+Report types (`rssig::domain`), Rust and JSON:
+
+| Before | Now |
+|---|---|
+| `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL |
+| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect, and absent when the reported target is withheld (credentials, whitespace or control characters) |
+| (none) | `CrlRetrievalArtifact.certificate_sha256: Option<String>`: the certificate the CRL was asked for |
+| (none) | `details.certificates_with_expired_crl` on `crl_expired` and `revocation_unknown`: certificates whose only CRLs have expired |
+| `CrlRetrievalReport { artifacts }` | adds `failures: Vec<CrlRetrievalFailure>`, omitted from JSON when empty; each names its certificate, URL, code and `source_error` kind |
+
+A consumer that read `artifact.url` as a string handles its absence:
+`artifact.url.as_deref().unwrap_or("(by certificate)")`.
+
 These pre-1.0 APIs may evolve in future releases; future breaking changes must
 include migration notes. Do not depend on private adapter layout, exact
 allocation counts beyond the documented measurement, enum numeric values, or

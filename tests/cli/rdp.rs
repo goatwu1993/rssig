@@ -1434,6 +1434,63 @@ fn rdp_powershell_comment() {
     assert!(output.json["results"][0].get("rdp").is_none());
 }
 
+/// A signer acceptable under its second EKU only, whose CA has no CRL: the
+/// missing CRL is the result, not the first EKU's path failure, so that
+/// `--fetch-crls` can ask for it.
+#[test]
+fn rdp_eku_retry_reports_the_missing_crl_over_another_ekus_path_failure() {
+    let base = [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+    ];
+    let output = run_fixture("good-rdp-eku-retry-ca.rdp", &base);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    assert_eq!(
+        error["details"]["certificates_without_crl"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let mut with_crl = base.to_vec();
+    with_crl.extend(["--crl", "fixtures/rdp-eku-retry-ca.crl"]);
+    expect_rdp_success(&run_fixture("good-rdp-eku-retry-ca.rdp", &with_crl));
+}
+
+/// A signer revoked under its second EKU, whose first EKU fails on the path:
+/// the revocation is definite and is reported over the EKU failure.
+#[test]
+fn rdp_a_revoked_usage_is_reported_over_another_usages_eku_failure() {
+    let output = run_fixture(
+        "good-rdp-eku-retry-ca.rdp",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--time",
+            "1800000000",
+            "--crl",
+            "fixtures/good.crl",
+            "--crl",
+            "fixtures/rdp-eku-retry-ca-revoked.crl",
+        ],
+    );
+    assert_eq!(output.exit_code, 1);
+    assert_eq!(
+        output.json["results"][0]["error"]["code"],
+        "certificate_revoked"
+    );
+}
+
 #[test]
 fn rdp_multiple_accepted_ekus_preserves_certificate_metadata() {
     let output = run_fixture("good-rdp-multiple-ekus.rdp", TRUSTED);

@@ -272,7 +272,59 @@ See [coverage by invariant](coverage-inventory.md) and the maintained
 `tests/coverage-inventory.json` case/error/producer index. Cargo tests validate
 its references; it records open gaps separately from existing evidence.
 
-Retrieval cases can provide `crl_responses` (URL to fixture filename) and
-`expect.crl_requests` (exact ordered URL array, including failed requests).
+Retrieval cases can provide `crl_responses` (URL to fixture filename),
+`crl_errors` (URL to the fetch-error kind the injected source returns instead:
+`denied`, `failed`, `abort` or `unknown`; it reads no file and requires
+`crl_responses`; an unmapped URL is `failed`) and `expect.crl_requests`
+(exact ordered URL array, including failed requests).
 An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.
+`crl_certificate_responses` (lowercase SHA-256 of a certificate's DER, as
+rssig re-encodes it, which equals the original for every committed fixture, to a
+fixture filename; requires `crl_responses`) makes the injected source
+answer a request for that certificate with that CRL alone, without a URL, as
+a source keyed by certificate or issuer does; none of that certificate's
+listed URLs is requested. Such answers are not listed in
+`expect.crl_requests`, which holds URLs only
+(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+match listed fields only, so the absence of `crl_retrieval.failures` is
+asserted by the named test
+`sec10_fetch_by_certificate_answer_leaves_no_point_failures`.
+
+A case may carry a `decision` (not used to run it): `basis` (`decided`, which
+changes only with the owner's approval, or `observed`, current behavior kept
+so that a change is visible; a case without `decision` counts as observed),
+`pins` (`acceptance`: verifies or rejects; `diagnostics`: which error, detail
+or request), `reason` (a repository-relative document, with an optional
+`#anchor`, that names the case and says why; required when decided) and
+`references` (what reference implementations do, each with its source
+location). `tests/spec.rs` checks that each `reason` document exists and names
+its case. See AGENTS.md, "Pinned expectations".
+
+Five retrieval behaviors have unit tests only, because no committed input can
+reach them through the CLI:
+
+- An unknown status from webpki's confirmation pass (`details.reason`
+  `confirmation`) is final for retrieval. The confirmation exists to catch a
+  disagreement between rssig's per-certificate evaluation and webpki's own
+  rules; no fixture produces one unless one side has a bug.
+  `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins
+  the decision.
+- A certificate whose issuer name cannot be read is recorded as
+  `invalid_certificate` for each listed point, and the source is not asked.
+  Every certificate reaching retrieval has already been decoded from DER, and
+  a decoded name always re-encodes, so no fixture reaches this branch.
+- At most 64 CRL bodies and failures in one source response
+  (`crl_response_entries`). The spec's injected source answers one body per
+  listed URL, and a certificate lists at most 16, so a case cannot exceed the
+  limit; `retrieval::tests::a_response_with_too_many_entries_ends_the_run`
+  covers it.
+- Points recorded as not tried once a request's byte allowance is spent. The
+  allowance is up to 32 MiB and fixtures are a few hundred bytes, so no case
+  spends it;
+  `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`
+  covers it.
+- The built-in HTTP source's kinds (a last request keeping its own failure,
+  aborts when spent). Tests never use the network, so these are unit tests
+  in `src/retrieval/http.rs`.

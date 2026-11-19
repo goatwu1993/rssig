@@ -99,6 +99,21 @@ fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
             126,
             seq(&[seq(&[full_name(&[uri(LISTED_POINT)]), crl_issuer])]),
         ),
+        // An https URI: the engine passes it to the source, which decides.
+        (
+            "https",
+            128,
+            seq(&[seq(&[full_name(&[uri("https://crl.invalid/sec10-a.crl")])])]),
+        ),
+        // A reason-partitioned point, then the listed URI as a plain point.
+        (
+            "mixed",
+            127,
+            seq(&[
+                seq(&[full_name(&[uri(MULTI_POINTS[0])]), tlv(0x81, &[6, 0x40])]),
+                seq(&[full_name(&[uri(LISTED_POINT)])]),
+            ]),
+        ),
     ]
 }
 
@@ -267,23 +282,78 @@ fn write_pe(dir: &std::path::Path, label: &str, leaf: &Certificate, candidates: 
     std::fs::write(dir.join(format!("{label}.exe")), attach(base, &cms, true)).unwrap();
 }
 fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKey, label: &str) {
+    write_crl_with(dir, issuer, issuer_key, label, false, None);
+}
+/// With `key_identified`, the CRL carries an authorityKeyIdentifier naming
+/// the issuer's subjectKeyIdentifier.
+fn write_crl_with(
+    dir: &std::path::Path,
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    label: &str,
+    key_identified: bool,
+    revoked: Option<u32>,
+) {
+    write_crl_at(
+        dir,
+        issuer,
+        issuer_key,
+        label,
+        key_identified,
+        revoked,
+        (NOW - 100, NOW + 1000),
+    );
+}
+/// `window` is (thisUpdate, nextUpdate).
+fn write_crl_at(
+    dir: &std::path::Path,
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    label: &str,
+    key_identified: bool,
+    revoked: Option<u32>,
+    window: (u64, u64),
+) {
     use x509_cert::{
         Version,
         crl::{CertificateList, TbsCertList},
     };
     let algorithm = issuer.signature_algorithm.clone();
+    let mut crl_extensions = vec![Extension {
+        extn_id: "2.5.29.20".parse().unwrap(),
+        critical: false,
+        extn_value: OctetString::new([2, 1, 1]).unwrap(),
+    }];
+    if key_identified {
+        let ski = issuer
+            .tbs_certificate
+            .extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id.to_string() == "2.5.29.14")
+            .expect("issuer subjectKeyIdentifier");
+        // SKI is OCTET STRING { id }; AKI is SEQUENCE { [0] id }.
+        let id = &ski.extn_value.as_bytes()[2..];
+        crl_extensions.push(Extension {
+            extn_id: "2.5.29.35".parse().unwrap(),
+            critical: false,
+            extn_value: OctetString::new(tlv(0x30, &tlv(0x80, id))).unwrap(),
+        });
+    }
     let tbs = TbsCertList {
         version: Version::V2,
         signature: algorithm.clone(),
         issuer: issuer.tbs_certificate.subject.clone(),
-        this_update: tm(NOW - 100),
-        next_update: Some(tm(NOW + 1000)),
-        revoked_certificates: None,
-        crl_extensions: Some(vec![Extension {
-            extn_id: "2.5.29.20".parse().unwrap(),
-            critical: false,
-            extn_value: OctetString::new([2, 1, 1]).unwrap(),
-        }]),
+        this_update: tm(window.0),
+        next_update: Some(tm(window.1)),
+        revoked_certificates: revoked.map(|serial| {
+            vec![x509_cert::crl::RevokedCert {
+                serial_number: SerialNumber::from(serial),
+                revocation_date: tm(NOW - 50),
+                crl_entry_extensions: None,
+            }]
+        }),
+        crl_extensions: Some(crl_extensions),
     };
     let sig: Signature = issuer_key.sign(&tbs.to_der().unwrap());
     let crl = CertificateList {
@@ -489,6 +559,26 @@ pub(super) fn write(dir: &std::path::Path) {
             revoked.then_some(&scoped),
         );
     }
+    // SEC-10: an expired partition for another point. It cannot decide the
+    // signer, so its age must not either.
+    let other_scope = Extension {
+        extn_id: "2.5.29.28".parse().unwrap(),
+        critical: true,
+        extn_value: OctetString::new(crl_applicability::idp_named_point(OTHER_POINT)).unwrap(),
+    };
+    std::fs::write(
+        dir.join("sec10-issuer-idp-other-expired.crl"),
+        crl_applicability::crl_full(
+            &ca.tbs_certificate.subject.to_string(),
+            &ca_key,
+            NOW - 200,
+            Some(NOW - 1),
+            None,
+            vec![other_scope],
+            None,
+        ),
+    )
+    .unwrap();
     // SEC-10: other distribution-point forms on the signer and on issuer CRLs.
     for (label, serial, points) in point_forms() {
         let mut signer = certificate("publisher", serial, &leaf_key, "issuer", &ca_key, false);
@@ -521,6 +611,14 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         core::slice::from_ref(&pointed),
     );
+    // SEC-10: both selected certificates list a distribution point, the signer
+    // LISTED_POINT and its issuer ISSUER_POINT.
+    write_pe(
+        dir,
+        "sec10-chain-crl-dp",
+        &scoped,
+        core::slice::from_ref(&pointed),
+    );
     for (label, scope) in root_scope_forms() {
         let file = format!("sec10-sec06-root-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
@@ -530,6 +628,16 @@ pub(super) fn write(dir: &std::path::Path) {
         dir,
         "sec10-sec06-root-revoked-issuer.crl",
         (&root, &root_key),
+        None,
+        Some(&ca),
+    );
+    // SEC-10: a full other-root CRL that revokes the cross certificate (the
+    // issuer re-signed by the other root, same serial), so that one candidate
+    // path is revoked while the other only lacks a root CRL.
+    write_scoped_crl(
+        dir,
+        "sec10-sec06-other-root-revoked-cross.crl",
+        (&other, &other_key),
         None,
         Some(&ca),
     );
@@ -648,6 +756,73 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross.clone(), other.clone(), ca.clone()],
     );
+    // SEC-10: a cross certificate whose KeyUsage lacks keyCertSign (cRLSign
+    // only), first, so that its path fails path policy whatever its CRLs say.
+    let mut cross_no_cert_sign = cross.clone();
+    extension(
+        &mut cross_no_cert_sign,
+        "2.5.29.15",
+        true,
+        Some(tlv(3, &[1, 2])),
+    );
+    sign(&mut cross_no_cert_sign, &other_key);
+    write_pe(
+        dir,
+        "sec10-sec06-cross-no-cert-sign",
+        &leaf,
+        &[cross_no_cert_sign, other.clone(), ca.clone()],
+    );
+    // SEC-16: a self-issued key rollover. The root's name is carried by a
+    // second key, certified by the root; the signer is issued under that
+    // name by the second key. Two certificates on the path therefore have
+    // issuers of the same name and different keys, each with its own CRL.
+    let rollover_key = key(45);
+    let rollover = certificate("root", 140, &rollover_key, "root", &root_key, true);
+    let rolled_leaf = certificate("publisher", 141, &leaf_key, "root", &rollover_key, false);
+    write_pe(
+        dir,
+        "good-sec06-self-issued-rollover",
+        &rolled_leaf,
+        core::slice::from_ref(&rollover),
+    );
+    write_crl(dir, &rollover, &rollover_key, "rollover");
+    // The same two CRLs, each naming its issuer's key: the case in which
+    // OpenSSL, BoringSSL and Bouncy Castle all tell the two issuers apart.
+    // SEC-10: the root's CRL, expired: on a cross-certified file the root
+    // path's only CRL then needs a refresh while the other path is revoked.
+    write_crl_at(
+        dir,
+        &root,
+        &root_key,
+        "root-expired",
+        false,
+        None,
+        (NOW - 2000, NOW - 1000),
+    );
+    write_crl_with(dir, &root, &root_key, "root-akid", true, None);
+    write_crl_with(dir, &rollover, &rollover_key, "rollover-akid", true, None);
+    // The root key's CRL revoking the rollover certificate, which webpki's
+    // confirmation of such a path does not look at.
+    write_crl_with(
+        dir,
+        &root,
+        &root_key,
+        "root-akid-revoked-rollover",
+        true,
+        Some(140),
+    );
+    // SEC-10: an expired cross certificate, first, so that webpki's highest
+    // ranked error (expiry) comes from a path other than the one that only
+    // lacks a root CRL.
+    let mut cross_expired = cross.clone();
+    cross_expired.tbs_certificate.validity.not_after = tm(NOW - 1);
+    sign(&mut cross_expired, &other_key);
+    write_pe(
+        dir,
+        "sec10-sec06-cross-expired-first",
+        &leaf,
+        &[cross_expired, other.clone(), ca.clone()],
+    );
     write_pe(
         dir,
         "good-sec06-cross-last",
@@ -758,6 +933,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             "sec10-ca-crl-sign-fallback.exe",
             "sec10-leaf-crl-dp.exe",
             "sec10-ca-crl-dp.exe",
+            "sec10-chain-crl-dp.exe",
         ];
         let form = point_forms()
             .iter()
@@ -795,7 +971,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 38 + point_forms().len());
+    assert_eq!(count, 42 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {
@@ -934,6 +1110,12 @@ fn sec10_distribution_point_forms_are_signed_and_encoded() {
     assert_crl(
         "sec10-sec06-root-revoked-issuer.crl",
         &root,
+        None,
+        &[ISSUER_SERIAL],
+    );
+    assert_crl(
+        "sec10-sec06-other-root-revoked-cross.crl",
+        &committed_certificate("sec06-other-root.der"),
         None,
         &[ISSUER_SERIAL],
     );

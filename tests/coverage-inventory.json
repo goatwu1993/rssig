@@ -327,10 +327,10 @@
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-partition-revoked",
+        "sec10-crl-dp-other-partition-revocation-is-ignored",
         "sec10-crl-dp-full-crl",
         "sec10-ca-no-crl-sign",
-        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
@@ -381,7 +381,48 @@
         "sec10-crl-this-update-one-second-ahead",
         "sec10-crl-this-update-exact",
         "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact"
+        "sec10-crl-next-update-exact",
+        "sec10-chain-crl-dp-full-crls",
+        "sec10-leaf-crl-dp-mixed-full-crl",
+        "sec10-leaf-crl-dp-https-full-crl",
+        "sec10-root-crl-no-next-update-beside-good-crl",
+        "sec10-root-expired-crl-still-rejected-beside-good-crl",
+        "sec10-root-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-crl-malformed-aki-beside-good-crl",
+        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-crl-unsupported-beside-good-crl",
+        "sec10-root-indirect-crl-unsupported-beside-good-crl",
+        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "sec10-stale-crl-revocation-alone-is-expired",
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-fetch-completes-the-path-beside-an-expired-path",
+        "sec10-fetch-path-failing-key-usage-asks-nothing",
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "sec10-superseded-crl-revocation-alone-revokes",
+        "sec10-fetch-by-certificate-answer-requests-no-listed-point",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-fetch-invalid-nested-signature-requests-nothing",
+        "sec16-self-issued-rollover-without-revocation-verifies",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies",
+        "sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed",
+        "sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected"
       ]
     },
     {
@@ -406,7 +447,7 @@
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
-        "crl-stale-local-provider-unused",
+        "crl-stale-local-asks-provider",
         "sec10-fetch-other-idp-fetches-listed-point",
         "sec10-fetch-other-idp-fetched-revoked",
         "sec10-fetch-other-idp-fetched-other-unknown",
@@ -419,7 +460,27 @@
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-reasons-point-denied",
         "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied"
+        "sec10-fetch-dns-name-point-denied",
+        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-covered-signer-point-not-requested",
+        "sec10-fetch-asks-each-certificate-without-crl",
+        "sec10-fetch-covered-signer-is-not-asked",
+        "sec10-fetch-mixed-point-requests-plain-uri",
+        "sec10-fetch-asks-only-the-uncovered-certificate",
+        "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
+        "crl-fetch-source-denied-is-no-evidence",
+        "crl-fetch-source-failed-is-no-evidence",
+        "crl-fetch-source-unknown-is-no-evidence",
+        "crl-fetch-source-abort-is-reported",
+        "sec10-fetch-source-abort-stops-requests",
+        "sec10-fetch-source-is-asked-for-any-scheme",
+        "sec10-fetch-builtin-source-denies-https",
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-fetch-untrusted-chain-requests-nothing",
+        "crl-stale-local-refreshed-by-provider",
+        "crl-stale-local-source-abort-is-marked"
       ]
     },
     {
@@ -778,6 +839,7 @@
     },
     "invalid_key_usage": {
       "cases": [
+        "sec10-fetch-path-failing-key-usage-asks-nothing",
         "ca-key-usage",
         "bad-signer-key-usage",
         "msi-ca-key-usage",
@@ -788,19 +850,25 @@
     },
     "certificate_revoked": {
       "cases": [
+        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "rdp-eku-retry-ca-revoked-usage-is-revoked",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",
         "msi-revoked",
         "cab-revoked",
         "sec10-competing-crls-good-first-revoked",
         "sec10-competing-crls-revoked-first-revoked",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-fetch-other-idp-fetched-revoked"
+        "sec10-fetch-other-idp-fetched-revoked",
+        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "sec10-superseded-crl-revocation-alone-revokes",
+        "sec10-role-partition-crl-revocation-beside-full-crl-revokes"
       ],
       "gap": ""
     },
@@ -847,7 +915,8 @@
         "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-fetch-other-idp-fetched-other-unknown"
+        "sec10-fetch-other-idp-fetched-other-unknown",
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
       ],
       "gap": ""
     },
@@ -866,8 +935,16 @@
       ],
       "gap": ""
     },
+    "crl_fetch_aborted": {
+      "cases": [
+        "crl-fetch-source-abort-is-reported",
+        "sec10-fetch-source-abort-stops-requests"
+      ],
+      "gap": ""
+    },
     "invalid_crl": {
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "sec10-root-crl-no-next-update",
         "sec10-root-crl-malformed-aki",
         "sec10-root-unknown-critical-extension-crl-unsupported",
@@ -881,7 +958,11 @@
         "sec10-partition-crl-no-listed-point",
         "sec10-crl-dp-relative-idp-unsupported",
         "sec10-partition-crl-relative-no-listed-point",
-        "sec10-fetch-no-listed-point-not-fetched"
+        "sec10-fetch-no-listed-point-not-fetched",
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
+        "sec10-role-partition-crl-revocation-alone-is-unsupported"
       ],
       "gap": ""
     },
@@ -899,7 +980,8 @@
         "bad-sec06-name-outside",
         "bad-sec06-ca-critical",
         "bad-sec06-leaf-critical",
-        "bad-sec06-wrong-key"
+        "bad-sec06-wrong-key",
+        "sec16-self-issued-rollover-with-both-crls-is-rejected"
       ],
       "gap": ""
     },

@@ -1,5 +1,7 @@
-//! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded, while
-//! a CRL from a chain issuer that is stale or structurally invalid fails closed.
+//! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded. A CRL
+//! from a chain issuer that is stale or structurally invalid fails closed when it
+//! is the only one for the certificate, and is set aside when another CRL of
+//! that issuer is usable (the best CRL decides, as in OpenSSL and Bouncy Castle).
 //! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
 //! KeyUsage. The distribution-point tests use SEC-06 signers and one intermediate
 //! that list CRL distribution points in several forms, issuer and root CRLs
@@ -27,6 +29,50 @@ fn run_with(extra: &str) -> Output {
     )
 }
 
+/// The chain issuer's CRL `crl` alone, without `good.crl`.
+fn run_alone(crl: &str) -> Output {
+    run_fixture(
+        "good-countersignature.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            &format!("fixtures/{crl}"),
+            "--time",
+            T,
+        ],
+    )
+}
+
+#[test]
+fn sec10_an_unusable_chain_issuer_crl_is_set_aside_beside_a_usable_one() {
+    for extra in [
+        "sec10-root-no-next-update.crl",
+        "expired.crl",
+        "sec10-root-aki-expired.crl",
+        "sec10-root-malformed-aki.crl",
+        "sec10-root-signed-other-aki-expired.crl",
+        "sec10-root-unknown-critical-extension.crl",
+        "sec10-root-delta.crl",
+        "sec10-root-indirect.crl",
+        "sec10-root-entry-critical-extension.crl",
+        "sec10-root-delta-expired.crl",
+        "sec10-root-idp-user-certs.crl",
+        "sec10-root-idp-ca-certs.crl",
+        "sec10-root-aki-issuer-serial-expired.crl",
+        "sec10-root-idp-named-point.crl",
+    ] {
+        let output = run_with(extra);
+        expect_success(&output);
+        assert_eq!(
+            output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"], "good",
+            "{extra}"
+        );
+    }
+}
+
 #[test]
 fn sec10_unrelated_issuer_crls_are_excluded_whatever_their_fault() {
     for extra in [
@@ -45,7 +91,7 @@ fn sec10_unrelated_issuer_crls_are_excluded_whatever_their_fault() {
 
 #[test]
 fn sec10_chain_issuer_crl_without_next_update_is_a_typed_revocation_failure() {
-    let output = run_with("sec10-root-no-next-update.crl");
+    let output = run_alone("sec10-root-no-next-update.crl");
     expect_failure(
         &output,
         1,
@@ -58,7 +104,7 @@ fn sec10_chain_issuer_crl_without_next_update_is_a_typed_revocation_failure() {
 
 #[test]
 fn sec10_chain_issuer_stale_crl_still_fails_closed() {
-    let output = run_with("expired.crl");
+    let output = run_alone("expired.crl");
     expect_failure(
         &output,
         1,
@@ -107,7 +153,7 @@ fn sec10_crl_naming_another_authority_key_is_excluded() {
 
 #[test]
 fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
-    let output = run_with("sec10-root-aki-expired.crl");
+    let output = run_alone("sec10-root-aki-expired.crl");
     expect_failure(
         &output,
         1,
@@ -120,7 +166,7 @@ fn sec10_crl_naming_the_issuer_key_still_fails_closed_when_stale() {
 
 #[test]
 fn sec10_malformed_authority_key_identifier_fails_closed() {
-    let output = run_with("sec10-root-malformed-aki.crl");
+    let output = run_alone("sec10-root-malformed-aki.crl");
     expect_failure(
         &output,
         1,
@@ -135,7 +181,7 @@ fn sec10_malformed_authority_key_identifier_fails_closed() {
 fn sec10_chain_issuer_signature_is_never_excluded_by_a_mismatched_aki() {
     // Signed by the root's own key, so a differing authorityKeyIdentifier
     // cannot make it irrelevant: the stale CRL still fails closed.
-    let output = run_with("sec10-root-signed-other-aki-expired.crl");
+    let output = run_alone("sec10-root-signed-other-aki-expired.crl");
     expect_failure(
         &output,
         1,
@@ -171,7 +217,7 @@ fn sec10_unsupported_crl_features_from_a_chain_issuer_are_typed() {
         ("sec10-root-delta-expired.crl", "delta_crl"),
         ("sec10-root-indirect.crl", "indirect_crl"),
     ] {
-        let output = run_with(file);
+        let output = run_alone(file);
         expect_failure(
             &output,
             1,
@@ -227,7 +273,7 @@ fn sec10_path_building_falls_back_to_the_issuer_with_crl_sign() {
 fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
     // authorityCertIssuer/serial alone cannot exclude a CRL: the stale CRL
     // from the chain issuer's name still fails closed.
-    let output = run_with("sec10-root-aki-issuer-serial-expired.crl");
+    let output = run_alone("sec10-root-aki-issuer-serial-expired.crl");
     expect_failure(
         &output,
         1,
@@ -242,7 +288,7 @@ fn sec10_aki_without_key_identifier_is_matched_by_issuer_name() {
 fn sec10_named_distribution_point_crl_without_matching_certificate_point_fails_closed() {
     // The signer lists no CRL distribution points, so a CRL scoped to a named
     // point may be a partition that does not cover it.
-    let output = run_with("sec10-root-idp-named-point.crl");
+    let output = run_alone("sec10-root-idp-named-point.crl");
     expect_failure(
         &output,
         1,
@@ -375,9 +421,11 @@ fn sec10_matching_partition_is_selected_whatever_the_crl_order() {
 }
 
 #[test]
-fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
-    // On a path whose certificates all have an authoritative CRL, a serial
-    // listed by another applicable CRL of the same issuer name also rejects.
+fn sec10_revocation_in_another_partition_of_the_issuer_does_not_count() {
+    // The signer's own partition decides and does not list it. A partition
+    // for another point does not cover the signer, so its entries are not
+    // read, whatever the `--crl` order: OpenSSL gives such a CRL no scope
+    // score and Bouncy Castle's processCRLB2 rejects it.
     for crls in [
         [
             "sec10-issuer-idp-match.crl",
@@ -388,11 +436,7 @@ fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
             "sec10-issuer-idp-match.crl",
         ],
     ] {
-        revocation_failure(
-            &run_crl_dp(&crls),
-            "certificate_revoked",
-            "Certificate revoked",
-        );
+        revocation_good(&run_crl_dp(&crls));
     }
 }
 
@@ -529,6 +573,104 @@ fn sec10_revoked_intermediate_is_rejected_whatever_the_crl_order() {
     }
 }
 
+/// Two candidate paths: the cross certificate under the other root, which
+/// that root's CRL revokes, and the issuer under the root. Without the root's
+/// CRL the revocation decides, as without retrieval nothing can complete the
+/// second path, and the second path's gap is named for a CRL source; with
+/// that CRL, the second path verifies.
+#[test]
+fn sec10_a_revoked_path_names_what_another_path_still_lacks() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("good-sec06-cross-first.exe", &args)
+    };
+    let output = run(&[]);
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+    let details = &output.json["results"][0]["error"]["details"];
+    let missing = details["certificates_without_crl"].as_array().unwrap();
+    assert_eq!(missing.len(), 1);
+    assert_eq!(missing[0]["subject"]["display"], "CN=SEC-06 issuer");
+    revocation_good(&run(&["--crl", "fixtures/sec06-root.crl"]));
+}
+
+/// The other path's cross certificate lacks keyCertSign, so a CRL for it could
+/// not make it verify: the revocation on the first path decides, whether or
+/// not the other path has a CRL.
+#[test]
+fn sec10_a_revoked_path_decides_when_the_other_path_fails_key_usage() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("sec10-sec06-cross-no-cert-sign.exe", &args)
+    };
+    for extra in [&[][..], &["--crl", "fixtures/sec06-other-root.crl"]] {
+        let output = run(extra);
+        revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+        assert!(
+            output.json["results"][0]["error"]["details"]
+                .get("certificates_without_crl")
+                .is_none()
+        );
+    }
+}
+
+/// The issuer under the root has only an unusable root CRL (scoped to a
+/// point it does not list); the cross path fails keyCertSign and lacks a
+/// CRL. Only the path that could verify decides: its CRL failure is
+/// reported, not an unknown status naming the blocked path's certificate.
+#[test]
+fn sec10_an_unknown_status_ignores_a_path_failing_key_usage() {
+    let output = run_fixture(
+        "sec10-sec06-cross-no-cert-sign.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-root-idp-ca.crl",
+        ],
+    );
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+    assert_eq!(
+        output.json["results"][0]["error"]["details"]["reason"],
+        "distribution_point_scope"
+    );
+}
+
 /// `good.crl`: thisUpdate and nextUpdate in seconds.
 const CRL_THIS_UPDATE: u64 = 1_799_999_900;
 const CRL_NEXT_UPDATE: u64 = 1_800_001_000;
@@ -582,4 +724,172 @@ fn sec10_crl_this_update_is_an_inclusive_lower_bound() {
 fn sec10_crl_next_update_is_an_exclusive_upper_bound() {
     fresh_at(CRL_NEXT_UPDATE - 1);
     stale_at(CRL_NEXT_UPDATE, "crl_expired", "CRL expired");
+}
+
+#[test]
+fn sec10_a_revocation_in_a_stale_crl_does_not_count_beside_a_fresh_one() {
+    // The fresh CRL decides and does not list the signer. The expired one
+    // does, but a listing counts only from a current CRL, as in OpenSSL and
+    // Bouncy Castle: it may be a hold that was since released.
+    let output = run_with("sec10-root-expired-revoked.crl");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+    // Alone, the stale CRL is not usable evidence: expired, not revoked.
+    let output = run_alone("sec10-root-expired-revoked.crl");
+    revocation_failure(&output, "crl_expired", "CRL expired");
+}
+
+#[test]
+fn sec10_a_revocation_in_a_superseded_crl_does_not_count_beside_a_newer_one() {
+    // Both CRLs are within their validity, but good.crl is newer and does
+    // not list the signer: the newest usable CRL decides, as OpenSSL prefers
+    // the latest lastUpdate, so the older listing may be a released hold.
+    let output = run_with("sec10-root-superseded-revoked.crl");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+    // Alone it is the newest usable CRL, and its listing revokes.
+    let output = run_alone("sec10-root-superseded-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+}
+
+#[test]
+fn sec10_a_revocation_in_a_role_partition_without_a_point_counts() {
+    // A user-certificate partition with no distribution point name is in
+    // scope for the signer in OpenSSL (`crl_crldp_check`) and Bouncy Castle
+    // (processCRLB2), so its listing counts beside the full good.crl.
+    let output = run_with("sec10-root-idp-user-certs-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+    // Alone it cannot decide here: webpki does not support the form.
+    let output = run_alone("sec10-root-idp-user-certs-revoked.crl");
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+}
+
+#[test]
+fn sec10_an_expired_partition_for_another_point_does_not_decide_the_signer() {
+    // Not authoritative for the signer, so its age is irrelevant: the status
+    // is unknown and the signer is named, not crl_expired.
+    let output = run_crl_dp(&["sec06-root.crl", "sec10-issuer-idp-other-expired.crl"]);
+    revocation_failure(&output, "revocation_unknown", "Revocation status unknown");
+    let missing = &output.json["results"][0]["error"]["details"]["certificates_without_crl"];
+    assert_eq!(missing.as_array().unwrap().len(), 1);
+    assert_eq!(
+        missing[0]["sha256"],
+        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+    );
+}
+
+#[test]
+fn sec10_a_listing_in_an_authenticated_crl_counts_even_with_a_malformed_aki() {
+    // The root signed it, so its listing of the signer counts beside good.crl,
+    // although its authorityKeyIdentifier cannot be decoded.
+    let output = run_with("sec10-root-malformed-aki-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+}
+
+/// SEC-16: a self-issued key rollover. The chain verifies without
+/// revocation. With CRLs that carry no authorityKeyIdentifier nothing tells
+/// the two same-name issuers' CRLs apart: OpenSSL and BoringSSL reject (CRL
+/// signature failure), Bouncy Castle accepts, and rssig rejects (fails
+/// closed) in either `--crl` order. With CRLs that each name their issuer's
+/// key all three accept, and so does rssig.
+#[test]
+fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--time",
+            T,
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("good-sec06-self-issued-rollover.exe", &args)
+    };
+    expect_success(&run(&["--no-revocation"]));
+    for crls in [
+        ["fixtures/sec06-root.crl", "fixtures/sec06-rollover.crl"],
+        ["fixtures/sec06-rollover.crl", "fixtures/sec06-root.crl"],
+    ] {
+        let output = run(&["--crl", crls[0], "--crl", crls[1]]);
+        assert_eq!(output.exit_code, 1);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "certificate_chain_invalid");
+        assert_eq!(error["details"]["reason"], "confirmation");
+    }
+    for crls in [
+        [
+            "fixtures/sec06-root-akid.crl",
+            "fixtures/sec06-rollover-akid.crl",
+        ],
+        [
+            "fixtures/sec06-rollover-akid.crl",
+            "fixtures/sec06-root-akid.crl",
+        ],
+    ] {
+        let output = run(&["--crl", crls[0], "--crl", crls[1]]);
+        expect_success(&output);
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert_eq!(signature["revocation_checked"], true);
+        assert_eq!(signature["chain_trusted"], true);
+    }
+    // The rollover certificate itself is still checked: revoked by the root
+    // key's CRL, it rejects the path.
+    let output = run(&[
+        "--crl",
+        "fixtures/sec06-root-akid-revoked-rollover.crl",
+        "--crl",
+        "fixtures/sec06-rollover-akid.crl",
+    ]);
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+}
+
+/// SEC-10: two configured roots with one key and name may carry different
+/// subjectKeyIdentifiers. A CRL signed by another key that names one of them
+/// is forged for that anchor, whichever root is listed first; naming an
+/// identifier no configured root carries, it is another issuer's CRL and is
+/// set aside without a failure.
+#[test]
+fn sec10_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside() {
+    let run = |roots: &[&str]| {
+        let mut args = vec!["verify", "--no-system-roots"];
+        for root in roots {
+            args.extend(["--roots", root]);
+        }
+        args.extend([
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec10-root-forged-other-ski.crl",
+        ]);
+        run_fixture("good-countersignature.exe", &args)
+    };
+    let alone = run(&["fixtures/root.der"]);
+    assert_eq!(
+        alone.json["results"][0]["error"]["code"],
+        "revocation_unknown"
+    );
+    assert!(
+        alone.json["results"][0]["error"]["details"]
+            .get("unusable_crl")
+            .is_none()
+    );
+    for roots in [
+        ["fixtures/root.der", "fixtures/sec10-root-other-ski.der"],
+        ["fixtures/sec10-root-other-ski.der", "fixtures/root.der"],
+    ] {
+        let output = run(&roots);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "revocation_unknown");
+        assert_eq!(
+            error["details"]["unusable_crl"]["code"],
+            "invalid_crl_signature"
+        );
+    }
 }

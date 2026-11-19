@@ -131,6 +131,27 @@ fn aki_issuer_serial() -> Vec<u8> {
     seq(&[tlv(0xa1, &tlv(0xa4, &name)), tlv(0x82, &[1])])
 }
 
+/// The test root re-issued with the same key and name but another
+/// subjectKeyIdentifier (all 0xbb): to webpki the same trust anchor.
+fn root_with_other_ski() -> Certificate {
+    use ::der::asn1::OctetString;
+    let id = identity();
+    let mut cert = id.root.clone();
+    let extension = cert
+        .tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .unwrap();
+    extension.extn_value = OctetString::new(tlv(4, &[0xbb; 20])).unwrap();
+    let signature: p256::ecdsa::Signature =
+        id.root_key.sign(&cert.tbs_certificate.to_der().unwrap());
+    cert.signature = ::der::asn1::BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    cert
+}
+
 fn ski(cert: &Certificate) -> Vec<u8> {
     use ::der::Decode;
     let ext = cert
@@ -155,6 +176,20 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
+        // The root's name, a fresh period, signed by another key, naming the
+        // subjectKeyIdentifier of `sec10-root-other-ski.der`: forged when that
+        // root is configured (it is the same anchor), another issuer's CRL
+        // otherwise.
+        (
+            "sec10-root-forged-other-ski.crl",
+            crl_with_aki(
+                root,
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_value(&[0xbb; 20])),
+            ),
+        ),
         // The root's name, but signed by another key that its authorityKeyIdentifier
         // names: a CRL of a rolled-over issuer, not of the chain's root.
         (
@@ -200,6 +235,25 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 NOW - 100,
                 Some(NOW + 1000),
                 Some(vec![0x30, 0x05, 0x80]),
+            ),
+        ),
+        // The same malformed authorityKeyIdentifier on a fresh root CRL that
+        // lists the test signer (serial 2): the root signed it, so the listing
+        // counts beside a usable CRL that does not list the signer.
+        (
+            "sec10-root-malformed-aki-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(vec![0x30, 0x05, 0x80]),
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 50),
+                    crl_entry_extensions: None,
+                }]),
             ),
         ),
         // An unrelated issuer's CRL is excluded before its extensions are read.
@@ -265,6 +319,29 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-idp-ca-certs.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x82, 1, 0xff]),
         ),
+        // The user-certificate partition without a distribution point,
+        // listing the test signer (serial 2): in scope for an end entity in
+        // OpenSSL and Bouncy Castle, so its listing counts beside a full CRL.
+        (
+            "sec10-root-idp-user-certs-revoked.crl",
+            crl_full(
+                "CN=rssig test root",
+                &identity().root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![x509_cert::ext::Extension {
+                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.28"),
+                    critical: true,
+                    extn_value: ::der::asn1::OctetString::new([0x30, 3, 0x81, 1, 0xff]).unwrap(),
+                }],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         // A named distribution point; the test certificates list none, so the
         // CRL may be a partition that does not cover them.
         (
@@ -291,6 +368,63 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
+        // A root CRL without nextUpdate that lists the test signer and is
+        // newer than good.crl: it claims no expiry, so it is not stale. It is
+        // unusable (RFC 5280 requires nextUpdate) but its listing counts.
+        (
+            "sec10-root-no-next-update-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 50,
+                None,
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 60),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
+        // An expired root CRL that lists the test signer (serial 2): a listing
+        // counts only from a current CRL, so beside a fresh CRL that does not
+        // list the signer it is ignored, and alone it is only expired.
+        (
+            "sec10-root-expired-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW - 1),
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
+        // A root CRL still within its validity but older than `good.crl`
+        // (thisUpdate NOW - 200 against NOW - 100), listing the test signer:
+        // superseded, so its listing does not count beside the newer CRL.
+        (
+            "sec10-root-superseded-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         (
             "sec10-unrelated-expired.crl",
             crl(other, &other_key, NOW - 200, Some(NOW - 1)),
@@ -313,4 +447,9 @@ fn regenerate_sec10_fixtures() {
     for (name, bytes) in crls() {
         std::fs::write(dir.join(name), bytes).unwrap();
     }
+    std::fs::write(
+        dir.join("sec10-root-other-ski.der"),
+        root_with_other_ski().to_der().unwrap(),
+    )
+    .unwrap();
 }

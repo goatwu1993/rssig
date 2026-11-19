@@ -59,6 +59,16 @@ pub struct Case {
     pub id: String,
     pub input: Option<String>,
     pub crl_responses: Option<BTreeMap<String, String>>,
+    /// URLs the injected source answers with a fetch error of this kind
+    /// instead of a response. Reads no file.
+    pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
+    /// The injected source also answers a request for the certificate with
+    /// this SHA-256 (lowercase hex of its DER) with this response file, as a
+    /// CRL without a URL, the way a source keyed by certificate or issuer
+    /// does. Requires `crl_responses`.
+    pub crl_certificate_responses: Option<BTreeMap<String, String>>,
+    /// Why this case's result is pinned (AGENTS.md, "Pinned expectations").
+    /// Not used to run the case.
     pub decision: Option<Decision>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
@@ -159,6 +169,8 @@ impl Case {
             id: _,
             input,
             crl_responses,
+            crl_errors: _,
+            crl_certificate_responses,
             decision: _,
             inputs,
             command,
@@ -188,6 +200,7 @@ impl Case {
             .chain(
                 crl_responses
                     .iter()
+                    .chain(crl_certificate_responses.iter())
                     .flat_map(BTreeMap::values)
                     .map(|name| named(name, CaseFile::ResponseBody)),
             )

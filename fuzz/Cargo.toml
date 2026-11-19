@@ -14,7 +14,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-rssig = { path = "..", default-features = false, features = ["verify"] }
+rssig = { path = "..", default-features = false, features = ["verify", "crl-fetch"] }
 sha2 = { version = "0.10", default-features = false }
 
 [profile.release]
@@ -93,6 +93,20 @@ bench = false
 [[bin]]
 name = "trust_loading"
 path = "fuzz_targets/trust_loading.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_retrieval"
+path = "fuzz_targets/verify_retrieval.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "check_url"
+path = "fuzz_targets/check_url.rs"
 test = false
 doc = false
 bench = false

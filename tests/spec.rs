@@ -58,6 +58,32 @@ impl Suite {
                 }
             }
             let expect = &case.expect;
+            if case.crl_errors.is_some() && case.crl_responses.is_none() {
+                return Err(format!("crl_errors requires crl_responses: {}", case.id));
+            }
+            if let Some(answers) = &case.crl_certificate_responses {
+                if case.crl_responses.is_none() {
+                    return Err(format!(
+                        "crl_certificate_responses requires crl_responses: {}",
+                        case.id
+                    ));
+                }
+                let digest = |key: &String| {
+                    key.len() == 64
+                        && key
+                            .bytes()
+                            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                };
+                if !answers
+                    .iter()
+                    .all(|(key, name)| digest(key) && spec_suite::is_fixture_name(name))
+                {
+                    return Err(format!(
+                        "crl_certificate_responses maps a lowercase SHA-256 to a fixture file name: {}",
+                        case.id
+                    ));
+                }
+            }
             if expect.crl_requests.is_some() && case.crl_responses.is_none() {
                 return Err(format!(
                     "crl_requests requires an injected source: {}",
@@ -171,36 +197,55 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     let mut stderr = Vec::new();
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
+        by_certificate: Option<&'a BTreeMap<String, String>>,
+        errors: Option<&'a BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
         fixtures: &'a Path,
         requests: &'a mut Vec<String>,
     }
     impl rssig::retrieval::CrlSource for Source<'_> {
-        fn fetch(
+        fn crls(
             &mut self,
-            url: &str,
-            max_bytes: usize,
-        ) -> Result<rssig::retrieval::FetchedCrl, rssig::VerificationError> {
-            self.requests.push(url.to_owned());
-            let name = self.responses.get(url).ok_or_else(|| {
-                rssig::VerificationError::new(
-                    rssig::domain::ErrorCode::CrlFetchFailed,
-                    rssig::domain::Stage::Revocation,
-                    "no injected CRL response",
-                )
-            })?;
-            let path = Path::new(name);
-            assert!(
-                path.is_relative()
-                    && !path
-                        .components()
-                        .any(|c| matches!(c, std::path::Component::ParentDir))
-            );
-            let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
-            assert!(bytes.len() <= max_bytes);
-            Ok(rssig::retrieval::FetchedCrl {
-                bytes,
-                final_url: url.into(),
-            })
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            use sha2::Digest;
+            let certificate: String = sha2::Sha256::digest(request.certificate)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect();
+            let by_certificate = self
+                .by_certificate
+                .and_then(|answers| answers.get(&certificate))
+                .map(|name| std::fs::read(self.fixtures.join(name)).unwrap());
+            // A source keyed by certificate answers such a certificate with
+            // its CRL alone, within the allowance, and requests none of its
+            // listed URLs.
+            if let Some(bytes) = by_certificate {
+                assert!(bytes.len() <= request.max_bytes);
+                return Ok(rssig::retrieval::CrlResponse::new()
+                    .with_crl(rssig::retrieval::SourcedCrl::new(bytes)));
+            }
+            let response = rssig::retrieval::fetch_each(request, |url, max_bytes| {
+                use rssig::domain::CrlSourceErrorKind;
+                use rssig::retrieval::CrlSourceError;
+                self.requests.push(url.to_owned());
+                if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
+                    return Err(CrlSourceError::new(*kind, "injected CRL fetch error"));
+                }
+                let name = self.responses.get(url).ok_or_else(|| {
+                    CrlSourceError::new(CrlSourceErrorKind::Failed, "no injected CRL response")
+                })?;
+                let path = Path::new(name);
+                assert!(
+                    path.is_relative()
+                        && !path
+                            .components()
+                            .any(|c| matches!(c, std::path::Component::ParentDir))
+                );
+                let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
+                assert!(bytes.len() <= max_bytes);
+                Ok(rssig::retrieval::SourcedCrl::new(bytes))
+            });
+            Ok(response)
         }
     }
     let mut requests = Vec::new();
@@ -211,6 +256,8 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut stderr,
             &mut Source {
                 responses,
+                by_certificate: case.crl_certificate_responses.as_ref(),
+                errors: case.crl_errors.as_ref(),
                 fixtures,
                 requests: &mut requests,
             },
@@ -298,6 +345,23 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
         stderr,
         failures,
     }
+}
+
+/// A case's `decision.reason` names a committed document that mentions the
+/// case, so the marker and the written reason cannot drift apart.
+#[test]
+fn decision_reasons_point_to_documents_that_name_their_case() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let suite: Suite =
+        serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap()).unwrap();
+    suite.validate().unwrap();
+    assert!(
+        suite.cases.iter().any(|case| case
+            .decision
+            .as_ref()
+            .is_some_and(|decision| decision.reason.is_some())),
+        "no case carries a decision reason"
+    );
 }
 
 #[test]

@@ -124,6 +124,28 @@
             },
             "description": "Offline injected CRL source: map requested URL to a DER/PEM response file named directly in the fixtures directory. Unmapped requests fail; no live network is used."
           },
+          "crl_errors": {
+            "type": "object",
+            "additionalProperties": {
+              "enum": [
+                "denied",
+                "failed",
+                "abort",
+                "unknown"
+              ]
+            },
+            "description": "Offline injected CRL source: map requested URL to the kind of fetch error the source returns instead of a response (denied, failed, abort or unknown). Requires crl_responses; checked before it."
+          },
+          "crl_certificate_responses": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/fixtureName"
+            },
+            "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to a DER/PEM response file, returned alone as a CRL without a URL, as a source keyed by certificate or issuer does; none of that certificate's listed URLs is requested. Requires crl_responses. Such answers are not listed in expect.crl_requests."
+          },
           "decision": {
             "type": "object",
             "additionalProperties": false,
@@ -179,6 +201,14 @@
           "required": [
             "input",
             "inputs"
+          ]
+        },
+        "dependentRequired": {
+          "crl_errors": [
+            "crl_responses"
+          ],
+          "crl_certificate_responses": [
+            "crl_responses"
           ]
         }
       }

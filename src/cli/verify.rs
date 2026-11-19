@@ -148,6 +148,9 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
                 }
             }
             if fetch_crls {
+                // Each verification starts its source's allowances afresh
+                // (`CrlSource::begin_verification`): the built-in source's
+                // limits bound one file, not the batch.
                 verifier.verify_with_crl_source(bytes, hint.as_deref(), source)
             } else {
                 verifier.verify_with_hint(bytes, hint.as_deref())

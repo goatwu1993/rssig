@@ -13,3 +13,6 @@ verify_text ps1 psm1 psd1 ps1xml vbs vbe js jse wsf rdp
 verify_trusted exe msi msp cab navx msix appx msixbundle appxbundle ps1 ps1xml vbs js wsf rdp
 verify_logged exe msi msp cab navx msix appx msixbundle appxbundle ps1 ps1xml vbs js wsf rdp
 trust_loading der crl pem
+verify_retrieval exe crl der
+
+check_url

@@ -176,6 +176,10 @@ timestamps, and local CRL validation already exist.
   `sec10-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
   A `certificate_revoked` result does not identify which supplied CRL listed
   the certificate.
+  From the PR #60 review: a retrieved body that is not a CRL (for example an
+  HTML error page) is listed in `crl_retrieval.artifacts` as well as reported
+  as an `invalid_crl` failure, so counting artifacts overcounts retrieved CRLs.
+  Decide whether artifacts mean "bytes received" or "CRLs loaded".
 - [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
   all-required-signatures policy, primary/nested ordering, first-failure
   precedence, and bundle/child identity and signer binding. Test a valid first
@@ -254,7 +258,10 @@ timestamps, and local CRL validation already exist.
     `src/tests.rs`, SEC-08/09 and RDP fixture modules without changing committed
     bytes; keep per-task regeneration commands (as SEC-08 does) consistent with
     `regenerate_cli_fixtures`.
-- [ ] **SEC-15: Select CRLs against the selected chain, not every candidate.**
+- [x] **SEC-15: Select CRLs against the selected chain, not every candidate.**
+  Done in PR #60: CRLs are evaluated per certificate on each candidate path,
+  authenticated under the issuer key that path uses, and the scope rule applies
+  to that certificate only. Original notes follow.
   Deliberately skipped in PRs #44 to #46. CRL applicability currently matches
   each CRL's issuer name (and AKI) against every configured root and every
   embedded candidate certificate, not the path webpki selects. An untrusted
@@ -268,7 +275,19 @@ timestamps, and local CRL validation already exist.
   on the selected path. It tests only for the extension's presence and treats
   an undecodable issuingDistributionPoint as naming a point. No fixture has an
   off-path candidate.
-- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Deliberately skipped in
+- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Since PR #60 a CRL is
+  authenticated under the issuer key the path uses. Settled in PR #60 by
+  cross-checking OpenSSL, BoringSSL and Bouncy Castle (see "Decisions made"
+  in [SEC-10](docs/tasks/sec-10-crl-applicability.md)): on a self-issued
+  key-rollover path (two issuers of one name with different keys) CRLs that
+  each name their issuer's key verify, as in all three libraries
+  (`sec16-self-issued-rollover-with-key-identified-crls-verifies`); webpki
+  cannot confirm two issuers of one name, so it confirms the signer only on
+  such a path. CRLs without key identifiers are rejected at confirmation, as
+  OpenSSL and BoringSSL reject them and unlike Bouncy Castle
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`); the owner chose
+  that tiebreaker, so it is Decided.
+  Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
   so one SKI-less candidate makes the AKI check vacuous for that name. A
   candidate whose SKI fails to parse is treated as having none. Issuer names
@@ -281,16 +300,6 @@ timestamps, and local CRL validation already exist.
   root's real issuer and serial and is signed by the root, so it cannot tell
   name-only matching from issuer/serial matching; a fixture with a wrong
   serial is needed to pin either behavior.
-  `--fetch-crls` coverage (`has_crl_for`) matches the issuer by name only. A
-  supplied CRL without an issuingDistributionPoint that verification excludes
-  (its AKI matches no candidate and its signature verifies under none) still
-  suppresses retrieval, so the result is `revocation_unknown` although the
-  listed point could have been fetched. Apply the same applicability filter to
-  coverage, with a fixture. Coverage also decodes extensions with x509-cert,
-  which rejects a whole cRLDistributionPoints or issuingDistributionPoint
-  extension on one name form it cannot decode, where webpki skips that entry:
-  such a certificate beside a usable local CRL verifies offline but fails
-  under `--fetch-crls`. No fixture has such a name.
 - [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately
   skipped in PRs #44 and #45. Every verification re-parses all configured
   roots to collect issuer names, outside `budget.decoded_bytes`. The
@@ -303,29 +312,61 @@ timestamps, and local CRL validation already exist.
   map entry per revoked certificate that is not charged beyond the existing
   8x byte-length reservation. Cache parsed CRLs on the `TrustStore` and pin the
   budget effect for large CRLs.
-  `--fetch-crls` coverage (`has_crl_for`, PR #55) adds to this: it decodes
-  every supplied CRL again for each selected certificate and role, charges 8x
-  its bytes each time, and copies every distribution-point URI to compare
-  them. Decode each CRL's issuer and scope once per verification and compare
-  borrowed bytes. It is also a second copy of webpki's authority rule; the
-  lasting fix is to drive retrieval from the verifier's own result (which
-  certificate had no authoritative CRL) instead of restating the rule.
-  Three further gaps found in the PR #55 review share that cause; fix or pin
-  them with the redesign. All reject, none accepts. (1) Coverage skips a
-  certificate point with reasons, a cRLIssuer or a non-URI name, but discovery
-  (`crl_distribution_points`) fails on the first such point, so a certificate
-  that also lists a plain URI point is `crl_fetch_denied` and that URI is never
-  requested. No fixture mixes the two forms. (2) A signer that lists no
-  distribution point, beside an issuer CRL whose issuingDistributionPoint names
-  a point and excludes its role (for example onlyContainsCACerts), is
-  `revocation_unknown` under `--fetch-crls` with a message saying no issuer
-  CRL was supplied, while the same inputs without the flag are `invalid_crl`
-  (`distribution_point_scope`). Read from the code, not run; no case pins it.
-  (3) A supplied CRL that verification rejects anyway (an undecodable or
-  issuer-relative issuingDistributionPoint) does not count as coverage, so the
-  listed point is fetched before the same `invalid_crl`: one request for a
-  verification that cannot succeed. Not run; no case pins it.
-- [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Deliberately
+  `--fetch-crls` asks the source only about the certificates the verifier
+  reports without a usable CRL (`details.certificates_without_crl`), as
+  OpenSSL's `get_crl` and Bouncy Castle look up CRLs for the certificate being
+  checked (PR #60). What remains: a run verifies the input up to once per
+  retrieval round, plus once without revocation before the first request (the
+  whole-input integrity and trust check), against one budget, and no case
+  exhausts it on that path. The per-certificate CRL evaluation decodes
+  each loaded CRL once per verification, but verifies CRL signatures with its
+  own OID table outside the budgeted algorithm adapter; reuse the adapter.
+  Repeated work found in the PR #60 review (results unchanged, bounded by
+  existing limits):
+  - `LoadedCrl::load` copies each applicable CRL's bytes and tbsCertList and
+    builds an owned webpki CRL on every verification and retrieval round; the
+    confirmation pass clones it again. Borrow from the store instead.
+  - The CRL signature cache key clones the issuer SPKI on every lookup, even
+    on a hit; key it by CRL and issuer index.
+  - The path callback re-encodes and hashes every certificate on every
+    candidate path, uncharged; compute it once per certificate.
+  - Every configured root is decoded twice per verification (issuer names
+    and anchor certificates); decode it once.
+  With revocation on, building the CRL prefilter's issuer names uses `?` on
+  each configured root's x509-cert decoding (`src/trust.rs`, as on `main`),
+  so one root webpki accepts but x509-cert rejects fails every verification
+  with CRLs; skip such a root, as the anchor list already does, with a
+  fixture.
+  Retrieval skips a certificate whose listed points were all asked and
+  whose issuer, authority key and role (CA or end entity) were already asked
+  about, so a certificate that an earlier scoped or partial answer did not
+  cover can stay `revocation_unknown` without a request of its own; re-ask
+  when the earlier answer added no CRL covering it, with a paired fixture.
+- [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Partly
+  decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
+  stale, delta, indirect, unsupported or out-of-scope CRL is set aside when
+  another CRL of the issuer is usable and authoritative (full-plus-delta and
+  old-beside-current deployments verify). Still open: real delta support, and
+  reporting which CRLs were set aside (SEC-11).
+  Open from the PR #60 review: a listing counts as a revocation once the CRL
+  verifies under the path issuer's key, before delta, indirect or other
+  unsupported features are checked, and entry extensions are ignored. A delta
+  CRL entry with reason `removeFromCRL` (a hold lifted), or an indirect CRL
+  entry whose `certificateIssuer` names another CA with the same serial,
+  therefore rejects as `certificate_revoked` a certificate the full CRL
+  leaves good. This fails closed. Decide it with real delta support and pin it
+  with a full-plus-delta `removeFromCRL` fixture.
+  Decided in PR #60 for stale full CRLs: a listing counts only from a CRL
+  that is current at the validation time, as in OpenSSL and Bouncy Castle,
+  so a released `certificateHold` in an expired CRL no longer revokes
+  (`sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
+  current delta or indirect CRL's entries, and the listing in a current CRL
+  with a malformed authorityKeyIdentifier
+  (`sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
+  both Bouncy Castle paths, BoringSSL and relic were compared and do not
+  agree (`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"); the owner
+  decided to keep counting it, so only delta and indirect entries are open. Original notes follow.
+  Deliberately
   kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
   indirect, unknown critical extension) rejects the request even when another
   supplied CRL covers the same issuer, so a normal full-plus-delta CRL
@@ -366,12 +407,24 @@ timestamps, and local CRL validation already exist.
   (null if the report parser fails) but with `?` on the nextUpdate and
   freshness paths (a report-parse error replaces the typed error); make them
   consistent.
-- [ ] **SEC-20: Revisit revocation_unknown precedence over path errors.**
+- [x] **SEC-20: Revisit revocation_unknown precedence over path errors.**
+  Done in PR #60: with no applicable CRL the path is still built, so an
+  untrusted chain is `untrusted_root` and, with `--fetch-crls`, nothing is
+  requested for it (`crl-fetch-untrusted-chain-requests-nothing`). Original
+  notes follow.
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain
   errors. This extends the existing empty-CRL-set precedence. Revisit together
   with SEC-14's error-precedence notes if consumers need the chain error first.
-- [ ] **SEC-21: Bind listed-serial revocation to the verified path.** From PR
+- [x] **SEC-21: Bind listed-serial revocation to the verified path.**
+  Done in PR #60: a listing counts only in a CRL that verifies under the path
+  issuer's key, from an issuer with cRLSign (anchors exempt); an unmappable
+  signature algorithm is `invalid_crl` (`unsupported_signature_algorithm`), and
+  a listing in an authenticated CRL counts even if its authorityKeyIdentifier
+  is malformed. Later in PR #60 the listing rule was narrowed to follow
+  OpenSSL and Bouncy Castle: it counts only from a current CRL that covers
+  the certificate and is at least as new as the deciding CRL (see
+  `docs/tasks/sec-10-crl-applicability.md`, "Case reasons"). Original notes follow. From PR
   #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
   callback matches a listing by issuer name and serial only. It accepts a CRL
   whose signature verified under any name-matching candidate key, or whose
@@ -390,6 +443,76 @@ timestamps, and local CRL validation already exist.
   reverted it). Identify the listing CRL in `details` instead of reusing
   webpki's `CertRevoked` message. Paired fixtures: same-name rollover issuers,
   an issuer without cRLSign, an unmappable algorithm.
+- [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.**
+  From the PR #60 review. `--fetch-crls` learns which certificates lack a
+  usable CRL by reading `certificates_without_crl` back out of the error's JSON
+  `details` and hex-decoding each `der_hex`. If that schema changes and the
+  list no longer deserializes, retrieval treats the result as final and
+  quietly asks nothing (the same holds for `certificates_with_expired_crl`),
+  so `--fetch-crls` stops fetching with no error. Carry the uncovered certificates' DER
+  beside the error inside the crate, keep the JSON field for consumers, and
+  pin the request sequence with a test.
+  Carry the original certificate bytes through that channel too. Today
+  `CrlRequest.certificate`, its `issuer`, `certificates_without_crl` and
+  `certificate_sha256` all use rssig's re-encoding, which equals the
+  original for DER-conformant input. der sorts a SET OF while decoding, so
+  a certificate whose name has a multi-valued RDN out of DER order reaches a
+  source with an invalid signature and a sorted issuer key, and a portable
+  `crl_certificate_responses` implementation hashing the original bytes
+  disagrees. Add a fixture with such a name before changing it.
+- [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of
+  PR #60 was concluded with these items not changed in that PR. Reasons and
+  references are in
+  [SEC-10](docs/tasks/sec-10-crl-applicability.md) ("Case reasons (PR #60)").
+  Owner decision needed:
+  - A supplied CRL that is unusable for a reason other than expiry (bad
+    signature, `invalid_crl`, not yet valid) is not refreshed by
+    `--fetch-crls`, and a path with one is not named for retrieval
+    (`sec10-fetch-unusable-supplied-crl-not-fetched`, Observed). Bouncy
+    Castle would fetch; OpenSSL and BoringSSL do not fetch at all.
+  - A CRL without nextUpdate that lists a certificate, alone, is
+    `invalid_crl` (`missing_next_update`) rather than `certificate_revoked`
+    (`sec10-no-next-update-crl-revocation-alone-is-invalid`); both reject.
+  Retrieval and the built-in HTTP source:
+  - The CLI's fetch limits are per file, so a batch is bounded only by its
+    file count (up to 16 requests, 32 MiB and 30 s each). Consider an
+    optional batch-wide cap.
+  - A DNS timeout closes the built-in source for the rest of the run, even
+    when only a short remaining deadline caused it. Reopening once the
+    stale resolver finished was reverted (timing-dependent results, and
+    `HttpCrlSource` stopped being `Sync`); find a deterministic,
+    `Sync`-safe way.
+  - `retrieval_trust_bytes` and the other engine limits end the whole
+    verification with `resource_limit_exceeded`, rather than recording the
+    remaining points and finishing with the evidence gathered.
+  - With `fetch_each`, the first over-allowance body of a request is the
+    engine's `resource_limit_exceeded` and later ones the source's
+    `crl_fetch_failed`; the allowance counts accepted bodies only.
+  - A URL-less failure beside an answer by certificate is recorded without
+    the points it concerned.
+  - The built-in URL check lists reserved labels; other private-use suffixes
+    (`.lan`, `.corp`, `.localdomain`) rely on the DNS-answer address check.
+  Report shape:
+  - `CrlRetrievalArtifact.url`/`final_url` are omitted when absent while
+    `CrlRetrievalFailure.url` serializes as `null`; pick one (with
+    PRODUCT-03).
+  - On the RDP fallback path (a revocation that is another error type's
+    source), the merged error loses the outer error's cause messages.
+  - Distribution-point URIs are compared byte for byte (webpki's rule), so a
+    scheme or host that differs only in case does not match.
+  Specification coverage (with TEST-05): the spec's injected CRL source maps
+  URLs or certificates to bodies and error kinds, so it cannot express
+  URL-less failures, whole-request errors, several entries per request, a
+  point shared by certificates of two issuers, or the built-in source's
+  deadline and byte-cap behavior. Those are unit-tested only
+  (`docs/testing.md`); extend the case format before pinning them
+  portably.
+  Not from this PR's changes, found during its review:
+  - `rssig::cli::command()` is a hidden public function kept for the spec
+    runner (#59).
+  - `tests/manifest.rs` `fixtures_are_never_indexed_as_sources` creates its
+    scratch directory without the drop guard its sibling test uses.
+  - The strict root decoding in the CRL prefilter (see SEC-17).
 
 ## P1 — Clean parse/verify interfaces
 
