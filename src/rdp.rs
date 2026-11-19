@@ -241,10 +241,12 @@ fn verify_trust(
 /// could supply is reported ahead of another usage's failure; on a tie, the
 /// first.
 fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
+    // A failure's code is the first verification error in its chain, as
+    // `VerificationError::from_internal` reports it.
     let revoked_at = failures.iter().position(|e| {
         e.chain()
-            .filter_map(|cause| cause.downcast_ref::<VerificationError>())
-            .any(|error| error.code == ErrorCode::CertificateRevoked)
+            .find_map(|cause| cause.downcast_ref::<VerificationError>())
+            .is_some_and(|error| error.code == ErrorCode::CertificateRevoked)
     });
     let Some(position) = revoked_at else {
         let mut chosen: Option<anyhow::Error> = None;
@@ -281,24 +283,32 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
             }
         }
     }
-    let revoked = failures.into_iter().nth(position)?;
-    if gaps.iter().all(Vec::is_empty) {
+    let mut revoked = failures.into_iter().nth(position)?;
+    let add = |error: &mut VerificationError, gaps: [Vec<serde_json::Value>; 2]| {
+        for (key, list) in KEYS.iter().zip(gaps) {
+            if !list.is_empty() {
+                error
+                    .details
+                    .insert((*key).into(), serde_json::Value::Array(list));
+            }
+        }
+    };
+    // The revocation takes the names in place, keeping any context around
+    // it, so the reported causes are the same with or without them.
+    if let Some(error) = revoked
+        .downcast_mut::<VerificationError>()
+        .filter(|error| error.code == ErrorCode::CertificateRevoked)
+    {
+        add(error, gaps);
         return Some(revoked);
     }
-    // The verifier's revocation, wherever it sits in the chain, takes the
-    // names and is reported at the top, where retrieval reads them.
+    // Otherwise (another typed error as context), the revocation is
+    // reported at the top with the names.
     let mut error = revoked
         .chain()
-        .filter_map(|cause| cause.downcast_ref::<VerificationError>())
-        .find(|error| error.code == ErrorCode::CertificateRevoked)?
+        .find_map(|cause| cause.downcast_ref::<VerificationError>())?
         .clone();
-    for (key, list) in KEYS.iter().zip(gaps) {
-        if !list.is_empty() {
-            error
-                .details
-                .insert((*key).into(), serde_json::Value::Array(list));
-        }
-    }
+    add(&mut error, gaps);
     Some(error.into())
 }
 
@@ -398,9 +408,10 @@ mod tests {
             details(&chosen)["certificates_with_expired_crl"],
             serde_json::json!([report("e")])
         );
-        // A revocation under added context still takes the names, at the top.
+        // A revocation under added context takes the names and keeps it.
         let wrapped = revoked(vec![]).context("usage");
         let chosen = choose_usage_failure(vec![wrapped, unknown(vec![report("a")])]).unwrap();
+        assert_eq!(chosen.to_string(), "usage");
         assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
         assert_eq!(
             details(&chosen)["certificates_without_crl"],

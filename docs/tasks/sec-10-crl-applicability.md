@@ -432,7 +432,22 @@ relic 02c54d58 and BoringSSL `main`.
   `PKIXCRLUtil.java:42-45`); OpenSSL has no equivalent (one chain, no fetch).
   `sec10-cross-revoked-path-beside-path-with-expired-crl-names-it`
   (diagnostics), `sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`
-  (acceptance). The revoked path's own certificates are not named. The same
+  (acceptance). The revoked path's own certificates are not named, and
+  neither is anything on a path with a CRL a refresh cannot fix (forged,
+  no cRLSign, `invalid_crl`): that path cannot verify, so no source is asked
+  (unit test `a_revocation_names_only_paths_a_source_could_complete`; the
+  same now holds for `certificates_without_crl`). Named test
+  `sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl`.
+- **With `--fetch-crls`, a definite result is not followed by a check of the
+  rest of the input.** Decided, diagnostics. When the first signer's result
+  is a definite revocation or CRL failure and nothing is asked, it is the
+  result, as without `--fetch-crls`; later nested signatures or bundle
+  members are not checked first. Before PR #60 a pass without revocation ran
+  first with fetching, so an integrity failure elsewhere could be reported
+  instead. Running that pass after a definite result would make the code
+  depend on fetching and spend the work budget twice; both results reject.
+  The pass still runs before any request (privacy), and after an unknown
+  status that names nothing. The same
   holds across an RDP signer's usages. Before, such a certificate was not
   named, and the revocation stood although a refresh could complete the
   other path.

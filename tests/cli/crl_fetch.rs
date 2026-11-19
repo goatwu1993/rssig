@@ -733,6 +733,70 @@ fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
     );
 }
 
+/// SEC-10: one path is revoked and the other's only root CRL has expired.
+/// The revocation names the certificate whose CRL a source could refresh;
+/// offline that is the result, and a source answering with a fresh CRL
+/// completes the other path, as Bouncy Castle would.
+#[test]
+fn sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
+    struct Fresh(Vec<u8>, usize);
+    impl rssig::retrieval::CrlSource for Fresh {
+        fn crls(
+            &mut self,
+            _: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            self.1 += 1;
+            Ok(rssig::retrieval::CrlResponse::new()
+                .with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone())))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = |fetch: bool| {
+        let mut args = vec![
+            "rssig".to_owned(),
+            "verify".to_owned(),
+            "--no-system-roots".to_owned(),
+            "--roots".to_owned(),
+            path("sec06-root.der"),
+            "--roots".to_owned(),
+            path("sec06-other-root.der"),
+            "--time".to_owned(),
+            "1800000000".to_owned(),
+            "--crl".to_owned(),
+            path("sec06-issuer.crl"),
+            "--crl".to_owned(),
+            path("sec10-sec06-other-root-revoked-cross.crl"),
+            "--crl".to_owned(),
+            path("sec06-root-expired.crl"),
+        ];
+        if fetch {
+            args.push("--fetch-crls".to_owned());
+        }
+        args.push(path("good-sec06-cross-first.exe"));
+        args
+    };
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    assert_eq!(
+        rssig::cli::run_with_writers(args(false), &mut out, &mut err).unwrap(),
+        1
+    );
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_revoked");
+    assert_eq!(
+        error["details"]["certificates_with_expired_crl"][0]["sha256"],
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+    );
+    let mut source = Fresh(std::fs::read(base.join("sec06-root.crl")).unwrap(), 0);
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        rssig::cli::run_with_crl_source(args(true), &mut out, &mut err, &mut source).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(code, 0, "{report}");
+    assert_eq!(source.1, 1);
+}
+
 /// SEC-10: one path is revoked and the other only lacks its root's CRL. The
 /// source aborts before that path could be completed: the revocation keeps
 /// its code, and the result marks that retrieval was cut short.

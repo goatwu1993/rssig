@@ -1173,12 +1173,19 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         // policy and has certificates with no CRL at all, or whose only CRLs
         // have expired, could still verify with a current one: they are
         // named, so that a CRL source can be asked about them, as Bouncy
-        // Castle tries every path and fetches past an expired CRL. One whose
-        // only CRL is unusable for another reason is not named.
+        // Castle tries every path and fetches past an expired CRL. Only a
+        // path a source could complete is named: one with a CRL unusable for
+        // another reason (forged, no cRLSign, `invalid_crl`) cannot verify
+        // whatever is fetched, so nothing on it is asked about.
+        let stuck: Vec<usize> = viable
+            .iter()
+            .filter(|o| matches!(&o.outcome, Outcome::Missing(Some((rank, _))) if *rank != EXPIRED))
+            .map(|o| o.path)
+            .collect();
         let open: Vec<&CertificateEvidence> = viable
             .iter()
             .copied()
-            .filter(|o| !revoked_paths.contains(&o.path))
+            .filter(|o| !revoked_paths.contains(&o.path) && !stuck.contains(&o.path))
             .collect();
         let (_, missing) = without_crl(&open);
         let expired = with_expired_crl(&open);
@@ -1613,6 +1620,35 @@ mod revocation_reporting {
     }
     fn failed(rank: u8, code: ErrorCode) -> Outcome {
         Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
+    }
+
+    #[test]
+    fn a_revocation_names_only_paths_a_source_could_complete() {
+        let revoked =
+            || Outcome::Revoked(revocation_error("r", ErrorCode::CertificateRevoked, "x"));
+        let expired = || failed(EXPIRED, ErrorCode::CrlExpired);
+        // Path 1 only lacks or has expired CRLs: both named.
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "m", Outcome::Missing(None)),
+            on_path(1, "e", expired()),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert!(error.details.contains_key("certificates_without_crl"));
+        assert!(error.details.contains_key("certificates_with_expired_crl"));
+        // Path 1 also has a forged CRL that no refresh fixes: nothing on it
+        // is named, so no source is asked.
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "m", Outcome::Missing(None)),
+            on_path(1, "e", expired()),
+            on_path(1, "f", failed(5, ErrorCode::InvalidCrlSignature)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert!(!error.details.contains_key("certificates_without_crl"));
+        assert!(!error.details.contains_key("certificates_with_expired_crl"));
     }
 
     #[test]
