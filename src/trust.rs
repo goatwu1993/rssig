@@ -832,8 +832,23 @@ fn evaluate_crls(
             });
             continue;
         }
-        if authority == Some(true) {
-            usable.get_or_insert(index);
+        match authority {
+            Some(true) => {
+                usable.get_or_insert(index);
+            }
+            Some(false) => {}
+            // webpki can use it, but its scope cannot be read here: reported,
+            // never silently dropped.
+            None => fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
+                        ErrorCode::InvalidCrl,
+                        "CRL issuingDistributionPoint cannot be read",
+                    )
+                    .detail("reason", "issuing_distribution_point"),
+                )
+            }),
         }
     }
     let outcome = match (usable, authenticated_listing) {

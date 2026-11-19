@@ -561,18 +561,45 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Err(e) => {
                 // The whole request failed: every point it carried yielded
                 // nothing, for this certificate and any later one listing it.
+                // The URL the source named keeps its own entry; every other
+                // point of the request is recorded with the same error.
+                for point in points.iter().filter(|p| e.url.as_ref() != Some(p)) {
+                    self.source_failure(sha256, e.clone().with_url(point.clone()));
+                }
                 if points.is_empty() || e.url.is_some() {
                     self.source_failure(sha256, e);
-                } else {
-                    for point in &points {
-                        self.source_failure(sha256, e.clone().with_url(point.clone()));
-                    }
                 }
                 return Ok(false);
             }
         };
+        let unanswered: Vec<String> = points
+            .iter()
+            .filter(|point| {
+                !response.crls.iter().any(|c| c.url.as_ref() == Some(point))
+                    && !response
+                        .failures
+                        .iter()
+                        .any(|f| f.url.as_ref() == Some(point))
+            })
+            .cloned()
+            .collect();
+        // A source that answered by other means (a CRL without a URL, found
+        // by issuer) has not ignored the points.
+        let by_issuer = response.crls.iter().any(|c| c.url.is_none());
         for failure in response.failures {
             self.source_failure(sha256, failure);
+        }
+        // A point the source neither answered nor reported is recorded, so
+        // that no listed point disappears from the report; after an abort the
+        // rest were never tried, and the abort explains them.
+        if !by_issuer && !self.aborted {
+            for point in &unanswered {
+                let e = error(
+                    ErrorCode::CrlFetchFailed,
+                    "the CRL source returned nothing for this point",
+                );
+                self.skip(sha256, Some(point), e, None);
+            }
         }
         let mut added = false;
         let mut total = 0usize;
@@ -1206,6 +1233,37 @@ mod tests {
             state.report.failures[0].details["resource"],
             "crl_response_bytes"
         );
+    }
+    #[test]
+    fn no_listed_point_disappears_from_the_report() {
+        // A source that ignores the points, and one whose whole-request
+        // error names only one of them: every point is still recorded.
+        struct Ignores;
+        impl CrlSource for Ignores {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new())
+            }
+        }
+        struct NamesOne;
+        impl CrlSource for NamesOne {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                    .with_url(request.distribution_points[0].clone()))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        for source in [&mut Ignores as &mut dyn CrlSource, &mut NamesOne] {
+            let mut state = Retrieval::new(&store, &budget);
+            ask(&mut state, "a", &signer_with_points("a", 2), source).unwrap();
+            let urls: Vec<_> = state
+                .report
+                .failures
+                .iter()
+                .filter_map(|f| f.url.clone())
+                .collect();
+            assert_eq!(urls.len(), 2, "{urls:?}");
+        }
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {
