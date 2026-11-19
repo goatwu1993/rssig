@@ -110,9 +110,6 @@ pub struct HttpCrlSource {
     bytes: usize,
     started: Option<Instant>,
     poisoned: bool,
-    /// The channel of a resolver that timed out: once it has an answer or
-    /// is closed, that thread has finished and the source may reopen.
-    stale_dns: Option<mpsc::Receiver<std::io::Result<Vec<SocketAddr>>>>,
 }
 impl HttpCrlSource {
     pub fn new() -> Self {
@@ -122,21 +119,11 @@ impl HttpCrlSource {
     /// are bounded per verification, as in OpenSSL and Bouncy Castle, where
     /// nothing one validation fetched is charged to the next. The engine
     /// calls this through [`CrlSource::begin_verification`]. A DNS timeout
-    /// closes the source until that resolver has finished, so that no more than one unfinished
+    /// still closes the source for good, so that no more than one unfinished
     /// resolver worker can exist.
     fn renew(&mut self) {
-        // A source closed by a DNS timeout reopens only once that resolver
-        // has finished, so at most one unfinished resolver thread exists.
-        // Without a handle (none was kept) it cannot be known: stay closed.
-        let had_handle = self.stale_dns.is_some();
-        let stale = self
-            .stale_dns
-            .take()
-            .filter(|rx| matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
-        let poisoned = self.poisoned && (stale.is_some() || !had_handle);
         *self = Self {
-            poisoned,
-            stale_dns: stale,
+            poisoned: self.poisoned,
             ..Self::default()
         };
     }
@@ -182,7 +169,6 @@ impl HttpCrlSource {
             })?,
             Err(_) => {
                 self.poisoned = true;
-                self.stale_dns = Some(rx);
                 return Err(dns_timeout());
             }
         };
@@ -719,33 +705,6 @@ mod tests {
         );
     }
     #[test]
-    fn a_source_reopens_once_its_timed_out_resolver_has_finished() {
-        // The resolver is still running: the source stays closed.
-        let (tx, rx) = mpsc::sync_channel::<std::io::Result<Vec<SocketAddr>>>(1);
-        let mut source = HttpCrlSource {
-            poisoned: true,
-            stale_dns: Some(rx),
-            ..HttpCrlSource::new()
-        };
-        CrlSource::begin_verification(&mut source);
-        assert!(source.poisoned);
-        // It has finished (sent its answer, or ended): the next verification
-        // may start a resolver again, so at most one is ever unfinished.
-        tx.send(Ok(Vec::new())).unwrap();
-        CrlSource::begin_verification(&mut source);
-        assert!(!source.poisoned);
-        assert!(source.stale_dns.is_none());
-        let (tx, rx) = mpsc::sync_channel::<std::io::Result<Vec<SocketAddr>>>(1);
-        drop(tx);
-        let mut source = HttpCrlSource {
-            poisoned: true,
-            stale_dns: Some(rx),
-            ..HttpCrlSource::new()
-        };
-        CrlSource::begin_verification(&mut source);
-        assert!(!source.poisoned);
-    }
-    #[test]
     fn a_source_closed_by_a_dns_timeout_aborts_every_request_even_after_a_new_verification() {
         let mut source = HttpCrlSource {
             poisoned: true,
@@ -782,7 +741,6 @@ mod tests {
             bytes: MAX_TOTAL_BYTES,
             started: Some(Instant::now() - DEADLINE),
             poisoned: false,
-            stale_dns: None,
         };
         // The engine does this at the start of each verification.
         CrlSource::begin_verification(&mut source);

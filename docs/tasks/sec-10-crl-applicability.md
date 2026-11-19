@@ -501,7 +501,7 @@ relic 02c54d58 and BoringSSL `main`.
   `sec10-fetch-by-certificate-answer-requests-no-listed-point`. When that
   answer does not settle the certificate's status (for example an expired
   CRL), the listed points the source left unused are recorded as
-  `crl_fetch_failed` ("not requested"), so that no listed point disappears
+  `crl_fetch_failed` ("not used"), so that no listed point disappears
   from the report of a failed retrieval (written argument, diagnostics):
   `sec10-fetch-by-certificate-unusable-answer-records-unused-points`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
@@ -698,14 +698,17 @@ relic 02c54d58 and BoringSSL `main`.
   still read to its end (`a_body_ending_exactly_at_the_byte_cap_still_reads_its_end`),
   with the byte limit reported ahead of the deadline. A URL that does not
   parse is reported as not an absolute URL.
-- **A source reopens once a timed-out resolver has finished.** The
-  built-in source keeps the channel of a DNS lookup that timed out; at the
-  next verification it reopens if that thread has finished, and stays closed
-  while it runs, so at most one unfinished resolver exists and a short
-  deadline in one file does not close the source for the rest of a batch
-  (`a_source_reopens_once_its_timed_out_resolver_has_finished`). An abort
-  among a response's URL-less failures marks the points left as not tried
+- **A DNS timeout still closes the built-in source for the run.** Reopening
+  once the stale resolver finished was tried in review and reverted: it made
+  a batch's result depend on thread timing and made `HttpCrlSource` stop
+  being `Sync`. The close keeps at most one unfinished resolver thread.
+- **A URL-less abort marks the points left as not tried.** When a response
+  carries an `Abort` without a URL (about the whole request), the points
+  left are recorded as `crl_fetch_aborted`, not tried, even beside another
+  URL-less failure; an abort naming one point does not relabel the others
   (`points_left_after_an_abort_among_url_less_failures_are_not_tried`).
+  The spec's injected source maps URLs to error kinds and cannot return
+  URL-less failures, so this is unit-tested only.
 - **Deadline during I/O.** Each DNS, connect, read and write wait is cut
   to the time left, so an I/O failure once the deadline has passed is
   reported as the deadline (`abort`); a request that completed and failed

@@ -33689,7 +33689,7 @@
         "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
         "references": [
           "OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls) and Bouncy Castle CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): CRLs are looked up by issuer, with no per-distribution-point outcome, so an answer by certificate leaves no per-point failure when it settles the status.",
-          "Written argument for the other case: when that answer does not settle the status, the report must still account for every listed point (docs/crl-retrieval.md: no listed point disappears from the report), so the points the source did not use are recorded as not requested."
+          "Written argument for the other case: when that answer does not settle the status, the report must still account for every listed point (docs/crl-retrieval.md: no listed point disappears from the report), so the points the source did not use are recorded as not used."
         ]
       },
       "crl_responses": {},

@@ -685,8 +685,8 @@ uses it to start its allowances (16 requests, 32 MiB, 30 seconds from its first
 fetch) afresh, so one instance can serve many files; the CLI relies on this.
 A source of your own that keeps per-verification allowances should do the
 same; the default does nothing, and a source that delegates to another must
-forward it. A DNS timeout closes the built-in source until that lookup has
-finished.
+forward it. A DNS timeout closes the built-in source for good, whatever a
+later verification does.
 
 Results: missing evidence is `revocation_unknown` (with each problem in
 `crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;

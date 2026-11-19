@@ -814,6 +814,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // recorded with it and none as "returned nothing".
         // The first such failure answers the points; every other one is
         // still recorded as it is, and an `Abort` among them stops retrieval.
+        // An abort about the whole request (no URL): the points left were
+        // not tried, whatever other URL-less failure came with it.
+        let whole_abort = response
+            .failures
+            .iter()
+            .any(|f| f.url.is_none() && f.kind == CrlSourceErrorKind::Abort);
         let mut whole_request = None;
         for failure in response.failures {
             if failure.url.is_none() && !unanswered.is_empty() && whole_request.is_none() {
@@ -829,9 +835,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if let Some(failure) = whole_request {
             // Beside an answer by certificate, such a failure is recorded as
             // it is: the points were not used, so it is not about them. So
-            // is one beside an abort the source reported elsewhere in this
-            // response: the points left were not tried, as recorded below.
-            let aborted_elsewhere = self.aborted && failure.kind != CrlSourceErrorKind::Abort;
+            // is one beside a URL-less abort in this response: the points
+            // left were not tried, as recorded below.
+            let aborted_elsewhere = whole_abort && failure.kind != CrlSourceErrorKind::Abort;
             if loaded.by_certificate && failure.kind != CrlSourceErrorKind::Abort
                 || aborted_elsewhere
             {
@@ -2070,6 +2076,31 @@ mod tests {
             points,
             [ErrorCode::CrlFetchAborted, ErrorCode::CrlFetchAborted]
         );
+    }
+    #[test]
+    fn an_abort_naming_one_point_does_not_relabel_the_others() {
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "policy"))
+                    .with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Abort, "stop")
+                            .with_url(request.distribution_points[0].clone()),
+                    ))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("p", 2), &mut Source).unwrap();
+        let second = state
+            .report
+            .failures
+            .iter()
+            .find(|f| f.url.as_deref() == Some("http://crl.example.invalid/p-1.crl"))
+            .unwrap();
+        assert_eq!(second.code, ErrorCode::CrlFetchDenied);
     }
     #[test]
     fn a_certificate_named_twice_is_one_target() {
