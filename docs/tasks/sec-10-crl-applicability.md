@@ -577,6 +577,11 @@ relic 02c54d58 and BoringSSL `main`.
     has an earlier verification's allowances charged to a later one. Unit
     tests `a_source_is_told_when_a_verification_begins` and
     `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
+  - A source closed by a DNS timeout aborts every later request before any
+    work, including a URL its policy would refuse (reported `abort`, not
+    `denied`) and across later verifications, so no request is spent and the
+    "closed for good" contract holds
+    (`a_source_closed_by_a_dns_timeout_aborts_every_request_even_after_a_new_verification`).
   - Re-offered points are bounded by `crl_requests` (64 source requests per
     verification), not by `crl_source_urls`
     (`re_offered_points_are_bounded_by_the_request_limit`).

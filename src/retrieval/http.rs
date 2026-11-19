@@ -308,6 +308,14 @@ impl HttpCrlSource {
     fn fetch_one(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         // Whether the source was already spent before this request: then
         // nothing this request reports is about its own URL.
+        // A source closed by a DNS timeout does no work at all, whatever the
+        // URL: no request is spent and nothing is called denied.
+        if self.poisoned {
+            return Err(CrlSourceError::new(
+                CrlSourceErrorKind::Abort,
+                "CRL source is closed after a DNS timeout",
+            ));
+        }
         let spent_before = self.requests >= MAX_REQUESTS
             || self.bytes >= MAX_TOTAL_BYTES
             || self.started.is_some() && self.remaining().is_err();
@@ -578,6 +586,21 @@ mod tests {
         );
         let budget = limit("crl_http_requests", MAX_REQUESTS, MAX_REQUESTS, 1);
         assert_eq!(source_error_kind(&budget, false), CrlSourceErrorKind::Abort);
+    }
+    #[test]
+    fn a_source_closed_by_a_dns_timeout_aborts_every_request_even_after_a_new_verification() {
+        let mut source = HttpCrlSource {
+            poisoned: true,
+            ..HttpCrlSource::new()
+        };
+        CrlSource::begin_verification(&mut source);
+        // A URL the policy would refuse, and one it would allow: both abort
+        // before any work, so no request is spent and none is called denied.
+        for url in ["http://127.0.0.1/x.crl", "http://example.com/x.crl"] {
+            let e = source.fetch_one(url, 10).expect_err("a closed source");
+            assert_eq!(e.kind, CrlSourceErrorKind::Abort, "{url}");
+        }
+        assert_eq!(source.requests, 0);
     }
     #[test]
     fn a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good() {
