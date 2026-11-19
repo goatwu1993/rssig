@@ -275,6 +275,7 @@ impl TrustStore {
         // CRLs chosen for an accepted path.
         let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
         let chosen: core::cell::RefCell<Vec<usize>> = Default::default();
+        let paths_evaluated = core::cell::Cell::new(0usize);
         // Rejecting a candidate path here is non-fatal: webpki tries other
         // issuers and reports the most specific rejection by its error rank.
         let invalid_ca_usage = core::cell::Cell::new(false);
@@ -309,6 +310,8 @@ impl TrustStore {
                     .ok_or(webpki::Error::UnknownIssuer)?;
                 // Every certificate is evaluated, so that an unknown status
                 // names every certificate without a usable CRL at once.
+                let path_index = paths_evaluated.get();
+                paths_evaluated.set(path_index + 1);
                 let mut path_chosen = Vec::new();
                 let mut rejected = None;
                 for (depth, cert) in path_certificates.iter().enumerate() {
@@ -317,7 +320,7 @@ impl TrustStore {
                         None => IssuerKey::of(&anchor, true),
                     }
                     .map_err(|_| webpki::Error::BadDer)?;
-                    let evidence = evaluate_crls(
+                    let mut evidence = evaluate_crls(
                         cert,
                         depth == 0,
                         &issuer,
@@ -341,6 +344,7 @@ impl TrustStore {
                         },
                     )
                     .ok_or(webpki::Error::BadDer)?;
+                    evidence.path = path_index;
                     match &evidence.outcome {
                         Outcome::Good(index) => path_chosen.push(*index),
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -647,6 +651,8 @@ impl IssuerKey {
 
 /// What one certificate's CRLs established on one candidate path.
 struct CertificateEvidence {
+    /// The candidate path it was evaluated on, in the order webpki tried them.
+    path: usize,
     sha256: String,
     der: Vec<u8>,
     outcome: Outcome,
@@ -859,6 +865,7 @@ fn evaluate_crls(
         (None, _) => Outcome::Missing(failure),
     };
     Some(CertificateEvidence {
+        path: 0,
         sha256,
         der,
         outcome,
@@ -880,12 +887,37 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     if outcomes.is_empty() {
         return None;
     }
-    if let Some(error) = outcomes.iter().find_map(|o| match &o.outcome {
+    let revoked_paths: Vec<usize> = outcomes
+        .iter()
+        .filter(|o| matches!(o.outcome, Outcome::Revoked(_)))
+        .map(|o| o.path)
+        .collect();
+    let first_revocation = outcomes.iter().find_map(|o| match &o.outcome {
         Outcome::Revoked(error) => Some(error.clone()),
         _ => None,
-    }) {
-        return Some(error);
+    });
+    // A revocation on one candidate path decides only when no other path
+    // lacks evidence that a CRL source could still supply: otherwise the
+    // status is unknown for those paths, so that retrieval can complete one.
+    let open: Vec<&CertificateEvidence> = outcomes
+        .iter()
+        .filter(|o| !revoked_paths.contains(&o.path))
+        .collect();
+    let lacking = open
+        .iter()
+        .any(|o| matches!(o.outcome, Outcome::Missing(None)));
+    match first_revocation {
+        Some(revoked) if lacking => {
+            unknown_status(&open).map(|unknown| unknown.detail("revoked_on_another_path", revoked))
+        }
+        Some(revoked) => Some(revoked),
+        None => unknown_status(&open),
     }
+}
+
+/// The failure for paths without a revocation: unknown status naming every
+/// certificate without any CRL, else the most specific unusable CRL.
+fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError> {
     // Each certificate in full, so that a CRL source can be asked about it
     // whichever candidate path it was on.
     let mut seen: Vec<&str> = Vec::new();
@@ -1106,8 +1138,12 @@ mod revocation_reporting {
     use super::*;
 
     fn evidence(sha: &str, outcome: Outcome) -> CertificateEvidence {
+        on_path(0, sha, outcome)
+    }
+    fn on_path(path: usize, sha: &str, outcome: Outcome) -> CertificateEvidence {
         let der = include_bytes!("../tests/fixtures/sec06-issuer.der").to_vec();
         CertificateEvidence {
+            path,
             sha256: sha.into(),
             der,
             outcome,
@@ -1155,6 +1191,48 @@ mod revocation_reporting {
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
         assert_eq!(error.details["affected_certificate"], "c");
+    }
+
+    #[test]
+    fn a_revocation_decides_only_when_no_other_path_could_still_be_completed() {
+        let revoked = || Outcome::Revoked(webpki_revocation_error("r", webpki::Error::CertRevoked));
+        // One path revoked, another only lacking a CRL: retrieval could
+        // complete the other, so the status is unknown and names its gap.
+        let error = revocation_failure(&[
+            on_path(0, "leaf", Outcome::Good(0)),
+            on_path(0, "r", revoked()),
+            on_path(1, "leaf", Outcome::Good(0)),
+            on_path(1, "m", Outcome::Missing(None)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::RevocationUnknown);
+        assert_eq!(
+            error.details["certificates_without_crl"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            error.details["revoked_on_another_path"]["code"],
+            "certificate_revoked"
+        );
+        // Every path revoked: the revocation decides.
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "m", Outcome::Missing(None)),
+            on_path(1, "r", revoked()),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        // A path with no revocation problem (rejected for another reason)
+        // leaves the revocation deciding.
+        let error = revocation_failure(&[
+            on_path(0, "r", revoked()),
+            on_path(1, "leaf", Outcome::Good(0)),
+        ])
+        .unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
     }
 
     #[test]

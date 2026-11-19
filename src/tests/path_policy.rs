@@ -576,6 +576,16 @@ pub(super) fn write(dir: &std::path::Path) {
         None,
         Some(&ca),
     );
+    // SEC-10: a full other-root CRL that revokes the cross certificate (the
+    // issuer re-signed by the other root, same serial), so that one candidate
+    // path is revoked while the other only lacks a root CRL.
+    write_scoped_crl(
+        dir,
+        "sec10-sec06-other-root-revoked-cross.crl",
+        (&other, &other_key),
+        None,
+        Some(&ca),
+    );
     for label in [
         "leaf-ca",
         "leaf-no-bc",
@@ -978,6 +988,12 @@ fn sec10_distribution_point_forms_are_signed_and_encoded() {
     assert_crl(
         "sec10-sec06-root-revoked-issuer.crl",
         &root,
+        None,
+        &[ISSUER_SERIAL],
+    );
+    assert_crl(
+        "sec10-sec06-other-root-revoked-cross.crl",
+        &committed_certificate("sec06-other-root.der"),
         None,
         &[ISSUER_SERIAL],
     );

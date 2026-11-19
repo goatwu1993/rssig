@@ -575,6 +575,43 @@ fn sec10_revoked_intermediate_is_rejected_whatever_the_crl_order() {
     }
 }
 
+/// Two candidate paths: the cross certificate under the other root, which
+/// that root's CRL revokes, and the issuer under the root. Without the root's
+/// CRL the second path only lacks evidence, so the status is unknown and
+/// names that gap; with it, the second path verifies.
+#[test]
+fn sec10_a_revoked_path_does_not_decide_while_another_path_lacks_a_crl() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("good-sec06-cross-first.exe", &args)
+    };
+    let output = run(&[]);
+    revocation_failure(&output, "revocation_unknown", "Revocation status unknown");
+    let details = &output.json["results"][0]["error"]["details"];
+    assert_eq!(
+        details["revoked_on_another_path"]["code"],
+        "certificate_revoked"
+    );
+    let missing = details["certificates_without_crl"].as_array().unwrap();
+    assert_eq!(missing.len(), 1);
+    assert_eq!(missing[0]["subject"]["display"], "CN=SEC-06 issuer");
+    revocation_good(&run(&["--crl", "fixtures/sec06-root.crl"]));
+}
+
 /// `good.crl`: thisUpdate and nextUpdate in seconds.
 const CRL_THIS_UPDATE: u64 = 1_799_999_900;
 const CRL_NEXT_UPDATE: u64 = 1_800_001_000;

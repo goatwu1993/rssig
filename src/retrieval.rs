@@ -22,6 +22,8 @@ pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
 /// Requests to a [`CrlSource`] per verification, one per certificate.
 pub const MAX_SOURCE_REQUESTS: usize = 64;
+/// CRL bodies and failures one [`CrlResponse`] may carry together.
+pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
 /// The single interface through which the engine obtains CRLs, asked once per
 /// certificate, like OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by
@@ -483,6 +485,26 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if self.aborted {
             return Ok(false);
         }
+        // The issuer name is the key for a source that stores CRLs by
+        // issuer; a certificate without a readable one is not asked about.
+        let decoded_issuer;
+        let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
+            Some(issuer) => issuer,
+            None => match ::der::Encode::to_der(&cert.tbs_certificate.issuer) {
+                Ok(encoded) => {
+                    decoded_issuer = encoded;
+                    &decoded_issuer
+                }
+                Err(_) => {
+                    let e = error(
+                        ErrorCode::InvalidCertificate,
+                        "certificate issuer name cannot be read for a CRL request",
+                    );
+                    self.skip(sha256, None, e, None);
+                    return Ok(false);
+                }
+            },
+        };
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // The engine's own per-certificate URL limits end the run.
@@ -538,15 +560,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if max_bytes == 0 {
             return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
         }
-        let decoded_issuer;
-        let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
-            Some(issuer) => issuer,
-            None => {
-                decoded_issuer =
-                    ::der::Encode::to_der(&cert.tbs_certificate.issuer).unwrap_or_default();
-                &decoded_issuer
-            }
-        };
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
         self.requests += 1;
         self.budget.log.info(
@@ -572,6 +585,17 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 return Ok(false);
             }
         };
+        // Every body and failure becomes a report entry: the engine bounds
+        // how many one response may carry.
+        let entries = response.crls.len().saturating_add(response.failures.len());
+        if entries > MAX_RESPONSE_ENTRIES {
+            return Err(limit(
+                "crl_response_entries",
+                MAX_RESPONSE_ENTRIES,
+                0,
+                entries,
+            ));
+        }
         // A point is answered by a CRL or failure naming it, compared as
         // URLs (a source may report the normalized form).
         let answers = |url: &Option<String>, point: &str| {
@@ -720,14 +744,12 @@ fn retrieve(
             // certificate evaluation), the selected certificates are found
             // once by verifying without revocation, where integrity and
             // trust failures end the run.
-            let missing: Option<Vec<CertificateReport>> = unknown
-                .details
-                .get("certificates_without_crl")
-                .and_then(|v| serde_json::from_value(v.clone()).ok())
-                // An empty list names nothing to ask about: fall back.
-                .filter(|reports: &Vec<CertificateReport>| !reports.is_empty());
-            let targets = match missing {
-                Some(reports) => {
+            let targets = match uncovered(unknown) {
+                // webpki rejected the path rssig's own evaluation accepted:
+                // every certificate on it had a usable CRL, so no source can
+                // help, and asking about covered certificates is refused.
+                Uncovered::Final => break,
+                Uncovered::Listed(reports) => {
                     let mut targets = Vec::new();
                     for report in &reports {
                         budget
@@ -744,7 +766,7 @@ fn retrieve(
                     }
                     targets
                 }
-                None => match &selected {
+                Uncovered::Unlisted => match &selected {
                     Some(selected) => selected.clone(),
                     None => selected
                         .insert(selected_certificates(bytes, options, format, budget)?)
@@ -790,6 +812,32 @@ fn retrieve(
             Ok(verified)
         }
         Err(e) => Err(e.detail("crl_retrieval", state.report)),
+    }
+}
+
+/// What an unknown revocation status tells retrieval to ask about.
+enum Uncovered {
+    /// The certificates the verifier reports without a usable CRL.
+    Listed(Vec<CertificateReport>),
+    /// No source can help: the status is final.
+    Final,
+    /// Not named: the selected certificates, found by verifying without
+    /// revocation.
+    Unlisted,
+}
+
+fn uncovered(unknown: &VerificationError) -> Uncovered {
+    if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("confirmation") {
+        return Uncovered::Final;
+    }
+    match unknown
+        .details
+        .get("certificates_without_crl")
+        .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
+    {
+        // An empty list names nothing to ask about.
+        Some(reports) if !reports.is_empty() => Uncovered::Listed(reports),
+        _ => Uncovered::Unlisted,
     }
 }
 
@@ -1334,6 +1382,71 @@ mod tests {
                 .count();
             assert_eq!(urls, 2, "{certificate}: {:?}", state.report.failures);
         }
+    }
+    #[test]
+    fn a_response_with_too_many_entries_ends_the_run() {
+        // Each body and failure becomes a report entry: the engine bounds how
+        // many one response may carry, whatever the source does.
+        struct Floods(usize, usize);
+        impl CrlSource for Floods {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new();
+                for _ in 0..self.0 {
+                    response = response.with_crl(SourcedCrl::new(Vec::new()));
+                }
+                for _ in 0..self.1 {
+                    response = response
+                        .with_failure(CrlSourceError::new(CrlSourceErrorKind::Failed, "down"));
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        for (bodies, failures) in [
+            (MAX_RESPONSE_ENTRIES + 1, 0),
+            (0, MAX_RESPONSE_ENTRIES + 1),
+            (MAX_RESPONSE_ENTRIES, 1),
+        ] {
+            let budget = Budget::default();
+            let mut state = Retrieval::new(&store, &budget);
+            let e = ask(
+                &mut state,
+                "a",
+                &signer_with_points("a", 1),
+                &mut Floods(bodies, failures),
+            )
+            .unwrap_err();
+            assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
+            assert_eq!(e.details["resource"], "crl_response_entries");
+            assert!(state.report.artifacts.is_empty());
+        }
+        // At the limit, every entry is taken.
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 1),
+            &mut Floods(MAX_RESPONSE_ENTRIES, 0),
+        )
+        .unwrap();
+        assert_eq!(state.report.artifacts.len(), MAX_RESPONSE_ENTRIES);
+    }
+    #[test]
+    fn a_confirmation_disagreement_is_final_for_retrieval() {
+        let unknown = || error(ErrorCode::RevocationUnknown, "unknown");
+        // webpki rejected the path every certificate of which had a CRL.
+        assert!(matches!(
+            uncovered(&unknown().detail("reason", "confirmation")),
+            Uncovered::Final
+        ));
+        assert!(matches!(uncovered(&unknown()), Uncovered::Unlisted));
+        assert!(matches!(
+            uncovered(
+                &unknown().detail("certificates_without_crl", Vec::<CertificateReport>::new())
+            ),
+            Uncovered::Unlisted
+        ));
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {

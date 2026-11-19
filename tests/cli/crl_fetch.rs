@@ -482,8 +482,16 @@ fn sec10_fetch_follows_the_verification_result() {
                 .collect();
             let artifacts = result["crl_retrieval"]["artifacts"].as_array().unwrap();
             assert_eq!(artifacts.len(), answered.len(), "{label}");
+            // Each artifact names the chain certificate it was asked for: the
+            // issuer's point for the issuer, any other for the signer.
+            let chain = &result["signatures"][0]["trust"]["chain"];
             for (artifact, request) in artifacts.iter().zip(&answered) {
                 assert_eq!(artifact["url"], **request, "{label}");
+                let depth = usize::from(**request == CA_POINT);
+                assert_eq!(
+                    artifact["certificate_sha256"], chain[depth]["sha256"],
+                    "{label}"
+                );
             }
             // Every unanswered request, and the mixed signer's partitioned point, is a
             // reported failure.
@@ -556,6 +564,14 @@ fn sec10_fetch_asks_only_the_certificate_without_a_crl() {
     assert_eq!(failures.len(), 1);
     assert_eq!(failures[0]["url"], "http://crl.invalid/sec10-issuer.crl");
     assert_eq!(failures[0]["code"], "crl_fetch_failed");
+    // The failure names the certificate it was for: the issuer, the one
+    // certificate the verifier reported without a CRL.
+    let issuer = "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb";
+    assert_eq!(failures[0]["certificate_sha256"], issuer);
+    assert_eq!(
+        error["details"]["certificates_without_crl"][0]["sha256"],
+        issuer
+    );
 }
 
 /// SEC-10: a response that is not a CRL, and a failed request, are no evidence;

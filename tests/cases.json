@@ -32295,6 +32295,86 @@
       }
     },
     {
+      "id": "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+      "input": "good-sec06-cross-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "revoked_on_another_path": {
+                    "code": "certificate_revoked"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-cross-revoked-path-beside-covered-path-verifies",
+      "input": "good-sec06-cross-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--crl",
+        "fixtures/sec06-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-crl-this-update-one-second-ahead",
       "input": "good-pe64.exe",
       "command": [
@@ -33206,13 +33286,15 @@
                     "url": "http://crl.invalid/sec10-a.crl",
                     "final_url": "http://crl.invalid/sec10-a.crl",
                     "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
-                    "bytes": 233
+                    "bytes": 233,
+                    "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
                   },
                   {
                     "url": "http://crl.invalid/sec10-issuer.crl",
                     "final_url": "http://crl.invalid/sec10-issuer.crl",
                     "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
-                    "bytes": 180
+                    "bytes": 180,
+                    "certificate_sha256": "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb"
                   }
                 ]
               },
@@ -33423,7 +33505,8 @@
                     "failures": [
                       {
                         "url": "http://crl.invalid/sec10-issuer.crl",
-                        "code": "crl_fetch_failed"
+                        "code": "crl_fetch_failed",
+                        "certificate_sha256": "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb"
                       }
                     ]
                   }

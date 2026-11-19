@@ -23,7 +23,13 @@ rule is restated for retrieval.
    CRL decides). An unknown status names, in
    `details.certificates_without_crl`, every certificate on a tried path that
    has no CRL at all, each in full (`unusable_crl` adds the most specific CRL
-   that exists but could not be used).
+   that exists but could not be used). A revocation on one candidate path
+   decides only when no other tried path lacks a CRL: otherwise the status is
+   unknown for those paths, with the revocation in
+   `details.revoked_on_another_path`, so that retrieval can complete one
+   (`sec10-cross-revoked-path-beside-path-without-crl-is-unknown`). An unknown
+   status from webpki's confirmation of a path whose every certificate had a
+   CRL (`details.reason` `confirmation`) is final: no source is asked.
 2. Ask the source about exactly those certificates, once each, as OpenSSL's
    `get_crl` and Bouncy Castle look up CRLs for the certificate being
    checked; a certificate that a supplied CRL covers is never asked about
@@ -40,7 +46,8 @@ Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: requests to the source (64 per
   verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
-  passed to it (64 per verification), retained CRLs, combined bytes, URLs per
+  passed to it (64 per verification), CRL bodies and failures in one response
+  (64, `MAX_RESPONSE_ENTRIES`), retained CRLs, combined bytes, URLs per
   certificate and URL length, and the SEC-02 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
@@ -164,7 +171,8 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject local/single-label names and nonpublic/reserved literal addresses; reject an entire DNS answer containing nonpublic addresses |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source per verification (one per certificate), and and 16 HTTP hops per HTTP source (redirects included) |
+| Requests | At most 64 requests to the source per verification (one per certificate), and 16 HTTP hops per HTTP source (redirects included) |
+| Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |

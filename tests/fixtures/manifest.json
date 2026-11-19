@@ -7261,7 +7261,9 @@
       },
       "cases": [
         "good-sec06-cross-first",
-        "good-sec06-cross-other-root"
+        "good-sec06-cross-other-root",
+        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
@@ -7617,7 +7619,9 @@
         "sec10-leaf-crl-dp-mixed-full-crl",
         "sec10-fetch-asks-only-the-uncovered-certificate",
         "sec10-leaf-crl-dp-https-full-crl",
-        "sec10-fetch-source-is-asked-for-any-scheme"
+        "sec10-fetch-source-is-asked-for-any-scheme",
+        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
@@ -7812,7 +7816,9 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-cross-other-root"
+        "good-sec06-cross-other-root",
+        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
@@ -7989,7 +7995,8 @@
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-fetch-builtin-source-denies-https",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
@@ -8102,7 +8109,9 @@
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-fetch-builtin-source-denies-https",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
@@ -9953,6 +9962,18 @@
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-revoked-issuer-issuer-crl-first"
+      ]
+    },
+    {
+      "file": "sec10-sec06-other-root-revoked-cross.crl",
+      "sha256": "fb97e26855f42eb9735347fcd8723e24e8b8343a8c2d3d5d4a7700ec5ba16e04",
+      "bytes": 209,
+      "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 other root (no issuingDistributionPoint) revoking serial 110, the cross certificate (the SEC-06 issuer re-signed by the other root). Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
     {
