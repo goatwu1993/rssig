@@ -7262,7 +7262,7 @@
       "cases": [
         "good-sec06-cross-first",
         "good-sec06-cross-other-root",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
@@ -7620,7 +7620,7 @@
         "sec10-fetch-asks-only-the-uncovered-certificate",
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
@@ -7817,7 +7817,7 @@
       },
       "cases": [
         "good-sec06-cross-other-root",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
@@ -8110,7 +8110,7 @@
         "sec10-fetch-builtin-source-denies-https",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies"
       ]
     },
@@ -9934,7 +9934,8 @@
       "cases": [
         "sec10-ca-crl-dp-ca-scope-covers-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched"
+        "sec10-fetch-ca-ca-scope-idp-not-fetched",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
@@ -9973,9 +9974,10 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path"
+        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl"
       ]
     },
     {
@@ -9986,7 +9988,8 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
+        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {

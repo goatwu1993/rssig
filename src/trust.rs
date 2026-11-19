@@ -910,7 +910,8 @@ fn names_another_key(crl_key: Option<&Vec<u8>>, issuer_key: Option<&[u8]>) -> bo
 /// The error for a revocation rejection, from what the candidate paths
 /// established: a revocation first, then the most specific reason a CRL could
 /// not be used, else unknown status naming every certificate that lacked a
-/// usable CRL.
+/// usable CRL. Only paths that pass every other path policy decide, unless
+/// none does.
 fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
     if outcomes.is_empty() {
         return None;
@@ -924,32 +925,35 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         Outcome::Revoked(error) => Some(error.clone()),
         _ => None,
     });
-    // A revocation on one candidate path decides unless another path passes
-    // every other path policy and has a certificate with no CRL at all: then
-    // the status is unknown, so that retrieval can complete that path. A
-    // certificate whose only CRL is stale or unusable does not keep a path
-    // open, as such a certificate is never offered to a CRL source.
-    let open: Vec<&CertificateEvidence> = outcomes
-        .iter()
-        .filter(|o| !revoked_paths.contains(&o.path))
-        .collect();
-    let lacking = open
-        .iter()
-        .any(|o| o.path_viable && matches!(o.outcome, Outcome::Missing(None)));
-    match first_revocation {
-        Some(revoked) if lacking => {
-            unknown_status(&open).map(|unknown| unknown.detail("revoked_on_another_path", revoked))
-        }
-        Some(revoked) => Some(revoked),
-        None => unknown_status(&open),
+    if let Some(revoked) = first_revocation {
+        // A revocation decides. Another path that passes every other path
+        // policy and has certificates with no CRL at all could still verify
+        // with one: they are named, so that a CRL source can be asked about
+        // them. A certificate whose only CRL is stale or unusable is not, as
+        // such a certificate is never offered to a source.
+        let open: Vec<&CertificateEvidence> = outcomes
+            .iter()
+            .filter(|o| o.path_viable && !revoked_paths.contains(&o.path))
+            .collect();
+        let (_, missing) = without_crl(&open);
+        return Some(if missing.is_empty() {
+            revoked
+        } else {
+            revoked.detail("certificates_without_crl", missing)
+        });
+    }
+    let viable: Vec<&CertificateEvidence> = outcomes.iter().filter(|o| o.path_viable).collect();
+    if viable.is_empty() {
+        unknown_status(&outcomes.iter().collect::<Vec<_>>())
+    } else {
+        unknown_status(&viable)
     }
 }
 
-/// The failure for paths without a revocation: unknown status naming every
-/// certificate without any CRL, else the most specific unusable CRL.
-fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError> {
-    // Each certificate in full, so that a CRL source can be asked about it
-    // whichever candidate path it was on.
+/// The certificates with no CRL at all, once each, and whether there were
+/// any. A certificate whose report cannot be built still counts; it is only
+/// not offered for retrieval by name.
+fn without_crl(outcomes: &[&CertificateEvidence]) -> (bool, Vec<CertificateReport>) {
     let mut seen: Vec<&str> = Vec::new();
     let mut missing: Vec<CertificateReport> = Vec::new();
     for outcome in outcomes {
@@ -957,8 +961,6 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
             && !seen.contains(&outcome.sha256.as_str())
         {
             seen.push(&outcome.sha256);
-            // A certificate whose report cannot be built still counts as
-            // uncovered; it is only not offered for retrieval by name.
             if let Some(report) = Certificate::from_der(&outcome.der)
                 .ok()
                 .and_then(|c| CertificateReport::parse(&c).ok())
@@ -967,6 +969,15 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
             }
         }
     }
+    (!seen.is_empty(), missing)
+}
+
+/// The failure for paths without a revocation: unknown status naming every
+/// certificate without any CRL, else the most specific unusable CRL.
+fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError> {
+    // Each certificate in full, so that a CRL source can be asked about it
+    // whichever candidate path it was on.
+    let (any_without, missing) = without_crl(outcomes);
     let mut best: Option<&(u8, VerificationError)> = None;
     for outcome in outcomes {
         if let Outcome::Missing(Some(failure)) = &outcome.outcome
@@ -980,7 +991,7 @@ fn unknown_status(outcomes: &[&CertificateEvidence]) -> Option<VerificationError
     // with it. Only when no certificate simply lacks one does that failure
     // decide.
     match best {
-        Some((_, error)) if seen.is_empty() => Some(error.clone()),
+        Some((_, error)) if !any_without => Some(error.clone()),
         best => {
             let error = VerificationError::new(
                 ErrorCode::RevocationUnknown,
@@ -1225,10 +1236,16 @@ mod revocation_reporting {
     }
 
     #[test]
-    fn a_revocation_decides_only_when_no_other_path_could_still_be_completed() {
+    fn a_revocation_decides_and_names_what_another_path_still_lacks() {
         let revoked = || Outcome::Revoked(webpki_revocation_error("r", webpki::Error::CertRevoked));
-        // One path revoked, another only lacking a CRL: retrieval could
-        // complete the other, so the status is unknown and names its gap.
+        let without = |error: &VerificationError| {
+            error
+                .details
+                .get("certificates_without_crl")
+                .map(|v| v.as_array().unwrap().len())
+        };
+        // One path revoked, another only lacking a CRL: the revocation
+        // decides, and the other path's gap is named for a CRL source.
         let error = revocation_failure(&[
             on_path(0, "leaf", Outcome::Good(0)),
             on_path(0, "r", revoked()),
@@ -1236,19 +1253,9 @@ mod revocation_reporting {
             on_path(1, "m", Outcome::Missing(None)),
         ])
         .unwrap();
-        assert_eq!(error.code, ErrorCode::RevocationUnknown);
-        assert_eq!(
-            error.details["certificates_without_crl"]
-                .as_array()
-                .unwrap()
-                .len(),
-            1
-        );
-        assert_eq!(
-            error.details["revoked_on_another_path"]["code"],
-            "certificate_revoked"
-        );
-        // Every path revoked: the revocation decides.
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(without(&error), Some(1));
+        // Every path revoked: nothing is named.
         let error = revocation_failure(&[
             on_path(0, "r", revoked()),
             on_path(1, "m", Outcome::Missing(None)),
@@ -1256,20 +1263,43 @@ mod revocation_reporting {
         ])
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(without(&error), None);
         // A path that only lacks a CRL but fails other path policy (here,
-        // keyCertSign) could not be completed: the revocation decides.
+        // keyCertSign) could not be completed: nothing is named.
         let mut blocked = on_path(1, "m", Outcome::Missing(None));
         blocked.path_viable = false;
         let error = revocation_failure(&[on_path(0, "r", revoked()), blocked]).unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(without(&error), None);
         // A path with no revocation problem (rejected for another reason)
-        // leaves the revocation deciding.
+        // names nothing either.
         let error = revocation_failure(&[
             on_path(0, "r", revoked()),
             on_path(1, "leaf", Outcome::Good(0)),
         ])
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(without(&error), None);
+    }
+
+    #[test]
+    fn only_paths_that_pass_other_policy_decide_an_unknown_status() {
+        // Path 0 could verify but its CRL is unusable; path 1 fails other
+        // path policy and lacks a CRL. The usable path's failure decides,
+        // and path 1's certificate is not offered for retrieval.
+        let mut blocked = on_path(1, "m", Outcome::Missing(None));
+        blocked.path_viable = false;
+        let error =
+            revocation_failure(&[on_path(0, "a", failed(1, ErrorCode::CrlExpired)), blocked])
+                .unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        // When no path passes other policy, every tried path decides.
+        let mut first = on_path(0, "a", failed(1, ErrorCode::CrlExpired));
+        first.path_viable = false;
+        let mut second = on_path(1, "m", Outcome::Missing(None));
+        second.path_viable = false;
+        let error = revocation_failure(&[first, second]).unwrap();
+        assert_eq!(error.code, ErrorCode::RevocationUnknown);
     }
 
     #[test]

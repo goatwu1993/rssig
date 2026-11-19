@@ -577,10 +577,11 @@ fn sec10_revoked_intermediate_is_rejected_whatever_the_crl_order() {
 
 /// Two candidate paths: the cross certificate under the other root, which
 /// that root's CRL revokes, and the issuer under the root. Without the root's
-/// CRL the second path only lacks evidence, so the status is unknown and
-/// names that gap; with it, the second path verifies.
+/// CRL the revocation decides, as without retrieval nothing can complete the
+/// second path, and the second path's gap is named for a CRL source; with
+/// that CRL, the second path verifies.
 #[test]
-fn sec10_a_revoked_path_does_not_decide_while_another_path_lacks_a_crl() {
+fn sec10_a_revoked_path_names_what_another_path_still_lacks() {
     let run = |extra: &[&str]| {
         let mut args = vec![
             "verify",
@@ -600,12 +601,8 @@ fn sec10_a_revoked_path_does_not_decide_while_another_path_lacks_a_crl() {
         run_fixture("good-sec06-cross-first.exe", &args)
     };
     let output = run(&[]);
-    revocation_failure(&output, "revocation_unknown", "Revocation status unknown");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
     let details = &output.json["results"][0]["error"]["details"];
-    assert_eq!(
-        details["revoked_on_another_path"]["code"],
-        "certificate_revoked"
-    );
     let missing = details["certificates_without_crl"].as_array().unwrap();
     assert_eq!(missing.len(), 1);
     assert_eq!(missing[0]["subject"]["display"], "CN=SEC-06 issuer");
@@ -640,10 +637,40 @@ fn sec10_a_revoked_path_decides_when_the_other_path_fails_key_usage() {
         revocation_failure(&output, "certificate_revoked", "Certificate revoked");
         assert!(
             output.json["results"][0]["error"]["details"]
-                .get("revoked_on_another_path")
+                .get("certificates_without_crl")
                 .is_none()
         );
     }
+}
+
+/// The issuer under the root has only an unusable root CRL (scoped to a
+/// point it does not list); the cross path fails keyCertSign and lacks a
+/// CRL. Only the path that could verify decides: its CRL failure is
+/// reported, not an unknown status naming the blocked path's certificate.
+#[test]
+fn sec10_an_unknown_status_ignores_a_path_failing_key_usage() {
+    let output = run_fixture(
+        "sec10-sec06-cross-no-cert-sign.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-root-idp-ca.crl",
+        ],
+    );
+    revocation_failure(&output, "invalid_crl", "Invalid CRL");
+    assert_eq!(
+        output.json["results"][0]["error"]["details"]["reason"],
+        "distribution_point_scope"
+    );
 }
 
 /// `good.crl`: thisUpdate and nextUpdate in seconds.

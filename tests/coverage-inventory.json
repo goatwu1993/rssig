@@ -403,10 +403,12 @@
         "sec10-stale-crl-revocation-alone-is-expired",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path"
+        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
@@ -844,7 +846,9 @@
         "sec10-revoked-issuer-before-good-root-crl",
         "sec10-revoked-issuer-issuer-crl-first",
         "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
+        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl"
       ],
       "gap": ""
     },
@@ -891,8 +895,7 @@
         "sec10-crl-dp-relative-expanded-name-unknown",
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-cross-revoked-path-beside-path-without-crl-is-unknown"
+        "sec10-fetch-other-idp-fetched-other-unknown"
       ],
       "gap": ""
     },
@@ -935,7 +938,8 @@
         "sec10-partition-crl-relative-no-listed-point",
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched"
+        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ],
       "gap": ""
     },

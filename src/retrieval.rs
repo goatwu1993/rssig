@@ -658,9 +658,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             format_args!("CRL source returned {len} bytes from {url:?}; not yet authenticated"),
         );
         // A body over its caps is not counted against the bodies after it.
-        if len > MAX_CRL_BYTES || total.saturating_add(len) > max_bytes {
-            let cap = MAX_CRL_BYTES.min(max_bytes);
-            let e = limit("crl_response_bytes", cap, 0, len);
+        if let Some(e) = body_over_allowance(len, *total, max_bytes) {
             self.skip(sha256, url.as_deref(), e, None);
             return Ok(false);
         }
@@ -732,13 +730,22 @@ fn retrieve(
         }
         // The verifier decides first, with the supplied CRLs: a good result
         // or any failure but unknown status is final, and an unknown status
-        // names the certificates that lacked a usable CRL.
+        // names the certificates that lacked a usable CRL. A revocation on
+        // one candidate path is final too, unless it names certificates of
+        // another path that could still verify with a CRL: then those are
+        // asked about, and the revocation stands if none is found.
         let mut result = verify_with(bytes, options, &state.store, format, budget);
         let mut selected: Option<Vec<(String, Vec<u8>, Certificate)>> = None;
         let mut asked = BTreeSet::new();
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
+                Err(e)
+                    if e.code == ErrorCode::CertificateRevoked
+                        && e.details.contains_key("certificates_without_crl") =>
+                {
+                    e
+                }
                 _ => break,
             };
             if state.aborted {
@@ -824,6 +831,19 @@ fn retrieve(
     }
 }
 
+/// The limit a body of `len` bytes exceeds, reported with the cap it hit:
+/// the per-CRL size, or the request's allowance with the bytes already taken
+/// from earlier bodies of the same response.
+fn body_over_allowance(len: usize, total: usize, max_bytes: usize) -> Option<VerificationError> {
+    if len > MAX_CRL_BYTES {
+        Some(limit("crl_response_bytes", MAX_CRL_BYTES, 0, len))
+    } else if total.saturating_add(len) > max_bytes {
+        Some(limit("crl_response_bytes", max_bytes, total, len))
+    } else {
+        None
+    }
+}
+
 /// What an unknown revocation status tells retrieval to ask about.
 enum Uncovered {
     /// The certificates the verifier reports without a usable CRL.
@@ -846,6 +866,9 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
     {
         // An empty list names nothing to ask about.
         Some(reports) if !reports.is_empty() => Uncovered::Listed(reports),
+        // A revocation is definite evidence: only the certificates it names
+        // are worth asking about, never every selected one.
+        _ if unknown.code == ErrorCode::CertificateRevoked => Uncovered::Final,
         _ => Uncovered::Unlisted,
     }
 }
@@ -1456,6 +1479,37 @@ mod tests {
             ),
             Uncovered::Unlisted
         ));
+        // A revocation names what is worth asking about, or nothing is.
+        let revoked = || error(ErrorCode::CertificateRevoked, "revoked");
+        assert!(matches!(uncovered(&revoked()), Uncovered::Final));
+        assert!(matches!(
+            uncovered(
+                &revoked().detail("certificates_without_crl", Vec::<CertificateReport>::new())
+            ),
+            Uncovered::Final
+        ));
+    }
+
+    #[test]
+    fn an_over_allowance_body_reports_the_cap_it_hit() {
+        let numbers = |e: VerificationError| {
+            (
+                e.details["limit"].as_u64().unwrap(),
+                e.details["used"].as_u64().unwrap(),
+                e.details["requested"].as_u64().unwrap(),
+            )
+        };
+        let mib = 1024 * 1024;
+        // A second 5 MiB body beside a first one, with an 8 MiB allowance.
+        let e = body_over_allowance(5 * mib, 5 * mib, 8 * mib).unwrap();
+        assert_eq!(numbers(e), (8 * mib as u64, 5 * mib as u64, 5 * mib as u64));
+        // A body over the per-CRL size.
+        let e = body_over_allowance(MAX_CRL_BYTES + 1, 0, MAX_TOTAL_BYTES).unwrap();
+        assert_eq!(
+            numbers(e),
+            (MAX_CRL_BYTES as u64, 0, MAX_CRL_BYTES as u64 + 1)
+        );
+        assert!(body_over_allowance(3 * mib, 5 * mib, 8 * mib).is_none());
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {

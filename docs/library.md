@@ -668,6 +668,18 @@ Results: missing evidence is `revocation_unknown` (with each problem in
 `crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;
 `crl_fetch_denied` and `crl_fetch_failed` are no longer results.
 
+Report types (`rssig::domain`), Rust and JSON:
+
+| Before | Now |
+|---|---|
+| `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL |
+| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect |
+| (none) | `CrlRetrievalArtifact.certificate_sha256: Option<String>`: the certificate the CRL was asked for |
+| `CrlRetrievalReport { artifacts }` | adds `failures: Vec<CrlRetrievalFailure>`, omitted from JSON when empty; each names its certificate, URL, code and `source_error` kind |
+
+A consumer that read `artifact.url` as a string handles its absence:
+`artifact.url.as_deref().unwrap_or("(by certificate)")`.
+
 These pre-1.0 APIs may evolve in future releases; future breaking changes must
 include migration notes. Do not depend on private adapter layout, exact
 allocation counts beyond the documented measurement, enum numeric values, or
