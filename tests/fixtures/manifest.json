@@ -7269,7 +7269,8 @@
         "sec10-partition-crl-relative-no-listed-point",
         "sec10-revoked-issuer-issuer-crl-first",
         "sec10-fetch-no-listed-point-not-fetched",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected"
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -7753,7 +7754,8 @@
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8137,7 +8139,8 @@
         "sec16-self-issued-rollover-with-both-crls-is-rejected",
         "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
         "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8261,7 +8264,8 @@
         "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
         "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -10196,7 +10200,8 @@
       "cases": [
         "sec10-crl-dp-ca-scope-excludes-signer",
         "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected"
+        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {

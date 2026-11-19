@@ -486,6 +486,7 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate",
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",

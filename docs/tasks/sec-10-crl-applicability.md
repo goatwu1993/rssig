@@ -223,8 +223,9 @@ Change these only with a new decision and paired fixtures.
 - The three cases added with the retrieval redesign
   (`sec10-fetch-excluded-name-match-fetches-listed-point`,
   `sec10-fetch-no-listed-point-role-excluded-scope-rejected`,
-  `sec10-fetch-unusable-supplied-crl-not-fetched`) failed before it, for the
-  intended reason each.
+  `sec10-fetch-unusable-supplied-crl-not-fetched`, since replaced by
+  `sec10-fetch-unusable-scope-supplied-crl-refreshed` with the opposite
+  result) failed before it, for the intended reason each.
 - `--fetch-crls` requests points in two steps (certificates whose issuer no
   supplied CRL names, then the rest), pinned on `sec10-chain-crl-dp.exe` by
   `sec10-fetch-covered-signer-point-not-requested`,
@@ -841,8 +842,9 @@ fetches from the certificate's distribution points.
 | bad signature, unsupported signature algorithm | reported, no lookup | fetches | not asked (BoringSSL decides) |
 | issuer without cRLSign | reported | fetches | not asked: a fetched CRL has the same issuer |
 | malformed (extensions, authorityKeyIdentifier, CRL number, version, entry extensions) | BoringSSL drops it when decoding (`x_crl.cc:122-160`); OpenSSL flags it `EXFLAG_INVALID`, which verification never tests, and an invalid issuingDistributionPoint scores 0 (`x509_vfy.c:1292`): either way the store is still consulted | fetches | asked about: the three agree |
-| the certificate's own points unreadable, or a point-scoped CRL for a certificate that lists none | no equivalent | fetches | not asked: no point to ask about |
-| no nextUpdate | usable | usable | not asked: `invalid_crl`, the separate open question in SEC-23 |
+| a point-scoped CRL for a certificate that lists none | no scope score, store lookup | fetches | asked about, by certificate and issuer |
+| the certificate's own points unreadable | no equivalent | fetches | not asked: the certificate is at fault |
+| no nextUpdate | usable | usable | not asked; a listing in it revokes (see "Case reasons (a CRL without nextUpdate that lists the certificate)") |
 
 A certificate whose only CRLs are unusable for one of the "asked about"
 reasons other than expiry is named in `details.certificates_with_unusable_crl`
@@ -871,6 +873,12 @@ path is not one a source could complete.
   `crl-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
 
+- **Decided, acceptance:** a CRL scoped to a distribution point, for a
+  certificate that lists none, is replaceable: the certificate is still asked
+  about by certificate and issuer, and a full CRL from the source decides
+  (`sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate`). A source
+  that answers only by URL has nothing to fetch, so the `invalid_crl` stands
+  (`sec10-fetch-no-listed-point-role-excluded-scope-rejected`).
 - **Decided, acceptance:** a malformed CRL does not stop the search for
   another, alone or beside an expired one
   (`crl-malformed-aki-local-refreshed-by-provider`,
@@ -900,9 +908,11 @@ reported, and one that cannot be replaced ranks above one that can, so a
 certificate with any such CRL is not asked about. A malformed CRL was first
 ranked that way too (a "written choice"); compared with the references it
 is replaceable: BoringSSL drops it when decoding, OpenSSL never tests the
-invalid flag and still consults the store, and Bouncy Castle fetches. A CRL scoped to a distribution point the
-certificate does not list, when it lists none, is not replaceable either: a
-source is asked about the points the certificate lists.
+invalid flag and still consults the store, and Bouncy Castle fetches. A CRL
+scoped to a distribution point, for a certificate that lists none, was also
+first ranked unreplaceable, on the mistaken ground that a source is asked
+only about listed points; a certificate without points is asked about by
+certificate and issuer, so it is replaceable.
 
 ## Case reasons (a CRL without nextUpdate that lists the certificate)
 
@@ -930,6 +940,17 @@ first; that certificate is not on the CRL, so the result is the stricter
 rule below (`invalid_crl` for the timestamp authority), not the signer's
 listing. Its earlier reason in this document described it as the signer's
 listing; the reason is now corrected.
+
+Such a listing revokes alone only under webpki's other rules, applied by
+rssig because webpki cannot parse a CRL without nextUpdate: not from a
+delta, indirect, reason-partitioned or attribute-only CRL, one with another
+critical extension, or an entry that is critical or removeFromCRL (OpenSSL
+`get_crl_score` gives such CRLs no valid score; `cert_crl` releases a
+removeFromCRL entry); not when a newer authenticated full CRL of the issuer
+covering the certificate leaves it out, as a listing beside a newer CRL
+does not count; and not from an issuer without cRLSign. A malformed
+authorityKeyIdentifier does not stop it, as decided for a listing beside
+another CRL. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
 
 Kept, stricter than the references: the same CRL without a listing is not
 evidence of good status. It stays `invalid_crl` (`missing_next_update`), as
