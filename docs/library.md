@@ -679,12 +679,13 @@ URL policy and returns a `Denied` error to pass on. It checks the URL only;
 your HTTP client must also refuse nonpublic DNS answers and re-check redirect
 targets, as `HttpCrlSource` does.
 
-**Reusing the built-in source.** An `HttpCrlSource` carries its allowances
-(16 requests, 32 MiB, 30 seconds from its first fetch) for the verification it
-serves. To reuse one across verifications, call `renew()` before each, as the
-CLI does for every file; or create a new one. Without it, once the allowances
-are spent every later verification reports `crl_fetch_aborted`. A DNS timeout
-closes the source for good, whatever `renew()` does.
+**Reusing a source.** The engine calls `CrlSource::begin_verification()` once
+at the start of each verification that may ask the source. `HttpCrlSource`
+uses it to start its allowances (16 requests, 32 MiB, 30 seconds from its first
+fetch) afresh, so one instance can serve many files; the CLI relies on this.
+A source of your own that keeps per-verification allowances should do the
+same; the default does nothing. A DNS timeout closes the built-in source for
+good, whatever a later verification does.
 
 Results: missing evidence is `revocation_unknown` (with each problem in
 `crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;

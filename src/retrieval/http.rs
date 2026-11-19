@@ -93,13 +93,11 @@ impl HttpCrlSource {
     }
     /// Start a new verification's allowances: requests, bytes and lifetime
     /// are bounded per verification, as in OpenSSL and Bouncy Castle, where
-    /// nothing one validation fetched is charged to the next. A source reused
-    /// across verifications must be renewed before each one, as the CLI does
-    /// for each file; otherwise its 16 requests, 32 MiB and 30 seconds are
-    /// shared by all of them and, once spent, every later request aborts. A
-    /// DNS timeout still closes the source for good, so that no more than one
-    /// unfinished resolver worker can exist.
-    pub fn renew(&mut self) {
+    /// nothing one validation fetched is charged to the next. The engine
+    /// calls this through [`CrlSource::begin_verification`]. A DNS timeout
+    /// still closes the source for good, so that no more than one unfinished
+    /// resolver worker can exist.
+    fn renew(&mut self) {
         *self = Self {
             poisoned: self.poisoned,
             ..Self::default()
@@ -288,6 +286,10 @@ fn source_error_kind(e: &VerificationError, spent_before: bool) -> CrlSourceErro
 }
 
 impl CrlSource for HttpCrlSource {
+    fn begin_verification(&mut self) {
+        self.renew();
+    }
+
     /// Requests the certificate's listed distribution points in order (see
     /// [`fetch_each`]). Reports a URL its policy refuses as `Denied`, a
     /// request that did not work as `Failed`, and its own spent request or
@@ -585,12 +587,13 @@ mod tests {
             started: Some(Instant::now() - DEADLINE),
             poisoned: false,
         };
-        source.renew();
+        // The engine does this at the start of each verification.
+        CrlSource::begin_verification(&mut source);
         assert_eq!((source.requests, source.bytes), (0, 0));
         assert!(source.started.is_none());
         // The unfinished resolver worker still exists: no second one.
         source.poisoned = true;
-        source.renew();
+        CrlSource::begin_verification(&mut source);
         assert!(source.poisoned);
     }
     #[test]

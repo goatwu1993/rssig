@@ -261,7 +261,9 @@ download provenance but returns no successful signature report.
 | Unsupported framing | Chunked transfer and content encodings fail closed |
 | Time | 30-second source lifetime starting with its first fetch; after it, or after a DNS timeout, the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
-The CLI's HTTP limits bound one file, not the batch: the 16 requests, 32 MiB
+The built-in source's HTTP limits bound one verification, not a batch or a
+reused instance (the engine calls `CrlSource::begin_verification` first), so
+in the CLI they bound one file: the 16 requests, 32 MiB
 and 30 seconds start again for each file, so what earlier files fetched never
 costs a later file its CRL. OpenSSL (`apps/lib/apps.c` `crls_http_cb`: size,
 timeout and redirect count per fetch) and Bouncy Castle (`CrlCache`: timeouts

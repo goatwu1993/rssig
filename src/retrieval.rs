@@ -44,6 +44,12 @@ pub const MAX_RESPONSE_ENTRIES: usize = 64;
 /// anywhere, means the source can do no more work; the engine asks nothing
 /// further and verifies with what it has. See `docs/crl-retrieval.md`.
 pub trait CrlSource {
+    /// Called once at the start of each verification that may ask this
+    /// source, before any request. A source that keeps allowances for one
+    /// verification (requests, bytes, a deadline) starts them afresh here, so
+    /// that reusing it across files or calls never charges one to the next.
+    /// [`HttpCrlSource`] does; the default does nothing.
+    fn begin_verification(&mut self) {}
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError>;
 }
 
@@ -623,7 +629,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 None => {
                     // The engine bounds the URIs it passes to sources in one
                     // verification, whatever each source does with them.
-                    if !self.urls_counted.contains(&url_key(&raw)) {
+                    let key = url_key(&raw);
+                    if !self.urls_counted.contains(&key) {
                         if self.urls_passed >= MAX_SOURCE_REQUESTS {
                             return Err(limit(
                                 "crl_source_urls",
@@ -633,9 +640,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                             ));
                         }
                         self.urls_passed += 1;
-                        self.urls_counted.insert(url_key(&raw));
+                        self.urls_counted.insert(key.clone());
                     }
-                    self.asked.insert(url_key(&raw), None);
+                    self.asked.insert(key, None);
                     points.push(raw);
                 }
             }
@@ -964,6 +971,7 @@ fn retrieve(
         ));
     }
     let format = crate::format::detect(bytes, filename)?;
+    source.begin_verification();
     let mut state = Retrieval::new(base, budget);
     let result = (|| {
         if base.retrieval_bytes() > MAX_TOTAL_BYTES {
@@ -1957,6 +1965,58 @@ mod tests {
         assert_eq!(source.0, [2, 2]);
         // A URI offered again costs nothing more: each distinct one counts once.
         assert_eq!(state.urls_passed, 2);
+    }
+    #[test]
+    fn a_source_is_told_when_a_verification_begins() {
+        struct Source {
+            begun: usize,
+            asked: usize,
+        }
+        impl CrlSource for Source {
+            fn begin_verification(&mut self) {
+                self.begun += 1;
+            }
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.asked += 1;
+                Ok(CrlResponse::new())
+            }
+        }
+        let trust = store();
+        let options = VerifyOptions::trusted(&trust, 1_800_000_000);
+        let mut source = Source { begun: 0, asked: 0 };
+        let input = include_bytes!("../tests/fixtures/good-crl-discovery.exe");
+        for round in 1..=2 {
+            let _ = crate::verify::Verifier::new(&options).verify_with_crl_source(
+                input,
+                Some("a.exe"),
+                &mut source,
+            );
+            assert_eq!(source.begun, round);
+        }
+    }
+    #[test]
+    fn re_offered_points_are_bounded_by_the_request_limit() {
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("shared", 2);
+        for index in 0..MAX_SOURCE_REQUESTS {
+            ask(&mut state, &format!("c{index}"), &cert, &mut Source).unwrap();
+        }
+        // The points were offered every time but cost no URI allowance; the
+        // source requests are what stop the run.
+        assert_eq!(state.urls_passed, 2);
+        let e = ask(&mut state, "last", &cert, &mut Source).unwrap_err();
+        assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(e.details["resource"], "crl_requests");
     }
     #[test]
     fn a_source_answering_by_certificate_never_exhausts_the_uri_limit() {

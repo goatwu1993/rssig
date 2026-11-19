@@ -351,7 +351,8 @@ relic 02c54d58 and BoringSSL `main`.
   nextUpdate is null, and BoringSSL (`x509_vfy.cc:414`) behaves as OpenSSL.
   An authenticated, in-scope CRL without nextUpdate therefore counts for a
   listing, so it revokes beside an older usable CRL
-  (`sec10-no-next-update-crl-revocation-beside-older-crl-revokes`; the old
+  (`sec10-no-next-update-crl-revocation-beside-older-crl-revokes`, Decided,
+  acceptance; the old
   rule verified a certificate the issuer said was revoked). Such a CRL is
   still unusable as evidence of good status: RFC 5280 requires nextUpdate,
   and alone it is `invalid_crl` / `missing_next_update`
@@ -569,9 +570,16 @@ relic 02c54d58 and BoringSSL `main`.
     the CRL's key identifier (`RFC3280CertPathUtilities.java:379-390`). A
     root that names no key cannot disprove a match. Unit test
     `only_a_differing_key_identifier_sets_a_failed_crl_aside`.
-  - `HttpCrlSource::renew()` is public: a library caller that reuses one
-    source across verifications renews it before each, as the CLI does for
-    every file (`docs/library.md`).
+  - `CrlSource::begin_verification()` (default: nothing) is called by the
+    engine at the start of each verification that may ask the source;
+    `HttpCrlSource` renews its allowances there, so a library caller that
+    reuses one source across verifications, like the CLI across files, never
+    has an earlier verification's allowances charged to a later one. Unit
+    tests `a_source_is_told_when_a_verification_begins` and
+    `a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout`.
+  - Re-offered points are bounded by `crl_requests` (64 source requests per
+    verification), not by `crl_source_urls`
+    (`re_offered_points_are_bounded_by_the_request_limit`).
   - `check_public_http_url` has a fuzz target, `check_url`.
   - The reserved-name check trims one trailing dot before testing for a
     single-label name too, so `http://intranet./x.crl` is denied like
@@ -625,8 +633,8 @@ relic 02c54d58 and BoringSSL `main`.
   loops files with one callback); Bouncy Castle has per-connection timeouts,
   no request or byte counters, and a process-wide cache
   (`CrlCache.java:41-46`). Neither lets what one validation fetched exhaust
-  the next, so the CLI renews its built-in source's requests, bytes and
-  lifetime for each file. A DNS timeout still closes the source for the
+  the next, so the engine renews a source's allowances for each verification
+  (`CrlSource::begin_verification`), which the CLI relies on. A DNS timeout still closes the source for the
   invocation, to keep at most one unfinished resolver worker. Unit test
   `a_renewed_source_has_its_allowances_back_but_stays_closed_after_a_dns_timeout`.
 - **Scope of a listing, refined after review.** Decided, acceptance, by the

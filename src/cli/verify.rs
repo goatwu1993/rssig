@@ -125,7 +125,7 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
     };
     options.allow_sha1 = allow_sha1;
     let mut http = crate::retrieval::HttpCrlSource::new();
-    let mut injected = source;
+    let source = source.unwrap_or(&mut http);
     batch::execute(
         "verify",
         files,
@@ -148,15 +148,9 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
                 }
             }
             if fetch_crls {
-                // The built-in source's limits bound one file, not the batch:
-                // what earlier files fetched never costs a later one its CRL.
-                let source: &mut dyn crate::retrieval::CrlSource = match injected.as_deref_mut() {
-                    Some(source) => source,
-                    None => {
-                        http.renew();
-                        &mut http
-                    }
-                };
+                // Each verification starts its source's allowances afresh
+                // (`CrlSource::begin_verification`): the built-in source's
+                // limits bound one file, not the batch.
                 verifier.verify_with_crl_source(bytes, hint.as_deref(), source)
             } else {
                 verifier.verify_with_hint(bytes, hint.as_deref())
