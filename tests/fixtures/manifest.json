@@ -7358,7 +7358,9 @@
         "good-sec06-cross-first",
         "good-sec06-cross-other-root",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies"
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -7737,7 +7739,9 @@
         "sec10-leaf-crl-dp-https-full-crl",
         "sec10-fetch-source-is-asked-for-any-scheme",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies"
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -7936,7 +7940,9 @@
         "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-cross-other-root",
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies"
+        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -8117,7 +8123,9 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec16-self-issued-rollover-with-both-crls-is-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -8237,7 +8245,11 @@
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec16-self-issued-rollover-without-revocation-verifies",
         "sec16-self-issued-rollover-with-both-crls-is-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -8340,6 +8352,25 @@
       "cases": [
         "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
+      ]
+    },
+    {
+      "file": "sec06-root-not-yet-valid.crl",
+      "sha256": "1fcb6f9b8aeaf794176106e5cdadd584831548a15e3867ef1c13675cb3b2223b",
+      "bytes": 180,
+      "description": "SEC-23: empty, correctly signed CRL of the SEC-06 root, not yet valid at 1800000000 (thisUpdate 1000 seconds after): a CRL a source could replace, so the certificates it fails to cover are named in certificates_with_unusable_crl; supporting revocation evidence, not an individual verification claim.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -9933,7 +9964,8 @@
         "sec10-fetch-unusable-scope-supplied-crl-refreshed",
         "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -10121,7 +10153,9 @@
         "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-covered-signer-is-not-asked",
         "sec10-fetch-asks-only-the-uncovered-certificate",
-        "sec10-fetch-source-abort-stops-requests"
+        "sec10-fetch-source-abort-stops-requests",
+        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -10255,7 +10289,9 @@
         "sec10-cross-revoked-path-beside-path-without-crl-names-it",
         "sec10-cross-revoked-path-beside-covered-path-verifies",
         "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
-        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl"
+        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {

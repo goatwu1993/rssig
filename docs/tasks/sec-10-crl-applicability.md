@@ -867,6 +867,18 @@ path is not one a source could complete.
   `crl-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
 
+- **Decided, diagnostics:** the list's placement beside other evidence,
+  on the `sec06` chain with the root's CRL not yet valid
+  (`sec06-root-not-yet-valid.crl`): a revocation on the cross path names
+  the root path's certificate in `certificates_with_unusable_crl`
+  (`sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`),
+  and an unknown status names the signer without a CRL in
+  `certificates_without_crl` and the issuer with the not-yet-valid CRL in
+  `certificates_with_unusable_crl`
+  (`sec10-chain-unknown-names-missing-and-not-yet-valid-crl`).
+- **Decided, acceptance:** with a source, both complete
+  (`sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path`,
+  `sec10-fetch-completes-missing-and-not-yet-valid-crl`).
 - **Decided, diagnostics:** a source abort is marked
   `retrieval_aborted: true` on `crl_not_yet_valid` and `invalid_crl` as on
   `crl_expired` (`crl-not-yet-valid-local-source-abort-is-marked`,

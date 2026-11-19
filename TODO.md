@@ -474,14 +474,6 @@ timestamps, and local CRL validation already exist.
   - A CRL without nextUpdate that lists a certificate, alone, is
     `invalid_crl` (`missing_next_update`) rather than `certificate_revoked`
     (`sec10-no-next-update-crl-revocation-alone-is-invalid`); both reject.
-  Spec coverage left for the unusable-CRL list
-  (`details.certificates_with_unusable_crl`): the spec asserts it on
-  `crl_not_yet_valid` and `invalid_crl` only. Its placement on
-  `revocation_unknown` and on `certificate_revoked` beside another path's
-  gap is covered by Rust unit tests (`src/trust.rs`, `src/rdp.rs`) but needs
-  fixtures: a not-yet-valid or unsupported-feature root CRL for the
-  `sec06-*` cross-signed chain, and a chain with one certificate lacking a
-  CRL beside one with such a CRL.
   Retrieval and the built-in HTTP source:
   - The CLI's fetch limits are per file, so a batch is bounded only by its
     file count (up to 16 requests, 32 MiB and 30 s each). Consider an

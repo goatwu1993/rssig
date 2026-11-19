@@ -486,6 +486,8 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
         "crl-stale-local-source-abort-is-marked",
         "crl-not-yet-valid-local-source-abort-is-marked",
         "crl-unknown-critical-extension-local-source-abort-is-marked"
@@ -859,6 +861,7 @@
     "certificate_revoked": {
       "cases": [
         "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
         "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",
@@ -924,7 +927,8 @@
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl"
       ],
       "gap": ""
     },

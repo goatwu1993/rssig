@@ -1389,3 +1389,93 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
         }
     }
 }
+
+/// SEC-23: the unusable-CRL list beside other evidence. On the `sec06`
+/// chain whose root CRL is not yet valid, an unknown status names the signer
+/// without a CRL and the issuer whose CRL a source could replace; a source
+/// answering both points completes the path.
+#[test]
+fn sec10_unknown_status_names_a_missing_and_a_replaceable_crl() {
+    struct Points(Vec<(&'static str, Vec<u8>)>, Vec<String>);
+    impl rssig::retrieval::CrlSource for Points {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            Ok(rssig::retrieval::fetch_each(request, |url, _| {
+                self.1.push(url.to_owned());
+                let (_, bytes) = self.0.iter().find(|(known, _)| *known == url).unwrap();
+                Ok(rssig::retrieval::SourcedCrl::new(bytes.clone()))
+            }))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = |fetch: bool| {
+        let mut args: Vec<String> = [
+            "rssig",
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            &path("sec06-root.der"),
+            "--time",
+            "1800000000",
+            "--crl",
+            &path("sec06-root-not-yet-valid.crl"),
+        ]
+        .map(str::to_owned)
+        .to_vec();
+        if fetch {
+            args.push("--fetch-crls".to_owned());
+        }
+        args.push(path("sec10-chain-crl-dp.exe"));
+        args
+    };
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    assert_eq!(
+        rssig::cli::run_with_writers(args(false), &mut out, &mut err).unwrap(),
+        1
+    );
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let details = &report["results"][0]["error"]["details"];
+    assert_eq!(report["results"][0]["error"]["code"], "revocation_unknown");
+    let sha = |key: &str| -> Vec<String> {
+        details[key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["sha256"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let leaf = "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1";
+    let issuer = "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb";
+    assert_eq!(sha("certificates_without_crl"), [leaf]);
+    assert_eq!(sha("certificates_with_unusable_crl"), [issuer]);
+    assert_eq!(details["unusable_crl"]["code"], "crl_not_yet_valid");
+
+    let mut source = Points(
+        vec![
+            (
+                "http://crl.invalid/sec10-a.crl",
+                std::fs::read(base.join("sec10-issuer-idp-match.crl")).unwrap(),
+            ),
+            (
+                "http://crl.invalid/sec10-issuer.crl",
+                std::fs::read(base.join("sec06-root.crl")).unwrap(),
+            ),
+        ],
+        Vec::new(),
+    );
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        rssig::cli::run_with_crl_source(args(true), &mut out, &mut err, &mut source).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(code, 0, "{report}");
+    assert_eq!(
+        source.1,
+        [
+            "http://crl.invalid/sec10-a.crl",
+            "http://crl.invalid/sec10-issuer.crl"
+        ]
+    );
+}

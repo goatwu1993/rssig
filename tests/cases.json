@@ -33621,6 +33621,244 @@
       }
     },
     {
+      "id": "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+      "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--crl",
+        "fixtures/sec06-root-not-yet-valid.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation",
+                "details": {
+                  "certificates_with_unusable_crl": [
+                    {
+                      "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+      "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
+        ]
+      },
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--crl",
+        "fixtures/sec06-root-not-yet-valid.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
+      "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root-not-yet-valid.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "certificates_without_crl": [
+                    {
+                      "sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                    }
+                  ],
+                  "certificates_with_unusable_crl": [
+                    {
+                      "sha256": "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb"
+                    }
+                  ],
+                  "unusable_crl": {
+                    "code": "crl_not_yet_valid"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-completes-missing-and-not-yet-valid-crl",
+      "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
+        ]
+      },
+      "crl_responses": {
+        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
+        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root-not-yet-valid.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.invalid/sec10-a.crl",
+                    "final_url": "http://crl.invalid/sec10-a.crl",
+                    "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
+                    "bytes": 233,
+                    "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                  },
+                  {
+                    "url": "http://crl.invalid/sec10-issuer.crl",
+                    "final_url": "http://crl.invalid/sec10-issuer.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
+                    "bytes": 180,
+                    "certificate_sha256": "8dc7731929354e18379fa5f78b071548885ed9f2bb12aded834dddfb44815fbb"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl",
+          "http://crl.invalid/sec10-issuer.crl"
+        ]
+      }
+    },
+    {
       "id": "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
       "decision": {
