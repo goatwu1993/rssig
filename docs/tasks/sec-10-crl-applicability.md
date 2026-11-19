@@ -334,8 +334,10 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   a newer one (`sec10-superseded-crl-revocation-beside-newer-crl-is-ignored`)
   and alone it revokes (`sec10-superseded-crl-revocation-alone-revokes`). A
   CRL without nextUpdate is never current.
-- **A listing in a current CRL with a malformed AKI counts.** Observed,
-  acceptance (fails closed); **awaiting the owner's decision**:
+- **A listing in a current CRL with a malformed AKI counts.** Decided by the
+  owner (PR #60), acceptance (fails closed): a correctly signed CRL of the
+  issuer said the certificate is revoked, and a malformed identifier field
+  does not make that statement less authentic.
   `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`. The
   references do not agree, with a well-formed CRL that omits the serial also
   present:
@@ -350,8 +352,8 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
     well-formed CRL is iterated first; never revoked.
   - BoringSSL rejects the CRL at parse (`crl_cb` returns 0): never revoked.
   - relic checks no CRLs.
-  rssig today: `invalid_crl` alone; beside a usable CRL its listing revokes
-  when it is at least as new, which is closest to OpenSSL.
+  rssig: `invalid_crl` alone; beside a usable CRL its listing revokes when
+  it is at least as new, which is closest to OpenSSL.
 - **Cross-certified paths.** A path that verifies with its CRLs is accepted
   whatever another path does: Decided, acceptance, as Bouncy Castle's builder
   tries every candidate path and accepts one that validates
