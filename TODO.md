@@ -523,7 +523,9 @@ timestamps, and local CRL validation already exist.
     vain. `main` pins this on purpose (unit test
     `a_revocation_then_a_missing_crl_then_the_most_specific_failure_decides`:
     a certificate without any CRL is named "so that it can still be
-    retrieved"); changing it is the owner's call.
+    retrieved"); changing it is the owner's call. The expired and
+    replaceable lists are built the same way, so the decision covers all
+    three.
   - Beside a usable CRL, a newer complete CRL without nextUpdate that leaves
     the certificate out does not clear an older listing (it does when no CRL
     is usable). OpenSSL's best-scored newest CRL would give good status.

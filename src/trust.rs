@@ -981,8 +981,9 @@ fn evaluate_crls(
         // a listing but would let it clear one.
         // It must also be one rssig would otherwise use: a well-formed
         // authorityKeyIdentifier, an issuer with cRLSign, and webpki's
-        // acceptance unless only nextUpdate is missing. Whether it lists the
-        // certificate is kept: a listing there keeps the revocation.
+        // acceptance unless only nextUpdate is missing. Whether it revokes
+        // the certificate is kept: a revoking entry there keeps the
+        // revocation, a removeFromCRL entry releases it.
         if authority == Some(true)
             && covers
             && !(!lists_points && names_distribution_point(&crl.tbs))
@@ -994,7 +995,7 @@ fn evaluate_crls(
             && (crl.webpki.is_ok() || crl.tbs.next_update.is_none())
             && newest_complete.is_none_or(|(n, _)| this_update > n)
         {
-            newest_complete = Some((this_update, lists));
+            newest_complete = Some((this_update, lists_revoking(&crl.tbs, serial)));
         }
         // A listing in a CRL whose only defect is a missing nextUpdate
         // revokes alone, under the same conditions as beside another CRL
@@ -1755,49 +1756,50 @@ fn complete_direct_crl(tbs: &x509_cert::crl::TbsCertList) -> bool {
     if tbs.version != x509_cert::Version::V2 {
         return false;
     }
-    tbs.crl_extensions
-        .iter()
-        .flatten()
-        .all(|e| match e.extn_id.to_string().as_str() {
-            "2.5.29.27" => false,
-            "2.5.29.28" => {
-                IssuingDistributionPoint::from_der(e.extn_value.as_bytes()).is_ok_and(|idp| {
-                    matches!(
-                        idp.distribution_point,
-                        Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(
-                            _
-                        ))
-                    ) && !idp.indirect_crl
-                        && idp.only_some_reasons.is_none()
-                        && !idp.only_contains_attribute_certs
-                })
-            }
-            "2.5.29.20" | "2.5.29.35" => true,
-            _ => !e.critical,
-        })
+    let extensions_ok =
+        tbs.crl_extensions
+            .iter()
+            .flatten()
+            .all(|e| match e.extn_id.to_string().as_str() {
+                "2.5.29.27" => false,
+                "2.5.29.28" => IssuingDistributionPoint::from_der(e.extn_value.as_bytes())
+                    .is_ok_and(|idp| {
+                        matches!(
+                            idp.distribution_point,
+                            Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(
+                                _
+                            ))
+                        ) && !idp.indirect_crl
+                            && idp.only_some_reasons.is_none()
+                            && !idp.only_contains_attribute_certs
+                    }),
+                // cRLNumber: a non-negative INTEGER of at most 20 octets, as
+                // webpki requires (`InvalidCrlNumber`).
+                "2.5.29.20" => matches!(
+                    e.extn_value.as_bytes(),
+                    [0x02, len, first, ..]
+                        if (1..=20).contains(len)
+                            && usize::from(*len) + 2 == e.extn_value.as_bytes().len()
+                            && *first < 0x80
+                ),
+                "2.5.29.35" => true,
+                _ => !e.critical,
+            });
+    // webpki rejects the whole CRL for any entry it cannot use.
+    extensions_ok
+        && tbs
+            .revoked_certificates
+            .iter()
+            .flatten()
+            .all(entry_acceptable)
 }
 
-/// Whether a CRL that webpki cannot parse only because it lacks nextUpdate
-/// revokes `serial` under webpki's other rules: a complete, direct v2 CRL
-/// whose entry for the serial webpki would accept. A removeFromCRL entry
-/// does not revoke, as in OpenSSL's `cert_crl`.
-fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
-    if !complete_direct_crl(tbs) {
-        return false;
-    }
-    let Some(entry) = tbs
-        .revoked_certificates
-        .iter()
-        .flatten()
-        .find(|r| r.serial_number.as_bytes() == serial)
-    else {
-        return false;
-    };
-    // As webpki: reasonCode and invalidityDate are understood (critical or
-    // not); a certificateIssuer makes the CRL indirect; any other critical
-    // entry extension is unsupported; a reasonCode must be a single-byte
-    // ENUMERATED with a defined value. As OpenSSL (`cert_crl`), not webpki
-    // (which revokes on any entry): removeFromCRL (8) releases the entry.
+/// Whether webpki accepts a CRL entry: reasonCode and invalidityDate are
+/// understood (critical or not), a reasonCode being a single-byte ENUMERATED
+/// with a defined value and an invalidityDate a GeneralizedTime; a
+/// certificateIssuer makes the CRL indirect; any other critical entry
+/// extension is unsupported.
+fn entry_acceptable(entry: &x509_cert::crl::RevokedCert) -> bool {
     entry
         .crl_entry_extensions
         .iter()
@@ -1805,12 +1807,35 @@ fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8])
         .all(|e| match e.extn_id.to_string().as_str() {
             "2.5.29.21" => matches!(
                 e.extn_value.as_bytes(),
-                [0x0a, 1, reason] if *reason <= 10 && *reason != 7 && *reason != 8
+                [0x0a, 1, reason] if *reason <= 10 && *reason != 7
             ),
-            "2.5.29.24" => true,
+            "2.5.29.24" => e.extn_value.as_bytes().first() == Some(&0x18),
             "2.5.29.29" => false,
             _ => !e.critical,
         })
+}
+
+/// Whether the CRL lists `serial` with an entry that revokes: as OpenSSL
+/// (`cert_crl`), not webpki (which revokes on any entry), an entry with
+/// reasonCode removeFromCRL (8) releases the certificate.
+fn lists_revoking(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
+    tbs.revoked_certificates
+        .iter()
+        .flatten()
+        .find(|r| r.serial_number.as_bytes() == serial)
+        .is_some_and(|entry| {
+            !entry.crl_entry_extensions.iter().flatten().any(|e| {
+                e.extn_id.to_string() == "2.5.29.21" && e.extn_value.as_bytes() == [0x0a, 1, 8]
+            })
+        })
+}
+
+/// Whether a CRL that webpki cannot parse only because it lacks nextUpdate
+/// revokes `serial` under webpki's other rules: a complete, direct v2 CRL
+/// whose every entry webpki would accept, listing the serial with an entry
+/// that is not removeFromCRL.
+fn revokes_without_next_update(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
+    complete_direct_crl(tbs) && lists_revoking(tbs, serial)
 }
 
 fn has_extension(cert: &Certificate, oid: &str) -> bool {
@@ -1900,6 +1925,47 @@ mod revocation_reporting {
         let mut v1 = base.clone();
         v1.version = x509_cert::Version::V1;
         assert!(!revokes_without_next_update(&v1, &serial));
+        // Each issuingDistributionPoint condition on its own, with a fullName
+        // point: plain is accepted; indirect, reasons, attribute-only are not.
+        let point = [
+            0xa0, 0x0c, 0xa0, 0x0a, 0x86, 0x08, b'h', b't', b't', b'p', b':', b'/', b'/', b'a',
+        ];
+        let idp = |extra: &[u8]| {
+            let mut body = point.to_vec();
+            body.extend_from_slice(extra);
+            let mut der = vec![0x30, body.len() as u8];
+            der.extend(body);
+            der
+        };
+        let plain = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
+        assert!(revokes_without_next_update(&plain, &serial));
+        for extra in [
+            &[0x84u8, 1, 0xff][..],
+            &[0x83, 2, 0x07, 0x80][..],
+            &[0x85, 1, 0xff][..],
+        ] {
+            let tbs = with_crl_extension(extension("2.5.29.28", true, &idp(extra)));
+            assert!(!revokes_without_next_update(&tbs, &serial), "{extra:?}");
+        }
+        // A malformed cRLNumber.
+        let mut number = base.clone();
+        for e in number.crl_extensions.iter_mut().flatten() {
+            if e.extn_id.to_string() == "2.5.29.20" {
+                e.extn_value = ::der::asn1::OctetString::new([0x02, 1, 0xff]).unwrap();
+            }
+        }
+        assert!(!revokes_without_next_update(&number, &serial));
+        // Another entry webpki rejects makes the whole CRL unusable.
+        let mut other = base.clone();
+        let mut indirect_entry = other.revoked_certificates.as_ref().unwrap()[0].clone();
+        indirect_entry.serial_number = x509_cert::serial_number::SerialNumber::from(4242u32);
+        indirect_entry.crl_entry_extensions = Some(vec![extension("2.5.29.29", false, &[0x30, 0])]);
+        other
+            .revoked_certificates
+            .as_mut()
+            .unwrap()
+            .push(indirect_entry);
+        assert!(!revokes_without_next_update(&other, &serial));
         // A role-only issuingDistributionPoint, which webpki 0.103 rejects.
         let role_only = with_crl_extension(extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]));
         assert!(!revokes_without_next_update(&role_only, &serial));
