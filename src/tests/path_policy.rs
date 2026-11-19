@@ -701,6 +701,22 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross.clone(), other.clone(), ca.clone()],
     );
+    // SEC-10: a cross certificate whose KeyUsage lacks keyCertSign (cRLSign
+    // only), first, so that its path fails path policy whatever its CRLs say.
+    let mut cross_no_cert_sign = cross.clone();
+    extension(
+        &mut cross_no_cert_sign,
+        "2.5.29.15",
+        true,
+        Some(tlv(3, &[1, 2])),
+    );
+    sign(&mut cross_no_cert_sign, &other_key);
+    write_pe(
+        dir,
+        "sec10-sec06-cross-no-cert-sign",
+        &leaf,
+        &[cross_no_cert_sign, other.clone(), ca.clone()],
+    );
     write_pe(
         dir,
         "good-sec06-cross-last",
@@ -849,7 +865,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 39 + point_forms().len());
+    assert_eq!(count, 40 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {

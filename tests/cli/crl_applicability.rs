@@ -612,6 +612,40 @@ fn sec10_a_revoked_path_does_not_decide_while_another_path_lacks_a_crl() {
     revocation_good(&run(&["--crl", "fixtures/sec06-root.crl"]));
 }
 
+/// The other path's cross certificate lacks keyCertSign, so a CRL for it could
+/// not make it verify: the revocation on the first path decides, whether or
+/// not the other path has a CRL.
+#[test]
+fn sec10_a_revoked_path_decides_when_the_other_path_fails_key_usage() {
+    let run = |extra: &[&str]| {
+        let mut args = vec![
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/sec06-root.der",
+            "--roots",
+            "fixtures/sec06-other-root.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/sec06-issuer.crl",
+            "--crl",
+            "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        ];
+        args.extend_from_slice(extra);
+        run_fixture("sec10-sec06-cross-no-cert-sign.exe", &args)
+    };
+    for extra in [&[][..], &["--crl", "fixtures/sec06-other-root.crl"]] {
+        let output = run(extra);
+        revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+        assert!(
+            output.json["results"][0]["error"]["details"]
+                .get("revoked_on_another_path")
+                .is_none()
+        );
+    }
+}
+
 /// `good.crl`: thisUpdate and nextUpdate in seconds.
 const CRL_THIS_UPDATE: u64 = 1_799_999_900;
 const CRL_NEXT_UPDATE: u64 = 1_800_001_000;

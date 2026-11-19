@@ -279,3 +279,28 @@ Retrieval cases can provide `crl_responses` (URL to fixture filename),
 (exact ordered URL array, including failed requests).
 An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.
+`crl_certificate_responses` (lowercase SHA-256 of a certificate's DER to a
+fixture filename; requires `crl_responses`) makes the injected source also
+answer a request for that certificate with that CRL, without a URL, as a
+source keyed by certificate or issuer does. Such answers are not listed in
+`expect.crl_requests`, which holds URLs only
+(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`).
+
+Three retrieval guards have unit tests only, because no committed input can
+reach them through the CLI:
+
+- An unknown status from webpki's confirmation pass (`details.reason`
+  `confirmation`) is final for retrieval. The confirmation exists to catch a
+  disagreement between rssig's per-certificate evaluation and webpki's own
+  rules; no fixture produces one unless one side has a bug.
+  `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins
+  the decision.
+- A certificate whose issuer name cannot be read is recorded as
+  `invalid_certificate` for each listed point, and the source is not asked.
+  Every certificate reaching retrieval has already been decoded from DER, and
+  a decoded name always re-encodes, so no fixture reaches this branch.
+- At most 64 CRL bodies and failures in one source response
+  (`crl_response_entries`). The spec's injected source answers one body per
+  listed URL, and a certificate lists at most 16, so a case cannot exceed the
+  limit; `retrieval::tests::a_response_with_too_many_entries_ends_the_run`
+  covers it.

@@ -32375,6 +32375,99 @@
       }
     },
     {
+      "id": "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+      "input": "sec10-sec06-cross-no-cert-sign.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-root-revoked-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+      "input": "good-sec06-cross-first.exe",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--roots",
+        "fixtures/sec06-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-issuer.crl",
+        "--crl",
+        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "certificate_sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {},
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {}
+                    ],
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": []
+      }
+    },
+    {
       "id": "sec10-crl-this-update-one-second-ahead",
       "input": "good-pe64.exe",
       "command": [

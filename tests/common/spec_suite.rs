@@ -28,6 +28,11 @@ pub struct Case {
     /// URLs the injected source answers with a fetch error of this kind
     /// instead of a response. Reads no file.
     pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
+    /// The injected source also answers a request for the certificate with
+    /// this SHA-256 (lowercase hex of its DER) with this response file, as a
+    /// CRL without a URL, the way a source keyed by certificate or issuer
+    /// does. Requires `crl_responses`.
+    pub crl_certificate_responses: Option<BTreeMap<String, String>>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
     pub expect: Expectation,
@@ -128,6 +133,7 @@ impl Case {
             input,
             crl_responses,
             crl_errors: _,
+            crl_certificate_responses,
             inputs,
             command,
             expect:
@@ -156,6 +162,7 @@ impl Case {
             .chain(
                 crl_responses
                     .iter()
+                    .chain(crl_certificate_responses.iter())
                     .flat_map(BTreeMap::values)
                     .map(|name| named(name, CaseFile::ResponseBody)),
             )

@@ -485,26 +485,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if self.aborted {
             return Ok(false);
         }
-        // The issuer name is the key for a source that stores CRLs by
-        // issuer; a certificate without a readable one is not asked about.
-        let decoded_issuer;
-        let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
-            Some(issuer) => issuer,
-            None => match ::der::Encode::to_der(&cert.tbs_certificate.issuer) {
-                Ok(encoded) => {
-                    decoded_issuer = encoded;
-                    &decoded_issuer
-                }
-                Err(_) => {
-                    let e = error(
-                        ErrorCode::InvalidCertificate,
-                        "certificate issuer name cannot be read for a CRL request",
-                    );
-                    self.skip(sha256, None, e, None);
-                    return Ok(false);
-                }
-            },
-        };
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // The engine's own per-certificate URL limits end the run.
@@ -550,6 +530,34 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             }
         }
+        // The issuer name is the key for a source that stores CRLs by
+        // issuer; a certificate without a readable one is not asked about,
+        // and each of its listed points is recorded with that reason. No
+        // committed input reaches this: a decoded name always re-encodes
+        // (docs/testing.md).
+        let decoded_issuer;
+        let issuer = match crate::der::tbs_issuer(der, 0xa0, 2) {
+            Some(issuer) => issuer,
+            None => match ::der::Encode::to_der(&cert.tbs_certificate.issuer) {
+                Ok(encoded) => {
+                    decoded_issuer = encoded;
+                    &decoded_issuer
+                }
+                Err(_) => {
+                    let e = error(
+                        ErrorCode::InvalidCertificate,
+                        "certificate issuer name cannot be read for a CRL request",
+                    );
+                    if points.is_empty() {
+                        self.skip(sha256, None, e.clone(), None);
+                    }
+                    for point in &points {
+                        self.skip(sha256, Some(point), e.clone(), None);
+                    }
+                    return Ok(false);
+                }
+            },
+        };
         if self.requests >= MAX_SOURCE_REQUESTS {
             return Err(limit("crl_requests", MAX_SOURCE_REQUESTS, self.requests, 1));
         }
@@ -748,6 +756,7 @@ fn retrieve(
                 // webpki rejected the path rssig's own evaluation accepted:
                 // every certificate on it had a usable CRL, so no source can
                 // help, and asking about covered certificates is refused.
+                // Unit-tested only: no fixture makes the two disagree.
                 Uncovered::Final => break,
                 Uncovered::Listed(reports) => {
                     let mut targets = Vec::new();

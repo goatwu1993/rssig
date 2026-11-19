@@ -33,6 +33,29 @@ impl Suite {
             if case.crl_errors.is_some() && case.crl_responses.is_none() {
                 return Err(format!("crl_errors requires crl_responses: {}", case.id));
             }
+            if let Some(answers) = &case.crl_certificate_responses {
+                if case.crl_responses.is_none() {
+                    return Err(format!(
+                        "crl_certificate_responses requires crl_responses: {}",
+                        case.id
+                    ));
+                }
+                let digest = |key: &String| {
+                    key.len() == 64
+                        && key
+                            .bytes()
+                            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                };
+                if !answers
+                    .iter()
+                    .all(|(key, name)| digest(key) && spec_suite::is_fixture_name(name))
+                {
+                    return Err(format!(
+                        "crl_certificate_responses maps a lowercase SHA-256 to a fixture file name: {}",
+                        case.id
+                    ));
+                }
+            }
             if expect.crl_requests.is_some() && case.crl_responses.is_none() {
                 return Err(format!(
                     "crl_requests requires an injected source: {}",
@@ -146,6 +169,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     let mut stderr = Vec::new();
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
+        by_certificate: Option<&'a BTreeMap<String, String>>,
         errors: Option<&'a BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
         fixtures: &'a Path,
         requests: &'a mut Vec<String>,
@@ -155,7 +179,16 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut self,
             request: &rssig::retrieval::CrlRequest<'_>,
         ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, max_bytes| {
+            use sha2::Digest;
+            let certificate: String = sha2::Sha256::digest(request.certificate)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect();
+            let by_certificate = self
+                .by_certificate
+                .and_then(|answers| answers.get(&certificate))
+                .map(|name| std::fs::read(self.fixtures.join(name)).unwrap());
+            let response = rssig::retrieval::fetch_each(request, |url, max_bytes| {
                 use rssig::domain::CrlSourceErrorKind;
                 use rssig::retrieval::CrlSourceError;
                 self.requests.push(url.to_owned());
@@ -175,7 +208,11 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 let bytes = std::fs::read(self.fixtures.join(path)).unwrap();
                 assert!(bytes.len() <= max_bytes);
                 Ok(rssig::retrieval::SourcedCrl::new(bytes))
-            }))
+            });
+            Ok(match by_certificate {
+                Some(bytes) => response.with_crl(rssig::retrieval::SourcedCrl::new(bytes)),
+                None => response,
+            })
         }
     }
     let mut requests = Vec::new();
@@ -186,6 +223,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             &mut stderr,
             &mut Source {
                 responses,
+                by_certificate: case.crl_certificate_responses.as_ref(),
                 errors: case.crl_errors.as_ref(),
                 fixtures,
                 requests: &mut requests,

@@ -24,10 +24,15 @@ rule is restated for retrieval.
    `details.certificates_without_crl`, every certificate on a tried path that
    has no CRL at all, each in full (`unusable_crl` adds the most specific CRL
    that exists but could not be used). A revocation on one candidate path
-   decides only when no other tried path lacks a CRL: otherwise the status is
-   unknown for those paths, with the revocation in
-   `details.revoked_on_another_path`, so that retrieval can complete one
-   (`sec10-cross-revoked-path-beside-path-without-crl-is-unknown`). An unknown
+   decides unless another tried path passes every other path policy and has
+   a certificate with no CRL at all: then the status is unknown, with the
+   revocation in `details.revoked_on_another_path`, so that retrieval can
+   complete that path
+   (`sec10-cross-revoked-path-beside-path-without-crl-is-unknown`). A path
+   that would fail another check, such as a missing keyCertSign, does not
+   (`sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`), and
+   neither does a certificate whose only CRL is stale or unusable, which is
+   never offered to a source. An unknown
    status from webpki's confirmation of a path whose every certificate had a
    CRL (`details.reason` `confirmation`) is final: no source is asked.
 2. Ask the source about exactly those certificates, once each, as OpenSSL's

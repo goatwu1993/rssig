@@ -653,3 +653,82 @@ fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
         "good"
     );
 }
+
+/// SEC-10: one candidate path is revoked by a supplied CRL and the other only
+/// lacks its root's CRL. Retrieval asks about exactly that path's issuer, by
+/// certificate and issuer name (it lists no point), and the path verifies.
+#[test]
+fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
+    struct ByCertificate {
+        crl: Vec<u8>,
+        asked: Vec<(Vec<u8>, Vec<u8>, usize)>,
+    }
+    impl rssig::retrieval::CrlSource for ByCertificate {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            self.asked.push((
+                request.certificate.to_vec(),
+                request.issuer.to_vec(),
+                request.distribution_points.len(),
+            ));
+            Ok(rssig::retrieval::CrlResponse::new()
+                .with_crl(rssig::retrieval::SourcedCrl::new(self.crl.clone())))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let read = |name: &str| std::fs::read(base.join(name)).unwrap();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("sec06-root.der"),
+        "--roots".to_owned(),
+        path("sec06-other-root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--crl".to_owned(),
+        path("sec06-issuer.crl"),
+        "--crl".to_owned(),
+        path("sec10-sec06-other-root-revoked-cross.crl"),
+        "--fetch-crls".to_owned(),
+        path("good-sec06-cross-first.exe"),
+    ];
+    let mut source = ByCertificate {
+        crl: read("sec06-root.crl"),
+        asked: Vec::new(),
+    };
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    assert!(err.is_empty());
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(code, 0, "{report}");
+    // Asked once, about the issuer under the root, never about the revoked
+    // cross certificate or a covered one.
+    assert_eq!(source.asked.len(), 1);
+    let (certificate, issuer, points) = &source.asked[0];
+    assert_eq!(certificate, &read("sec06-issuer.der"));
+    assert_eq!(*points, 0);
+    // The issuer name is the root's subject, as the root's CRL names it.
+    let root_crl = read("sec06-root.crl");
+    assert!(
+        root_crl
+            .windows(issuer.len())
+            .any(|w| w == issuer.as_slice()),
+        "the request's issuer name is the root CRL's issuer"
+    );
+    let result = &report["results"][0];
+    assert_eq!(
+        result["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+    let artifacts = result["crl_retrieval"]["artifacts"].as_array().unwrap();
+    assert_eq!(artifacts.len(), 1);
+    assert_eq!(
+        artifacts[0]["certificate_sha256"],
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+    );
+}
