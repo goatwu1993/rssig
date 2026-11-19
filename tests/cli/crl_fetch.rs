@@ -1088,7 +1088,7 @@ fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
     assert_eq!(error["code"], "crl_expired");
     // The signer and the timestamp signer share the expired CRL.
     assert!(
-        !error["details"]["certificates_without_crl"]
+        !error["details"]["certificates_with_expired_crl"]
             .as_array()
             .unwrap()
             .is_empty()
@@ -1097,4 +1097,51 @@ fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
         error["details"]["crl_retrieval"]["failures"][0]["code"],
         "crl_fetch_failed"
     );
+}
+
+/// SEC-10: a source keyed by certificate answers the signer with its issuer's
+/// CRL, naming no URL, and never uses the signer's listed point. The point is
+/// not a failure: nothing is reported in `crl_retrieval.failures`.
+#[test]
+fn sec10_fetch_by_certificate_answer_leaves_no_point_failures() {
+    struct ByCertificate(Vec<u8>, Vec<usize>);
+    impl rssig::retrieval::CrlSource for ByCertificate {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            self.1.push(request.distribution_points.len());
+            Ok(rssig::retrieval::CrlResponse::new()
+                .with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone())))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("sec06-root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--crl".to_owned(),
+        path("sec06-root.crl"),
+        "--fetch-crls".to_owned(),
+        path("sec10-leaf-crl-dp.exe"),
+    ];
+    let mut source = ByCertificate(
+        std::fs::read(base.join("sec06-issuer.crl")).unwrap(),
+        Vec::new(),
+    );
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut source).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(code, 0, "{report}");
+    // Asked once, with the signer's one listed point as a hint.
+    assert_eq!(source.1, [1]);
+    let retrieval = &report["results"][0]["crl_retrieval"];
+    assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 1);
+    assert!(retrieval["artifacts"][0].get("url").is_none());
+    assert!(retrieval.get("failures").is_none(), "{retrieval}");
 }

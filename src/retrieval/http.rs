@@ -272,6 +272,8 @@ impl HttpCrlSource {
             let kind = source_error_kind(&e, spent_before);
             let mut source_error = CrlSourceError::new(kind, e.message);
             source_error.details = e.details;
+            // The marker only classifies; the kind says the same.
+            source_error.details.remove("source_spent");
             source_error
         })
     }
@@ -534,6 +536,15 @@ mod tests {
         };
         assert!(source.remaining().is_err());
         assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
+        // The classifying marker is not part of the reported failure.
+        let mut source = HttpCrlSource {
+            started: Some(Instant::now() - DEADLINE),
+            ..HttpCrlSource::new()
+        };
+        let reported = source
+            .fetch_one("http://example.com/x", 10)
+            .expect_err("deadline");
+        assert!(!reported.details.contains_key("source_spent"));
         // A URL the policy refuses is Denied, before any work.
         let mut source = HttpCrlSource::new();
         assert_eq!(

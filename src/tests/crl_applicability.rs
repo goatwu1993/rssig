@@ -328,6 +328,25 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 }]),
             ),
         ),
+        // A root CRL still within its validity but older than `good.crl`
+        // (thisUpdate NOW - 200 against NOW - 100), listing the test signer:
+        // superseded, so its listing does not count beside the newer CRL.
+        (
+            "sec10-root-superseded-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 200,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 150),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         (
             "sec10-unrelated-expired.crl",
             crl(other, &other_key, NOW - 200, Some(NOW - 1)),

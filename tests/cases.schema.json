@@ -144,7 +144,7 @@
             "additionalProperties": {
               "$ref": "#/$defs/fixtureName"
             },
-            "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to a DER/PEM response file, returned as a CRL without a URL, as a source keyed by certificate or issuer does. Requires crl_responses. Such answers are not listed in expect.crl_requests."
+            "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to a DER/PEM response file, returned alone as a CRL without a URL, as a source keyed by certificate or issuer does; none of that certificate's listed URLs is requested. Requires crl_responses. Such answers are not listed in expect.crl_requests."
           }
         },
         "not": {

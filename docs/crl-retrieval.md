@@ -45,7 +45,8 @@ rule is restated for retrieval.
    empty list marks a certificate the verifier could not name. A
    certificate whose only CRLs have expired is offered to the source too, as
    Bouncy Castle drops expired CRLs and fetches from the certificate's
-   points: `crl_expired` names it in `details.certificates_without_crl`, a
+   points: `crl_expired` names it in `details.certificates_with_expired_crl`
+   (an unknown status lists such certificates under the same key), a
    fresh CRL verifies (`crl-stale-local-refreshed-by-provider`), and without
    one `crl_expired` stands (`crl-stale-local-asks-provider`). One whose only
    CRL is unusable for another reason is not offered
@@ -62,7 +63,9 @@ rule is restated for retrieval.
    (`sec10-fetch-covered-signer-is-not-asked`,
    `sec10-fetch-asks-only-the-uncovered-certificate`). A source that answers
    with a CRL naming no URL looked it up by certificate or issuer: the
-   points it did not use are not recorded as failures.
+   points it did not use are not recorded as failures
+   (`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Only a
+   body that loads as a CRL counts as such an answer.
    CRLs are per issuer, so a certificate with no point left to pass on,
    whose issuer was already asked about, is not asked again and does not
    spend the request cap. A list that is present but empty (a certificate

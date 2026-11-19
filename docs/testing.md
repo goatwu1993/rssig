@@ -281,13 +281,18 @@ An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.
 `crl_certificate_responses` (lowercase SHA-256 of a certificate's DER, as
 rssig re-encodes it, which equals the original for every committed fixture, to a
-fixture filename; requires `crl_responses`) makes the injected source also
-answer a request for that certificate with that CRL, without a URL, as a
-source keyed by certificate or issuer does. Such answers are not listed in
+fixture filename; requires `crl_responses`) makes the injected source
+answer a request for that certificate with that CRL alone, without a URL, as
+a source keyed by certificate or issuer does; none of that certificate's
+listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
-(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`).
+(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+match listed fields only, so the absence of `crl_retrieval.failures` is
+asserted by the named test
+`sec10_fetch_by_certificate_answer_leaves_no_point_failures`.
 
-Three retrieval guards have unit tests only, because no committed input can
+Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 
 - An unknown status from webpki's confirmation pass (`details.reason`
@@ -305,3 +310,11 @@ reach them through the CLI:
   listed URL, and a certificate lists at most 16, so a case cannot exceed the
   limit; `retrieval::tests::a_response_with_too_many_entries_ends_the_run`
   covers it.
+- Points recorded as not tried once a request's byte allowance is spent. The
+  allowance is up to 32 MiB and fixtures are a few hundred bytes, so no case
+  spends it;
+  `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`
+  covers it.
+- The built-in HTTP source's kinds (a last request keeping its own failure,
+  aborts when spent). Tests never use the network, so these are unit tests
+  in `src/retrieval/http.rs`.

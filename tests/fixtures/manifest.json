@@ -147,7 +147,9 @@
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "sec10-superseded-crl-revocation-alone-revokes"
       ]
     },
     {
@@ -266,7 +268,8 @@
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
-        "crl-stale-local-refreshed-by-provider"
+        "crl-stale-local-refreshed-by-provider",
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored"
       ]
     },
     {
@@ -322,7 +325,9 @@
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
         "sec10-stale-crl-revocation-alone-is-expired",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "sec10-superseded-crl-revocation-alone-revokes"
       ]
     },
     {
@@ -9337,6 +9342,18 @@
       ]
     },
     {
+      "file": "sec10-root-superseded-revoked.crl",
+      "sha256": "03d7b931fce4ea3bf9aeb2a7eac6cd412abb96e54e94b1d8ee21cd99dc648752",
+      "bytes": 209,
+      "description": "SEC-10: Correctly signed root CRL, still within its validity (thisUpdate 200 seconds before the pinned time, nextUpdate 1000 after) but older than good.crl, revoking serial 2, the test signer. Beside the newer good.crl its listing is superseded and ignored; alone it is usable and revokes. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "sec10-superseded-crl-revocation-alone-revokes"
+      ]
+    },
+    {
       "file": "sec10-unrelated-expired.crl",
       "sha256": "341293836f1a01319a8ce1efbbda81194cd9a16528199258cfecc76656dc31ad",
       "bytes": 187,
@@ -9634,7 +9651,8 @@
         "sec10-fetch-full-crl-not-fetched",
         "sec10-fetch-unusable-supplied-crl-not-fetched",
         "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "sec10-fetch-expired-partition-for-another-point-still-fetches",
+        "sec10-fetch-by-certificate-answer-requests-no-listed-point"
       ]
     },
     {

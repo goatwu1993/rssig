@@ -745,6 +745,22 @@ fn sec10_a_revocation_in_a_stale_crl_does_not_count_beside_a_fresh_one() {
 }
 
 #[test]
+fn sec10_a_revocation_in_a_superseded_crl_does_not_count_beside_a_newer_one() {
+    // Both CRLs are within their validity, but good.crl is newer and does
+    // not list the signer: the newest usable CRL decides, as OpenSSL prefers
+    // the latest lastUpdate, so the older listing may be a released hold.
+    let output = run_with("sec10-root-superseded-revoked.crl");
+    expect_success(&output);
+    assert_eq!(
+        output.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+    // Alone it is the newest usable CRL, and its listing revokes.
+    let output = run_alone("sec10-root-superseded-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+}
+
+#[test]
 fn sec10_an_expired_partition_for_another_point_does_not_decide_the_signer() {
     // Not authoritative for the signer, so its age is irrelevant: the status
     // is unknown and the signer is named, not crl_expired.

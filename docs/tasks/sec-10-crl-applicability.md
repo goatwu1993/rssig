@@ -302,7 +302,12 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   expired CRL beside a fresh CRL that omits the serial therefore verifies
   (`sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`, formerly
   `-revokes`), and alone it is `crl_expired`
-  (`sec10-stale-crl-revocation-alone-is-expired`).
+  (`sec10-stale-crl-revocation-alone-is-expired`). The newest usable CRL
+  decides, as OpenSSL's `get_crl_sk` breaks ties by the latest lastUpdate, so
+  a listing in an older CRL still within its validity does not count beside
+  a newer one (`sec10-superseded-crl-revocation-beside-newer-crl-is-ignored`)
+  and alone it revokes (`sec10-superseded-crl-revocation-alone-revokes`). A
+  CRL without nextUpdate is never current.
 - **A listing in a current CRL with a malformed AKI counts.** Observed,
   acceptance (fails closed); not yet compared with either library:
   `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`.
@@ -344,7 +349,9 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   would fetch here too; kept narrow until compared case by case.
 - **A source answering by certificate leaves no per-point failures.**
   Decided, diagnostics (owner delegated the call): OpenSSL's `lookup_crls`
-  and Bouncy Castle's store lookups have no per-point outcome.
+  and Bouncy Castle's store lookups have no per-point outcome. Only a body
+  that loads as a CRL counts:
+  `sec10-fetch-by-certificate-answer-requests-no-listed-point`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds
   denied/failed/abort/unknown), diagnostics. Changed:

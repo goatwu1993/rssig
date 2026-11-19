@@ -32706,6 +32706,55 @@
       }
     },
     {
+      "id": "sec10-fetch-by-certificate-answer-requests-no-listed-point",
+      "input": "sec10-leaf-crl-dp.exe",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "sec06-issuer.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/sec06-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec06-root.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": []
+      }
+    },
+    {
       "id": "sec10-fetch-path-failing-key-usage-asks-nothing",
       "input": "bad-sec06-ca-ku.exe",
       "crl_responses": {},
@@ -34904,6 +34953,72 @@
               "ok": false,
               "error": {
                 "code": "crl_expired",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/sec10-root-superseded-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-superseded-crl-revocation-alone-revokes",
+      "input": "good-countersignature.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-superseded-revoked.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
                 "stage": "revocation"
               }
             }

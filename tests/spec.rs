@@ -188,10 +188,13 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 .by_certificate
                 .and_then(|answers| answers.get(&certificate))
                 .map(|name| std::fs::read(self.fixtures.join(name)).unwrap());
-            // A well-behaved source: within the allowance, and nothing more
-            // after it aborted.
-            if let Some(bytes) = &by_certificate {
+            // A source keyed by certificate answers such a certificate with
+            // its CRL alone, within the allowance, and requests none of its
+            // listed URLs.
+            if let Some(bytes) = by_certificate {
                 assert!(bytes.len() <= request.max_bytes);
+                return Ok(rssig::retrieval::CrlResponse::new()
+                    .with_crl(rssig::retrieval::SourcedCrl::new(bytes)));
             }
             let response = rssig::retrieval::fetch_each(request, |url, max_bytes| {
                 use rssig::domain::CrlSourceErrorKind;
@@ -214,16 +217,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 assert!(bytes.len() <= max_bytes);
                 Ok(rssig::retrieval::SourcedCrl::new(bytes))
             });
-            let aborted = response
-                .failures
-                .iter()
-                .any(|f| f.kind == rssig::domain::CrlSourceErrorKind::Abort);
-            Ok(match by_certificate {
-                Some(bytes) if !aborted => {
-                    response.with_crl(rssig::retrieval::SourcedCrl::new(bytes))
-                }
-                _ => response,
-            })
+            Ok(response)
         }
     }
     let mut requests = Vec::new();

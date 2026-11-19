@@ -605,25 +605,27 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // whose issuer, authority key and role (CA or end entity) were
         // already asked about, needs no request of its own (its points'
         // outcomes were recorded above) and does not spend the cap.
-        // No authorityKeyIdentifier: the issuer name alone. One that cannot
-        // be read, or names no key, cannot be told from another key of the
-        // same name: such a certificate is always asked about.
-        let authority_key = match cert
+        // The authorityKeyIdentifier extension's raw bytes (none: empty), so
+        // that one that cannot be read, or names its issuer by name and
+        // serial, is told apart from other keys of the same name and still
+        // asked about only once.
+        let authority_key: Vec<u8> = cert
             .tbs_certificate
-            .get::<x509_cert::ext::pkix::AuthorityKeyIdentifier>()
-        {
-            Ok(None) => Some(Vec::new()),
-            Ok(Some((_, aki))) => aki.key_identifier.map(|k| k.as_bytes().to_vec()),
-            Err(_) => None,
-        };
+            .extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id.to_string() == "2.5.29.35")
+            .map(|e| e.extn_value.as_bytes().to_vec())
+            .unwrap_or_default();
         let is_ca = cert
             .tbs_certificate
             .get::<x509_cert::ext::pkix::BasicConstraints>()
             .ok()
             .flatten()
             .is_some_and(|(_, constraints)| constraints.ca);
-        let new_issuer = authority_key
-            .is_none_or(|key| self.asked_issuers.insert((issuer.to_vec(), key, is_ca)));
+        let new_issuer = self
+            .asked_issuers
+            .insert((issuer.to_vec(), authority_key, is_ca));
         if points.is_empty() && !new_issuer {
             return Ok(false);
         }
@@ -703,18 +705,22 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             for point in &unanswered {
                 self.source_failure(sha256, failure.clone().with_url(point.clone()));
             }
-            return self.load_all(sha256, response.crls, max_bytes);
+            return Ok(self.load_all(sha256, response.crls, max_bytes)?.added);
         }
+        // The bodies are loaded first: what they turn out to be decides how
+        // the points the source did not answer are recorded.
+        let loaded = self.load_all(sha256, response.crls, max_bytes)?;
+        let returned = loaded.accepted_bytes;
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort, or
-        // once the response used the request's whole byte allowance, the
-        // points never tried are recorded as such.
-        let returned: usize = response.crls.iter().map(|c| c.bytes.len()).sum();
+        // once the accepted bodies used the request's whole byte allowance,
+        // the points never tried are recorded as such.
         // A source that answered with a CRL naming no URL looked the CRL up
         // by certificate or issuer, as OpenSSL's `lookup_crls` does: the
         // points it did not use are not failures. They stay asked, so each
-        // URI still goes to a source once per verification.
-        let by_certificate = !self.aborted && response.crls.iter().any(|c| c.url.is_none());
+        // URI still goes to a source once per verification. Only a body that
+        // loaded as a CRL counts as such an answer.
+        let by_certificate = !self.aborted && loaded.by_certificate;
         for point in unanswered.iter().filter(|_| !by_certificate) {
             let e = if self.aborted {
                 error(
@@ -737,33 +743,36 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             };
             self.skip(sha256, Some(point), e, None);
         }
-        self.load_all(sha256, response.crls, max_bytes)
+        Ok(loaded.added)
     }
 
-    /// Load every returned body; returns whether a new CRL was added.
+    /// Load every returned body.
     fn load_all(
         &mut self,
         sha256: &str,
         crls: Vec<SourcedCrl>,
         max_bytes: usize,
-    ) -> Result<bool, VerificationError> {
-        let mut added = false;
-        let mut total = 0usize;
+    ) -> Result<Loaded, VerificationError> {
+        let mut loaded = Loaded::default();
         for crl in crls {
-            added |= self.load(sha256, crl, &mut total, max_bytes)?;
+            let without_url = crl.url.is_none();
+            let (valid, added) = self.load(sha256, crl, &mut loaded.accepted_bytes, max_bytes)?;
+            loaded.added |= added;
+            loaded.by_certificate |= valid && without_url;
         }
-        Ok(added)
+        Ok(loaded)
     }
 
     /// Check, account for and load one returned body. A body over its size
-    /// caps, or that is not a CRL, is no evidence and is not loaded.
+    /// caps, or that is not a CRL, is no evidence and is not loaded. Returns
+    /// whether it is a CRL, and whether it added one not already loaded.
     fn load(
         &mut self,
         sha256: &str,
         crl: SourcedCrl,
         total: &mut usize,
         max_bytes: usize,
-    ) -> Result<bool, VerificationError> {
+    ) -> Result<(bool, bool), VerificationError> {
         let url = crl.url.filter(|u| hygienic_url(u));
         // A redirect target the source reported but that is not recorded is
         // withheld, never replaced by the requested URL.
@@ -779,7 +788,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // A body over its caps is not counted against the bodies after it.
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
             self.skip(sha256, url.as_deref(), e, None);
-            return Ok(false);
+            return Ok((false, false));
         }
         *total += len;
         for _ in 0..8 {
@@ -804,7 +813,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 format!("decoding retrieved CRL: {e:#}"),
             );
             self.skip(sha256, url.as_deref(), e, None);
-            return Ok(false);
+            return Ok((false, false));
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
@@ -813,7 +822,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
         }
         // A body identical to a loaded CRL adds nothing to verify.
-        Ok(loaded > prior)
+        Ok((true, loaded > prior))
     }
 }
 
@@ -862,10 +871,10 @@ fn retrieve(
                 // A revocation naming another path's gap, or an expired CRL
                 // naming the certificates a source could refresh.
                 Err(e)
-                    if matches!(
-                        e.code,
-                        ErrorCode::CertificateRevoked | ErrorCode::CrlExpired
-                    ) && e.details.contains_key("certificates_without_crl") =>
+                    if e.code == ErrorCode::CertificateRevoked
+                        && e.details.contains_key("certificates_without_crl")
+                        || e.code == ErrorCode::CrlExpired
+                            && e.details.contains_key("certificates_with_expired_crl") =>
                 {
                     e
                 }
@@ -992,6 +1001,18 @@ fn body_over_allowance(len: usize, total: usize, max_bytes: usize) -> Option<Ver
     }
 }
 
+/// What one response's bodies turned out to be.
+#[derive(Default)]
+struct Loaded {
+    /// A CRL not already loaded was added.
+    added: bool,
+    /// The bytes of the bodies accepted within the size caps.
+    accepted_bytes: usize,
+    /// A body naming no URL loaded as a CRL: the source answered by
+    /// certificate or issuer.
+    by_certificate: bool,
+}
+
 /// What an unknown revocation status tells retrieval to ask about.
 enum Uncovered {
     /// The certificates the verifier reports without a usable CRL.
@@ -1007,18 +1028,30 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
     if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("confirmation") {
         return Uncovered::Final;
     }
-    match unknown
-        .details
-        .get("certificates_without_crl")
-        .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
-    {
-        Some(reports) if !reports.is_empty() => Uncovered::Listed(reports),
-        // The verifier's own list, but empty: the certificate without a CRL
-        // could not be named. Asking about every selected certificate would
-        // ask about covered ones, so nothing is asked.
-        Some(_) => Uncovered::Final,
-        // A revocation is definite evidence: only the certificates it names
-        // are worth asking about, never every selected one.
+    let listed = |key: &str| {
+        unknown
+            .details
+            .get(key)
+            .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
+    };
+    // Certificates whose only CRLs have expired can be refreshed.
+    let expired = listed("certificates_with_expired_crl").unwrap_or_default();
+    match listed("certificates_without_crl") {
+        Some(mut reports) => {
+            reports.extend(expired);
+            if reports.is_empty() {
+                // The verifier's own list, but empty: the certificate
+                // without a CRL could not be named. Asking about every
+                // selected certificate would ask about covered ones, so
+                // nothing is asked.
+                Uncovered::Final
+            } else {
+                Uncovered::Listed(reports)
+            }
+        }
+        None if !expired.is_empty() => Uncovered::Listed(expired),
+        // Any other result is definite evidence: only the certificates it
+        // names are worth asking about, never every selected one.
         None if unknown.code != ErrorCode::RevocationUnknown => Uncovered::Final,
         None => Uncovered::Unlisted,
     }
@@ -1703,9 +1736,10 @@ mod tests {
         assert_eq!(not_tried, 2, "{:?}", state.report.failures);
     }
     #[test]
-    fn a_certificate_with_an_unreadable_authority_key_is_always_asked() {
-        // Its issuer key cannot be told from another of the same name, so a
-        // request for that name does not stand in for it.
+    fn an_unreadable_authority_key_is_its_own_issuer_key() {
+        // It cannot be told from another key of the same name, so a request
+        // for a readable key does not stand in for it; a second certificate
+        // with the same unreadable bytes needs no request of its own.
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
@@ -1720,8 +1754,9 @@ mod tests {
         aki.extn_value = ::der::asn1::OctetString::new(vec![0x04, 0x00]).unwrap();
         ask(&mut state, "plain", &plain, &mut source).unwrap();
         ask(&mut state, "broken", &broken, &mut source).unwrap();
+        assert_eq!(source.calls, 2);
         ask(&mut state, "broken2", &broken, &mut source).unwrap();
-        assert_eq!(source.calls, 3);
+        assert_eq!(source.calls, 2);
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
@@ -1888,7 +1923,7 @@ mod tests {
         assert!(state.report.failures.iter().all(|f| f.message == "down"));
     }
     #[test]
-    fn points_passed_over_by_an_issuer_answer_are_not_failures() {
+    fn only_a_real_crl_without_a_url_answers_by_certificate() {
         struct ByIssuer(Vec<usize>);
         impl CrlSource for ByIssuer {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -1903,17 +1938,35 @@ mod tests {
         let cert = signer_with_points("a", 2);
         ask(&mut state, "a", &cert, &mut source).unwrap();
         ask(&mut state, "b", &cert, &mut source).unwrap();
-        // Each URI goes to the source once per verification, and the second
+        // The body is not a CRL, so it is no answer by certificate: both
+        // certificates report the two points it passed over, and the second
         // certificate of the same issuer, with nothing new, is not asked.
-        // The source answered by certificate, so the points it did not use
-        // are no failures; only its body, which is not a CRL, is one.
         assert_eq!(source.0, [2]);
+        for certificate in ["a", "b"] {
+            let urls = state
+                .report
+                .failures
+                .iter()
+                .filter(|f| f.certificate_sha256 == certificate && f.url.is_some())
+                .count();
+            assert_eq!(urls, 2, "{certificate}: {:?}", state.report.failures);
+        }
+        // A real CRL naming no URL is such an answer: no point is a failure.
+        struct Answers;
+        impl CrlSource for Answers {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "c", &signer_with_points("c", 2), &mut Answers).unwrap();
         assert!(
-            state.report.failures.iter().all(|f| f.url.is_none()),
+            state.report.failures.is_empty(),
             "{:?}",
             state.report.failures
         );
-        assert_eq!(state.report.failures.len(), 1);
     }
     #[test]
     fn a_response_with_too_many_entries_ends_the_run() {
