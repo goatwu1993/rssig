@@ -866,5 +866,11 @@ path is not one a source could complete.
   `crl-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
 
-Among a certificate's unusable CRLs, one that cannot be replaced is now
-reported ahead of one that can (wording only).
+Among a certificate's unusable CRLs, the one with the highest rank is
+reported, and one that cannot be replaced now ranks above one that can. This
+is a behaviour change, not only wording: a certificate with a scope-mismatched
+CRL beside a malformed one of the same issuer was asked about before (the
+two tied and the first won) and now is not, since the malformed CRL's
+failure stands whatever is fetched. A CRL scoped to a distribution point the
+certificate does not list, when it lists none, is not replaceable either: a
+source is asked about the points the certificate lists.

@@ -1058,10 +1058,14 @@ fn retrieve(
                 // CRL naming the certificates whose CRL a source could
                 // replace.
                 Err(e)
-                    if e.code == ErrorCode::CertificateRevoked
-                        && e.details.contains_key("certificates_without_crl")
-                        || e.details.contains_key("certificates_with_expired_crl")
-                        || e.details.contains_key(crate::trust::WITH_UNUSABLE_CRL) =>
+                    if (e.code == ErrorCode::CertificateRevoked
+                        && e.details.contains_key("certificates_without_crl"))
+                        || ((e.code == ErrorCode::CertificateRevoked
+                            || e.code == ErrorCode::CrlExpired
+                            || e.code == ErrorCode::CrlNotYetValid
+                            || e.code == ErrorCode::InvalidCrl)
+                            && (e.details.contains_key("certificates_with_expired_crl")
+                                || e.details.contains_key(crate::trust::WITH_UNUSABLE_CRL))) =>
                 {
                     e
                 }

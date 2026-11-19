@@ -999,8 +999,10 @@ fn evaluate_crls(
         // webpki would treat a CRL scoped to a named distribution point as
         // authoritative for a certificate that lists none, so such a
         // partition could clear a certificate it does not cover.
+        // Not replaceable: the points a source is asked about come from the
+        // certificate, and it lists none (`sec10-fetch-no-listed-point-*`).
         if !lists_points && names_distribution_point(&crl.tbs) {
-            fail(REPLACEABLE, &|| {
+            fail(UNUSABLE, &|| {
                 with_crl(
                     revocation_error(
                         &sha256,

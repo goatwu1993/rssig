@@ -235,9 +235,10 @@ fn verify_trust(
 /// The failure reported when no usage verifies, as for candidate paths: a
 /// revocation is definite and is the result (the first, if several), naming
 /// every certificate any other usage reports without a CRL
-/// (`certificates_without_crl`) or with only expired ones
-/// (`certificates_with_expired_crl`), once each, so that `--fetch-crls` can
-/// still complete that usage. Otherwise a usage that only lacks CRLs a source
+/// (`certificates_without_crl`), with only expired ones
+/// (`certificates_with_expired_crl`) or with only ones a source's CRL could
+/// replace (`certificates_with_unusable_crl`), once each, so that
+/// `--fetch-crls` can still complete that usage. Otherwise a usage that only lacks CRLs a source
 /// could supply is reported ahead of another usage's failure; on a tie, the
 /// first.
 fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
@@ -314,8 +315,8 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
 
 /// How far CRLs from a source could complete a failed usage that is not a
 /// revocation (a revocation is chosen before any ranking): 2 when the
-/// failure is an unknown status or an expired CRL that names the
-/// certificates to ask about, and 0 otherwise. An empty list names nothing:
+/// failure is an unknown status or an expired or replaceable CRL that names
+/// the certificates to ask about, and 0 otherwise. An empty list names nothing:
 /// it is what the verifier returns when no path passes path policy.
 fn completable_by_crl(e: &anyhow::Error) -> u8 {
     e.chain()
@@ -339,6 +340,8 @@ fn completable_by_crl(e: &anyhow::Error) -> u8 {
 }
 
 /// The details that name certificates a CRL source could be asked about.
+/// `choose_usage_failure` keeps one merged list per key, in this order: its
+/// `gaps` array must have as many entries as there are keys.
 const KEYS: [&str; 3] = [
     "certificates_without_crl",
     "certificates_with_expired_crl",
