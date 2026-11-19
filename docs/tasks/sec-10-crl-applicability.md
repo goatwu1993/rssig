@@ -132,7 +132,10 @@ One box per item in the scope above.
   as OpenSSL and Bouncy Castle do, and webpki confirms the accepted path with
   only the chosen CRLs. An unusable CRL is set aside when another CRL of the
   issuer is usable; the former `sec10-root-*` cases now pin each failure with
-  the bad CRL alone and success beside `good.crl`.
+  the bad CRL alone and success beside `good.crl`. Changing those earlier
+  failure expectations for the bad CRL beside `good.crl` was approved by the
+  repository owner as a one-time exception to the AGENTS.md rule; each
+  failure is still pinned with the bad CRL alone.
 
 Change these only with a new decision and paired fixtures.
 
