@@ -192,7 +192,7 @@ fn verify_trust(
         .tbs_certificate
         .get::<ExtendedKeyUsage>()
         .map_err(crate::compat_error)?;
-    let mut failure = None;
+    let mut failures = Vec::new();
     for eku in USAGES {
         if usage
             .as_ref()
@@ -216,19 +216,12 @@ fn verify_trust(
                     }) {
                         return Err(e);
                     }
-                    // A usage that only lacks CRLs a source could supply is
-                    // reported ahead of another usage's failure.
-                    if failure
-                        .as_ref()
-                        .is_none_or(|kept| completable_by_crl(&e) > completable_by_crl(kept))
-                    {
-                        failure = Some(e)
-                    }
+                    failures.push(e);
                 }
             }
         }
     }
-    Err(failure.unwrap_or_else(|| {
+    Err(choose_usage_failure(failures).unwrap_or_else(|| {
         VerificationError::new(
             ErrorCode::InvalidEku,
             Stage::Certificate,
@@ -237,6 +230,76 @@ fn verify_trust(
         .detail("certificate", CertificateReport::parse(leaf).ok())
         .into()
     }))
+}
+
+/// The failure reported when no usage verifies, as for candidate paths: a
+/// revocation is definite and is the result, naming the certificates another
+/// usage only lacks a CRL for (in `certificates_without_crl` and
+/// `certificates_with_expired_crl`), so that `--fetch-crls` can still
+/// complete that usage. Otherwise a usage that only lacks CRLs a source could
+/// supply is reported ahead of another usage's failure; on a tie, the first.
+fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
+    let code = |e: &anyhow::Error| {
+        e.chain()
+            .find_map(|cause| cause.downcast_ref::<VerificationError>())
+            .map(|error| error.code)
+    };
+    if let Some(position) = failures
+        .iter()
+        .position(|e| code(e) == Some(ErrorCode::CertificateRevoked))
+    {
+        let mut without = Vec::new();
+        let mut expired = Vec::new();
+        for e in failures.iter().filter(|e| completable_by_crl(e) == 2) {
+            for cause in e.chain() {
+                let Some(error) = cause.downcast_ref::<VerificationError>() else {
+                    continue;
+                };
+                for (key, into) in [
+                    ("certificates_without_crl", &mut without),
+                    ("certificates_with_expired_crl", &mut expired),
+                ] {
+                    if let Some(list) = error.details.get(key).and_then(|v| v.as_array()) {
+                        into.extend(list.iter().cloned());
+                    }
+                }
+            }
+        }
+        let mut revoked = failures.into_iter().nth(position)?;
+        if (!without.is_empty() || !expired.is_empty())
+            && let Some(error) = revoked.downcast_mut::<VerificationError>()
+        {
+            if let Some(list) = error
+                .details
+                .get_mut("certificates_without_crl")
+                .and_then(|v| v.as_array_mut())
+            {
+                list.extend(without);
+            } else {
+                error.details.insert(
+                    "certificates_without_crl".into(),
+                    serde_json::Value::Array(without),
+                );
+            }
+            if !expired.is_empty() {
+                error.details.insert(
+                    "certificates_with_expired_crl".into(),
+                    serde_json::Value::Array(expired),
+                );
+            }
+        }
+        return Some(revoked);
+    }
+    let mut chosen: Option<anyhow::Error> = None;
+    for e in failures {
+        if chosen
+            .as_ref()
+            .is_none_or(|kept| completable_by_crl(&e) > completable_by_crl(kept))
+        {
+            chosen = Some(e);
+        }
+    }
+    chosen
 }
 
 /// How far CRLs from a source could complete a failed usage: 2 when the
@@ -271,6 +334,50 @@ fn completable_by_crl(e: &anyhow::Error) -> u8 {
 mod tests {
     use super::*;
     use ::der::Encode;
+    #[test]
+    fn a_revoked_usage_is_reported_and_names_another_usages_gaps() {
+        let named = serde_json::json!([{"sha256": "a"}]);
+        let error = |code| VerificationError::new(code, Stage::Revocation, "x");
+        let revoked = || anyhow::Error::from(error(ErrorCode::CertificateRevoked));
+        let unknown = || {
+            anyhow::Error::from(
+                error(ErrorCode::RevocationUnknown).detail("certificates_without_crl", &named),
+            )
+        };
+        let expired = || {
+            anyhow::Error::from(
+                error(ErrorCode::CrlExpired).detail("certificates_with_expired_crl", &named),
+            )
+        };
+        let code = |e: &anyhow::Error| e.downcast_ref::<VerificationError>().unwrap().code;
+        let details = |e: &anyhow::Error| {
+            e.downcast_ref::<VerificationError>()
+                .unwrap()
+                .details
+                .clone()
+        };
+        // Either order: the revocation is the result, naming the gaps of the
+        // usage that only lacks a CRL, so a source can still complete it.
+        for failures in [vec![revoked(), unknown()], vec![unknown(), revoked()]] {
+            let chosen = choose_usage_failure(failures).unwrap();
+            assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
+            assert_eq!(details(&chosen)["certificates_without_crl"], named);
+        }
+        let chosen = choose_usage_failure(vec![revoked(), expired()]).unwrap();
+        assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
+        assert_eq!(details(&chosen)["certificates_with_expired_crl"], named);
+        assert_eq!(
+            details(&chosen)["certificates_without_crl"],
+            serde_json::json!([])
+        );
+        // Without a revocation, the completable usage is preferred.
+        let other = || anyhow::Error::from(error(ErrorCode::InvalidEku));
+        let chosen = choose_usage_failure(vec![other(), unknown()]).unwrap();
+        assert_eq!(code(&chosen), ErrorCode::RevocationUnknown);
+        let chosen = choose_usage_failure(vec![other(), revoked()]).unwrap();
+        assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
+        assert!(choose_usage_failure(Vec::new()).is_none());
+    }
     #[test]
     fn only_a_named_missing_crl_ranks_a_usage_failure_as_completable() {
         let named = serde_json::json!([{"sha256": "a"}]);

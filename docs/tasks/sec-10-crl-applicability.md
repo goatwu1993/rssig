@@ -413,6 +413,13 @@ relic 02c54d58 and BoringSSL `main`.
   own failure (`invalid_key_usage`), as before PR #60, where that check ran
   first; still no request is made. Without `--fetch-crls` the result is
   `revocation_unknown` with an empty list, as before PR #60.
+  The same holds whatever revocation error such a chain gets, when
+  retrieval asks nothing: an unusable CRL or a revoked issuer on a path that
+  fails path policy reports `invalid_key_usage` with `--fetch-crls`
+  (`sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure`,
+  `sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure`;
+  Decided, diagnostics: both reject). A chain that verifies without
+  revocation keeps its revocation result.
 - **Retrieval asks per certificate, only about what lacks a CRL.** Decided,
   diagnostics (which requests are made; the verification result is the same
   either way). OpenSSL's `get_crl`/`lookup_crls` and Bouncy Castle's
@@ -582,6 +589,14 @@ relic 02c54d58 and BoringSSL `main`.
     `denied`) and across later verifications, so no request is spent and the
     "closed for good" contract holds
     (`a_source_closed_by_a_dns_timeout_aborts_every_request_even_after_a_new_verification`).
+  - An RDP signer with several usages: when one usage is revoked, the
+    revocation is the result (it is definite), and it names the certificates
+    another usage only lacks a CRL for, as a revocation on one candidate path
+    names another path's gaps, so `--fetch-crls` can still complete that
+    usage. Otherwise a usage that only lacks CRLs is reported first. Unit
+    test `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
+  - A delta CRL answered by certificate is not a full CRL, so it does not ask
+    for another verification pass (`a_new_full_crl_by_certificate_asks_for_verification_first`).
   - Re-offered points are bounded by `crl_requests` (64 source requests per
     verification), not by `crl_source_urls`
     (`re_offered_points_are_bounded_by_the_request_limit`).

@@ -839,6 +839,8 @@
     },
     "invalid_key_usage": {
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
         "sec10-fetch-path-failing-key-usage-asks-nothing",
         "ca-key-usage",
         "bad-signer-key-usage",

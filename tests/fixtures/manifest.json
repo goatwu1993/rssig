@@ -7010,6 +7010,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
         "bad-sec06-ca-ku",
         "sec10-fetch-path-failing-key-usage-asks-nothing"
       ]
@@ -7622,6 +7624,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -10142,6 +10146,7 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-unusable-crl-reports-path-failure",
         "sec10-ca-crl-dp-user-scope-excludes-issuer",
         "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
         "sec10-fetch-covered-signer-is-not-asked"
@@ -10155,6 +10160,7 @@
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
+        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-reports-path-failure",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",

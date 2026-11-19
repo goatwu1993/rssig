@@ -77,8 +77,9 @@ rule is restated for retrieval.
    (`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Only a
    body that loads as a CRL of the certificate's issuer counts as such an
    answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
-   unused points stay open: a later certificate listing one still offers it,
-   and each offer counts toward the 64 URIs passed per verification. When
+   unused points stay open: a later certificate listing one still offers it.
+   A re-offered URI counts once toward the 64 URIs passed per verification
+   (`crl_source_urls`); each offer still costs a source request. When
    the answer adds a full CRL (no issuingDistributionPoint), verification
    runs again before anything else is asked: its name and syntax do not
    establish authority or freshness, so only verification can tell which of
