@@ -19,12 +19,47 @@ pub struct Suite {
     pub cases: Vec<Case>,
 }
 
+/// Whether a case's result was decided on purpose, what it protects, and
+/// where the reasoning and the reference implementations' behavior are
+/// recorded.
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Decision {
+    /// `decided` (changes only with the owner's approval) or `observed`
+    /// (current behavior, kept so that a change is visible).
+    pub basis: Basis,
+    /// `acceptance` (verifies or rejects) or `diagnostics` (which error,
+    /// detail or request).
+    pub pins: Pins,
+    /// A repository-relative document, with an optional `#anchor`, that
+    /// names this case and gives the reason. Required when `decided`.
+    pub reason: Option<String>,
+    /// What reference implementations do, each with its source location.
+    #[serde(default)]
+    pub references: Vec<String>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Basis {
+    Decided,
+    Observed,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Pins {
+    Acceptance,
+    Diagnostics,
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
     pub id: String,
     pub input: Option<String>,
     pub crl_responses: Option<BTreeMap<String, String>>,
+    pub decision: Option<Decision>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
     pub expect: Expectation,
@@ -124,6 +159,7 @@ impl Case {
             id: _,
             input,
             crl_responses,
+            decision: _,
             inputs,
             command,
             expect:

@@ -29,6 +29,34 @@ impl Suite {
         }
         let mut ids = HashSet::new();
         for case in &self.cases {
+            if let Some(decision) = &case.decision {
+                if decision.basis == spec_suite::Basis::Decided && decision.reason.is_none() {
+                    return Err(format!("decided case {} needs a reason", case.id));
+                }
+                if decision.references.iter().any(|s| s.trim().is_empty()) {
+                    return Err(format!("empty decision reference for {}", case.id));
+                }
+                if let Some(reason) = &decision.reason {
+                    let path = Path::new(reason.split('#').next().unwrap());
+                    if path.as_os_str().is_empty()
+                        || path.is_absolute()
+                        || path
+                            .components()
+                            .any(|c| c == std::path::Component::ParentDir)
+                    {
+                        return Err(format!(
+                            "case {} needs a repository-relative reason document",
+                            case.id
+                        ));
+                    }
+                    let text =
+                        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
+                            .map_err(|e| format!("{}: {reason}: {e}", case.id))?;
+                    if !text.contains(&format!("`{}`", case.id)) {
+                        return Err(format!("{reason} does not name case {}", case.id));
+                    }
+                }
+            }
             let expect = &case.expect;
             if expect.crl_requests.is_some() && case.crl_responses.is_none() {
                 return Err(format!(
@@ -449,4 +477,26 @@ fn specification_detects_incorrect_provider_request_expectations() {
             .unwrap_err()
             .contains("requires an injected source")
     );
+}
+
+#[test]
+fn specification_checks_decision_reasons() {
+    let case = serde_json::json!({
+        "id": "sec10-root-crl-no-next-update",
+        "command": ["verify"],
+        "expect": {"exit_code": 1, "json": {}},
+        "decision": {"basis": "decided", "pins": "diagnostics"}
+    });
+    let mut suite = serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]});
+    let validate = |suite: &Value| {
+        serde_json::from_value::<Suite>(suite.clone())
+            .unwrap()
+            .validate()
+    };
+    assert!(validate(&suite).is_err());
+    let reason = "docs/tasks/sec-10-crl-applicability.md#cases";
+    suite["cases"][0]["decision"]["reason"] = reason.into();
+    validate(&suite).unwrap();
+    suite["cases"][0]["id"] = "unmentioned-case".into();
+    assert!(validate(&suite).is_err());
 }
