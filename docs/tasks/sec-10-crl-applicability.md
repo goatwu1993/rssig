@@ -680,16 +680,21 @@ relic 02c54d58 and BoringSSL `main`.
     requested only if no request carried it. The shared-point variant has no
     spec case: no committed file has two certificates of different issuers
     listing one URI; the unit test checks the serialized failure entries.
-    After a source abort, such a point is reported as `crl_fetch_aborted`
-    (not tried), and when retrieval ends early on an engine limit or a
-    failed check, every unused point still held is reported.
+    One rule, whenever retrieval fails however it ends (including an
+    abort, an engine limit or a failed check): every point a source
+    answering by certificate left unused is reported, with the failure a
+    request for another certificate gave it, or as "not requested: the CRL
+    source answered for the certificate without using this point", which is
+    always true. The entry codes and URLs are pinned by
+    `sec10-fetch-by-certificate-unusable-answer-records-unused-points`;
+    message texts are diagnostics prose, not matched by consumers.
 - **Retrieval bookkeeping (unit-tested).** A request marks its points as
   offered only once every engine limit has passed, so a limit that ends the
-  run leaves a point another certificate left unused reported as such; held
-  unused points are reported on every early exit (a flag set only when the
-  loop ends). The built-in source does no work once spent (no request, DNS
+  run leaves a point another certificate left unused reported as such. The built-in source does no work once spent (no request, DNS
   lookup or connection), and a body that ends exactly at its 32 MiB cap is
-  still read to its end (`a_body_ending_exactly_at_the_byte_cap_still_reads_its_end`).
+  still read to its end (`a_body_ending_exactly_at_the_byte_cap_still_reads_its_end`),
+  with the byte limit reported ahead of the deadline. A URL that does not
+  parse is reported as not an absolute URL.
 - **Declined after review:** naming the gaps of a path whose other
   certificate has a supplied CRL that is unusable for a reason other than
   expiry. Such a certificate is never asked about (Observed,

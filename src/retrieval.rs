@@ -570,42 +570,27 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
     }
 
-    /// Records, for each named certificate whose source answered by
-    /// certificate, the listed points it left unused: with the outcome a
-    /// later request for another certificate gave the point (its failure, or
-    /// nothing if it was answered), or as not requested if none asked.
-    fn report_unused_points(&mut self, certificates: &[String]) {
-        for certificate in certificates {
-            for point in self.unused_points.remove(certificate).unwrap_or_default() {
+    /// Records, for every certificate whose source answered by certificate,
+    /// the listed points it left unused: with the failure a request for
+    /// another certificate reported for the point, if any, and otherwise as
+    /// not requested, which is always true. Called only when retrieval fails,
+    /// however it ends, so that no listed point disappears from that report.
+    fn report_unused_points(&mut self) {
+        for (certificate, points) in core::mem::take(&mut self.unused_points) {
+            for point in points {
                 match self.asked.get(&url_key(&point)).cloned() {
-                    Some(Some((e, kind))) => self.record(certificate, Some(&point), &e, kind),
-                    Some(None) => {}
-                    None => {
-                        let e = if self.aborted {
-                            error(
-                                ErrorCode::CrlFetchAborted,
-                                "not tried: the CRL source aborted retrieval",
-                            )
-                        } else {
-                            error(
-                                ErrorCode::CrlFetchFailed,
-                                "not requested: the CRL source answered for the certificate \
-                                 without using this point, and its answer did not settle the status",
-                            )
-                        };
-                        self.record(certificate, Some(&point), &e, None);
+                    Some(Some((e, kind))) => self.record(&certificate, Some(&point), &e, kind),
+                    _ => {
+                        let e = error(
+                            ErrorCode::CrlFetchFailed,
+                            "not requested: the CRL source answered for the certificate \
+                             without using this point",
+                        );
+                        self.record(&certificate, Some(&point), &e, None);
                     }
                 }
             }
         }
-    }
-
-    /// When retrieval ends early (an engine limit or a failed check), every
-    /// point still held as unused is reported, since what it would have
-    /// settled is unknown.
-    fn report_all_unused_points(&mut self) {
-        let certificates: Vec<String> = self.unused_points.keys().cloned().collect();
-        self.report_unused_points(&certificates);
     }
 
     /// Ask the source for CRLs for one certificate. Its listed URIs are read
@@ -1027,8 +1012,6 @@ fn retrieve(
     let format = crate::format::detect(bytes, filename)?;
     source.begin_verification();
     let mut state = Retrieval::new(base, budget);
-    // Whether the retrieval loop ran to its end; any other exit is early.
-    let mut loop_ended = false;
     let result = (|| {
         if base.retrieval_bytes() > MAX_TOTAL_BYTES {
             return Err(limit(
@@ -1136,17 +1119,6 @@ fn retrieve(
             }
             result = verify_with(bytes, options, &state.store, format, budget);
         }
-        // A certificate still named after its source answered by certificate:
-        // that answer did not settle its status, so the listed points the
-        // source left unused are recorded. No listed point disappears from
-        // the report of a failed retrieval.
-        if let Err(e) = &result
-            && let Uncovered::Listed(reports) = uncovered(e)
-        {
-            let named: Vec<String> = reports.iter().map(|r| r.sha256.clone()).collect();
-            state.report_unused_points(&named);
-        }
-        loop_ended = true;
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
         // Only when the abort cut retrieval short: a certificate still
@@ -1185,11 +1157,10 @@ fn retrieve(
             result => result,
         }
     })();
-    // The loop's own end reports the named certificates' unused points; an
-    // early exit (an engine limit, a failed check, a malformed report)
-    // leaves them held, and they are reported here.
-    if !loop_ended {
-        state.report_all_unused_points();
+    // A failed retrieval, however it ended, reports every point a source
+    // answering by certificate left unused.
+    if result.is_err() {
+        state.report_unused_points();
     }
     match result {
         Ok(mut verified) => {
@@ -2099,9 +2070,8 @@ mod tests {
         assert!(state.unused_points.contains_key("a"));
         let mut source = Source(1);
         ask(&mut state, "b", &b, &mut source).unwrap();
-        // A's point is reported with the outcome it got for B, not as "not
-        // requested"; one never requested still is.
-        state.report_unused_points(&["a".to_string()]);
+        // A's point is reported with the failure it got for B.
+        state.report_unused_points();
         let a_entries: Vec<_> = state
             .report
             .failures
@@ -2116,27 +2086,27 @@ mod tests {
                 "down".to_string()
             )]
         );
-        let mut state = Retrieval::new(&store, &budget);
-        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
-        state.report_unused_points(&["a".to_string()]);
-        assert!(
-            state.report.failures[0]
-                .message
-                .starts_with("not requested")
-        );
-        // After the source aborted, such a point is not tried for that reason.
-        let mut state = Retrieval::new(&store, &budget);
-        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
-        state.aborted = true;
-        state.report_unused_points(&["a".to_string()]);
-        assert_eq!(state.report.failures[0].code, ErrorCode::CrlFetchAborted);
-        // A run that ends early (an engine limit) still reports every unused
-        // point it holds.
-        let mut state = Retrieval::new(&store, &budget);
-        ask(&mut state, "a", &a, &mut Source(0)).unwrap();
-        state.report_all_unused_points();
-        assert_eq!(state.report.failures.len(), 1);
         assert!(state.unused_points.is_empty());
+        // Otherwise it is not requested, whatever else happened (an abort,
+        // or the point still in flight when the run ended).
+        for in_flight in [false, true] {
+            let mut state = Retrieval::new(&store, &budget);
+            ask(&mut state, "a", &a, &mut Source(0)).unwrap();
+            state.aborted = true;
+            if in_flight {
+                state
+                    .asked
+                    .insert(url_key("http://crl.example.invalid/shared-0.crl"), None);
+            }
+            state.report_unused_points();
+            assert_eq!(state.report.failures.len(), 1);
+            assert_eq!(state.report.failures[0].code, ErrorCode::CrlFetchFailed);
+            assert!(
+                state.report.failures[0]
+                    .message
+                    .starts_with("not requested")
+            );
+        }
     }
     #[test]
     fn re_offered_points_are_bounded_by_the_request_limit() {

@@ -63,7 +63,8 @@ pub(super) fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             "CRL URL is over 2,048 bytes or has whitespace, control characters or backslashes",
         ));
     }
-    let url = Url::parse(raw).map_err(|_| denied())?;
+    let url = Url::parse(raw)
+        .map_err(|_| error(ErrorCode::CrlFetchDenied, "CRL URL is not an absolute URL"))?;
     if url.scheme() != "http"
         || url.port_or_known_default() != Some(80)
         || !url.username().is_empty()
@@ -187,18 +188,24 @@ impl HttpCrlSource {
         stream: &mut TcpStream,
         bytes: &mut [u8],
     ) -> Result<usize, VerificationError> {
-        stream
-            .set_read_timeout(Some(self.remaining()?.min(IO_TIMEOUT)))
-            .map_err(io_error)?;
-        // The budget is exactly spent: one probe tells a body that ends here
-        // from one that goes past the cap.
+        // The budget is exactly spent: one probe, within the time left, tells
+        // a body that ends here from one that goes past the cap; the byte
+        // limit keeps its precedence over the deadline.
         if self.bytes >= MAX_TOTAL_BYTES {
+            let spent = || limit("crl_network_bytes", MAX_TOTAL_BYTES, self.bytes, 1);
+            let left = self.remaining().map_err(|_| spent())?;
+            stream
+                .set_read_timeout(Some(left.min(IO_TIMEOUT)))
+                .map_err(io_error)?;
             let mut probe = [0u8; 1];
             return match stream.read(&mut probe).map_err(io_error)? {
                 0 => Ok(0),
-                _ => Err(limit("crl_network_bytes", MAX_TOTAL_BYTES, self.bytes, 1)),
+                _ => Err(spent()),
             };
         }
+        stream
+            .set_read_timeout(Some(self.remaining()?.min(IO_TIMEOUT)))
+            .map_err(io_error)?;
         let cap = bytes.len().min(MAX_TOTAL_BYTES - self.bytes);
         let n = stream.read(&mut bytes[..cap]).map_err(io_error)?;
         self.bytes += n;
@@ -543,6 +550,7 @@ mod tests {
         assert!(message("http://10.0.0.1/x.crl").contains("not public"));
         assert!(message(" http://example.com/x").contains("whitespace"));
         assert!(message("https://example.com/x").contains("port 80"));
+        assert!(message("crl.example.com/x.crl").contains("absolute"));
         for url in [
             "http://example.com/test.crl",
             "http://8.8.8.8/x",
