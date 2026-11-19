@@ -23927,6 +23927,11 @@
     {
       "id": "crl-fetch-private",
       "input": "bad-crl-private-url.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -24140,6 +24145,11 @@
     {
       "id": "crl-fetch-injected-unavailable",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
@@ -24598,6 +24608,11 @@
     {
       "id": "crl-stale-local-asks-provider",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -24651,6 +24666,11 @@
     {
       "id": "crl-stale-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -24696,6 +24716,11 @@
     {
       "id": "crl-stale-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -30226,6 +30251,11 @@
     {
       "id": "sec10-root-crl-no-next-update",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30339,6 +30369,11 @@
     {
       "id": "sec10-root-expired-crl-still-rejected",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30427,6 +30462,11 @@
     {
       "id": "sec10-root-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30459,6 +30499,11 @@
     {
       "id": "sec10-root-crl-malformed-aki",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30491,6 +30536,11 @@
     {
       "id": "sec10-root-signed-other-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30550,6 +30600,11 @@
     {
       "id": "sec10-root-unknown-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30582,6 +30637,11 @@
     {
       "id": "sec10-root-delta-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30614,6 +30674,11 @@
     {
       "id": "sec10-root-indirect-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30673,6 +30738,11 @@
     {
       "id": "sec10-root-entry-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30705,6 +30775,11 @@
     {
       "id": "sec10-root-delta-expired-crl-reports-feature",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30864,6 +30939,11 @@
     {
       "id": "sec10-root-idp-user-certs-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30896,6 +30976,11 @@
     {
       "id": "sec10-root-idp-ca-certs-crl-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30928,6 +31013,11 @@
     {
       "id": "sec10-root-aki-issuer-serial-crl-name-matched",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -30960,6 +31050,11 @@
     {
       "id": "sec10-root-idp-named-point-crl-rejected",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -31139,6 +31234,11 @@
     {
       "id": "sec10-crl-dp-other-idp-unknown",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -31258,6 +31358,11 @@
     {
       "id": "sec10-crl-dp-other-partition-revocation-is-ignored",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -31298,6 +31403,11 @@
     {
       "id": "sec10-crl-dp-other-partition-revocation-is-ignored-first",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32427,6 +32537,11 @@
     {
       "id": "sec10-cross-revoked-path-beside-path-without-crl-names-it",
       "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32467,6 +32582,11 @@
     {
       "id": "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
       "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
@@ -32513,6 +32633,11 @@
     {
       "id": "sec10-cross-revoked-path-beside-covered-path-verifies",
       "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32555,6 +32680,11 @@
     {
       "id": "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
       "input": "sec10-sec06-cross-no-cert-sign.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32588,6 +32718,11 @@
     {
       "id": "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
       "input": "sec10-sec06-cross-no-cert-sign.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32624,6 +32759,11 @@
     {
       "id": "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -32684,6 +32824,11 @@
     {
       "id": "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
       "input": "sec10-sec06-cross-expired-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -32722,6 +32867,11 @@
     {
       "id": "sec10-fetch-completes-the-path-beside-an-expired-path",
       "input": "sec10-sec06-cross-expired-first.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -32780,6 +32930,11 @@
     {
       "id": "sec10-fetch-by-certificate-answer-requests-no-listed-point",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_certificate_responses": {
         "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "sec06-issuer.crl"
@@ -32829,6 +32984,11 @@
     {
       "id": "sec10-fetch-path-failing-key-usage-asks-nothing",
       "input": "bad-sec06-ca-ku.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
@@ -33387,6 +33547,11 @@
     {
       "id": "sec10-fetch-reasons-point-denied",
       "input": "sec10-leaf-crl-dp-reasons.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -33432,6 +33597,11 @@
     {
       "id": "sec10-fetch-crl-issuer-point-denied",
       "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -33477,6 +33647,11 @@
     {
       "id": "sec10-fetch-dns-name-point-denied",
       "input": "sec10-leaf-crl-dp-dns.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -33522,6 +33697,11 @@
     {
       "id": "sec10-fetch-excluded-name-match-fetches-listed-point",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -33576,6 +33756,11 @@
     {
       "id": "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
       "input": "good-sec06-basic.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
@@ -33613,6 +33798,11 @@
     {
       "id": "sec10-fetch-unusable-supplied-crl-not-fetched",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "observed",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
       },
@@ -33652,6 +33842,11 @@
     {
       "id": "sec10-chain-crl-dp-full-crls",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -33691,6 +33886,11 @@
     {
       "id": "sec10-fetch-covered-signer-point-not-requested",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
       },
@@ -33745,6 +33945,11 @@
     {
       "id": "sec10-fetch-asks-each-certificate-without-crl",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
@@ -33809,6 +34014,11 @@
     {
       "id": "sec10-fetch-covered-signer-is-not-asked",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
       },
@@ -33865,6 +34075,11 @@
     {
       "id": "sec10-leaf-crl-dp-mixed-full-crl",
       "input": "sec10-leaf-crl-dp-mixed.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -33902,6 +34117,11 @@
     {
       "id": "sec10-fetch-mixed-point-requests-plain-uri",
       "input": "sec10-leaf-crl-dp-mixed.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
       },
@@ -33964,6 +34184,11 @@
     {
       "id": "sec10-fetch-asks-only-the-uncovered-certificate",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
@@ -34010,6 +34235,11 @@
     {
       "id": "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
       "input": "sec10-leaf-crl-dp-multi.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-c.crl": "sec06-root.der",
         "http://crl.invalid/sec10-e.crl": "sec10-issuer-idp-second-point.crl"
@@ -34083,6 +34313,11 @@
     {
       "id": "crl-fetch-source-denied-is-no-evidence",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "denied"
@@ -34130,6 +34365,11 @@
     {
       "id": "crl-fetch-source-failed-is-no-evidence",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "failed"
@@ -34177,6 +34417,11 @@
     {
       "id": "crl-fetch-source-unknown-is-no-evidence",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "unknown"
@@ -34224,6 +34469,11 @@
     {
       "id": "crl-fetch-source-abort-is-reported",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -34271,6 +34521,11 @@
     {
       "id": "sec10-fetch-source-abort-stops-requests",
       "input": "sec10-chain-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "crl_errors": {
         "http://crl.invalid/sec10-a.crl": "abort"
@@ -34318,6 +34573,11 @@
     {
       "id": "sec10-leaf-crl-dp-https-full-crl",
       "input": "sec10-leaf-crl-dp-https.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34355,6 +34615,11 @@
     {
       "id": "sec10-fetch-source-is-asked-for-any-scheme",
       "input": "sec10-leaf-crl-dp-https.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
       },
@@ -34409,6 +34674,11 @@
     {
       "id": "sec10-fetch-builtin-source-denies-https",
       "input": "sec10-leaf-crl-dp-https.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34451,6 +34721,11 @@
     {
       "id": "sec10-root-crl-no-next-update-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34488,6 +34763,11 @@
     {
       "id": "sec10-root-expired-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34525,6 +34805,11 @@
     {
       "id": "sec10-root-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34562,6 +34847,11 @@
     {
       "id": "sec10-root-crl-malformed-aki-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34599,6 +34889,11 @@
     {
       "id": "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34636,6 +34931,11 @@
     {
       "id": "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34673,6 +34973,11 @@
     {
       "id": "sec10-root-delta-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34710,6 +35015,11 @@
     {
       "id": "sec10-root-indirect-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34747,6 +35057,11 @@
     {
       "id": "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34784,6 +35099,11 @@
     {
       "id": "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34821,6 +35141,11 @@
     {
       "id": "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34858,6 +35183,11 @@
     {
       "id": "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34895,6 +35225,11 @@
     {
       "id": "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34932,6 +35267,11 @@
     {
       "id": "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -34969,6 +35309,11 @@
     {
       "id": "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35006,6 +35351,11 @@
     {
       "id": "sec10-stale-crl-revocation-alone-is-expired",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35035,6 +35385,11 @@
     {
       "id": "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35072,6 +35427,11 @@
     {
       "id": "sec10-superseded-crl-revocation-alone-revokes",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35101,6 +35461,11 @@
     {
       "id": "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35132,6 +35497,11 @@
     {
       "id": "sec10-role-partition-crl-revocation-alone-is-unsupported",
       "input": "good-countersignature.exe",
+      "decision": {
+        "basis": "observed",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35164,6 +35534,11 @@
     {
       "id": "sec10-expired-partition-for-another-point-leaves-status-unknown",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "command": [
         "verify",
         "--no-system-roots",
@@ -35202,6 +35577,11 @@
     {
       "id": "sec10-fetch-expired-partition-for-another-point-still-fetches",
       "input": "sec10-leaf-crl-dp.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
       },
@@ -35299,6 +35679,11 @@
     {
       "id": "crl-fetch-untrusted-chain-requests-nothing",
       "input": "good-crl-discovery.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
       "crl_responses": {},
       "command": [
         "verify",
