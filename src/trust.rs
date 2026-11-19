@@ -220,8 +220,20 @@ impl TrustStore {
         // under that path's real issuer key, and the best usable one decides.
         // webpki then confirms the accepted path with only the chosen CRLs.
         let crls = if revocation {
+            // Without any applicable CRL, every certificate of this chain
+            // lacks one: they are listed so that retrieval asks about these
+            // and not about another chain's.
+            let chain_without_crl = || -> Vec<CertificateReport> {
+                core::iter::once(signer)
+                    .chain(certificates)
+                    .filter(|c| c.tbs_certificate.issuer != c.tbs_certificate.subject)
+                    .filter_map(|c| CertificateReport::parse(c).ok())
+                    .collect()
+            };
             if self.crls.is_empty() {
-                return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates").into());
+                return Err(VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "revocation requires --crl files covering the signer and intermediate certificates")
+                    .detail("certificates_without_crl", chain_without_crl())
+                    .into());
             }
             let mut issuer_names = Vec::new();
             for root in &self.roots {
@@ -260,6 +272,7 @@ impl TrustStore {
                     Stage::Revocation,
                     "no supplied CRL applies to the certificate chain",
                 )
+                .detail("certificates_without_crl", chain_without_crl())
                 .into());
             }
             crls
@@ -338,13 +351,13 @@ impl TrustStore {
                                 .or_insert_with(|| {
                                     // Over budget: no verification, and the
                                     // exhausted counter ends the run below.
-                                    budget.crypto.charge(1).ok()?;
-                                    signed_by(
+                                    budget.crypto.charge(1).map_err(|_| ())?;
+                                    Ok(signed_by(
                                         &issuer.spki,
                                         &crl.algorithm,
                                         &crl.signed,
                                         &crl.signature,
-                                    )
+                                    ))
                                 })
                         },
                     );
@@ -557,9 +570,10 @@ impl TrustStore {
     }
 }
 
-/// CRL signature results by (CRL index, issuer SPKI); `None` when the
-/// algorithm is unsupported or the work budget is spent.
-type SignatureCache = alloc::collections::BTreeMap<(usize, Vec<u8>), Option<bool>>;
+/// CRL signature results by (CRL index, issuer SPKI): `Ok(None)` when the
+/// algorithm is unsupported, `Err` when the work budget is spent.
+type SignatureCheck = core::result::Result<Option<bool>, ()>;
+type SignatureCache = alloc::collections::BTreeMap<(usize, Vec<u8>), SignatureCheck>;
 
 /// A supplied or retrieved CRL, decoded once per verification.
 struct LoadedCrl {
@@ -678,7 +692,7 @@ fn evaluate_crls(
     issuer: &IssuerKey,
     crls: &[LoadedCrl],
     now: u64,
-    verify_signature: &mut dyn FnMut(usize, &LoadedCrl) -> Option<bool>,
+    verify_signature: &mut dyn FnMut(usize, &LoadedCrl) -> SignatureCheck,
 ) -> CertificateEvidence {
     let der = cert.to_der().unwrap_or_default();
     let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
@@ -706,32 +720,19 @@ fn evaluate_crls(
         }
         let with_crl =
             |error: VerificationError| error.detail("crl", CrlReport::parse(&crl.bytes).ok());
-        let Ok(authority_key) = &crl.authority_key else {
-            fail(3, &|| {
-                with_crl(
-                    revocation_error(
-                        &sha256,
-                        ErrorCode::InvalidCrl,
-                        "CRL authorityKeyIdentifier is malformed",
-                    )
-                    .detail("reason", "malformed_authority_key_identifier"),
-                )
-            });
-            continue;
-        };
-        // Authenticate under this path's issuer key. A CRL that names
-        // another key of the same name, and is not signed by this one, is
-        // not this issuer's: it is set aside without a failure.
+        // Authenticate under this path's issuer key first: what an
+        // authenticated CRL lists counts whatever else is wrong with it.
+        // A CRL that names another key and is not signed by this one is not
+        // this issuer's: it is set aside without a failure.
+        let named_key = crl.authority_key.as_ref().ok().and_then(Option::as_ref);
         match verify_signature(index, crl) {
-            Some(true) => {}
-            Some(false)
-                if authority_key.is_some()
-                    && issuer.key_id.is_some()
-                    && authority_key != &issuer.key_id =>
+            Ok(Some(true)) => {}
+            Ok(Some(false))
+                if named_key.is_some_and(|named| issuer.key_id.as_ref() != Some(named)) =>
             {
                 continue;
             }
-            Some(false) => {
+            Ok(Some(false)) => {
                 fail(5, &|| {
                     with_crl(webpki_revocation_error(
                         &sha256,
@@ -741,7 +742,7 @@ fn evaluate_crls(
                 continue;
             }
             // An algorithm the engine cannot verify: unsupported, not forged.
-            None => {
+            Ok(None) => {
                 fail(3, &|| {
                     with_crl(
                         revocation_error(
@@ -754,10 +755,24 @@ fn evaluate_crls(
                 });
                 continue;
             }
+            // The work budget is spent: the run ends with that error.
+            Err(()) => continue,
         }
-        // Authenticated: a listing here counts, whatever else is wrong with it.
         if crl.revoked.iter().any(|s| s.as_slice() == serial) {
             authenticated_listing.get_or_insert(index);
+        }
+        if crl.authority_key.is_err() {
+            fail(3, &|| {
+                with_crl(
+                    revocation_error(
+                        &sha256,
+                        ErrorCode::InvalidCrl,
+                        "CRL authorityKeyIdentifier is malformed",
+                    )
+                    .detail("reason", "malformed_authority_key_identifier"),
+                )
+            });
+            continue;
         }
         if !issuer.crl_sign {
             fail(4, &|| {

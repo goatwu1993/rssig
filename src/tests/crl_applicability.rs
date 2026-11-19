@@ -202,6 +202,25 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(vec![0x30, 0x05, 0x80]),
             ),
         ),
+        // The same malformed authorityKeyIdentifier on a fresh root CRL that
+        // lists the test signer (serial 2): the root signed it, so the listing
+        // counts beside a usable CRL that does not list the signer.
+        (
+            "sec10-root-malformed-aki-revoked.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(vec![0x30, 0x05, 0x80]),
+                vec![],
+                Some(vec![x509_cert::crl::RevokedCert {
+                    serial_number: SerialNumber::from(2u32),
+                    revocation_date: tm(NOW - 50),
+                    crl_entry_extensions: None,
+                }]),
+            ),
+        ),
         // An unrelated issuer's CRL is excluded before its extensions are read.
         (
             "sec10-unrelated-malformed-aki.crl",

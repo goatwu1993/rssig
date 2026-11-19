@@ -362,7 +362,9 @@ timestamps, and local CRL validation already exist.
 - [x] **SEC-21: Bind listed-serial revocation to the verified path.**
   Done in PR #60: a listing counts only in a CRL that verifies under the path
   issuer's key, from an issuer with cRLSign (anchors exempt); an unmappable
-  signature algorithm is `invalid_crl_signature`. Original notes follow. From PR
+  signature algorithm is `invalid_crl` (`unsupported_signature_algorithm`), and
+  a listing in an authenticated CRL counts even if its authorityKeyIdentifier
+  is malformed. Original notes follow. From PR
   #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
   callback matches a listing by issuer name and serial only. It accepts a CRL
   whose signature verified under any name-matching candidate key, or whose

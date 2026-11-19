@@ -654,3 +654,11 @@ fn sec10_an_expired_partition_for_another_point_does_not_decide_the_signer() {
         "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
     );
 }
+
+#[test]
+fn sec10_a_listing_in_an_authenticated_crl_counts_even_with_a_malformed_aki() {
+    // The root signed it, so its listing of the signer counts beside good.crl,
+    // although its authorityKeyIdentifier cannot be decoded.
+    let output = run_with("sec10-root-malformed-aki-revoked.crl");
+    revocation_failure(&output, "certificate_revoked", "Certificate revoked");
+}

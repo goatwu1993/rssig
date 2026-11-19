@@ -559,12 +559,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Err(e) => {
                 // The whole request failed: every point it carried yielded
                 // nothing, for this certificate and any later one listing it.
-                if e.url.is_none() && !points.is_empty() {
+                if points.is_empty() {
+                    self.source_failure(sha256, e);
+                } else {
                     for point in &points {
                         self.source_failure(sha256, e.clone().with_url(point.clone()));
                     }
-                } else {
-                    self.source_failure(sha256, e);
                 }
                 return Ok(false);
             }

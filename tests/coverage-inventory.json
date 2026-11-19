@@ -401,7 +401,8 @@
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
         "sec10-stale-crl-revocation-alone-is-expired",
-        "sec10-expired-partition-for-another-point-leaves-status-unknown"
+        "sec10-expired-partition-for-another-point-leaves-status-unknown",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {

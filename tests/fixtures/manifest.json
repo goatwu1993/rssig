@@ -146,7 +146,8 @@
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
-        "sec10-stale-crl-revocation-alone-is-expired"
+        "sec10-stale-crl-revocation-alone-is-expired",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {
@@ -263,7 +264,8 @@
         "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-revokes"
+        "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {
@@ -318,7 +320,8 @@
         "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
         "sec10-stale-crl-revocation-beside-fresh-crl-revokes",
-        "sec10-stale-crl-revocation-alone-is-expired"
+        "sec10-stale-crl-revocation-alone-is-expired",
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {
@@ -9388,6 +9391,17 @@
       "cases": [
         "sec10-root-crl-malformed-aki",
         "sec10-root-crl-malformed-aki-beside-good-crl"
+      ]
+    },
+    {
+      "file": "sec10-root-malformed-aki-revoked.crl",
+      "sha256": "b526e3f962cc53e0ab9af9732cd976266c8f281e1e7bebdd65fc690f895a61f2",
+      "bytes": 220,
+      "description": "SEC-10: Fresh root CRL, correctly signed, with a malformed authorityKeyIdentifier, revoking serial 2 (the test signer). Its listing counts beside a usable CRL that does not list the signer. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {
