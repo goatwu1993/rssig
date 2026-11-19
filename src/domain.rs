@@ -585,7 +585,8 @@ pub struct CrlRetrievalReport {
     /// Listed points that yielded no evidence, grouped by the certificate
     /// they were asked for, in request order. Within a request: points
     /// refused before asking, then the source's own failures in response
-    /// order, then points it did not answer, then bodies rejected on load.
+    /// order, then points it did not answer (after an abort, the points not
+    /// tried, as `crl_fetch_aborted`), then bodies rejected on load.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failures: Vec<CrlRetrievalFailure>,
 }

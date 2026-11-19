@@ -697,16 +697,20 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort the
-        // rest were never tried, and the abort explains them. A source that
-        // also answered by issuer still passed over these points.
-        if !self.aborted {
-            for point in &unanswered {
-                let e = error(
+        // points never tried are recorded as such.
+        for point in &unanswered {
+            let e = if self.aborted {
+                error(
+                    ErrorCode::CrlFetchAborted,
+                    "not tried: the CRL source aborted retrieval",
+                )
+            } else {
+                error(
                     ErrorCode::CrlFetchFailed,
                     "the CRL source returned nothing for this point",
-                );
-                self.skip(sha256, Some(point), e, None);
-            }
+                )
+            };
+            self.skip(sha256, Some(point), e, None);
         }
         self.load_all(sha256, response.crls, max_bytes)
     }
@@ -1571,6 +1575,32 @@ mod tests {
         );
     }
     #[test]
+    fn points_not_tried_after_an_abort_stay_in_the_report() {
+        use CrlSourceErrorKind::*;
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        // The first point aborts; fetch_each tries no other.
+        let mut source = Kinds::new(vec![Abort]);
+        ask(&mut state, "a", &signer_with_points("a", 3), &mut source).unwrap();
+        assert_eq!(source.urls.len(), 1);
+        let urls: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .filter(|f| f.certificate_sha256 == "a")
+            .filter_map(|f| f.url.clone())
+            .collect();
+        assert_eq!(urls.len(), 3, "{:?}", state.report.failures);
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .all(|f| f.code == ErrorCode::CrlFetchAborted)
+        );
+    }
+    #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
         let store = store();
         let budget = Budget::default();
@@ -1898,8 +1928,16 @@ mod tests {
         assert_eq!(source.urls.len(), 2, "nothing is fetched after Abort");
         assert_eq!(source.calls, 1, "nothing is asked after Abort");
         assert!(state.aborted);
-        assert_eq!(state.report.failures.len(), 2);
-        assert_eq!(state.report.failures[1].code, ErrorCode::CrlFetchAborted);
+        // a's four points: the failed one, the aborting one, and the two
+        // never tried, recorded as such.
+        assert_eq!(state.report.failures.len(), 4);
+        assert!(
+            state.report.failures[1..]
+                .iter()
+                .all(|f| f.code == ErrorCode::CrlFetchAborted)
+        );
+        assert_eq!(state.report.failures[1].source_error, Some(Abort));
+        assert_eq!(state.report.failures[2].source_error, None);
     }
     #[test]
     fn the_result_tells_an_aborted_source_from_missing_evidence() {
