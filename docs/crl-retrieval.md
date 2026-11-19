@@ -64,10 +64,12 @@ rule is restated for retrieval.
 3. Verify again with what was added, and repeat steps 2 and 3 while a round
    adds a CRL and another certificate is still reported without one.
 4. If evidence is still missing, the result is the verifier's own
-   `revocation_unknown` or revocation, or `crl_fetch_aborted` when the
-   source aborted while a certificate was still without a CRL, also beside a
-   revocation that named another path's gap (details keep the verifier's
-   result under `revocation_unknown` or `certificate_revoked`).
+   `revocation_unknown` or revocation. When the source aborted and that cut
+   retrieval short (a certificate still without a CRL was never asked
+   about, or was being asked about), an unknown status is
+   `crl_fetch_aborted` (the verifier's message under `revocation_unknown`),
+   and a revocation keeps its code with `retrieval_aborted: true`. An abort
+   that left nothing unasked changes nothing.
 
 Two kinds of error, and nothing in between:
 

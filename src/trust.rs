@@ -505,6 +505,7 @@ impl TrustStore {
             );
             budget.crypto.check()?;
             budget.hash_bytes.check()?;
+            budget.decoded_bytes.check()?;
             confirmed.map_err(|e| {
                 webpki_error(e)
                     .detail("certificate", &leaf_report)

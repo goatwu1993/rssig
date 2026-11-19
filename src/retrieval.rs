@@ -386,6 +386,8 @@ struct Retrieval<'s, 'b, 'l> {
     asked_issuers: BTreeSet<(Vec<u8>, Vec<u8>, bool)>,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
+    /// The certificate whose request the source aborted.
+    aborted_for: Option<String>,
     budget: &'b Budget<'l>,
 }
 
@@ -404,6 +406,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             requests: 0,
             asked_issuers: BTreeSet::new(),
             aborted: false,
+            aborted_for: None,
             budget,
         }
     }
@@ -474,6 +477,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         self.skip(certificate, url.as_deref(), e.into_error(), Some(kind));
         if kind == CrlSourceErrorKind::Abort && !self.aborted {
             self.aborted = true;
+            self.aborted_for = Some(certificate.into());
             self.budget.log.info(
                 Stage::Revocation,
                 format_args!("CRL source aborted retrieval"),
@@ -882,28 +886,34 @@ fn retrieve(
         }
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
-        // That includes a revocation that names another path's
-        // certificates without a CRL: that path might have verified.
+        // Only when the abort cut retrieval short: a certificate still
+        // without a CRL was never asked about, or was being asked about.
+        let cut_short = |e: &VerificationError| {
+            state.aborted
+                && match uncovered(e) {
+                    Uncovered::Listed(reports) => reports.iter().any(|report| {
+                        !asked.contains(&report.sha256)
+                            || state.aborted_for.as_deref() == Some(report.sha256.as_str())
+                    }),
+                    Uncovered::Unlisted => true,
+                    Uncovered::Final => false,
+                }
+        };
         match result {
-            Err(e)
-                if state.aborted
-                    && (e.code == ErrorCode::RevocationUnknown
-                        || (e.code == ErrorCode::CertificateRevoked
-                            && e.details.contains_key("certificates_without_crl"))) =>
-            {
+            // A revocation is definite evidence and keeps its code; that
+            // another path might have verified is marked.
+            Err(e) if e.code == ErrorCode::CertificateRevoked && cut_short(&e) => {
+                Err(e.detail("retrieval_aborted", true))
+            }
+            Err(e) if e.code == ErrorCode::RevocationUnknown && cut_short(&e) => {
                 let mut aborted = error(
                     ErrorCode::CrlFetchAborted,
                     "the CRL source stopped retrieval before revocation status was known",
                 );
                 // Keep the verifier's structured details, such as the
                 // certificates still without a CRL, and its result.
-                let key = if e.code == ErrorCode::RevocationUnknown {
-                    "revocation_unknown"
-                } else {
-                    "certificate_revoked"
-                };
                 aborted.details.extend(e.details);
-                Err(aborted.detail(key, e.message))
+                Err(aborted.detail("revocation_unknown", e.message))
             }
             result => result,
         }
