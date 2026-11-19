@@ -152,6 +152,14 @@
             "input",
             "inputs"
           ]
+        },
+        "dependentRequired": {
+          "crl_errors": [
+            "crl_responses"
+          ],
+          "crl_certificate_responses": [
+            "crl_responses"
+          ]
         }
       }
     }

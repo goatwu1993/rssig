@@ -421,9 +421,11 @@ fn sec10_matching_partition_is_selected_whatever_the_crl_order() {
 }
 
 #[test]
-fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
-    // On a path whose certificates all have an authoritative CRL, a serial
-    // listed by another applicable CRL of the same issuer name also rejects.
+fn sec10_revocation_in_another_partition_of_the_issuer_does_not_count() {
+    // The signer's own partition decides and does not list it. A partition
+    // for another point does not cover the signer, so its entries are not
+    // read, whatever the `--crl` order: OpenSSL gives such a CRL no scope
+    // score and Bouncy Castle's processCRLB2 rejects it.
     for crls in [
         [
             "sec10-issuer-idp-match.crl",
@@ -434,11 +436,7 @@ fn sec10_revocation_in_another_partition_of_the_issuer_still_rejects() {
             "sec10-issuer-idp-match.crl",
         ],
     ] {
-        revocation_failure(
-            &run_crl_dp(&crls),
-            "certificate_revoked",
-            "Certificate revoked",
-        );
+        revocation_good(&run_crl_dp(&crls));
     }
 }
 

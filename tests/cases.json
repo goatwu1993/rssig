@@ -24631,7 +24631,15 @@
                         "code": "crl_fetch_failed"
                       }
                     ]
-                  }
+                  },
+                  "certificates_with_expired_crl": [
+                    {
+                      "subject": {
+                        "display": "CN=rssig test publisher"
+                      }
+                    },
+                    {}
+                  ]
                 }
               }
             }
@@ -24680,6 +24688,56 @@
                   "revocation_checked": true
                 }
               ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-stale-local-source-abort-is-marked",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.example.invalid/test.crl": "abort"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/expired.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_expired",
+                "stage": "revocation",
+                "details": {
+                  "retrieval_aborted": true,
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      }
+                    ]
+                  }
+                }
+              }
             }
           ]
         }
@@ -31198,7 +31256,7 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revoked",
+      "id": "sec10-crl-dp-other-partition-revocation-is-ignored",
       "input": "sec10-leaf-crl-dp.exe",
       "command": [
         "verify",
@@ -31215,23 +31273,30 @@
         "fixtures/sec10-issuer-idp-other-revoked.crl"
       ],
       "expect": {
-        "exit_code": 1,
+        "exit_code": 0,
         "json": {
-          "ok": false,
+          "ok": true,
           "results": [
             {
-              "ok": false,
-              "error": {
-                "code": "certificate_revoked",
-                "stage": "revocation"
-              }
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revoked-first",
+      "id": "sec10-crl-dp-other-partition-revocation-is-ignored-first",
       "input": "sec10-leaf-crl-dp.exe",
       "command": [
         "verify",
@@ -31248,16 +31313,23 @@
         "fixtures/sec10-issuer-idp-match.crl"
       ],
       "expect": {
-        "exit_code": 1,
+        "exit_code": 0,
         "json": {
-          "ok": false,
+          "ok": true,
           "results": [
             {
-              "ok": false,
-              "error": {
-                "code": "certificate_revoked",
-                "stage": "revocation"
-              }
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
             }
           ]
         }

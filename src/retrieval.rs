@@ -191,7 +191,15 @@ pub fn fetch_each(
         if remaining == 0 {
             break;
         }
-        match fetch(url, remaining.min(MAX_CRL_BYTES)) {
+        let allowed = remaining.min(MAX_CRL_BYTES);
+        match fetch(url, allowed) {
+            // A body over what was allowed is passed on for the engine to
+            // reject and report, but does not spend the allowance: the next
+            // point is still tried.
+            Ok(mut crl) if crl.bytes.len() > allowed => {
+                crl.url.get_or_insert_with(|| url.clone());
+                response.crls.push(crl);
+            }
             Ok(mut crl) => {
                 remaining = remaining.saturating_sub(crl.bytes.len());
                 crl.url.get_or_insert_with(|| url.clone());
@@ -705,11 +713,13 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             for point in &unanswered {
                 self.source_failure(sha256, failure.clone().with_url(point.clone()));
             }
-            return Ok(self.load_all(sha256, response.crls, max_bytes)?.added);
+            return Ok(self
+                .load_all(sha256, issuer, response.crls, max_bytes)?
+                .added);
         }
         // The bodies are loaded first: what they turn out to be decides how
         // the points the source did not answer are recorded.
-        let loaded = self.load_all(sha256, response.crls, max_bytes)?;
+        let loaded = self.load_all(sha256, issuer, response.crls, max_bytes)?;
         let returned = loaded.accepted_bytes;
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort, or
@@ -719,7 +729,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // by certificate or issuer, as OpenSSL's `lookup_crls` does: the
         // points it did not use are not failures. They stay asked, so each
         // URI still goes to a source once per verification. Only a body that
-        // loaded as a CRL counts as such an answer.
+        // loaded as a CRL of this certificate's issuer counts as such an
+        // answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
         let by_certificate = !self.aborted && loaded.by_certificate;
         for point in unanswered.iter().filter(|_| !by_certificate) {
             let e = if self.aborted {
@@ -750,15 +761,21 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
     fn load_all(
         &mut self,
         sha256: &str,
+        issuer: &[u8],
         crls: Vec<SourcedCrl>,
         max_bytes: usize,
     ) -> Result<Loaded, VerificationError> {
         let mut loaded = Loaded::default();
         for crl in crls {
-            let without_url = crl.url.is_none();
+            // A DER CRL naming no URL whose issuer is the certificate's.
+            let for_issuer = crl.url.is_none()
+                && x509_cert::crl::CertificateList::from_der(&crl.bytes)
+                    .ok()
+                    .and_then(|list| ::der::Encode::to_der(&list.tbs_cert_list.issuer).ok())
+                    .is_some_and(|name| name == issuer);
             let (valid, added) = self.load(sha256, crl, &mut loaded.accepted_bytes, max_bytes)?;
             loaded.added |= added;
-            loaded.by_certificate |= valid && without_url;
+            loaded.by_certificate |= valid && for_issuer;
         }
         Ok(loaded)
     }
@@ -1008,8 +1025,8 @@ struct Loaded {
     added: bool,
     /// The bytes of the bodies accepted within the size caps.
     accepted_bytes: usize,
-    /// A body naming no URL loaded as a CRL: the source answered by
-    /// certificate or issuer.
+    /// A body naming no URL loaded as a CRL of the certificate's issuer: the
+    /// source answered by certificate or issuer.
     by_certificate: bool,
 }
 
@@ -1759,6 +1776,25 @@ mod tests {
         assert_eq!(source.calls, 2);
     }
     #[test]
+    fn fetch_each_tries_the_next_point_after_an_over_allowance_body() {
+        let points: Vec<String> = (0..2)
+            .map(|i| format!("http://crl.example.invalid/a-{i}.crl"))
+            .collect();
+        let mut calls = 0;
+        let response = fetch_each(&CrlRequest::new(b"", b"", &points, 10), |_, max_bytes| {
+            calls += 1;
+            // The first answer ignores its allowance; the second fits.
+            let len = if calls == 1 { max_bytes + 1 } else { 4 };
+            Ok(SourcedCrl::new(vec![0; len]))
+        });
+        // Both points are tried: the oversized body is left for the engine
+        // to reject, and the second still has the whole allowance.
+        assert_eq!(calls, 2);
+        assert_eq!(response.crls.len(), 2);
+        assert!(response.failures.is_empty());
+        assert_eq!(response.crls[1].bytes.len(), 4);
+    }
+    #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {
         let store = store();
         let budget = Budget::default();
@@ -1962,6 +1998,24 @@ mod tests {
         }
         let mut state = Retrieval::new(&store, &budget);
         ask(&mut state, "c", &signer_with_points("c", 2), &mut Answers).unwrap();
+        // A CRL of another issuer is no answer for this certificate: its
+        // points are still recorded.
+        struct Unrelated;
+        impl CrlSource for Unrelated {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/sec06-root.crl").to_vec(),
+                )))
+            }
+        }
+        let mut other = Retrieval::new(&store, &budget);
+        ask(&mut other, "d", &signer_with_points("d", 2), &mut Unrelated).unwrap();
+        assert_eq!(
+            other.report.failures.len(),
+            2,
+            "{:?}",
+            other.report.failures
+        );
         assert!(
             state.report.failures.is_empty(),
             "{:?}",

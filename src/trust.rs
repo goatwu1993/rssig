@@ -348,6 +348,16 @@ impl TrustStore {
                     .ok_or(webpki::Error::BadDer)?;
                     evidence.path = path_index;
                     evidence.path_viable = other_policy.is_none();
+                    if evidence.ignored_listings > 0 {
+                        budget.log.warn(
+                            Stage::Revocation,
+                            format_args!(
+                                "certificate {} is listed by {} authenticated CRL(s) that do not \
+                                 decide (not current, superseded or out of scope); not counted",
+                                evidence.sha256, evidence.ignored_listings
+                            ),
+                        );
+                    }
                     match &evidence.outcome {
                         Outcome::Good(index) => path_chosen.push(*index),
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -709,6 +719,9 @@ struct CertificateEvidence {
     /// Whether that path passes every path policy but revocation, so that a
     /// CRL for it could still make it verify.
     path_viable: bool,
+    /// Authenticated CRLs that list the certificate but did not count: not
+    /// current, older than the deciding CRL, or not covering it.
+    ignored_listings: usize,
     sha256: String,
     der: Vec<u8>,
     outcome: Outcome,
@@ -747,6 +760,9 @@ fn evaluate_crls(
     // Each with its thisUpdate: the newest usable CRL decides, and a listing
     // counts only from a CRL at least as new.
     let mut authenticated_listing: Option<(usize, u64)> = None;
+    // Authenticated CRLs that list the serial, whether or not they count:
+    // one that does not is logged, never dropped silently.
+    let mut listings: Vec<usize> = Vec::new();
     let mut failure: Option<(u8, VerificationError)> = None;
     // A failure's error is built only when it would be kept.
     let mut fail = |rank: u8, error: &dyn Fn() -> VerificationError| {
@@ -808,8 +824,20 @@ fn evaluate_crls(
                 .tbs
                 .next_update
                 .is_some_and(|next| next.to_unix_duration().as_secs() > now);
+        // Nor does one in a CRL that does not cover this certificate (a
+        // partition for another point or role): OpenSSL gives it no scope
+        // score and Bouncy Castle's processCRLB2 rejects it, so neither reads
+        // its entries.
+        let authority = authority_for(&crl.tbs, cert, end_entity);
+        let covers =
+            authority != Some(false) && (lists_points || !names_distribution_point(&crl.tbs));
+        let lists = crl.revoked.iter().any(|s| s.as_slice() == serial);
+        if lists {
+            listings.push(index);
+        }
         if current
-            && crl.revoked.iter().any(|s| s.as_slice() == serial)
+            && covers
+            && lists
             && authenticated_listing.is_none_or(|(_, newest)| this_update > newest)
         {
             authenticated_listing = Some((index, this_update));
@@ -856,7 +884,6 @@ fn evaluate_crls(
         // this certificate (another point or role) is set aside, whatever its
         // age. One that webpki cannot use is reported below: its scope is not
         // trusted enough to set it aside silently.
-        let authority = authority_for(&crl.tbs, cert, end_entity);
         if crl.webpki.is_ok() && authority == Some(false) {
             continue;
         }
@@ -931,9 +958,9 @@ fn evaluate_crls(
     }
     let outcome = match (usable, authenticated_listing) {
         // A current authoritative CRL makes the status known; a listing in
-        // a current CRL authenticated by this issuer key then revokes, even
-        // a partition for another point, unless the deciding CRL is newer:
-        // a superseded CRL's entry may be a hold that was since released.
+        // a current CRL authenticated by this issuer key that covers the
+        // certificate then revokes, unless the deciding CRL is newer: a
+        // superseded CRL's entry may be a hold that was since released.
         (Some((_, decided)), Some((listing, listed))) if listed >= decided => Outcome::Revoked(
             webpki_revocation_error(&sha256, webpki::Error::CertRevoked)
                 .detail("crl", CrlReport::parse(&crls[listing].bytes).ok()),
@@ -942,9 +969,15 @@ fn evaluate_crls(
         // Without one, the status is unknown, even if a CRL lists it.
         (None, _) => Outcome::Missing(failure),
     };
+    // With a good status, every listing was set aside.
+    let ignored_listings = match outcome {
+        Outcome::Good(_) => listings.len(),
+        _ => 0,
+    };
     Some(CertificateEvidence {
         path: 0,
         path_viable: true,
+        ignored_listings,
         sha256,
         der,
         outcome,
@@ -1318,6 +1351,7 @@ mod revocation_reporting {
         CertificateEvidence {
             path,
             path_viable: true,
+            ignored_listings: 0,
             sha256: sha.into(),
             der,
             outcome,

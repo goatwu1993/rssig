@@ -71,13 +71,15 @@ One box per item in the scope above.
   `sec10-root-indirect-crl-unsupported`,
   `sec10-root-delta-expired-crl-reports-feature`. Limit: SEC-18.
 - [x] **Competing or unrelated supplied CRLs.** Unrelated CRLs are excluded
-  whatever their fault; among applicable CRLs a revocation in any one wins in
-  either order. `sec10-unrelated-expired-crl-excluded`,
+  whatever their fault; among CRLs that cover the certificate a revocation in
+  any one wins in either order. `sec10-unrelated-expired-crl-excluded`,
   `sec10-unrelated-not-yet-valid-crl-excluded`,
   `sec10-competing-crls-good-first-revoked`,
-  `sec10-competing-crls-revoked-first-revoked`,
-  `sec10-crl-dp-other-partition-revoked`,
-  `sec10-crl-dp-other-partition-revoked-first`. Limit: SEC-21.
+  `sec10-competing-crls-revoked-first-revoked`. Since PR #60 a partition for
+  another point does not cover the certificate, so its entries are not read
+  (`sec10-crl-dp-other-partition-revocation-is-ignored`,
+  `sec10-crl-dp-other-partition-revocation-is-ignored-first`; see "Case
+  reasons"). Limit: SEC-21.
 - [x] **Unusable extra CRL: reject or exclude.** Specified: excluded when it
   does not apply to the chain, otherwise the request fails closed.
   `sec10-root-expired-crl-still-rejected` against the
@@ -285,6 +287,18 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
     `-beside-good-crl`.
   - Full-CRL controls for the new fixtures (acceptance): `sec10-chain-crl-dp-full-crls`,
     `sec10-leaf-crl-dp-mixed-full-crl`, `sec10-leaf-crl-dp-https-full-crl`.
+- **A revocation in a CRL that does not cover the certificate does not
+  count.** Decided, acceptance (owner chose to follow the libraries, PR #60).
+  OpenSSL's `crl_crldp_check` gives a CRL for another point or role no
+  `CRL_SCORE_SCOPE`, so `get_crl_sk` never selects it over the covering CRL
+  and `cert_crl` never reads its entries (`crypto/x509/x509_vfy.c`); Bouncy
+  Castle's processCRLB2 rejects it before processCRLJ reads entries
+  (`RFC3280CertPathUtilities.checkCRL`). On `main` such a listing revoked
+  (`sec10-crl-dp-other-partition-revoked` and `-first`, expecting
+  `certificate_revoked`); they are now
+  `sec10-crl-dp-other-partition-revocation-is-ignored` and `-first` and
+  verify. Comparing thisUpdate across partitions would have made the result
+  depend on issuance order.
 - **A partition for another point is no evidence.** Decided, diagnostics.
   Bouncy Castle's processCRLB2 rejects a CRL whose distribution point does not
   match; OpenSSL gives it no `CRL_SCORE_SCOPE`. The certificate is without a
@@ -337,6 +351,9 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-fetch-excluded-name-match-fetches-listed-point`,
   `sec10-fetch-mixed-point-requests-plain-uri`,
   `sec10-fetch-bad-response-is-no-evidence-beside-another-point`.
+- **An abort before an expired CRL could be refreshed is marked.** Decided,
+  diagnostics: `crl-stale-local-source-abort-is-marked` keeps `crl_expired`
+  with `retrieval_aborted`.
 - **An expired supplied CRL is refreshed.** Decided, acceptance (owner
   delegated the call, PR #60). Bouncy Castle drops CRLs past nextUpdate and,
   with CRL fetching enabled, fetches from the certificate's points; OpenSSL
@@ -350,7 +367,8 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
 - **A source answering by certificate leaves no per-point failures.**
   Decided, diagnostics (owner delegated the call): OpenSSL's `lookup_crls`
   and Bouncy Castle's store lookups have no per-point outcome. Only a body
-  that loads as a CRL counts:
+  that loads as a CRL of the certificate's issuer counts, as both look CRLs
+  up by issuer name:
   `sec10-fetch-by-certificate-answer-requests-no-listed-point`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds

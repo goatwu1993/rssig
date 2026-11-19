@@ -65,7 +65,8 @@ rule is restated for retrieval.
    with a CRL naming no URL looked it up by certificate or issuer: the
    points it did not use are not recorded as failures
    (`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Only a
-   body that loads as a CRL counts as such an answer.
+   body that loads as a CRL of the certificate's issuer counts as such an
+   answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
    CRLs are per issuer, so a certificate with no point left to pass on,
    whose issuer was already asked about, is not asked again and does not
    spend the request cap. A list that is present but empty (a certificate

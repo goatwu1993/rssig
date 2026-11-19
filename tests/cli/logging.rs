@@ -158,3 +158,40 @@ fn cli_logger_and_crl_source_combine_and_log_each_request() {
         );
     }
 }
+
+#[test]
+fn an_ignored_crl_listing_is_logged_and_the_result_is_unchanged() {
+    // An older, still valid CRL lists the signer; the newer good.crl decides.
+    let (input, root) = (fixture("good-pe64.exe"), fixture("root.der"));
+    let (good, superseded) = (
+        fixture("good.crl"),
+        fixture("sec10-root-superseded-revoked.crl"),
+    );
+    let args = [
+        "rssig",
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        &root,
+        "--crl",
+        &good,
+        "--crl",
+        &superseded,
+        "--time",
+        "1800000000",
+        &input,
+    ];
+    let (mut plain, mut plain_err) = (Vec::new(), Vec::new());
+    assert_eq!(
+        cli::run_with_writers(args, &mut plain, &mut plain_err).unwrap(),
+        0
+    );
+    let capture = Capture::default();
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        cli::run_with_host(args, &mut out, &mut err, Host::new().with_logger(&capture)).unwrap();
+    assert_eq!(code, 0);
+    assert_eq!(out, plain);
+    assert!(err.is_empty());
+    assert!(capture.has(Level::Warn, Stage::Revocation, "not counted"));
+}

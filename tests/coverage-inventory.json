@@ -327,10 +327,10 @@
         "sec10-crl-dp-matching-idp",
         "sec10-crl-dp-other-idp-unknown",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-partition-revoked",
+        "sec10-crl-dp-other-partition-revocation-is-ignored",
         "sec10-crl-dp-full-crl",
         "sec10-ca-no-crl-sign",
-        "sec10-crl-dp-other-partition-revoked-first",
+        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
         "sec10-crl-dp-other-idp-first",
         "sec10-crl-dp-matching-idp-first",
         "sec10-crl-dp-other-idp-with-full-crl",
@@ -471,7 +471,8 @@
         "sec10-fetch-builtin-source-denies-https",
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
-        "crl-stale-local-refreshed-by-provider"
+        "crl-stale-local-refreshed-by-provider",
+        "crl-stale-local-source-abort-is-marked"
       ]
     },
     {
@@ -846,8 +847,6 @@
         "sec10-competing-crls-good-first-revoked",
         "sec10-competing-crls-revoked-first-revoked",
         "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-partition-revoked",
-        "sec10-crl-dp-other-partition-revoked-first",
         "sec10-revoked-issuer",
         "sec10-revoked-issuer-after-good-root-crl",
         "sec10-revoked-issuer-before-good-root-crl",

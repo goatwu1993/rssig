@@ -399,7 +399,10 @@ timestamps, and local CRL validation already exist.
   issuer's key, from an issuer with cRLSign (anchors exempt); an unmappable
   signature algorithm is `invalid_crl` (`unsupported_signature_algorithm`), and
   a listing in an authenticated CRL counts even if its authorityKeyIdentifier
-  is malformed. Original notes follow. From PR
+  is malformed. Later in PR #60 the listing rule was narrowed to follow
+  OpenSSL and Bouncy Castle: it counts only from a current CRL that covers
+  the certificate and is at least as new as the deciding CRL (see
+  `docs/tasks/sec-10-crl-applicability.md`, "Case reasons"). Original notes follow. From PR
   #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
   callback matches a listing by issuer name and serial only. It accepts a CRL
   whose signature verified under any name-matching candidate key, or whose
