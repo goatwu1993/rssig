@@ -438,6 +438,21 @@ relic 02c54d58 and BoringSSL `main`.
   (unit test `a_revocation_names_only_paths_a_source_could_complete`; the
   same now holds for `certificates_without_crl`). Named test
   `sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl`.
+- **A path a source could complete is reported over a stuck path.**
+  Decided, diagnostics offline and acceptance with `--fetch-crls`: when no
+  path is revoked, a viable path that only lacks or has expired CRLs is
+  reported (and its certificates named) ahead of another path whose CRL no
+  refresh can fix (forged, no cRLSign, `invalid_crl`, not yet valid), so a
+  source can complete it; when every path is stuck, the most specific
+  failure decides as before. Unit test
+  `a_path_a_source_could_complete_is_reported_over_a_stuck_paths_failure`.
+  A by-certificate answer asks for another verification pass only for a
+  full CRL that was not already loaded, judged per CRL in a PEM bundle.
+- **Declined after review:** setting aside a CRL that names a distribution
+  point the certificate does not list, instead of `invalid_crl`
+  (`distribution_point_scope`). OpenSSL fails it with
+  `X509_V_ERR_DIFFERENT_CRL_SCOPE` and Bouncy Castle rejects it in
+  processCRLB2 (see the CA-only comparison above); it stays Decided.
 - **With `--fetch-crls`, a definite result is not followed by a check of the
   rest of the input.** Decided, diagnostics. When the first signer's result
   is a definite revocation or CRL failure and nothing is asked, it is the

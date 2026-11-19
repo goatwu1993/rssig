@@ -87,16 +87,16 @@ impl TrustStore {
     }
 }
 
-/// The issuer name (DER) of each CRL in a DER or PEM input that loads, and
-/// whether it is a full CRL: no issuingDistributionPoint and not a delta CRL
-/// (deltaCRLIndicator), which webpki cannot use.
+/// The issuer name (DER) of each CRL in a DER or PEM input that loads,
+/// whether it is a full CRL (no issuingDistributionPoint and not a delta CRL,
+/// deltaCRLIndicator, which webpki cannot use), and its DER.
 #[cfg(feature = "crl-fetch")]
-pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<(Vec<u8>, bool)> {
+pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<(Vec<u8>, bool, Vec<u8>)> {
     decode_input(bytes, Kind::Crl)
         .unwrap_or_default()
         .iter()
-        .filter_map(|der| CertificateList::from_der(der).ok())
-        .filter_map(|list| {
+        .filter_map(|der| CertificateList::from_der(der).ok().map(|list| (der, list)))
+        .filter_map(|(der, list)| {
             let full = !list
                 .tbs_cert_list
                 .crl_extensions
@@ -105,7 +105,7 @@ pub(crate) fn crl_issuers(bytes: &[u8]) -> Vec<(Vec<u8>, bool)> {
                 .any(|e| matches!(e.extn_id.to_string().as_str(), "2.5.29.28" | "2.5.29.27"));
             ::der::Encode::to_der(&list.tbs_cert_list.issuer)
                 .ok()
-                .map(|issuer| (issuer, full))
+                .map(|issuer| (issuer, full, der.clone()))
         })
         .collect()
 }

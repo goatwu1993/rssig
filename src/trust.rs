@@ -60,6 +60,11 @@ impl TrustStore {
         }
         Ok(())
     }
+    /// Whether this exact CRL (DER) is already loaded.
+    #[cfg(feature = "crl-fetch")]
+    pub(crate) fn has_crl(&self, der: &[u8]) -> bool {
+        self.crls.iter().any(|crl| crl == der)
+    }
     #[cfg(feature = "crl-fetch")]
     pub(crate) fn retrieval_crl_count(&self) -> usize {
         self.crls.len()
@@ -1177,11 +1182,7 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         // path a source could complete is named: one with a CRL unusable for
         // another reason (forged, no cRLSign, `invalid_crl`) cannot verify
         // whatever is fetched, so nothing on it is asked about.
-        let stuck: Vec<usize> = viable
-            .iter()
-            .filter(|o| matches!(&o.outcome, Outcome::Missing(Some((rank, _))) if *rank != EXPIRED))
-            .map(|o| o.path)
-            .collect();
+        let stuck = stuck_paths(&viable);
         let open: Vec<&CertificateEvidence> = viable
             .iter()
             .copied()
@@ -1198,7 +1199,38 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         }
         return Some(revoked);
     }
-    unknown_status(&viable)
+    // A path a source could complete is reported over a stuck path's more
+    // specific failure, so that its certificates are named.
+    unknown_status(&completable_first(&viable))
+}
+
+/// The paths with a CRL that no refresh can fix (forged, no cRLSign,
+/// `invalid_crl`, not yet valid): no source could complete them.
+fn stuck_paths(outcomes: &[&CertificateEvidence]) -> Vec<usize> {
+    outcomes
+        .iter()
+        .filter(|o| matches!(&o.outcome, Outcome::Missing(Some((rank, _))) if *rank != EXPIRED))
+        .map(|o| o.path)
+        .collect()
+}
+
+/// The outcomes of the paths a source could complete, if any has a gap;
+/// otherwise all of them, so the most specific failure still decides.
+fn completable_first<'a>(outcomes: &[&'a CertificateEvidence]) -> Vec<&'a CertificateEvidence> {
+    let stuck = stuck_paths(outcomes);
+    let completable: Vec<&CertificateEvidence> = outcomes
+        .iter()
+        .copied()
+        .filter(|o| !stuck.contains(&o.path))
+        .collect();
+    if completable
+        .iter()
+        .any(|o| matches!(o.outcome, Outcome::Missing(_)))
+    {
+        completable
+    } else {
+        outcomes.to_vec()
+    }
 }
 
 fn first_revocation(outcomes: &[&CertificateEvidence]) -> Option<VerificationError> {
@@ -1230,6 +1262,11 @@ fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationErro
     let open: Vec<&CertificateEvidence> = outcomes
         .iter()
         .filter(|o| o.path_viable && !revoked_paths.contains(&o.path))
+        .collect();
+    let stuck = stuck_paths(&open);
+    let open: Vec<&CertificateEvidence> = open
+        .into_iter()
+        .filter(|o| !stuck.contains(&o.path))
         .collect();
     // What a CRL source could still supply: a CRL for a certificate that
     // has none, or a fresh one where every CRL has expired. Any other
@@ -1620,6 +1657,32 @@ mod revocation_reporting {
     }
     fn failed(rank: u8, code: ErrorCode) -> Outcome {
         Outcome::Missing(Some((rank, revocation_error("x", code, "test"))))
+    }
+
+    #[test]
+    fn a_path_a_source_could_complete_is_reported_over_a_stuck_paths_failure() {
+        let expired = || failed(EXPIRED, ErrorCode::CrlExpired);
+        let forged = || failed(5, ErrorCode::InvalidCrlSignature);
+        // Path 0's CRL is forged (no refresh fixes it); path 1 only has an
+        // expired CRL: path 1 is reported, so a source can refresh it.
+        let outcomes = [on_path(0, "f", forged()), on_path(1, "e", expired())];
+        let error = revocation_failure(&outcomes).unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        assert!(error.details.contains_key("certificates_with_expired_crl"));
+        let error = completable_path(&outcomes).unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        // A stuck path's certificate without a CRL is not named.
+        let outcomes = [
+            on_path(0, "f", forged()),
+            on_path(0, "m", Outcome::Missing(None)),
+            on_path(1, "e", expired()),
+        ];
+        let error = revocation_failure(&outcomes).unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        // Every path stuck: the most specific failure decides, as before.
+        let error = revocation_failure(&[on_path(0, "f", forged())]).unwrap();
+        assert_eq!(error.code, ErrorCode::InvalidCrlSignature);
+        assert!(completable_path(&[on_path(0, "f", forged())]).is_none());
     }
 
     #[test]

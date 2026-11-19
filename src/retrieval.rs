@@ -867,8 +867,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 self.load(sha256, issuer, crl, &mut loaded.accepted_bytes, max_bytes)?;
             loaded.added |= added;
             loaded.by_certificate |= by_certificate.is_some();
-            loaded.full |= by_certificate == Some(true);
-            loaded.full_added |= by_certificate == Some(true) && added;
+            loaded.full_added |= by_certificate == Some(true);
         }
         Ok(loaded)
     }
@@ -927,6 +926,17 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
             bytes: len,
         });
+        // Before loading: whether this body brings a full CRL of the issuer
+        // that is not already loaded (one PEM may hold several CRLs).
+        let of_issuer: Vec<bool> = if without_url {
+            crate::trust::crl_issuers(&crl.bytes)
+                .into_iter()
+                .filter(|(name, _, _)| name == issuer)
+                .map(|(_, full, der)| full && !self.store.has_crl(&der))
+                .collect()
+        } else {
+            Vec::new()
+        };
         let prior = self.store.retrieval_crl_count();
         if let Err(e) = self.store.add_crl(&crl.bytes) {
             let e = error(
@@ -942,18 +952,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if loaded > 64 {
             return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
         }
-        // An answer by certificate, and whether it is a full CRL, which
-        // serves every certificate of that issuer and role.
-        let answer = if without_url {
-            let of_issuer: Vec<bool> = crate::trust::crl_issuers(&crl.bytes)
-                .into_iter()
-                .filter(|(name, _)| name == issuer)
-                .map(|(_, full)| full)
-                .collect();
-            (!of_issuer.is_empty()).then(|| of_issuer.contains(&true))
-        } else {
-            None
-        };
+        // An answer by certificate, and whether it brought a new full CRL,
+        // which serves every certificate of that issuer and role.
+        let answer = (!of_issuer.is_empty()).then(|| of_issuer.contains(&true));
         // A body identical to a loaded CRL adds nothing to verify.
         Ok((answer, loaded > prior))
     }
@@ -1205,10 +1206,9 @@ struct Loaded {
     /// A body naming no URL loaded as a CRL of the certificate's issuer: the
     /// source answered by certificate or issuer.
     by_certificate: bool,
-    /// Such a body was a full CRL (no issuingDistributionPoint), which
-    /// serves every certificate of that issuer and role.
-    full: bool,
-    /// A full CRL answered by certificate and was itself newly added.
+    /// Such a body brought a full CRL (no issuingDistributionPoint, not a
+    /// delta) that was not already loaded: it serves every certificate of
+    /// that issuer and role, so verification runs again first.
     full_added: bool,
 }
 
@@ -2154,6 +2154,28 @@ mod tests {
             "../tests/fixtures/sec10-root-idp-named-point.crl"
         ));
         ask(&mut state, "p0", &cert, &mut partition).unwrap();
+        assert!(!state.reverify);
+        // One PEM body holding the loaded full CRL and a new partition: the
+        // full CRL is not new, so no reason to verify again.
+        let pem = |der: &[u8]| {
+            ::der::pem::encode_string("X509 CRL", ::der::pem::LineEnding::LF, der).unwrap()
+        };
+        let both = pem(include_bytes!("../tests/fixtures/good.crl"))
+            + &pem(include_bytes!(
+                "../tests/fixtures/sec10-root-idp-named-point.crl"
+            ));
+        let mut state = Retrieval::new(&store, &budget);
+        let mut full = Source(include_bytes!("../tests/fixtures/good.crl"));
+        ask(&mut state, "b0", &cert, &mut full).unwrap();
+        state.reverify = false;
+        let both: &'static [u8] = Box::leak(both.into_bytes().into_boxed_slice());
+        ask(
+            &mut state,
+            "b1",
+            &signer_with_points("other", 2),
+            &mut Source(both),
+        )
+        .unwrap();
         assert!(!state.reverify);
         // A delta CRL is not a full CRL: webpki cannot use it.
         let mut state = Retrieval::new(&store, &budget);
