@@ -292,6 +292,16 @@ match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
 `sec10_fetch_by_certificate_answer_leaves_no_point_failures`.
 
+A case may carry a `decision` (not used to run it): `basis` (`decided`, which
+changes only with the owner's approval, or `observed`, current behavior kept
+so that a change is visible; a case without `decision` counts as observed),
+`pins` (`acceptance`: verifies or rejects; `diagnostics`: which error, detail
+or request), `reason` (a repository-relative document, with an optional
+`#anchor`, that names the case and says why; required when decided) and
+`references` (what reference implementations do, each with its source
+location). `tests/spec.rs` checks that each `reason` document exists and names
+its case. See AGENTS.md, "Pinned expectations".
+
 Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 

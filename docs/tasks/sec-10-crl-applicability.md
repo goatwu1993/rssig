@@ -341,17 +341,28 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`. The
   references do not agree, with a well-formed CRL that omits the serial also
   present:
-  - OpenSSL uses the CRL: `crl_cb` leaves `akid` NULL and sets
-    `EXFLAG_INVALID`, which `x509_vfy.c` never reads for a CRL, and
-    `X509_check_akid` treats a NULL akid as a match. Revoked if that CRL has
-    the later lastUpdate (or an equal one and comes first), else good.
+  - OpenSSL uses the CRL. `crl_cb` (`crypto/x509/x_crl.c:265-269`) leaves
+    `akid` NULL and sets `EXFLAG_INVALID`, which `crypto/x509/x509_vfy.c`
+    never reads for a CRL; `X509_check_akid` (`crypto/x509/v3_purp.c:1353`)
+    treats a NULL akid as a match; `get_crl_sk` (`x509_vfy.c:1603-1633`)
+    picks one CRL, the newer on a tie, and `cert_crl` (`x509_vfy.c:2344`)
+    reads only that one. Revoked if the malformed CRL has the later
+    lastUpdate (or an equal one and comes first), else good.
   - Bouncy Castle's `X509RevocationChecker` (pkix) ignores the CRL's AKI:
-    revoked or good by iteration order.
+    `processCRLF` at
+    `pkix/src/main/java/org/bouncycastle/pkix/jcajce/RFC3280CertPathUtilities.java:255-280`
+    selects the issuer by name only. Revoked or good by iteration order.
   - Bouncy Castle's provider path throws an uncaught
-    `IllegalArgumentException` in `processCRLF`, or reports good if the
-    well-formed CRL is iterated first; never revoked.
-  - BoringSSL rejects the CRL at parse (`crl_cb` returns 0): never revoked.
-  - relic checks no CRLs.
+    `IllegalArgumentException` in `processCRLF`
+    (`prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:379-393`),
+    or reports good if the well-formed CRL is iterated first; never revoked.
+  - BoringSSL rejects the CRL at parse: `crl_cb` returns 0
+    (`crypto/x509/x_crl.cc:157-161`). Never revoked.
+  - relic checks no CRLs: chain validation is Go's `x509.VerifyOptions`
+    (`lib/pkcs7/verify.go:177`).
+  Compared at OpenSSL 3a3f1356, bc-java e03fee0b, relic 02c54d58 and
+  BoringSSL `main` (commit not captured). The same references are on the
+  case itself, in its `decision` field in `tests/cases.json`.
   rssig: `invalid_crl` alone; beside a usable CRL its listing revokes when
   it is at least as new, which is closest to OpenSSL.
 - **Cross-certified paths.** A path that verifies with its CRLs is accepted

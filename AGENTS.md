@@ -81,7 +81,11 @@ keep tests, `TODO.md` and the specification from locking correct behavior out.
 1. **Every pinned result needs a reason.** A case added or changed in
    `tests/cases.json` is listed in its task document under `docs/tasks/` with
    why that result is right: an RFC section, what OpenSSL or Bouncy Castle do,
-   or a written security argument. "The code did this" is not a reason.
+   or a written security argument. "The code did this" is not a reason. A
+   case whose result was decided against, or between, reference
+   implementations also carries a `decision` in `tests/cases.json` (`basis`,
+   `pins`, `reason`, and `references` with source locations); the spec test
+   checks that its `reason` document exists and names the case.
 2. **Decided or observed.** That task document marks each case **Decided**
    (with its reason) or **Observed** (current behavior, kept so that a change
    is visible). A case with no such entry counts as Observed. An Observed case

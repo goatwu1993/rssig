@@ -33,6 +33,23 @@ impl Suite {
             if case.crl_errors.is_some() && case.crl_responses.is_none() {
                 return Err(format!("crl_errors requires crl_responses: {}", case.id));
             }
+            if let Some(decision) = &case.decision {
+                let reason = decision.reason.as_deref().unwrap_or("");
+                if decision.basis == spec_suite::Basis::Decided && reason.trim().is_empty() {
+                    return Err(format!("a decided case needs a reason: {}", case.id));
+                }
+                let path = reason.split('#').next().unwrap_or("");
+                if !reason.is_empty()
+                    && (path.is_empty()
+                        || path.starts_with('/')
+                        || path.split('/').any(|part| part == ".."))
+                {
+                    return Err(format!(
+                        "reason must be a repository-relative document: {}",
+                        case.id
+                    ));
+                }
+            }
             if let Some(answers) = &case.crl_certificate_responses {
                 if case.crl_responses.is_none() {
                     return Err(format!(
@@ -317,6 +334,32 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
         stderr,
         failures,
     }
+}
+
+/// A case's `decision.reason` names a committed document that mentions the
+/// case, so the marker and the written reason cannot drift apart.
+#[test]
+fn decision_reasons_point_to_documents_that_name_their_case() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let suite: Suite =
+        serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap()).unwrap();
+    suite.validate().unwrap();
+    let mut marked = 0;
+    for case in &suite.cases {
+        let Some(reason) = case.decision.as_ref().and_then(|d| d.reason.as_deref()) else {
+            continue;
+        };
+        marked += 1;
+        let path = reason.split('#').next().unwrap();
+        let text = std::fs::read_to_string(root.join(path))
+            .unwrap_or_else(|e| panic!("{}: reason {path}: {e}", case.id));
+        assert!(
+            text.contains(&format!("`{}`", case.id)),
+            "{path} does not name case {}",
+            case.id
+        );
+    }
+    assert!(marked > 0, "no case carries a decision reason");
 }
 
 #[test]
