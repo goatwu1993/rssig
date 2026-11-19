@@ -683,8 +683,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                         self.urls_counted.insert(key.clone());
                         newly_counted.push(key.clone());
                     }
-                    self.asked.insert(key, None);
-                    points.push(raw);
+                    // Listed twice by this certificate: offered once.
+                    if !points.iter().any(|point: &String| url_key(point) == key) {
+                        points.push(raw);
+                    }
                 }
             }
         }
@@ -749,6 +751,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         let max_bytes = MAX_TOTAL_BYTES.saturating_sub(used);
         if max_bytes == 0 {
             return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
+        }
+        // Only now, with every engine limit passed, are the points offered:
+        // a limit that ends the run leaves them as they were.
+        for point in &points {
+            self.asked.insert(url_key(point), None);
         }
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
         self.requests += 1;
@@ -1020,6 +1027,8 @@ fn retrieve(
     let format = crate::format::detect(bytes, filename)?;
     source.begin_verification();
     let mut state = Retrieval::new(base, budget);
+    // Whether the retrieval loop ran to its end; any other exit is early.
+    let mut loop_ended = false;
     let result = (|| {
         if base.retrieval_bytes() > MAX_TOTAL_BYTES {
             return Err(limit(
@@ -1137,6 +1146,7 @@ fn retrieve(
             let named: Vec<String> = reports.iter().map(|r| r.sha256.clone()).collect();
             state.report_unused_points(&named);
         }
+        loop_ended = true;
         // Evidence is still missing because the source stopped: say so, so
         // that "the source gave up" is distinct from "no CRL was available".
         // Only when the abort cut retrieval short: a certificate still
@@ -1176,11 +1186,9 @@ fn retrieve(
         }
     })();
     // The loop's own end reports the named certificates' unused points; an
-    // early exit leaves them held, and they are reported here.
-    if result
-        .as_ref()
-        .is_err_and(|e| e.code == ErrorCode::ResourceLimitExceeded || e.stage != Stage::Revocation)
-    {
+    // early exit (an engine limit, a failed check, a malformed report)
+    // leaves them held, and they are reported here.
+    if !loop_ended {
         state.report_all_unused_points();
     }
     match result {
@@ -2153,6 +2161,13 @@ mod tests {
         let e = ask(&mut state, "last", &cert, &mut Source).unwrap_err();
         assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(e.details["resource"], "crl_requests");
+        // The limit leaves the points as they were: not marked as offered,
+        // so a certificate that left them unused still reports them.
+        assert!(
+            !state
+                .asked
+                .contains_key(&url_key("http://crl.example.invalid/shared-0.crl"))
+        );
     }
     #[test]
     fn a_source_answering_by_certificate_never_exhausts_the_uri_limit() {

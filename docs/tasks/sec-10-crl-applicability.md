@@ -683,6 +683,19 @@ relic 02c54d58 and BoringSSL `main`.
     After a source abort, such a point is reported as `crl_fetch_aborted`
     (not tried), and when retrieval ends early on an engine limit or a
     failed check, every unused point still held is reported.
+- **Retrieval bookkeeping (unit-tested).** A request marks its points as
+  offered only once every engine limit has passed, so a limit that ends the
+  run leaves a point another certificate left unused reported as such; held
+  unused points are reported on every early exit (a flag set only when the
+  loop ends). The built-in source does no work once spent (no request, DNS
+  lookup or connection), and a body that ends exactly at its 32 MiB cap is
+  still read to its end (`a_body_ending_exactly_at_the_byte_cap_still_reads_its_end`).
+- **Declined after review:** naming the gaps of a path whose other
+  certificate has a supplied CRL that is unusable for a reason other than
+  expiry. Such a certificate is never asked about (Observed,
+  `sec10-fetch-unusable-supplied-crl-not-fetched`), so the path cannot be
+  completed by retrieval; changing that is revisiting the Observed rule
+  (Bouncy Castle would fetch), not this one.
 - **Declined after review (already decided):** confirming intermediates on a
   key-rollover path with webpki (it cannot confirm two same-name issuers;
   rssig's per-key evaluation decides, SEC-16 above); a batch-wide fetch

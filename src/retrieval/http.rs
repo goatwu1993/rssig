@@ -187,12 +187,18 @@ impl HttpCrlSource {
         stream: &mut TcpStream,
         bytes: &mut [u8],
     ) -> Result<usize, VerificationError> {
-        if self.bytes >= MAX_TOTAL_BYTES {
-            return Err(limit("crl_network_bytes", MAX_TOTAL_BYTES, self.bytes, 1));
-        }
         stream
             .set_read_timeout(Some(self.remaining()?.min(IO_TIMEOUT)))
             .map_err(io_error)?;
+        // The budget is exactly spent: one probe tells a body that ends here
+        // from one that goes past the cap.
+        if self.bytes >= MAX_TOTAL_BYTES {
+            let mut probe = [0u8; 1];
+            return match stream.read(&mut probe).map_err(io_error)? {
+                0 => Ok(0),
+                _ => Err(limit("crl_network_bytes", MAX_TOTAL_BYTES, self.bytes, 1)),
+            };
+        }
         let cap = bytes.len().min(MAX_TOTAL_BYTES - self.bytes);
         let n = stream.read(&mut bytes[..cap]).map_err(io_error)?;
         self.bytes += n;
@@ -339,6 +345,23 @@ impl HttpCrlSource {
         let spent_before = self.requests >= MAX_REQUESTS
             || self.bytes >= MAX_TOTAL_BYTES
             || self.started.is_some() && self.remaining().is_err();
+        // A source already spent does no work for this request: no request,
+        // DNS lookup or connection.
+        if spent_before {
+            let e = if self.requests >= MAX_REQUESTS {
+                limit("crl_http_requests", MAX_REQUESTS, self.requests, 1)
+            } else if self.bytes >= MAX_TOTAL_BYTES {
+                limit("crl_network_bytes", MAX_TOTAL_BYTES, self.bytes, 1)
+            } else {
+                self.remaining()
+                    .err()
+                    .unwrap_or_else(|| error(ErrorCode::CrlFetchFailed, "CRL source is spent"))
+            };
+            let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
+            source_error.details = e.details;
+            source_error.details.remove("source_spent");
+            return Err(source_error);
+        }
         self.fetch_http(raw, max_bytes).map_err(|e| {
             let kind = source_error_kind(&e, spent_before);
             let mut source_error = CrlSourceError::new(kind, e.message);
@@ -672,6 +695,31 @@ mod tests {
         assert!(source.poisoned);
     }
     #[test]
+    fn a_body_ending_exactly_at_the_byte_cap_still_reads_its_end() {
+        use std::io::Write;
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let writer = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream.write_all(b"abcd").unwrap();
+        });
+        let mut stream = TcpStream::connect(address).unwrap();
+        writer.join().unwrap();
+        let mut source = HttpCrlSource {
+            bytes: MAX_TOTAL_BYTES - 4,
+            started: Some(Instant::now()),
+            ..HttpCrlSource::new()
+        };
+        let mut buffer = [0u8; 16];
+        let mut read = 0;
+        while read < 4 {
+            read += source.read(&mut stream, &mut buffer[read..]).unwrap();
+        }
+        assert_eq!(&buffer[..4], b"abcd");
+        // The budget is exactly spent; the end of the body is still seen.
+        assert_eq!(source.read(&mut stream, &mut buffer).unwrap(), 0);
+    }
+    #[test]
     fn deadlines_request_budgets_and_dns_poison_are_terminal_without_network() {
         let mut source = HttpCrlSource {
             requests: MAX_REQUESTS,
@@ -701,6 +749,15 @@ mod tests {
         };
         assert!(source.remaining().is_err());
         assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
+        // A spent byte budget aborts before any work: no request is spent,
+        // and nothing is resolved or connected.
+        let mut source = HttpCrlSource {
+            bytes: MAX_TOTAL_BYTES,
+            ..HttpCrlSource::new()
+        };
+        assert_eq!(kind(&mut source), CrlSourceErrorKind::Abort);
+        assert_eq!(source.requests, 0);
+        assert!(source.started.is_none());
         // The classifying marker is not part of the reported failure.
         let mut source = HttpCrlSource {
             started: Some(Instant::now() - DEADLINE),
