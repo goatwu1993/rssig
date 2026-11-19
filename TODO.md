@@ -307,7 +307,9 @@ timestamps, and local CRL validation already exist.
   reports without a usable CRL (`details.certificates_without_crl`), as
   OpenSSL's `get_crl` and Bouncy Castle look up CRLs for the certificate being
   checked (PR #60). What remains: a run verifies the input up to once per
-  retrieval round, against one budget, and no case exhausts it on that path. The per-certificate CRL evaluation decodes
+  retrieval round, plus once without revocation before the first request (the
+  whole-input integrity and trust check), against one budget, and no case
+  exhausts it on that path. The per-certificate CRL evaluation decodes
   each loaded CRL once per verification, but verifies CRL signatures with its
   own OID table outside the budgeted algorithm adapter; reuse the adapter.
   Repeated work found in the PR #60 review (results unchanged, bounded by

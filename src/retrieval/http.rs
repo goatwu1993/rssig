@@ -129,10 +129,7 @@ impl HttpCrlSource {
             })?,
             Err(_) => {
                 self.poisoned = true;
-                return Err(error(
-                    ErrorCode::CrlFetchFailed,
-                    "CRL DNS deadline exceeded",
-                ));
+                return Err(dns_timeout());
             }
         };
         if addresses.is_empty()
@@ -229,6 +226,12 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
         location,
     })
 }
+/// The request whose DNS lookup timed out closes the source: it is itself
+/// the abort, not only the requests after it.
+fn dns_timeout() -> VerificationError {
+    error(ErrorCode::CrlFetchFailed, "CRL DNS deadline exceeded").detail("source_spent", true)
+}
+
 /// The kind of a failed request. `Abort` only when the source was spent
 /// before it, or this request ran out of the source's own requests, bytes or
 /// time: a request that failed for its own reason keeps that reason, even if
@@ -501,6 +504,11 @@ mod tests {
         .unwrap_err();
         assert_eq!(
             source_error_kind(&deadline, false),
+            CrlSourceErrorKind::Abort
+        );
+        // The request whose DNS lookup times out is itself the abort.
+        assert_eq!(
+            source_error_kind(&dns_timeout(), false),
             CrlSourceErrorKind::Abort
         );
         let budget = limit("crl_http_requests", MAX_REQUESTS, MAX_REQUESTS, 1);

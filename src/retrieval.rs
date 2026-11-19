@@ -245,7 +245,9 @@ fn url_key(raw: &str) -> String {
 /// hygiene, not transport policy.
 fn hygienic_url(raw: &str) -> bool {
     !raw.chars().any(|c| c.is_control() || c.is_whitespace())
-        && url::Url::parse(raw).map_or(true, |u| u.username().is_empty() && u.password().is_none())
+        // A URL that does not parse cannot be screened for credentials, so it
+        // is withheld too: never passed on, logged or reported.
+        && url::Url::parse(raw).is_ok_and(|u| u.username().is_empty() && u.password().is_none())
 }
 
 pub(crate) fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
@@ -294,33 +296,54 @@ fn listed_points(
         return Ok(Vec::new());
     };
     let mut listed = Vec::new();
-    let deny = |listed: &mut Vec<_>, message: &'static str| {
-        let e = error(ErrorCode::CrlFetchDenied, message);
-        if strict {
-            return Err(e);
+    // Diagnostics kept for one certificate are bounded like its URIs: past
+    // the bound they are counted, and one entry reports how many were left
+    // out, so many unusable names cannot grow the report.
+    let mut diagnostics = 0usize;
+    let mut omitted = 0usize;
+    let mut note = |listed: &mut Vec<_>, e: VerificationError| {
+        if diagnostics < MAX_REQUESTS {
+            diagnostics += 1;
+            listed.push(Err(e));
+        } else {
+            omitted += 1;
         }
-        listed.push(Err(e));
-        Ok(())
     };
     let mut urls = 0;
-    for point in points.0 {
+    let mut over_limit = false;
+    'points: for point in points.0 {
         if point.reasons.is_some() || point.crl_issuer.is_some() {
-            deny(
-                &mut listed,
+            let e = error(
+                ErrorCode::CrlFetchDenied,
                 "partitioned or indirect CRL distribution points are unsupported",
-            )?;
+            );
+            if strict {
+                return Err(e);
+            }
+            note(&mut listed, e);
             continue;
         }
         let Some(DistributionPointName::FullName(names)) = point.distribution_point else {
-            deny(
-                &mut listed,
+            let e = error(
+                ErrorCode::CrlFetchDenied,
                 "CRL distribution point requires a full URI name",
-            )?;
+            );
+            if strict {
+                return Err(e);
+            }
+            note(&mut listed, e);
             continue;
         };
         for name in names {
             let GeneralName::UniformResourceIdentifier(uri) = name else {
-                deny(&mut listed, "non-URI CRL distribution point is unsupported")?;
+                let e = error(
+                    ErrorCode::CrlFetchDenied,
+                    "non-URI CRL distribution point is unsupported",
+                );
+                if strict {
+                    return Err(e);
+                }
+                note(&mut listed, e);
                 continue;
             };
             if urls >= MAX_REQUESTS {
@@ -328,20 +351,31 @@ fn listed_points(
                 if strict {
                     return Err(e);
                 }
-                listed.push(Err(e));
-                return Ok(listed);
+                over_limit = true;
+                break 'points;
             }
             if uri.as_str().len() > 2048 {
                 let e = limit("crl_url_bytes", 2048, 0, uri.as_str().len());
                 if strict {
                     return Err(e);
                 }
-                listed.push(Err(e));
+                note(&mut listed, e);
                 continue;
             }
             urls += 1;
             listed.push(Ok(uri.as_str().into()));
         }
+    }
+    // Always reported, whatever the diagnostics bound.
+    if over_limit {
+        listed.push(Err(limit("crl_urls", MAX_REQUESTS, urls, 1)));
+    }
+    if omitted > 0 {
+        listed.push(Err(error(
+            ErrorCode::CrlFetchDenied,
+            "further unusable CRL distribution point names are not listed",
+        )
+        .detail("omitted", omitted)));
     }
     Ok(listed)
 }
@@ -396,9 +430,10 @@ struct Retrieval<'s, 'b, 'l> {
     /// an issuer's CRLs can differ by key and be split between CA and
     /// end-entity certificates.
     asked_issuers: BTreeSet<IssuerKey>,
-    /// Those of them a source answered by certificate, with a CRL of that
-    /// issuer naming no URL.
-    answered_by_certificate: BTreeSet<IssuerKey>,
+    /// A source just answered by certificate with a new full CRL of the
+    /// issuer: verification runs again before any further request, since
+    /// only it can tell which certificates that CRL covers.
+    reverify: bool,
     /// The source reported `Abort`: nothing further is asked.
     aborted: bool,
     /// The certificate whose request the source aborted.
@@ -427,7 +462,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             asked: BTreeMap::new(),
             requests: 0,
             asked_issuers: BTreeSet::new(),
-            answered_by_certificate: BTreeSet::new(),
+            reverify: false,
             aborted: false,
             aborted_for: None,
             urls_passed: 0,
@@ -532,16 +567,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return Ok(false);
         }
         self.in_flight.clear();
-        // An issuer key and role a source already answered by certificate
-        // needs no further request: that answer serves every such
-        // certificate, and its points are neither offered nor counted.
-        if let Some(issuer) = crate::der::tbs_issuer(der, 0xa0, 2)
-            && self
-                .answered_by_certificate
-                .contains(&issuer_key(issuer, cert))
-        {
-            return Ok(false);
-        }
         let listed = match listed_points(cert, false) {
             Ok(listed) => listed,
             // A malformed extension: webpki skips it offline, so it is no
@@ -733,11 +758,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name.
         let by_certificate = !self.aborted && loaded.by_certificate;
         if by_certificate {
-            // A partition may not cover the issuer's other certificates:
-            // only a full CRL answers for them all.
-            if loaded.full {
-                self.answered_by_certificate.insert(key);
-            }
+            // A new full CRL may cover the issuer's other certificates, but
+            // its name and syntax do not establish authority or freshness:
+            // verification decides, before anything else is asked.
+            self.reverify = loaded.full && loaded.added;
             // No source used these points: a later certificate listing one
             // still offers it. Each offer counts toward `crl_source_urls`.
             for point in &unanswered {
@@ -802,6 +826,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         total: &mut usize,
         max_bytes: usize,
     ) -> Result<(Option<bool>, bool), VerificationError> {
+        // Whether the source named a URL at all is decided before the URL is
+        // screened: one withheld from the report is still not an answer by
+        // certificate.
+        let without_url = crl.url.is_none();
         let url = crl.url.filter(|u| hygienic_url(u));
         // A redirect target the source reported but that is not recorded is
         // withheld, never replaced by the requested URL.
@@ -852,7 +880,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
         // An answer by certificate, and whether it is a full CRL, which
         // serves every certificate of that issuer and role.
-        let answer = if url.is_none() {
+        let answer = if without_url {
             let of_issuer: Vec<bool> = crate::trust::crl_issuers(&crl.bytes)
                 .into_iter()
                 .filter(|(name, _)| name == issuer)
@@ -905,6 +933,7 @@ fn retrieve(
         // asked about, and the revocation stands if none is found.
         let mut result = verify_with(bytes, options, &state.store, format, budget);
         let mut asked = BTreeSet::new();
+        let mut authenticated = false;
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
@@ -958,12 +987,23 @@ fn retrieve(
             let mut added = false;
             let mut any = false;
             for (sha256, der, cert) in &targets {
-                if !asked.insert(sha256.clone()) {
+                if asked.contains(sha256) {
                     continue;
                 }
+                // Verification with required revocation stops at the first
+                // signer without a CRL: later signers, nested signatures and
+                // bundle members are not yet checked. Before the first
+                // request, the whole input must pass integrity and trust
+                // checks, so that no source is asked about a file that
+                // fails them and that failure is the result.
+                if !authenticated {
+                    authenticate(bytes, options, &state.store, format, budget)?;
+                    authenticated = true;
+                }
+                asked.insert(sha256.clone());
                 any = true;
                 added |= state.request(sha256, der, cert, source)?;
-                if state.aborted {
+                if state.aborted || core::mem::take(&mut state.reverify) {
                     break;
                 }
             }
@@ -1143,6 +1183,32 @@ fn decode_report(
     let cert = Certificate::from_der(&der)
         .map_err(|e| error(ErrorCode::InvalidCertificate, e.to_string()))?;
     Ok((report.sha256.clone(), der, cert))
+}
+
+/// Verify the whole input without revocation: every signature, nested
+/// signature, timestamp and bundle member must pass integrity and trust
+/// checks before a CRL source is asked about any of it.
+fn authenticate(
+    bytes: &[u8],
+    options: &VerifyOptions<'_>,
+    store: &TrustStore,
+    format: crate::format::Format,
+    budget: &Budget,
+) -> Result<(), VerificationError> {
+    budget.log.debug(
+        Stage::Revocation,
+        format_args!("CRL retrieval: verifying without revocation before the first request"),
+    );
+    let options = VerifyOptions {
+        trust: Some(store),
+        check_revocation: false,
+        ..*options
+    };
+    verify_inner_budget(bytes, &options, format, budget)
+        .map(|_| ())
+        .map_err(|e| {
+            VerificationError::from_internal(e, ErrorCode::InvalidCertificate, Stage::Certificate)
+        })
 }
 
 fn verify_with(
@@ -1812,44 +1878,102 @@ mod tests {
         assert_eq!(state.urls_passed, 4);
     }
     #[test]
-    fn an_issuer_answered_by_certificate_is_not_asked_again() {
-        // Many certificates of one issuer listing the same points: the first
-        // answer by certificate serves them all, and none spends the cap.
-        struct Source(usize);
+    fn a_new_full_crl_by_certificate_asks_for_verification_first() {
+        // Whether a full CRL returned by certificate covers the issuer's
+        // other certificates is for verification to decide: retrieval
+        // verifies again before asking about anything else.
+        struct Source(&'static [u8]);
         impl CrlSource for Source {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
-                self.0 += 1;
-                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
-                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
-                )))
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(self.0.to_vec())))
             }
         }
         let store = store();
         let budget = Budget::default();
-        let mut state = Retrieval::new(&store, &budget);
-        let mut source = Source(0);
         let cert = signer_with_points("shared", 2);
-        for i in 0..=MAX_SOURCE_REQUESTS {
-            ask(&mut state, &format!("c{i}"), &cert, &mut source).unwrap();
-        }
-        assert_eq!(source.0, 1);
-        assert!(state.report.failures.is_empty());
-        // A partition CRL answers only the certificate it was returned for:
-        // the next certificate of that issuer is still asked.
-        struct Partition(usize);
-        impl CrlSource for Partition {
+        let mut state = Retrieval::new(&store, &budget);
+        let mut full = Source(include_bytes!("../tests/fixtures/good.crl"));
+        ask(&mut state, "c0", &cert, &mut full).unwrap();
+        assert!(state.reverify);
+        // The same body again adds nothing: no reason to verify again.
+        state.reverify = false;
+        ask(&mut state, "c1", &cert, &mut full).unwrap();
+        assert!(!state.reverify);
+        // A partition answers only the certificate it was returned for.
+        let mut state = Retrieval::new(&store, &budget);
+        let mut partition = Source(include_bytes!(
+            "../tests/fixtures/sec10-root-idp-named-point.crl"
+        ));
+        ask(&mut state, "p0", &cert, &mut partition).unwrap();
+        assert!(!state.reverify);
+        // A body whose URL is withheld from the report is not an answer by
+        // certificate: its certificate's points are still recorded.
+        struct Credentialed;
+        impl CrlSource for Credentialed {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
-                self.0 += 1;
-                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
-                    include_bytes!("../tests/fixtures/sec10-root-idp-named-point.crl").to_vec(),
-                )))
+                Ok(CrlResponse::new().with_crl(
+                    SourcedCrl::new(include_bytes!("../tests/fixtures/good.crl").to_vec())
+                        .with_url("http://user:pw@crl.example.invalid/other.crl"),
+                ))
             }
         }
         let mut state = Retrieval::new(&store, &budget);
-        let mut source = Partition(0);
-        ask(&mut state, "p0", &cert, &mut source).unwrap();
-        ask(&mut state, "p1", &cert, &mut source).unwrap();
-        assert_eq!(source.0, 2);
+        ask(&mut state, "u0", &cert, &mut Credentialed).unwrap();
+        assert!(!state.reverify);
+        assert_eq!(
+            state
+                .report
+                .failures
+                .iter()
+                .filter(|f| f.url.is_some())
+                .count(),
+            2,
+            "{:?}",
+            state.report.failures
+        );
+    }
+    #[test]
+    fn a_url_that_cannot_be_screened_is_withheld() {
+        assert!(hygienic_url("http://crl.example.invalid/a.crl"));
+        assert!(hygienic_url("ldap://crl.example.invalid/cn=a"));
+        // Credentials, even where the URL does not parse (an invalid port).
+        assert!(!hygienic_url("http://user:pw@crl.example.invalid/a.crl"));
+        assert!(!hygienic_url(
+            "http://user:pw@crl.example.invalid:port/a.crl"
+        ));
+        assert!(!hygienic_url("not a url"));
+    }
+    #[test]
+    fn diagnostics_for_unusable_names_are_bounded_per_certificate() {
+        // 200 dNSName names in one point: none is a URI. The report keeps a
+        // bounded number of entries and one that counts the rest.
+        fn tlv(tag: u8, body: &[u8]) -> Vec<u8> {
+            let mut out = vec![tag];
+            match body.len() {
+                n @ 0..128 => out.push(n as u8),
+                n @ 128..256 => out.extend([0x81, n as u8]),
+                n => out.extend([0x82, (n >> 8) as u8, n as u8]),
+            }
+            out.extend_from_slice(body);
+            out
+        }
+        let names: Vec<u8> = (0..200).flat_map(|_| tlv(0x82, b"crl.invalid")).collect();
+        let point = tlv(0x30, &tlv(0xa0, &tlv(0xa0, &names)));
+        let mut cert = signer_with_points("d", 1);
+        cert.tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|e| e.extn_id.to_string() == "2.5.29.31")
+            .unwrap()
+            .extn_value = ::der::asn1::OctetString::new(tlv(0x30, &point)).unwrap();
+        let listed = listed_points(&cert, false).unwrap();
+        assert_eq!(listed.len(), MAX_REQUESTS + 1);
+        let last = listed.last().unwrap().as_ref().unwrap_err();
+        assert_eq!(last.details["omitted"], 200 - MAX_REQUESTS);
+        // The strict public discovery still fails at the first such name.
+        assert!(crl_distribution_points(&cert).is_err());
     }
     #[test]
     fn the_request_carries_the_certificate_issuer_and_every_listed_uri() {

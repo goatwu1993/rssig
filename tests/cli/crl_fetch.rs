@@ -1145,3 +1145,37 @@ fn sec10_fetch_by_certificate_answer_leaves_no_point_failures() {
     assert!(retrieval["artifacts"][0].get("url").is_none());
     assert!(retrieval.get("failures").is_none(), "{retrieval}");
 }
+
+/// The outer signer is trusted and only lacks a CRL, but the nested signature
+/// is invalid. The whole input passes integrity and trust checks before any
+/// source is asked: no request, and the integrity failure is the result.
+#[test]
+fn fetch_asks_nothing_before_the_whole_input_is_authenticated() {
+    struct NoCalls;
+    impl rssig::retrieval::CrlSource for NoCalls {
+        fn crls(
+            &mut self,
+            _: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            panic!("a source must not be asked before the input is authenticated");
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    let args = [
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--fetch-crls".to_owned(),
+        path("bad-nested-signature.exe"),
+    ];
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(args, &mut out, &mut err, &mut NoCalls).unwrap();
+    assert_eq!(code, 1);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    assert_eq!(report["results"][0]["error"]["code"], "invalid_signature");
+}

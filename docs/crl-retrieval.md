@@ -16,7 +16,12 @@ rule is restated for retrieval.
 
 1. Verify with revocation required, against the supplied CRLs. The path is
    always built first, so integrity and trust failures end the run before
-   any request (`crl-fetch-untrusted-chain-requests-nothing`). A good result,
+   any request (`crl-fetch-untrusted-chain-requests-nothing`). That
+   verification stops at the first signer without a CRL, so before the
+   first request the whole input (every signature, nested signature,
+   timestamp and bundle member) is verified once without revocation; a
+   failure there is the result and nothing is asked
+   (`crl-fetch-invalid-nested-signature-requests-nothing`). A good result,
    or any failure but `revocation_unknown`, is final, with the two
    exceptions below (a revocation naming another path's gap, and an expired
    CRL): a forged, unusable or revoking local CRL is reported as it is without
@@ -69,8 +74,11 @@ rule is restated for retrieval.
    answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
    unused points stay open: a later certificate listing one still offers it,
    and each offer counts toward the 64 URIs passed per verification. When
-   the answer is a full CRL (no issuingDistributionPoint), later
-   certificates of that issuer key and role are not asked again.
+   the answer adds a full CRL (no issuingDistributionPoint), verification
+   runs again before anything else is asked: its name and syntax do not
+   establish authority or freshness, so only verification can tell which of
+   the issuer's certificates it covers. A body whose URL is withheld from
+   the report is not an answer by certificate.
    CRLs are per issuer, so a certificate with no point left to pass on,
    whose issuer was already asked about, is not asked again and does not
    spend the request cap. A list that is present but empty (a certificate
@@ -96,10 +104,14 @@ Two kinds of error, and nothing in between:
   a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
   first 16 (one `crl_urls` entry; the first 16 still go to the source), as
   OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
-  it is not discovered (reasons, cRLIssuer, a relative or non-URI name), the
+  it is not discovered (reasons, cRLIssuer, a relative or non-URI name; at
+  most 16 such entries are kept per certificate, and one more counts the
+  rest in `details.omitted`), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
-  the URI has control characters, whitespace or credentials (never passed to
-  the source or recorded; input hygiene, not transport policy), the response
+  the URI has control characters, whitespace or credentials, or does not
+  parse as a URL so that it cannot be screened (never passed to the source,
+  logged or recorded; input hygiene, not transport policy; any valid scheme
+  is passed), the response
   is not a CRL or is larger than allowed (not loaded), or the source reports
   `denied`, `failed` or `unknown` (see below).
 - **The source reporting `abort` stops retrieval**: nothing further is

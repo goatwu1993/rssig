@@ -340,6 +340,11 @@ impl TrustStore {
                                     // Over budget: no verification, and the
                                     // exhausted counter ends the run below.
                                     budget.crypto.charge(1).map_err(|_| ())?;
+                                    // An identifier the adapter rejects is
+                                    // unsupported, whatever its OID.
+                                    if !crl.algorithm_accepted {
+                                        return Ok(None);
+                                    }
                                     Ok(signed_by(
                                         &issuer.spki,
                                         &crl.algorithm,
@@ -452,7 +457,8 @@ impl TrustStore {
             } else {
                 viable
             };
-            let mut error = if let Some(error) = revocation_error {
+            let mut error = if let Some(mut error) = revocation_error {
+                report_crls(&mut error, &crls);
                 error
             } else if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
                 VerificationError::new(
@@ -593,6 +599,9 @@ struct LoadedCrl {
     /// The original tbsCertList bytes, never a re-encoding.
     signed: Vec<u8>,
     algorithm: ::der::asn1::ObjectIdentifier,
+    /// Whether the complete signature AlgorithmIdentifier is one the webpki
+    /// algorithm adapter accepts.
+    algorithm_accepted: bool,
     signature: ::der::asn1::BitString,
     issuer: Vec<u8>,
     /// The authorityKeyIdentifier keyIdentifier; `Err` when malformed.
@@ -634,9 +643,27 @@ impl LoadedCrl {
         // unsupported entry could go unnoticed.
         let webpki =
             webpki::BorrowedCertRevocationList::from_der(bytes).and_then(|crl| crl.to_owned());
+        // The whole AlgorithmIdentifier, parameters included, must be one the
+        // webpki adapter accepts: the confirmation pass uses that adapter, so
+        // a CRL it would reject must not be chosen ahead of a usable one.
+        let algorithm_accepted = crl
+            .signature_algorithm
+            .to_der()
+            .ok()
+            .and_then(|der| {
+                crate::der::one(&der, 0x30)
+                    .ok()
+                    .map(|sequence| sequence.body.to_vec())
+            })
+            .is_some_and(|identifier| {
+                ALGORITHMS
+                    .iter()
+                    .any(|a| a.signature_alg_id().as_ref() == identifier.as_slice())
+            });
         Ok(Self {
             bytes: bytes.to_vec(),
             signed,
+            algorithm_accepted,
             algorithm: crl.signature_algorithm.oid,
             signature: crl.signature,
             issuer,
@@ -785,8 +812,9 @@ fn evaluate_crls(
         if crl.issuer != issuer_name {
             continue;
         }
-        let with_crl =
-            |error: VerificationError| error.detail("crl", CrlReport::parse(&crl.bytes).ok());
+        // Only the CRL's index is kept per candidate path: its full report
+        // (DER and every entry) is built once, for the error returned.
+        let with_crl = |error: VerificationError| error.detail(CRL_INDEX, index);
         // Authenticate under this path's issuer key first: what an
         // authenticated CRL lists counts whatever else is wrong with it.
         // A CRL that names another key and is not signed by this one is not
@@ -840,15 +868,7 @@ fn evaluate_crls(
         // score and Bouncy Castle's processCRLB2 rejects it, so neither reads
         // its entries.
         let authority = authority_for(&crl.tbs, cert, end_entity);
-        // Nor one whose issuingDistributionPoint does not decode: OpenSSL
-        // scores it unusable (`IDP_INVALID`) and Bouncy Castle skips a CRL
-        // whose extension does not parse. A well-formed one that admits the
-        // certificate's role and names no point is in scope for both
-        // (`crl->idp->distpoint == NULL` in `crl_crldp_check`; processCRLB2
-        // compares names only when the IDP has one), so its listing counts.
-        let covers = authority != Some(false)
-            && idp_decodes(&crl.tbs)
-            && (lists_points || !names_distribution_point(&crl.tbs));
+        let covers = listing_in_scope(&crl.tbs, cert, end_entity);
         let lists = crl.revoked.iter().any(|s| s.as_slice() == serial);
         if lists {
             listings.push(index);
@@ -980,8 +1000,7 @@ fn evaluate_crls(
         // certificate then revokes, unless the deciding CRL is newer: a
         // superseded CRL's entry may be a hold that was since released.
         (Some((_, decided)), Some((listing, listed))) if listed >= decided => Outcome::Revoked(
-            webpki_revocation_error(&sha256, webpki::Error::CertRevoked)
-                .detail("crl", CrlReport::parse(&crls[listing].bytes).ok()),
+            webpki_revocation_error(&sha256, webpki::Error::CertRevoked).detail(CRL_INDEX, listing),
         ),
         (Some((index, _)), _) => Outcome::Good(index),
         // Without one, the status is unknown, even if a CRL lists it.
@@ -1083,8 +1102,8 @@ fn search_limit(e: &webpki::Error) -> bool {
     )
 }
 
-/// The unknown status of a path that passes every path policy, has no
-/// revocation and only lacks CRLs, if any path is like that.
+/// The status of a path that passes every path policy, has no revocation
+/// and only lacks CRLs or has only expired ones, if any path is like that.
 fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
     let revoked_paths: Vec<usize> = outcomes
         .iter()
@@ -1095,11 +1114,20 @@ fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationErro
         .iter()
         .filter(|o| o.path_viable && !revoked_paths.contains(&o.path))
         .collect();
-    let (_, missing) = without_crl(&open);
-    if missing.is_empty() {
+    // What a CRL source could still supply: a CRL for a certificate that
+    // has none, or a fresh one where every CRL has expired. Any other
+    // failure is not completable, and the other path's error stands.
+    if !open
+        .iter()
+        .any(|o| matches!(o.outcome, Outcome::Missing(_)))
+    {
         return None;
     }
-    unknown_status(&open)
+    unknown_status(&open).filter(|error| {
+        error.code == ErrorCode::RevocationUnknown
+            || error.code == ErrorCode::CrlExpired
+                && error.details.contains_key("certificates_with_expired_crl")
+    })
 }
 
 /// The certificates with no CRL at all, once each, and whether there were
@@ -1137,6 +1165,32 @@ fn reports(
         }
     }
     (!seen.is_empty(), listed)
+}
+
+/// The detail under which a rejected path's evidence names a CRL by its
+/// index among the loaded CRLs, until the returned error is built.
+const CRL_INDEX: &str = "crl_index";
+
+/// Replace each CRL index in the error to be returned, and in the unusable
+/// CRL it reports, with that CRL's full report.
+fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
+    let report = |index: &serde_json::Value| {
+        let crl = index.as_u64().and_then(|i| crls.get(i as usize));
+        serde_json::to_value(crl.and_then(|crl| CrlReport::parse(&crl.bytes).ok()))
+            .unwrap_or(serde_json::Value::Null)
+    };
+    if let Some(index) = error.details.remove(CRL_INDEX) {
+        error.details.insert("crl".into(), report(&index));
+    }
+    if let Some(details) = error
+        .details
+        .get_mut("unusable_crl")
+        .and_then(|unusable| unusable.get_mut("details"))
+        .and_then(|details| details.as_object_mut())
+        && let Some(index) = details.remove(CRL_INDEX)
+    {
+        details.insert("crl".into(), report(&index));
+    }
 }
 
 /// The rank of an expired CRL among unusable-CRL failures: the lowest.
@@ -1205,14 +1259,71 @@ fn webpki_revocation_error(certificate: &str, error: webpki::Error) -> Verificat
     webpki_error(error).detail("affected_certificate", certificate)
 }
 
-/// Whether the CRL has no issuingDistributionPoint, or one that decodes.
-fn idp_decodes(tbs: &x509_cert::crl::TbsCertList) -> bool {
-    use x509_cert::ext::pkix::crl::dp::IssuingDistributionPoint;
-    tbs.crl_extensions
+/// Whether a revocation listed in this CRL applies to `cert`, as OpenSSL
+/// (`crl_crldp_check`) and Bouncy Castle (processCRLB2) decide which CRLs to
+/// read entries from:
+/// - no issuingDistributionPoint: yes;
+/// - one that does not decode, or whose role flags exclude the certificate:
+///   no (OpenSSL `IDP_INVALID`; Bouncy Castle skips the CRL);
+/// - one that admits the role and names no point: yes
+///   (`crl->idp->distpoint == NULL` is in scope);
+/// - one that names a point: only on a positive match with a fullName URI
+///   the certificate lists. A certificate that lists none does not match. A
+///   name form that cannot be compared (relative, non-URI) is no match.
+///
+/// A certificate whose own points cannot be read fails closed: the listing
+/// counts, since a match cannot be ruled out.
+fn listing_in_scope(
+    tbs: &x509_cert::crl::TbsCertList,
+    cert: &Certificate,
+    end_entity: bool,
+) -> bool {
+    use x509_cert::ext::pkix::{
+        CrlDistributionPoints,
+        crl::dp::IssuingDistributionPoint,
+        name::{DistributionPointName, GeneralName},
+    };
+    let Some(idp) = tbs
+        .crl_extensions
         .iter()
         .flatten()
         .find(|e| e.extn_id.to_string() == "2.5.29.28")
-        .is_none_or(|e| IssuingDistributionPoint::from_der(e.extn_value.as_bytes()).is_ok())
+    else {
+        return true;
+    };
+    let Ok(idp) = IssuingDistributionPoint::from_der(idp.extn_value.as_bytes()) else {
+        return false;
+    };
+    if idp.only_contains_ca_certs && end_entity || idp.only_contains_user_certs && !end_entity {
+        return false;
+    }
+    let Some(name) = &idp.distribution_point else {
+        return true;
+    };
+    let points = match cert.tbs_certificate.get::<CrlDistributionPoints>() {
+        Ok(None) => return false,
+        Ok(Some((_, points))) => points.0,
+        Err(_) => return true,
+    };
+    let uris = |name: &DistributionPointName| -> Vec<Vec<u8>> {
+        match name {
+            DistributionPointName::FullName(names) => names
+                .iter()
+                .filter_map(|n| match n {
+                    GeneralName::UniformResourceIdentifier(uri) => Some(uri.as_bytes().to_vec()),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    };
+    let scope = uris(name);
+    points
+        .iter()
+        .filter(|p| p.reasons.is_none() && p.crl_issuer.is_none())
+        .filter_map(|p| p.distribution_point.as_ref())
+        .flat_map(uris)
+        .any(|uri| scope.contains(&uri))
 }
 
 /// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint,
@@ -1247,7 +1358,10 @@ fn authority_for(
     let points = match cert.tbs_certificate.get::<CrlDistributionPoints>() {
         Ok(None) => return Some(true),
         Ok(Some((_, points))) => points.0,
-        Err(_) => return Some(false),
+        // The certificate's points cannot be read (one unsupported name
+        // fails the whole extension), so whether a point matches is not
+        // known: never a silent mismatch.
+        Err(_) => return None,
     };
     let uris = |name: &Option<DistributionPointName>| -> Option<Vec<Vec<u8>>> {
         match name {
@@ -1559,6 +1673,114 @@ mod revocation_reporting {
             not_after: UnixTime::since_unix_epoch(Duration::from_secs(1)),
         }));
         assert!(!search_limit(&webpki::Error::UnknownIssuer));
+    }
+
+    /// The signer of a committed PE fixture.
+    fn signer(pe: &[u8]) -> Certificate {
+        let pe = crate::parse::Pe::parse(pe).unwrap();
+        let cms = pe.signatures().unwrap();
+        let sd = crate::parse::SignedData::parse(cms[0]).unwrap();
+        sd.certificate_choices()[0].x509().unwrap().clone()
+    }
+    fn tbs(crl: &[u8]) -> x509_cert::crl::TbsCertList {
+        CertificateList::from_der(crl).unwrap().tbs_cert_list
+    }
+
+    #[test]
+    fn a_listing_counts_only_on_a_positive_scope_match() {
+        // The signer lists http://crl.invalid/sec10-a.crl.
+        let listed = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
+        let plain = signer(include_bytes!("../tests/fixtures/good-sec06-basic.exe"));
+        let matching = tbs(include_bytes!(
+            "../tests/fixtures/sec10-issuer-idp-match-revoked.crl"
+        ));
+        let other = tbs(include_bytes!(
+            "../tests/fixtures/sec10-issuer-idp-other-revoked.crl"
+        ));
+        let relative = tbs(include_bytes!(
+            "../tests/fixtures/sec10-issuer-idp-relative.crl"
+        ));
+        let role_only = tbs(include_bytes!(
+            "../tests/fixtures/sec10-root-idp-user-certs-revoked.crl"
+        ));
+        let full = tbs(include_bytes!("../tests/fixtures/sec06-issuer.crl"));
+        assert!(listing_in_scope(&full, &listed, true));
+        assert!(listing_in_scope(&matching, &listed, true));
+        assert!(!listing_in_scope(&other, &listed, true));
+        // A named partition whose name cannot be compared is no match.
+        assert!(!listing_in_scope(&relative, &listed, true));
+        // A certificate that lists no point is not in a named partition.
+        assert!(!listing_in_scope(&matching, &plain, true));
+        // A role-only partition admits its role and nothing else.
+        assert!(listing_in_scope(&role_only, &plain, true));
+        assert!(!listing_in_scope(&role_only, &plain, false));
+    }
+
+    #[test]
+    fn unreadable_certificate_points_never_discard_a_partition() {
+        // One name x509-cert cannot decode fails the whole extension: the
+        // match is unknown, so the partition is neither set aside as out of
+        // scope nor are its listings dropped.
+        let mut cert = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
+        cert.tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|e| e.extn_id.to_string() == "2.5.29.31")
+            .unwrap()
+            .extn_value = ::der::asn1::OctetString::new(vec![0x04, 0x00]).unwrap();
+        let matching = tbs(include_bytes!(
+            "../tests/fixtures/sec10-issuer-idp-match-revoked.crl"
+        ));
+        assert_eq!(authority_for(&matching, &cert, true), None);
+        assert!(listing_in_scope(&matching, &cert, true));
+    }
+
+    #[test]
+    fn a_crl_algorithm_identifier_the_adapter_rejects_is_unsupported() {
+        let good = include_bytes!("../tests/fixtures/good.crl");
+        assert!(LoadedCrl::load(good).unwrap().algorithm_accepted);
+        // The same ECDSA OID with NULL parameters, inner and outer: webpki's
+        // adapter matches the whole identifier and rejects it, so it must
+        // not be ranked as a verifiable CRL.
+        let mut crl = CertificateList::from_der(good).unwrap();
+        let null = ::der::Any::from_der(&[0x05, 0x00]).unwrap();
+        crl.signature_algorithm.parameters = Some(null.clone());
+        crl.tbs_cert_list.signature.parameters = Some(null);
+        let loaded = LoadedCrl::load(&crl.to_der().unwrap()).unwrap();
+        assert!(!loaded.algorithm_accepted);
+    }
+
+    #[test]
+    fn crl_indices_become_reports_only_in_the_returned_error() {
+        let crls = [LoadedCrl::load(include_bytes!("../tests/fixtures/good.crl")).unwrap()];
+        let inner = revocation_error("a", ErrorCode::CrlExpired, "x").detail(CRL_INDEX, 0);
+        let mut error = revocation_error("a", ErrorCode::RevocationUnknown, "y")
+            .detail(CRL_INDEX, 0)
+            .detail("unusable_crl", inner);
+        report_crls(&mut error, &crls);
+        assert!(!error.details.contains_key(CRL_INDEX));
+        assert!(error.details["crl"]["der_hex"].is_string());
+        let nested = &error.details["unusable_crl"]["details"];
+        assert!(nested.get(CRL_INDEX).is_none());
+        assert!(nested["crl"]["der_hex"].is_string());
+    }
+
+    #[test]
+    fn a_path_needing_only_a_fresh_crl_is_completable() {
+        // An expired CRL on the path that otherwise verifies: retrieval can
+        // refresh it, so it is reported ahead of another path's error.
+        let error =
+            completable_path(&[on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired))]).unwrap();
+        assert_eq!(error.code, ErrorCode::CrlExpired);
+        assert!(error.details.contains_key("certificates_with_expired_crl"));
+        // A CRL unusable for another reason is not something a source fixes.
+        assert!(completable_path(&[on_path(0, "a", failed(3, ErrorCode::InvalidCrl))]).is_none());
+        // Nor is a path that fails other path policy.
+        let mut blocked = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
+        blocked.path_viable = false;
+        assert!(completable_path(&[blocked]).is_none());
     }
 
     #[test]

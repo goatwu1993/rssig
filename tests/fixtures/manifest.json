@@ -332,7 +332,8 @@
         "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
         "sec10-superseded-crl-revocation-alone-revokes",
         "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported"
+        "sec10-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-fetch-invalid-nested-signature-requests-nothing"
       ]
     },
     {

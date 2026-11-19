@@ -428,4 +428,27 @@ result is argued. **Acceptance** pins whether a file verifies or is rejected;
   `sec10-fetch-builtin-source-denies-https`.
 - **An untrusted chain is never fetched for.** Decided, acceptance and
   privacy: path validation fails before any request, as `main`'s preliminary
-  pass did: `crl-fetch-untrusted-chain-requests-nothing`.
+  pass did: `crl-fetch-untrusted-chain-requests-nothing`. The same holds for
+  the whole input: before the first request it is verified once without
+  revocation, so an invalid nested signature, later signer or bundle member
+  is the result and no source is asked
+  (`crl-fetch-invalid-nested-signature-requests-nothing`).
+- **Scope of a listing, refined after review.** Decided, acceptance, by the
+  same OpenSSL (`crl_crldp_check`) and Bouncy Castle (processCRLB2) rules: a
+  named partition's listing counts only on a positive match with a fullName
+  URI the certificate lists (an issuer-relative or non-URI name is no
+  match); a role-only partition with no name counts for its role; a
+  certificate whose own cRLDistributionPoints cannot be read fails closed,
+  so the partition is not set aside and its listing counts. Unit tests
+  `a_listing_counts_only_on_a_positive_scope_match` and
+  `unreadable_certificate_points_never_discard_a_partition` in
+  `src/trust.rs`; no committed certificate has an undecodable extension.
+- **Other review fixes without a fixture** (unit tests in `src/trust.rs`,
+  `src/retrieval.rs` and `src/retrieval/http.rs`): a CRL's complete signature
+  AlgorithmIdentifier must be one the webpki adapter accepts; rejected paths
+  keep CRL indices and the returned error alone carries the CRL report; a
+  path needing only a fresh CRL is completable; a full CRL returned by
+  certificate triggers verification before further requests; a URL that
+  does not parse is withheld; diagnostics for unusable point names are
+  bounded per certificate; the request whose DNS lookup times out is the
+  abort; a withheld URL is not an answer by certificate.

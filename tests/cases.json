@@ -24611,7 +24611,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
+          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
+        ]
       },
       "command": [
         "verify",
@@ -24669,7 +24673,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
+          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
+        ]
       },
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
@@ -24719,7 +24727,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
+          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
+        ]
       },
       "crl_responses": {},
       "crl_errors": {
@@ -31237,7 +31249,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
+        ]
       },
       "command": [
         "verify",
@@ -31361,7 +31377,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
+        ]
       },
       "command": [
         "verify",
@@ -31406,7 +31426,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
+        ]
       },
       "command": [
         "verify",
@@ -32933,7 +32957,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls): CRLs are looked up by issuer name, with no per-distribution-point outcome.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): the selector matches the issuer only."
+        ]
       },
       "crl_responses": {},
       "crl_certificate_responses": {
@@ -33759,7 +33787,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x_crl.c:358-361 sets IDP_ONLYCA; OpenSSL crypto/x509/x509_vfy.c:2154-2157 (crl_crldp_check) returns 0 for an end entity, and :2295 (check_crl) fails with X509_V_ERR_DIFFERENT_CRL_SCOPE.",
+          "Bouncy Castle core PKIXCRLValidator.java:151-158 (checkDistributionPointName): the CRL is rejected with a distribution point name mismatch; RFC3280CertPathUtilities.java:1716-1729 reports the last such exception when no CRL is valid."
+        ]
       },
       "crl_responses": {},
       "command": [
@@ -34724,7 +34756,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34766,7 +34802,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34808,7 +34848,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34850,7 +34894,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34892,7 +34940,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34934,7 +34986,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -34976,7 +35032,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35018,7 +35078,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35060,7 +35124,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35102,7 +35170,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35144,7 +35216,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35186,7 +35262,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35228,7 +35308,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35270,7 +35354,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
+        ]
       },
       "command": [
         "verify",
@@ -35312,7 +35400,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
+        ]
       },
       "command": [
         "verify",
@@ -35354,7 +35446,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
+        ]
       },
       "command": [
         "verify",
@@ -35388,7 +35484,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
+        ]
       },
       "command": [
         "verify",
@@ -35430,7 +35530,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
+        ]
       },
       "command": [
         "verify",
@@ -35464,7 +35568,11 @@
       "decision": {
         "basis": "decided",
         "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2154-2157 and :2195-2197 (crl_crldp_check): role flags are checked first, and an issuingDistributionPoint with no distpoint is in scope for a certificate of that role.",
+          "Bouncy Castle core PKIXCRLValidator.java:151-158, 218-220 (processCRLB2): names are compared only when the IDP has one; the onlyContains flags then admit or reject by role."
+        ]
       },
       "command": [
         "verify",
@@ -35537,7 +35645,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
+        ]
       },
       "command": [
         "verify",
@@ -35580,7 +35692,11 @@
       "decision": {
         "basis": "decided",
         "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
+        "references": [
+          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
+          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
+        ]
       },
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
@@ -35703,6 +35819,40 @@
               "ok": false,
               "error": {
                 "code": "untrusted_root"
+              }
+            }
+          ]
+        },
+        "crl_requests": []
+      }
+    },
+    {
+      "id": "crl-fetch-invalid-nested-signature-requests-nothing",
+      "input": "bad-nested-signature.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
+      },
+      "crl_responses": {},
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature"
               }
             }
           ]
