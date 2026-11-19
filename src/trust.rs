@@ -339,7 +339,8 @@ impl TrustStore {
                                     ))
                                 })
                         },
-                    );
+                    )
+                    .ok_or(webpki::Error::BadDer)?;
                     match &evidence.outcome {
                         Outcome::Good(index) => path_chosen.push(*index),
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -672,16 +673,12 @@ fn evaluate_crls(
     crls: &[LoadedCrl],
     now: u64,
     verify_signature: &mut dyn FnMut(usize, &LoadedCrl) -> SignatureCheck,
-) -> CertificateEvidence {
-    let der = cert.to_der().unwrap_or_default();
+) -> Option<CertificateEvidence> {
+    // A certificate decoded from DER re-encodes; one that does not is no
+    // evidence of anything and rejects the path.
+    let der = cert.to_der().ok()?;
     let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
-    let Ok(issuer_name) = cert.tbs_certificate.issuer.to_der() else {
-        return CertificateEvidence {
-            sha256,
-            der,
-            outcome: Outcome::Missing(None),
-        };
-    };
+    let issuer_name = cert.tbs_certificate.issuer.to_der().ok()?;
     let serial = cert.tbs_certificate.serial_number.as_bytes();
     let lists_points = has_extension(cert, "2.5.29.31");
     let mut usable = None;
@@ -861,11 +858,11 @@ fn evaluate_crls(
         // Without one, the status is unknown, even if a CRL lists it.
         (None, _) => Outcome::Missing(failure),
     };
-    CertificateEvidence {
+    Some(CertificateEvidence {
         sha256,
         der,
         outcome,
-    }
+    })
 }
 
 /// A CRL that fails under this issuer's key is set aside as another key's

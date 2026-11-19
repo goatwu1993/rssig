@@ -572,14 +572,16 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 return Ok(false);
             }
         };
+        // A point is answered by a CRL or failure naming it, compared as
+        // URLs (a source may report the normalized form).
+        let answers = |url: &Option<String>, point: &str| {
+            url.as_deref().is_some_and(|u| url_key(u) == url_key(point))
+        };
         let unanswered: Vec<String> = points
             .iter()
             .filter(|point| {
-                !response.crls.iter().any(|c| c.url.as_ref() == Some(point))
-                    && !response
-                        .failures
-                        .iter()
-                        .any(|f| f.url.as_ref() == Some(point))
+                !response.crls.iter().any(|c| answers(&c.url, point))
+                    && !response.failures.iter().any(|f| answers(&f.url, point))
             })
             .cloned()
             .collect();
@@ -592,7 +594,15 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // A point the source neither answered nor reported is recorded, so
         // that no listed point disappears from the report; after an abort the
         // rest were never tried, and the abort explains them.
-        if !by_issuer && !self.aborted {
+        if by_issuer {
+            // The points it passed over stay open: a later certificate
+            // listing one carries it to the source again.
+            for point in &unanswered {
+                if matches!(self.asked.get(&url_key(point)), Some(None)) {
+                    self.asked.remove(&url_key(point));
+                }
+            }
+        } else if !self.aborted {
             for point in &unanswered {
                 let e = error(
                     ErrorCode::CrlFetchFailed,
@@ -715,10 +725,11 @@ fn retrieve(
             // Ask about exactly the certificates the verifier reports without
             // a usable CRL, as OpenSSL and Bouncy Castle look up CRLs for the
             // certificate being checked. The report carries each certificate,
-            // whichever candidate path it was on. Without that list (no CRL
-            // applied at all), every selected certificate lacks one; those
-            // are found once by verifying without revocation, where
-            // integrity and trust failures end the run.
+            // whichever candidate path it was on. Without that list (an
+            // unknown status from webpki itself, not from rssig's per-
+            // certificate evaluation), the selected certificates are found
+            // once by verifying without revocation, where integrity and
+            // trust failures end the run.
             let missing: Option<Vec<CertificateReport>> = unknown
                 .details
                 .get("certificates_without_crl")
@@ -1264,6 +1275,59 @@ mod tests {
                 .collect();
             assert_eq!(urls.len(), 2, "{urls:?}");
         }
+    }
+    #[test]
+    fn a_point_answered_under_its_normalized_url_is_answered() {
+        struct Normalizes;
+        impl CrlSource for Normalizes {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new();
+                for point in request.distribution_points {
+                    let url = point.replace("crl.example.invalid", "CRL.Example.Invalid");
+                    response = response.with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Failed, "down").with_url(url),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 2),
+            &mut Normalizes,
+        )
+        .unwrap();
+        // One entry per point: the source's own, not also "returned nothing".
+        assert_eq!(
+            state.report.failures.len(),
+            2,
+            "{:?}",
+            state.report.failures
+        );
+        assert!(state.report.failures.iter().all(|f| f.message == "down"));
+    }
+    #[test]
+    fn points_passed_over_by_an_issuer_answer_stay_open() {
+        struct ByIssuer(Vec<usize>);
+        impl CrlSource for ByIssuer {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0.push(request.distribution_points.len());
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(b"not a CRL".to_vec())))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = ByIssuer(Vec::new());
+        let cert = signer_with_points("a", 2);
+        ask(&mut state, "a", &cert, &mut source).unwrap();
+        ask(&mut state, "b", &cert, &mut source).unwrap();
+        // The second certificate carries the points the first answer ignored.
+        assert_eq!(source.0, [2, 2]);
     }
     #[test]
     fn denied_failed_and_unknown_are_recorded_and_retrieval_goes_on() {
