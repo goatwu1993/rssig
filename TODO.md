@@ -179,6 +179,9 @@ TDD workflow and checks in AGENTS.md.
   `bad-rfc3161-certificate-choice-tag` and
   `bad-rfc3161-certificate-choice-no-signer`, which pin CertificateChoices
   parsing inside a timestamp token.
+  Move TSA-004's duplicated-attribute-OID clause and its two
+  `invalid_signature` cases (`tsa-004-duplicate-rfc`,
+  `tsa-004-duplicate-counter`) to `CMS-`.
 - [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
   `docs/trust-loading.md` (SEC-07); rename the `sec07-*` cases.
 - [ ] **TEST-17: Index limit decisions as `LIMIT-NNN`.** From
@@ -199,6 +202,11 @@ TDD workflow and checks in AGENTS.md.
   copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
   decision. Found while doing TEST-14.
 - [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
+- [ ] **TEST-23: Scaffold the remaining decision indexes.** Before TEST-15 to
+  TEST-18, add a skeleton per future index (`CMS-`, `TRUST-`, `LIMIT-` and the
+  format prefixes): its question, scope, boundaries with neighboring indexes
+  and an unnumbered list of candidate rules with their cases, so that every
+  unindexed case is claimed by exactly one index before any is numbered.
 
 ## P1 — CLI, reporting, and distribution
 

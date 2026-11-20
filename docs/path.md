@@ -29,7 +29,7 @@ Observed ones. A new entry takes the next free number.
 | [PATH-004](#path-004-path-length-constraints-are-enforced) | Path length constraints are enforced | Decided | acceptance |
 | [PATH-005](#path-005-dns-name-constraints-apply-at-intermediates-and-anchors) | DNS name constraints apply at intermediates and anchors | Decided | acceptance |
 | [PATH-006](#path-006-unknown-critical-extensions-are-rejected) | Unknown critical extensions are rejected | Decided | acceptance |
-| [PATH-007](#path-007-the-signer-needs-the-code-signing-eku-explicitly) | The signer needs the code-signing EKU explicitly | Decided | acceptance |
+| [PATH-007](#path-007-an-authenticode-signer-needs-the-code-signing-eku-explicitly) | An Authenticode signer needs the code-signing EKU explicitly | Decided | acceptance |
 | [PATH-008](#path-008-a-present-keyusage-must-allow-the-certificates-role) | A present KeyUsage must allow the certificate's role | Decided | acceptance |
 | [PATH-009](#path-009-a-rejected-candidate-issuer-does-not-stop-path-building) | A rejected candidate issuer does not stop path building | Decided | acceptance |
 | [PATH-010](#path-010-cross-signed-paths-lead-to-the-configured-root) | Cross-signed paths lead to the configured root | Decided | acceptance |
@@ -114,12 +114,15 @@ certificate DER, and rejected when critical on the leaf or an intermediate.
   - RFC 5280 section 4.2: a certificate with an unrecognized critical
     extension must be rejected.
 
-### PATH-007: The signer needs the code-signing EKU explicitly
+### PATH-007: An Authenticode signer needs the code-signing EKU explicitly
 
-The signing leaf must list the code-signing EKU (`invalid_eku` at
+For every Authenticode format (PE, MSI and the others that share its
+verifier), the signing leaf must list the code-signing EKU (`invalid_eku` at
 `certificate`); an intermediate EKU, when present, must permit it
 (`invalid_eku` at `certificate_chain`); an intermediate without EKU is
-unrestricted.
+unrestricted. RDP signers follow RDP's own EKU policy (codeSigning, serverAuth
+or Remote Desktop signing; see [RDP](rdp.md)), which a future `RDP-` entry
+will state; TSA certificates follow TSA-003.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #40 (SEC-06)
