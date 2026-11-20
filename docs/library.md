@@ -699,7 +699,8 @@ Report types (`rssig::domain`), Rust and JSON:
 | `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL |
 | `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect, and absent when the reported target is withheld (credentials, whitespace or control characters) |
 | (none) | `CrlRetrievalArtifact.certificate_sha256: Option<String>`: the certificate the CRL was asked for |
-| (none) | `details.certificates_with_expired_crl` on `crl_expired` and `revocation_unknown`: certificates whose only CRLs have expired |
+| (none) | `details.certificates_with_expired_crl` on `crl_expired`, `crl_not_yet_valid`, `invalid_crl`, `revocation_unknown` and `certificate_revoked`: certificates whose only CRLs have expired; a `CrlSource` is asked about them |
+| (none) | `details.certificates_with_replaceable_crl` on `crl_not_yet_valid`, `invalid_crl`, `revocation_unknown` and `certificate_revoked`: certificates whose only CRLs are unusable for another reason a source's CRL could replace; a `CrlSource` is asked about them |
 | `CrlRetrievalReport { artifacts }` | adds `failures: Vec<CrlRetrievalFailure>`, omitted from JSON when empty; each names its certificate, URL, code and `source_error` kind |
 
 A consumer that read `artifact.url` as a string handles its absence:

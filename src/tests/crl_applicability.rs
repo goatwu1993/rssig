@@ -352,6 +352,27 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 &idp_named_point("http://crl.invalid/root.crl"),
             ),
         ),
+        // SEC-23: the same named point on a CRL without nextUpdate. The scope
+        // defect decides, as with nextUpdate: a source's CRL can replace it.
+        (
+            "sec10-root-idp-named-point-no-next-update.crl",
+            crl_full(
+                root,
+                root_key,
+                NOW - 100,
+                None,
+                None,
+                vec![x509_cert::ext::Extension {
+                    extn_id: ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.28"),
+                    critical: true,
+                    extn_value: ::der::asn1::OctetString::new(idp_named_point(
+                        "http://crl.invalid/root.crl",
+                    ))
+                    .unwrap(),
+                }],
+                None,
+            ),
+        ),
         // AKI with authorityCertIssuer and serial but no keyIdentifier: matched by
         // name only, so the stale CRL fails closed.
         (
@@ -368,9 +389,17 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "sec10-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
+        // SEC-23: the same, newer than sec10-root-no-next-update-revoked.crl:
+        // a current, complete CRL that leaves the signer out, so that older
+        // listing may be a released hold and does not revoke.
+        (
+            "sec10-root-no-next-update-newer.crl",
+            crl(root, root_key, NOW - 10, None),
+        ),
         // A root CRL without nextUpdate that lists the test signer and is
         // newer than good.crl: it claims no expiry, so it is not stale. It is
-        // unusable (RFC 5280 requires nextUpdate) but its listing counts.
+        // not evidence of good status (RFC 5280 requires nextUpdate), but its
+        // listing counts and revokes, beside good.crl and alone.
         (
             "sec10-root-no-next-update-revoked.crl",
             crl_full(
