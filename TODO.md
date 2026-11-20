@@ -464,8 +464,10 @@ timestamps, and local CRL validation already exist.
 - [x] **SEC-24: Make rssig the only revocation authority.** webpki's second
   `verify_for_usage` call with `RevocationOptions` is removed; rssig's
   per-certificate evaluation in the path callback decides alone, and an
-  accepted-path rule keeps the Decided SEC-16 rollover rejection. No case
-  changed. Detail and evidence:
+  accepted-path rule keeps the Decided SEC-16 rollover rejection. The removed
+  webpki check runs in test builds only, as a cross-check that panics on
+  disagreement (feature `revocation-crosscheck`). No case changed. Detail and
+  evidence:
   [SEC-24](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of
   PR #60 was concluded with these items not changed in that PR. Reasons and

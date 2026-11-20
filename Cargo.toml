@@ -23,6 +23,12 @@ verify-core = [
 crl-fetch = ["verify", "dep:url", "dep:httparse"]
 cli = ["verify", "crl-fetch", "dep:clap", "dep:libc"]
 system-roots = ["verify", "dep:rustls-native-certs"]
+# Testing only, never for a product build: after rssig's revocation decision,
+# re-run webpki's own revocation check on the accepted path and panic if the
+# two disagree (SEC-24). Enabled for every test target by the self
+# dev-dependency below. It enables no other feature, so reduced-feature test
+# runs keep their feature set; it has an effect only with `verify-core`.
+revocation-crosscheck = []
 
 [[bin]]
 name = "rssig"
@@ -98,6 +104,9 @@ serde_json = { version = "1", optional = true, default-features = false, feature
 cfb = { version = "0.15", optional = true, default-features = false }
 
 [dev-dependencies]
+# Builds the library with the test-only revocation cross-check for every test
+# target (unit and integration). See the `revocation-crosscheck` feature.
+rssig = { path = ".", default-features = false, features = ["revocation-crosscheck"] }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pem"] }
 rand = "0.8"

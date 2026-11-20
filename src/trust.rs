@@ -4,6 +4,8 @@ use alloc::{
     vec,
     vec::Vec,
 };
+#[cfg(feature = "revocation-crosscheck")]
+mod crosscheck;
 mod error;
 mod loading;
 use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
@@ -519,7 +521,19 @@ impl TrustStore {
         // path are rejected here when their CRLs cannot be told apart by key,
         // as OpenSSL and BoringSSL do (see `ambiguous_issuer_keys`).
         if revocation_enabled {
-            if ambiguous_issuer_keys(&chosen.borrow(), &crls) {
+            let rejects = ambiguous_issuer_keys(&chosen.borrow(), &crls);
+            // Test builds only: webpki's own revocation check must agree.
+            #[cfg(feature = "revocation-crosscheck")]
+            crosscheck::confirm(
+                &leaf,
+                &path,
+                validation_time,
+                eku,
+                &chosen.borrow(),
+                &crls,
+                rejects,
+            );
+            if rejects {
                 return Err(VerificationError::new(
                     ErrorCode::CertificateChainInvalid,
                     Stage::CertificateChain,

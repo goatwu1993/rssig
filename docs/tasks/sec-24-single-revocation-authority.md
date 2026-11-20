@@ -39,6 +39,8 @@ whatever step 1 decided (SEC-18).
 - `LoadedCrl.webpki` (webpki's CRL parse) is kept, but only to report
   unsupported CRL features as `invalid_crl`. Removing that parse, and with it
   the extra CRL decoding, stays in SEC-17.
+- The removed webpki check is kept as a **test-only cross-check**
+  (`src/trust/crosscheck.rs`, feature `revocation-crosscheck`). See below.
 
 ## Why the rule is right
 
@@ -77,13 +79,40 @@ No case was added or changed.
 | `sec16-self-issued-rollover-with-key-identified-crls-verifies` and `-reversed` | Decided (PR #60), unchanged | Acceptance | Unchanged |
 | `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected` | Unchanged | Acceptance | Decided by rssig's per-key evaluation, as before |
 
-## What is given up
+## Test-only cross-check
 
-A second, independent revocation engine. Before, a bug in `evaluate_crls` that
-accepted a revoked certificate would usually also have had to get past webpki.
-Now the SEC-10 and SEC-16 cases and their OpenSSL and Bouncy Castle comparisons
-are the only check on that code. Any later change to revocation follows
-AGENTS.md "Pinned expectations", item 6.
+In production, rssig no longer has a second, independent revocation engine.
+To keep webpki as an oracle where it can judge, the removed call runs in
+every test build:
+
+- After rssig decides an accepted path, `crosscheck::confirm` re-runs
+  webpki's `verify_for_usage` with `RevocationOptions` holding the CRLs rssig
+  chose, with the same rollover rule as the former production check. It
+  panics if webpki and rssig disagree in either direction.
+- It uses the unbudgeted algorithms and logs nothing, so it cannot change a
+  result, a budget outcome or a log.
+- It is skipped when webpki cannot parse a chosen CRL, so later support for
+  CRL features webpki lacks (SEC-18) does not trip it.
+- The `revocation-crosscheck` feature enables no other feature. A
+  self dev-dependency (`rssig = { path = ".", default-features = false,
+  features = ["revocation-crosscheck"] }`) turns it on for unit and
+  integration test builds only. Release and debug product builds do not
+  pass `--cfg feature="revocation-crosscheck"` (checked with `cargo build
+  -v`). Reduced-feature CI runs keep their feature sets: the test counts for
+  `--no-default-features`, `verify-core` and `verify` match the previous
+  commit (36, 107, 219).
+
+What it can catch is limited. webpki only sees the CRLs rssig chose, so it
+checks serial lookup, the CRL signature under the algorithm adapter, and the
+scope and expiry of those CRLs. It cannot catch rssig choosing the wrong CRL
+or ignoring one that applies; the SEC-10 and SEC-16 cases and their OpenSSL
+and Bouncy Castle comparisons remain the only check on selection. Any later
+change to revocation follows AGENTS.md "Pinned expectations", item 6.
+
+Evidence that it runs: with the new rule disabled, the named SEC-16 test
+fails on the cross-check panic ("rssig accepts the accepted path, webpki
+returned Some(InvalidSignatureForPublicKey)"), while the product binary, run
+on the same input, exits 0 without a panic.
 
 ## Left open
 
