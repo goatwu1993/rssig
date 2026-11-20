@@ -715,7 +715,7 @@ fn path_error(
     // is the one a CRL could complete: it outranks every other path's error,
     // including a CA issued after the lifetime signing time. A definite
     // revocation does not: a higher-ranked error on another path still
-    // decides, as pinned by `sec09-lifetime-rollover-revoked-issuer` (SEC-14).
+    // decides, as pinned by `crl-032-lifetime-rollover-revoked-issuer` (SEC-14).
     let revocation_rejected = matches!(
         e,
         webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
@@ -1010,9 +1010,9 @@ struct ChosenCrl {
 /// one of the two keys. OpenSSL (`get_crl_sk`, `check_crl`) and BoringSSL
 /// reject such a path; Bouncy Castle (`checkCRL`) tries the next CRL and
 /// accepts. rssig rejects, as pinned by
-/// `sec16-self-issued-rollover-with-both-crls-is-rejected`. When each CRL
+/// `crl-008-self-issued-rollover-with-both-crls-is-rejected`. When each CRL
 /// names its issuer's key, all three give each certificate its own key's CRL
-/// and accept (`sec16-self-issued-rollover-with-key-identified-crls-verifies`).
+/// and accept (`crl-007-self-issued-rollover-with-key-identified-crls-verifies`).
 fn ambiguous_issuer_keys(chosen: &[ChosenCrl], crls: &[LoadedCrl]) -> bool {
     same_name_different_keys(chosen, crls)
         .any(|(first, second)| !(first.names_issuer && second.names_issuer))

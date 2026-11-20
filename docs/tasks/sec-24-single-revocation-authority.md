@@ -46,16 +46,16 @@ whatever step 1 decided (SEC-18).
 ## Why the rule is right
 
 The case it keeps is
-`sec16-self-issued-rollover-with-both-crls-is-rejected`, a **Decided**
+`crl-008-self-issued-rollover-with-both-crls-is-rejected`, a **Decided**
 acceptance pin from PR #60. Its decision entry,
-[CRL-018](../crl.md#crl-018-a-rollover-path-with-crls-that-name-no-key-is-rejected),
+[CRL-008](../crl.md#crl-008-a-rollover-path-with-crls-that-name-no-key-is-rejected),
 records what the references do. OpenSSL 3.0.13 and BoringSSL keep one CRL per issuer name
 and reject after its signature fails; Bouncy Castle tries the next CRL and
 accepts. The owner chose to reject. The references are unchanged by this task:
 only the code that enforces the decision moved from webpki into rssig. When
 both CRLs name their issuer's key, all three references give each certificate
 its own key's CRL and accept, as rssig still does
-(`sec16-self-issued-rollover-with-key-identified-crls-verifies`, both orders).
+(`crl-007-self-issued-rollover-with-key-identified-crls-verifies`, both orders).
 
 ## Evidence
 
@@ -77,9 +77,9 @@ No case was added or changed.
 
 | Case | Kind | Pins | Status |
 | --- | --- | --- | --- |
-| `sec16-self-issued-rollover-with-both-crls-is-rejected` | Decided (PR #60), unchanged | Acceptance | Now enforced by `ambiguous_issuer_keys` |
-| `sec16-self-issued-rollover-with-key-identified-crls-verifies` and `-reversed` | Decided (PR #60), unchanged | Acceptance | Unchanged |
-| `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected` | Unchanged | Acceptance | Decided by rssig's per-key evaluation, as before |
+| `crl-008-self-issued-rollover-with-both-crls-is-rejected` | Decided (PR #60), unchanged | Acceptance | Now enforced by `ambiguous_issuer_keys` |
+| `crl-007-self-issued-rollover-with-key-identified-crls-verifies` and `-reversed` | Decided (PR #60), unchanged | Acceptance | Unchanged |
+| `crl-007-self-issued-rollover-revoked-by-key-identified-crl-is-rejected` | Unchanged | Acceptance | Decided by rssig's per-key evaluation, as before |
 
 ## Test-only cross-check
 
@@ -145,7 +145,7 @@ on the same input, exits 0 without a panic.
 - ~~`details.reason` `confirmation` described history, not a webpki call.~~
   Renamed to `ambiguous_issuer_keys` in PR #64, with the owner's approval: a
   wording-only change to the Decided case
-  `sec16-self-issued-rollover-with-both-crls-is-rejected` (which still pins the
+  `crl-008-self-issued-rollover-with-both-crls-is-rejected` (which still pins the
   rejection and `certificate_chain_invalid`). The case, retrieval's finality
   rule and the docs changed together; the case failed against the old name.
 - `ambiguous_issuer_keys` tells two same-name issuers apart by their

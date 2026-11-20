@@ -204,7 +204,7 @@ timestamps, and local CRL validation already exist.
     path. Store-wide CRL freshness errors are still reported first, by the TSA
     check. A rejected issuer issued after signing ranks as a webpki validity
     error, so it can hide a revoked or wrongly signed issuer on another
-    candidate path (pinned by `sec09-lifetime-rollover-revoked-issuer`); the
+    candidate path (pinned by `crl-032-lifetime-rollover-revoked-issuer`); the
     signature is still rejected. Equal-rank failures report the first
     encountered.
   - CRL/revocation: revocation is evaluated only at the validation time, and a
@@ -282,11 +282,11 @@ timestamps, and local CRL validation already exist.
   in [SEC-10](docs/tasks/sec-10-crl-applicability.md)): on a self-issued
   key-rollover path (two issuers of one name with different keys) CRLs that
   each name their issuer's key verify, as in all three libraries
-  (`sec16-self-issued-rollover-with-key-identified-crls-verifies`). CRLs
+  (`crl-007-self-issued-rollover-with-key-identified-crls-verifies`). CRLs
   without key identifiers are rejected (since SEC-24 by rssig's
   `ambiguous_issuer_keys`, formerly by webpki's confirmation pass), as
   OpenSSL and BoringSSL reject them and unlike Bouncy Castle
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`); the owner chose
+  (`crl-008-self-issued-rollover-with-both-crls-is-rejected`); the owner chose
   that tiebreaker, so it is Decided.
   Deliberately skipped in
   PR #45. A name-matching candidate without an SKI cannot disprove a CRL's AKI,
@@ -297,7 +297,7 @@ timestamps, and local CRL validation already exist.
   exclude, reject or be reported, and pin each with fixtures.
   An AKI that carries only authorityCertIssuer and serial is not compared at
   all; the CRL is matched by issuer name
-  (`crl-001-root-aki-issuer-serial-crl-name-matched`). That fixture names the
+  (`crl-012-root-aki-issuer-serial-crl-name-matched`). That fixture names the
   root's real issuer and serial and is signed by the root, so it cannot tell
   name-only matching from issuer/serial matching; a fixture with a wrong
   serial is needed to pin either behavior.
@@ -361,10 +361,10 @@ timestamps, and local CRL validation already exist.
   Decided in PR #60 for stale full CRLs: a listing counts only from a CRL
   that is current at the validation time, as in OpenSSL and Bouncy Castle,
   so a released `certificateHold` in an expired CRL no longer revokes
-  (`crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
+  (`crl-016-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
   current delta or indirect CRL's entries, and the listing in a current CRL
   with a malformed authorityKeyIdentifier
-  (`crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
+  (`crl-005-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
   both Bouncy Castle paths, BoringSSL and relic were compared and do not
   agree (`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"); the owner
   decided to keep counting it, so only delta and indirect entries are open. Original notes follow.
@@ -381,7 +381,7 @@ timestamps, and local CRL validation already exist.
   (observed with `good-sec06-basic.exe`, `sec06-issuer.crl` and
   `crl-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
   from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
-  same issuer is supplied (`crl-001-root-expired-crl-still-rejected`), so an
+  same issuer is supplied (`crl-012-root-expired-crl-still-rejected`), so an
   operator who keeps old CRLs beside current ones is rejected. Decide these
   together with the delta case.
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
@@ -412,7 +412,7 @@ timestamps, and local CRL validation already exist.
 - [x] **SEC-20: Revisit revocation_unknown precedence over path errors.**
   Done in PR #60: with no applicable CRL the path is still built, so an
   untrusted chain is `untrusted_root` and, with `--fetch-crls`, nothing is
-  requested for it (`crl-fetch-untrusted-chain-requests-nothing`). Original
+  requested for it (`crl-011-fetch-untrusted-chain-requests-nothing`). Original
   notes follow.
   Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
   is returned before path building, so it hides untrusted_root and other chain

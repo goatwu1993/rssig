@@ -289,8 +289,8 @@ answer a request for that certificate with that CRL alone, without a URL, as
 a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
-(`crl-020-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-`crl-033-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+(`crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+`crl-040-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
 `crl_fetch_by_certificate_answer_leaves_no_point_failures`.
@@ -319,7 +319,7 @@ reach them through the CLI:
 - An error with `details.reason` `ambiguous_issuer_keys` is final for retrieval. Since
   SEC-24 it is produced only by the accepted-path rule for same-name issuers
   with different keys whose CRLs do not name those keys
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Its code is
+  (`crl-008-self-issued-rollover-with-both-crls-is-rejected`). Its code is
   `certificate_chain_invalid`, which retrieval never treats as missing CRLs,
   so the `revocation_unknown` branch is unreachable through the CLI.
   `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins
