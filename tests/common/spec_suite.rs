@@ -19,40 +19,6 @@ pub struct Suite {
     pub cases: Vec<Case>,
 }
 
-/// Whether a case's result was decided on purpose, what it protects, and
-/// where the reasoning and the reference implementations' behavior are
-/// recorded.
-#[derive(Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Decision {
-    /// `decided` (changes only with the owner's approval) or `observed`
-    /// (current behavior, kept so that a change is visible).
-    pub basis: Basis,
-    /// `acceptance` (verifies or rejects) or `diagnostics` (which error,
-    /// detail or request).
-    pub pins: Pins,
-    /// A repository-relative document, with an optional `#anchor`, that
-    /// names this case and gives the reason. Required when `decided`.
-    pub reason: Option<String>,
-    /// What reference implementations do, each with its source location.
-    #[serde(default)]
-    pub references: Vec<String>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Basis {
-    Decided,
-    Observed,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Pins {
-    Acceptance,
-    Diagnostics,
-}
-
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
@@ -67,9 +33,10 @@ pub struct Case {
     /// CRL without a URL, the way a source keyed by certificate or issuer
     /// does. Requires `crl_responses`.
     pub crl_certificate_responses: Option<BTreeMap<String, String>>,
-    /// Why this case's result is pinned (AGENTS.md, "Pinned expectations").
-    /// Not used to run the case.
-    pub decision: Option<Decision>,
+    /// The decision entry this case pins, such as `CRL-001`, defined in a
+    /// decision index under `docs/` (AGENTS.md, "Pinned expectations"). Not
+    /// used to run the case.
+    pub decision: Option<String>,
     pub inputs: Option<Vec<String>>,
     pub command: Vec<String>,
     pub expect: Expectation,

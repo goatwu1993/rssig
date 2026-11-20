@@ -47,8 +47,9 @@ whatever step 1 decided (SEC-18).
 
 The case it keeps is
 `sec16-self-issued-rollover-with-both-crls-is-rejected`, a **Decided**
-acceptance pin from PR #60. Its `decision` in `tests/cases.json` records what
-the references do. OpenSSL 3.0.13 and BoringSSL keep one CRL per issuer name
+acceptance pin from PR #60. Its decision entry,
+[CRL-018](../crl.md#crl-018-a-rollover-path-with-crls-that-name-no-key-is-rejected),
+records what the references do. OpenSSL 3.0.13 and BoringSSL keep one CRL per issuer name
 and reject after its signature fails; Bouncy Castle tries the next CRL and
 accepts. The owner chose to reject. The references are unchanged by this task:
 only the code that enforces the decision moved from webpki into rssig. When

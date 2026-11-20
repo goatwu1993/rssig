@@ -24,13 +24,25 @@ discussion is in [SEC-10](tasks/sec-10-crl-applicability.md) and
   for an Observed entry.
 - **Pins:** exactly one of `acceptance` (verifies or rejects: security) or
   `diagnostics` (which code, stage, detail or request). A rule with both
-  sides is split into two entries.
-- **Sources:** reference locations. Line numbers are for OpenSSL 3a3f1356
+  sides is split into two entries. An acceptance pin is never loosened
+  without a Decided entry.
+- **Sources:** reference locations, RFC sections or the written argument.
+  Line numbers are for OpenSSL 3a3f1356
   (3.3 where a source says so), bc-java e03fee0b, relic 02c54d58, BoringSSL
   `main` (commit not captured) and webpki 0.103.16 unless stated.
-- **Cases:** spec cases in `tests/cases.json`. Each case with a `decision`
-  block appears under exactly one entry, whose Status and Pins match the
-  block's `basis` and `pins`.
+- **Unit tests** and **Notes**, where an entry has them.
+
+Entries do not list their cases. A case in `tests/cases.json` names the entry
+it pins with `"decision": "CRL-NNN"`, and the case's Status and Pins are that
+entry's. A case without `decision` counts as Observed. To list an entry's
+cases:
+
+```sh
+jq -r '.cases[] | select(.decision == "CRL-001") | .id' tests/cases.json
+```
+
+`tests/spec.rs` checks that every `decision` names an entry here whose Status
+is `Decided` or `Observed`, and that every entry has valid fields.
 
 ## How IDs work
 
@@ -38,10 +50,6 @@ An ID is `CRL-` and a three-digit number. It is never reused or renumbered;
 a dropped entry keeps its ID with Status `Retired` or `Superseded by`. A
 Decided entry's rule changes only with the owner's approval; the ID stays the
 same and git history keeps the earlier text.
-
-**Migration status:** cases in `tests/cases.json` still carry their own
-`decision` blocks with `reason` pointing at the SEC-10 document. This index
-was generated from those blocks.
 
 ## Index
 
@@ -110,8 +118,6 @@ An unusable CRL of the issuer is set aside when another CRL of that issuer is us
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721).
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.
   - OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used.
-- **Cases:** `sec10-root-crl-no-next-update`, `sec10-root-expired-crl-still-rejected`, `sec10-root-aki-crl-still-rejected`, `sec10-root-crl-malformed-aki`, `sec10-root-signed-other-aki-crl-still-rejected`, `sec10-root-unknown-critical-extension-crl-unsupported`, `sec10-root-delta-crl-unsupported`, `sec10-root-indirect-crl-unsupported`, `sec10-root-entry-critical-extension-crl-unsupported`, `sec10-root-delta-expired-crl-reports-feature`, `sec10-root-idp-user-certs-crl-unsupported`, `sec10-root-idp-ca-certs-crl-unsupported`, `sec10-root-aki-issuer-serial-crl-name-matched`, `sec10-root-idp-named-point-crl-rejected`, `sec10-root-crl-no-next-update-beside-good-crl`, `sec10-root-expired-crl-still-rejected-beside-good-crl`, `sec10-root-aki-crl-still-rejected-beside-good-crl`, `sec10-root-crl-malformed-aki-beside-good-crl`, `sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl`, `sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl`, `sec10-root-delta-crl-unsupported-beside-good-crl`, `sec10-root-indirect-crl-unsupported-beside-good-crl`, `sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl`, `sec10-root-delta-expired-crl-reports-feature-beside-good-crl`, `sec10-root-idp-user-certs-crl-unsupported-beside-good-crl`, `sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl`, `sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl`, `sec10-root-idp-named-point-crl-rejected-beside-good-crl`.
-- **Note:** `sec10-root-crl-no-next-update` also pins CRL-005.
 
 ### CRL-002: A listing counts only from a current CRL, and the newest decides
 
@@ -123,7 +129,6 @@ A revocation in an expired CRL beside a fresh CRL that omits the serial does not
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read.
-- **Cases:** `sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`, `sec10-stale-crl-revocation-alone-is-expired`, `sec10-superseded-crl-revocation-beside-newer-crl-is-ignored`, `sec10-superseded-crl-revocation-alone-revokes`.
 
 ### CRL-003: A CRL without nextUpdate counts for a listing beside an older CRL
 
@@ -137,7 +142,6 @@ A correctly signed, in-scope CRL without nextUpdate claims no expiry, so it is c
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45: a CRL with a null nextUpdate is kept ("nextUpdate == null || nextUpdate.after(validityDate)") and its entries are read.
   - BoringSSL crypto/x509/x509_vfy.cc:414: the nextUpdate comparison runs only if the field is present.
   - All three agree; the earlier rule in this task, that a CRL without nextUpdate is never current, followed none of them and failed open for a listed certificate.
-- **Cases:** `sec10-no-next-update-crl-revocation-beside-older-crl-revokes`.
 
 ### CRL-004: A CRL without nextUpdate alone revokes, unless a newer CRL clears it
 
@@ -158,7 +162,6 @@ Alone, such a listing is `certificate_revoked` if webpki would admit the CRL apa
   - BoringSSL crypto/x509/x509_vfy.cc:666-691 (get_crl_sk): the same newest-CRL choice (:675-685).
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/RFC3280CertPathUtilities.java:708 walks its CRL set in no fixed order and stops at the first listing or once all reasons are covered, so it may revoke from the older CRL: it differs from OpenSSL, and BoringSSL decides (newest CRL decides).
   - removeFromCRL releases the entry in OpenSSL 3.3 crypto/x509/x509_vfy.c:1686-1689 (cert_crl) and Bouncy Castle RFC3280CertPathUtilities.java:794 (step k); BoringSSL crypto/x509/x509_vfy.cc:768-790 (cert_crl) revokes on any entry, so OpenSSL and Bouncy Castle, which agree, are followed.
-- **Cases:** `sec10-no-next-update-crl-revocation-alone-is-invalid`, `sec10-no-next-update-crl-revocation-alone-revokes`, `sec10-no-next-update-crl-revocation-cleared-by-newer-crl`, `sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`.
 - **Unit tests:** `a_crl_without_next_update_revokes_only_under_webpki_rules`, `a_crl_without_next_update_is_judged_by_its_other_defects`, `only_a_usable_covering_crl_clears_a_listing_without_next_update`, `a_crl_without_next_update_for_another_point_is_set_aside_if_admitted`, `a_crl_that_does_not_reencode_to_its_bytes_is_not_judged`.
 
 ### CRL-005: A CRL without nextUpdate is not evidence of good status
@@ -170,7 +173,6 @@ Without a listing, a chain issuer's CRL that lacks nextUpdate is `invalid_crl` (
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 5.1.2.5.
-- **Cases:** `sec10-root-crl-no-next-update` (acceptance), whose `decision` block is filed under CRL-001.
 
 ### CRL-006: A listing in a current CRL with a malformed AKI counts beside a usable CRL
 
@@ -185,7 +187,6 @@ A correctly signed CRL of the issuer that lists the certificate revokes even if 
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:379-393 (processCRLF): AuthorityKeyIdentifier.getInstance throws an uncaught IllegalArgumentException, or the result is good if the well-formed CRL is iterated first; never revoked.
   - BoringSSL crypto/x509/x_crl.cc:157-161 (crl_cb): returns 0, so the CRL fails to parse and is never used; never revoked.
   - relic lib/pkcs7/verify.go:177: Go's x509.VerifyOptions, no CRL checking.
-- **Cases:** `sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`.
 
 ### CRL-007: A listing in a CRL whose signature cannot be verified never counts
 
@@ -209,7 +210,7 @@ A CRL that does not apply to the chain is excluded whatever its fault; an applic
 - **Pins:** acceptance
 - **Sources:**
   - AGENTS.md, "Fail closed".
-- **Cases:** no `decision` block; the behavior is pinned by the `sec10-unrelated-*-excluded`, `sec10-only-unrelated-crl-is-unknown` and `sec10-root-delta-expired-crl-reports-feature` cases.
+- **Note:** no case points here yet; the behavior is exercised by the `sec10-unrelated-*-excluded`, `sec10-only-unrelated-crl-is-unknown` and `sec10-root-delta-expired-crl-reports-feature` cases, which count as Observed.
 
 ### CRL-009: A full CRL is in scope for any certificate
 
@@ -221,7 +222,6 @@ A CRL without an issuingDistributionPoint covers every certificate of its issuer
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint.
-- **Cases:** `sec10-chain-crl-dp-full-crls`, `sec10-leaf-crl-dp-mixed-full-crl`, `sec10-leaf-crl-dp-https-full-crl`.
 
 ### CRL-010: A revocation in a CRL that does not cover the certificate does not count
 
@@ -233,7 +233,6 @@ A partition for another point or role, or a CRL whose issuingDistributionPoint d
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries.
-- **Cases:** `sec10-crl-dp-other-partition-revocation-is-ignored`, `sec10-crl-dp-other-partition-revocation-is-ignored-first`.
 
 ### CRL-011: A partition for another point is no evidence
 
@@ -245,7 +244,6 @@ The certificate is without a CRL, so the status is `revocation_unknown` and retr
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries.
-- **Cases:** `sec10-crl-dp-other-idp-unknown`, `sec10-expired-partition-for-another-point-leaves-status-unknown`, `sec10-fetch-expired-partition-for-another-point-still-fetches`.
 
 ### CRL-012: A role-only partition counts for its role
 
@@ -257,7 +255,6 @@ An issuingDistributionPoint with only onlyContainsUserCerts or onlyContainsCACer
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2154-2157 and :2195-2197 (crl_crldp_check): role flags are checked first, and an issuingDistributionPoint with no distpoint is in scope for a certificate of that role.
   - Bouncy Castle core PKIXCRLValidator.java:151-158, 218-220 (processCRLB2): names are compared only when the IDP has one; the onlyContains flags then admit or reject by role.
-- **Cases:** `sec10-role-partition-crl-revocation-beside-full-crl-revokes`.
 
 ### CRL-013: A role-only partition alone is unsupported
 
@@ -266,7 +263,6 @@ Alone, a role-only partition is `invalid_crl`, because webpki cannot use that fo
 - **Status:** Observed
 - **Decided by:** —
 - **Pins:** acceptance
-- **Cases:** `sec10-role-partition-crl-revocation-alone-is-unsupported`.
 
 ### CRL-014: A point-scoped CRL for a certificate that lists no points is rejected
 
@@ -278,7 +274,6 @@ A CRL that names a distribution point (including a CA-only one) is `invalid_crl`
 - **Sources:**
   - OpenSSL crypto/x509/x_crl.c:358-361 sets IDP_ONLYCA; OpenSSL crypto/x509/x509_vfy.c:2154-2157 (crl_crldp_check) returns 0 for an end entity, and :2295 (check_crl) fails with X509_V_ERR_DIFFERENT_CRL_SCOPE.
   - Bouncy Castle core PKIXCRLValidator.java:151-158 (checkDistributionPointName): the CRL is rejected with a distribution point name mismatch; RFC3280CertPathUtilities.java:1716-1729 reports the last such exception when no CRL is valid.
-- **Cases:** `sec10-fetch-no-listed-point-role-excluded-scope-rejected`.
 
 ### CRL-015: A listing's scope needs a positive match
 
@@ -289,7 +284,7 @@ A named partition's listing counts only on a positive match with a fullName URI 
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL `crl_crldp_check`; Bouncy Castle processCRLB2.
-- **Cases:** none (no committed certificate has an undecodable extension).
+- **Note:** no spec case (no committed certificate has an undecodable extension).
 - **Unit tests:** `a_listing_counts_only_on_a_positive_scope_match`, `unreadable_certificate_points_never_discard_a_partition` in `src/trust.rs`.
 
 ## Issuers and keys
@@ -303,7 +298,6 @@ A configured root whose KeyUsage lacks cRLSign still issues usable CRLs. An inte
 - **Pins:** acceptance
 - **Sources:**
   - webpki 0.103 does not track anchor KeyUsage; a configured anchor is a trusted key, not a certificate to be policed.
-- **Cases:** no `decision` block; pinned by `sec10-root-no-crl-sign-accepted`.
 
 ### CRL-017: On a key-rollover path each certificate uses its own key's CRL
 
@@ -321,7 +315,6 @@ A self-issued rollover path (two issuers of one name, different keys) verifies w
   - webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, so it cannot confirm two issuers of one name; rssig's own per-key evaluation decides for such a path.
   - RFC 5280 section 6.3.3: a certificate listed on a current CRL of its issuer is revoked.
   - OpenSSL crypto/x509/x509_vfy.c (check_cert_crl, cert_crl) and Bouncy Castle RFC3280CertPathUtilities.checkCRL: every certificate on the path is checked against its own issuer key's CRL, the rollover certificate included.
-- **Cases:** `sec16-self-issued-rollover-without-revocation-verifies`, `sec16-self-issued-rollover-with-key-identified-crls-verifies`, `sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed`, `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected`.
 
 ### CRL-018: A rollover path with CRLs that name no key is rejected
 
@@ -336,7 +329,6 @@ With same-name CRLs that carry no authorityKeyIdentifier, the path is `certifica
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1721 (checkCRL skips a CRL that does not verify and tries the next). Accepts.
   - webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, then verifies it under the certificate's issuer key. Rejects.
   - The references differ; the owner chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects, and rejecting fails closed.
-- **Cases:** `sec16-self-issued-rollover-with-both-crls-is-rejected`.
 
 ### CRL-019: A CRL naming a same-key root's identifier is forged, not set aside
 
@@ -345,7 +337,6 @@ Two configured roots with one key and name may carry different subjectKeyIdentif
 - **Status:** Observed
 - **Decided by:** —
 - **Pins:** diagnostics
-- **Cases:** `sec10-forged-crl-naming-another-key-is-set-aside`, `sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged`.
 
 ## Candidate paths and usages
 
@@ -357,7 +348,6 @@ Two configured roots with one key and name may carry different subjectKeyIdentif
 - **Sources:**
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).
   - OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.
-- **Cases:** `sec10-cross-revoked-path-beside-covered-path-verifies`, `sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`, `sec10-fetch-completes-the-path-beside-an-expired-path`.
 
 ### CRL-021: Which error a rejected chain reports
 
@@ -370,7 +360,6 @@ A revocation is definite evidence and is reported over another path's failure; o
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).
   - OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.
   - No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed).
-- **Cases:** `sec10-cross-revoked-path-beside-path-without-crl-names-it`, `sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl`, `sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`, `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`, `sec10-cross-expired-path-beside-path-without-crl-names-the-gap`, `sec10-fetch-path-failing-key-usage-asks-nothing`.
 
 ### CRL-022: A revocation names another path's refreshable certificates
 
@@ -386,7 +375,6 @@ A revocation on one candidate path names, in `details.certificates_with_expired_
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
-- **Cases:** `sec10-cross-revoked-path-beside-path-with-expired-crl-names-it`, `sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`.
 - **Unit test:** `a_revocation_names_only_paths_a_source_could_complete`.
 
 ### CRL-023: A source completes another path beside a revoked one
@@ -403,7 +391,6 @@ With `--fetch-crls`, the path named under CRL-022 is refreshed and the file veri
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45 drops a CRL past nextUpdate, and with CRL distribution point fetching enabled (CertPathValidatorUtilities.java:571) a fresh CRL is fetched from the certificate's points.
   - OpenSSL builds one chain (crypto/x509/x509_vfy.c:3925 build_chain) and does not fetch, so it has no equivalent; the owner's delegated call to refresh expired CRLs follows Bouncy Castle (crl-stale-local-refreshed-by-provider).
-- **Cases:** `sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path`, `sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`.
 
 ### CRL-024: A path a source could complete is reported over a stuck path
 
@@ -414,7 +401,6 @@ When no path is revoked, a viable path that only lacks, or has expired or replac
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument in `docs/crl-retrieval.md`.
-- **Cases:** none.
 - **Unit test:** `a_path_a_source_could_complete_is_reported_over_a_stuck_paths_failure`.
 
 ### CRL-025: Lifetime-signing validity outranks revocation on another path
@@ -427,7 +413,6 @@ Across candidate paths, a CA issued after the lifetime signing time on one path 
 - **Sources:**
   - OpenSSL builds one chain and checks revocation before validity.
   - Bouncy Castle tries every path and checks validity before revocation per certificate.
-- **Cases:** no `decision` block; pinned by `sec09-lifetime-rollover-revoked-issuer`.
 
 ### CRL-026: An RDP signer lacking only a CRL under one usage verifies once the CRL is present
 
@@ -439,7 +424,6 @@ When one usage fails its path (`invalid_eku`) and another lacks only a CRL, supp
 - **Sources:**
   - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
   - On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that.
-- **Cases:** `rdp-eku-retry-ca-with-crls-verifies`, `rdp-eku-retry-ca-fetches-the-missing-crl`.
 
 ### CRL-027: An RDP signer lacking only a CRL under one usage reports the missing CRL
 
@@ -451,7 +435,6 @@ Without the CRL, the result is the missing CRL (`revocation_unknown`), not the o
 - **Sources:**
   - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
   - On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that.
-- **Cases:** `rdp-eku-retry-ca-missing-crl-is-unknown`.
 
 ### CRL-028: A revoked RDP usage is reported over another usage's failure
 
@@ -463,7 +446,6 @@ The revocation is reported and names the certificates another usage only lacks a
 - **Sources:**
   - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md).
   - Written argument, as for candidate paths (sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject.
-- **Cases:** `rdp-eku-retry-ca-revoked-usage-is-revoked`.
 - **Unit test:** `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
 
 ## Retrieval (`--fetch-crls` and `CrlSource`)
@@ -478,7 +460,6 @@ Before the first request the whole input is verified once without revocation, so
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain, which requires a trust anchor, runs before check_revocation (:276), so no CRL is looked up for a chain that does not reach a trusted root.
   - Verifying the whole input (nested signatures, later signers, bundle members) before any request has no reference equivalent; it is a written privacy argument in docs/crl-retrieval.md: an input that cannot verify must not cause network requests.
-- **Cases:** `crl-fetch-untrusted-chain-requests-nothing`, `crl-fetch-invalid-nested-signature-requests-nothing`.
 
 ### CRL-030: A definite result keeps its code with `--fetch-crls`
 
@@ -491,7 +472,6 @@ A definite revocation or CRL failure is the result, as without fetching, and is 
   - Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).
   - Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.
   - Diagnostics only: both results reject.
-- **Cases:** `sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure`, `sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked`.
 
 ### CRL-031: Retrieval asks per certificate, only about what lacks a CRL
 
@@ -503,7 +483,6 @@ Which requests are made; the verification result is the same either way.
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point.
-- **Cases:** `sec10-fetch-excluded-name-match-fetches-listed-point`, `sec10-fetch-covered-signer-point-not-requested`, `sec10-fetch-asks-each-certificate-without-crl`, `sec10-fetch-covered-signer-is-not-asked`, `sec10-fetch-mixed-point-requests-plain-uri`, `sec10-fetch-asks-only-the-uncovered-certificate`, `sec10-fetch-bad-response-is-no-evidence-beside-another-point`.
 
 ### CRL-032: Missing evidence is `revocation_unknown`; a source has four outcome kinds
 
@@ -516,7 +495,6 @@ However a CRL could not be obtained, the code is `revocation_unknown`, with the 
   - OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single "No CRLs found for issuer" error, with lookup diagnostics appended to its message.
   - The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md.
-- **Cases:** `crl-fetch-private`, `crl-fetch-injected-unavailable`, `sec10-fetch-reasons-point-denied`, `sec10-fetch-crl-issuer-point-denied`, `sec10-fetch-dns-name-point-denied`, `crl-fetch-source-denied-is-no-evidence`, `crl-fetch-source-failed-is-no-evidence`, `crl-fetch-source-unknown-is-no-evidence`, `crl-fetch-source-abort-is-reported`, `sec10-fetch-source-abort-stops-requests`.
 
 ### CRL-033: A source answering by certificate leaves no per-point failures
 
@@ -530,7 +508,6 @@ Only a body that loads as a CRL of the certificate's issuer counts. When that an
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): the selector matches the issuer only.
   - OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls) and Bouncy Castle CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): CRLs are looked up by issuer, with no per-distribution-point outcome, so an answer by certificate leaves no per-point failure when it settles the status.
   - Written argument for the other case: when that answer does not settle the status, the report must still account for every listed point (docs/crl-retrieval.md: no listed point disappears from the report), so the points the source did not use are recorded as not used.
-- **Cases:** `sec10-fetch-by-certificate-answer-requests-no-listed-point`, `sec10-fetch-by-certificate-unusable-answer-records-unused-points`.
 
 ### CRL-034: An expired supplied CRL is refreshed
 
@@ -542,7 +519,6 @@ With a source, an expired supplied CRL is refreshed from the certificate's point
 - **Sources:**
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.
   - OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch.
-- **Cases:** `crl-stale-local-asks-provider`, `crl-stale-local-refreshed-by-provider`.
 
 ### CRL-035: An abort before an expired CRL is refreshed is marked
 
@@ -554,7 +530,6 @@ Without an answer `crl_expired` stands, marked `retrieval_aborted` when the sour
 - **Sources:**
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.
   - OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch.
-- **Cases:** `crl-stale-local-source-abort-is-marked`.
 
 ### CRL-036: A supplied CRL the references would look past is refreshed
 
@@ -567,7 +542,6 @@ A not-yet-valid CRL, an unusable issuingDistributionPoint, an unknown critical e
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
-- **Cases:** `crl-not-yet-valid-local-refreshed-by-provider`, `crl-unknown-critical-extension-local-refreshed-by-provider`, `sec10-fetch-completes-missing-and-not-yet-valid-crl`, `sec10-fetch-unusable-scope-supplied-crl-refreshed`.
 
 ### CRL-037: Without an answer, a replaceable CRL's error stands and names the certificate
 
@@ -580,7 +554,6 @@ The certificate is named in `certificates_with_replaceable_crl` on the error tha
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
-- **Cases:** `crl-not-yet-valid-local-asks-provider`, `crl-not-yet-valid-local-source-abort-is-marked`, `crl-unknown-critical-extension-local-source-abort-is-marked`, `sec10-chain-unknown-names-missing-and-not-yet-valid-crl`, `sec10-fetch-unusable-scope-supplied-crl-stands-without-answer`.
 
 ### CRL-038: A CRL with a bad signature is not refreshed
 
@@ -593,7 +566,6 @@ A supplied CRL with a bad signature is `invalid_crl_signature` and nothing is re
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
-- **Cases:** `crl-forged-local-asks-nothing`.
 
 ### CRL-039: A malformed CRL is replaceable
 
@@ -608,7 +580,6 @@ A malformed CRL does not stop the search for another, alone or beside an expired
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
   - BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.
   - OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588).
-- **Cases:** `crl-malformed-aki-local-refreshed-by-provider`, `crl-malformed-aki-beside-expired-local-refreshed-by-provider`.
 
 ### CRL-040: Without an answer, a malformed CRL's failure stands
 
@@ -623,7 +594,6 @@ Its failure stands and names the certificate.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
   - BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.
   - OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588).
-- **Cases:** `crl-malformed-aki-beside-expired-local-asks-provider`.
 
 ### CRL-041: A CRL without nextUpdate but with another defect is replaced
 
@@ -637,7 +607,6 @@ A CRL's other defects decide exactly as they would with nextUpdate present, so a
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches.
-- **Cases:** `sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate`.
 
 ### CRL-042: A missing nextUpdate blocks retrieval only as a CRL's sole defect
 
@@ -656,7 +625,6 @@ A CRL whose only defect is a missing nextUpdate is `invalid_crl` (`missing_next_
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches.
-- **Cases:** `crl-no-next-update-local-asks-nothing`, `sec10-no-next-update-point-scope-crl-is-replaceable`.
 
 ### CRL-043: A point-scoped CRL for a certificate that lists no points is replaced by certificate
 
@@ -670,7 +638,6 @@ The certificate is asked about by certificate and issuer, and a full CRL from th
   - Bouncy Castle core PKIXCRLValidator.java:151-158 (checkDistributionPointName): the CRL is rejected with a distribution point name mismatch; RFC3280CertPathUtilities.java:1716-1729 reports the last such exception when no CRL is valid.
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.
-- **Cases:** `sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate`.
 
 ### CRL-044: The source decides transport; the core screens hygiene only
 
@@ -683,7 +650,6 @@ The verification core passes every listed URI to an injected source after hygien
   - OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.
   - BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches.
-- **Cases:** `sec10-fetch-source-is-asked-for-any-scheme`.
 
 ### CRL-045: The built-in source refuses what it does not fetch
 
@@ -696,7 +662,6 @@ The built-in `HttpCrlSource` is stricter than the references (public addresses, 
   - OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.
   - BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches.
-- **Cases:** `sec10-fetch-builtin-source-denies-https`.
 
 ### CRL-046: Fetch limits bound one verification
 
@@ -708,7 +673,6 @@ The engine renews a source's allowances for each verification (`CrlSource::begin
 - **Sources:**
   - OpenSSL `apps/lib/apps.c:2866-2867`, `apps/verify.c:220-232`: per-fetch limits, nothing accumulated.
   - Bouncy Castle `CrlCache.java:41-46`: per-connection timeouts, process-wide cache.
-- **Cases:** none.
 - **Unit test:** `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
 
 ### CRL-047: One certificate's distribution points never end the run
@@ -720,7 +684,6 @@ An over-long URI is skipped, and URIs past the first 16 are recorded as one `crl
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL and Bouncy Castle have no per-certificate point limit and skip a point that fails.
-- **Cases:** none.
 - **Unit test:** `a_certificate_over_the_url_limits_is_skipped_point_by_point`.
 
 ### CRL-048: A URI that is not an absolute URL is never offered to a source
@@ -733,5 +696,4 @@ It is recorded as `crl_fetch_denied` with its own message and no `url`.
 - **Sources:**
   - OpenSSL `apps/lib/apps.c:2833`: `get_dp_url` returns only `http://`.
   - Bouncy Castle `CrlCache.java:185`: `toURL()` fails on a relative URI.
-- **Cases:** none.
 - **Unit test:** `a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason`.

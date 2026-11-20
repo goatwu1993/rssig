@@ -4,6 +4,8 @@ Task detail for **SEC-10** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox. Other IDs below (SEC-11, SEC-15 to SEC-21, TEST-11,
 PRODUCT-04, INTEROP-01, DEFER-01) are items in that file.
 
+The decisions this task made are indexed in [CRL decisions](../crl.md).
+
 **Status:** complete. Every box in the audit checklist is checked, as is the
 box in `TODO.md`. The limitations below stay open under their own IDs.
 
@@ -270,10 +272,11 @@ Every case PR #60 added or changed, with why its result is right (AGENTS.md,
 "Pinned expectations"). **Decided** cases change only with the owner's
 approval; **Observed** ones pin current behavior and may change when a better
 result is argued. **Acceptance** pins whether a file verifies or is rejected;
-**diagnostics** pins which error, detail or request. Every Decided case also
-carries its sources on the case itself, in `decision.references` in
-`tests/cases.json`; line numbers are for OpenSSL 3a3f1356, bc-java e03fee0b,
-relic 02c54d58 and BoringSSL `main`.
+**diagnostics** pins which error, detail or request. The rules and sources
+below are now stated once as numbered entries in [CRL decisions](../crl.md)
+(`CRL-001` to `CRL-048`), which each case names in its `decision` field; this
+section keeps the review history. Line numbers are for OpenSSL 3a3f1356,
+bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 
 - **The best CRL decides.** Decided, acceptance; owner-approved exception.
   Bouncy Castle's `checkCRL` skips a CRL that fails a check and goes on to the

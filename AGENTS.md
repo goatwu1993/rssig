@@ -96,22 +96,27 @@ A case pins what the verifier does, not proof that it is right. These rules
 keep tests, `TODO.md` and the specification from locking correct behavior out.
 
 1. **Every pinned result needs a reason.** A case added or changed in
-   `tests/cases.json` is listed in its task document under `docs/tasks/` with
-   why that result is right: an RFC section, what OpenSSL or Bouncy Castle do,
-   or a written security argument. "The code did this" is not a reason. A
-   case whose result was decided against, or between, reference
-   implementations also carries a `decision` in `tests/cases.json` (`basis`,
-   `pins`, `reason`, and `references` with source locations); the spec test
-   checks that its `reason` document exists and names the case.
-2. **Decided or observed.** That task document marks each case **Decided**
-   (with its reason) or **Observed** (current behavior, kept so that a change
-   is visible). A case with no such entry counts as Observed. An Observed case
-   may be changed when a better result is argued; a Decided case changes only
-   with the repository owner's approval, recorded in the task document.
-3. **Safety or wording.** Also mark whether a case pins acceptance (verifies
-   vs rejects: security) or only diagnostics (which error code, stage or
-   detail). A disagreement about wording never blocks a correct fix, and an
-   acceptance pin is never loosened without a Decided reason.
+   `tests/cases.json` is backed by a numbered decision entry in an index under
+   `docs/` (CRL and revocation cases: [docs/crl.md](docs/crl.md), `CRL-NNN`)
+   that says why the result is right: an RFC section, what OpenSSL or Bouncy
+   Castle do, or a written security argument. "The code did this" is not a
+   reason. The case names its entry with `"decision": "CRL-NNN"`; the entry
+   states the rule once with its sources and does not list its cases. The
+   task document under `docs/tasks/` links to the entries it adds or changes
+   instead of restating them. The spec test checks every entry's fields and
+   that each case's `decision` names an entry in force.
+2. **Decided or observed.** Each entry has exactly one Status: **Decided**
+   (with who decided it) or **Observed** (current behavior, kept so that a
+   change is visible), or `Retired` / `Superseded by` once no case may name
+   it. A case without `decision` counts as Observed. An Observed entry may be
+   changed when a better result is argued; a Decided entry changes only with
+   the repository owner's approval, recorded in the PR and in the entry's
+   "Decided by". IDs are never reused or renumbered.
+3. **Safety or wording.** Each entry also pins exactly one of acceptance
+   (verifies vs rejects: security) or diagnostics (which error code, stage or
+   detail); a rule with both sides is two entries. A disagreement about
+   wording never blocks a correct fix, and an acceptance pin is never loosened
+   without a Decided reason.
 4. **Conflicts go to the owner.** When a review finding contradicts a pinned
    case, judge the finding on its merits. If it may be right, ask the owner
    instead of declining it because a test exists, and say in the PR which
@@ -122,10 +127,11 @@ keep tests, `TODO.md` and the specification from locking correct behavior out.
 6. **Compare with a second implementation.** For a disputed revocation, path
    or CRL result, check what OpenSSL (`crypto/x509/x509_vfy.c`, `openssl
    verify -crl_check_all`) and Bouncy Castle (`RFC3280CertPathUtilities`,
-   `X509RevocationChecker`) do, and cite it in the task document. Run any such
-   comparison as a separate maintenance step, never inside `cargo test` or the
-   product, and never as a runtime dependency. Where they agree, follow them;
-   where they differ or have no equivalent, write down the choice.
+   `X509RevocationChecker`) do, and cite it in the decision entry's Sources.
+   Run any such comparison as a separate maintenance step, never inside
+   `cargo test` or the product, and never as a runtime dependency. Where they
+   agree, follow them; where they differ or have no equivalent, write down the
+   choice.
 
 ## Native Rust tests and coverage
 
