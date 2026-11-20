@@ -1466,29 +1466,39 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
     }
 }
 
-/// The ranks of unusable-CRL failures; the highest among a certificate's
-/// CRLs is reported. Up to `REPLACEABLE`, a CRL from a source can replace
-/// the unusable one: it has expired, is not yet valid, has an
-/// issuingDistributionPoint that cannot be used, uses a feature that is not
-/// supported, or is malformed. OpenSSL and BoringSSL score such a CRL below a
-/// valid one, or drop it when decoding, and then look the issuer's CRLs up
-/// in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle fetches after
-/// any CRL failure. Above it, a source is not asked, by policy: a fetched
-/// usable CRL would still decide if supplied, but OpenSSL and BoringSSL do
-/// not score the signature and report its failure (or an unsupported
-/// signature algorithm) without another lookup (BoringSSL decides the tie
-/// with Bouncy Castle); an issuer without cRLSign signs no usable CRL; a CRL
-/// whose only defect is a missing nextUpdate is usable to all three
-/// references, so none of them would look again (with another defect, that
-/// defect is reported and decides); and a certificate whose own points
-/// cannot be read is itself at fault. A CRL
-/// scoped to a point, for a certificate that lists none, is replaceable: the
-/// certificate is asked about by certificate and issuer.
+// The ranks of unusable-CRL failures; the highest among a certificate's
+// CRLs is reported. Up to `REPLACEABLE`, a CRL from a source can replace
+// the unusable one: it has expired, is not yet valid, has an
+// issuingDistributionPoint that cannot be used, uses a feature that is not
+// supported, or is malformed. OpenSSL and BoringSSL score such a CRL below a
+// valid one, or drop it when decoding, and then look the issuer's CRLs up
+// in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle fetches after
+// any CRL failure. Above it, a source is not asked, by policy: a fetched
+// usable CRL would still decide if supplied, but OpenSSL and BoringSSL do
+// not score the signature and report its failure (or an unsupported
+// signature algorithm) without another lookup (BoringSSL decides the tie
+// with Bouncy Castle); an issuer without cRLSign signs no usable CRL; a CRL
+// whose only defect is a missing nextUpdate is usable to all three
+// references, so none of them would look again (with another defect, that
+// defect is reported and decides); and a certificate whose own points
+// cannot be read is itself at fault. A CRL
+// scoped to a point, for a certificate that lists none, is replaceable: the
+// certificate is asked about by certificate and issuer.
+
+/// An expired CRL: replaceable (a source's CRL can decide).
 const EXPIRED: u8 = 1;
+/// Not yet valid: replaceable.
 const NOT_YET_VALID: u8 = 2;
+/// The highest replaceable rank (an unusable issuingDistributionPoint, an
+/// unsupported feature, a malformed CRL, a point scope for a certificate
+/// that lists none): offered to a source.
 const REPLACEABLE: u8 = 3;
+/// A CRL with no other defect that lacks nextUpdate, or whose certificate
+/// points cannot be read: stuck, a source is not asked.
 const UNUSABLE: u8 = 4;
+/// An issuer without cRLSign: stuck.
 const NO_CRL_SIGN: u8 = 5;
+/// A bad signature, or an unsupported signature algorithm: stuck.
 const FORGED: u8 = 6;
 // `stuck_paths`, `with_replaceable_crl` and `unknown_status` compare these
 // with `<=` and `>`: inserting a rank must keep the order, and the groups

@@ -813,6 +813,14 @@ relic 02c54d58 and BoringSSL `main`.
 
 ## Case reasons (refresh of an unusable supplied CRL)
 
+Cases from `main` changed by this refresh, checked mechanically against
+`origin/main`: only `sec10-fetch-unusable-supplied-crl-not-fetched` (Observed,
+diagnostics), which is replaced by
+`sec10-fetch-unusable-scope-supplied-crl-refreshed`; its reject became a
+verification, with the owner's approval given in the PR #64 discussion. No
+Decided case from `main` changed its command or expectation, and
+`sec10-fetch-no-listed-point-role-excluded-scope-rejected` is untouched.
+
 Decided by the repository owner after PR #60 (SEC-23), under the standing
 rule: follow OpenSSL and Bouncy Castle where they agree, and BoringSSL where
 they differ. It replaces the Observed rule that only an expired supplied CRL
