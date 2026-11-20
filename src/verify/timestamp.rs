@@ -87,12 +87,14 @@ pub(crate) fn verify_timestamp(
             let tsa = token.verify(token.signers[0], options.allow_sha1)?;
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
-                    tsa.cert,
-                    &token.certs,
-                    trust::TIME_STAMPING,
-                    Some(at),
-                    options.now,
-                    options.check_revocation,
+                    trust::ChainRequest {
+                        leaf: tsa.cert,
+                        certificates: &token.certs,
+                        eku: trust::TIME_STAMPING,
+                        signing_time: Some(at),
+                        now: options.now,
+                        revocation: options.check_revocation,
+                    },
                     budget,
                 )?)
             } else {
@@ -142,12 +144,14 @@ pub(crate) fn verify_timestamp(
             }
             let trust_report = if let Some(trust) = options.trust {
                 Some(trust.verify(
-                    tsa.cert,
-                    certificates,
-                    trust::TIME_STAMPING,
-                    Some(at),
-                    options.now,
-                    options.check_revocation,
+                    trust::ChainRequest {
+                        leaf: tsa.cert,
+                        certificates,
+                        eku: trust::TIME_STAMPING,
+                        signing_time: Some(at),
+                        now: options.now,
+                        revocation: options.check_revocation,
+                    },
                     budget,
                 )?)
             } else {

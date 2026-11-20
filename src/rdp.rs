@@ -199,12 +199,14 @@ fn verify_trust(
             .is_some_and(|(_, u)| u.0.iter().any(|v| v.as_bytes() == *eku))
         {
             match store.verify(
-                leaf,
-                certificates,
-                eku,
-                signing_time,
-                options.now,
-                options.check_revocation,
+                crate::trust::ChainRequest {
+                    leaf,
+                    certificates,
+                    eku,
+                    signing_time,
+                    now: options.now,
+                    revocation: options.check_revocation,
+                },
                 budget,
             ) {
                 Ok(report) => return Ok(report),

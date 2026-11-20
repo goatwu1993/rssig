@@ -76,17 +76,17 @@ impl TrustStore {
         self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
             + self.crls.iter().map(Vec::len).sum::<usize>()
     }
-    #[allow(clippy::too_many_arguments)] // Time, revocation and work policy are explicit.
-    pub(crate) fn verify(
-        &self,
-        leaf: &Certificate,
-        certificates: &[Certificate],
-        eku: &'static [u8],
-        signing_time: Option<u64>,
-        now: u64,
-        revocation: bool,
-        budget: &Budget,
-    ) -> Result<TrustReport> {
+    /// Build and validate the signer's chain to a configured root, checking
+    /// revocation per certificate on each candidate path when requested.
+    pub(crate) fn verify(&self, request: ChainRequest<'_>, budget: &Budget) -> Result<TrustReport> {
+        let ChainRequest {
+            leaf,
+            certificates,
+            eku,
+            signing_time,
+            now,
+            revocation,
+        } = request;
         // webpki exposes no caller-owned search budget. Reserve its entire
         // 200,000-call path-search allowance before starting each invocation.
         budget.path_work.charge(200_000)?;
@@ -102,6 +102,279 @@ impl TrustStore {
             )
             .into());
         }
+        let policy = SignerPolicy::check(leaf, eku, signing_time, now)?;
+        if let Some(at) = issued_after(leaf, policy.lifetime_signed_at) {
+            return Err(policy.not_valid_at_signing(leaf, at).into());
+        }
+        let leaf_report = CertificateReport::parse(leaf)?;
+        let leaf_der = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
+        let end_entity = webpki::EndEntityCert::try_from(&leaf_der)
+            .map_err(|e| anyhow::anyhow!("invalid signer certificate: {e:?}"))?;
+        self.charge_loaded(budget)?;
+        let anchors: Vec<_> = self
+            .roots
+            .iter()
+            .map(|c| {
+                webpki::anchor_from_trusted_cert(c)
+                    .map_err(|e| anyhow::anyhow!("unsupported configured trust anchor: {e:?}"))
+            })
+            .collect::<Result<_>>()?;
+        let intermediates: Vec<_> = certificates
+            .iter()
+            .map(|c| c.to_der().map(CertificateDer::from))
+            .collect::<core::result::Result<_, _>>()
+            .map_err(crate::compat_error)?;
+        // Revocation is checked here, certificate by certificate on each
+        // candidate path, as OpenSSL's check_cert_crl and Bouncy Castle's
+        // X509RevocationChecker do: each certificate's CRLs are authenticated
+        // under that path's real issuer key, and the best usable one decides.
+        // This is the only revocation check; webpki builds paths without one.
+        // With no applicable CRL at all, the path is still built: an
+        // untrusted chain fails as such, and a trusted one reports every
+        // certificate on it as without a CRL.
+        let crls = if revocation {
+            self.applicable_crls(certificates)?
+        } else {
+            Vec::new()
+        };
+        let evaluator = PathEvaluator {
+            signer: leaf,
+            anchors: &anchors,
+            anchor_certificates: if revocation {
+                self.anchor_certificates()
+            } else {
+                Vec::new()
+            },
+            crls: &crls,
+            now,
+            revocation,
+            lifetime_signed_at: policy.lifetime_signed_at,
+            budget,
+            state: Default::default(),
+        };
+        // An absent EKU in a CA is unrestricted. The leaf is required to have
+        // the requested EKU above; any CA EKU that is present must permit it.
+        let algorithms: Vec<_> = ALGORITHMS
+            .iter()
+            .map(|algorithm| BudgetedAlgorithm {
+                algorithm: *algorithm,
+                budget,
+            })
+            .collect();
+        let algorithm_refs: Vec<&dyn rustls_pki_types::SignatureVerificationAlgorithm> = algorithms
+            .iter()
+            .map(|a| a as &dyn rustls_pki_types::SignatureVerificationAlgorithm)
+            .collect();
+        let path = {
+            let check_path = |path: &webpki::VerifiedPath<'_>| evaluator.check(path);
+            end_entity.verify_for_usage(
+                &algorithm_refs,
+                &anchors,
+                &intermediates,
+                UnixTime::since_unix_epoch(Duration::from_secs(policy.validation_time)),
+                webpki::KeyUsage::required_if_present(eku),
+                None,
+                Some(&check_path),
+            )
+        };
+        budget.crypto.check()?;
+        budget.hash_bytes.check()?;
+        budget.decoded_bytes.check()?;
+        let state = evaluator.state.into_inner();
+        let path = path.map_err(|e| path_error(e, &state, &crls, &policy, &leaf_report))?;
+        // rssig's per-certificate check above is the only revocation
+        // decision. Issuers of one name with different keys on the accepted
+        // path are rejected here when their CRLs cannot be told apart by key,
+        // as OpenSSL and BoringSSL do (see `ambiguous_issuer_keys`).
+        if revocation {
+            let rejects = ambiguous_issuer_keys(&state.chosen, &crls);
+            // Test builds only: webpki's own revocation check must agree.
+            #[cfg(all(feature = "revocation-crosscheck", debug_assertions))]
+            crosscheck::confirm(
+                &end_entity,
+                &path,
+                policy.validation_time,
+                eku,
+                &state.chosen,
+                &crls,
+                rejects,
+            );
+            if rejects {
+                return Err(VerificationError::new(
+                    ErrorCode::CertificateChainInvalid,
+                    Stage::CertificateChain,
+                    "CRLs of two issuers with one name and different keys cannot be told \
+                     apart: each must name its issuer's key in an authorityKeyIdentifier",
+                )
+                .detail("certificate", &leaf_report)
+                .detail("required_eku", policy.eku_oid.to_string())
+                .detail("reason", "ambiguous_issuer_keys")
+                .into());
+            }
+            state.warn_ignored_listings(budget);
+        }
+        Ok(TrustReport {
+            validation_time: policy.validation_time,
+            lifetime_signing: policy.lifetime_signing,
+            chain: self.chain_report(leaf_report, &anchors, &path)?,
+            required_eku: OidReport::new(policy.eku_oid),
+            revocation: self.revocation_report(revocation)?,
+        })
+    }
+
+    /// Charge the loaded roots and CRLs to the hash and decode budgets.
+    fn charge_loaded(&self, budget: &Budget) -> Result<()> {
+        let loaded = self
+            .roots
+            .iter()
+            .map(|root| root.as_ref().len())
+            .chain(self.crls.iter().map(Vec::len));
+        for len in loaded {
+            for _ in 0..8 {
+                budget.hash_bytes.charge(len)?;
+                budget.decoded_bytes.charge(len)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// The loaded CRLs whose issuer could be on a chain through `certificates`.
+    ///
+    /// Only a CRL whose issuer could be on the chain is decoded in full; the
+    /// issuer is read from the top-level fields first and compared
+    /// re-encoded, as the chain's names are (der sorts a SET OF while
+    /// decoding, so raw and re-encoded bytes can differ). One whose issuer
+    /// cannot be read that way is decoded and judged.
+    fn applicable_crls(&self, certificates: &[Certificate]) -> Result<Vec<LoadedCrl>> {
+        let mut issuer_names = Vec::new();
+        for root in &self.roots {
+            let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
+            issuer_names.push(
+                root.tbs_certificate
+                    .subject
+                    .to_der()
+                    .map_err(crate::compat_error)?,
+            );
+        }
+        for certificate in certificates {
+            issuer_names.push(
+                certificate
+                    .tbs_certificate
+                    .subject
+                    .to_der()
+                    .map_err(crate::compat_error)?,
+            );
+        }
+        self.crls
+            .iter()
+            .filter(|bytes| crl_may_apply(bytes, &issuer_names))
+            .map(|bytes| LoadedCrl::load(bytes))
+            .collect()
+    }
+
+    /// The configured root behind each anchor, parsed once.
+    fn anchor_certificates(&self) -> Vec<Option<Certificate>> {
+        self.roots
+            .iter()
+            .map(|root| Certificate::from_der(root.as_ref()).ok())
+            .collect()
+    }
+
+    /// The accepted chain: the signer, the path's intermediates, and a
+    /// configured root representing the anchor actually selected.
+    fn chain_report(
+        &self,
+        leaf_report: CertificateReport,
+        anchors: &[rustls_pki_types::TrustAnchor<'_>],
+        path: &webpki::VerifiedPath<'_>,
+    ) -> Result<Vec<CertificateReport>> {
+        let mut chain = vec![leaf_report];
+        for intermediate in path.intermediate_certificates() {
+            chain.push(CertificateReport::parse(
+                &Certificate::from_der(intermediate.der().as_ref()).map_err(crate::compat_error)?,
+            )?);
+        }
+        // Equal subject/key pairs may carry different anchor constraints.
+        if let Some((root, _)) = self
+            .roots
+            .iter()
+            .zip(anchors)
+            .find(|(_, anchor)| same_anchor(anchor, path.anchor()))
+        {
+            chain.push(CertificateReport::parse(
+                &Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?,
+            )?);
+        }
+        Ok(chain)
+    }
+
+    fn revocation_report(&self, revocation: bool) -> Result<RevocationReport> {
+        Ok(if revocation {
+            RevocationReport {
+                status: RevocationStatus::Good,
+                method: Some("crl".into()),
+                crls: self
+                    .crls
+                    .iter()
+                    .map(|b| CrlReport::parse(b))
+                    .collect::<Result<_>>()?,
+            }
+        } else {
+            RevocationReport {
+                status: RevocationStatus::NotChecked,
+                method: None,
+                crls: vec![],
+            }
+        })
+    }
+}
+
+/// One chain-validation request for [`TrustStore::verify`].
+pub(crate) struct ChainRequest<'a> {
+    /// The signer certificate.
+    pub(crate) leaf: &'a Certificate,
+    /// Untrusted embedded certificates, used as chain candidates only.
+    pub(crate) certificates: &'a [Certificate],
+    /// The extended key usage the signer must have.
+    pub(crate) eku: &'static [u8],
+    /// A verified timestamp's signing time, if any.
+    pub(crate) signing_time: Option<u64>,
+    /// The validation time.
+    pub(crate) now: u64,
+    /// Whether to check revocation against CRLs.
+    pub(crate) revocation: bool,
+}
+
+/// Whether two anchors are the same one to webpki: one key, name and
+/// name constraints.
+fn same_anchor(
+    a: &rustls_pki_types::TrustAnchor<'_>,
+    b: &rustls_pki_types::TrustAnchor<'_>,
+) -> bool {
+    a.subject == b.subject
+        && a.subject_public_key_info == b.subject_public_key_info
+        && a.name_constraints == b.name_constraints
+}
+
+/// The signer's own key usage and EKU, and the times its chain is judged at.
+struct SignerPolicy {
+    eku_oid: ::der::asn1::ObjectIdentifier,
+    /// Whether the signer has the Microsoft lifetime-signing EKU.
+    lifetime_signing: bool,
+    /// The time webpki validates the path at.
+    validation_time: u64,
+    /// The signing time, only for a lifetime-signing signer.
+    lifetime_signed_at: Option<u64>,
+    now: u64,
+}
+
+impl SignerPolicy {
+    fn check(
+        leaf: &Certificate,
+        eku: &'static [u8],
+        signing_time: Option<u64>,
+        now: u64,
+    ) -> Result<Self> {
         // KeyUsage digitalSignature is not enforced by webpki's TLS-oriented
         // leaf processing, so enforce it explicitly for CMS signers.
         use x509_cert::ext::pkix::{ExtendedKeyUsage, KeyUsage};
@@ -170,441 +443,338 @@ impl TrustStore {
             Some(at) if !lifetime_signing => at,
             _ => now,
         };
-        let lifetime_signed_at = signing_time.filter(|_| lifetime_signing);
-        let eku_oid =
-            ::der::asn1::ObjectIdentifier::from_bytes(eku).map_err(crate::compat_error)?;
-        let not_valid_at_signing = |cert: &Certificate, at: u64| {
-            let error = VerificationError::new(
-                ErrorCode::CertificateNotYetValid,
-                Stage::CertificateChain,
-                "lifetime-signing certificate was not valid at the signing time",
-            )
-            .detail("lifetime_signing", true)
-            .detail("signing_time", at)
-            .detail("validation_time", now)
-            .detail("not_before", not_before(cert).as_secs())
-            .detail("required_eku", eku_oid.to_string());
-            // Keep the signing-time reason even if the report cannot be built.
-            match CertificateReport::parse(cert) {
-                Ok(report) => error.detail("certificate", report),
-                Err(cause) => error.detail("certificate_report_error", format!("{cause:#}")),
-            }
-        };
-        if let Some(at) = issued_after(leaf, lifetime_signed_at) {
-            return Err(not_valid_at_signing(leaf, at).into());
-        }
-        let leaf_report = CertificateReport::parse(leaf)?;
-        let signer = leaf;
-        let leaf = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
-        let leaf = webpki::EndEntityCert::try_from(&leaf)
-            .map_err(|e| anyhow::anyhow!("invalid signer certificate: {e:?}"))?;
-        for root in &self.roots {
-            for _ in 0..8 {
-                budget.hash_bytes.charge(root.as_ref().len())?;
-                budget.decoded_bytes.charge(root.as_ref().len())?;
-            }
-        }
-        for crl in &self.crls {
-            for _ in 0..8 {
-                budget.hash_bytes.charge(crl.len())?;
-                budget.decoded_bytes.charge(crl.len())?;
-            }
-        }
-        let roots: Vec<_> = self
-            .roots
-            .iter()
-            .map(|c| {
-                webpki::anchor_from_trusted_cert(c)
-                    .map_err(|e| anyhow::anyhow!("unsupported configured trust anchor: {e:?}"))
-            })
-            .collect::<Result<_>>()?;
-        let intermediates: Vec<_> = certificates
-            .iter()
-            .map(|c| c.to_der().map(CertificateDer::from))
-            .collect::<core::result::Result<_, _>>()
-            .map_err(crate::compat_error)?;
-        // Revocation is checked here, certificate by certificate on each
-        // candidate path, as OpenSSL's check_cert_crl and Bouncy Castle's
-        // X509RevocationChecker do: each certificate's CRLs are authenticated
-        // under that path's real issuer key, and the best usable one decides.
-        // This is the only revocation check; webpki builds paths without one.
-        let crls = if revocation {
-            let mut issuer_names = Vec::new();
-            for root in &self.roots {
-                let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
-                issuer_names.push(
-                    root.tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
-            }
-            for certificate in certificates {
-                issuer_names.push(
-                    certificate
-                        .tbs_certificate
-                        .subject
-                        .to_der()
-                        .map_err(crate::compat_error)?,
-                );
-            }
-            // Only a CRL whose issuer could be on the chain is decoded in
-            // full; the issuer is read from the top-level fields first and
-            // compared re-encoded, as the chain's names are (der sorts a SET
-            // OF while decoding, so raw and re-encoded bytes can differ). One
-            // whose issuer cannot be read that way is decoded and judged.
-            let crls = self
-                .crls
-                .iter()
-                .filter(|bytes| crl_may_apply(bytes, &issuer_names))
-                .map(|bytes| LoadedCrl::load(bytes))
-                .collect::<Result<Vec<_>>>()?;
-            // With no applicable CRL at all, the path is still built: an
-            // untrusted chain fails as such, and a trusted one reports every
-            // certificate on it as without a CRL.
-            crls
-        } else {
-            Vec::new()
-        };
-        let revocation_enabled = revocation;
-        // The configured root behind each anchor, parsed once.
-        let anchor_certificates: Vec<Option<Certificate>> = if revocation {
-            self.roots
-                .iter()
-                .map(|root| Certificate::from_der(root.as_ref()).ok())
-                .collect()
-        } else {
-            Vec::new()
-        };
-        // CRL signature results by (CRL, issuer key), shared by every
-        // candidate path and charged to the work budget once each.
-        let signatures: core::cell::RefCell<SignatureCache> = Default::default();
-        // Per candidate path: the revocation outcomes it produced, and the
-        // CRLs chosen for an accepted path.
-        let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
-        let chosen: core::cell::RefCell<Vec<ChosenCrl>> = Default::default();
-        let paths_evaluated = core::cell::Cell::new(0usize);
-        // The last path whose revocation passed: the accepted one on success.
-        let accepted_path = core::cell::Cell::new(None::<usize>);
-        // Rejecting a candidate path here is non-fatal: webpki tries other
-        // issuers and reports the most specific rejection by its error rank.
-        let invalid_ca_usage = core::cell::Cell::new(false);
-        let issued_after_signing = core::cell::OnceCell::new();
-        let check_path_policy = |path: &webpki::VerifiedPath<'_>| {
-            let mut path_certificates = vec![signer.clone()];
-            for intermediate in path.intermediate_certificates() {
-                for _ in 0..8 {
-                    budget
-                        .decoded_bytes
-                        .charge(intermediate.der().as_ref().len())
-                        .map_err(|_| webpki::Error::BadDer)?;
-                }
-                path_certificates.push(
-                    Certificate::from_der(intermediate.der().as_ref())
-                        .map_err(|_| webpki::Error::BadDer)?,
-                );
-            }
-            // The other path policy is judged first but applied after
-            // revocation, as webpki checked revocation while verifying the
-            // path's signatures: only a path that would pass it can still be
-            // completed by a fetched CRL.
-            let other_policy = path_policy_failure(&path_certificates, lifetime_signed_at)?;
-            if revocation_enabled {
-                // Each certificate's issuer on this path: the next
-                // certificate, or the configured root behind the anchor.
-                // Configured roots that are this anchor to webpki (one key,
-                // name and constraints) may carry different key identifiers:
-                // a CRL naming any of them is this anchor's.
-                let mut anchors = roots
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, root)| {
-                        root.subject == path.anchor().subject
-                            && root.subject_public_key_info == path.anchor().subject_public_key_info
-                            && root.name_constraints == path.anchor().name_constraints
-                    })
-                    .filter_map(|(index, _)| anchor_certificates[index].as_ref());
-                let anchor = anchors.next().ok_or(webpki::Error::UnknownIssuer)?;
-                let mut anchor_key =
-                    IssuerKey::of(anchor, true).map_err(|_| webpki::Error::BadDer)?;
-                for same_key in anchors {
-                    let identity = issuer_identity(same_key).map_err(|_| webpki::Error::BadDer)?;
-                    match identity.key_id {
-                        Some(id) => anchor_key.other_key_ids.push(id),
-                        // One that names no key cannot disprove a match.
-                        None => anchor_key.undisprovable = true,
-                    }
-                }
-                // Every certificate is evaluated, so that an unknown status
-                // names every certificate without a usable CRL at once.
-                let path_index = paths_evaluated.get();
-                paths_evaluated.set(path_index + 1);
-                let mut path_chosen = Vec::new();
-                let mut rejected = None;
-                for (depth, cert) in path_certificates.iter().enumerate() {
-                    let issuer = match path_certificates.get(depth + 1) {
-                        Some(next) => {
-                            IssuerKey::of(next, false).map_err(|_| webpki::Error::BadDer)?
-                        }
-                        None => anchor_key.clone(),
-                    };
-                    let mut evidence = evaluate_crls(
-                        cert,
-                        depth == 0,
-                        &issuer,
-                        &crls,
-                        now,
-                        &mut |index, crl: &LoadedCrl| {
-                            *signatures
-                                .borrow_mut()
-                                .entry((index, issuer.spki.clone()))
-                                .or_insert_with(|| {
-                                    // Over budget: no verification, and the
-                                    // exhausted counter ends the run below.
-                                    budget.crypto.charge(1).map_err(|_| ())?;
-                                    // An identifier the adapter rejects is
-                                    // unsupported, whatever its OID.
-                                    if !crl.algorithm_accepted {
-                                        return Ok(None);
-                                    }
-                                    Ok(signed_by(
-                                        &issuer.spki,
-                                        &crl.algorithm,
-                                        &crl.signed,
-                                        &crl.signature,
-                                    ))
-                                })
-                        },
-                    )
-                    .ok_or(webpki::Error::BadDer)?;
-                    evidence.path = path_index;
-                    evidence.path_viable = other_policy.is_none();
-                    match &evidence.outcome {
-                        Outcome::Good(index) => {
-                            let named = crls[*index].authority_key.as_ref();
-                            // A positive match only: an issuer with no key
-                            // identifier never names itself, while
-                            // `names_another_key` (a CRL set aside as another
-                            // key's) needs a negative one it cannot make
-                            // without an identifier.
-                            let names_issuer =
-                                matches!(named, Ok(Some(named)) if issuer.names(named));
-                            path_chosen.push(ChosenCrl {
-                                index: *index,
-                                names_issuer,
-                                issuer_spki: issuer.spki.clone(),
-                            });
-                        }
-                        Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
-                        Outcome::Missing(_) => {
-                            rejected.get_or_insert(webpki::Error::UnknownRevocationStatus);
-                        }
-                    }
-                    outcomes.borrow_mut().push(evidence);
-                }
-                if let Some(error) = rejected {
-                    return Err(error);
-                }
-                *chosen.borrow_mut() = path_chosen;
-                accepted_path.set(Some(path_index));
-            }
-            match other_policy {
-                None => Ok(()),
-                Some(PathPolicyFailure::IssuedAfterSigning(cert, at)) => {
-                    // Ranked like webpki's own validity errors. Keep the first
-                    // rejection, which webpki also keeps among equal ranks.
-                    let error = webpki::Error::CertNotValidYet {
-                        time: UnixTime::since_unix_epoch(Duration::from_secs(at)),
-                        not_before: UnixTime::since_unix_epoch(not_before(cert)),
-                    };
-                    let _ = issued_after_signing.set(cert.clone());
-                    Err(error)
-                }
-                Some(PathPolicyFailure::LacksCertSign) => {
-                    invalid_ca_usage.set(true);
-                    Err(webpki::Error::UnknownIssuer)
-                }
-            }
-        };
-        // An absent EKU in a CA is unrestricted. The leaf is required to have
-        // the requested EKU above; any CA EKU that is present must permit it.
-        let algorithms: Vec<_> = ALGORITHMS
-            .iter()
-            .map(|algorithm| BudgetedAlgorithm {
-                algorithm: *algorithm,
-                budget,
-            })
-            .collect();
-        let algorithm_refs: Vec<&dyn rustls_pki_types::SignatureVerificationAlgorithm> = algorithms
-            .iter()
-            .map(|a| a as &dyn rustls_pki_types::SignatureVerificationAlgorithm)
-            .collect();
-        let path = leaf.verify_for_usage(
-            &algorithm_refs,
-            &roots,
-            &intermediates,
-            UnixTime::since_unix_epoch(Duration::from_secs(validation_time)),
-            webpki::KeyUsage::required_if_present(eku),
-            None,
-            Some(&check_path_policy),
-        );
-        budget.crypto.check()?;
-        budget.hash_bytes.check()?;
-        budget.decoded_bytes.check()?;
-        let path = path.map_err(|e| {
-            // webpki ranks another path's validity error above unknown
-            // revocation status, but a path that passes every path policy
-            // and only lacks CRLs is the one a CRL could complete: it
-            // outranks every other path's error, including a CA issued after
-            // the lifetime signing time. A definite revocation does not: a
-            // higher-ranked error on another path still decides, as pinned
-            // by `sec09-lifetime-rollover-revoked-issuer` (SEC-14).
-            let revocation = matches!(
-                e,
-                webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
-            );
-            // webpki's own search limits are never replaced: the search did
-            // not finish, so no other path's status is final.
-            let viable = if revocation || search_limit(&e) {
-                None
-            } else {
-                completable_path(&outcomes.borrow())
-            };
-            // Only the callback reports a validity error at the signing time;
-            // webpki's own checks use the (later) validation time. Also require
-            // the stored certificate to be the one behind the surviving error.
-            if let (
-                webpki::Error::CertNotValidYet {
-                    time,
-                    not_before: rejected,
-                },
-                Some(at),
-                Some(cert),
-            ) = (&e, lifetime_signed_at, issued_after_signing.get())
-                && viable.is_none()
-                && time.as_secs() == at
-                && rejected.as_secs() == not_before(cert).as_secs()
-            {
-                // Every candidate path failed; report the issuer that postdates signing.
-                return not_valid_at_signing(cert, at);
-            }
-            let revocation_error = if revocation {
-                revocation_failure(&outcomes.borrow())
-            } else {
-                viable
-            };
-            let mut error = if let Some(mut error) = revocation_error {
-                report_crls(&mut error, &crls);
-                error
-            } else if invalid_ca_usage.get() && e == webpki::Error::UnknownIssuer {
-                VerificationError::new(
-                    ErrorCode::InvalidKeyUsage,
-                    Stage::CertificateChain,
-                    "intermediate certificate KeyUsage lacks keyCertSign",
-                )
-            } else {
-                webpki_error(e)
-            };
-            error = error
-                .detail("certificate", &leaf_report)
-                .detail("required_eku", eku_oid.to_string());
-            if lifetime_signing {
-                error = error.detail("lifetime_signing", true);
-            }
-            if let Some(at) = lifetime_signed_at {
-                error = error.detail("signing_time", at);
-            }
-            error
-        })?;
-        // rssig's per-certificate check above is the only revocation
-        // decision. Issuers of one name with different keys on the accepted
-        // path are rejected here when their CRLs cannot be told apart by key,
-        // as OpenSSL and BoringSSL do (see `ambiguous_issuer_keys`).
-        if revocation_enabled {
-            let rejects = ambiguous_issuer_keys(&chosen.borrow(), &crls);
-            // Test builds only: webpki's own revocation check must agree.
-            #[cfg(all(feature = "revocation-crosscheck", debug_assertions))]
-            crosscheck::confirm(
-                &leaf,
-                &path,
-                validation_time,
-                eku,
-                &chosen.borrow(),
-                &crls,
-                rejects,
-            );
-            if rejects {
-                return Err(VerificationError::new(
-                    ErrorCode::CertificateChainInvalid,
-                    Stage::CertificateChain,
-                    "CRLs of two issuers with one name and different keys cannot be told \
-                     apart: each must name its issuer's key in an authorityKeyIdentifier",
-                )
-                .detail("certificate", &leaf_report)
-                .detail("required_eku", eku_oid.to_string())
-                .detail("reason", "ambiguous_issuer_keys")
-                .into());
-            }
-            // Once, for the accepted path only: a listing that was set aside
-            // is never dropped silently.
-            for evidence in outcomes
-                .borrow()
-                .iter()
-                .filter(|o| Some(o.path) == accepted_path.get() && o.ignored_listings > 0)
-            {
-                budget.log.warn(
-                    Stage::Revocation,
-                    format_args!(
-                        "certificate {} is listed by {} authenticated CRL(s) that do not \
-                         decide (not current, superseded or out of scope); not counted",
-                        evidence.sha256, evidence.ignored_listings
-                    ),
-                );
-            }
-        }
-        let mut chain = vec![leaf_report];
-        for intermediate in path.intermediate_certificates() {
-            chain.push(CertificateReport::parse(
-                &Certificate::from_der(intermediate.der().as_ref()).map_err(crate::compat_error)?,
-            )?);
-        }
-        for root in &self.roots {
-            if let Ok(anchor) = webpki::anchor_from_trusted_cert(root)
-                && anchor.subject == path.anchor().subject
-                && anchor.subject_public_key_info == path.anchor().subject_public_key_info
-                // Equal subject/key pairs may carry different anchor constraints.
-                // Report a certificate representing the anchor actually selected.
-                && anchor.name_constraints == path.anchor().name_constraints
-            {
-                chain.push(CertificateReport::parse(
-                    &Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?,
-                )?);
-                break;
-            }
-        }
-        Ok(TrustReport {
-            validation_time,
+        Ok(Self {
+            eku_oid: ::der::asn1::ObjectIdentifier::from_bytes(eku).map_err(crate::compat_error)?,
             lifetime_signing,
-            required_eku: OidReport::new(eku_oid),
-            chain,
-            revocation: RevocationReport {
-                status: if revocation_enabled {
-                    RevocationStatus::Good
-                } else {
-                    RevocationStatus::NotChecked
-                },
-                method: revocation_enabled.then(|| "crl".into()),
-                crls: if revocation_enabled {
-                    self.crls
-                        .iter()
-                        .map(|b| CrlReport::parse(b))
-                        .collect::<Result<_>>()?
-                } else {
-                    vec![]
-                },
-            },
+            validation_time,
+            lifetime_signed_at: signing_time.filter(|_| lifetime_signing),
+            now,
         })
     }
+
+    /// `cert` was issued after the lifetime signing time `at`.
+    fn not_valid_at_signing(&self, cert: &Certificate, at: u64) -> VerificationError {
+        let error = VerificationError::new(
+            ErrorCode::CertificateNotYetValid,
+            Stage::CertificateChain,
+            "lifetime-signing certificate was not valid at the signing time",
+        )
+        .detail("lifetime_signing", true)
+        .detail("signing_time", at)
+        .detail("validation_time", self.now)
+        .detail("not_before", not_before(cert).as_secs())
+        .detail("required_eku", self.eku_oid.to_string());
+        // Keep the signing-time reason even if the report cannot be built.
+        match CertificateReport::parse(cert) {
+            Ok(report) => error.detail("certificate", report),
+            Err(cause) => error.detail("certificate_report_error", format!("{cause:#}")),
+        }
+    }
+}
+
+/// What the path callback recorded across every candidate path webpki tried.
+#[derive(Default)]
+struct PathState {
+    /// CRL signature results by (CRL, issuer key), shared by every candidate
+    /// path and charged to the work budget once each.
+    signatures: SignatureCache,
+    /// Per candidate path: the revocation outcomes it produced.
+    outcomes: Vec<CertificateEvidence>,
+    /// The CRLs chosen for the last path whose revocation passed.
+    chosen: Vec<ChosenCrl>,
+    paths_evaluated: usize,
+    /// The last path whose revocation passed: the accepted one on success.
+    accepted_path: Option<usize>,
+    /// A path was rejected for a CA without keyCertSign.
+    invalid_ca_usage: bool,
+    /// The first CA found issued after the lifetime signing time.
+    issued_after_signing: Option<Certificate>,
+}
+
+impl PathState {
+    /// Once, for the accepted path only: a listing that was set aside is
+    /// never dropped silently.
+    fn warn_ignored_listings(&self, budget: &Budget) {
+        for evidence in self
+            .outcomes
+            .iter()
+            .filter(|o| Some(o.path) == self.accepted_path && o.ignored_listings > 0)
+        {
+            budget.log.warn(
+                Stage::Revocation,
+                format_args!(
+                    "certificate {} is listed by {} authenticated CRL(s) that do not \
+                     decide (not current, superseded or out of scope); not counted",
+                    evidence.sha256, evidence.ignored_listings
+                ),
+            );
+        }
+    }
+}
+
+/// The path policy webpki calls back into for each candidate path.
+///
+/// Rejecting a candidate path is non-fatal: webpki tries other issuers and
+/// reports the most specific rejection by its error rank. What each path
+/// established is kept in `state` for the final report or error.
+struct PathEvaluator<'a, 'b> {
+    signer: &'a Certificate,
+    anchors: &'a [rustls_pki_types::TrustAnchor<'a>],
+    /// The configured root behind each anchor; empty without revocation.
+    anchor_certificates: Vec<Option<Certificate>>,
+    crls: &'a [LoadedCrl],
+    now: u64,
+    revocation: bool,
+    lifetime_signed_at: Option<u64>,
+    budget: &'a Budget<'b>,
+    state: core::cell::RefCell<PathState>,
+}
+
+impl PathEvaluator<'_, '_> {
+    fn check(&self, path: &webpki::VerifiedPath<'_>) -> core::result::Result<(), webpki::Error> {
+        let path_certificates = self.path_certificates(path)?;
+        // The other path policy is judged first but applied after
+        // revocation, as webpki checked revocation while verifying the
+        // path's signatures: only a path that would pass it can still be
+        // completed by a fetched CRL.
+        let other_policy = path_policy_failure(&path_certificates, self.lifetime_signed_at)?;
+        if self.revocation {
+            self.check_revocation(path, &path_certificates, other_policy.is_none())?;
+        }
+        match other_policy {
+            None => Ok(()),
+            Some(PathPolicyFailure::IssuedAfterSigning(cert, at)) => {
+                // Ranked like webpki's own validity errors. Keep the first
+                // rejection, which webpki also keeps among equal ranks.
+                let error = webpki::Error::CertNotValidYet {
+                    time: UnixTime::since_unix_epoch(Duration::from_secs(at)),
+                    not_before: UnixTime::since_unix_epoch(not_before(cert)),
+                };
+                self.state
+                    .borrow_mut()
+                    .issued_after_signing
+                    .get_or_insert_with(|| cert.clone());
+                Err(error)
+            }
+            Some(PathPolicyFailure::LacksCertSign) => {
+                self.state.borrow_mut().invalid_ca_usage = true;
+                Err(webpki::Error::UnknownIssuer)
+            }
+        }
+    }
+
+    /// The signer and the path's intermediates, decoded under the budget.
+    fn path_certificates(
+        &self,
+        path: &webpki::VerifiedPath<'_>,
+    ) -> core::result::Result<Vec<Certificate>, webpki::Error> {
+        let mut path_certificates = vec![self.signer.clone()];
+        for intermediate in path.intermediate_certificates() {
+            for _ in 0..8 {
+                self.budget
+                    .decoded_bytes
+                    .charge(intermediate.der().as_ref().len())
+                    .map_err(|_| webpki::Error::BadDer)?;
+            }
+            path_certificates.push(
+                Certificate::from_der(intermediate.der().as_ref())
+                    .map_err(|_| webpki::Error::BadDer)?,
+            );
+        }
+        Ok(path_certificates)
+    }
+
+    /// The anchor's key. Configured roots that are this anchor to webpki
+    /// (one key, name and constraints) may carry different key identifiers:
+    /// a CRL naming any of them is this anchor's.
+    fn anchor_key(
+        &self,
+        anchor: &rustls_pki_types::TrustAnchor<'_>,
+    ) -> core::result::Result<IssuerKey, webpki::Error> {
+        let mut anchors = self
+            .anchors
+            .iter()
+            .enumerate()
+            .filter(|(_, root)| same_anchor(root, anchor))
+            .filter_map(|(index, _)| self.anchor_certificates.get(index)?.as_ref());
+        let first = anchors.next().ok_or(webpki::Error::UnknownIssuer)?;
+        let mut anchor_key = IssuerKey::of(first, true).map_err(|_| webpki::Error::BadDer)?;
+        for same_key in anchors {
+            let identity = issuer_identity(same_key).map_err(|_| webpki::Error::BadDer)?;
+            match identity.key_id {
+                Some(id) => anchor_key.other_key_ids.push(id),
+                // One that names no key cannot disprove a match.
+                None => anchor_key.undisprovable = true,
+            }
+        }
+        Ok(anchor_key)
+    }
+
+    /// Check every certificate on the path against its issuer's CRLs, so
+    /// that an unknown status names every certificate without a usable CRL
+    /// at once.
+    fn check_revocation(
+        &self,
+        path: &webpki::VerifiedPath<'_>,
+        path_certificates: &[Certificate],
+        path_viable: bool,
+    ) -> core::result::Result<(), webpki::Error> {
+        // Each certificate's issuer on this path: the next certificate, or
+        // the configured root behind the anchor.
+        let anchor_key = self.anchor_key(path.anchor())?;
+        let path_index = {
+            let mut state = self.state.borrow_mut();
+            state.paths_evaluated += 1;
+            state.paths_evaluated - 1
+        };
+        let mut path_chosen = Vec::new();
+        let mut rejected = None;
+        for (depth, cert) in path_certificates.iter().enumerate() {
+            let issuer = match path_certificates.get(depth + 1) {
+                Some(next) => IssuerKey::of(next, false).map_err(|_| webpki::Error::BadDer)?,
+                None => anchor_key.clone(),
+            };
+            let mut evidence = evaluate_crls(
+                cert,
+                depth == 0,
+                &issuer,
+                self.crls,
+                self.now,
+                &mut |index, crl: &LoadedCrl| self.crl_signature(index, crl, &issuer),
+            )
+            .ok_or(webpki::Error::BadDer)?;
+            evidence.path = path_index;
+            evidence.path_viable = path_viable;
+            match &evidence.outcome {
+                Outcome::Good(index) => {
+                    let named = self.crls[*index].authority_key.as_ref();
+                    // A positive match only: an issuer with no key identifier
+                    // never names itself, while `names_another_key` (a CRL set
+                    // aside as another key's) needs a negative one it cannot
+                    // make without an identifier.
+                    let names_issuer = matches!(named, Ok(Some(named)) if issuer.names(named));
+                    path_chosen.push(ChosenCrl {
+                        index: *index,
+                        names_issuer,
+                        issuer_spki: issuer.spki.clone(),
+                    });
+                }
+                Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
+                Outcome::Missing(_) => {
+                    rejected.get_or_insert(webpki::Error::UnknownRevocationStatus);
+                }
+            }
+            self.state.borrow_mut().outcomes.push(evidence);
+        }
+        if let Some(error) = rejected {
+            return Err(error);
+        }
+        let mut state = self.state.borrow_mut();
+        state.chosen = path_chosen;
+        state.accepted_path = Some(path_index);
+        Ok(())
+    }
+
+    /// Whether `crl` is signed by `issuer`, cached by (CRL, issuer key).
+    fn crl_signature(&self, index: usize, crl: &LoadedCrl, issuer: &IssuerKey) -> SignatureCheck {
+        *self
+            .state
+            .borrow_mut()
+            .signatures
+            .entry((index, issuer.spki.clone()))
+            .or_insert_with(|| {
+                // Over budget: no verification, and the exhausted counter
+                // ends the run after path building.
+                self.budget.crypto.charge(1).map_err(|_| ())?;
+                // An identifier the adapter rejects is unsupported, whatever
+                // its OID.
+                if !crl.algorithm_accepted {
+                    return Ok(None);
+                }
+                Ok(signed_by(
+                    &issuer.spki,
+                    &crl.algorithm,
+                    &crl.signed,
+                    &crl.signature,
+                ))
+            })
+    }
+}
+
+/// Map webpki's final path-building error, with what the path callback
+/// recorded, to the reported verification error.
+fn path_error(
+    e: webpki::Error,
+    state: &PathState,
+    crls: &[LoadedCrl],
+    policy: &SignerPolicy,
+    leaf_report: &CertificateReport,
+) -> VerificationError {
+    // webpki ranks another path's validity error above unknown revocation
+    // status, but a path that passes every path policy and only lacks CRLs
+    // is the one a CRL could complete: it outranks every other path's error,
+    // including a CA issued after the lifetime signing time. A definite
+    // revocation does not: a higher-ranked error on another path still
+    // decides, as pinned by `sec09-lifetime-rollover-revoked-issuer` (SEC-14).
+    let revocation_rejected = matches!(
+        e,
+        webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus
+    );
+    // webpki's own search limits are never replaced: the search did not
+    // finish, so no other path's status is final.
+    let viable = if revocation_rejected || search_limit(&e) {
+        None
+    } else {
+        completable_path(&state.outcomes)
+    };
+    // Only the callback reports a validity error at the signing time;
+    // webpki's own checks use the (later) validation time. Also require the
+    // stored certificate to be the one behind the surviving error.
+    if let (
+        webpki::Error::CertNotValidYet {
+            time,
+            not_before: rejected,
+        },
+        Some(at),
+        Some(cert),
+    ) = (
+        &e,
+        policy.lifetime_signed_at,
+        state.issued_after_signing.as_ref(),
+    ) && viable.is_none()
+        && time.as_secs() == at
+        && rejected.as_secs() == not_before(cert).as_secs()
+    {
+        // Every candidate path failed; report the issuer that postdates signing.
+        return policy.not_valid_at_signing(cert, at);
+    }
+    let revocation_error = if revocation_rejected {
+        revocation_failure(&state.outcomes)
+    } else {
+        viable
+    };
+    let mut error = if let Some(mut error) = revocation_error {
+        report_crls(&mut error, crls);
+        error
+    } else if state.invalid_ca_usage && e == webpki::Error::UnknownIssuer {
+        VerificationError::new(
+            ErrorCode::InvalidKeyUsage,
+            Stage::CertificateChain,
+            "intermediate certificate KeyUsage lacks keyCertSign",
+        )
+    } else {
+        webpki_error(e)
+    };
+    error = error
+        .detail("certificate", leaf_report)
+        .detail("required_eku", policy.eku_oid.to_string());
+    if policy.lifetime_signing {
+        error = error.detail("lifetime_signing", true);
+    }
+    if let Some(at) = policy.lifetime_signed_at {
+        error = error.detail("signing_time", at);
+    }
+    error
 }
 
 /// CRL signature results by (CRL index, issuer SPKI): `Ok(None)` when the
