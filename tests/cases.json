@@ -23616,17 +23616,9 @@
       }
     },
     {
-      "id": "rdp-eku-retry-ca-with-crls-verifies",
+      "id": "crl-025-rdp-eku-retry-ca-with-crls-verifies",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.",
-          "On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that."
-        ]
-      },
+      "decision": "CRL-025",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23658,17 +23650,9 @@
       }
     },
     {
-      "id": "rdp-eku-retry-ca-missing-crl-is-unknown",
+      "id": "crl-035-rdp-eku-retry-ca-missing-crl-is-unknown",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.",
-          "On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that."
-        ]
-      },
+      "decision": "CRL-035",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23702,17 +23686,9 @@
       }
     },
     {
-      "id": "rdp-eku-retry-ca-fetches-the-missing-crl",
+      "id": "crl-025-rdp-eku-retry-ca-fetches-the-missing-crl",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.",
-          "On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that."
-        ]
-      },
+      "decision": "CRL-025",
       "crl_responses": {},
       "crl_certificate_responses": {
         "659967d0ba738ea80d092732b5e77bef06862f43346c64d12b93a96426a9a109": "rdp-eku-retry-ca.crl"
@@ -23748,17 +23724,9 @@
       }
     },
     {
-      "id": "rdp-eku-retry-ca-revoked-usage-is-revoked",
+      "id": "crl-034-rdp-eku-retry-ca-revoked-usage-is-revoked",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md).",
-          "Written argument, as for candidate paths (sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject."
-        ]
-      },
+      "decision": "CRL-034",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24097,18 +24065,9 @@
       }
     },
     {
-      "id": "crl-fetch-private",
+      "id": "crl-029-fetch-private",
       "input": "bad-crl-private-url.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24365,18 +24324,9 @@
       }
     },
     {
-      "id": "crl-fetch-injected-unavailable",
+      "id": "crl-029-fetch-injected-unavailable",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "crl_responses": {},
       "command": [
         "verify",
@@ -24833,17 +24783,9 @@
       "crl_responses": {}
     },
     {
-      "id": "crl-stale-local-asks-provider",
+      "id": "crl-019-stale-local-asks-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
-          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
-        ]
-      },
+      "decision": "CRL-019",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24895,17 +24837,9 @@
       "crl_responses": {}
     },
     {
-      "id": "crl-stale-local-refreshed-by-provider",
+      "id": "crl-019-stale-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
-          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
-        ]
-      },
+      "decision": "CRL-019",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -24949,18 +24883,9 @@
       }
     },
     {
-      "id": "crl-not-yet-valid-local-refreshed-by-provider",
+      "id": "crl-020-not-yet-valid-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-020",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25004,18 +24929,9 @@
       }
     },
     {
-      "id": "crl-not-yet-valid-local-asks-provider",
+      "id": "crl-043-not-yet-valid-local-asks-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-043",
       "crl_responses": {},
       "command": [
         "verify",
@@ -25067,18 +24983,9 @@
       }
     },
     {
-      "id": "crl-forged-local-asks-nothing",
+      "id": "crl-018-forged-local-asks-nothing",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-018",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25111,18 +25018,9 @@
       }
     },
     {
-      "id": "crl-unknown-critical-extension-local-refreshed-by-provider",
+      "id": "crl-020-unknown-critical-extension-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-020",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25134,7 +25032,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25166,20 +25064,9 @@
       }
     },
     {
-      "id": "crl-malformed-aki-local-refreshed-by-provider",
+      "id": "crl-021-malformed-aki-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
-          "OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
-        ]
-      },
+      "decision": "CRL-021",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25191,7 +25078,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25223,20 +25110,9 @@
       }
     },
     {
-      "id": "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
+      "id": "crl-021-malformed-aki-beside-expired-local-refreshed-by-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
-          "OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
-        ]
-      },
+      "decision": "CRL-021",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25248,7 +25124,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--crl",
         "fixtures/expired.crl",
         "--fetch-crls"
@@ -25282,20 +25158,9 @@
       }
     },
     {
-      "id": "crl-malformed-aki-beside-expired-local-asks-provider",
+      "id": "crl-044-malformed-aki-beside-expired-local-asks-provider",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.",
-          "OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588)."
-        ]
-      },
+      "decision": "CRL-044",
       "crl_responses": {},
       "command": [
         "verify",
@@ -25305,7 +25170,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--crl",
         "fixtures/expired.crl",
         "--fetch-crls"
@@ -25350,20 +25215,9 @@
       }
     },
     {
-      "id": "crl-no-next-update-local-asks-nothing",
+      "id": "crl-041-no-next-update-local-asks-nothing",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 (check_crl_time) check nextUpdate only when present, so a CRL without it is time-valid, scores valid and no store lookup follows.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/PKIXCRLUtil.java findCRLs keeps a CRL whose nextUpdate is null, so it is used and nothing is fetched for it."
-        ]
-      },
+      "decision": "CRL-041",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25375,7 +25229,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25399,17 +25253,9 @@
       }
     },
     {
-      "id": "crl-stale-local-source-abort-is-marked",
+      "id": "crl-042-stale-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.",
-          "OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch."
-        ]
-      },
+      "decision": "CRL-042",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -25458,18 +25304,9 @@
       }
     },
     {
-      "id": "crl-not-yet-valid-local-source-abort-is-marked",
+      "id": "crl-043-not-yet-valid-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-043",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -25518,18 +25355,9 @@
       }
     },
     {
-      "id": "crl-unknown-critical-extension-local-source-abort-is-marked",
+      "id": "crl-043-unknown-critical-extension-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "decision": "CRL-043",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -25542,7 +25370,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -30810,8 +30638,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-rollover-revoked-issuer",
+      "id": "crl-032-lifetime-rollover-revoked-issuer",
       "input": "sec09-lifetime-intermediate-rollover.exe",
+      "decision": "CRL-032",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31097,24 +30926,16 @@
       }
     },
     {
-      "id": "sec10-root-crl-no-next-update",
+      "id": "crl-002-root-crl-no-next-update",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-002",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -31138,7 +30959,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-expired-crl-excluded",
+      "id": "crl-unrelated-expired-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31148,7 +30969,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-expired.crl",
+        "fixtures/crl-unrelated-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31165,7 +30986,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-not-yet-valid-crl-excluded",
+      "id": "crl-unrelated-not-yet-valid-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31175,7 +30996,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-not-yet-valid.crl",
+        "fixtures/crl-unrelated-not-yet-valid.crl",
         "--time",
         "1800000000"
       ],
@@ -31192,7 +31013,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-no-next-update-crl-excluded",
+      "id": "crl-unrelated-no-next-update-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31202,7 +31023,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-no-next-update.crl",
+        "fixtures/crl-unrelated-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -31219,17 +31040,9 @@
       }
     },
     {
-      "id": "sec10-root-expired-crl-still-rejected",
+      "id": "crl-012-root-expired-crl-still-rejected",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31260,7 +31073,7 @@
       }
     },
     {
-      "id": "sec10-only-unrelated-crl-is-unknown",
+      "id": "crl-only-unrelated-crl-is-unknown",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31268,7 +31081,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-unrelated-expired.crl",
+        "fixtures/crl-unrelated-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31289,7 +31102,7 @@
       }
     },
     {
-      "id": "sec10-root-name-other-aki-crl-excluded",
+      "id": "crl-root-name-other-aki-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31299,7 +31112,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-name-other-aki-expired.crl",
+        "fixtures/crl-root-name-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31316,24 +31129,16 @@
       }
     },
     {
-      "id": "sec10-root-aki-crl-still-rejected",
+      "id": "crl-012-root-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-aki-expired.crl",
+        "fixtures/crl-root-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31357,24 +31162,16 @@
       }
     },
     {
-      "id": "sec10-root-crl-malformed-aki",
+      "id": "crl-012-root-crl-malformed-aki",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -31398,24 +31195,16 @@
       }
     },
     {
-      "id": "sec10-root-signed-other-aki-crl-still-rejected",
+      "id": "crl-012-root-signed-other-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-signed-other-aki-expired.crl",
+        "fixtures/crl-root-signed-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31439,13 +31228,9 @@
       }
     },
     {
-      "id": "sec10-forged-crl-naming-another-key-is-set-aside",
+      "id": "crl-048-forged-crl-naming-another-key-is-set-aside",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "observed",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
-      },
+      "decision": "CRL-048",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31454,7 +31239,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-forged-other-ski.crl"
+        "fixtures/crl-root-forged-other-ski.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31473,24 +31258,20 @@
       }
     },
     {
-      "id": "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+      "id": "crl-048-forged-crl-naming-a-same-key-roots-identifier-is-forged",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "observed",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
-      },
+      "decision": "CRL-048",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--roots",
-        "fixtures/sec10-root-other-ski.der",
+        "fixtures/crl-root-other-ski.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-forged-other-ski.crl"
+        "fixtures/crl-root-forged-other-ski.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31514,7 +31295,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-malformed-aki-crl-excluded",
+      "id": "crl-unrelated-malformed-aki-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31524,7 +31305,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-malformed-aki.crl",
+        "fixtures/crl-unrelated-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -31541,24 +31322,16 @@
       }
     },
     {
-      "id": "sec10-root-unknown-critical-extension-crl-unsupported",
+      "id": "crl-012-root-unknown-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31582,24 +31355,16 @@
       }
     },
     {
-      "id": "sec10-root-delta-crl-unsupported",
+      "id": "crl-012-root-delta-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-delta.crl",
+        "fixtures/crl-root-delta.crl",
         "--time",
         "1800000000"
       ],
@@ -31623,24 +31388,16 @@
       }
     },
     {
-      "id": "sec10-root-indirect-crl-unsupported",
+      "id": "crl-012-root-indirect-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-indirect.crl",
+        "fixtures/crl-root-indirect.crl",
         "--time",
         "1800000000"
       ],
@@ -31664,7 +31421,7 @@
       }
     },
     {
-      "id": "sec10-root-unknown-noncritical-extension-crl-accepted",
+      "id": "crl-root-unknown-noncritical-extension-crl-accepted",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31674,7 +31431,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-unknown-noncritical-extension.crl",
+        "fixtures/crl-root-unknown-noncritical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31691,24 +31448,16 @@
       }
     },
     {
-      "id": "sec10-root-entry-critical-extension-crl-unsupported",
+      "id": "crl-012-root-entry-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-entry-critical-extension.crl",
+        "fixtures/crl-root-entry-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31732,24 +31481,16 @@
       }
     },
     {
-      "id": "sec10-root-delta-expired-crl-reports-feature",
+      "id": "crl-012-root-delta-expired-crl-reports-feature",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-delta-expired.crl",
+        "fixtures/crl-root-delta-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31773,8 +31514,8 @@
       }
     },
     {
-      "id": "sec10-ca-no-crl-sign",
-      "input": "sec10-ca-no-crl-sign.exe",
+      "id": "crl-ca-no-crl-sign",
+      "input": "crl-ca-no-crl-sign.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31804,8 +31545,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-sign",
-      "input": "sec10-ca-crl-sign.exe",
+      "id": "crl-ca-crl-sign",
+      "input": "crl-ca-crl-sign.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31852,8 +31593,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-sign-fallback",
-      "input": "sec10-ca-crl-sign-fallback.exe",
+      "id": "crl-ca-crl-sign-fallback",
+      "input": "crl-ca-crl-sign-fallback.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31900,24 +31641,16 @@
       }
     },
     {
-      "id": "sec10-root-idp-user-certs-crl-unsupported",
+      "id": "crl-012-root-idp-user-certs-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs.crl",
+        "fixtures/crl-root-idp-user-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -31941,24 +31674,16 @@
       }
     },
     {
-      "id": "sec10-root-idp-ca-certs-crl-unsupported",
+      "id": "crl-012-root-idp-ca-certs-crl-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-ca-certs.crl",
+        "fixtures/crl-root-idp-ca-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -31982,24 +31707,16 @@
       }
     },
     {
-      "id": "sec10-root-aki-issuer-serial-crl-name-matched",
+      "id": "crl-012-root-aki-issuer-serial-crl-name-matched",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-aki-issuer-serial-expired.crl",
+        "fixtures/crl-root-aki-issuer-serial-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -32023,24 +31740,16 @@
       }
     },
     {
-      "id": "sec10-root-idp-named-point-crl-rejected",
+      "id": "crl-012-root-idp-named-point-crl-rejected",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1592-1633 (get_crl_sk) and :1801-1861 (get_crl_score): CRLs of the issuer are scored (CRL_SCORE_TIME, CRL_SCORE_SCOPE, CRL_SCORE_NOCRITICAL) and the best one is used; :2257-2320 (check_crl) reports the best CRL's own defect when no better one exists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1586-1721 (checkCRL): a CRL that fails a check is skipped (lastException, :1718) and the next is tried; its error is thrown only when no CRL was valid (:1721)."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-named-point.crl",
+        "fixtures/crl-root-idp-named-point.crl",
         "--time",
         "1800000000"
       ],
@@ -32064,13 +31773,14 @@
       }
     },
     {
-      "id": "sec10-root-no-crl-sign-accepted",
+      "id": "crl-015-root-no-crl-sign-accepted",
       "input": "good-sec06-basic.exe",
+      "decision": "CRL-015",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec10-root-no-crl-sign.der",
+        "fixtures/crl-root-no-crl-sign.der",
         "--time",
         "1800000000",
         "--crl",
@@ -32101,7 +31811,7 @@
       }
     },
     {
-      "id": "sec10-competing-crls-good-first-revoked",
+      "id": "crl-competing-crls-good-first-revoked",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -32132,7 +31842,7 @@
       }
     },
     {
-      "id": "sec10-competing-crls-revoked-first-revoked",
+      "id": "crl-competing-crls-revoked-first-revoked",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -32163,8 +31873,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32175,7 +31885,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32211,17 +31921,9 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
-        ]
-      },
+      "id": "crl-036-dp-other-idp-unknown",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-036",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32232,7 +31934,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32258,8 +31960,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp-revoked",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp-revoked",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32270,7 +31972,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-revoked.crl"
+        "fixtures/crl-issuer-idp-match-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32289,8 +31991,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-first",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-first",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32301,9 +32003,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32339,17 +32041,9 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revocation-is-ignored",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
-        ]
-      },
+      "id": "crl-013-dp-other-partition-revocation-is-ignored",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32360,9 +32054,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl"
+        "fixtures/crl-issuer-idp-other-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32388,17 +32082,9 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
-        ]
-      },
+      "id": "crl-013-dp-other-partition-revocation-is-ignored-first",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32409,9 +32095,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl",
+        "fixtures/crl-issuer-idp-other-revoked.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32437,8 +32123,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-full-crl",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-full-crl",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32485,8 +32171,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp-first",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp-first",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32497,9 +32183,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32535,8 +32221,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-with-full-crl",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-with-full-crl",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32547,7 +32233,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32585,7 +32271,7 @@
       }
     },
     {
-      "id": "sec10-partition-crl-no-listed-point",
+      "id": "crl-partition-crl-no-listed-point",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -32597,7 +32283,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32619,8 +32305,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-revoked-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-revoked-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32631,7 +32317,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl"
+        "fixtures/crl-issuer-idp-other-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32650,8 +32336,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-case-variant-idp-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-case-variant-idp-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32662,7 +32348,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-case.crl"
+        "fixtures/crl-issuer-idp-case.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32681,8 +32367,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-user-scope-covers-signer",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-user-scope-covers-signer",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32693,7 +32379,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-user.crl"
+        "fixtures/crl-issuer-idp-match-user.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32729,8 +32415,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-ca-scope-excludes-signer",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-ca-scope-excludes-signer",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32741,7 +32427,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl"
+        "fixtures/crl-issuer-idp-match-ca.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32760,8 +32446,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-dp-ca-scope-covers-issuer",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-ca-crl-dp-ca-scope-covers-issuer",
+      "input": "crl-ca-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32770,7 +32456,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl",
+        "fixtures/crl-sec06-root-idp-ca.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32808,8 +32494,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-dp-user-scope-excludes-issuer",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-ca-crl-dp-user-scope-excludes-issuer",
+      "input": "crl-ca-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32818,7 +32504,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32839,8 +32525,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-idp-second-name-matches",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-idp-second-name-matches",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32851,7 +32537,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-two-names.crl"
+        "fixtures/crl-issuer-idp-two-names.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32887,8 +32573,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-second-point-matches",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-second-point-matches",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32899,7 +32585,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-second-point.crl"
+        "fixtures/crl-issuer-idp-second-point.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32935,8 +32621,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-unlisted-point-unknown",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-unlisted-point-unknown",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32947,7 +32633,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32966,8 +32652,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-full-crl",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-full-crl",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33014,8 +32700,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-dns-name-unknown",
-      "input": "sec10-leaf-crl-dp-dns.exe",
+      "id": "crl-dp-dns-name-unknown",
+      "input": "crl-leaf-crl-dp-dns.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33026,7 +32712,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-dns.crl"
+        "fixtures/crl-issuer-idp-dns.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33045,8 +32731,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-dns-full-crl",
-      "input": "sec10-leaf-crl-dp-dns.exe",
+      "id": "crl-dp-dns-full-crl",
+      "input": "crl-leaf-crl-dp-dns.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33093,8 +32779,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-idp-unsupported",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-idp-unsupported",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33105,7 +32791,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl"
+        "fixtures/crl-issuer-idp-relative.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33127,8 +32813,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-expanded-name-unknown",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-expanded-name-unknown",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33139,7 +32825,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative-expanded.crl"
+        "fixtures/crl-issuer-idp-relative-expanded.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33158,8 +32844,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-full-crl",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-full-crl",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33206,8 +32892,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-reasons-point-unknown",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "id": "crl-dp-reasons-point-unknown",
+      "input": "crl-leaf-crl-dp-reasons.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33218,7 +32904,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33237,8 +32923,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-reasons-full-crl",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "id": "crl-dp-reasons-full-crl",
+      "input": "crl-leaf-crl-dp-reasons.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33285,8 +32971,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-crl-issuer-point-unknown",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "id": "crl-dp-crl-issuer-point-unknown",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33297,7 +32983,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33316,8 +33002,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-crl-issuer-full-crl",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "id": "crl-dp-crl-issuer-full-crl",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33364,7 +33050,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer",
+      "id": "crl-revoked-issuer",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33374,7 +33060,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -33395,7 +33081,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-after-good-root-crl",
+      "id": "crl-revoked-issuer-after-good-root-crl",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33407,7 +33093,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -33428,7 +33114,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-before-good-root-crl",
+      "id": "crl-revoked-issuer-before-good-root-crl",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33438,7 +33124,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
@@ -33461,7 +33147,7 @@
       }
     },
     {
-      "id": "sec10-partition-crl-relative-no-listed-point",
+      "id": "crl-partition-crl-relative-no-listed-point",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33473,7 +33159,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl"
+        "fixtures/crl-issuer-idp-relative.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33495,7 +33181,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-issuer-crl-first",
+      "id": "crl-revoked-issuer-issuer-crl-first",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33507,7 +33193,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-sec06-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33526,18 +33212,9 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-without-crl-names-it",
+      "id": "crl-030-cross-revoked-path-beside-path-without-crl-names-it",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33550,7 +33227,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl"
+        "fixtures/crl-sec06-other-root-revoked-cross.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33576,18 +33253,9 @@
       }
     },
     {
-      "id": "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+      "id": "crl-030-fetch-revocation-stands-when-the-other-path-stays-without-crl",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "decision": "CRL-030",
       "crl_responses": {},
       "command": [
         "verify",
@@ -33601,7 +33269,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33632,17 +33300,9 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-covered-path-verifies",
+      "id": "crl-017-cross-revoked-path-beside-covered-path-verifies",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
-        ]
-      },
+      "decision": "CRL-017",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33655,7 +33315,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root.crl"
       ],
@@ -33683,18 +33343,9 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-      "input": "sec10-sec06-cross-no-cert-sign.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "id": "crl-030-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+      "input": "crl-sec06-cross-no-cert-sign.exe",
+      "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33707,7 +33358,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-sec06-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33726,18 +33377,9 @@
       }
     },
     {
-      "id": "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
-      "input": "sec10-sec06-cross-no-cert-sign.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "id": "crl-030-cross-unusable-crl-decides-beside-path-failing-key-usage",
+      "input": "crl-sec06-cross-no-cert-sign.exe",
+      "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33750,7 +33392,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl"
+        "fixtures/crl-sec06-root-idp-ca.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33772,17 +33414,9 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+      "id": "crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
-        ]
-      },
+      "decision": "CRL-017",
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -33799,7 +33433,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33841,18 +33475,9 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+      "id": "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45 drops a CRL past nextUpdate, and with CRL distribution point fetching enabled (CertPathValidatorUtilities.java:571) a fresh CRL is fetched from the certificate's points.",
-          "OpenSSL builds one chain (crypto/x509/x509_vfy.c:3925 build_chain) and does not fetch, so it has no equivalent; the owner's delegated call to refresh expired CRLs follows Bouncy Castle (crl-stale-local-refreshed-by-provider)."
-        ]
-      },
+      "decision": "CRL-037",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33865,7 +33490,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-expired.crl"
       ],
@@ -33893,19 +33518,9 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+      "id": "crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation."
-        ]
-      },
+      "decision": "CRL-037",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33918,7 +33533,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-not-yet-valid.crl"
       ],
@@ -33946,19 +33561,9 @@
       }
     },
     {
-      "id": "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+      "id": "crl-024-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation."
-        ]
-      },
+      "decision": "CRL-024",
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -33975,7 +33580,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-not-yet-valid.crl",
         "--fetch-crls"
@@ -34005,18 +33610,9 @@
       }
     },
     {
-      "id": "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "id": "crl-043-chain-unknown-names-missing-and-not-yet-valid-crl",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-043",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34059,21 +33655,12 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-missing-and-not-yet-valid-crl",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "id": "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-020",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -34133,18 +33720,9 @@
       }
     },
     {
-      "id": "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+      "id": "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate path is tried and one that validates is accepted, whatever another path's revocation.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45 drops a CRL past nextUpdate, and with CRL distribution point fetching enabled (CertPathValidatorUtilities.java:571) a fresh CRL is fetched from the certificate's points.",
-          "OpenSSL builds one chain (crypto/x509/x509_vfy.c:3925 build_chain) and does not fetch, so it has no equivalent; the owner's delegated call to refresh expired CRLs follows Bouncy Castle (crl-stale-local-refreshed-by-provider)."
-        ]
-      },
+      "decision": "CRL-024",
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -34161,7 +33739,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-expired.crl",
         "--fetch-crls"
@@ -34191,18 +33769,9 @@
       }
     },
     {
-      "id": "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
-      "input": "sec10-sec06-cross-expired-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "id": "crl-030-cross-expired-path-beside-path-without-crl-names-the-gap",
+      "input": "crl-sec06-cross-expired-first.exe",
+      "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34239,17 +33808,9 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-the-path-beside-an-expired-path",
-      "input": "sec10-sec06-cross-expired-first.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed."
-        ]
-      },
+      "id": "crl-017-fetch-completes-the-path-beside-an-expired-path",
+      "input": "crl-sec06-cross-expired-first.exe",
+      "decision": "CRL-017",
       "crl_responses": {},
       "crl_certificate_responses": {
         "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
@@ -34306,17 +33867,9 @@
       }
     },
     {
-      "id": "sec16-self-issued-rollover-without-revocation-verifies",
+      "id": "crl-007-self-issued-rollover-without-revocation-verifies",
       "input": "good-sec06-self-issued-rollover.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "RFC 5280 section 6.1: self-issued certificates (same subject and issuer name, different keys) are valid on a path and support key rollover.",
-          "OpenSSL crypto/x509/x509_vfy.c:755 and :802 (self-issued intermediates are accepted). Run with OpenSSL 3.0.13, `openssl verify -attime 1800000000` without CRL checks: OK."
-        ]
-      },
+      "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34345,20 +33898,9 @@
       }
     },
     {
-      "id": "sec16-self-issued-rollover-with-both-crls-is-rejected",
+      "id": "crl-008-self-issued-rollover-with-both-crls-is-rejected",
       "input": "good-sec06-self-issued-rollover.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1869-1881 (get_crl_score), :1614-1627 (get_crl_sk keeps one best CRL for a name) and :2318-2320 (check_crl has no fallback after a signature failure); crypto/x509/v3_purp.c:1353-1354 (a CRL without an authorityKeyIdentifier matches any key). Run with OpenSSL 3.0.13, `openssl verify -crl_check_all -attime 1800000000`: 'CRL signature failure' at depth 0 or 1 depending on CRL order. Rejects.",
-          "BoringSSL crypto/x509/x509_vfy.cc:490-515, :665-693 and :755-760: the same logic. Rejects.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1721 (checkCRL skips a CRL that does not verify and tries the next). Accepts.",
-          "webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, then verifies it under the certificate's issuer key. Rejects.",
-          "The references differ; the owner chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects, and rejecting fails closed."
-        ]
-      },
+      "decision": "CRL-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34390,19 +33932,9 @@
       }
     },
     {
-      "id": "sec16-self-issued-rollover-with-key-identified-crls-verifies",
+      "id": "crl-007-self-issued-rollover-with-key-identified-crls-verifies",
       "input": "good-sec06-self-issued-rollover.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1869-1889 (get_crl_score, crl_akid_check) and crypto/x509/v3_purp.c:1353 (X509_check_akid): a CRL whose authorityKeyIdentifier names the issuer's key outscores a same-name CRL that names another key, so each certificate gets its own key's CRL. Run with OpenSSL 3.0.13, `openssl verify -crl_check_all -attime 1800000000`, either CRL order: OK.",
-          "BoringSSL crypto/x509/x509_vfy.cc:490-515 (crl_akid_check) and :665-693 (get_crl_sk): the same scoring.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:379-390 (processCRLF selects the signing key by the CRL's authority key identifier) and :1716-1721 (checkCRL skips a CRL that does not verify and continues).",
-          "webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, so it cannot confirm two issuers of one name; rssig's own per-key evaluation decides for such a path."
-        ]
-      },
+      "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34434,19 +33966,9 @@
       }
     },
     {
-      "id": "sec16-self-issued-rollover-with-key-identified-crls-verifies-reversed",
+      "id": "crl-007-self-issued-rollover-with-key-identified-crls-verifies-reversed",
       "input": "good-sec06-self-issued-rollover.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1869-1889 (get_crl_score, crl_akid_check) and crypto/x509/v3_purp.c:1353 (X509_check_akid): a CRL whose authorityKeyIdentifier names the issuer's key outscores a same-name CRL that names another key, so each certificate gets its own key's CRL. Run with OpenSSL 3.0.13, `openssl verify -crl_check_all -attime 1800000000`, either CRL order: OK.",
-          "BoringSSL crypto/x509/x509_vfy.cc:490-515 (crl_akid_check) and :665-693 (get_crl_sk): the same scoring.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:379-390 (processCRLF selects the signing key by the CRL's authority key identifier) and :1716-1721 (checkCRL skips a CRL that does not verify and continues).",
-          "webpki 0.103.16: check_crls takes the first authoritative CRL by issuer name and IDP only, so it cannot confirm two issuers of one name; rssig's own per-key evaluation decides for such a path."
-        ]
-      },
+      "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34478,17 +34000,9 @@
       }
     },
     {
-      "id": "sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected",
+      "id": "crl-007-self-issued-rollover-revoked-by-key-identified-crl-is-rejected",
       "input": "good-sec06-self-issued-rollover.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "RFC 5280 section 6.3.3: a certificate listed on a current CRL of its issuer is revoked.",
-          "OpenSSL crypto/x509/x509_vfy.c (check_cert_crl, cert_crl) and Bouncy Castle RFC3280CertPathUtilities.checkCRL: every certificate on the path is checked against its own issuer key's CRL, the rollover certificate included."
-        ]
-      },
+      "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34517,17 +34031,9 @@
       }
     },
     {
-      "id": "sec10-fetch-by-certificate-answer-requests-no-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls): CRLs are looked up by issuer name, with no per-distribution-point outcome.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): the selector matches the issuer only."
-        ]
-      },
+      "id": "crl-040-fetch-by-certificate-answer-requests-no-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-040",
       "crl_responses": {},
       "crl_certificate_responses": {
         "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "sec06-issuer.crl"
@@ -34575,17 +34081,9 @@
       }
     },
     {
-      "id": "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
+      "id": "crl-040-fetch-by-certificate-unusable-answer-records-unused-points",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls) and Bouncy Castle CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): CRLs are looked up by issuer, with no per-distribution-point outcome, so an answer by certificate leaves no per-point failure when it settles the status.",
-          "Written argument for the other case: when that answer does not settle the status, the report must still account for every listed point (docs/crl-retrieval.md: no listed point disappears from the report), so the points the source did not use are recorded as not used."
-        ]
-      },
+      "decision": "CRL-040",
       "crl_responses": {},
       "crl_certificate_responses": {
         "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": "expired.crl"
@@ -34627,18 +34125,9 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-asks-nothing",
+      "id": "crl-030-fetch-path-failing-key-usage-asks-nothing",
       "input": "bad-sec06-ca-ku.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathBuilderSpi.java:135-270 (build): every candidate issuer is tried and a path that validates is returned; a failed candidate only sets certPathException (:268).",
-          "OpenSSL crypto/x509/x509_vfy.c:3925 (build_chain) builds one chain and :1444-1537 (check_cert_crl) checks that chain only; it has no second path to fall back on, so Bouncy Castle is followed.",
-          "No reference reports which of several rejected paths decides; the order is the written argument in docs/crl-retrieval.md (only a path that passes every other check and lacks CRLs can be completed)."
-        ]
-      },
+      "decision": "CRL-030",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34669,18 +34158,9 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+      "id": "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
       "input": "bad-sec06-ca-ku.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).",
-          "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
-          "Diagnostics only: both results reject."
-        ]
-      },
+      "decision": "CRL-033",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34692,7 +34172,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34716,18 +34196,9 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+      "id": "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
       "input": "bad-sec06-ca-ku.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).",
-          "Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.",
-          "Diagnostics only: both results reject."
-        ]
-      },
+      "decision": "CRL-033",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34739,7 +34210,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34760,7 +34231,7 @@
       }
     },
     {
-      "id": "sec10-crl-this-update-one-second-ahead",
+      "id": "crl-this-update-one-second-ahead",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34796,7 +34267,7 @@
       }
     },
     {
-      "id": "sec10-crl-this-update-exact",
+      "id": "crl-this-update-exact",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34833,7 +34304,7 @@
       }
     },
     {
-      "id": "sec10-crl-next-update-one-second-left",
+      "id": "crl-next-update-one-second-left",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34870,7 +34341,7 @@
       }
     },
     {
-      "id": "sec10-crl-next-update-exact",
+      "id": "crl-next-update-exact",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34906,10 +34377,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetches-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetches-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -34922,7 +34393,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34946,10 +34417,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetched-revoked",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetched-revoked",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match-revoked.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match-revoked.crl"
       },
       "command": [
         "verify",
@@ -34962,7 +34433,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -34984,10 +34455,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetched-other-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetched-other-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-other.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-other.crl"
       },
       "command": [
         "verify",
@@ -35000,7 +34471,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -35022,10 +34493,10 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-scope-idp-fetches-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-ca-scope-idp-fetches-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35038,7 +34509,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl"
+        "fixtures/crl-issuer-idp-match-ca.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35062,8 +34533,8 @@
       }
     },
     {
-      "id": "sec10-fetch-matching-idp-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-matching-idp-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35076,7 +34547,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35098,8 +34569,8 @@
       }
     },
     {
-      "id": "sec10-fetch-user-scope-idp-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-user-scope-idp-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35112,7 +34583,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-user.crl"
+        "fixtures/crl-issuer-idp-match-user.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35134,8 +34605,8 @@
       }
     },
     {
-      "id": "sec10-fetch-full-crl-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-full-crl-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35170,10 +34641,10 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+      "input": "crl-ca-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec10-sec06-root-idp-ca.crl"
+        "http://crl.invalid/sec10-issuer.crl": "crl-sec06-root-idp-ca.crl"
       },
       "command": [
         "verify",
@@ -35184,7 +34655,7 @@
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -35210,8 +34681,8 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-ca-scope-idp-not-fetched",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-fetch-ca-ca-scope-idp-not-fetched",
+      "input": "crl-ca-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35222,7 +34693,7 @@
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl",
+        "fixtures/crl-sec06-root-idp-ca.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -35246,7 +34717,7 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-not-fetched",
+      "id": "crl-fetch-no-listed-point-not-fetched",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -35258,7 +34729,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35283,18 +34754,9 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-reasons-point-denied",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "id": "crl-029-fetch-reasons-point-denied",
+      "input": "crl-leaf-crl-dp-reasons.exe",
+      "decision": "CRL-029",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35305,7 +34767,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35338,18 +34800,9 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-crl-issuer-point-denied",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "id": "crl-029-fetch-crl-issuer-point-denied",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
+      "decision": "CRL-029",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35360,7 +34813,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35393,18 +34846,9 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-dns-name-point-denied",
-      "input": "sec10-leaf-crl-dp-dns.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "id": "crl-029-fetch-dns-name-point-denied",
+      "input": "crl-leaf-crl-dp-dns.exe",
+      "decision": "CRL-029",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35415,7 +34859,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-dns.crl",
+        "fixtures/crl-issuer-idp-dns.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35448,17 +34892,9 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-excluded-name-match-fetches-listed-point",
+      "id": "crl-039-fetch-excluded-name-match-fetches-listed-point",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "decision": "CRL-039",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -35470,7 +34906,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-name-other-aki-expired.crl",
+        "fixtures/crl-root-name-other-aki-expired.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35511,17 +34947,9 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+      "id": "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
       "input": "good-sec06-basic.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x_crl.c:358-361 sets IDP_ONLYCA; OpenSSL crypto/x509/x509_vfy.c:2154-2157 (crl_crldp_check) returns 0 for an end entity, and :2295 (check_crl) fails with X509_V_ERR_DIFFERENT_CRL_SCOPE.",
-          "Bouncy Castle core PKIXCRLValidator.java:151-158 (checkDistributionPointName): the CRL is rejected with a distribution point name mismatch; RFC3280CertPathUtilities.java:1716-1729 reports the last such exception when no CRL is valid."
-        ]
-      },
+      "decision": "CRL-009",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35533,7 +34961,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl",
+        "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35557,19 +34985,9 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+      "id": "crl-023-fetch-no-listed-point-scope-crl-replaced-by-certificate",
       "input": "good-sec06-basic.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x_crl.c:358-361 sets IDP_ONLYCA; OpenSSL crypto/x509/x509_vfy.c:2154-2157 (crl_crldp_check) returns 0 for an end entity, and :2295 (check_crl) fails with X509_V_ERR_DIFFERENT_CRL_SCOPE.",
-          "Bouncy Castle core PKIXCRLValidator.java:151-158 (checkDistributionPointName): the CRL is rejected with a distribution point name mismatch; RFC3280CertPathUtilities.java:1716-1729 reports the last such exception when no CRL is valid.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name."
-        ]
-      },
+      "decision": "CRL-023",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35581,7 +34999,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl",
+        "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35612,19 +35030,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-point-scope-crl-is-replaceable",
+      "id": "crl-041-no-next-update-point-scope-crl-is-replaceable",
       "input": "good-pe64.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches."
-        ]
-      },
+      "decision": "CRL-041",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35633,7 +35041,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-named-point-no-next-update.crl"
+        "fixtures/crl-root-idp-named-point-no-next-update.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -35661,19 +35069,9 @@
       }
     },
     {
-      "id": "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+      "id": "crl-022-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
       "input": "good-pe64.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches."
-        ]
-      },
+      "decision": "CRL-022",
       "crl_responses": {},
       "crl_certificate_responses": {
         "c7c035de80f09cba3d044a9879f12fea45541bdd6d8957c47f59521b3f9051d8": "good.crl"
@@ -35686,7 +35084,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-named-point-no-next-update.crl",
+        "fixtures/crl-root-idp-named-point-no-next-update.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35714,20 +35112,11 @@
       }
     },
     {
-      "id": "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "id": "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-020",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35739,7 +35128,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl",
+        "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35771,18 +35160,9 @@
       }
     },
     {
-      "id": "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled."
-        ]
-      },
+      "id": "crl-043-fetch-unusable-scope-supplied-crl-stands-without-answer",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-043",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35794,7 +35174,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl",
+        "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35823,17 +35203,9 @@
       }
     },
     {
-      "id": "sec10-chain-crl-dp-full-crls",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
-        ]
-      },
+      "id": "crl-014-chain-crl-dp-full-crls",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-014",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35871,17 +35243,9 @@
       }
     },
     {
-      "id": "sec10-fetch-covered-signer-point-not-requested",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-covered-signer-point-not-requested",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-039",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
       },
@@ -35934,20 +35298,12 @@
       }
     },
     {
-      "id": "sec10-fetch-asks-each-certificate-without-crl",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-asks-each-certificate-without-crl",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-039",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35957,7 +35313,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -36007,17 +35363,9 @@
       }
     },
     {
-      "id": "sec10-fetch-covered-signer-is-not-asked",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-covered-signer-is-not-asked",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-039",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
       },
@@ -36031,7 +35379,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -36072,17 +35420,9 @@
       }
     },
     {
-      "id": "sec10-leaf-crl-dp-mixed-full-crl",
-      "input": "sec10-leaf-crl-dp-mixed.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
-        ]
-      },
+      "id": "crl-014-leaf-crl-dp-mixed-full-crl",
+      "input": "crl-leaf-crl-dp-mixed.exe",
+      "decision": "CRL-014",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36118,19 +35458,11 @@
       }
     },
     {
-      "id": "sec10-fetch-mixed-point-requests-plain-uri",
-      "input": "sec10-leaf-crl-dp-mixed.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-mixed-point-requests-plain-uri",
+      "input": "crl-leaf-crl-dp-mixed.exe",
+      "decision": "CRL-039",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -36142,7 +35474,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -36189,17 +35521,9 @@
       }
     },
     {
-      "id": "sec10-fetch-asks-only-the-uncovered-certificate",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-asks-only-the-uncovered-certificate",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-039",
       "crl_responses": {},
       "command": [
         "verify",
@@ -36244,20 +35568,12 @@
       }
     },
     {
-      "id": "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
-      "input": "sec10-leaf-crl-dp-multi.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point."
-        ]
-      },
+      "id": "crl-039-fetch-bad-response-is-no-evidence-beside-another-point",
+      "input": "crl-leaf-crl-dp-multi.exe",
+      "decision": "CRL-039",
       "crl_responses": {
         "http://crl.invalid/sec10-c.crl": "sec06-root.der",
-        "http://crl.invalid/sec10-e.crl": "sec10-issuer-idp-second-point.crl"
+        "http://crl.invalid/sec10-e.crl": "crl-issuer-idp-second-point.crl"
       },
       "command": [
         "verify",
@@ -36326,18 +35642,9 @@
       }
     },
     {
-      "id": "crl-fetch-source-denied-is-no-evidence",
+      "id": "crl-029-fetch-source-denied-is-no-evidence",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "denied"
@@ -36383,18 +35690,9 @@
       }
     },
     {
-      "id": "crl-fetch-source-failed-is-no-evidence",
+      "id": "crl-029-fetch-source-failed-is-no-evidence",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "failed"
@@ -36440,18 +35738,9 @@
       }
     },
     {
-      "id": "crl-fetch-source-unknown-is-no-evidence",
+      "id": "crl-029-fetch-source-unknown-is-no-evidence",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "unknown"
@@ -36497,18 +35786,9 @@
       }
     },
     {
-      "id": "crl-fetch-source-abort-is-reported",
+      "id": "crl-029-fetch-source-abort-is-reported",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "decision": "CRL-029",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -36554,18 +35834,9 @@
       }
     },
     {
-      "id": "sec10-fetch-source-abort-stops-requests",
-      "input": "sec10-chain-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CertPathValidatorUtilities.java:1340: a single \"No CRLs found for issuer\" error, with lookup diagnostics appended to its message.",
-          "The four source kinds (denied, failed, abort, unknown) have no reference equivalent; they are the owner's design in PR #60, described in docs/crl-retrieval.md."
-        ]
-      },
+      "id": "crl-029-fetch-source-abort-stops-requests",
+      "input": "crl-chain-crl-dp.exe",
+      "decision": "CRL-029",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.invalid/sec10-a.crl": "abort"
@@ -36611,17 +35882,9 @@
       }
     },
     {
-      "id": "sec10-leaf-crl-dp-https-full-crl",
-      "input": "sec10-leaf-crl-dp-https.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2200 (crl_crldp_check): a CRL without an issuingDistributionPoint is in scope for any certificate, whatever points the certificate lists.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:105-195 (processCRLB2): distribution point names are compared only when the CRL has an issuingDistributionPoint."
-        ]
-      },
+      "id": "crl-014-leaf-crl-dp-https-full-crl",
+      "input": "crl-leaf-crl-dp-https.exe",
+      "decision": "CRL-014",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36657,18 +35920,9 @@
       }
     },
     {
-      "id": "sec10-fetch-source-is-asked-for-any-scheme",
-      "input": "sec10-leaf-crl-dp-https.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches."
-        ]
-      },
+      "id": "crl-026-fetch-source-is-asked-for-any-scheme",
+      "input": "crl-leaf-crl-dp-https.exe",
+      "decision": "CRL-026",
       "crl_responses": {
         "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
       },
@@ -36721,18 +35975,9 @@
       }
     },
     {
-      "id": "sec10-fetch-builtin-source-denies-https",
-      "input": "sec10-leaf-crl-dp-https.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.",
-          "BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches."
-        ]
-      },
+      "id": "crl-045-fetch-builtin-source-denies-https",
+      "input": "crl-leaf-crl-dp-https.exe",
+      "decision": "CRL-045",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36773,17 +36018,9 @@
       }
     },
     {
-      "id": "sec10-root-crl-no-next-update-beside-good-crl",
+      "id": "crl-012-root-crl-no-next-update-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36792,7 +36029,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -36819,17 +36056,9 @@
       }
     },
     {
-      "id": "sec10-root-expired-crl-still-rejected-beside-good-crl",
+      "id": "crl-012-root-expired-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36865,17 +36094,9 @@
       }
     },
     {
-      "id": "sec10-root-aki-crl-still-rejected-beside-good-crl",
+      "id": "crl-012-root-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36884,7 +36105,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-aki-expired.crl",
+        "fixtures/crl-root-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -36911,17 +36132,9 @@
       }
     },
     {
-      "id": "sec10-root-crl-malformed-aki-beside-good-crl",
+      "id": "crl-012-root-crl-malformed-aki-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36930,7 +36143,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -36957,17 +36170,9 @@
       }
     },
     {
-      "id": "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+      "id": "crl-012-root-signed-other-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -36976,7 +36181,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-signed-other-aki-expired.crl",
+        "fixtures/crl-root-signed-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -37003,17 +36208,9 @@
       }
     },
     {
-      "id": "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37022,7 +36219,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -37049,17 +36246,9 @@
       }
     },
     {
-      "id": "sec10-root-delta-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-delta-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37068,7 +36257,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-delta.crl",
+        "fixtures/crl-root-delta.crl",
         "--time",
         "1800000000"
       ],
@@ -37095,17 +36284,9 @@
       }
     },
     {
-      "id": "sec10-root-indirect-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-indirect-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37114,7 +36295,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-indirect.crl",
+        "fixtures/crl-root-indirect.crl",
         "--time",
         "1800000000"
       ],
@@ -37141,17 +36322,9 @@
       }
     },
     {
-      "id": "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-entry-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37160,7 +36333,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-entry-critical-extension.crl",
+        "fixtures/crl-root-entry-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -37187,17 +36360,9 @@
       }
     },
     {
-      "id": "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+      "id": "crl-012-root-delta-expired-crl-reports-feature-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37206,7 +36371,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-delta-expired.crl",
+        "fixtures/crl-root-delta-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -37233,17 +36398,9 @@
       }
     },
     {
-      "id": "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-idp-user-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37252,7 +36409,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs.crl",
+        "fixtures/crl-root-idp-user-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -37279,17 +36436,9 @@
       }
     },
     {
-      "id": "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+      "id": "crl-012-root-idp-ca-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37298,7 +36447,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-ca-certs.crl",
+        "fixtures/crl-root-idp-ca-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -37325,17 +36474,9 @@
       }
     },
     {
-      "id": "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+      "id": "crl-012-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37344,7 +36485,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-aki-issuer-serial-expired.crl",
+        "fixtures/crl-root-aki-issuer-serial-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -37371,17 +36512,9 @@
       }
     },
     {
-      "id": "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+      "id": "crl-012-root-idp-named-point-crl-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1716-1718 (checkCRL): a CRL that fails a check is skipped (lastException) and the next CRL is tried.",
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): candidate CRLs are scored and the best is used."
-        ]
-      },
+      "decision": "CRL-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37390,7 +36523,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-named-point.crl",
+        "fixtures/crl-root-idp-named-point.crl",
         "--time",
         "1800000000"
       ],
@@ -37417,17 +36550,9 @@
       }
     },
     {
-      "id": "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
+      "id": "crl-016-stale-crl-revocation-beside-fresh-crl-is-ignored",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
-        ]
-      },
+      "decision": "CRL-016",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37438,7 +36563,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-expired-revoked.crl"
+        "fixtures/crl-root-expired-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -37463,17 +36588,9 @@
       }
     },
     {
-      "id": "sec10-stale-crl-revocation-alone-is-expired",
+      "id": "crl-016-stale-crl-revocation-alone-is-expired",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
-        ]
-      },
+      "decision": "CRL-016",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37482,7 +36599,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-expired-revoked.crl"
+        "fixtures/crl-root-expired-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37501,19 +36618,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
+      "id": "crl-004-no-next-update-crl-revocation-beside-older-crl-revokes",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1555-1587 (ossl_x509_check_crl_time): a CRL without nextUpdate is never expired, so a current CRL whose entries are read.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45: a CRL with a null nextUpdate is kept (\"nextUpdate == null || nextUpdate.after(validityDate)\") and its entries are read.",
-          "BoringSSL crypto/x509/x509_vfy.cc:414: the nextUpdate comparison runs only if the field is present.",
-          "All three agree; the earlier rule in this task, that a CRL without nextUpdate is never current, followed none of them and failed open for a listed certificate."
-        ]
-      },
+      "decision": "CRL-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37524,7 +36631,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37543,19 +36650,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-alone-is-invalid",
+      "id": "crl-031-no-next-update-crl-revocation-alone-is-invalid",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1555-1587 (ossl_x509_check_crl_time): a CRL without nextUpdate is never expired, so a current CRL whose entries are read.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-45: a CRL with a null nextUpdate is kept (\"nextUpdate == null || nextUpdate.after(validityDate)\") and its entries are read.",
-          "BoringSSL crypto/x509/x509_vfy.cc:414: the nextUpdate comparison runs only if the field is present.",
-          "All three agree; the earlier rule in this task, that a CRL without nextUpdate is never current, followed none of them and failed open for a listed certificate."
-        ]
-      },
+      "decision": "CRL-031",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37564,7 +36661,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37586,18 +36683,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-alone-revokes",
+      "id": "crl-031-no-next-update-crl-revocation-alone-revokes",
       "input": "good-pe64.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-a-crl-without-nextupdate-that-lists-the-certificate",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time): nextUpdate is checked only when present, so the CRL is current and its entry revokes (X509_V_ERR_CERT_REVOKED).",
-          "BoringSSL crypto/x509/x509_vfy.cc:414 (check_crl_time): the same; the CRL is used and the listed certificate is revoked.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/PKIXCRLUtil.java findCRLs keeps a CRL whose nextUpdate is null, so its entry revokes."
-        ]
-      },
+      "decision": "CRL-031",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37606,7 +36694,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37625,22 +36713,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+      "id": "crl-031-no-next-update-crl-revocation-cleared-by-newer-crl",
       "input": "good-pe64.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-a-crl-without-nextupdate-that-lists-the-certificate",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time): nextUpdate is checked only when present, so the CRL is current and its entry revokes (X509_V_ERR_CERT_REVOKED).",
-          "BoringSSL crypto/x509/x509_vfy.cc:414 (check_crl_time): the same; the CRL is used and the listed certificate is revoked.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/PKIXCRLUtil.java findCRLs keeps a CRL whose nextUpdate is null, so its entry revokes.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1134-1186 (get_crl_sk): among equally scored CRLs only the newest lastUpdate is kept (:1150-1164), so an older CRL's listing is not read once a newer valid CRL leaves the certificate out.",
-          "BoringSSL crypto/x509/x509_vfy.cc:666-691 (get_crl_sk): the same newest-CRL choice (:675-685).",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/RFC3280CertPathUtilities.java:708 walks its CRL set in no fixed order and stops at the first listing or once all reasons are covered, so it may revoke from the older CRL: it differs from OpenSSL, and BoringSSL decides (newest CRL decides).",
-          "removeFromCRL releases the entry in OpenSSL 3.3 crypto/x509/x509_vfy.c:1686-1689 (cert_crl) and Bouncy Castle RFC3280CertPathUtilities.java:794 (step k); BoringSSL crypto/x509/x509_vfy.cc:768-790 (cert_crl) revokes on any entry, so OpenSSL and Bouncy Castle, which agree, are followed."
-        ]
-      },
+      "decision": "CRL-031",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37649,9 +36724,9 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl",
+        "fixtures/crl-root-no-next-update-revoked.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update-newer.crl"
+        "fixtures/crl-root-no-next-update-newer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37673,22 +36748,9 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+      "id": "crl-031-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
       "input": "good-pe64.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-a-crl-without-nextupdate-that-lists-the-certificate",
-        "references": [
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time): nextUpdate is checked only when present, so the CRL is current and its entry revokes (X509_V_ERR_CERT_REVOKED).",
-          "BoringSSL crypto/x509/x509_vfy.cc:414 (check_crl_time): the same; the CRL is used and the listed certificate is revoked.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/PKIXCRLUtil.java findCRLs keeps a CRL whose nextUpdate is null, so its entry revokes.",
-          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1134-1186 (get_crl_sk): among equally scored CRLs only the newest lastUpdate is kept (:1150-1164), so an older CRL's listing is not read once a newer valid CRL leaves the certificate out.",
-          "BoringSSL crypto/x509/x509_vfy.cc:666-691 (get_crl_sk): the same newest-CRL choice (:675-685).",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/RFC3280CertPathUtilities.java:708 walks its CRL set in no fixed order and stops at the first listing or once all reasons are covered, so it may revoke from the older CRL: it differs from OpenSSL, and BoringSSL decides (newest CRL decides).",
-          "removeFromCRL releases the entry in OpenSSL 3.3 crypto/x509/x509_vfy.c:1686-1689 (cert_crl) and Bouncy Castle RFC3280CertPathUtilities.java:794 (step k); BoringSSL crypto/x509/x509_vfy.cc:768-790 (cert_crl) revokes on any entry, so OpenSSL and Bouncy Castle, which agree, are followed."
-        ]
-      },
+      "decision": "CRL-031",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37697,9 +36759,9 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl",
+        "fixtures/crl-root-no-next-update-revoked.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl"
+        "fixtures/crl-root-no-next-update.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37718,17 +36780,9 @@
       }
     },
     {
-      "id": "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+      "id": "crl-016-superseded-crl-revocation-beside-newer-crl-is-ignored",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
-        ]
-      },
+      "decision": "CRL-016",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37739,7 +36793,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-superseded-revoked.crl"
+        "fixtures/crl-root-superseded-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -37764,17 +36818,9 @@
       }
     },
     {
-      "id": "sec10-superseded-crl-revocation-alone-revokes",
+      "id": "crl-016-superseded-crl-revocation-alone-revokes",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:1603-1633 (get_crl_sk): one best CRL is selected, the newer lastUpdate winning a tie; :2344 (cert_crl) reads entries from that CRL only.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 (findCRLs): CRLs whose nextUpdate is not after the validation date are dropped before any entry is read."
-        ]
-      },
+      "decision": "CRL-016",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37783,7 +36829,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-superseded-revoked.crl"
+        "fixtures/crl-root-superseded-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37802,17 +36848,9 @@
       }
     },
     {
-      "id": "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+      "id": "crl-006-role-partition-crl-revocation-beside-full-crl-revokes",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2154-2157 and :2195-2197 (crl_crldp_check): role flags are checked first, and an issuingDistributionPoint with no distpoint is in scope for a certificate of that role.",
-          "Bouncy Castle core PKIXCRLValidator.java:151-158, 218-220 (processCRLB2): names are compared only when the IDP has one; the onlyContains flags then admit or reject by role."
-        ]
-      },
+      "decision": "CRL-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37823,7 +36861,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+        "fixtures/crl-root-idp-user-certs-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37842,13 +36880,9 @@
       }
     },
     {
-      "id": "sec10-role-partition-crl-revocation-alone-is-unsupported",
+      "id": "crl-028-role-partition-crl-revocation-alone-is-unsupported",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "observed",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60"
-      },
+      "decision": "CRL-028",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37857,7 +36891,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+        "fixtures/crl-root-idp-user-certs-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37879,17 +36913,9 @@
       }
     },
     {
-      "id": "sec10-expired-partition-for-another-point-leaves-status-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
-        ]
-      },
+      "id": "crl-036-expired-partition-for-another-point-leaves-status-unknown",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-036",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37900,7 +36926,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-expired.crl"
+        "fixtures/crl-issuer-idp-other-expired.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -37926,19 +36952,11 @@
       }
     },
     {
-      "id": "sec10-fetch-expired-partition-for-another-point-still-fetches",
-      "input": "sec10-leaf-crl-dp.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "diagnostics",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries."
-        ]
-      },
+      "id": "crl-036-fetch-expired-partition-for-another-point-still-fetches",
+      "input": "crl-leaf-crl-dp.exe",
+      "decision": "CRL-036",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -37950,7 +36968,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-expired.crl",
+        "fixtures/crl-issuer-idp-other-expired.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -37989,20 +37007,9 @@
       }
     },
     {
-      "id": "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+      "id": "crl-005-malformed-aki-crl-revocation-beside-good-crl-revokes",
       "input": "good-countersignature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x_crl.c:265-269 (crl_cb): a malformed AKI leaves crl->akid NULL and sets EXFLAG_INVALID, which crypto/x509/x509_vfy.c never reads for a CRL; crypto/x509/v3_purp.c:1353 (X509_check_akid) treats a NULL akid as a match, so get_crl_sk (x509_vfy.c:1603-1633) can select the CRL and cert_crl (x509_vfy.c:2344) reports the listing: revoked if that CRL has the later lastUpdate, or an equal one and comes first; otherwise good.",
-          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/RFC3280CertPathUtilities.java:255-280 (processCRLF, used by X509RevocationChecker): the CRL's AKI is not read; revoked or good by CRL iteration order.",
-          "Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:379-393 (processCRLF): AuthorityKeyIdentifier.getInstance throws an uncaught IllegalArgumentException, or the result is good if the well-formed CRL is iterated first; never revoked.",
-          "BoringSSL crypto/x509/x_crl.cc:157-161 (crl_cb): returns 0, so the CRL fails to parse and is never used; never revoked.",
-          "relic lib/pkcs7/verify.go:177: Go's x509.VerifyOptions, no CRL checking."
-        ]
-      },
+      "decision": "CRL-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -38013,7 +37020,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-malformed-aki-revoked.crl"
+        "fixtures/crl-root-malformed-aki-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -38032,17 +37039,9 @@
       }
     },
     {
-      "id": "crl-fetch-untrusted-chain-requests-nothing",
+      "id": "crl-011-fetch-untrusted-chain-requests-nothing",
       "input": "good-crl-discovery.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain, which requires a trust anchor, runs before check_revocation (:276), so no CRL is looked up for a chain that does not reach a trusted root.",
-          "Verifying the whole input (nested signatures, later signers, bundle members) before any request has no reference equivalent; it is a written privacy argument in docs/crl-retrieval.md: an input that cannot verify must not cause network requests."
-        ]
-      },
+      "decision": "CRL-011",
       "crl_responses": {},
       "command": [
         "verify",
@@ -38070,17 +37069,9 @@
       }
     },
     {
-      "id": "crl-fetch-invalid-nested-signature-requests-nothing",
+      "id": "crl-011-fetch-invalid-nested-signature-requests-nothing",
       "input": "bad-nested-signature.exe",
-      "decision": {
-        "basis": "decided",
-        "pins": "acceptance",
-        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-pr-60",
-        "references": [
-          "OpenSSL crypto/x509/x509_vfy.c:266-284 (verify_chain): build_chain, which requires a trust anchor, runs before check_revocation (:276), so no CRL is looked up for a chain that does not reach a trusted root.",
-          "Verifying the whole input (nested signatures, later signers, bundle members) before any request has no reference equivalent; it is a written privacy argument in docs/crl-retrieval.md: an input that cannot verify must not cause network requests."
-        ]
-      },
+      "decision": "CRL-011",
       "crl_responses": {},
       "command": [
         "verify",

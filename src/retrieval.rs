@@ -2306,7 +2306,7 @@ mod tests {
                 if self.0 == 2 {
                     response = response.with_crl(
                         SourcedCrl::new(
-                            include_bytes!("../tests/fixtures/sec10-root-idp-named-point.crl")
+                            include_bytes!("../tests/fixtures/crl-root-idp-named-point.crl")
                                 .to_vec(),
                         )
                         .with_url(request.distribution_points[0].clone()),
@@ -2364,7 +2364,7 @@ mod tests {
         // A partition answers only the certificate it was returned for.
         let mut state = Retrieval::new(&store, &budget);
         let mut partition = Source(include_bytes!(
-            "../tests/fixtures/sec10-root-idp-named-point.crl"
+            "../tests/fixtures/crl-root-idp-named-point.crl"
         ));
         ask(&mut state, "p0", &cert, &mut partition).unwrap();
         assert!(!state.reverify);
@@ -2375,7 +2375,7 @@ mod tests {
         };
         let both = pem(include_bytes!("../tests/fixtures/good.crl"))
             + &pem(include_bytes!(
-                "../tests/fixtures/sec10-root-idp-named-point.crl"
+                "../tests/fixtures/crl-root-idp-named-point.crl"
             ));
         let mut state = Retrieval::new(&store, &budget);
         let mut full = Source(include_bytes!("../tests/fixtures/good.crl"));
@@ -2392,7 +2392,7 @@ mod tests {
         assert!(!state.reverify);
         // A delta CRL is not a full CRL: webpki cannot use it.
         let mut state = Retrieval::new(&store, &budget);
-        let mut delta = Source(include_bytes!("../tests/fixtures/sec10-root-delta.crl"));
+        let mut delta = Source(include_bytes!("../tests/fixtures/crl-root-delta.crl"));
         ask(&mut state, "d0", &cert, &mut delta).unwrap();
         assert!(!state.reverify);
         // A body whose URL is withheld from the report is not an answer by
@@ -2989,7 +2989,7 @@ mod tests {
         ext.extn_value = ::der::asn1::OctetString::new([0x30, 0x7f]).unwrap();
         // The public API stops at the first unsupported point, before limits.
         let pe = crate::parse::Pe::parse(include_bytes!(
-            "../tests/fixtures/sec10-leaf-crl-dp-mixed.exe"
+            "../tests/fixtures/crl-leaf-crl-dp-mixed.exe"
         ))
         .unwrap();
         let cms = pe.signatures().unwrap();

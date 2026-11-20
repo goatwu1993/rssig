@@ -69,7 +69,7 @@ fuzz_target!(|data: &[u8]| {
         let _ = verify_with_crl_source(data, None, &options, &mut Answer(crl));
     } else {
         let options = VerifyOptions::trusted(&SEC06, NOW);
-        let input = include_bytes!("../../tests/fixtures/sec10-chain-crl-dp.exe");
+        let input = include_bytes!("../../tests/fixtures/crl-chain-crl-dp.exe");
         let _ = verify_with_crl_source(input, None, &options, &mut Answer(data));
     }
 });

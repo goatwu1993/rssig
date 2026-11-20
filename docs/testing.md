@@ -119,6 +119,32 @@ cargo test --locked --test cli msi::
 cargo test --locked --test cli_interface
 ```
 
+
+## Test layout
+
+`rssig::cli::run` captures combined output;
+`run_with_writers` takes separate stdout/stderr sinks and is used by the
+process adapter and stream-contract tests. Neither exits the calling process.
+Tests do not change the working directory and must not require another
+language or runtime.
+
+Example fixture-first regression:
+
+```rust
+#[test]
+fn rejects_modified_image() {
+    let input = format!("{}/tests/fixtures/bad-image-digest.exe", env!("CARGO_MANIFEST_DIR"));
+    let mut stdout = Vec::new();
+    let code = rssig::cli::run(
+        ["rssig", "verify", "--integrity-only", "--time", "1800000000", &input],
+        &mut stdout,
+    ).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
+    assert_eq!(code, 1);
+    assert_eq!(report["results"][0]["error"]["code"], "image_digest_mismatch");
+}
+```
+
 ## Coverage reports
 
 Install the optional development tool and matching LLVM tools. For Homebrew Rust:
@@ -179,6 +205,31 @@ The report step is skipped for fork PRs because their token cannot write PR
 comments or checks. It does not enforce a coverage threshold.
 The ordinary test jobs require no coverage tool. No job regenerates fixtures or
 needs Java, Go, external signing tools, system trust contents, or network CRLs.
+
+## Fixtures
+
+Commit binary fixtures and their provenance, SHA-256 digests, and intended
+outcomes in `tests/fixtures/manifest.json`. Ordinary tests consume committed
+fixtures; they must never regenerate expected data or overwrite fixtures.
+Generated fixtures use public, deterministic **test-only** keys and a fixed
+validation time. Synthetic fixtures are PE/CFB/CAB containers and inert comment-only scripts; externally signed artifacts have per-artifact provenance.
+Do not put real private keys or proprietary binaries in the repository.
+
+The explicit maintenance command is:
+
+```sh
+cargo test --locked regenerate_cli_fixtures -- --ignored
+```
+
+After intentional regeneration, review all binary changes and update the
+manifest. Add independent jsign/relic-produced or publicly redistributable
+fixtures with source/version/license information when extending interoperability.
+The existing synthetic corpus alone is not evidence of full interoperability.
+
+Windows-oracle integration is deferred. The current development loop runs the
+committed fixtures and JSON expectations locally; it requires no Windows
+environment or external verifier. Passing these expectations must not be
+described as Windows compatibility validation.
 
 ## Portable CLI specification
 
@@ -289,21 +340,21 @@ answer a request for that certificate with that CRL alone, without a URL, as
 a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
-(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+(`crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+`crl-040-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
-`sec10_fetch_by_certificate_answer_leaves_no_point_failures`.
+`crl_fetch_by_certificate_answer_leaves_no_point_failures`.
 
-A case may carry a `decision` (not used to run it): `basis` (`decided`, which
-changes only with the owner's approval, or `observed`, current behavior kept
-so that a change is visible; a case without `decision` counts as observed),
-`pins` (`acceptance`: verifies or rejects; `diagnostics`: which error, detail
-or request), `reason` (a repository-relative document, with an optional
-`#anchor`, that names the case and says why; required when decided) and
-`references` (what reference implementations do, each with its source
-location). `tests/spec.rs` checks that each `reason` document exists and names
-its case. See AGENTS.md, "Pinned expectations".
+A case may carry a `decision` (not used to run it): the ID of the entry it
+pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for
+[CRL decisions](crl.md). The entry states the rule once, with its Status
+(`Decided` or `Observed`), who decided it, whether it pins `acceptance` or
+`diagnostics`, and its sources; a case without `decision` counts as observed.
+`tests/spec.rs` reads every `### PREFIX-NNN: title` entry in `docs/*.md`,
+checks its fields, and checks that each case's `decision` names an entry that
+is `Decided` or `Observed` (not `Retired` or `Superseded by`). See AGENTS.md,
+"Pinned expectations".
 
 Every test build enables the internal `revocation-crosscheck` feature through
 a self dev-dependency in `Cargo.toml`. After rssig accepts a path's
@@ -319,7 +370,7 @@ reach them through the CLI:
 - An error with `details.reason` `ambiguous_issuer_keys` is final for retrieval. Since
   SEC-24 it is produced only by the accepted-path rule for same-name issuers
   with different keys whose CRLs do not name those keys
-  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Its code is
+  (`crl-008-self-issued-rollover-with-both-crls-is-rejected`). Its code is
   `certificate_chain_invalid`, which retrieval never treats as missing CRLs,
   so the `revocation_unknown` branch is unreachable through the CLI.
   `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins

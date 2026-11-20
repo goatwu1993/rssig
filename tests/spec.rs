@@ -12,6 +12,119 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// One `### CRL-001: title` entry of a decision index under `docs/`
+/// (AGENTS.md, "Pinned expectations").
+#[derive(Debug)]
+struct DecisionEntry {
+    status: String,
+}
+
+impl DecisionEntry {
+    /// `Decided` and `Observed` entries may be named by a case; `Retired` and
+    /// `Superseded by` ones may not.
+    fn in_force(&self) -> bool {
+        matches!(self.status.as_str(), "Decided" | "Observed")
+    }
+}
+
+/// Reads every decision entry from the given documents: a level-three
+/// heading `### PREFIX-NNN: title` followed by `- **Status:**`,
+/// `- **Decided by:**` and `- **Pins:**` lines before the next heading.
+fn parse_decisions(
+    documents: impl IntoIterator<Item = (String, String)>,
+) -> Result<BTreeMap<String, DecisionEntry>, String> {
+    let is_id = |id: &str| {
+        id.split_once('-').is_some_and(|(prefix, number)| {
+            !prefix.is_empty()
+                && prefix.bytes().all(|b| b.is_ascii_uppercase())
+                && number.len() == 3
+                && number.bytes().all(|b| b.is_ascii_digit())
+        })
+    };
+    let mut entries = BTreeMap::new();
+    let mut superseded = Vec::new();
+    for (name, text) in documents {
+        let mut lines = text.lines().peekable();
+        while let Some(line) = lines.next() {
+            let Some((id, _title)) = line.strip_prefix("### ").and_then(|h| h.split_once(": "))
+            else {
+                continue;
+            };
+            if !is_id(id) {
+                continue;
+            }
+            let mut field = BTreeMap::new();
+            while let Some(next) = lines.next_if(|l| !l.starts_with('#')) {
+                for key in ["Status", "Decided by", "Pins"] {
+                    if let Some(value) = next.strip_prefix(&format!("- **{key}:**")) {
+                        field.insert(key, value.trim().to_owned());
+                    }
+                }
+            }
+            let get = |key| field.get(key).cloned().unwrap_or_default();
+            let (status, by, pins) = (get("Status"), get("Decided by"), get("Pins"));
+            let target = status.strip_prefix("Superseded by ");
+            if !matches!(status.as_str(), "Decided" | "Observed" | "Retired")
+                && !target.is_some_and(is_id)
+            {
+                return Err(format!("{name}: {id} has an unknown status {status:?}"));
+            }
+            if by.is_empty() || (by == "—") != (status == "Observed") {
+                return Err(format!(
+                    "{name}: {id} needs decided by `—` exactly when Observed, got {by:?}"
+                ));
+            }
+            if !matches!(pins.as_str(), "acceptance" | "diagnostics") {
+                return Err(format!(
+                    "{name}: {id} pins must be acceptance or diagnostics, got {pins:?}"
+                ));
+            }
+            if let Some(target) = target {
+                superseded.push((id.to_owned(), target.to_owned()));
+            }
+            if entries
+                .insert(id.to_owned(), DecisionEntry { status })
+                .is_some()
+            {
+                return Err(format!("{name}: duplicate decision {id}"));
+            }
+        }
+    }
+    for (id, target) in superseded {
+        if !entries.contains_key(&target) {
+            return Err(format!(
+                "{id} is superseded by {target}, which is not defined"
+            ));
+        }
+    }
+    Ok(entries)
+}
+
+/// The decision entries of every Markdown document directly under `docs/`.
+fn committed_decisions() -> Result<&'static BTreeMap<String, DecisionEntry>, String> {
+    static INDEX: std::sync::OnceLock<Result<BTreeMap<String, DecisionEntry>, String>> =
+        std::sync::OnceLock::new();
+    INDEX
+        .get_or_init(|| {
+            let docs = Path::new(env!("CARGO_MANIFEST_DIR")).join("docs");
+            let mut documents = Vec::new();
+            for entry in std::fs::read_dir(&docs).map_err(|e| format!("docs/: {e}"))? {
+                let path = entry.map_err(|e| format!("docs/: {e}"))?.path();
+                if path.extension().is_some_and(|e| e == "md") {
+                    let text = std::fs::read_to_string(&path)
+                        .map_err(|e| format!("{}: {e}", path.display()))?;
+                    documents.push((
+                        format!("docs/{}", path.file_name().unwrap().to_string_lossy()),
+                        text,
+                    ));
+                }
+            }
+            parse_decisions(documents)
+        })
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
 #[derive(Serialize)]
 struct CaseResult {
     id: String,
@@ -29,32 +142,21 @@ impl Suite {
         }
         let mut ids = HashSet::new();
         for case in &self.cases {
-            if let Some(decision) = &case.decision {
-                if decision.basis == spec_suite::Basis::Decided && decision.reason.is_none() {
-                    return Err(format!("decided case {} needs a reason", case.id));
-                }
-                if decision.references.iter().any(|s| s.trim().is_empty()) {
-                    return Err(format!("empty decision reference for {}", case.id));
-                }
-                if let Some(reason) = &decision.reason {
-                    let path = Path::new(reason.split('#').next().unwrap());
-                    if path.as_os_str().is_empty()
-                        || path.is_absolute()
-                        || path
-                            .components()
-                            .any(|c| c == std::path::Component::ParentDir)
-                    {
+            if let Some(id) = &case.decision {
+                match committed_decisions()?.get(id) {
+                    None => {
                         return Err(format!(
-                            "case {} needs a repository-relative reason document",
+                            "case {} names decision {id}, which no index under docs/ defines",
                             case.id
                         ));
                     }
-                    let text =
-                        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
-                            .map_err(|e| format!("{}: {reason}: {e}", case.id))?;
-                    if !text.contains(&format!("`{}`", case.id)) {
-                        return Err(format!("{reason} does not name case {}", case.id));
+                    Some(entry) if !entry.in_force() => {
+                        return Err(format!(
+                            "case {} names decision {id}, whose status is {}",
+                            case.id, entry.status
+                        ));
                     }
+                    Some(_) => {}
                 }
             }
             let expect = &case.expect;
@@ -358,20 +460,22 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     }
 }
 
-/// A case's `decision.reason` names a committed document that mentions the
-/// case, so the marker and the written reason cannot drift apart.
+/// Every case's `decision` names an entry in force in a committed decision
+/// index, and the committed indexes are well formed.
 #[test]
-fn decision_reasons_point_to_documents_that_name_their_case() {
+fn case_decisions_name_committed_entries() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let suite: Suite =
         serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap()).unwrap();
     suite.validate().unwrap();
+    let decisions = committed_decisions().unwrap();
     assert!(
-        suite.cases.iter().any(|case| case
-            .decision
-            .as_ref()
-            .is_some_and(|decision| decision.reason.is_some())),
-        "no case carries a decision reason"
+        decisions.contains_key("CRL-001"),
+        "docs/crl.md is not indexed"
+    );
+    assert!(
+        suite.cases.iter().any(|case| case.decision.is_some()),
+        "no case names a decision"
     );
 }
 
@@ -591,12 +695,12 @@ fn specification_stderr_once_requires_text_stderr_and_counts_repeats() {
 }
 
 #[test]
-fn specification_checks_decision_reasons() {
+fn specification_checks_case_decisions() {
     let case = serde_json::json!({
-        "id": "sec10-root-crl-no-next-update",
+        "id": "crl-005-root-crl-no-next-update",
         "command": ["verify"],
         "expect": {"exit_code": 1, "json": {}},
-        "decision": {"basis": "decided", "pins": "diagnostics"}
+        "decision": "CRL-001"
     });
     let mut suite = serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]});
     let validate = |suite: &Value| {
@@ -604,10 +708,48 @@ fn specification_checks_decision_reasons() {
             .unwrap()
             .validate()
     };
-    assert!(validate(&suite).is_err());
-    let reason = "docs/tasks/sec-10-crl-applicability.md#cases";
-    suite["cases"][0]["decision"]["reason"] = reason.into();
     validate(&suite).unwrap();
-    suite["cases"][0]["id"] = "unmentioned-case".into();
-    assert!(validate(&suite).is_err());
+    suite["cases"][0]["decision"] = "CRL-999".into();
+    assert!(validate(&suite).unwrap_err().contains("no index"));
+}
+
+#[test]
+fn decision_index_rejects_malformed_entries() {
+    let entry = |status: &str, by: &str, pins: &str| {
+        format!(
+            "# Index\n\n### CRL-001: A rule\n\nText.\n\n- **Status:** {status}\n- **Decided by:** {by}\n- **Pins:** {pins}\n"
+        )
+    };
+    let parse = |text: String| parse_decisions([("docs/x.md".to_owned(), text)]);
+    let good = parse(entry("Decided", "owner, PR #1", "acceptance")).unwrap();
+    assert!(good["CRL-001"].in_force());
+    assert!(parse(entry("Observed", "—", "diagnostics")).unwrap()["CRL-001"].in_force());
+    for (status, by, pins, error) in [
+        ("Approved", "owner, PR #1", "acceptance", "status"),
+        ("Decided", "—", "acceptance", "decided by"),
+        ("Decided", "", "acceptance", "decided by"),
+        ("Observed", "owner, PR #1", "acceptance", "decided by"),
+        ("Decided", "owner, PR #1", "both", "pins"),
+        (
+            "Superseded by CRL-002",
+            "owner, PR #1",
+            "acceptance",
+            "superseded",
+        ),
+    ] {
+        let err = parse(entry(status, by, pins)).err().unwrap_or_default();
+        assert!(err.contains(error), "{status}/{by}/{pins}: {err}");
+    }
+    let mut two = entry("Decided", "owner, PR #1", "acceptance");
+    two.push_str(&two.clone());
+    assert!(parse(two).unwrap_err().contains("duplicate"));
+    let missing = "### CRL-001: A rule\n\n- **Status:** Decided\n".to_owned();
+    assert!(parse(missing).unwrap_err().contains("decided by"));
+    let mut superseded = entry("Superseded by CRL-002", "owner, PR #1", "acceptance");
+    superseded.push_str(
+        "\n### CRL-002: Its replacement\n\n- **Status:** Decided\n- **Decided by:** owner, PR #2\n- **Pins:** acceptance\n",
+    );
+    let index = parse(superseded).unwrap();
+    assert!(!index["CRL-001"].in_force());
+    assert!(index["CRL-002"].in_force());
 }

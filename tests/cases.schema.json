@@ -160,54 +160,9 @@
             "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to a DER/PEM response file, returned alone as a CRL without a URL, as a source keyed by certificate or issuer does; none of that certificate's listed URLs is requested. Requires crl_responses. Such answers are not listed in expect.crl_requests."
           },
           "decision": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "basis",
-              "pins"
-            ],
-            "description": "Why this case's result is pinned. Not used to run the case; a case without it counts as observed.",
-            "properties": {
-              "basis": {
-                "enum": [
-                  "decided",
-                  "observed"
-                ],
-                "description": "decided: chosen on purpose, changes only with the owner's approval. observed: current behavior, kept so that a change is visible."
-              },
-              "pins": {
-                "enum": [
-                  "acceptance",
-                  "diagnostics"
-                ],
-                "description": "acceptance: whether the input verifies or is rejected. diagnostics: which error code, stage, detail or request."
-              },
-              "reason": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Repository-relative document, with an optional #anchor, that names this case and gives the reason."
-              },
-              "references": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "description": "What reference implementations do, each with its source location."
-              }
-            },
-            "if": {
-              "properties": {
-                "basis": {
-                  "const": "decided"
-                }
-              }
-            },
-            "then": {
-              "required": [
-                "reason"
-              ]
-            }
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{3}$",
+            "description": "The decision entry this case pins, e.g. CRL-001, defined under a '### CRL-001: title' heading in a document under docs/ with its Status, Decided by and Pins. Not used to run the case; a case without it counts as observed."
           }
         },
         "not": {

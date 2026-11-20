@@ -177,11 +177,11 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_ski = ski(&identity().root);
     vec![
         // The root's name, a fresh period, signed by another key, naming the
-        // subjectKeyIdentifier of `sec10-root-other-ski.der`: forged when that
+        // subjectKeyIdentifier of `crl-root-other-ski.der`: forged when that
         // root is configured (it is the same anchor), another issuer's CRL
         // otherwise.
         (
-            "sec10-root-forged-other-ski.crl",
+            "crl-root-forged-other-ski.crl",
             crl_with_aki(
                 root,
                 &other_key,
@@ -193,7 +193,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // The root's name, but signed by another key that its authorityKeyIdentifier
         // names: a CRL of a rolled-over issuer, not of the chain's root.
         (
-            "sec10-root-name-other-aki-expired.crl",
+            "crl-root-name-other-aki-expired.crl",
             crl_with_aki(
                 root,
                 &other_key,
@@ -205,7 +205,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // Signed by the root's own key, but with a mismatched authorityKeyIdentifier:
         // a valid signature from a chain issuer is never excluded.
         (
-            "sec10-root-signed-other-aki-expired.crl",
+            "crl-root-signed-other-aki-expired.crl",
             crl_with_aki(
                 root,
                 root_key,
@@ -216,7 +216,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         ),
         // Same, but carrying the root's own key identifier.
         (
-            "sec10-root-aki-expired.crl",
+            "crl-root-aki-expired.crl",
             crl_with_aki(
                 root,
                 root_key,
@@ -228,7 +228,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // An authorityKeyIdentifier that is not a SEQUENCE: fail closed, do not
         // fall back to name-only matching.
         (
-            "sec10-root-malformed-aki.crl",
+            "crl-root-malformed-aki.crl",
             crl_with_aki(
                 root,
                 root_key,
@@ -241,7 +241,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // lists the test signer (serial 2): the root signed it, so the listing
         // counts beside a usable CRL that does not list the signer.
         (
-            "sec10-root-malformed-aki-revoked.crl",
+            "crl-root-malformed-aki-revoked.crl",
             crl_full(
                 root,
                 root_key,
@@ -258,7 +258,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         ),
         // An unrelated issuer's CRL is excluded before its extensions are read.
         (
-            "sec10-unrelated-malformed-aki.crl",
+            "crl-unrelated-malformed-aki.crl",
             crl_with_aki(
                 other,
                 &other_key,
@@ -269,27 +269,27 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         ),
         // Unsupported CRL features from the chain's issuer must fail closed.
         (
-            "sec10-root-unknown-critical-extension.crl",
+            "crl-root-unknown-critical-extension.crl",
             crl_with_extension("1.2.3.4", true, &[5, 0]),
         ),
         // The same unknown extension, non-critical: ignorable, so accepted.
         (
-            "sec10-root-unknown-noncritical-extension.crl",
+            "crl-root-unknown-noncritical-extension.crl",
             crl_with_extension("1.2.3.4", false, &[5, 0]),
         ),
         // webpki reads entries lazily; this must still fail closed as invalid_crl.
         (
-            "sec10-root-entry-critical-extension.crl",
+            "crl-root-entry-critical-extension.crl",
             crl_with_entry_extension(),
         ),
         // deltaCRLIndicator: BaseCRLNumber 1.
         (
-            "sec10-root-delta.crl",
+            "crl-root-delta.crl",
             crl_with_extension("2.5.29.27", true, &[2, 1, 1]),
         ),
         // Expired as well: the unsupported feature is reported, not freshness.
         (
-            "sec10-root-delta-expired.crl",
+            "crl-root-delta-expired.crl",
             crl_full(
                 root,
                 root_key,
@@ -306,24 +306,24 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         ),
         // issuingDistributionPoint with indirectCRL TRUE.
         (
-            "sec10-root-indirect.crl",
+            "crl-root-indirect.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x84, 1, 0xff]),
         ),
         // issuingDistributionPoint with only a scope flag and no distribution point:
         // webpki 0.103 rejects it at load, so it fails closed.
         (
-            "sec10-root-idp-user-certs.crl",
+            "crl-root-idp-user-certs.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]),
         ),
         (
-            "sec10-root-idp-ca-certs.crl",
+            "crl-root-idp-ca-certs.crl",
             crl_with_extension("2.5.29.28", true, &[0x30, 3, 0x82, 1, 0xff]),
         ),
         // The user-certificate partition without a distribution point,
         // listing the test signer (serial 2): in scope for an end entity in
         // OpenSSL and Bouncy Castle, so its listing counts beside a full CRL.
         (
-            "sec10-root-idp-user-certs-revoked.crl",
+            "crl-root-idp-user-certs-revoked.crl",
             crl_full(
                 "CN=rssig test root",
                 &identity().root_key,
@@ -345,7 +345,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // A named distribution point; the test certificates list none, so the
         // CRL may be a partition that does not cover them.
         (
-            "sec10-root-idp-named-point.crl",
+            "crl-root-idp-named-point.crl",
             crl_with_extension(
                 "2.5.29.28",
                 true,
@@ -355,7 +355,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // SEC-23: the same named point on a CRL without nextUpdate. The scope
         // defect decides, as with nextUpdate: a source's CRL can replace it.
         (
-            "sec10-root-idp-named-point-no-next-update.crl",
+            "crl-root-idp-named-point-no-next-update.crl",
             crl_full(
                 root,
                 root_key,
@@ -376,7 +376,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // AKI with authorityCertIssuer and serial but no keyIdentifier: matched by
         // name only, so the stale CRL fails closed.
         (
-            "sec10-root-aki-issuer-serial-expired.crl",
+            "crl-root-aki-issuer-serial-expired.crl",
             crl_with_aki(
                 root,
                 root_key,
@@ -386,14 +386,14 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             ),
         ),
         (
-            "sec10-root-no-next-update.crl",
+            "crl-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
-        // SEC-23: the same, newer than sec10-root-no-next-update-revoked.crl:
+        // SEC-23: the same, newer than crl-root-no-next-update-revoked.crl:
         // a current, complete CRL that leaves the signer out, so that older
         // listing may be a released hold and does not revoke.
         (
-            "sec10-root-no-next-update-newer.crl",
+            "crl-root-no-next-update-newer.crl",
             crl(root, root_key, NOW - 10, None),
         ),
         // A root CRL without nextUpdate that lists the test signer and is
@@ -401,7 +401,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // not evidence of good status (RFC 5280 requires nextUpdate), but its
         // listing counts and revokes, beside good.crl and alone.
         (
-            "sec10-root-no-next-update-revoked.crl",
+            "crl-root-no-next-update-revoked.crl",
             crl_full(
                 root,
                 root_key,
@@ -420,7 +420,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // counts only from a current CRL, so beside a fresh CRL that does not
         // list the signer it is ignored, and alone it is only expired.
         (
-            "sec10-root-expired-revoked.crl",
+            "crl-root-expired-revoked.crl",
             crl_full(
                 root,
                 root_key,
@@ -439,7 +439,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
         // (thisUpdate NOW - 200 against NOW - 100), listing the test signer:
         // superseded, so its listing does not count beside the newer CRL.
         (
-            "sec10-root-superseded-revoked.crl",
+            "crl-root-superseded-revoked.crl",
             crl_full(
                 root,
                 root_key,
@@ -455,15 +455,15 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             ),
         ),
         (
-            "sec10-unrelated-expired.crl",
+            "crl-unrelated-expired.crl",
             crl(other, &other_key, NOW - 200, Some(NOW - 1)),
         ),
         (
-            "sec10-unrelated-not-yet-valid.crl",
+            "crl-unrelated-not-yet-valid.crl",
             crl(other, &other_key, NOW + 100, Some(NOW + 1000)),
         ),
         (
-            "sec10-unrelated-no-next-update.crl",
+            "crl-unrelated-no-next-update.crl",
             crl(other, &other_key, NOW - 100, None),
         ),
     ]
@@ -471,13 +471,13 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
 
 #[test]
 #[ignore = "explicit fixture maintenance"]
-fn regenerate_sec10_fixtures() {
+fn regenerate_crl_fixtures() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     for (name, bytes) in crls() {
         std::fs::write(dir.join(name), bytes).unwrap();
     }
     std::fs::write(
-        dir.join("sec10-root-other-ski.der"),
+        dir.join("crl-root-other-ski.der"),
         root_with_other_ski().to_der().unwrap(),
     )
     .unwrap();

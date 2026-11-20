@@ -1,0 +1,19 @@
+# SEC-11: Report CRL evidence actually used.
+
+Task detail for **SEC-11** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox.
+
+Distinguish supplied artifacts
+from CRLs authenticated and used for each selected chain. Include affected
+certificates/CRLs in structured failures. Preserve conservative rejection when
+a current CRL lists a signer even after its signing time; historical good status
+requires separate evidence and policy.
+Observed today: a CRL excluded as non-applicable still appears in
+`revocation.crls` with role `supplied` beside status `good` (for example
+`crl-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
+A `certificate_revoked` result does not identify which supplied CRL listed
+the certificate.
+From the PR #60 review: a retrieved body that is not a CRL (for example an
+HTML error page) is listed in `crl_retrieval.artifacts` as well as reported
+as an `invalid_crl` failure, so counting artifacts overcounts retrieved CRLs.
+Decide whether artifacts mean "bytes received" or "CRLs loaded".

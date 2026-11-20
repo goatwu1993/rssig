@@ -25,9 +25,12 @@ type and capitalize the first word after the colon and space.
 
 ## Task tracking
 
-Tasks live in `TODO.md`; an item that outgrows it keeps its ID, title and
-checkbox there and links to a detail document under `docs/tasks/`. Do not create
-or reference GitHub issues to track tasks or sub-items.
+Tasks live in `TODO.md`, one short entry each: ID, title, checkbox and at most
+a few lines. Detail longer than that goes in `docs/tasks/<id>.md`, linked from
+the entry. A finished item becomes one line with its PR; its evidence lives in
+the PR and git history. A task is the scope of one PR: work found along the
+way becomes a new task, not a larger branch. Do not create or reference
+GitHub issues to track tasks or sub-items.
 
 ## Architecture and constraints
 
@@ -92,89 +95,36 @@ or reference GitHub issues to track tasks or sub-items.
 
 ## Pinned expectations
 
-A case pins what the verifier does, not proof that it is right. These rules
-keep tests, `TODO.md` and the specification from locking correct behavior out.
+A case pins what the verifier does, not proof that it is right.
 
-1. **Every pinned result needs a reason.** A case added or changed in
-   `tests/cases.json` is listed in its task document under `docs/tasks/` with
-   why that result is right: an RFC section, what OpenSSL or Bouncy Castle do,
-   or a written security argument. "The code did this" is not a reason. A
-   case whose result was decided against, or between, reference
-   implementations also carries a `decision` in `tests/cases.json` (`basis`,
-   `pins`, `reason`, and `references` with source locations); the spec test
-   checks that its `reason` document exists and names the case.
-2. **Decided or observed.** That task document marks each case **Decided**
-   (with its reason) or **Observed** (current behavior, kept so that a change
-   is visible). A case with no such entry counts as Observed. An Observed case
-   may be changed when a better result is argued; a Decided case changes only
-   with the repository owner's approval, recorded in the task document.
-3. **Safety or wording.** Also mark whether a case pins acceptance (verifies
-   vs rejects: security) or only diagnostics (which error code, stage or
-   detail). A disagreement about wording never blocks a correct fix, and an
-   acceptance pin is never loosened without a Decided reason.
-4. **Conflicts go to the owner.** When a review finding contradicts a pinned
-   case, judge the finding on its merits. If it may be right, ask the owner
-   instead of declining it because a test exists, and say in the PR which
-   pinned case it would change.
-5. **Only `main` is existing.** "Preserve existing expectations" protects what
-   is on the default branch. A case added earlier in the same branch or PR is
-   not a reason to decline a fix.
-6. **Compare with a second implementation.** For a disputed revocation, path
-   or CRL result, check what OpenSSL (`crypto/x509/x509_vfy.c`, `openssl
-   verify -crl_check_all`) and Bouncy Castle (`RFC3280CertPathUtilities`,
-   `X509RevocationChecker`) do, and cite it in the task document. Run any such
-   comparison as a separate maintenance step, never inside `cargo test` or the
-   product, and never as a runtime dependency. Where they agree, follow them;
-   where they differ or have no equivalent, write down the choice.
+1. **Every pinned result needs a reason:** a numbered decision entry (format
+   in [docs/decisions.md](docs/decisions.md); CRL cases use
+   [docs/crl.md](docs/crl.md)) that the case names in `"decision"`. "The code
+   did this" is not a reason.
+2. **Decided or observed:** a Decided entry changes only with the repository
+   owner's approval, recorded in the PR; an Observed one may change when a
+   better result is argued.
+3. **Safety or wording:** an entry pins acceptance or diagnostics. A wording
+   disagreement never blocks a correct fix; an acceptance pin is never
+   loosened without a Decided reason.
+4. **Conflicts go to the owner:** judge a review finding that contradicts a
+   pinned case on its merits; if it may be right, ask the owner and name the
+   case in the PR.
+5. **Only `main` is existing:** a case added earlier in the same branch or PR
+   is no reason to decline a fix.
+6. **Compare with a second implementation** for a disputed revocation, path
+   or CRL result, as [docs/decisions.md](docs/decisions.md) describes.
 
 ## Native Rust tests and coverage
 
-`cargo test --locked` is the single entry point for all parser, crypto, CLI,
-fixture, domain, and declarative specification tests. `tests/spec.rs` deserializes
-`tests/cases.json` with Serde and invokes `rssig::cli::run_with_writers` in-process, collecting
-exit codes, JSON verification results, and plain-text stdout/stderr for command
-diagnostics. It never runs a child executable.
-
-The 142 original fixture cases also have individually named
-Rust tests under `tests/cli/pe.rs` and `tests/cli/msi.rs`; shared helpers only
-capture output and assert the domain contract. CLI syntax, configuration errors,
-help/version, multiple files, and writer failures live in `tests/cli_interface.rs`.
-
-The public CLI entry point accepts argv including the program name and any
-`std::io::Write` sink, returns an exit code, and never exits the calling process.
-`rssig::cli::run` captures combined output; `run_with_writers` accepts separate
-stdout/stderr sinks and is used by the process adapter and stream-contract tests.
-Tests use absolute fixture paths without changing the process working directory
-or invoking a child executable. Prefer stable error codes/stages, exact arrays
-and serialized fields, and specific diagnostic fragments over OS error prose.
-Keep `cases.json`, `cases.schema.json`, the committed fixtures, and their manifest
-as the portable specification. They must remain sufficient for another language
-to implement the same CLI without Rust source. Do not add test commands to the
-product CLI or require another language/runtime to execute Cargo tests.
-
-Example fixture-first regression:
-
-```rust
-#[test]
-fn rejects_modified_image() {
-    let input = format!("{}/tests/fixtures/bad-image-digest.exe", env!("CARGO_MANIFEST_DIR"));
-    let mut stdout = Vec::new();
-    let code = rssig::cli::run(
-        ["rssig", "verify", "--integrity-only", "--time", "1800000000", &input],
-        &mut stdout,
-    ).unwrap();
-    let report: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
-    assert_eq!(code, 1);
-    assert_eq!(report["results"][0]["error"]["code"], "image_digest_mismatch");
-}
-```
-
-CI runs formatting, Clippy, and Cargo tests on Linux and macOS. A coverage job
-runs `make coverage`, using cargo-llvm-cov to run native tests and the Serde
-specification test with instrumentation. It publishes Cobertura XML, standalone
-HTML, and a per-case specification report. See `docs/testing.md` for local commands.
-Fixture builders and Rust test source files are excluded from coverage reports;
-production source, including the thin process adapter, remains included.
+`cargo test --locked` is the single entry point for every test. Tests call
+`rssig::cli::run` or `run_with_writers` in-process with an argument array and
+captured writers, never a child process, with absolute fixture paths.
+`tests/cases.json`, its schema, the fixtures and the manifest are the portable
+specification another language could implement the CLI from; do not add test
+commands to the product CLI. Prefer stable codes, stages and serialized
+fields over prose. Commands, layout, coverage and CI are in
+[docs/testing.md](docs/testing.md).
 
 ## Fuzzing
 
@@ -190,68 +140,15 @@ Fuzz targets live in the detached `fuzz/` crate and need nightly; see
 
 ## Fixtures
 
-Commit binary fixtures and their provenance, SHA-256 digests, and intended
-outcomes in `tests/fixtures/manifest.json`. Ordinary tests consume committed
-fixtures; they must never regenerate expected data or overwrite fixtures.
-Generated fixtures use public, deterministic **test-only** keys and a fixed
-validation time. Synthetic fixtures are PE/CFB/CAB containers and inert comment-only scripts; externally signed artifacts have per-artifact provenance.
-Do not put real private keys or proprietary binaries in the repository.
-
-The explicit maintenance command is:
-
-```sh
-cargo test --locked regenerate_cli_fixtures -- --ignored
-```
-
-After intentional regeneration, review all binary changes and update the
-manifest. Add independent jsign/relic-produced or publicly redistributable
-fixtures with source/version/license information when extending interoperability.
-The existing synthetic corpus alone is not evidence of full interoperability.
-
-Windows-oracle integration is deferred. The current development loop runs the
-committed fixtures and JSON expectations locally; it requires no Windows
-environment or external verifier. Passing these expectations must not be
-described as Windows compatibility validation.
+Commit binary fixtures with provenance, SHA-256 digests and intended outcomes
+in `tests/fixtures/manifest.json`. Ordinary tests never regenerate or
+overwrite fixtures; regeneration is the explicit maintenance command in
+[docs/testing.md](docs/testing.md#fixtures), followed by a review of every
+binary change. Use public, deterministic test-only keys and a fixed
+validation time; never commit real private keys or proprietary binaries.
 
 ## Current boundaries
 
-Embedded PE32/PE32+, MSI/MSP CFB v3/v4, and standard-reserve single-volume CAB signatures, SHA-256/384/512, RSA PKCS#1 v1.5 (2048+ bits),
-ECDSA P-256/SHA-256 and P-384/SHA-384, nested signatures, page hashes, RFC 3161,
-and PKCS#9 countersignatures are supported. SHA-1 image/CMS/timestamp digests
-require `--allow-sha1`; SHA-1 certificate/CRL chains are not supported.
-MSI package/extended metadata hashes and limits are documented in `docs/msi.md`.
-MSP patches use the same MSI SIP, `verify_msi` entry point, error codes, and
-`msi_authenticode` JSON format. Verification needs no original MSI; patch
-applicability, database semantics, and Windows patch authorization are not checked.
-CAB layouts and limits are documented in `docs/cab.md`.
-PowerShell hash-comment signatures for `.ps1`, `.psm1`, and `.psd1`, including strict
-UTF-8 and BOM-marked UTF-16LE/BE, are supported; see `docs/powershell.md` for limits.
-PowerShell XML-comment `.ps1xml` signatures support BOM-less ASCII and BOM-marked
-UTF-8/UTF-16LE/BE; see `docs/powershell-xml.md`. They use the same SIP identity and
-shared verification engine as hash-comment scripts, not XMLDSig.
-Windows Script Host `.vbs`/`.vbe`/`.js`/`.jse` and single-job `.wsf` signatures are supported;
-see `docs/wsh.md` for strict encoding/block limits and opaque encoded-text handling.
-RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
-unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
-MSIX/AppX package and bundle embedded signatures, package components, block maps,
-Publisher binding, and embedded package verification are supported; see `docs/appx.md`
-for ZIP/compression and bundle limits. Flat/external, stub, and nested bundles are
-unsupported. Embedded CodeIntegrity catalogs are package-hashed but not independently
-signature-verified; JSON must report this explicitly.
-`verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_navx`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
-
-CRLs are supplied as local PEM/DER files, checked for signature, authority,
-freshness, and revocation across the chain. Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
-`CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
-catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
-Windows-specific trust lists, and Windows policy parity are not implemented.
-Revocation of a timestamped signer is handled conservatively: an entry on a
-current CRL rejects it even if its revocation date is after the signing time.
-Signers with the lifetime-signing EKU are validated at the validation time, not
-the timestamp; see `docs/time-policy.md`.
-
-Diagnostic logging is opt-in through an injected `rssig::log::Logger` (`verify::Verifier`,
-`cli::Host`); see `docs/logging.md`. There is no global logger, the binary injects none,
-and a logger must never change a result or write to stdout/stderr.
-
-NAVX embedded signatures use the shared verification engine; see `docs/navx.md` for envelope, SIP, hashing, and interoperability limits.
+Supported formats, algorithms, CRL handling and what is not implemented are
+listed in [docs/boundaries.md](docs/boundaries.md); keep it current with each
+change. Never describe passing fixtures as Windows policy parity.
