@@ -35,7 +35,8 @@ whatever step 1 decided (SEC-18).
   keys, and the CRLs chosen for them do not both name their issuer's key in an
   authorityKeyIdentifier. The result is the same as before:
   `certificate_chain_invalid` at `certificate_chain` with `details.reason`
-  `confirmation`.
+  `ambiguous_issuer_keys` (first `confirmation`; renamed in PR #64 with the
+  owner's approval, see "Left open").
 - `LoadedCrl.webpki` (webpki's CRL parse) is kept, but only to report
   unsupported CRL features as `invalid_crl`. Removing that parse, and with it
   the extra CRL decoding, stays in SEC-17.
@@ -101,9 +102,14 @@ every test build:
 - The `revocation-crosscheck` feature enables no other feature. A
   self dev-dependency (`rssig = { path = ".", default-features = false,
   features = ["revocation-crosscheck"] }`) turns it on for unit and
-  integration test builds only. Release and debug product builds do not
-  pass `--cfg feature="revocation-crosscheck"` (checked with `cargo build
-  -v`). Reduced-feature CI runs keep their feature sets: the test counts for
+  integration test builds only. Plain release and debug product builds do
+  not pass `--cfg feature="revocation-crosscheck"` (checked with `cargo build
+  -v`). `cargo build --all-targets` does, because the self dev-dependency's
+  feature is unified with the library and binary built in the same
+  invocation (checked, PR #64): a debug binary from that command contains the
+  cross-check, which never changes a result but panics on a disagreement,
+  and a release one still compiles it out (`debug_assertions`). Build
+  product binaries without `--all-targets`. Reduced-feature CI runs keep their feature sets: the test counts for
   `--no-default-features`, `verify-core` and `verify` match the previous
   commit (36, 107, 219).
 
@@ -135,10 +141,12 @@ on the same input, exits 0 without a panic.
   the rule into the path callback would let the search continue, but it
   changes error precedence and needs a fixture with two candidate paths
   first.
-- `details.reason` `confirmation` keeps its value so the pinned case and
-  retrieval's finality rule stay unchanged. The name now describes history, not
-  a webpki call. A rename (for example `ambiguous_issuer_keys`) is a
-  wording-only change to the pinned diagnostic and needs its own case update.
+- ~~`details.reason` `confirmation` described history, not a webpki call.~~
+  Renamed to `ambiguous_issuer_keys` in PR #64, with the owner's approval: a
+  wording-only change to the Decided case
+  `sec16-self-issued-rollover-with-both-crls-is-rejected` (which still pins the
+  rejection and `certificate_chain_invalid`). The case, retrieval's finality
+  rule and the docs changed together; the case failed against the old name.
 - `ambiguous_issuer_keys` tells two same-name issuers apart by their
   complete SubjectPublicKeyInfo bytes, where the former rule compared the
   chosen CRLs' authorityKeyIdentifiers. One key encoded two ways in one path

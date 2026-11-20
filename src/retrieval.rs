@@ -1256,7 +1256,7 @@ enum Uncovered {
 }
 
 fn uncovered(unknown: &VerificationError) -> Uncovered {
-    if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("confirmation") {
+    if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("ambiguous_issuer_keys") {
         return Uncovered::Final;
     }
     let listed = |key: &str| {
@@ -2855,7 +2855,7 @@ mod tests {
         let unknown = || error(ErrorCode::RevocationUnknown, "unknown");
         // The verifier rejected a path every certificate of which had a CRL.
         assert!(matches!(
-            uncovered(&unknown().detail("reason", "confirmation")),
+            uncovered(&unknown().detail("reason", "ambiguous_issuer_keys")),
             Uncovered::Final
         ));
         assert!(matches!(uncovered(&unknown()), Uncovered::Final));

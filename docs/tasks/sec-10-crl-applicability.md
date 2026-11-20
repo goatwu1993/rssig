@@ -596,7 +596,8 @@ relic 02c54d58 and BoringSSL `main`.
     webpki's confirmation (since SEC-24, at rssig's own accepted-path rule
     `ambiguous_issuer_keys`, which gives the same result)
     (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
-    `certificate_chain_invalid`, reason `confirmation`), in either order.
+    `certificate_chain_invalid`, reason `ambiguous_issuer_keys`; until SEC-24 follow-up in PR #64 the
+    reason was `confirmation`), in either order.
     An earlier note here said OpenSSL would accept this case; the run shows
     it does not.
 - **An RDP signer that only lacks a CRL under one of its usages reports the

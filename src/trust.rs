@@ -542,7 +542,7 @@ impl TrustStore {
                 )
                 .detail("certificate", &leaf_report)
                 .detail("required_eku", eku_oid.to_string())
-                .detail("reason", "confirmation")
+                .detail("reason", "ambiguous_issuer_keys")
                 .into());
             }
             // Once, for the accepted path only: a listing that was set aside

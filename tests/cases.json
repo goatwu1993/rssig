@@ -34297,7 +34297,7 @@
               "error": {
                 "code": "certificate_chain_invalid",
                 "details": {
-                  "reason": "confirmation"
+                  "reason": "ambiguous_issuer_keys"
                 }
               }
             }

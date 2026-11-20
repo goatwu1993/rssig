@@ -97,7 +97,7 @@ rule is restated for retrieval.
    expired cross certificate
    (`sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
    `sec10-fetch-completes-the-path-beside-an-expired-path`). An unknown
-   status carrying `details.reason` `confirmation` (a path whose every
+   status carrying `details.reason` `ambiguous_issuer_keys` (a path whose every
    certificate had a CRL) is final: no source is asked.
 2. Ask the source about exactly those certificates, once each, as OpenSSL's
    `get_crl` and Bouncy Castle look up CRLs for the certificate being

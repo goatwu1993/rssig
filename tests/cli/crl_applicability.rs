@@ -821,7 +821,7 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
         assert_eq!(output.exit_code, 1);
         let error = &output.json["results"][0]["error"];
         assert_eq!(error["code"], "certificate_chain_invalid");
-        assert_eq!(error["details"]["reason"], "confirmation");
+        assert_eq!(error["details"]["reason"], "ambiguous_issuer_keys");
     }
     for crls in [
         [
