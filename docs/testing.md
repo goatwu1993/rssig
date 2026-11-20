@@ -302,13 +302,23 @@ or request), `reason` (a repository-relative document, with an optional
 location). `tests/spec.rs` checks that each `reason` document exists and names
 its case. See AGENTS.md, "Pinned expectations".
 
+Every test build enables the internal `revocation-crosscheck` feature through
+a self dev-dependency in `Cargo.toml`. After rssig accepts a path's
+revocation status, it re-runs webpki's own revocation check with the CRLs
+rssig chose and panics on disagreement, so every fixture case with CRLs also
+checks that rssig and webpki agree. Product builds never enable it, and it is
+also compiled out without `debug_assertions`, so release test runs skip it; see
+[SEC-24](tasks/sec-24-single-revocation-authority.md).
+
 Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 
-- An unknown status from webpki's confirmation pass (`details.reason`
-  `confirmation`) is final for retrieval. The confirmation exists to catch a
-  disagreement between rssig's per-certificate evaluation and webpki's own
-  rules; no fixture produces one unless one side has a bug.
+- An error with `details.reason` `confirmation` is final for retrieval. Since
+  SEC-24 it is produced only by the accepted-path rule for same-name issuers
+  with different keys whose CRLs do not name those keys
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Its code is
+  `certificate_chain_invalid`, which retrieval never treats as missing CRLs,
+  so the `revocation_unknown` branch is unreachable through the CLI.
   `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins
   the decision.
 - A certificate whose issuer name cannot be read is recorded as

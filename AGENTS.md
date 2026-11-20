@@ -38,9 +38,11 @@ or reference GitHub issues to track tasks or sub-items.
   signature, chain, timestamp, or revocation verification.
 - Do not introduce OpenSSL (system or vendored), ring, aws-lc, WinVerifyTrust,
   native certificate validation, or subprocess crypto tools into the engine.
-- RustCrypto implements the cryptographic primitives. webpki path and CRL
-  validation uses our RustCrypto algorithm adapter with native crypto features
-  disabled. Review the resolved dependency graph when changing dependencies.
+- RustCrypto implements the cryptographic primitives. webpki path validation
+  uses our RustCrypto algorithm adapter with native crypto features disabled.
+  rssig alone decides revocation, in the path callback; webpki builds paths
+  without revocation options. Review the resolved dependency graph when
+  changing dependencies.
 - Trust anchors must come from the configured root store. Embedded certificates
   are untrusted chain candidates. A mathematically valid signature alone is not
   a trusted signature.

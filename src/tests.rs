@@ -4,6 +4,7 @@ mod certificate_choices;
 mod cms_audit;
 mod crl_applicability;
 mod crl_fetch_fixtures;
+mod crosscheck_active;
 mod fixture_faults;
 mod msi_fixtures;
 mod msp_fixtures;
