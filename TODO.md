@@ -172,8 +172,7 @@ TDD workflow and checks in AGENTS.md.
 
 - [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
 - [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
-- [ ] **TEST-14: Index timestamp decisions as `TSA-NNN`.** From
-  `docs/timestamp-policy.md` (SEC-08); rename the `sec08-*` cases.
+- [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
 - [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`
   (SEC-04, SEC-05): signed-attribute binding and signer selection.
 - [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
@@ -189,6 +188,11 @@ TDD workflow and checks in AGENTS.md.
   `docs/crl-retrieval.md` restates rules now in `CRL-029` to `CRL-048`.
 - [ ] **TEST-20: Rename task-named library cases.** `lib04-*` to `lib07-*` are
   API and feature checks; rename them by subject without decision entries.
+- [ ] **TEST-21: Attach pre-SEC-09 time cases to `TIME-` entries.**
+  `future-timestamp`, `rfc3161`, `expired-with-rfc3161`,
+  `expired-without-timestamp`, the `rfc3161-fractional*` time cases and their
+  MSI copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
+  decision. Found while doing TEST-14.
 
 ## P1 — CLI, reporting, and distribution
 

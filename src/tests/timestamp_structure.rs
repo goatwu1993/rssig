@@ -181,18 +181,18 @@ pub(super) fn write(dir: &std::path::Path) {
         .copied()
         .chain(["good", "good-optional", "good-counter"])
     {
-        std::fs::write(dir.join(format!("sec08-{fault}.exe")), artifact(fault)).unwrap();
+        std::fs::write(dir.join(format!("tsa-{fault}.exe")), artifact(fault)).unwrap();
     }
 }
 
 #[test]
 #[ignore = "explicit fixture maintenance"]
-fn regenerate_sec08_fixtures() {
+fn regenerate_tsa_fixtures() {
     write(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 }
 
 #[test]
-fn sec08_committed_faults_preserve_image_and_signature_math() {
+fn tsa_committed_faults_preserve_image_and_signature_math() {
     fn math(si: der::Node<'_>, cert: &Certificate) {
         let f = si.children().unwrap();
         let mut signed = f[3].full.to_vec();
@@ -214,7 +214,7 @@ fn sec08_committed_faults_preserve_image_and_signature_math() {
         let bytes = std::fs::read(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures")
-                .join(format!("sec08-{fault}.exe")),
+                .join(format!("tsa-{fault}.exe")),
         )
         .unwrap();
         let pe = pe::Pe::parse(&bytes).unwrap();

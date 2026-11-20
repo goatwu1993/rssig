@@ -595,8 +595,9 @@
       }
     },
     {
-      "id": "wrong-tsa-eku",
+      "id": "tsa-003-wrong-tsa-eku",
       "input": "bad-timestamp-eku.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -1447,8 +1448,9 @@
       }
     },
     {
-      "id": "bad-countersignature-digest",
+      "id": "tsa-001-bad-countersignature-digest",
       "input": "bad-countersignature-digest.exe",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -1482,8 +1484,9 @@
       }
     },
     {
-      "id": "bad-timestamp-signature",
+      "id": "tsa-002-bad-timestamp-signature",
       "input": "bad-timestamp-signature.exe",
+      "decision": "TSA-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -1517,8 +1520,9 @@
       }
     },
     {
-      "id": "bad-countersignature-signature",
+      "id": "tsa-002-bad-countersignature-signature",
       "input": "bad-countersignature-signature.exe",
+      "decision": "TSA-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -2192,8 +2196,9 @@
       }
     },
     {
-      "id": "msi-wrong-tsa-eku",
+      "id": "tsa-003-msi-wrong-tsa-eku",
       "input": "msi-bad-timestamp-eku.msi",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -2985,8 +2990,9 @@
       }
     },
     {
-      "id": "msi-bad-countersignature-digest",
+      "id": "tsa-001-msi-bad-countersignature-digest",
       "input": "msi-bad-countersignature-digest.msi",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -3020,8 +3026,9 @@
       }
     },
     {
-      "id": "msi-bad-timestamp-signature",
+      "id": "tsa-002-msi-bad-timestamp-signature",
       "input": "msi-bad-timestamp-signature.msi",
+      "decision": "TSA-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -3055,8 +3062,9 @@
       }
     },
     {
-      "id": "msi-bad-countersignature-signature",
+      "id": "tsa-002-msi-bad-countersignature-signature",
       "input": "msi-bad-countersignature-signature.msi",
+      "decision": "TSA-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -5530,8 +5538,9 @@
       }
     },
     {
-      "id": "cab-timestamp-imprint",
+      "id": "tsa-001-cab-timestamp-imprint",
       "input": "bad-cab-timestamp-imprint.cab",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -6967,8 +6976,9 @@
       }
     },
     {
-      "id": "powershell-timestamp-imprint",
+      "id": "tsa-001-powershell-timestamp-imprint",
       "input": "bad-powershell-timestamp-imprint.ps1",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -8947,8 +8957,9 @@
       }
     },
     {
-      "id": "rdp-timestamp-imprint",
+      "id": "tsa-001-rdp-timestamp-imprint",
       "input": "bad-rdp-timestamp-imprint.rdp",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -11345,8 +11356,9 @@
       }
     },
     {
-      "id": "psxml-timestamp-imprint",
+      "id": "tsa-001-psxml-timestamp-imprint",
       "input": "bad-psxml-timestamp-imprint.ps1xml",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -13178,8 +13190,9 @@
       }
     },
     {
-      "id": "appx-timestamp-imprint",
+      "id": "tsa-001-appx-timestamp-imprint",
       "input": "bad-appx-timestamp-imprint.msix",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -14906,8 +14919,9 @@
       }
     },
     {
-      "id": "appxbundle-child-timestamp",
+      "id": "tsa-001-appxbundle-child-timestamp",
       "input": "bad-appxbundle-child-timestamp.msixbundle",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17334,8 +17348,9 @@
       }
     },
     {
-      "id": "wsh-bad-timestamp-imprint-js",
+      "id": "tsa-001-wsh-bad-timestamp-imprint-js",
       "input": "bad-wsh-timestamp-imprint.js",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17364,8 +17379,9 @@
       }
     },
     {
-      "id": "wsh-bad-timestamp-imprint-vbs",
+      "id": "tsa-001-wsh-bad-timestamp-imprint-vbs",
       "input": "bad-wsh-timestamp-imprint.vbs",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17394,8 +17410,9 @@
       }
     },
     {
-      "id": "wsh-bad-timestamp-imprint-wsf",
+      "id": "tsa-001-wsh-bad-timestamp-imprint-wsf",
       "input": "bad-wsh-timestamp-imprint.wsf",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20632,8 +20649,9 @@
       }
     },
     {
-      "id": "navx-timestamp-imprint",
+      "id": "tsa-001-navx-timestamp-imprint",
       "input": "bad-navx-timestamp-imprint.navx",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -21634,8 +21652,9 @@
       }
     },
     {
-      "id": "rfc3161-fractional-noncanonical",
+      "id": "tsa-005-rfc3161-fractional-noncanonical",
       "input": "bad-rfc3161-fractional-noncanonical.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28146,8 +28165,9 @@
       }
     },
     {
-      "id": "sec08-version",
-      "input": "sec08-version.exe",
+      "id": "tsa-005-version",
+      "input": "tsa-version.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28175,8 +28195,9 @@
       }
     },
     {
-      "id": "sec08-policy",
-      "input": "sec08-policy.exe",
+      "id": "tsa-005-policy",
+      "input": "tsa-policy.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28204,8 +28225,9 @@
       }
     },
     {
-      "id": "sec08-serial-negative",
-      "input": "sec08-serial-negative.exe",
+      "id": "tsa-005-serial-negative",
+      "input": "tsa-serial-negative.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28233,8 +28255,9 @@
       }
     },
     {
-      "id": "sec08-serial-nonminimal",
-      "input": "sec08-serial-nonminimal.exe",
+      "id": "tsa-005-serial-nonminimal",
+      "input": "tsa-serial-nonminimal.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28262,8 +28285,9 @@
       }
     },
     {
-      "id": "sec08-time-tag",
-      "input": "sec08-time-tag.exe",
+      "id": "tsa-005-time-tag",
+      "input": "tsa-time-tag.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28291,8 +28315,9 @@
       }
     },
     {
-      "id": "sec08-unknown",
-      "input": "sec08-unknown.exe",
+      "id": "tsa-005-unknown",
+      "input": "tsa-unknown.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28320,8 +28345,9 @@
       }
     },
     {
-      "id": "sec08-order",
-      "input": "sec08-order.exe",
+      "id": "tsa-005-order",
+      "input": "tsa-order.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28349,8 +28375,9 @@
       }
     },
     {
-      "id": "sec08-duplicate-optional",
-      "input": "sec08-duplicate-optional.exe",
+      "id": "tsa-005-duplicate-optional",
+      "input": "tsa-duplicate-optional.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28378,8 +28405,9 @@
       }
     },
     {
-      "id": "sec08-ordering-false",
-      "input": "sec08-ordering-false.exe",
+      "id": "tsa-005-ordering-false",
+      "input": "tsa-ordering-false.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28407,8 +28435,9 @@
       }
     },
     {
-      "id": "sec08-nonce-negative",
-      "input": "sec08-nonce-negative.exe",
+      "id": "tsa-005-nonce-negative",
+      "input": "tsa-nonce-negative.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28436,8 +28465,9 @@
       }
     },
     {
-      "id": "sec08-accuracy-range",
-      "input": "sec08-accuracy-range.exe",
+      "id": "tsa-005-accuracy-range",
+      "input": "tsa-accuracy-range.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28465,8 +28495,9 @@
       }
     },
     {
-      "id": "sec08-accuracy-order",
-      "input": "sec08-accuracy-order.exe",
+      "id": "tsa-005-accuracy-order",
+      "input": "tsa-accuracy-order.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28494,8 +28525,9 @@
       }
     },
     {
-      "id": "sec08-accuracy-unknown",
-      "input": "sec08-accuracy-unknown.exe",
+      "id": "tsa-005-accuracy-unknown",
+      "input": "tsa-accuracy-unknown.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28523,8 +28555,9 @@
       }
     },
     {
-      "id": "sec08-tsa",
-      "input": "sec08-tsa.exe",
+      "id": "tsa-006-tsa",
+      "input": "tsa-tsa.exe",
+      "decision": "TSA-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28552,8 +28585,9 @@
       }
     },
     {
-      "id": "sec08-extensions",
-      "input": "sec08-extensions.exe",
+      "id": "tsa-006-extensions",
+      "input": "tsa-extensions.exe",
+      "decision": "TSA-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28581,8 +28615,9 @@
       }
     },
     {
-      "id": "sec08-duplicate-rfc",
-      "input": "sec08-duplicate-rfc.exe",
+      "id": "tsa-004-duplicate-rfc",
+      "input": "tsa-duplicate-rfc.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28610,8 +28645,9 @@
       }
     },
     {
-      "id": "sec08-duplicate-counter",
-      "input": "sec08-duplicate-counter.exe",
+      "id": "tsa-004-duplicate-counter",
+      "input": "tsa-duplicate-counter.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28639,8 +28675,9 @@
       }
     },
     {
-      "id": "sec08-mixed",
-      "input": "sec08-mixed.exe",
+      "id": "tsa-004-mixed",
+      "input": "tsa-mixed.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28668,8 +28705,9 @@
       }
     },
     {
-      "id": "sec08-mixed-reverse",
-      "input": "sec08-mixed-reverse.exe",
+      "id": "tsa-004-mixed-reverse",
+      "input": "tsa-mixed-reverse.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28697,8 +28735,9 @@
       }
     },
     {
-      "id": "sec08-aliases",
-      "input": "sec08-aliases.exe",
+      "id": "tsa-004-aliases",
+      "input": "tsa-aliases.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28726,8 +28765,9 @@
       }
     },
     {
-      "id": "sec08-multi-value",
-      "input": "sec08-multi-value.exe",
+      "id": "tsa-004-multi-value",
+      "input": "tsa-multi-value.exe",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28755,8 +28795,9 @@
       }
     },
     {
-      "id": "sec08-eku-noncritical",
-      "input": "sec08-eku-noncritical.exe",
+      "id": "tsa-003-eku-noncritical",
+      "input": "tsa-eku-noncritical.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28784,8 +28825,9 @@
       }
     },
     {
-      "id": "sec08-eku-mixed",
-      "input": "sec08-eku-mixed.exe",
+      "id": "tsa-003-eku-mixed",
+      "input": "tsa-eku-mixed.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28813,8 +28855,9 @@
       }
     },
     {
-      "id": "sec08-eku-missing",
-      "input": "sec08-eku-missing.exe",
+      "id": "tsa-003-eku-missing",
+      "input": "tsa-eku-missing.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28842,8 +28885,9 @@
       }
     },
     {
-      "id": "sec08-key-usage",
-      "input": "sec08-key-usage.exe",
+      "id": "tsa-003-key-usage",
+      "input": "tsa-key-usage.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28871,8 +28915,9 @@
       }
     },
     {
-      "id": "sec08-substitution",
-      "input": "sec08-substitution.exe",
+      "id": "tsa-001-substitution",
+      "input": "tsa-substitution.exe",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28900,8 +28945,9 @@
       }
     },
     {
-      "id": "sec08-counter-substitution",
-      "input": "sec08-counter-substitution.exe",
+      "id": "tsa-001-counter-substitution",
+      "input": "tsa-counter-substitution.exe",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28929,8 +28975,9 @@
       }
     },
     {
-      "id": "sec08-signing-time",
-      "input": "sec08-signing-time.exe",
+      "id": "tsa-005-signing-time",
+      "input": "tsa-signing-time.exe",
+      "decision": "TSA-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28958,8 +29005,9 @@
       }
     },
     {
-      "id": "sec08-counter-eku-noncritical",
-      "input": "sec08-counter-eku-noncritical.exe",
+      "id": "tsa-003-counter-eku-noncritical",
+      "input": "tsa-counter-eku-noncritical.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28987,8 +29035,9 @@
       }
     },
     {
-      "id": "sec08-counter-eku-mixed",
-      "input": "sec08-counter-eku-mixed.exe",
+      "id": "tsa-003-counter-eku-mixed",
+      "input": "tsa-counter-eku-mixed.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29016,8 +29065,9 @@
       }
     },
     {
-      "id": "sec08-counter-eku-missing",
-      "input": "sec08-counter-eku-missing.exe",
+      "id": "tsa-003-counter-eku-missing",
+      "input": "tsa-counter-eku-missing.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29045,8 +29095,9 @@
       }
     },
     {
-      "id": "sec08-counter-key-usage",
-      "input": "sec08-counter-key-usage.exe",
+      "id": "tsa-003-counter-key-usage",
+      "input": "tsa-counter-key-usage.exe",
+      "decision": "TSA-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29074,8 +29125,9 @@
       }
     },
     {
-      "id": "sec08-good",
-      "input": "sec08-good.exe",
+      "id": "tsa-007-good",
+      "input": "tsa-good.exe",
+      "decision": "TSA-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29114,8 +29166,9 @@
       }
     },
     {
-      "id": "sec08-good-optional",
-      "input": "sec08-good-optional.exe",
+      "id": "tsa-007-good-optional",
+      "input": "tsa-good-optional.exe",
+      "decision": "TSA-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29154,8 +29207,9 @@
       }
     },
     {
-      "id": "sec08-good-counter",
-      "input": "sec08-good-counter.exe",
+      "id": "tsa-007-good-counter",
+      "input": "tsa-good-counter.exe",
+      "decision": "TSA-007",
       "command": [
         "verify",
         "--no-system-roots",

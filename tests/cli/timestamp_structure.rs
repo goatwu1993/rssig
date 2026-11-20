@@ -3,8 +3,8 @@
 use super::support::*;
 
 #[test]
-fn sec08_version() {
-    let output = run_fixture("sec08-version.exe", TRUSTED);
+fn tsa_version() {
+    let output = run_fixture("tsa-version.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -12,8 +12,8 @@ fn sec08_version() {
 }
 
 #[test]
-fn sec08_policy() {
-    let output = run_fixture("sec08-policy.exe", TRUSTED);
+fn tsa_policy() {
+    let output = run_fixture("tsa-policy.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -21,8 +21,8 @@ fn sec08_policy() {
 }
 
 #[test]
-fn sec08_serial_negative() {
-    let output = run_fixture("sec08-serial-negative.exe", TRUSTED);
+fn tsa_serial_negative() {
+    let output = run_fixture("tsa-serial-negative.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -30,8 +30,8 @@ fn sec08_serial_negative() {
 }
 
 #[test]
-fn sec08_serial_nonminimal() {
-    let output = run_fixture("sec08-serial-nonminimal.exe", TRUSTED);
+fn tsa_serial_nonminimal() {
+    let output = run_fixture("tsa-serial-nonminimal.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -39,8 +39,8 @@ fn sec08_serial_nonminimal() {
 }
 
 #[test]
-fn sec08_time_tag() {
-    let output = run_fixture("sec08-time-tag.exe", TRUSTED);
+fn tsa_time_tag() {
+    let output = run_fixture("tsa-time-tag.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -48,8 +48,8 @@ fn sec08_time_tag() {
 }
 
 #[test]
-fn sec08_unknown() {
-    let output = run_fixture("sec08-unknown.exe", TRUSTED);
+fn tsa_unknown() {
+    let output = run_fixture("tsa-unknown.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -57,8 +57,8 @@ fn sec08_unknown() {
 }
 
 #[test]
-fn sec08_order() {
-    let output = run_fixture("sec08-order.exe", TRUSTED);
+fn tsa_order() {
+    let output = run_fixture("tsa-order.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -66,8 +66,8 @@ fn sec08_order() {
 }
 
 #[test]
-fn sec08_duplicate_optional() {
-    let output = run_fixture("sec08-duplicate-optional.exe", TRUSTED);
+fn tsa_duplicate_optional() {
+    let output = run_fixture("tsa-duplicate-optional.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -75,8 +75,8 @@ fn sec08_duplicate_optional() {
 }
 
 #[test]
-fn sec08_ordering_false() {
-    let output = run_fixture("sec08-ordering-false.exe", TRUSTED);
+fn tsa_ordering_false() {
+    let output = run_fixture("tsa-ordering-false.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -84,8 +84,8 @@ fn sec08_ordering_false() {
 }
 
 #[test]
-fn sec08_nonce_negative() {
-    let output = run_fixture("sec08-nonce-negative.exe", TRUSTED);
+fn tsa_nonce_negative() {
+    let output = run_fixture("tsa-nonce-negative.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -93,8 +93,8 @@ fn sec08_nonce_negative() {
 }
 
 #[test]
-fn sec08_accuracy_range() {
-    let output = run_fixture("sec08-accuracy-range.exe", TRUSTED);
+fn tsa_accuracy_range() {
+    let output = run_fixture("tsa-accuracy-range.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -102,8 +102,8 @@ fn sec08_accuracy_range() {
 }
 
 #[test]
-fn sec08_accuracy_order() {
-    let output = run_fixture("sec08-accuracy-order.exe", TRUSTED);
+fn tsa_accuracy_order() {
+    let output = run_fixture("tsa-accuracy-order.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -111,8 +111,8 @@ fn sec08_accuracy_order() {
 }
 
 #[test]
-fn sec08_accuracy_unknown() {
-    let output = run_fixture("sec08-accuracy-unknown.exe", TRUSTED);
+fn tsa_accuracy_unknown() {
+    let output = run_fixture("tsa-accuracy-unknown.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -120,8 +120,8 @@ fn sec08_accuracy_unknown() {
 }
 
 #[test]
-fn sec08_tsa() {
-    let output = run_fixture("sec08-tsa.exe", TRUSTED);
+fn tsa_tsa() {
+    let output = run_fixture("tsa-tsa.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -129,8 +129,8 @@ fn sec08_tsa() {
 }
 
 #[test]
-fn sec08_extensions() {
-    let output = run_fixture("sec08-extensions.exe", TRUSTED);
+fn tsa_extensions() {
+    let output = run_fixture("tsa-extensions.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -138,8 +138,8 @@ fn sec08_extensions() {
 }
 
 #[test]
-fn sec08_duplicate_rfc() {
-    let output = run_fixture("sec08-duplicate-rfc.exe", TRUSTED);
+fn tsa_duplicate_rfc() {
+    let output = run_fixture("tsa-duplicate-rfc.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_signature");
@@ -147,8 +147,8 @@ fn sec08_duplicate_rfc() {
 }
 
 #[test]
-fn sec08_duplicate_counter() {
-    let output = run_fixture("sec08-duplicate-counter.exe", TRUSTED);
+fn tsa_duplicate_counter() {
+    let output = run_fixture("tsa-duplicate-counter.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_signature");
@@ -156,8 +156,8 @@ fn sec08_duplicate_counter() {
 }
 
 #[test]
-fn sec08_mixed() {
-    let output = run_fixture("sec08-mixed.exe", TRUSTED);
+fn tsa_mixed() {
+    let output = run_fixture("tsa-mixed.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -165,8 +165,8 @@ fn sec08_mixed() {
 }
 
 #[test]
-fn sec08_mixed_reverse() {
-    let output = run_fixture("sec08-mixed-reverse.exe", TRUSTED);
+fn tsa_mixed_reverse() {
+    let output = run_fixture("tsa-mixed-reverse.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -174,8 +174,8 @@ fn sec08_mixed_reverse() {
 }
 
 #[test]
-fn sec08_aliases() {
-    let output = run_fixture("sec08-aliases.exe", TRUSTED);
+fn tsa_aliases() {
+    let output = run_fixture("tsa-aliases.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -183,8 +183,8 @@ fn sec08_aliases() {
 }
 
 #[test]
-fn sec08_multi_value() {
-    let output = run_fixture("sec08-multi-value.exe", TRUSTED);
+fn tsa_multi_value() {
+    let output = run_fixture("tsa-multi-value.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -192,8 +192,8 @@ fn sec08_multi_value() {
 }
 
 #[test]
-fn sec08_eku_noncritical() {
-    let output = run_fixture("sec08-eku-noncritical.exe", TRUSTED);
+fn tsa_eku_noncritical() {
+    let output = run_fixture("tsa-eku-noncritical.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -201,8 +201,8 @@ fn sec08_eku_noncritical() {
 }
 
 #[test]
-fn sec08_eku_mixed() {
-    let output = run_fixture("sec08-eku-mixed.exe", TRUSTED);
+fn tsa_eku_mixed() {
+    let output = run_fixture("tsa-eku-mixed.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -210,8 +210,8 @@ fn sec08_eku_mixed() {
 }
 
 #[test]
-fn sec08_eku_missing() {
-    let output = run_fixture("sec08-eku-missing.exe", TRUSTED);
+fn tsa_eku_missing() {
+    let output = run_fixture("tsa-eku-missing.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -219,8 +219,8 @@ fn sec08_eku_missing() {
 }
 
 #[test]
-fn sec08_key_usage() {
-    let output = run_fixture("sec08-key-usage.exe", TRUSTED);
+fn tsa_key_usage() {
+    let output = run_fixture("tsa-key-usage.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_key_usage");
@@ -228,8 +228,8 @@ fn sec08_key_usage() {
 }
 
 #[test]
-fn sec08_substitution() {
-    let output = run_fixture("sec08-substitution.exe", TRUSTED);
+fn tsa_substitution() {
+    let output = run_fixture("tsa-substitution.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "timestamp_imprint_mismatch");
@@ -237,8 +237,8 @@ fn sec08_substitution() {
 }
 
 #[test]
-fn sec08_counter_substitution() {
-    let output = run_fixture("sec08-counter-substitution.exe", TRUSTED);
+fn tsa_counter_substitution() {
+    let output = run_fixture("tsa-counter-substitution.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "content_digest_mismatch");
@@ -246,8 +246,8 @@ fn sec08_counter_substitution() {
 }
 
 #[test]
-fn sec08_signing_time() {
-    let output = run_fixture("sec08-signing-time.exe", TRUSTED);
+fn tsa_signing_time() {
+    let output = run_fixture("tsa-signing-time.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_timestamp");
@@ -255,8 +255,8 @@ fn sec08_signing_time() {
 }
 
 #[test]
-fn sec08_counter_eku_noncritical() {
-    let output = run_fixture("sec08-counter-eku-noncritical.exe", TRUSTED);
+fn tsa_counter_eku_noncritical() {
+    let output = run_fixture("tsa-counter-eku-noncritical.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -264,8 +264,8 @@ fn sec08_counter_eku_noncritical() {
 }
 
 #[test]
-fn sec08_counter_eku_mixed() {
-    let output = run_fixture("sec08-counter-eku-mixed.exe", TRUSTED);
+fn tsa_counter_eku_mixed() {
+    let output = run_fixture("tsa-counter-eku-mixed.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -273,8 +273,8 @@ fn sec08_counter_eku_mixed() {
 }
 
 #[test]
-fn sec08_counter_eku_missing() {
-    let output = run_fixture("sec08-counter-eku-missing.exe", TRUSTED);
+fn tsa_counter_eku_missing() {
+    let output = run_fixture("tsa-counter-eku-missing.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_eku");
@@ -282,8 +282,8 @@ fn sec08_counter_eku_missing() {
 }
 
 #[test]
-fn sec08_counter_key_usage() {
-    let output = run_fixture("sec08-counter-key-usage.exe", TRUSTED);
+fn tsa_counter_key_usage() {
+    let output = run_fixture("tsa-counter-key-usage.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "invalid_key_usage");
@@ -291,8 +291,8 @@ fn sec08_counter_key_usage() {
 }
 
 #[test]
-fn sec08_good() {
-    let output = run_fixture("sec08-good.exe", TRUSTED);
+fn tsa_good() {
+    let output = run_fixture("tsa-good.exe", TRUSTED);
     expect_success(&output);
     let ts = &output.json["results"][0]["signatures"][0]["timestamp_verification"];
     assert_eq!(ts["signing_time"], 1800000000u64);
@@ -301,8 +301,8 @@ fn sec08_good() {
 }
 
 #[test]
-fn sec08_good_optional() {
-    let output = run_fixture("sec08-good-optional.exe", TRUSTED);
+fn tsa_good_optional() {
+    let output = run_fixture("tsa-good-optional.exe", TRUSTED);
     expect_success(&output);
     let ts = &output.json["results"][0]["signatures"][0]["timestamp_verification"];
     assert_eq!(ts["signing_time"], 1800000000u64);
@@ -311,8 +311,8 @@ fn sec08_good_optional() {
 }
 
 #[test]
-fn sec08_good_counter() {
-    let output = run_fixture("sec08-good-counter.exe", TRUSTED);
+fn tsa_good_counter() {
+    let output = run_fixture("tsa-good-counter.exe", TRUSTED);
     expect_success(&output);
     let ts = &output.json["results"][0]["signatures"][0]["timestamp_verification"];
     assert_eq!(ts["signing_time"], 1800000000u64);
