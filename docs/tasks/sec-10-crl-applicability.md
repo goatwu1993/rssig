@@ -568,6 +568,10 @@ relic 02c54d58 and BoringSSL `main`.
     That evaluation still rejects a revoked rollover certificate:
     `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected`
     (`sec06-root-akid-revoked-rollover.crl`, RFC 5280 section 6.3.3).
+    Since SEC-24, webpki no longer confirms in production: rssig's per-key
+    evaluation decides alone, and webpki's signer-only confirmation described
+    here runs only in the test-only cross-check
+    ([SEC-24](sec-24-single-revocation-authority.md)).
   - *CRLs without an authorityKeyIdentifier* (`sec06-root.crl`,
     `sec06-rollover.crl`): the libraries differ. OpenSSL keeps one best CRL
     per name and has no fallback after its signature fails
@@ -730,7 +734,8 @@ relic 02c54d58 and BoringSSL `main`.
   (Bouncy Castle would fetch), not this one.
 - **Declined after review (already decided):** confirming intermediates on a
   key-rollover path with webpki (it cannot confirm two same-name issuers;
-  rssig's per-key evaluation decides, SEC-16 above); a batch-wide fetch
+  rssig's per-key evaluation decides, SEC-16 above; moot since SEC-24 removed
+  the production confirmation); a batch-wide fetch
   bound (the owner's per-verification choice); one JSON shape for absent
   URLs on artifacts and failures (the artifact change is in the migration
   notes); spreading a URL-less failure beside an answer by certificate over

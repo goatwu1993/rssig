@@ -827,7 +827,10 @@ fn same_name_different_keys<'a>(
             chosen[position + 1..]
                 .iter()
                 .filter(move |second| {
-                    crls[first.index].issuer == crls[second.index].issuer
+                    // One CRL cannot verify under two keys; skipped as the
+                    // former rule did.
+                    first.index != second.index
+                        && crls[first.index].issuer == crls[second.index].issuer
                         && first.issuer_spki != second.issuer_spki
                 })
                 .map(move |second| (first, second))

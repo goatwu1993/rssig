@@ -95,8 +95,9 @@ every test build:
   release build can never contain it, even through `cargo build --release
   --all-targets`, which unifies the self dev-dependency's feature. Release
   test runs therefore skip the cross-check.
-- It is skipped when webpki cannot parse a chosen CRL, so later support for
-  CRL features webpki lacks (SEC-18) does not trip it.
+- It asserts that every chosen CRL is one webpki can parse, which holds
+  today because rssig sets such CRLs aside. Supporting CRL features webpki
+  lacks (SEC-18) must make it skip those paths on purpose.
 - The `revocation-crosscheck` feature enables no other feature. A
   self dev-dependency (`rssig = { path = ".", default-features = false,
   features = ["revocation-crosscheck"] }`) turns it on for unit and
@@ -105,6 +106,14 @@ every test build:
   -v`). Reduced-feature CI runs keep their feature sets: the test counts for
   `--no-default-features`, `verify-core` and `verify` match the previous
   commit (36, 107, 219).
+
+**Accepted risk:** production has no runtime backstop for revocation any
+more. A regression in serial matching or CRL signature handling is caught by
+the cases and, in debug test runs, by this cross-check; a release build or a
+test run without it has neither. CI runs `cargo test --locked` in debug, and a
+compile-time guard in the unit-test module (`src/tests/crosscheck_active.rs`)
+fails the debug test build if the cross-check is not compiled in, for example
+if the self dev-dependency is removed.
 
 What it can catch is limited. webpki only sees the CRLs rssig chose, so it
 checks serial lookup, the CRL signature under the algorithm adapter, and the

@@ -56,16 +56,17 @@ pub(super) fn confirm(
         .filter_map(|&index| crls[index].webpki.clone().ok())
         .map(webpki::CertRevocationList::from)
         .collect();
-    // No oracle when webpki cannot use a chosen CRL (a feature rssig may
-    // support and webpki does not) or when nothing was chosen.
-    if picked.is_empty() || picked.len() != indices.len() {
-        return;
-    }
+    // rssig never chooses a CRL that webpki cannot parse (it reports it as
+    // `invalid_crl` and sets it aside), and every accepted path has a chosen
+    // CRL per certificate, so neither can happen. If rssig starts to accept
+    // CRL features webpki lacks (SEC-18), skip those paths here on purpose.
+    assert!(
+        !indices.is_empty() && picked.len() == indices.len(),
+        "SEC-24 revocation cross-check: a chosen CRL is missing or webpki cannot parse it"
+    );
     let picked_refs: Vec<_> = picked.iter().collect();
-    let Ok(options) = webpki::RevocationOptionsBuilder::new(&picked_refs) else {
-        return;
-    };
-    let options = options
+    let options = webpki::RevocationOptionsBuilder::new(&picked_refs)
+        .expect("at least one CRL, asserted above")
         .with_depth(if key_rollover {
             webpki::RevocationCheckDepth::EndEntity
         } else {
