@@ -30,7 +30,8 @@ fn rejected(file: &str, flag: &str, fragment: &str) {
     let stderr = String::from_utf8(stderr).unwrap();
     assert!(stderr.starts_with("error:"), "{stderr}");
     assert!(stderr.contains(file), "{stderr}");
-    assert!(stderr.contains(fragment), "{stderr}");
+    // Each cause is printed once, not repeated through the error's source chain.
+    assert_eq!(stderr.matches(fragment).count(), 1, "{stderr}");
 }
 
 #[test]

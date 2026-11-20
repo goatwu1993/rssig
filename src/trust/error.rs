@@ -73,19 +73,15 @@ pub struct TrustLoadError {
     kind: TrustLoadErrorKind,
     code: TrustLoadErrorCode,
     entry_index: Option<usize>,
-    inner: anyhow::Error,
+    inner: Option<anyhow::Error>,
 }
 impl TrustLoadError {
     pub(crate) fn new(
         kind: TrustLoadErrorKind,
         code: TrustLoadErrorCode,
         entry_index: Option<usize>,
-        inner: anyhow::Error,
+        inner: Option<anyhow::Error>,
     ) -> Self {
-        let inner = match entry_index {
-            Some(index) => inner.context(alloc::format!("trust input entry {index}")),
-            None => inner,
-        };
         Self {
             kind,
             code,
@@ -104,13 +100,41 @@ impl TrustLoadError {
         self.entry_index
     }
 }
+/// `{}` names what failed from the typed kind, code and entry; `{:#}` adds the
+/// whole causal chain. `source()` is that chain, so a reporter walking sources
+/// prints each cause once.
 impl core::fmt::Display for TrustLoadError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:#}", self.inner)
+        use TrustLoadErrorCode as C;
+        use TrustLoadErrorKind as K;
+        f.write_str(match (self.code, self.kind) {
+            (C::EmptyInput, K::SystemRoots) => "empty system root store",
+            (C::EmptyInput, _) => "empty trust input",
+            (C::InvalidEncoding, K::Roots) => "invalid root encoding",
+            (C::InvalidEncoding, K::Crl) => "invalid CRL encoding",
+            (C::InvalidEncoding, K::SystemRoots) => "invalid system root encoding",
+            (C::UnsupportedAnchor, _) => "unsupported trust anchor",
+            (C::NativeEnumeration, _) => "system root enumeration failed",
+        })?;
+        if let Some(index) = self.entry_index {
+            // Native positions come from the OS store, not the caller's input.
+            let source = match self.kind {
+                K::SystemRoots => "system root store",
+                K::Roots | K::Crl => "trust input",
+            };
+            write!(f, " in {source} entry {index}")?;
+        }
+        if let (true, Some(inner)) = (f.alternate(), &self.inner) {
+            write!(f, ": {inner:#}")?;
+        }
+        Ok(())
     }
 }
 impl core::error::Error for TrustLoadError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-        Some(self.inner.as_ref())
+        self.inner.as_ref().map(|inner| {
+            let inner: &(dyn core::error::Error + 'static) = inner.as_ref();
+            inner
+        })
     }
 }

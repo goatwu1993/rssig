@@ -1,7 +1,7 @@
 //! Atomic trust input loading. Decoding and anchor extraction are not verification.
 use super::{TrustLoadError, TrustLoadErrorCode as Code, TrustLoadErrorKind as Kind, TrustStore};
 use alloc::{format, vec, vec::Vec};
-use anyhow::{Result, ensure};
+use anyhow::ensure;
 use der::Decode;
 use rustls_pki_types::CertificateDer;
 use x509_cert::{Certificate, crl::CertificateList};
@@ -10,7 +10,7 @@ impl TrustStore {
     /// Atomically load DER or a nonempty CERTIFICATE PEM bundle.
     /// Reject every undecodable/unsupported anchor; deduplicate exact DER bytes.
     /// Anchor extraction does not authenticate certificates or validate root policy.
-    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
+    pub fn add_roots(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
         let pending = decode_input(bytes, Kind::Roots)?;
         for bytes in pending {
             let root = CertificateDer::from(bytes);
@@ -23,7 +23,7 @@ impl TrustStore {
 
     /// Atomically load DER or a nonempty X509 CRL PEM bundle, deduplicating exact DER.
     /// Loading checks syntax only, never signature, applicability or freshness.
-    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
+    pub fn add_crl(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
         let pending = decode_input(bytes, Kind::Crl)?;
         for crl in pending {
             if !self.crls.contains(&crl) {
@@ -33,26 +33,27 @@ impl TrustStore {
         Ok(())
     }
 
-    /// Add configured trust anchors with the same atomic policy as `add_roots_typed`.
-    pub fn add_roots(&mut self, bytes: &[u8]) -> Result<()> {
-        self.add_roots_typed(bytes).map_err(Into::into)
+    #[deprecated(note = "use `add_roots`, which now returns `TrustLoadError`")]
+    pub fn add_roots_typed(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
+        self.add_roots(bytes)
     }
 
-    /// Add supplied CRL artifacts with the same atomic policy as `add_crl_typed`.
-    pub fn add_crl(&mut self, bytes: &[u8]) -> Result<()> {
-        self.add_crl_typed(bytes).map_err(Into::into)
+    #[deprecated(note = "use `add_crl`, which now returns `TrustLoadError`")]
+    pub fn add_crl_typed(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
+        self.add_crl(bytes)
     }
 
     /// Enumerate OS roots only; reject partial enumeration, empty or unusable stores.
     /// No native signature, path or revocation validation is called.
     #[cfg(feature = "system-roots")]
-    pub fn from_system_typed() -> Result<Self, TrustLoadError> {
+    pub fn from_system() -> Result<Self, TrustLoadError> {
         Self::from_native(rustls_native_certs::load_native_certs())
     }
 
     #[cfg(feature = "system-roots")]
-    pub fn from_system() -> Result<Self> {
-        Self::from_system_typed().map_err(Into::into)
+    #[deprecated(note = "use `from_system`, which now returns `TrustLoadError`")]
+    pub fn from_system_typed() -> Result<Self, TrustLoadError> {
+        Self::from_system()
     }
 
     #[cfg(feature = "system-roots")]
@@ -62,10 +63,10 @@ impl TrustStore {
                 Kind::SystemRoots,
                 Code::NativeEnumeration,
                 None,
-                anyhow::Error::new(NativeErrors(native.errors)).context(format!(
-                    "system root enumeration failed; {} returned certificates discarded",
-                    native.certs.len()
-                )),
+                Some(anyhow::Error::new(NativeErrors {
+                    errors: native.errors,
+                    discarded: native.certs.len(),
+                })),
             ));
         }
         if native.certs.is_empty() {
@@ -73,7 +74,7 @@ impl TrustStore {
                 Kind::SystemRoots,
                 Code::EmptyInput,
                 None,
-                anyhow::anyhow!("empty system root store"),
+                None,
             ));
         }
         let mut store = Self::default();
@@ -120,7 +121,7 @@ fn validate(bytes: &[u8], kind: Kind, index: usize) -> Result<(), TrustLoadError
             kind,
             Code::InvalidEncoding,
             Some(index),
-            crate::compat_error(e),
+            Some(crate::compat_error(e)),
         )
     })?;
     if kind != Kind::Crl {
@@ -129,7 +130,7 @@ fn validate(bytes: &[u8], kind: Kind, index: usize) -> Result<(), TrustLoadError
                 kind,
                 Code::UnsupportedAnchor,
                 Some(index),
-                anyhow::anyhow!("unsupported trust anchor: {e:?}"),
+                Some(anyhow::anyhow!("{e:?}")),
             )
         })?;
     }
@@ -139,12 +140,7 @@ fn validate(bytes: &[u8], kind: Kind, index: usize) -> Result<(), TrustLoadError
 fn decode_input(bytes: &[u8], kind: Kind) -> Result<Vec<Vec<u8>>, TrustLoadError> {
     let mut rest = bytes.trim_ascii();
     if rest.is_empty() {
-        return Err(TrustLoadError::new(
-            kind,
-            Code::EmptyInput,
-            None,
-            anyhow::anyhow!("empty trust input"),
-        ));
+        return Err(TrustLoadError::new(kind, Code::EmptyInput, None, None));
     }
     if !rest.starts_with(b"-----BEGIN") {
         // DER must be exact; only PEM permits surrounding ASCII whitespace.
@@ -161,7 +157,7 @@ fn decode_input(bytes: &[u8], kind: Kind) -> Result<Vec<Vec<u8>>, TrustLoadError
     let mut pending = Vec::new();
     while !rest.is_empty() {
         let index = pending.len() + 1;
-        let decoded = (|| -> Result<_> {
+        let decoded = (|| -> anyhow::Result<_> {
             ensure!(
                 rest.starts_with(header.as_bytes()),
                 "expected {label} PEM label; unexpected data"
@@ -176,7 +172,7 @@ fn decode_input(bytes: &[u8], kind: Kind) -> Result<Vec<Vec<u8>>, TrustLoadError
             rest = rest[end..].trim_ascii_start();
             Ok(decoded)
         })()
-        .map_err(|e| TrustLoadError::new(kind, Code::InvalidEncoding, Some(index), e))?;
+        .map_err(|e| TrustLoadError::new(kind, Code::InvalidEncoding, Some(index), Some(e)))?;
         validate(&decoded, kind, index)?;
         pending.push(decoded);
     }
@@ -185,13 +181,25 @@ fn decode_input(bytes: &[u8], kind: Kind) -> Result<Vec<Vec<u8>>, TrustLoadError
 
 #[cfg(feature = "system-roots")]
 #[derive(Debug)]
-struct NativeErrors(Vec<rustls_native_certs::Error>);
+struct NativeErrors {
+    errors: Vec<rustls_native_certs::Error>,
+    discarded: usize,
+}
 
+/// Lists every native error. It reports no `source()`: returning one of the
+/// listed errors would print it a second time.
 #[cfg(feature = "system-roots")]
 impl core::fmt::Display for NativeErrors {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} native loading errors", self.0.len())?;
-        for error in &self.0 {
+        write!(
+            f,
+            "{} native loading errors; {} returned certificates discarded",
+            self.errors.len(),
+            self.discarded
+        )?;
+        // rustls-native-certs already writes its I/O cause into `Display` (and
+        // also returns it from `source()`), so print each error exactly once.
+        for error in &self.errors {
             write!(f, "; {error}")?;
         }
         Ok(())
@@ -199,11 +207,7 @@ impl core::fmt::Display for NativeErrors {
 }
 
 #[cfg(feature = "system-roots")]
-impl core::error::Error for NativeErrors {
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-        self.0.first().map(|e| e as _)
-    }
-}
+impl core::error::Error for NativeErrors {}
 
 #[cfg(test)]
 mod tests {
@@ -254,23 +258,23 @@ mod tests {
             b"-----BEGIN X509 CRL-----\n!\n-----END X509 CRL-----",
         ] {
             assert_eq!(
-                store.add_roots_typed(bytes).unwrap_err().code(),
+                store.add_roots(bytes).unwrap_err().code(),
                 Code::InvalidEncoding
             );
             assert_eq!(
-                store.add_crl_typed(bytes).unwrap_err().code(),
+                store.add_crl(bytes).unwrap_err().code(),
                 Code::InvalidEncoding
             );
         }
         for extra in [b"!".as_slice(), b"\n", b"\0", ROOT] {
             let bytes = [ROOT, extra].concat();
             assert_eq!(
-                store.add_roots_typed(&bytes).unwrap_err().code(),
+                store.add_roots(&bytes).unwrap_err().code(),
                 Code::InvalidEncoding
             );
             let bytes = [CRL, extra].concat();
             assert_eq!(
-                store.add_crl_typed(&bytes).unwrap_err().code(),
+                store.add_crl(&bytes).unwrap_err().code(),
                 Code::InvalidEncoding
             );
         }
@@ -305,19 +309,22 @@ mod tests {
             assert_eq!(error.kind(), Kind::SystemRoots);
             assert_eq!(error.code(), Code::NativeEnumeration);
             assert_eq!(error.entry_index(), None);
-            let text = format!("{error}");
+            assert_eq!(format!("{error}"), "system root enumeration failed");
+            let text = format!("{error:#}");
             assert!(text.contains("2 native loading errors"), "{text}");
-            assert!(text.contains("native fault 0"), "{text}");
-            assert!(text.contains("native fault 1"), "{text}");
             assert!(
                 text.contains(&format!("{} returned certificates discarded", certs.len())),
                 "{text}"
             );
-            let mut cause: &dyn core::error::Error = &error;
-            while let Some(source) = cause.source() {
-                cause = source;
+            for fragment in ["native fault 0", "native fault 1"] {
+                assert_eq!(text.matches(fragment).count(), 1, "{text}");
             }
-            assert_eq!(format!("{cause}"), "native fault 0");
+            assert_eq!(
+                text.matches("injected root enumeration failure").count(),
+                2,
+                "{text}"
+            );
+            crate::assert_causes_once(&error, &text);
         }
     }
 
@@ -341,6 +348,11 @@ mod tests {
             assert_eq!(error.kind(), Kind::SystemRoots);
             assert_eq!(error.code(), code);
             assert_eq!(error.entry_index(), Some(2));
+            // OS-store positions are not user trust input.
+            assert!(
+                error.to_string().ends_with(" in system root store entry 2"),
+                "{error}"
+            );
         }
         let store = TrustStore::from_native(native(&[ROOT, ROOT], 0)).unwrap();
         assert_eq!(store.roots.len(), 1);

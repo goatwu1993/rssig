@@ -23,6 +23,9 @@ fn parser_errors_are_independent_of_verification() {
         assert_eq!(error.kind(), kind);
         let _: &dyn core::error::Error = &error;
         assert!(!error.to_string().is_empty());
+        // `{}` names the kind; `{:#}` appends the causes (contract unit-tested per kind).
+        let chain = format!("{error:#}");
+        assert!(chain.starts_with(&format!("{error}: ")), "{chain}");
     }
     let pe = Pe::parse(include_bytes!("fixtures/bad-certificate-payload.exe")).unwrap();
     assert_eq!(
@@ -502,12 +505,7 @@ fn structured_signer_bounds_and_attribute_rules_are_explicit() {
         v
     };
     let duplicate = wrap(0xa0, &[attr, attr].concat());
-    assert!(
-        Attributes::parse(&duplicate)
-            .unwrap_err()
-            .to_string()
-            .contains("duplicate")
-    );
+    assert!(format!("{:#}", Attributes::parse(&duplicate).unwrap_err()).contains("duplicate"));
     let mut empty_value = attr.to_vec();
     empty_value.truncate(7);
     empty_value[1] = 7;

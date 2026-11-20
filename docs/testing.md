@@ -205,6 +205,9 @@ Suite version 1 uses:
   text fragments. Exactly one of `json`, `stdout_contains`, or `stderr_contains`
   selects the output mode. Text cases reject JSON output; JSON cases require
   exactly one JSON document. Stderr must be empty unless explicitly expected.
+- `expect.stderr_once`: optional with `stderr_contains`; nonempty array of plain
+  text fragments that must each occur exactly once in stderr, so a diagnostic
+  states each cause once.
 
 Inputs are relative to the suite's fixtures directory. Root/CRL argument paths
 are relative to the suite file, as are explicit `fixtures/...` argv paths. The

@@ -1,7 +1,7 @@
 # Root and CRL loading policy (SEC-07)
 
-Every explicit load is atomic. `TrustStore::add_roots[_typed]` and
-`add_crl[_typed]` validate the entire input before adding anything. A failure
+Every explicit load is atomic. `TrustStore::add_roots` and
+`add_crl` validate the entire input before adding anything. A failure
 leaves all previously loaded roots and CRLs unchanged. Separate successful
 calls remain committed if a later call fails. The CLI stops on any loading
 failure before verifying files: exit 2, plain stderr naming the source file
@@ -45,11 +45,11 @@ supported RustCrypto algorithms. Name constraints remain path inputs. The
 [certificate path policy](certificate-path-policy.md) and its existing
 expired/profile/constrained-root fixtures pin these boundaries.
 
-`from_system[_typed]` treats native enumeration as one atomic operation:
+`from_system` treats native enumeration as one atomic operation:
 
 - Any enumeration error rejects the complete result, including partial results.
-  Diagnostics include the returned certificate count, all native error messages,
-  and a causal chain through the first native error.
+  Diagnostics include the returned certificate count and every native error
+  message, each stated once in a single cause with no further `source()`.
 - An error-free empty result is rejected.
 - Every returned certificate passes the same X.509 decoding and anchor extraction
   checks as explicit roots; the first failure rejects the whole result.
@@ -79,9 +79,16 @@ non-exhaustive:
 
 Entry positions are one-based: DER uses 1, PEM uses block order, native roots use
 enumeration order. Empty-input and enumeration errors have no entry position.
-Match typed kinds/codes, not prose or dependency error strings. `source()` keeps
-causal diagnostics. Legacy `anyhow::Result` methods retain their signatures and
-wrap the same `TrustLoadError`, which can be downcast by callers.
+Match typed kinds/codes, not prose or dependency error strings. `{}` is a summary
+built from the kind, code and entry position (for example
+`invalid root encoding in trust input entry 2`, or
+`unsupported trust anchor in system root store entry 5` for a native root),
+`{:#}` appends every cause once,
+and `source()` walks those causes, so a reporter that walks the chain prints each
+cause once. Native enumeration lists every native error in one cause and reports
+no further `source()`. `add_roots`, `add_crl` and `from_system` return
+`TrustLoadError` directly; the `_typed` names are deprecated aliases. No public
+signature names `anyhow`.
 
 CRL loading checks syntax only. A syntactically valid forged, stale, unsupported
 or unrelated CRL may load; required revocation validation must still authenticate

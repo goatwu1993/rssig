@@ -99,6 +99,9 @@ impl Suite {
                     case.id
                 ));
             }
+            if !expect.stderr_once.is_empty() && expect.stderr_contains.is_empty() {
+                return Err(format!("stderr_once requires stderr_contains: {}", case.id));
+            }
             if case.id.is_empty() || !ids.insert(&case.id) || case.command.is_empty() {
                 return Err(format!("empty/duplicate case id or command: {}", case.id));
             }
@@ -314,6 +317,14 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
             if !actual.contains(fragment) {
                 failures.push(format!("{name}: expected {fragment:?}, got {actual:?}"));
             }
+        }
+    }
+    for fragment in &case.expect.stderr_once {
+        let count = stderr.matches(fragment.as_str()).count();
+        if count != 1 {
+            failures.push(format!(
+                "stderr: expected {fragment:?} exactly once, found {count}: {stderr:?}"
+            ));
         }
     }
     if exit_code != case.expect.exit_code {
@@ -540,6 +551,42 @@ fn specification_detects_incorrect_provider_request_expectations() {
             .validate()
             .unwrap_err()
             .contains("requires an injected source")
+    );
+}
+
+#[test]
+fn specification_stderr_once_requires_text_stderr_and_counts_repeats() {
+    let case = serde_json::json!({"id":"one","command":["--help"],"expect":{"exit_code":0,"json":{"ok":true},"stderr_once":["x"]}});
+    let suite: Suite = serde_json::from_value(
+        serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+    )
+    .unwrap();
+    assert_eq!(
+        suite.validate().unwrap_err(),
+        "stderr_once requires stderr_contains: one"
+    );
+
+    let parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let mut suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
+    let case = suite
+        .cases
+        .iter_mut()
+        .find(|c| c.id == "sec07-empty-roots")
+        .unwrap();
+    let fixtures = parent.join(&suite.fixtures);
+    let prefix = Path::new(&suite.fixtures);
+    assert!(
+        execute(case, &parent, &fixtures, prefix)
+            .failures
+            .is_empty()
+    );
+    // "e" occurs many times in the diagnostic, so an exactly-once check must fail.
+    case.expect.stderr_once = vec!["e".into()];
+    let result = execute(case, &parent, &fixtures, prefix);
+    assert!(
+        result.failures.iter().any(|f| f.contains("exactly once")),
+        "{:?}",
+        result.failures
     );
 }
 

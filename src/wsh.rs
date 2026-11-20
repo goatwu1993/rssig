@@ -4,7 +4,7 @@ use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::wsh::{Kind, Wsh};
 use alloc::vec::Vec;
 #[cfg(test)]
-use alloc::{format, string::ToString, vec};
+use alloc::{format, vec};
 #[cfg(test)]
 use std::path::Path;
 const KINDS: [Kind; 3] = [Kind::VbScript, Kind::JScript, Kind::Wsf];
@@ -138,11 +138,11 @@ mod tests {
     fn resource_limits_reject_before_base64_or_xml_allocation() {
         let too_large = vec![b' '; 64 * 1024 * 1024 + 1];
         assert!(
-            Wsh::parse(&too_large, Kind::VbScript)
-                .err()
-                .unwrap()
-                .to_string()
-                .contains("64 MiB")
+            format!(
+                "{:#}",
+                Wsh::parse(&too_large, Kind::VbScript).err().unwrap()
+            )
+            .contains("64 MiB")
         );
         drop(too_large);
         let (begin, end, prefix) = Kind::JScript.markers();
@@ -150,11 +150,11 @@ mod tests {
         block.push_str(&"A".repeat(16 * 1024 * 1024));
         block.push_str(&format!("\r\n{end}\r\n"));
         assert!(
-            Wsh::parse(block.as_bytes(), Kind::JScript)
-                .err()
-                .unwrap()
-                .to_string()
-                .contains("oversized")
+            format!(
+                "{:#}",
+                Wsh::parse(block.as_bytes(), Kind::JScript).err().unwrap()
+            )
+            .contains("oversized")
         );
     }
     #[test]

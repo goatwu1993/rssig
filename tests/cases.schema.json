@@ -84,6 +84,14 @@
                   "type": "string"
                 }
               },
+              "stderr_once": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Plain text fragments that must each occur exactly once in stderr, so a diagnostic does not repeat a cause. Requires stderr_contains."
+              },
               "crl_requests": {
                 "type": "array",
                 "items": {
@@ -91,6 +99,11 @@
                 },
                 "description": "Exact ordered URLs requested from the injected CRL source, including failed requests. Requires crl_responses; an empty array asserts no provider calls."
               }
+            },
+            "dependentRequired": {
+              "stderr_once": [
+                "stderr_contains"
+              ]
             },
             "oneOf": [
               {

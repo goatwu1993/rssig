@@ -6851,6 +6851,7 @@
         "crl-fetch-injected-forged",
         "crl-fetch-injected-good",
         "crl-fetch-injected-revoked",
+        "crl-fetch-injected-undecodable",
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
