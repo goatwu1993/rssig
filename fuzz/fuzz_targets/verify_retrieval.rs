@@ -28,14 +28,14 @@ static TEST_ROOT: LazyLock<TrustStore> = LazyLock::new(|| {
     trust
 });
 
-static SEC06: LazyLock<TrustStore> = LazyLock::new(|| {
+static PATH_PKI: LazyLock<TrustStore> = LazyLock::new(|| {
     let mut trust = TrustStore::default();
     trust
         .add_roots(include_bytes!("../../tests/fixtures/path-root.der"))
-        .expect("committed SEC-06 root loads");
+        .expect("committed path test root loads");
     trust
         .add_crl(include_bytes!("../../tests/fixtures/path-issuer.crl"))
-        .expect("committed SEC-06 issuer CRL loads");
+        .expect("committed path test issuer CRL loads");
     trust
 });
 
@@ -68,7 +68,7 @@ fuzz_target!(|data: &[u8]| {
         let crl = include_bytes!("../../tests/fixtures/good.crl");
         let _ = verify_with_crl_source(data, None, &options, &mut Answer(crl));
     } else {
-        let options = VerifyOptions::trusted(&SEC06, NOW);
+        let options = VerifyOptions::trusted(&PATH_PKI, NOW);
         let input = include_bytes!("../../tests/fixtures/crl-chain-crl-dp.exe");
         let _ = verify_with_crl_source(input, None, &options, &mut Answer(data));
     }
