@@ -188,17 +188,17 @@
       "id": "trust-policy",
       "claim": "Leaf/CA EKU and KeyUsage restrictions",
       "cases": [
-        "intermediate-without-eku",
-        "ca-key-usage",
-        "bad-signer-eku",
-        "bad-signer-key-usage",
+        "path-007-intermediate-without-eku",
+        "path-008-ca-key-usage",
+        "path-007-bad-signer-eku",
+        "path-008-bad-signer-key-usage",
         "wrong-tsa-eku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-ca-no-ku"
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-008-good-leaf-no-ku",
+        "path-008-good-ca-no-ku"
       ]
     },
     {
@@ -524,50 +524,50 @@
       "id": "trust-path-constraints",
       "claim": "BasicConstraints, path length, DNS permitted/excluded subtrees and unknown critical extensions",
       "cases": [
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-pathlen",
-        "bad-sec06-pathlen",
-        "good-sec06-name-good",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "good-sec06-leaf-noncritical",
-        "bad-sec06-leaf-critical",
-        "good-sec06-ca-noncritical",
-        "bad-sec06-ca-critical"
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-003-good-leaf-no-bc",
+        "path-004-good-pathlen",
+        "path-004-bad-pathlen",
+        "path-005-good-name-good",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-006-good-leaf-noncritical",
+        "path-006-bad-leaf-critical",
+        "path-006-good-ca-noncritical",
+        "path-006-bad-ca-critical"
       ]
     },
     {
       "id": "trust-path-selection",
       "claim": "Exact selected chains with wrong-key issuers, callback rejection, cross-signing and cycles in either order",
       "cases": [
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-wrong-key",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "bad-sec06-cross-untrusted",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cross-other-root",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed"
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-002-bad-wrong-key",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-001-bad-cross-untrusted",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cross-other-root",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed"
       ]
     },
     {
       "id": "trust-anchor-profile",
       "claim": "Configured anchor validity/profile treatment, DNS constraints and selected-anchor reporting",
       "cases": [
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection"
       ]
     }
   ],
@@ -837,28 +837,28 @@
         "unknown-root",
         "msi-unknown-root",
         "cab-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cross-untrusted"
+        "path-001-bad-cycle",
+        "path-001-bad-cross-untrusted"
       ],
       "gap": ""
     },
     "invalid_eku": {
       "cases": [
         "wrong-tsa-eku",
-        "bad-signer-eku",
+        "path-007-bad-signer-eku",
         "msi-wrong-tsa-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku"
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku"
       ],
       "gap": ""
     },
     "invalid_key_usage": {
       "cases": [
         "crl-030-fetch-path-failing-key-usage-asks-nothing",
-        "ca-key-usage",
-        "bad-signer-key-usage",
+        "path-008-ca-key-usage",
+        "path-008-bad-signer-key-usage",
         "msi-ca-key-usage",
-        "bad-sec06-ca-ku",
+        "path-008-bad-ca-ku",
         "crl-ca-no-crl-sign"
       ],
       "gap": ""
@@ -999,12 +999,12 @@
         "bad-certificate-signature",
         "bad-intermediate-signature",
         "msi-bad-certificate-signature",
-        "bad-sec06-ca-false",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-wrong-key",
+        "path-003-bad-ca-false",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-002-bad-wrong-key",
         "crl-008-self-issued-rollover-with-both-crls-is-rejected"
       ],
       "gap": ""

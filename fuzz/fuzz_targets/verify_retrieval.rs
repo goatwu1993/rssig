@@ -31,10 +31,10 @@ static TEST_ROOT: LazyLock<TrustStore> = LazyLock::new(|| {
 static SEC06: LazyLock<TrustStore> = LazyLock::new(|| {
     let mut trust = TrustStore::default();
     trust
-        .add_roots(include_bytes!("../../tests/fixtures/sec06-root.der"))
+        .add_roots(include_bytes!("../../tests/fixtures/path-root.der"))
         .expect("committed SEC-06 root loads");
     trust
-        .add_crl(include_bytes!("../../tests/fixtures/sec06-issuer.crl"))
+        .add_crl(include_bytes!("../../tests/fixtures/path-issuer.crl"))
         .expect("committed SEC-06 issuer CRL loads");
     trust
 });

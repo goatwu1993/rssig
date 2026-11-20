@@ -1008,8 +1008,9 @@
       }
     },
     {
-      "id": "intermediate-without-eku",
+      "id": "path-007-intermediate-without-eku",
       "input": "good-intermediate.exe",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -1027,8 +1028,9 @@
       }
     },
     {
-      "id": "ca-key-usage",
+      "id": "path-008-ca-key-usage",
       "input": "bad-ca-key-usage.exe",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -1663,8 +1665,9 @@
       }
     },
     {
-      "id": "bad-signer-eku",
+      "id": "path-007-bad-signer-eku",
       "input": "bad-signer-eku.exe",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -1702,8 +1705,9 @@
       }
     },
     {
-      "id": "bad-signer-key-usage",
+      "id": "path-008-bad-signer-key-usage",
       "input": "bad-signer-key-usage.exe",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -25406,23 +25410,24 @@
       }
     },
     {
-      "id": "good-sec06-basic",
-      "input": "good-sec06-basic.exe",
+      "id": "path-003-good-basic",
+      "input": "good-path-basic.exe",
+      "decision": "PATH-003",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -25464,23 +25469,24 @@
       }
     },
     {
-      "id": "bad-sec06-ca-false",
-      "input": "bad-sec06-ca-false.exe",
+      "id": "path-003-bad-ca-false",
+      "input": "bad-path-ca-false.exe",
+      "decision": "PATH-003",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25502,23 +25508,24 @@
       }
     },
     {
-      "id": "bad-sec06-ca-missing-bc",
-      "input": "bad-sec06-ca-missing-bc.exe",
+      "id": "path-003-bad-ca-missing-bc",
+      "input": "bad-path-ca-missing-bc.exe",
+      "decision": "PATH-003",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25540,23 +25547,24 @@
       }
     },
     {
-      "id": "bad-sec06-leaf-ca",
-      "input": "bad-sec06-leaf-ca.exe",
+      "id": "path-003-bad-leaf-ca",
+      "input": "bad-path-leaf-ca.exe",
+      "decision": "PATH-003",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25578,23 +25586,24 @@
       }
     },
     {
-      "id": "bad-sec06-ca-critical",
-      "input": "bad-sec06-ca-critical.exe",
+      "id": "path-006-bad-ca-critical",
+      "input": "bad-path-ca-critical.exe",
+      "decision": "PATH-006",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25616,23 +25625,24 @@
       }
     },
     {
-      "id": "bad-sec06-leaf-critical",
-      "input": "bad-sec06-leaf-critical.exe",
+      "id": "path-006-bad-leaf-critical",
+      "input": "bad-path-leaf-critical.exe",
+      "decision": "PATH-006",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25654,23 +25664,24 @@
       }
     },
     {
-      "id": "bad-sec06-pathlen",
-      "input": "bad-sec06-pathlen.exe",
+      "id": "path-004-bad-pathlen",
+      "input": "bad-path-pathlen.exe",
+      "decision": "PATH-004",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25692,23 +25703,24 @@
       }
     },
     {
-      "id": "bad-sec06-name-outside",
-      "input": "bad-sec06-name-outside.exe",
+      "id": "path-005-bad-name-outside",
+      "input": "bad-path-name-outside.exe",
+      "decision": "PATH-005",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25730,23 +25742,24 @@
       }
     },
     {
-      "id": "bad-sec06-name-excluded",
-      "input": "bad-sec06-name-excluded.exe",
+      "id": "path-005-bad-name-excluded",
+      "input": "bad-path-name-excluded.exe",
+      "decision": "PATH-005",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25768,23 +25781,24 @@
       }
     },
     {
-      "id": "bad-sec06-wrong-key",
-      "input": "bad-sec06-wrong-key.exe",
+      "id": "path-002-bad-wrong-key",
+      "input": "bad-path-wrong-key.exe",
+      "decision": "PATH-002",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -25806,23 +25820,24 @@
       }
     },
     {
-      "id": "good-sec06-leaf-no-bc",
-      "input": "good-sec06-leaf-no-bc.exe",
+      "id": "path-003-good-leaf-no-bc",
+      "input": "good-path-leaf-no-bc.exe",
+      "decision": "PATH-003",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -25864,23 +25879,24 @@
       }
     },
     {
-      "id": "good-sec06-leaf-no-ku",
-      "input": "good-sec06-leaf-no-ku.exe",
+      "id": "path-008-good-leaf-no-ku",
+      "input": "good-path-leaf-no-ku.exe",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -25922,23 +25938,24 @@
       }
     },
     {
-      "id": "good-sec06-leaf-noncritical",
-      "input": "good-sec06-leaf-noncritical.exe",
+      "id": "path-006-good-leaf-noncritical",
+      "input": "good-path-leaf-noncritical.exe",
+      "decision": "PATH-006",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -25980,23 +25997,24 @@
       }
     },
     {
-      "id": "good-sec06-ca-noncritical",
-      "input": "good-sec06-ca-noncritical.exe",
+      "id": "path-006-good-ca-noncritical",
+      "input": "good-path-ca-noncritical.exe",
+      "decision": "PATH-006",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26038,23 +26056,24 @@
       }
     },
     {
-      "id": "good-sec06-ca-no-ku",
-      "input": "good-sec06-ca-no-ku.exe",
+      "id": "path-008-good-ca-no-ku",
+      "input": "good-path-ca-no-ku.exe",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26096,23 +26115,24 @@
       }
     },
     {
-      "id": "good-sec06-ca-good-eku",
-      "input": "good-sec06-ca-good-eku.exe",
+      "id": "path-007-good-ca-good-eku",
+      "input": "good-path-ca-good-eku.exe",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26154,23 +26174,24 @@
       }
     },
     {
-      "id": "bad-sec06-ca-eku",
-      "input": "bad-sec06-ca-eku.exe",
+      "id": "path-007-bad-ca-eku",
+      "input": "bad-path-ca-eku.exe",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26192,23 +26213,24 @@
       }
     },
     {
-      "id": "bad-sec06-leaf-no-eku",
-      "input": "bad-sec06-leaf-no-eku.exe",
+      "id": "path-007-bad-leaf-no-eku",
+      "input": "bad-path-leaf-no-eku.exe",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26230,23 +26252,24 @@
       }
     },
     {
-      "id": "bad-sec06-ca-ku",
-      "input": "bad-sec06-ca-ku.exe",
+      "id": "path-008-bad-ca-ku",
+      "input": "bad-path-ca-ku.exe",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26268,23 +26291,24 @@
       }
     },
     {
-      "id": "good-sec06-pathlen",
-      "input": "good-sec06-pathlen.exe",
+      "id": "path-004-good-pathlen",
+      "input": "good-path-pathlen.exe",
+      "decision": "PATH-004",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26329,23 +26353,24 @@
       }
     },
     {
-      "id": "good-sec06-name-good",
-      "input": "good-sec06-name-good.exe",
+      "id": "path-005-good-name-good",
+      "input": "good-path-name-good.exe",
+      "decision": "PATH-005",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26387,23 +26412,24 @@
       }
     },
     {
-      "id": "good-sec06-wrong-key-first",
-      "input": "good-sec06-wrong-key-first.exe",
+      "id": "path-002-good-wrong-key-first",
+      "input": "good-path-wrong-key-first.exe",
+      "decision": "PATH-002",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26445,23 +26471,24 @@
       }
     },
     {
-      "id": "good-sec06-wrong-key-last",
-      "input": "good-sec06-wrong-key-last.exe",
+      "id": "path-002-good-wrong-key-last",
+      "input": "good-path-wrong-key-last.exe",
+      "decision": "PATH-002",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26503,23 +26530,24 @@
       }
     },
     {
-      "id": "good-sec06-cross-first",
-      "input": "good-sec06-cross-first.exe",
+      "id": "path-010-good-cross-first",
+      "input": "good-path-cross-first.exe",
+      "decision": "PATH-010",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26561,23 +26589,24 @@
       }
     },
     {
-      "id": "good-sec06-cross-last",
-      "input": "good-sec06-cross-last.exe",
+      "id": "path-010-good-cross-last",
+      "input": "good-path-cross-last.exe",
+      "decision": "PATH-010",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26619,23 +26648,24 @@
       }
     },
     {
-      "id": "good-sec06-cycle-escape",
-      "input": "good-sec06-cycle-escape.exe",
+      "id": "path-010-good-cycle-escape",
+      "input": "good-path-cycle-escape.exe",
+      "decision": "PATH-010",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26677,23 +26707,24 @@
       }
     },
     {
-      "id": "good-sec06-cycle-escape-reversed",
-      "input": "good-sec06-cycle-escape-reversed.exe",
+      "id": "path-010-good-cycle-escape-reversed",
+      "input": "good-path-cycle-escape-reversed.exe",
+      "decision": "PATH-010",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26735,23 +26766,24 @@
       }
     },
     {
-      "id": "good-sec06-ca-ku-first",
-      "input": "good-sec06-ca-ku-first.exe",
+      "id": "path-009-good-ca-ku-first",
+      "input": "good-path-ca-ku-first.exe",
+      "decision": "PATH-009",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26793,23 +26825,24 @@
       }
     },
     {
-      "id": "good-sec06-ca-ku-last",
-      "input": "good-sec06-ca-ku-last.exe",
+      "id": "path-009-good-ca-ku-last",
+      "input": "good-path-ca-ku-last.exe",
+      "decision": "PATH-009",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -26851,23 +26884,24 @@
       }
     },
     {
-      "id": "bad-sec06-cross-untrusted",
-      "input": "bad-sec06-cross-untrusted.exe",
+      "id": "path-001-bad-cross-untrusted",
+      "input": "bad-path-cross-untrusted.exe",
+      "decision": "PATH-001",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26889,23 +26923,24 @@
       }
     },
     {
-      "id": "bad-sec06-cycle",
-      "input": "bad-sec06-cycle.exe",
+      "id": "path-001-bad-cycle",
+      "input": "bad-path-cycle.exe",
+      "decision": "PATH-001",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26927,23 +26962,24 @@
       }
     },
     {
-      "id": "bad-sec06-cycle-reversed",
-      "input": "bad-sec06-cycle-reversed.exe",
+      "id": "path-001-bad-cycle-reversed",
+      "input": "bad-path-cycle-reversed.exe",
+      "decision": "PATH-001",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -26965,23 +27001,24 @@
       }
     },
     {
-      "id": "good-sec06-cross-other-root",
-      "input": "good-sec06-cross-first.exe",
+      "id": "path-010-good-cross-other-root",
+      "input": "good-path-cross-first.exe",
+      "decision": "PATH-010",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -27023,23 +27060,24 @@
       }
     },
     {
-      "id": "good-sec06-root-expired",
-      "input": "good-sec06-basic.exe",
+      "id": "path-011-good-root-expired",
+      "input": "good-path-basic.exe",
+      "decision": "PATH-011",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root-expired.der",
+        "fixtures/path-root-expired.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -27081,23 +27119,24 @@
       }
     },
     {
-      "id": "good-sec06-root-profile",
-      "input": "good-sec06-basic.exe",
+      "id": "path-011-good-root-profile",
+      "input": "good-path-basic.exe",
+      "decision": "PATH-011",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root-profile.der",
+        "fixtures/path-root-profile.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -27139,23 +27178,24 @@
       }
     },
     {
-      "id": "good-sec06-root-name",
-      "input": "good-sec06-root-name.exe",
+      "id": "path-005-good-root-name",
+      "input": "good-path-root-name.exe",
+      "decision": "PATH-005",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root-constrained.der",
+        "fixtures/path-root-constrained.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -27197,23 +27237,24 @@
       }
     },
     {
-      "id": "bad-sec06-root-name",
-      "input": "good-sec06-root-name.exe",
+      "id": "path-005-bad-root-name",
+      "input": "good-path-root-name.exe",
+      "decision": "PATH-005",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root-denied.der",
+        "fixtures/path-root-denied.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -27235,23 +27276,24 @@
       }
     },
     {
-      "id": "good-sec06-root-selection",
-      "input": "good-sec06-root-name.exe",
+      "id": "path-012-good-root-selection",
+      "input": "good-path-root-name.exe",
+      "decision": "PATH-012",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-roots-alternative.pem",
+        "fixtures/path-roots-alternative.pem",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/sec06-upper.crl",
+        "fixtures/path-upper.crl",
         "--crl",
-        "fixtures/sec06-other-root.crl"
+        "fixtures/path-other-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -31566,13 +31608,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31597,13 +31639,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -31645,13 +31687,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -31820,7 +31862,7 @@
     },
     {
       "id": "crl-015-root-no-crl-sign-accepted",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "decision": "CRL-015",
       "command": [
         "verify",
@@ -31830,9 +31872,9 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -31925,11 +31967,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -31974,11 +32016,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl"
       ],
@@ -32012,11 +32054,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-revoked.crl"
       ],
@@ -32043,11 +32085,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl",
         "--crl",
@@ -32094,11 +32136,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl",
         "--crl",
@@ -32135,11 +32177,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other-revoked.crl",
         "--crl",
@@ -32175,13 +32217,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32223,11 +32265,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl",
         "--crl",
@@ -32273,15 +32315,15 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32318,16 +32360,16 @@
     },
     {
       "id": "crl-partition-crl-no-listed-point",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -32357,11 +32399,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other-revoked.crl"
       ],
@@ -32388,11 +32430,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-case.crl"
       ],
@@ -32419,11 +32461,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-user.crl"
       ],
@@ -32467,11 +32509,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-ca.crl"
       ],
@@ -32498,13 +32540,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/crl-sec06-root-idp-ca.crl",
+        "fixtures/crl-path-root-idp-ca.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32546,13 +32588,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/crl-sec06-root-idp-user.crl",
+        "fixtures/crl-path-root-idp-user.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32577,11 +32619,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-two-names.crl"
       ],
@@ -32625,11 +32667,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-second-point.crl"
       ],
@@ -32673,11 +32715,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -32704,13 +32746,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32752,11 +32794,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-dns.crl"
       ],
@@ -32783,13 +32825,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32831,11 +32873,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-relative.crl"
       ],
@@ -32865,11 +32907,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-relative-expanded.crl"
       ],
@@ -32896,13 +32938,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32944,11 +32986,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -32975,13 +33017,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -33023,11 +33065,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -33054,13 +33096,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -33097,18 +33139,18 @@
     },
     {
       "id": "crl-revoked-issuer",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-path-root-revoked-issuer.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33128,20 +33170,20 @@
     },
     {
       "id": "crl-revoked-issuer-after-good-root-crl",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-path-root-revoked-issuer.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33161,20 +33203,20 @@
     },
     {
       "id": "crl-revoked-issuer-before-good-root-crl",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-path-root-revoked-issuer.crl",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33194,16 +33236,16 @@
     },
     {
       "id": "crl-partition-crl-relative-no-listed-point",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-relative.crl"
       ],
@@ -33228,18 +33270,18 @@
     },
     {
       "id": "crl-revoked-issuer-issuer-crl-first",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-path-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33259,21 +33301,21 @@
     },
     {
       "id": "crl-030-cross-revoked-path-beside-path-without-crl-names-it",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl"
+        "fixtures/crl-path-other-root-revoked-cross.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33300,22 +33342,22 @@
     },
     {
       "id": "crl-030-fetch-revocation-stands-when-the-other-path-stays-without-crl",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-030",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33347,23 +33389,23 @@
     },
     {
       "id": "crl-017-cross-revoked-path-beside-covered-path-verifies",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-017",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--crl",
-        "fixtures/sec06-root.crl"
+        "fixtures/path-root.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -33390,21 +33432,21 @@
     },
     {
       "id": "crl-030-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-      "input": "crl-sec06-cross-no-cert-sign.exe",
+      "input": "crl-path-cross-no-cert-sign.exe",
       "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-path-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33424,21 +33466,21 @@
     },
     {
       "id": "crl-030-cross-unusable-crl-decides-beside-path-failing-key-usage",
-      "input": "crl-sec06-cross-no-cert-sign.exe",
+      "input": "crl-path-cross-no-cert-sign.exe",
       "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-idp-ca.crl"
+        "fixtures/crl-path-root-idp-ca.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33461,25 +33503,25 @@
     },
     {
       "id": "crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-017",
       "crl_responses": {},
       "crl_certificate_responses": {
-        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33522,23 +33564,23 @@
     },
     {
       "id": "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-037",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--crl",
-        "fixtures/sec06-root-expired.crl"
+        "fixtures/path-root-expired.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33565,23 +33607,23 @@
     },
     {
       "id": "crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-037",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--crl",
-        "fixtures/sec06-root-not-yet-valid.crl"
+        "fixtures/path-root-not-yet-valid.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33608,27 +33650,27 @@
     },
     {
       "id": "crl-024-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-024",
       "crl_responses": {},
       "crl_certificate_responses": {
-        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--crl",
-        "fixtures/sec06-root-not-yet-valid.crl",
+        "fixtures/path-root-not-yet-valid.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33663,11 +33705,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root-not-yet-valid.crl"
+        "fixtures/path-root-not-yet-valid.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33705,18 +33747,18 @@
       "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-020",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
+        "http://crl.invalid/sec10-issuer.crl": "path-root.crl",
         "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root-not-yet-valid.crl",
+        "fixtures/path-root-not-yet-valid.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33767,27 +33809,27 @@
     },
     {
       "id": "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-      "input": "good-sec06-cross-first.exe",
+      "input": "good-path-cross-first.exe",
       "decision": "CRL-024",
       "crl_responses": {},
       "crl_certificate_responses": {
-        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-path-other-root-revoked-cross.crl",
         "--crl",
-        "fixtures/sec06-root-expired.crl",
+        "fixtures/path-root-expired.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33816,19 +33858,19 @@
     },
     {
       "id": "crl-030-cross-expired-path-beside-path-without-crl-names-the-gap",
-      "input": "crl-sec06-cross-expired-first.exe",
+      "input": "crl-path-cross-expired-first.exe",
       "decision": "CRL-030",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33855,23 +33897,23 @@
     },
     {
       "id": "crl-017-fetch-completes-the-path-beside-an-expired-path",
-      "input": "crl-sec06-cross-expired-first.exe",
+      "input": "crl-path-cross-expired-first.exe",
       "decision": "CRL-017",
       "crl_responses": {},
       "crl_certificate_responses": {
-        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "sec06-root.crl"
+        "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--roots",
-        "fixtures/sec06-other-root.der",
+        "fixtures/path-other-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33914,13 +33956,13 @@
     },
     {
       "id": "crl-007-self-issued-rollover-without-revocation-verifies",
-      "input": "good-sec06-self-issued-rollover.exe",
+      "input": "good-path-self-issued-rollover.exe",
       "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--no-revocation"
@@ -33945,19 +33987,19 @@
     },
     {
       "id": "crl-008-self-issued-rollover-with-both-crls-is-rejected",
-      "input": "good-sec06-self-issued-rollover.exe",
+      "input": "good-path-self-issued-rollover.exe",
       "decision": "CRL-008",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-rollover.crl"
+        "fixtures/path-rollover.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33979,19 +34021,19 @@
     },
     {
       "id": "crl-007-self-issued-rollover-with-key-identified-crls-verifies",
-      "input": "good-sec06-self-issued-rollover.exe",
+      "input": "good-path-self-issued-rollover.exe",
       "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root-akid.crl",
+        "fixtures/path-root-akid.crl",
         "--crl",
-        "fixtures/sec06-rollover-akid.crl"
+        "fixtures/path-rollover-akid.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34013,19 +34055,19 @@
     },
     {
       "id": "crl-007-self-issued-rollover-with-key-identified-crls-verifies-reversed",
-      "input": "good-sec06-self-issued-rollover.exe",
+      "input": "good-path-self-issued-rollover.exe",
       "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-rollover-akid.crl",
+        "fixtures/path-rollover-akid.crl",
         "--crl",
-        "fixtures/sec06-root-akid.crl"
+        "fixtures/path-root-akid.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34047,19 +34089,19 @@
     },
     {
       "id": "crl-007-self-issued-rollover-revoked-by-key-identified-crl-is-rejected",
-      "input": "good-sec06-self-issued-rollover.exe",
+      "input": "good-path-self-issued-rollover.exe",
       "decision": "CRL-007",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root-akid-revoked-rollover.crl",
+        "fixtures/path-root-akid-revoked-rollover.crl",
         "--crl",
-        "fixtures/sec06-rollover-akid.crl"
+        "fixtures/path-rollover-akid.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -34082,17 +34124,17 @@
       "decision": "CRL-040",
       "crl_responses": {},
       "crl_certificate_responses": {
-        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "sec06-issuer.crl"
+        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "path-issuer.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34172,18 +34214,18 @@
     },
     {
       "id": "crl-030-fetch-path-failing-key-usage-asks-nothing",
-      "input": "bad-sec06-ca-ku.exe",
+      "input": "bad-path-ca-ku.exe",
       "decision": "CRL-030",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34205,20 +34247,20 @@
     },
     {
       "id": "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-      "input": "bad-sec06-ca-ku.exe",
+      "input": "bad-path-ca-ku.exe",
       "decision": "CRL-033",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-idp-user.crl",
+        "fixtures/crl-path-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34243,20 +34285,20 @@
     },
     {
       "id": "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
-      "input": "bad-sec06-ca-ku.exe",
+      "input": "bad-path-ca-ku.exe",
       "decision": "CRL-033",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-path-root-revoked-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34432,12 +34474,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl"
       ],
@@ -34472,12 +34514,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl"
       ],
@@ -34510,12 +34552,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl"
       ],
@@ -34548,12 +34590,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-ca.crl"
       ],
@@ -34586,12 +34628,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl"
       ],
@@ -34622,12 +34664,12 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-user.crl"
       ],
@@ -34658,14 +34700,14 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34690,20 +34732,20 @@
       "id": "crl-fetch-ca-user-scope-idp-fetches-listed-point",
       "input": "crl-ca-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "crl-sec06-root-idp-ca.crl"
+        "http://crl.invalid/sec10-issuer.crl": "crl-path-root-idp-ca.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/crl-sec06-root-idp-user.crl",
+        "fixtures/crl-path-root-idp-user.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34734,14 +34776,14 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/crl-sec06-root-idp-ca.crl",
+        "fixtures/crl-path-root-idp-ca.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34764,16 +34806,16 @@
     },
     {
       "id": "crl-fetch-no-listed-point-not-fetched",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
@@ -34807,11 +34849,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
@@ -34853,11 +34895,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
@@ -34899,11 +34941,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-dns.crl",
         "--fetch-crls"
@@ -34994,18 +35036,18 @@
     },
     {
       "id": "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "decision": "CRL-009",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
@@ -35032,18 +35074,18 @@
     },
     {
       "id": "crl-023-fetch-no-listed-point-scope-crl-replaced-by-certificate",
-      "input": "good-sec06-basic.exe",
+      "input": "good-path-basic.exe",
       "decision": "CRL-023",
       "crl_responses": {},
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
@@ -35072,7 +35114,7 @@
         }
       },
       "crl_certificate_responses": {
-        "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf": "sec06-issuer.crl"
+        "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf": "path-issuer.crl"
       }
     },
     {
@@ -35168,11 +35210,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
@@ -35214,11 +35256,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
@@ -35256,13 +35298,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35293,17 +35335,17 @@
       "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-039",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
+        "http://crl.invalid/sec10-issuer.crl": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35348,14 +35390,14 @@
       "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-039",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
+        "http://crl.invalid/sec10-issuer.crl": "path-root.crl",
         "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
@@ -35413,19 +35455,19 @@
       "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-039",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
+        "http://crl.invalid/sec10-issuer.crl": "path-root.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--crl",
-        "fixtures/crl-sec06-root-idp-user.crl",
+        "fixtures/crl-path-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35473,13 +35515,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35514,11 +35556,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other.crl",
         "--fetch-crls"
@@ -35575,11 +35617,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-issuer.crl",
+        "fixtures/path-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35618,18 +35660,18 @@
       "input": "crl-leaf-crl-dp-multi.exe",
       "decision": "CRL-039",
       "crl_responses": {
-        "http://crl.invalid/sec10-c.crl": "sec06-root.der",
+        "http://crl.invalid/sec10-c.crl": "path-root.der",
         "http://crl.invalid/sec10-e.crl": "crl-issuer-idp-second-point.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35891,7 +35933,7 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--fetch-crls"
@@ -35935,13 +35977,13 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
-        "fixtures/sec06-issuer.crl"
+        "fixtures/path-issuer.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -35970,17 +36012,17 @@
       "input": "crl-leaf-crl-dp-https.exe",
       "decision": "CRL-026",
       "crl_responses": {
-        "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
+        "https://crl.invalid/sec10-a.crl": "path-issuer.crl"
       },
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -36028,11 +36070,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -36966,11 +37008,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other-expired.crl"
       ],
@@ -37008,11 +37050,11 @@
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec06-root.der",
+        "fixtures/path-root.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec06-root.crl",
+        "fixtures/path-root.crl",
         "--crl",
         "fixtures/crl-issuer-idp-other-expired.crl",
         "--fetch-crls"

@@ -2053,7 +2053,7 @@ mod revocation_reporting {
         on_path(0, sha, outcome)
     }
     fn on_path(path: usize, sha: &str, outcome: Outcome) -> CertificateEvidence {
-        let der = include_bytes!("../tests/fixtures/sec06-issuer.der").to_vec();
+        let der = include_bytes!("../tests/fixtures/path-issuer.der").to_vec();
         CertificateEvidence {
             path,
             path_viable: true,
@@ -2733,7 +2733,7 @@ mod revocation_reporting {
                 crl_entry_extensions: None,
             }]);
         };
-        let full = include_bytes!("../tests/fixtures/sec06-issuer.crl");
+        let full = include_bytes!("../tests/fixtures/path-issuer.crl");
         let partition = include_bytes!("../tests/fixtures/crl-issuer-idp-other.crl");
         let newer_partition = |crl: &mut CertificateList| {
             crl.tbs_cert_list.next_update = None;
@@ -2854,7 +2854,7 @@ mod revocation_reporting {
     fn a_listing_counts_only_on_a_positive_scope_match() {
         // The signer lists http://crl.invalid/sec10-a.crl.
         let listed = signer(include_bytes!("../tests/fixtures/crl-leaf-crl-dp.exe"));
-        let plain = signer(include_bytes!("../tests/fixtures/good-sec06-basic.exe"));
+        let plain = signer(include_bytes!("../tests/fixtures/good-path-basic.exe"));
         let matching = tbs(include_bytes!(
             "../tests/fixtures/crl-issuer-idp-match-revoked.crl"
         ));
@@ -2867,7 +2867,7 @@ mod revocation_reporting {
         let role_only = tbs(include_bytes!(
             "../tests/fixtures/crl-root-idp-user-certs-revoked.crl"
         ));
-        let full = tbs(include_bytes!("../tests/fixtures/sec06-issuer.crl"));
+        let full = tbs(include_bytes!("../tests/fixtures/path-issuer.crl"));
         assert!(listing_in_scope(&full, &listed, true));
         assert!(listing_in_scope(&matching, &listed, true));
         assert!(!listing_in_scope(&other, &listed, true));

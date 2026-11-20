@@ -558,14 +558,14 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   (`crl-011-fetch-invalid-nested-signature-requests-nothing`).
 - **A self-issued key rollover path needs CRLs that name their key.**
   Decided, acceptance, by cross-checking OpenSSL, BoringSSL and Bouncy Castle
-  (SEC-16). `good-sec06-self-issued-rollover.exe` has two certificates whose
+  (SEC-16). `good-path-self-issued-rollover.exe` has two certificates whose
   issuers share one name and have different keys. It verifies without
   revocation (`crl-007-self-issued-rollover-without-revocation-verifies`;
   RFC 5280 section 6.1 allows self-issued certificates for key rollover, and
   OpenSSL 3.0.13 `openssl verify -attime 1800000000` without CRL checks
   reports OK).
   - *CRLs with an authorityKeyIdentifier naming their issuer's key*
-    (`sec06-root-akid.crl`, `sec06-rollover-akid.crl`): all three libraries
+    (`path-root-akid.crl`, `path-rollover-akid.crl`): all three libraries
     give each certificate its own key's CRL and accept, in either order.
     OpenSSL `crypto/x509/x509_vfy.c:1869-1889` (`get_crl_score`,
     `crl_akid_check`), BoringSSL `crypto/x509/x509_vfy.cc:490-515`, Bouncy
@@ -581,13 +581,13 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     and rssig's per-key evaluation decides for the certificates above it.
     That evaluation still rejects a revoked rollover certificate:
     `crl-007-self-issued-rollover-revoked-by-key-identified-crl-is-rejected`
-    (`sec06-root-akid-revoked-rollover.crl`, RFC 5280 section 6.3.3).
+    (`path-root-akid-revoked-rollover.crl`, RFC 5280 section 6.3.3).
     Since SEC-24, webpki no longer confirms in production: rssig's per-key
     evaluation decides alone, and webpki's signer-only confirmation described
     here runs only in the test-only cross-check
     ([SEC-24](sec-24-single-revocation-authority.md)).
-  - *CRLs without an authorityKeyIdentifier* (`sec06-root.crl`,
-    `sec06-rollover.crl`): the libraries differ. OpenSSL keeps one best CRL
+  - *CRLs without an authorityKeyIdentifier* (`path-root.crl`,
+    `path-rollover.crl`): the libraries differ. OpenSSL keeps one best CRL
     per name and has no fallback after its signature fails
     (`x509_vfy.c:1614-1627`, `:2318-2320`; `v3_purp.c:1353-1354`); the same
     OpenSSL run reports "CRL signature failure" at depth 0 or 1 depending on
@@ -921,8 +921,8 @@ path is not one a source could complete.
   an answer its failure stands and names the certificate
   (`crl-044-malformed-aki-beside-expired-local-asks-provider`, diagnostics).
 - **Decided, diagnostics:** the list's placement beside other evidence,
-  on the `sec06` chain with the root's CRL not yet valid
-  (`sec06-root-not-yet-valid.crl`): a revocation on the cross path names
+  on the `path` chain with the root's CRL not yet valid
+  (`path-root-not-yet-valid.crl`): a revocation on the cross path names
   the root path's certificate in `certificates_with_replaceable_crl`
   (`crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`),
   and an unknown status names the signer without a CRL in

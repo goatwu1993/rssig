@@ -37,7 +37,7 @@ CRLs. Never skip silently.
 Two more cases of the same shape. A CRL naming a distribution point rejects
 the request as `invalid_crl` (`distribution_point_scope`) when the signer
 lists no point, even if a full CRL from the same issuer is also supplied
-(observed with `good-sec06-basic.exe`, `sec06-issuer.crl` and
+(observed with `good-path-basic.exe`, `path-issuer.crl` and
 `crl-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
 from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
 same issuer is supplied (`crl-012-root-expired-crl-still-rejected`), so an

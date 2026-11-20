@@ -154,7 +154,7 @@ mod tests {
             tbs_issuer(&crl, 0x02, 1).unwrap(),
             decoded.tbs_cert_list.issuer.to_der().unwrap()
         );
-        let cert = std::fs::read(alloc::format!("{dir}sec06-issuer.der")).unwrap();
+        let cert = std::fs::read(alloc::format!("{dir}path-issuer.der")).unwrap();
         let decoded = x509_cert::Certificate::from_der(&cert).unwrap();
         assert_eq!(
             tbs_issuer(&cert, 0xa0, 2).unwrap(),

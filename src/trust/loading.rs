@@ -240,7 +240,7 @@ mod tests {
         // Same subject/key with different name constraints must never be deduplicated.
         store
             .add_roots(include_bytes!(
-                "../../tests/fixtures/sec06-roots-alternative.pem"
+                "../../tests/fixtures/path-roots-alternative.pem"
             ))
             .unwrap();
         assert_eq!(store.roots.len(), 3);
