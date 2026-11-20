@@ -1061,21 +1061,11 @@ fn retrieve(
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
-                // A revocation naming another path's gap, or an unusable
-                // CRL naming the certificates whose CRL a source could
-                // replace.
-                Err(e)
-                    if (e.code == ErrorCode::CertificateRevoked
-                        && e.details.contains_key("certificates_without_crl"))
-                        || ((e.code == ErrorCode::CertificateRevoked
-                            || e.code == ErrorCode::CrlExpired
-                            || e.code == ErrorCode::CrlNotYetValid
-                            || e.code == ErrorCode::InvalidCrl)
-                            && (e.details.contains_key("certificates_with_expired_crl")
-                                || e.details.contains_key(crate::trust::WITH_REPLACEABLE_CRL))) =>
-                {
-                    e
-                }
+                // Any other result that names certificates to ask about (a
+                // revocation naming another path's gap, or the failure of a
+                // CRL a source could replace): `uncovered` alone decides,
+                // so a new code cannot be handled here and not there.
+                Err(e) if matches!(uncovered(e), Uncovered::Listed(_)) => e,
                 _ => break,
             };
             if state.aborted {
@@ -1168,15 +1158,7 @@ fn retrieve(
         match result {
             // A revocation is definite evidence and keeps its code; that
             // another path might have verified is marked.
-            Err(e)
-                if matches!(
-                    e.code,
-                    ErrorCode::CertificateRevoked
-                        | ErrorCode::CrlExpired
-                        | ErrorCode::CrlNotYetValid
-                        | ErrorCode::InvalidCrl
-                ) && cut_short(&e) =>
-            {
+            Err(e) if e.code != ErrorCode::RevocationUnknown && cut_short(&e) => {
                 Err(e.detail("retrieval_aborted", true))
             }
             Err(e) if e.code == ErrorCode::RevocationUnknown && cut_short(&e) => {

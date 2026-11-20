@@ -668,6 +668,10 @@ struct LoadedCrl {
     stand_in: Option<core::result::Result<(), webpki::Error>>,
 }
 
+/// The rejection reported for a CRL without nextUpdate that webpki was not
+/// asked about: `unsupported_or_malformed`.
+static NOT_JUDGED: webpki::Error = webpki::Error::BadDer;
+
 impl LoadedCrl {
     /// Whether webpki accepts the CRL, or would if only its missing
     /// nextUpdate were present: such a CRL counts under webpki's rules.
@@ -680,6 +684,10 @@ impl LoadedCrl {
         match (&self.stand_in, &self.webpki) {
             (Some(verdict), _) => verdict.as_ref().err(),
             (None, Err(e)) if self.tbs.next_update.is_some() => Some(e),
+            // A CRL without nextUpdate that could not be judged (it does not
+            // re-encode to its own bytes) is malformed to webpki, as it
+            // would be with nextUpdate: reported, and replaceable.
+            (None, _) if self.tbs.next_update.is_none() => Some(&NOT_JUDGED),
             _ => None,
         }
     }
@@ -1482,6 +1490,16 @@ const REPLACEABLE: u8 = 3;
 const UNUSABLE: u8 = 4;
 const NO_CRL_SIGN: u8 = 5;
 const FORGED: u8 = 6;
+// `stuck_paths`, `with_replaceable_crl` and `unknown_status` compare these
+// with `<=` and `>`: inserting a rank must keep the order, and the groups
+// (replaceable up to `REPLACEABLE`, stuck above it) must be revisited.
+const _: () = assert!(
+    EXPIRED < NOT_YET_VALID
+        && NOT_YET_VALID < REPLACEABLE
+        && REPLACEABLE < UNUSABLE
+        && UNUSABLE < NO_CRL_SIGN
+        && NO_CRL_SIGN < FORGED
+);
 
 /// The detail naming certificates whose only CRLs are unusable for a reason
 /// other than expiry that a CRL from a source could replace.
@@ -2623,11 +2641,15 @@ mod revocation_reporting {
         assert!(crl.stand_in.is_none());
         assert!(!crl.webpki_admits());
         // The canonical CRL is judged and revokes; this one does neither, and
-        // its missing nextUpdate is reported.
+        // is reported as malformed (replaceable), as it would be with
+        // nextUpdate.
         assert_eq!(LoadedCrl::load(REVOKING).unwrap().stand_in, Some(Ok(())));
         let cert = signer(include_bytes!("../tests/fixtures/good-pe64.exe"));
         let outcome = evaluated(&cert, true, &[crl]);
-        assert_eq!(unusable(&outcome), (UNUSABLE, "missing_next_update".into()));
+        assert_eq!(
+            unusable(&outcome),
+            (REPLACEABLE, "unsupported_or_malformed".into())
+        );
     }
 
     #[test]
