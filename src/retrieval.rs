@@ -394,9 +394,14 @@ fn listed_points(
 }
 
 /// Verify with required revocation against the supplied CRLs; while the
-/// result is `revocation_unknown`, ask the source about exactly the
-/// certificates the verifier reports without a usable CRL, and verify again.
-/// A good result or any other failure is final. Whether a CRL applies is
+/// result names certificates without a usable CRL (`revocation_unknown`, a
+/// revocation naming another path's gap, or the failure of a CRL a source
+/// could replace: `crl_expired`, `crl_not_yet_valid`, `invalid_crl`), ask
+/// the source about exactly those certificates, and verify again. A good
+/// result or any other failure is final. When the source aborts before the
+/// named certificates were asked about, an unknown status becomes
+/// `crl_fetch_aborted` and the other results keep their code with
+/// `details.retrieval_aborted`. Whether a CRL applies is
 /// decided only by verification. See `docs/crl-retrieval.md`. The passes share
 /// one SEC-02 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
@@ -1043,28 +1048,24 @@ fn retrieve(
             ));
         }
         // The verifier decides first, with the supplied CRLs: a good result
-        // or any failure but unknown status is final, and an unknown status
-        // names the certificates that lacked a usable CRL. A revocation on
-        // one candidate path is final too, unless it names certificates of
-        // another path that could still verify with a CRL: then those are
-        // asked about, and the revocation stands if none is found.
+        // is final, and so is any failure that names no certificate to ask
+        // about. An unknown status names the certificates that lacked a
+        // usable CRL; a revocation on one candidate path may name those of
+        // another path that could still verify with a CRL; and the failure
+        // of a CRL a source could replace (expired, not yet valid, or
+        // another replaceable `invalid_crl`) names its certificates. Those
+        // are asked about, and the result stands if nothing usable is found.
         let mut result = verify_with(bytes, options, &state.store, format, budget);
         let mut asked = BTreeSet::new();
         let mut authenticated = false;
         loop {
             let unknown = match &result {
                 Err(e) if e.code == ErrorCode::RevocationUnknown => e,
-                // A revocation naming another path's gap, or an expired CRL
-                // naming the certificates a source could refresh.
-                Err(e)
-                    if e.code == ErrorCode::CertificateRevoked
-                        && (e.details.contains_key("certificates_without_crl")
-                            || e.details.contains_key("certificates_with_expired_crl"))
-                        || e.code == ErrorCode::CrlExpired
-                            && e.details.contains_key("certificates_with_expired_crl") =>
-                {
-                    e
-                }
+                // Any other result that names certificates to ask about (a
+                // revocation naming another path's gap, or the failure of a
+                // CRL a source could replace): `uncovered` alone decides,
+                // so a new code cannot be handled here and not there.
+                Err(e) if matches!(uncovered(e), Uncovered::Listed(_)) => e,
                 _ => break,
             };
             if state.aborted {
@@ -1157,12 +1158,7 @@ fn retrieve(
         match result {
             // A revocation is definite evidence and keeps its code; that
             // another path might have verified is marked.
-            Err(e)
-                if matches!(
-                    e.code,
-                    ErrorCode::CertificateRevoked | ErrorCode::CrlExpired
-                ) && cut_short(&e) =>
-            {
+            Err(e) if e.code != ErrorCode::RevocationUnknown && cut_short(&e) => {
                 Err(e.detail("retrieval_aborted", true))
             }
             Err(e) if e.code == ErrorCode::RevocationUnknown && cut_short(&e) => {
@@ -1260,7 +1256,7 @@ enum Uncovered {
 }
 
 fn uncovered(unknown: &VerificationError) -> Uncovered {
-    if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("confirmation") {
+    if unknown.details.get("reason").and_then(|r| r.as_str()) == Some("ambiguous_issuer_keys") {
         return Uncovered::Final;
     }
     let listed = |key: &str| {
@@ -1269,8 +1265,16 @@ fn uncovered(unknown: &VerificationError) -> Uncovered {
             .get(key)
             .and_then(|v| serde_json::from_value::<Vec<CertificateReport>>(v.clone()).ok())
     };
-    // Certificates whose only CRLs have expired can be refreshed.
-    let expired = listed("certificates_with_expired_crl").unwrap_or_default();
+    // Certificates whose only CRLs have expired, or are unusable for
+    // another reason a source's CRL could replace, can be refreshed.
+    let mut expired = listed("certificates_with_expired_crl").unwrap_or_default();
+    // Once each: a certificate can be expired on one path and unusable on
+    // another.
+    for report in listed(crate::trust::WITH_REPLACEABLE_CRL).unwrap_or_default() {
+        if !expired.iter().any(|r| r.sha256 == report.sha256) {
+            expired.push(report);
+        }
+    }
     match listed("certificates_without_crl") {
         Some(mut reports) => {
             // Once each: a certificate can lack a CRL on one path and have
@@ -2851,7 +2855,7 @@ mod tests {
         let unknown = || error(ErrorCode::RevocationUnknown, "unknown");
         // The verifier rejected a path every certificate of which had a CRL.
         assert!(matches!(
-            uncovered(&unknown().detail("reason", "confirmation")),
+            uncovered(&unknown().detail("reason", "ambiguous_issuer_keys")),
             Uncovered::Final
         ));
         assert!(matches!(uncovered(&unknown()), Uncovered::Final));

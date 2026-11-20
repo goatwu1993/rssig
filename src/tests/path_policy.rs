@@ -799,6 +799,17 @@ pub(super) fn write(dir: &std::path::Path) {
         None,
         (NOW - 2000, NOW - 1000),
     );
+    // SEC-23: the root's CRL, not yet valid: a CRL a source could replace,
+    // named under certificates_with_replaceable_crl rather than as expired.
+    write_crl_at(
+        dir,
+        &root,
+        &root_key,
+        "root-not-yet-valid",
+        false,
+        None,
+        (NOW + 1000, NOW + 2000),
+    );
     write_crl_with(dir, &root, &root_key, "root-akid", true, None);
     write_crl_with(dir, &rollover, &rollover_key, "rollover-akid", true, None);
     // The root key's CRL revoking the rollover certificate, which webpki's
