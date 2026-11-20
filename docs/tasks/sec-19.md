@@ -1,0 +1,30 @@
+# SEC-19: Finish CRL rejection reason coverage.
+
+Task detail for **SEC-19** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox.
+
+Deliberately skipped
+in PR #46. Only `issuing_distribution_point` and the feature reasons used by
+SEC-10 cases are pinned; `crl_version`, `malformed_extensions`,
+`revocation_reasons_partitioning`, `revocation_reason`, `invalid_crl_number`
+and `unsupported_or_malformed` have no fixture, and other webpki
+rejections fall into the open-ended
+`unsupported_or_malformed` catch-all. The `invalid_crl` message embeds
+webpki's error name, which can change on upgrade (consumers must use
+`details.reason`). A malformed CRL from an unrelated issuer still fails at
+`CertificateList` decoding before the applicability filter, unlike other
+unrelated CRLs. No fixture has a non-canonical TBS encoding to pin that the
+signature probe uses the original TBS bytes.
+For a CRL issuer without cRLSign, `details.certificate` names the leaf being
+checked rather than the issuer whose KeyUsage fails; add the issuer (or a
+`reason`) before consumers depend on the current detail. The same leaf
+report is attached when an intermediate is revoked (`crl-revoked-issuer`)
+or has unknown status (`crl-ca-crl-dp-user-scope-excludes-issuer`), so
+the error does not identify the affected certificate; no test asserts it.
+`details.reason` values are string literals in `src/trust.rs`, documented in
+`docs/problems.md` but not a Serde domain enum in `src/domain.rs` and not
+enumerated in `tests/cases.schema.json`. `details.crl` is attached with
+`CrlReport::parse(..).ok()` on the AKI, scope and unsupported-feature paths
+(null if the report parser fails) but with `?` on the nextUpdate and
+freshness paths (a report-parse error replaces the typed error); make them
+consistent.

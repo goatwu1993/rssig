@@ -1,48 +1,10 @@
 # CRL decisions
 
-Numbered index of the decisions behind rssig's CRL and revocation behavior.
-Each entry states its rule once, with fixed fields, the sources it rests on
-and the cases that pin it. The rules for pinned expectations are in
-[AGENTS.md](../AGENTS.md#pinned-expectations); the history and review
-discussion is in [SEC-10](tasks/sec-10-crl-applicability.md) and
+Numbered decisions behind rssig's CRL and revocation behavior. The entry
+format, Status values and how cases name an entry are defined in
+[Decision indexes](decisions.md). The history and review discussion is in
+[SEC-10](tasks/sec-10-crl-applicability.md) and
 [SEC-24](tasks/sec-24-single-revocation-authority.md).
-
-## Fields
-
-- **Status:** exactly one of
-  - `Decided`: the result is argued right; it changes only with the
-    repository owner's approval, recorded in the PR.
-  - `Observed`: current behavior, pinned so that a change is visible; it may
-    change when a better result is argued.
-  - `Retired`: no longer in force; one line says why.
-  - `Superseded by CRL-NNN`: replaced by the named entry.
-- **Decided by:** who or what settled it, with the PR where it applies:
-  `owner, PR #N` (the repository owner decided or delegated the call),
-  `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named),
-  `<library> followed` (one reference, the other having no equivalent),
-  `written argument` or `written choice` (no reference equivalent), or `—`
-  for an Observed entry.
-- **Pins:** exactly one of `acceptance` (verifies or rejects: security) or
-  `diagnostics` (which code, stage, detail or request). A rule with both
-  sides is split into two entries. An acceptance pin is never loosened
-  without a Decided entry.
-- **Sources:** reference locations, RFC sections or the written argument.
-  Line numbers are for OpenSSL 3a3f1356
-  (3.3 where a source says so), bc-java e03fee0b, relic 02c54d58, BoringSSL
-  `main` (commit not captured) and webpki 0.103.16 unless stated.
-- **Unit tests** and **Notes**, where an entry has them.
-
-Entries do not list their cases. A case in `tests/cases.json` names the entry
-it pins with `"decision": "CRL-NNN"`, and the case's Status and Pins are that
-entry's. A case without `decision` counts as Observed. To list an entry's
-cases:
-
-```sh
-jq -r '.cases[] | select(.decision == "CRL-001") | .id' tests/cases.json
-```
-
-`tests/spec.rs` checks that every `decision` names an entry here whose Status
-is `Decided` or `Observed`, and that every entry has valid fields.
 
 ## Order
 
@@ -61,13 +23,6 @@ ones. The Area column gives the subject.
 
 A new entry takes the next free number, whatever its tier; the order above
 holds for the entries numbered when it was set.
-
-## How IDs work
-
-An ID is `CRL-` and a three-digit number. It is never reused or renumbered;
-a dropped entry keeps its ID with Status `Retired` or `Superseded by`. A
-Decided entry's rule changes only with the owner's approval; the ID stays the
-same and git history keeps the earlier text.
 
 ## Index
 
@@ -135,7 +90,7 @@ A CRL that does not apply to the chain is excluded whatever its fault; an applic
 - **Pins:** acceptance
 - **Sources:**
   - AGENTS.md, "Fail closed".
-- **Note:** no case points here yet; the behavior is exercised by the `crl-unrelated-*-excluded`, `crl-only-unrelated-crl-is-unknown` and `crl-012-root-delta-expired-crl-reports-feature` cases, which count as Observed.
+- **Note:** no case names this entry yet.
 
 ### CRL-002: A CRL without nextUpdate is not evidence of good status
 

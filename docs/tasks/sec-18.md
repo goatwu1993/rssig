@@ -1,0 +1,45 @@
+# SEC-18: Decide unsupported-but-applicable CRL handling.
+
+Task detail for **SEC-18** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox.
+
+Partly
+decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
+stale, delta, indirect, unsupported or out-of-scope CRL is set aside when
+another CRL of the issuer is usable and authoritative (full-plus-delta and
+old-beside-current deployments verify). Still open: real delta support, and
+reporting which CRLs were set aside (SEC-11).
+Open from the PR #60 review: a listing counts as a revocation once the CRL
+verifies under the path issuer's key, before delta, indirect or other
+unsupported features are checked, and entry extensions are ignored. A delta
+CRL entry with reason `removeFromCRL` (a hold lifted), or an indirect CRL
+entry whose `certificateIssuer` names another CA with the same serial,
+therefore rejects as `certificate_revoked` a certificate the full CRL
+leaves good. This fails closed. Decide it with real delta support and pin it
+with a full-plus-delta `removeFromCRL` fixture.
+Decided in PR #60 for stale full CRLs: a listing counts only from a CRL
+that is current at the validation time, as in OpenSSL and Bouncy Castle,
+so a released `certificateHold` in an expired CRL no longer revokes
+(`crl-016-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
+current delta or indirect CRL's entries, and the listing in a current CRL
+with a malformed authorityKeyIdentifier
+(`crl-005-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
+both Bouncy Castle paths, BoringSSL and relic were compared and do not
+agree (`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"); the owner
+decided to keep counting it, so only delta and indirect entries are open. Original notes follow.
+Deliberately
+kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,
+indirect, unknown critical extension) rejects the request even when another
+supplied CRL covers the same issuer, so a normal full-plus-delta CRL
+deployment fails. Options: real delta-CRL support (with FEATURE-level
+evidence) or an explicit, JSON-reported opt-in to skip known-unsupported
+CRLs. Never skip silently.
+Two more cases of the same shape. A CRL naming a distribution point rejects
+the request as `invalid_crl` (`distribution_point_scope`) when the signer
+lists no point, even if a full CRL from the same issuer is also supplied
+(observed with `good-sec06-basic.exe`, `sec06-issuer.crl` and
+`crl-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
+from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
+same issuer is supplied (`crl-012-root-expired-crl-still-rejected`), so an
+operator who keeps old CRLs beside current ones is rejected. Decide these
+together with the delta case.

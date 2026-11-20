@@ -119,6 +119,32 @@ cargo test --locked --test cli msi::
 cargo test --locked --test cli_interface
 ```
 
+
+## Test layout
+
+`rssig::cli::run` captures combined output;
+`run_with_writers` takes separate stdout/stderr sinks and is used by the
+process adapter and stream-contract tests. Neither exits the calling process.
+Tests do not change the working directory and must not require another
+language or runtime.
+
+Example fixture-first regression:
+
+```rust
+#[test]
+fn rejects_modified_image() {
+    let input = format!("{}/tests/fixtures/bad-image-digest.exe", env!("CARGO_MANIFEST_DIR"));
+    let mut stdout = Vec::new();
+    let code = rssig::cli::run(
+        ["rssig", "verify", "--integrity-only", "--time", "1800000000", &input],
+        &mut stdout,
+    ).unwrap();
+    let report: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
+    assert_eq!(code, 1);
+    assert_eq!(report["results"][0]["error"]["code"], "image_digest_mismatch");
+}
+```
+
 ## Coverage reports
 
 Install the optional development tool and matching LLVM tools. For Homebrew Rust:
@@ -179,6 +205,31 @@ The report step is skipped for fork PRs because their token cannot write PR
 comments or checks. It does not enforce a coverage threshold.
 The ordinary test jobs require no coverage tool. No job regenerates fixtures or
 needs Java, Go, external signing tools, system trust contents, or network CRLs.
+
+## Fixtures
+
+Commit binary fixtures and their provenance, SHA-256 digests, and intended
+outcomes in `tests/fixtures/manifest.json`. Ordinary tests consume committed
+fixtures; they must never regenerate expected data or overwrite fixtures.
+Generated fixtures use public, deterministic **test-only** keys and a fixed
+validation time. Synthetic fixtures are PE/CFB/CAB containers and inert comment-only scripts; externally signed artifacts have per-artifact provenance.
+Do not put real private keys or proprietary binaries in the repository.
+
+The explicit maintenance command is:
+
+```sh
+cargo test --locked regenerate_cli_fixtures -- --ignored
+```
+
+After intentional regeneration, review all binary changes and update the
+manifest. Add independent jsign/relic-produced or publicly redistributable
+fixtures with source/version/license information when extending interoperability.
+The existing synthetic corpus alone is not evidence of full interoperability.
+
+Windows-oracle integration is deferred. The current development loop runs the
+committed fixtures and JSON expectations locally; it requires no Windows
+environment or external verifier. Passing these expectations must not be
+described as Windows compatibility validation.
 
 ## Portable CLI specification
 
