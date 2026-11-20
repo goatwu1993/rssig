@@ -181,12 +181,14 @@ fn verify_signature(
         let trust_report = if let Some(trust) = options.trust {
             Some(tagged(
                 trust.verify(
-                    signer.cert,
-                    &sd.certs,
-                    trust::CODE_SIGNING,
-                    timestamp,
-                    options.now,
-                    options.check_revocation,
+                    trust::ChainRequest {
+                        leaf: signer.cert,
+                        certificates: &sd.certs,
+                        eku: trust::CODE_SIGNING,
+                        signing_time: timestamp,
+                        now: options.now,
+                        revocation: options.check_revocation,
+                    },
                     budget,
                 ),
                 ErrorCode::CertificateChainInvalid,
