@@ -7,8 +7,8 @@ Binary magic takes precedence over script extensions.
 Library inspection is available without default features through
 `parse::Navx`. It exposes borrowed container bytes, signature bytes, and
 `authenticode_chunks()` without authenticating them. With `verify` enabled,
-`verify_parsed_navx` reuses that parsed layout and applies the full verification
-policy. See the [library API](library.md) for structural errors and the distinction
+`verify_parsed_navx` reuses that parsed layout and applies full
+verification. See the [library API](library.md) for structural errors and the distinction
 between container parsing and CMS framing checks.
 
 The supported envelope has a 40-byte header with `NAVX` markers at offsets 0
@@ -41,7 +41,7 @@ revocation unchecked. Embedded certificates never become trusted roots.
 
 The committed synthetic fixtures use deterministic public test-only identities
 and a fixed validation time. They cover valid and altered payloads, headers,
-wrapper offsets/markers, CMS/SIP failures, SHA-1 policy, nested signatures,
+wrapper offsets/markers, CMS/SIP failures, the SHA-1 opt-in, nested signatures,
 timestamps, trust, and revocation. Ordinary tests only read them. Regenerate
 intentionally with `cargo test --locked regenerate_cli_fixtures -- --ignored`.
 

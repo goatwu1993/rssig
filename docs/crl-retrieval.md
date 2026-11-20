@@ -30,7 +30,7 @@ rule is restated for retrieval.
    `details.certificates_without_crl`, every certificate on a tried path that
    has no CRL at all, each in full (`unusable_crl` adds the most specific CRL
    that exists but could not be used). A revocation on one candidate path
-   decides. When another tried path passes every other path policy and has
+   decides. When another tried path passes every other path check and has
    certificates with no CRL at all, the revocation also names them in
    `details.certificates_without_crl`
    (`crl-029-cross-revoked-path-beside-path-without-crl-names-it`), and those
@@ -46,7 +46,7 @@ rule is restated for retrieval.
    (`crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
    `crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage`), and its
    revocation does not hide such a path's own CRL failure. When no path
-   passes the other path policy, revocation is still reported first, as on
+   passes the other path checks, revocation is still reported first, as on
    `main`, with an empty `certificates_without_crl`: no CRL could make such
    a path verify, so retrieval asks nothing. With `--fetch-crls` the whole
    input is then checked without revocation and that failure, such as

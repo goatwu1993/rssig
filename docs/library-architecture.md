@@ -28,10 +28,10 @@ hash trait would duplicate it. CAB and NAVX chunk loops are small and infallible
 after structural parsing; PE range validation and MSI cursor errors have different
 contracts. A generic `SignedContainer` trait would need to model one/many
 signatures, borrowed/decoded buffers, mutable streaming, component digests and
-format policy. No current consumer needs that extension point. Keep concrete
+format rules. No current consumer needs that extension point. Keep concrete
 parsers and the private enum rather than freezing those differences into public
 associated types or callbacks. Future external format support needs its own
-policy/security review; opaque CMS bytes plus a computed hash are insufficient.
+decision and security review; opaque CMS bytes plus a computed hash are insufficient.
 
 Existing evidence includes `tests/parse_core.rs`, `tests/parse.rs`,
 `tests/library_stability.rs`, and `tests/verification_core.rs`, plus the portable
@@ -67,10 +67,10 @@ it is not an alloc-only core feature.
   narrowly scoped validated view or relocate that calculation; do not expose
   unchecked mutable layout fields merely to make a split compile.
 - DER helpers and CMS interpretation cross module boundaries. Assign structural
-  DER decoding to the parser and algorithm/content policy to verification, with
+  DER decoding to the parser and algorithm/content checks to verification, with
   a one-way parser dependency. Keep domain error conversion on the verifier side
   to avoid a parser-to-verifier dependency cycle.
-- Keep reports, trust and timestamp policy together initially. Moving public
+- Keep reports, trust and timestamp checks together initially. Moving public
   types into separate crates requires re-exporting the same definitions, not
   duplicating them into conversion layers. Preserve `?` conversions and error
   sources as well as serialized code/stage/details.
@@ -89,7 +89,7 @@ No caller migration is required by this decision. Existing `rssig::parse`,
 and JSON contracts remain intact. Concrete parsed verification ownership remains
 as documented in [LIB-08](library.md#ownership-reuse-and-api-stability-lib-08).
 There are no new fixtures or failing behavior tests for this documentation-only
-reassessment because it changes no parsing, hashing, policy or report behavior.
+reassessment because it changes no parsing, hashing, verification or report behavior.
 
 Reconsider extraction when a real downstream consumer needs a separately
 versioned parser/verifier, when feature isolation demonstrably cannot express a

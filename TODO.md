@@ -16,14 +16,14 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-03: Bound host input and report memory.** Done; [record](docs/tasks/done.md#sec-03-bound-host-input-and-report-memory).
 - [x] **SEC-04: Audit CMS structure and signature binding.** Done; [record](docs/tasks/done.md#sec-04-audit-cms-structure-and-signature-binding).
 - [x] **SEC-05: Define ambiguous signer-certificate handling.** Done; [record](docs/tasks/done.md#sec-05-define-ambiguous-signer-certificate-handling).
-- [x] **SEC-06: Expand certificate-path policy coverage.** Done; [record](docs/tasks/done.md#sec-06-expand-certificate-path-policy-coverage).
+- [x] **SEC-06: Expand certificate-path rule coverage.** Done; [record](docs/tasks/done.md#sec-06-expand-certificate-path-rule-coverage).
 - [x] **SEC-07: Make root/CRL loading diagnostics explicit.** Done; [record](docs/tasks/done.md#sec-07-make-rootcrl-loading-diagnostics-explicit).
 - [x] **SEC-08: Complete timestamp structure and multiplicity tests.** Done; [record](docs/tasks/done.md#sec-08-complete-timestamp-structure-and-multiplicity-tests).
-- [x] **SEC-09: Define lifetime-signing and time-boundary policy ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).** Done; [record](docs/tasks/done.md#sec-09-define-lifetime-signing-and-time-boundary-policy-pr-43httpsgithubcomgoatwu1993rssigpull43).
+- [x] **SEC-09: Define lifetime-signing and time-boundary rules ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).** Done; [record](docs/tasks/done.md#sec-09-define-lifetime-signing-and-time-boundary-rules-pr-43httpsgithubcomgoatwu1993rssigpull43).
 - [x] **SEC-10: Audit CRL applicability and competing evidence.** Done; detail in [sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md).
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [sec-11.md](docs/tasks/sec-11.md).
 - [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
-  all-required-signatures policy, primary/nested ordering, first-failure
+  all-required-signatures rule, primary/nested ordering, first-failure
   precedence, and bundle/child identity and signer binding. Test a valid first
   signature followed by a bad one and the reverse. Later parsing failures must
   not mask earlier cryptographic failures during refactoring.
@@ -35,7 +35,7 @@ TDD workflow and checks in AGENTS.md.
   remain rejected even with `--allow-sha1`.
 - [ ] **SEC-14: Lifetime-signing review decisions and deferred follow-ups.**
   Recorded from PR #43 reviews; none permits an invalid signature to verify.
-  Kept as policy (change only with a new policy decision and paired fixtures):
+  Kept as decisions (change only with a new decision and paired fixtures):
   - Trust anchors: configured anchors remain keys. Their validity is not checked
     at the validation time or at a lifetime signing time, so a lifetime path
     through a root re-issued after the signing time is accepted.
@@ -205,6 +205,7 @@ TDD workflow and checks in AGENTS.md.
   existing entries for the cases claimed under `attach` (remaining SEC-10
   audit cases, every format's revocation and untrusted-root case), and add a
   PATH entry for `certificate-signature`.
+- [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); [glossary](docs/glossary.md).
 
 ## P1 — CLI, reporting, and distribution
 
@@ -223,13 +224,13 @@ TDD workflow and checks in AGENTS.md.
   versions. Make parse-only, integrity-only, trusted, revocation-disabled, and
   package-hashed-but-not-independently-verified catalog states unambiguous.
   Keep supplied artifacts distinct from selected evidence.
-- [ ] **PRODUCT-04: Keep public API and policy documentation current.** Add
+- [ ] **PRODUCT-04: Keep public API and decision documentation current.** Add
   compiling examples for parse-only and explicit trusted verification, feature
   combinations, and error handling. Update stale source paths in the comparison
   document; keep format limits, CLI help, README tables, architecture, and tests
   aligned. External comparisons retain pinned revisions and stated evidence limits.
-  CRL applicability, distribution-point and competing-evidence policy lives in
-  one table cell of `docs/time-policy.md` (the CRL row), which is hard to read
+  CRL applicability, distribution-point and competing-evidence rules live in
+  one table cell of `docs/validation-time.md` (the CRL row), which is hard to read
   and to cite. Move it to its own document with one rule per line and its
   pinning cases, and link it from the README and from `AGENTS.md`'s current
   boundaries, which describe CRL handling only in general terms.
@@ -255,7 +256,7 @@ TDD workflow and checks in AGENTS.md.
   evidence from trusted verification and keep normal tests offline.
 - [ ] **INTEROP-02: Record reproducible cross-tool differences.** Pin tools,
   roots, time, algorithms, revocation/network settings, and each verifier's actual
-  checks. Resolve disagreements against format evidence and explicit rssig policy,
+  checks. Resolve disagreements against format evidence and explicit rssig decisions,
   then commit portable expectations. A competitor's success exit is not necessarily
   a trusted verdict; competitors remain maintenance tools.
 - [ ] **FORMAT-01: Extend PE layout evidence before broadening support.** Cover
@@ -270,7 +271,7 @@ TDD workflow and checks in AGENTS.md.
   installation semantics, and patch authorization remain outside verification.
 - [ ] **FORMAT-03: Expand CAB/NAVX envelope interoperability.** Add independent
   reserve/padding/hash-range and envelope/back-pointer cases. Consider CAB layouts
-  with unambiguous hashing policy and producer evidence; multipart handling needs
+  with unambiguous hashing rules and producer evidence; multipart handling needs
   a separate design. NAVX payloads remain opaque, and signature success does not
   imply extension validity or installability.
 - [ ] **FORMAT-04: Expand text signature encoding evidence.** Cover BOM/newline,
@@ -282,8 +283,8 @@ TDD workflow and checks in AGENTS.md.
   display-name/key/type mappings and canonicalization tests. Unknown signed scope
   entries continue to fail; unscoped properties remain explicitly unsigned.
   More settings/encodings or nested signatures need isolated fixtures and a
-  documented policy; never open fixtures in an RDP client.
-- [ ] **FORMAT-06: Audit AppX edge cases and policy gaps.** Extend
+  documented rules; never open fixtures in an RDP client.
+- [ ] **FORMAT-06: Audit AppX edge cases and rule gaps.** Extend
   ZIP64/descriptors, compression/block boundaries, filename collisions, namespace
   parsing, publisher DN comparison, and bundle child identity/signature cases.
   Evaluate Unicode names and additional manifest/bundle profiles individually
@@ -298,14 +299,14 @@ TDD workflow and checks in AGENTS.md.
   boundary to missing intermediate certificates, always as untrusted candidates,
   never new trust anchors. Define pre-trust destination discovery, loop/work
   limits and provenance. HTTPS transport and persistent caching also remain
-  separate follow-ups requiring policy and dependency review.
-- [ ] **FEATURE-02: Add OCSP with explicit evidence policy.** Require responder
+  separate follow-ups requiring a decision and dependency review.
+- [ ] **FEATURE-02: Add OCSP with explicit evidence rules.** Require responder
   authorization, signature/freshness checks, issuer/serial binding, and tested
   unknown/revoked/error behavior. Define interaction with CRLs, caches, offline
   operation, and timestamped verification. Network failure must not silently
   become good revocation status.
 - [ ] **FEATURE-03: Add RSA-PSS where interoperability justifies it.** Specify
-  digest/MGF/salt/trailer parameters and policy for CMS, certificates, CRLs, and
+  digest/MGF/salt/trailer parameters and rules for CMS, certificates, CRLs, and
   timestamps independently. Add good/bad parameter and key fixtures and audit
   RustCrypto/webpki support; never reinterpret PSS as v1.5.
 - [ ] **FEATURE-04: Add catalog signature and membership verification.** Verify
@@ -324,7 +325,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **DEFER-01: Windows oracle integration remains deferred at the user's
   request.** Do not add a Windows/SignTool/WinVerifyTrust runner as part of these
   tasks. If explicitly resumed, pin tool/OS versions, roots, time, revocation/
-  network configuration, and policy differences; replay captured expectations
+  network configuration, and behavior differences; replay captured expectations
   locally without native verification in the engine.
 - Signing, installation, execution, patch applicability, device/deployment policy,
   Windows-specific trust/distrust lists, and full Windows policy parity are not
@@ -337,7 +338,7 @@ TDD workflow and checks in AGENTS.md.
   limits in [README.md](README.md) and the format documents.
 - [x] Image/package/script/content binding, supported RustCrypto signatures,
   nested Authenticode signatures, RFC 3161/PKCS#9 timestamps, configured-root
-  paths, and supplied local CRLs; explicit reduced-policy reports.
+  paths, and supplied local CRLs; explicit reduced-verification reports.
 - [x] Serializable verification/inspection types, parsed certificate
   CN/RDNs/EKUs/KeyUsage/validity, selected chains, timestamp signer, CRL artifacts,
   opaque DER preservation, and typed Problem Details errors with causes.

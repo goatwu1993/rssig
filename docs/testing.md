@@ -103,7 +103,7 @@ assert!(stderr.is_empty());
 assert!(String::from_utf8(stdout).unwrap().contains("Usage:"));
 ```
 
-`tests/cli_interface.rs` tests help/version, invalid arguments, policy conflicts,
+`tests/cli_interface.rs` tests help/version, invalid arguments, conflicting verification options,
 configuration errors, multiple inputs, and writer failures. Fixture tests use
 absolute paths and pinned validation times without changing process-global cwd
 or environment. The committed PE/MSI artifacts are data, never executed. The

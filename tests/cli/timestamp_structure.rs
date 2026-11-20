@@ -1,4 +1,4 @@
-//! SEC-08 committed timestamp structure, binding and certificate policy cases.
+//! SEC-08 committed timestamp structure, binding and TSA certificate cases.
 
 use super::support::*;
 

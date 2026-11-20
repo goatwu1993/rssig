@@ -11,15 +11,15 @@ or establish that the XML is well formed or safe to load.
 
 ## Encoding and hashing
 
-The initial encoding policy accepts BOM-less ASCII and Unicode with a UTF-8,
+The initial encoding rules accept BOM-less ASCII and Unicode with a UTF-8,
 UTF-16LE, or UTF-16BE BOM. Invalid Unicode, NULs, unpaired surrogates, odd UTF-16
 byte counts, UTF-32, and non-ASCII text without a BOM are rejected. XML encoding
-declarations do not override this policy.
+declarations do not override these rules.
 
 This is deliberately narrower than jsign's BOM-less Windows-1252 fallback for
 `.ps1xml`: UTF-8 and Windows-1252 can interpret the same non-ASCII bytes
 differently. Requiring a BOM for Unicode avoids guessing. The existing
-hash-comment PowerShell API retains its separate BOM-less UTF-8 policy.
+hash-comment PowerShell API retains its separate BOM-less UTF-8 rule.
 
 The decoded original body is encoded as UTF-16LE for hashing. A BOM contributes
 U+FEFF to the digest. Every original body line ending, space, comment, and XML
@@ -53,14 +53,14 @@ PowerShell markers retain detection priority; ambiguous cross-format inputs
 should use the explicit format API. Hash-style blocks in `.ps1xml` files are
 rejected. `.psc1`, `.cdxml`, `.mof`, and general XMLDSig are not added by this change.
 
-## CMS, policy, and JSON
+## CMS, checks, and JSON
 
 The SIP identity is the same as hash-comment PowerShell: `SPC_SIPINFO_OBJID`
 `1.3.6.1.4.1.311.2.1.30`, version 65536, UUID
 `1FCC3B60-594B-084E-B724-D2C6297EF351`, and five zero reserved integers. Other
 identities are rejected. Existing CMS/signature algorithms, nested signatures,
 RFC 3161 and PKCS#9 timestamps, code-signing EKU, configured root trust, key usage,
-certificate validity, and local CRL policies are reused unchanged. SHA-1 script
+certificate validity, and local CRL rules are reused unchanged. SHA-1 script
 or CMS digests require `--allow-sha1`; SHA-1 certificate/CRL chains remain unsupported.
 
 Success returns `format: "powershell_xml_authenticode"` and each signature's
@@ -91,7 +91,7 @@ Independent jsign 7.6 artifacts use inert XML text and the existing public,
 deterministic RSA-2048 identity exported by `export_msi_test_identity` (certificate
 CN `rssig independent MSI test signer`). They verify in explicit integrity-only
 mode. ASCII without BOM and BOM-marked UTF-8/UTF-16LE/BE succeed. A signed BOM-less
-Windows-1252 artifact is intentionally rejected by the encoding policy, and the
+Windows-1252 artifact is intentionally rejected by the encoding rules, and the
 ASCII digest-tampered counterpart changes only `Types` to `TypeS`. Artifact hashes,
 provenance, and exact expected cases are pinned in the manifest. These are specific
 interoperability checks, not Windows trust-policy validation.

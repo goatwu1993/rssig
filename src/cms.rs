@@ -458,7 +458,7 @@ fn verify_signer_inner<'a, 'c>(
             "signer digest absent from SignedData digestAlgorithms"
         );
     }
-    // Identity matching is independent of signature validity and trust policy.
+    // Identity matching is independent of signature validity and trust checks.
     // Identical decoded DER certificates are harmless duplicates; any distinct
     // matching certificate is ambiguous, including one carrying the same key.
     let mut selected: Option<&Certificate> = None;

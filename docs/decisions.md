@@ -2,7 +2,8 @@
 
 A spec case pins what the verifier does, not proof that it is right. Every
 pinned result is backed by a numbered **decision entry** that says why it is
-right. This page defines the format of every decision index. An index holds
+right. Terms are defined in the [glossary](glossary.md). This page defines
+the format of every decision index. An index holds
 its entries and, until every case it claims names one, a "Candidate rules"
 section; a skeleton index has only the latter.
 
@@ -10,7 +11,7 @@ section; a skeleton index has only the latter.
 |---|---|---|
 | `CRL-` | [crl.md](crl.md) | CRL selection, scope, issuer keys, candidate paths and CRL retrieval |
 | `TIME-` | [time.md](time.md) | Validation time: at which instant certificates are checked |
-| `PATH-` | [path.md](path.md) | Certificate-path policy: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
+| `PATH-` | [path.md](path.md) | Certificate-path rules: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
 | `TSA-` | [tsa.md](tsa.md) | Timestamp tokens: whether an RFC 3161 token or countersignature can be trusted at all |
 | `CMS-` | [cms.md](cms.md) (skeleton) | CMS SignedData structure, signer identification and signature, nested signatures |
 | `ALG-` | [alg.md](alg.md) (skeleton) | Algorithm acceptance, SHA-1 opt-in |
@@ -60,7 +61,7 @@ The usual error codes are a hint, not the rule.
 
 A rule that touches two questions goes where its decision is made: the
 precedence between a lifetime-signing failure and a revocation is set by the
-lifetime-signing policy, so it is a `TIME-` entry (TIME-012); whether a root
+lifetime-signing rules, so it is a `TIME-` entry (TIME-012); whether a root
 or an intermediate may sign CRLs without cRLSign is a CRL-issuer rule, so it
 is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011. A rule
 that is the same in every format stays in its subject index, and the format

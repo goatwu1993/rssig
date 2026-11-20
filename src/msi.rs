@@ -1,4 +1,4 @@
-//! Verification policy and reports over the shared MSI/MSP structural adapter.
+//! Verification checks and reports over the shared MSI/MSP structural adapter.
 use crate::crypto::DigestSink;
 pub(crate) use crate::parse::Msi;
 

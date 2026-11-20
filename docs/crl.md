@@ -369,7 +369,7 @@ When one usage fails its path (`invalid_eku`) and another lacks only a CRL, supp
 - **Decided by:** written argument (no reference has multi-EKU acceptance; `docs/rdp.md`)
 - **Pins:** acceptance
 - **Sources:**
-  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
+  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is an rssig RDP rule (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
   - On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that.
 
 ### CRL-025: The source decides transport; the core screens hygiene only
@@ -460,7 +460,7 @@ A definite revocation or CRL failure is the result, as without fetching, and is 
 - **Decided by:** written argument
 - **Pins:** diagnostics
 - **Sources:**
-  - Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (crl-029-fetch-path-failing-key-usage-asks-nothing).
+  - Without --fetch-crls, a chain whose paths all fail the path checks reports revocation first, as on main (crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (crl-029-fetch-path-failing-key-usage-asks-nothing).
   - Only an unknown status that names nothing is followed by a check without revocation (crl-029-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.
   - Diagnostics only: both results reject.
 
@@ -472,7 +472,7 @@ The revocation is reported and names the certificates another usage only lacks a
 - **Decided by:** written argument
 - **Pins:** diagnostics
 - **Sources:**
-  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md).
+  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is an rssig RDP rule (docs/rdp.md).
   - Written argument, as for candidate paths (crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject.
 - **Unit test:** `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
 
@@ -484,7 +484,7 @@ Without the CRL, the result is the missing CRL (`revocation_unknown`), not the o
 - **Decided by:** written argument (no reference has multi-EKU acceptance; `docs/rdp.md`)
 - **Pins:** diagnostics
 - **Sources:**
-  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
+  - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is an rssig RDP rule (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
   - On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that.
 
 ### CRL-034: A partition for another point is no evidence

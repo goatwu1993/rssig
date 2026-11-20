@@ -234,7 +234,7 @@ impl fmt::Display for VerificationError {
 }
 impl core::error::Error for VerificationError {}
 
-// Keep report policy at the verification boundary; the parser has no dependency
+// Keep report construction at the verification boundary; the parser has no dependency
 // on domain types or serialization. Preserve the existing CLI error contract.
 impl From<crate::parse::Error> for VerificationError {
     fn from(error: crate::parse::Error) -> Self {

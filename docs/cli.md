@@ -4,7 +4,7 @@
 
 ## Scope
 
-Subcommands, argument and policy conflicts, help and version, exit codes, read errors, problem-details output.
+Subcommands, argument and verification-option conflicts, help and version, exit codes, read errors, problem-details output.
 
 ## Boundaries
 
@@ -23,7 +23,7 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
-- `arguments`: unknown subcommands, retired commands and conflicting policies are argument errors (exit 2).
+- `arguments`: unknown subcommands, retired commands and conflicting verification options are argument errors (exit 2).
 - `help-version`: help and version print plain text on stdout (exit 0).
 - `exit-codes`: mixed per-file results give exit 1 with one JSON document.
 - `read-errors`: a missing input is reported as plain text or per-file `read_failed`.

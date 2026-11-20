@@ -37,7 +37,7 @@ to reach the legacy digest branch.
 `verify_trusted` and `trust_loading` cover configured-root trust from both
 sides. `verify_trusted` fixes the store (`root.der`, `good.crl`,
 `good-intermediate.crl`) and mutates the artifact and its embedded, untrusted
-certificates, reaching path building, EKU and time policy, and CRL
+certificates, reaching path building, EKU and time checks, and CRL
 applicability. `trust_loading` fixes one valid image (`good-pe64.exe`) and
 mutates the roots or CRLs it is verified against.
 

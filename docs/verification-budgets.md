@@ -4,7 +4,7 @@ Every public verification call creates one consumable budget. All PE certificate
 entries, CMS signers, nested signatures, RFC 3161 tokens, PKCS#9 countersigners,
 RDP signers, and embedded AppX bundle children share it. Parsed-container entry
 points use the same limits. Each CLI input receives its own budget. Limits are
-fixed engine policy; there is no implicit bypass in integrity-only mode.
+fixed engine limits; there is no implicit bypass in integrity-only mode.
 
 | Resource (`details.resource`) | Allowance per verification |
 | --- | --- |
@@ -79,7 +79,7 @@ counter, inherited timestamp/nested/RDP budgets, bundle sharing, and crypto/path
 exhaustion. An inert multi-EKU RDP fixture also covers a failed first EKU
 followed by budget exhaustion on a retry: exhaustion propagates immediately with
 its original typed resource details. Ordinary EKU failures still retain the first
-policy error. Existing failure expectations remain unchanged.
+path error. Existing failure expectations remain unchanged.
 
 CLI file/root/CRL reads, batch/report buffering, and nonregular/changing inputs
 are covered by [SEC-03 host limits](host-limits.md). Library callers own their

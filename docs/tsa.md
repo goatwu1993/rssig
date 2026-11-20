@@ -6,7 +6,7 @@ contain, bind and be signed by. Which instant certificates are then checked at
 is a [validation-time decision](time.md); see
 [which index](decisions.md#which-index). The entry format is defined in
 [Decision indexes](decisions.md); the profile and its limits are explained in
-[timestamp policy](timestamp-policy.md), and the history is in SEC-08
+[timestamp profile](timestamp-profile.md), and the history is in SEC-08
 ([done](tasks/done.md), PR #42).
 
 ## Order
@@ -85,7 +85,7 @@ Multiple attribute values, an RFC 3161 token beside a countersignature in
 either order, and the two RFC 3161 attribute aliases together are
 `invalid_timestamp`. A duplicated attribute OID is rejected earlier by CMS
 attribute validation (`invalid_signature` at `cms`). There is no selection
-policy.
+rule.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #42 (SEC-08): failing closed instead of
@@ -122,7 +122,7 @@ their framed DER without authenticating or interpreting it.
 - **Decided by:** written choice, PR #42 (SEC-08)
 - **Pins:** acceptance
 - **Sources:**
-  - Written argument: identity matching and extension policy are not
+  - Written argument: identity matching and extension rules are not
     implemented, so accepting these fields would vouch for content rssig has
     not evaluated.
 
@@ -139,7 +139,7 @@ identifiers; no policy allowlist is applied.
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 2.4.2; TSA policy documents are out of scope (see
-    [timestamp policy](timestamp-policy.md)).
+    [timestamp profile](timestamp-profile.md)).
 
 ## Candidate rules
 

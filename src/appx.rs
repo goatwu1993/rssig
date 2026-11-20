@@ -1,4 +1,4 @@
-//! Integrity policy and reports over immutable MSIX/AppX structural views.
+//! Integrity checks and reports over immutable MSIX/AppX structural views.
 pub(crate) use crate::parse::Appx;
 use crate::{
     crypto::Hash,

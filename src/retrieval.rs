@@ -1083,7 +1083,7 @@ fn retrieve(
                 // help, and asking about covered certificates is refused.
                 // Unit-tested only: no fixture makes the two disagree.
                 // An unknown status that names nothing also arises when no
-                // path passes path policy: no CRL can help and the status is
+                // path passes the path checks: no CRL can help and the status is
                 // no evidence, so the input is checked without revocation and
                 // that failure is the result. A definite CRL failure or
                 // revocation keeps its code, as without `--fetch-crls`.

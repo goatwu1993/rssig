@@ -6,6 +6,10 @@ read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
 project at build or runtime.
 
+Terms such as policy, rule, decision and spec have one meaning each, defined
+in [docs/glossary.md](docs/glossary.md); use them consistently and add new
+terms there.
+
 ## Release status
 
 rssig is pre-release (0.x, unpublished). Its public interfaces and contracts

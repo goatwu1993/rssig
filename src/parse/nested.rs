@@ -181,7 +181,7 @@ fn validate_accuracy(node: Node<'_>) -> Result<()> {
     Ok(())
 }
 
-/// RFC3161 TSTInfo fields. Unknown policy/algorithms are preserved without policy checks.
+/// RFC3161 TSTInfo fields. Unknown TSA policy OIDs and algorithms are preserved without checks.
 #[derive(Debug)]
 pub struct TstInfo<'a> {
     der: &'a [u8],
@@ -279,7 +279,7 @@ pub struct InspectedCms<'a> {
 impl<'a> SignedData<'a> {
     /// Recursively inspect known unsigned attributes with one consumable budget.
     /// Unknown attributes remain opaque in the signer views. No hashes, signatures,
-    /// imprint bindings, certificates, time policy, or trust are verified.
+    /// imprint bindings, certificates, time checks, or trust are verified.
     pub fn inspect(
         bytes: &'a [u8],
         budget: &mut InspectionBudget,

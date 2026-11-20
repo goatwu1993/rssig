@@ -102,9 +102,9 @@ impl TrustStore {
             )
             .into());
         }
-        let policy = SignerPolicy::check(leaf, eku, signing_time, now)?;
-        if let Some(at) = issued_after(leaf, policy.lifetime_signed_at) {
-            return Err(policy.not_valid_at_signing(leaf, at).into());
+        let requirements = SignerRequirements::check(leaf, eku, signing_time, now)?;
+        if let Some(at) = issued_after(leaf, requirements.lifetime_signed_at) {
+            return Err(requirements.not_valid_at_signing(leaf, at).into());
         }
         let leaf_report = CertificateReport::parse(leaf)?;
         let leaf_der = CertificateDer::from(leaf.to_der().map_err(crate::compat_error)?);
@@ -148,7 +148,7 @@ impl TrustStore {
             crls: &crls,
             now,
             revocation,
-            lifetime_signed_at: policy.lifetime_signed_at,
+            lifetime_signed_at: requirements.lifetime_signed_at,
             budget,
             state: Default::default(),
         };
@@ -171,7 +171,7 @@ impl TrustStore {
                 &algorithm_refs,
                 &anchors,
                 &intermediates,
-                UnixTime::since_unix_epoch(Duration::from_secs(policy.validation_time)),
+                UnixTime::since_unix_epoch(Duration::from_secs(requirements.validation_time)),
                 webpki::KeyUsage::required_if_present(eku),
                 None,
                 Some(&check_path),
@@ -181,7 +181,7 @@ impl TrustStore {
         budget.hash_bytes.check()?;
         budget.decoded_bytes.check()?;
         let state = evaluator.state.into_inner();
-        let path = path.map_err(|e| path_error(e, &state, &crls, &policy, &leaf_report))?;
+        let path = path.map_err(|e| path_error(e, &state, &crls, &requirements, &leaf_report))?;
         // rssig's per-certificate check above is the only revocation
         // decision. Issuers of one name with different keys on the accepted
         // path are rejected here when their CRLs cannot be told apart by key,
@@ -193,7 +193,7 @@ impl TrustStore {
             crosscheck::confirm(
                 &end_entity,
                 &path,
-                policy.validation_time,
+                requirements.validation_time,
                 eku,
                 &state.chosen,
                 &crls,
@@ -207,17 +207,17 @@ impl TrustStore {
                      apart: each must name its issuer's key in an authorityKeyIdentifier",
                 )
                 .detail("certificate", &leaf_report)
-                .detail("required_eku", policy.eku_oid.to_string())
+                .detail("required_eku", requirements.eku_oid.to_string())
                 .detail("reason", "ambiguous_issuer_keys")
                 .into());
             }
             state.warn_ignored_listings(budget);
         }
         Ok(TrustReport {
-            validation_time: policy.validation_time,
-            lifetime_signing: policy.lifetime_signing,
+            validation_time: requirements.validation_time,
+            lifetime_signing: requirements.lifetime_signing,
             chain: self.chain_report(leaf_report, &anchors, &path)?,
-            required_eku: OidReport::new(policy.eku_oid),
+            required_eku: OidReport::new(requirements.eku_oid),
             revocation: self.revocation_report(revocation)?,
         })
     }
@@ -357,7 +357,7 @@ fn same_anchor(
 }
 
 /// The signer's own key usage and EKU, and the times its chain is judged at.
-struct SignerPolicy {
+struct SignerRequirements {
     eku_oid: ::der::asn1::ObjectIdentifier,
     /// Whether the signer has the Microsoft lifetime-signing EKU.
     lifetime_signing: bool,
@@ -368,7 +368,7 @@ struct SignerPolicy {
     now: u64,
 }
 
-impl SignerPolicy {
+impl SignerRequirements {
     fn check(
         leaf: &Certificate,
         eku: &'static [u8],
@@ -512,7 +512,7 @@ impl PathState {
     }
 }
 
-/// The path policy webpki calls back into for each candidate path.
+/// The path checks webpki calls back into for each candidate path.
 ///
 /// Rejecting a candidate path is non-fatal: webpki tries other issuers and
 /// reports the most specific rejection by its error rank. What each path
@@ -533,17 +533,17 @@ struct PathEvaluator<'a, 'b> {
 impl PathEvaluator<'_, '_> {
     fn check(&self, path: &webpki::VerifiedPath<'_>) -> core::result::Result<(), webpki::Error> {
         let path_certificates = self.path_certificates(path)?;
-        // The other path policy is judged first but applied after
+        // The other path checks are judged first but applied after
         // revocation, as webpki checked revocation while verifying the
         // path's signatures: only a path that would pass it can still be
         // completed by a fetched CRL.
-        let other_policy = path_policy_failure(&path_certificates, self.lifetime_signed_at)?;
+        let other_failure = path_check_failure(&path_certificates, self.lifetime_signed_at)?;
         if self.revocation {
-            self.check_revocation(path, &path_certificates, other_policy.is_none())?;
+            self.check_revocation(path, &path_certificates, other_failure.is_none())?;
         }
-        match other_policy {
+        match other_failure {
             None => Ok(()),
-            Some(PathPolicyFailure::IssuedAfterSigning(cert, at)) => {
+            Some(PathCheckFailure::IssuedAfterSigning(cert, at)) => {
                 // Ranked like webpki's own validity errors. Keep the first
                 // rejection, which webpki also keeps among equal ranks.
                 let error = webpki::Error::CertNotValidYet {
@@ -556,7 +556,7 @@ impl PathEvaluator<'_, '_> {
                     .get_or_insert_with(|| cert.clone());
                 Err(error)
             }
-            Some(PathPolicyFailure::LacksCertSign) => {
+            Some(PathCheckFailure::LacksCertSign) => {
                 self.state.borrow_mut().invalid_ca_usage = true;
                 Err(webpki::Error::UnknownIssuer)
             }
@@ -707,11 +707,11 @@ fn path_error(
     e: webpki::Error,
     state: &PathState,
     crls: &[LoadedCrl],
-    policy: &SignerPolicy,
+    requirements: &SignerRequirements,
     leaf_report: &CertificateReport,
 ) -> VerificationError {
     // webpki ranks another path's validity error above unknown revocation
-    // status, but a path that passes every path policy and only lacks CRLs
+    // status, but a path that passes every path check and only lacks CRLs
     // is the one a CRL could complete: it outranks every other path's error,
     // including a CA issued after the lifetime signing time. A definite
     // revocation does not: a higher-ranked error on another path still
@@ -739,14 +739,14 @@ fn path_error(
         Some(cert),
     ) = (
         &e,
-        policy.lifetime_signed_at,
+        requirements.lifetime_signed_at,
         state.issued_after_signing.as_ref(),
     ) && viable.is_none()
         && time.as_secs() == at
         && rejected.as_secs() == not_before(cert).as_secs()
     {
         // Every candidate path failed; report the issuer that postdates signing.
-        return policy.not_valid_at_signing(cert, at);
+        return requirements.not_valid_at_signing(cert, at);
     }
     let revocation_error = if revocation_rejected {
         revocation_failure(&state.outcomes)
@@ -767,11 +767,11 @@ fn path_error(
     };
     error = error
         .detail("certificate", leaf_report)
-        .detail("required_eku", policy.eku_oid.to_string());
-    if policy.lifetime_signing {
+        .detail("required_eku", requirements.eku_oid.to_string());
+    if requirements.lifetime_signing {
         error = error.detail("lifetime_signing", true);
     }
-    if let Some(at) = policy.lifetime_signed_at {
+    if let Some(at) = requirements.lifetime_signed_at {
         error = error.detail("signing_time", at);
     }
     error
@@ -954,26 +954,26 @@ fn crl_may_apply(bytes: &[u8], issuer_names: &[Vec<u8>]) -> bool {
         .is_none_or(|issuer| issuer_names.contains(&issuer))
 }
 
-/// A path policy failure other than revocation, judged without side effects.
-enum PathPolicyFailure<'c> {
+/// A path-check failure other than revocation, judged without side effects.
+enum PathCheckFailure<'c> {
     /// A CA certificate issued after the lifetime signing time.
     IssuedAfterSigning(&'c Certificate, u64),
     /// A CA certificate whose KeyUsage lacks keyCertSign.
     LacksCertSign,
 }
 
-/// The first path policy failure on a path, in the order it is reported:
+/// The first path-check failure on a path, in the order it is reported:
 /// without a lifetime signing time a missing keyCertSign is reported where it
 /// is found; with one, every signing-time check comes first, so it outranks a
 /// missing keyCertSign wherever each defect sits in the path.
-fn path_policy_failure(
+fn path_check_failure(
     path_certificates: &[Certificate],
     lifetime_signed_at: Option<u64>,
-) -> core::result::Result<Option<PathPolicyFailure<'_>>, webpki::Error> {
+) -> core::result::Result<Option<PathCheckFailure<'_>>, webpki::Error> {
     let mut lacks_cert_sign = false;
     for cert in &path_certificates[1..] {
         if let Some(at) = issued_after(cert, lifetime_signed_at) {
-            return Ok(Some(PathPolicyFailure::IssuedAfterSigning(cert, at)));
+            return Ok(Some(PathCheckFailure::IssuedAfterSigning(cert, at)));
         }
         if let Some((_, ku)) = cert
             .tbs_certificate
@@ -982,12 +982,12 @@ fn path_policy_failure(
             && !ku.key_cert_sign()
         {
             if lifetime_signed_at.is_none() {
-                return Ok(Some(PathPolicyFailure::LacksCertSign));
+                return Ok(Some(PathCheckFailure::LacksCertSign));
             }
             lacks_cert_sign = true;
         }
     }
-    Ok(lacks_cert_sign.then_some(PathPolicyFailure::LacksCertSign))
+    Ok(lacks_cert_sign.then_some(PathCheckFailure::LacksCertSign))
 }
 
 /// The CRL that decided one certificate's status on the accepted path.
@@ -1045,7 +1045,7 @@ fn same_name_different_keys<'a>(
 struct CertificateEvidence {
     /// The candidate path it was evaluated on, in the order webpki tried them.
     path: usize,
-    /// Whether that path passes every path policy but revocation, so that a
+    /// Whether that path passes every path check but revocation, so that a
     /// CRL for it could still make it verify.
     path_viable: bool,
     /// Authenticated CRLs that list the certificate but did not count: not
@@ -1423,7 +1423,7 @@ fn names_another_key(crl_key: Option<&Vec<u8>>, issuer: &IssuerKey) -> bool {
 /// The error for a revocation rejection, from what the candidate paths
 /// established: a revocation first, then the most specific reason a CRL could
 /// not be used, else unknown status naming every certificate that lacked a
-/// usable CRL. Only paths that pass every other path policy decide, unless
+/// usable CRL. Only paths that pass every other path check decide, unless
 /// none does.
 fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationError> {
     if outcomes.is_empty() {
@@ -1431,7 +1431,7 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
     }
     let viable: Vec<&CertificateEvidence> = outcomes.iter().filter(|o| o.path_viable).collect();
     if viable.is_empty() {
-        // No path passes the other path policy. Revocation is still reported
+        // No path passes the other path checks. Revocation is still reported
         // first, as webpki checked it first, but the list of certificates
         // without a CRL is empty: no CRL could make such a path verify, so
         // retrieval asks nothing and reports the same result.
@@ -1458,7 +1458,7 @@ fn revocation_failure(outcomes: &[CertificateEvidence]) -> Option<VerificationEr
         .collect();
     if let Some(revoked) = first_revocation(&viable) {
         // A revocation decides. Another path that passes every other path
-        // policy and has certificates with no CRL at all, or whose only CRLs
+        // checks and has certificates with no CRL at all, or whose only CRLs
         // have expired or are otherwise replaceable (not yet valid, malformed,
         // an unsupported feature), could still verify with a current one:
         // they are
@@ -1541,7 +1541,7 @@ fn search_limit(e: &webpki::Error) -> bool {
     )
 }
 
-/// The status of a path that passes every path policy, has no revocation
+/// The status of a path that passes every path check, has no revocation
 /// and only lacks CRLs or has only ones a source's CRL could replace
 /// (expired, not yet valid, or another replaceable failure), if any path is
 /// like that.
@@ -1659,7 +1659,7 @@ fn report_crls(error: &mut VerificationError, crls: &[LoadedCrl]) {
 // supported, or is malformed. OpenSSL and BoringSSL score such a CRL below a
 // valid one, or drop it when decoding, and then look the issuer's CRLs up
 // in the store (`get_crl_delta`, `get_crl`), and Bouncy Castle fetches after
-// any CRL failure. Above it, a source is not asked, by policy: a fetched
+// any CRL failure. Above it, a source is not asked, by decision: a fetched
 // usable CRL would still decide if supplied, but OpenSSL and BoringSSL do
 // not score the signature and report its failure (or an unsupported
 // signature algorithm) without another lookup (BoringSSL decides the tie
@@ -2403,7 +2403,7 @@ mod revocation_reporting {
         .unwrap();
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
         assert_eq!(without(&error), None);
-        // A path that only lacks a CRL but fails other path policy (here,
+        // A path that only lacks a CRL but fails other path checks (here,
         // keyCertSign) could not be completed: nothing is named.
         let mut blocked = on_path(1, "m", Outcome::Missing(None));
         blocked.path_viable = false;
@@ -2422,10 +2422,10 @@ mod revocation_reporting {
     }
 
     #[test]
-    fn only_paths_that_pass_other_policy_decide_an_unknown_status() {
+    fn only_paths_that_pass_other_checks_decide_an_unknown_status() {
         let revoked = || Outcome::Revoked(webpki_revocation_error("r", webpki::Error::CertRevoked));
         // Path 0 could verify but its CRL is unusable; path 1 fails other
-        // path policy and lacks a CRL. The usable path's failure decides,
+        // path checks and lacks a CRL. The usable path's failure decides,
         // and path 1's certificate is not offered for retrieval.
         let mut blocked = on_path(1, "m", Outcome::Missing(None));
         blocked.path_viable = false;
@@ -2435,7 +2435,7 @@ mod revocation_reporting {
         ])
         .unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
-        // When no path passes other policy, every tried path decides.
+        // When no path passes other checks, every tried path decides.
         let mut first = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
         first.path_viable = false;
         let mut second = on_path(1, "m", Outcome::Missing(None));
@@ -2453,7 +2453,7 @@ mod revocation_reporting {
         let error = revocation_failure(&[first]).unwrap();
         assert_eq!(error.code, ErrorCode::CrlExpired);
         assert!(!error.details.contains_key("certificates_without_crl"));
-        // A revocation on a path failing other policy does not hide the
+        // A revocation on a path failing other checks does not hide the
         // usable path's own failure.
         let mut blocked = on_path(1, "r", revoked());
         blocked.path_viable = false;
@@ -2963,7 +2963,7 @@ mod revocation_reporting {
         assert!(
             completable_path(&[on_path(0, "a", failed(UNUSABLE, ErrorCode::InvalidCrl))]).is_none()
         );
-        // Nor is a path that fails other path policy.
+        // Nor is a path that fails other path checks.
         let mut blocked = on_path(0, "a", failed(EXPIRED, ErrorCode::CrlExpired));
         blocked.path_viable = false;
         assert!(completable_path(&[blocked]).is_none());

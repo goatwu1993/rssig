@@ -1,4 +1,4 @@
-# Root and CRL loading policy (SEC-07)
+# Root and CRL loading (SEC-07)
 
 Every explicit load is atomic. `TrustStore::add_roots` and
 `add_crl` validate the entire input before adding anything. A failure
@@ -9,7 +9,7 @@ and failing entry, empty stdout. It does not emit a partial verification report.
 
 ## Accepted input and duplicates
 
-| Input | Policy |
+| Input | Rule |
 | --- | --- |
 | DER | Exactly one certificate or CRL, with no prefix or trailing bytes. |
 | Root PEM | One or more complete `CERTIFICATE` blocks. |
@@ -36,13 +36,13 @@ Every configured root must decode as an X.509 certificate and support webpki's
 one-based entry position, even if another valid root would verify the file.
 Verification no longer silently filters out unsupported anchors.
 
-Anchor extraction is **not** signature verification or general root policy
+Anchor extraction is **not** signature verification or general root checks
 validation. It does not check the root's self-signature, expiry, CA flag, KU,
 EKU or unfamiliar critical extensions; configured roots are already trusted by
 the caller. Extraction also does not establish that an arbitrary public-key
 algorithm can verify a chain. Actual certificate signatures still require the
 supported RustCrypto algorithms. Name constraints remain path inputs. The
-[certificate path policy](certificate-path-policy.md) and its existing
+[certificate paths](certificate-paths.md) and its existing
 expired/profile/constrained-root fixtures pin these boundaries.
 
 `from_system` treats native enumeration as one atomic operation:
@@ -95,9 +95,9 @@ or unrelated CRL may load; required revocation validation must still authenticat
 and apply evidence and fails closed. A loaded forged-CRL fixture fails with
 `invalid_crl_signature` at `revocation`. Disabling revocation remains explicit
 and reports `not_checked`. Successful reports retain `CrlReport.role = "supplied"`,
-not an individually verified label. Selection/applicability policy and reporting
+not an individually verified label. Selection/applicability rules and reporting
 the CRLs actually used remain SEC-10/SEC-11. No verification JSON schema changes
-are introduced by this loading policy.
+are introduced by these loading rules.
 
 ## Compatibility and evidence
 

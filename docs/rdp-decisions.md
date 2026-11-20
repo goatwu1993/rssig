@@ -4,7 +4,7 @@
 
 ## Scope
 
-RDP signed settings: canonical settings, scope, EKU policy.
+RDP signed settings: canonical settings, scope, EKU rule.
 
 ## Boundaries
 
@@ -22,7 +22,7 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
-- `eku`: the format's signer EKU policy.
+- `eku`: the format's signer EKU rule.
 - `embedded-signature`: how the signature is embedded and extracted; a broken embedding is `malformed_cms` or `invalid_signature` (may move to `CMS-` where the rule is shared).
 - `hash`: the format's content hash must match what was signed.
 - `independent`: signatures from independent producers (jsign, nfedera) verify, and tampering with them is caught.

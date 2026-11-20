@@ -7,7 +7,7 @@
 //! those explicitly require `std`, without enabling verification or reports.
 //! Parsing success is not a verification result. Unknown algorithm
 //! identifiers and opaque certificate choices retain their original DER.
-//! Signature algorithm policy, hashes, signature checks, timestamp authentication, and certificate trust
+//! Signature algorithm checks, hashes, signature checks, timestamp authentication, and certificate trust
 //! belong to the optional `verify` module. The base parsers require only `core + alloc`.
 //!
 //! ```
@@ -54,7 +54,7 @@ mod wsf_xml;
 
 /// Stream an Authenticode image digest into any RustCrypto `digest::Update` sink.
 ///
-/// Uses the same bounded layout policy as [`Pe`]: nonempty sections may be
+/// Uses the same bounded layout rules as [`Pe`]: nonempty sections may be
 /// supplied in any order, but must not overlap headers, each other, or the
 /// certificate table. Only a gap before the first section is supported. That
 /// gap and any overlay before the certificate table are hashed exactly once.

@@ -39,9 +39,9 @@ These checks answer different questions:
 1. Does the format-specific file digest match the digest carried in CMS?
 2. Do CMS signed attributes, content binding, and the public-key signature verify?
 3. Does the signer chain reach a configured trust anchor under the required
-   validity, constraints, key usage, and EKU policy?
+   validity, constraints, key usage, and EKU checks?
 4. Is a timestamp bound to this signature, cryptographically valid, and issued
-   by a trusted TSA? Does policy allow using its time?
+   by a trusted TSA? Do its rules allow using its time?
 5. Is revocation status known and acceptable for the relevant chains?
 
 A matching file digest alone proves no publisher identity: that digest is stored
@@ -56,7 +56,7 @@ implement using that project's lower-level dependencies.
 | --- | --- | --- | --- | --- | --- | --- |
 | PE digest computation | Yes | Yes | Yes | Yes | Yes | Yes |
 | CMS public-key verification | Yes | Absent | Absent | Yes | Yes | Yes |
-| Certificate trust path | webpki + RustCrypto | Absent | Absent | Optional signature walk to supplied CA; limited policy | Bouncy Castle PKIX | Go X.509 |
+| Certificate trust path | webpki + RustCrypto | Absent | Absent | Optional signature walk to supplied CA; limited checks | Bouncy Castle PKIX | Go X.509 |
 | Required code-signing EKU | Yes | Absent | Absent | No check in chain walker | Yes | CLI passes `ExtKeyUsageAny` |
 | RFC 3161 / legacy timestamp verification | Both, including binding and TSA trust in trusted mode | Absent | Absent | Partial; see below | Both, including binding and TSA trust | Both, including binding and TSA trust |
 | Revocation in normal verification | Local CRLs; unknown status denied | Absent | Absent | No implemented CRL path found | Disabled in inspected rules | No CRL/OCSP check found in CLI path |
@@ -76,12 +76,12 @@ readable:
 | Verification concern | pe-sign | Difference from rssig |
 | --- | --- | --- |
 | PE digest + CMS verification | Checks PE digest, CMS signed-attribute digest, and RSA PKCS#1 v1.5 signature; no ECDSA verifier found in pe-sign's inspected path | rssig implements all three checks and additionally supports ECDSA P-256/SHA-256 and P-384/SHA-384 |
-| Trust path | Custom certificate signature walk, bundled or explicit PEM CA set | No full path-policy checks; automatic AIA retrieval |
+| Trust path | Custom certificate signature walk, bundled or explicit PEM CA set | No full path checks; automatic AIA retrieval |
 | Code-signing / TSA EKU | Not enforced by verification path | rssig enforces purpose-specific EKUs in trusted mode |
-| Certificate time | Current wall-clock validity, optional bypass | No fixed-time option or authenticated historical timestamp policy |
+| Certificate time | Current wall-clock validity, optional bypass | No fixed-time option or authenticated historical timestamp handling |
 | Timestamp verification | Parsing/extraction helpers; absent from normal verification | rssig checks binding, cryptography, and TSA trust |
 | Revocation | No CRL/OCSP validation found | rssig requires supplied CRL coverage by default |
-| Nested signatures | Extraction; CLI `--embed` selects a nested signature | No automatic all-signature verification policy |
+| Nested signatures | Extraction; CLI `--embed` selects a nested signature | No automatic all-signature verification |
 | PE page hashes / other formats | No page-hash check found; PE only | rssig verifies page hashes and additional Windows formats |
 | CLI/API reporting | Status enum + errors; human-readable CLI | CLI prints invalid statuses without converting them to failure exits |
 | Runtime model | RustCrypto RSA, `std`, blocking HTTP client | OpenSSL removed; inspected library is not actually `no_std` |
@@ -93,9 +93,9 @@ The Rust bindings in authenticode-parser 0.5.0 expose a C verification engine:
 | PE digest | `parse_pe()` calculates and compares it | `parse()` accepts signature bytes only; caller must compare file digest |
 | CMS verification | OpenSSL PKCS#7 public-key/content verification | Real cryptographic checking; not a digest-only parser |
 | Trust path | Reconstructed for inspection; verification result ignored | No trusted-chain conclusion or configurable trust-anchor workflow |
-| Timestamps | Legacy PKCS#9 and Microsoft PKCS#7/CMS timestamp signature and parent-digest checks | No TSA trust validation or trusted historical signer policy |
-| Revocation | No CRL/OCSP policy in exposed parse APIs | rssig requires local CRL coverage in normal trusted mode |
-| Nested signatures | Recursive extraction with per-attribute count limits | No claim of equivalent resource limits or all-signature acceptance policy |
+| Timestamps | Legacy PKCS#9 and Microsoft PKCS#7/CMS timestamp signature and parent-digest checks | No TSA trust validation or trusted historical signer handling |
+| Revocation | No CRL/OCSP checks in exposed parse APIs | rssig requires local CRL coverage in normal trusted mode |
+| Nested signatures | Recursive extraction with per-attribute count limits | No claim of equivalent resource limits or all-signature acceptance rule |
 | Other formats / page hashes | PE-focused; no page-hash verification found | rssig supports additional formats and verifies PE page hashes |
 | Output | Signature arrays, metadata, primary and countersignature verification enums | `Valid` is not equivalent to rssig trusted success; no comparable JSON CLI |
 | Engine dependencies | C compiler, FFI, OpenSSL libcrypto; optional static OpenSSL linking | Incompatible with rssig's pure-Rust/no-OpenSSL engine constraints |
@@ -169,7 +169,7 @@ or an additional pinning policy; extracting them does not authenticate the file.
 This is materially less than rssig's `--integrity-only`, which still checks
 CMS cryptography and content binding.
 
-### rsigncode: real CMS checks, incomplete trust and timestamp policy
+### rsigncode: real CMS checks, incomplete trust and timestamp checks
 
 `crates/rsigncode/src/crypto/verify.rs` verifies content digests and CMS signatures.
 However, chain verification only runs when CA certificates are supplied;
@@ -177,7 +177,7 @@ However, chain verification only runs when CA certificates are supplied;
 
 `crypto/chain.rs` walks certificate signatures to an explicitly supplied CA,
 with cycle/depth limits. It does not enforce validity periods, BasicConstraints,
-KeyUsage, EKU, name constraints, or path-length policy. It does not trust an
+KeyUsage, EKU, name constraints, or path-length checks. It does not trust an
 arbitrary embedded self-signed certificate, but its successful walk is still
 weaker than certificate-path validation.
 
@@ -195,7 +195,7 @@ TLS, ring, and aws-lc packages. Lockfile presence alone does not prove each is
 active on every target. A resolved target-specific dependency audit would be
 required before reuse under rssig's stricter dependency rules.
 
-### pe-sign: RSA verification with limited certificate policy
+### pe-sign: RSA verification with limited certificate checks
 
 The inspected 0.1.10 source performs real RSA signature and CMS message-digest
 checks. `PeSign::verify_pe_*` also compares the PE digest; plain
@@ -275,8 +275,8 @@ public-key hashes. This differs from rssig's configured-root-only model.
 rules do not enable it. `TimestampRule` explicitly handles lifetime-signing EKU
 and prioritizes legacy timestamps over RFC 3161. rssig instead rejects multiple
 timestamps and validates lifetime-signing signers at the validation time in its
-shared trust path; see [time policy](time-policy.md).
-These are concrete policy differences worth documenting and testing.
+shared trust path; see [validation time](validation-time.md).
+These are concrete behavior differences worth documenting and testing.
 
 ### Relic: a broader verification reference with different defaults
 
@@ -296,11 +296,11 @@ verification on macOS is independent of native trust APIs.
 
 ## Where rssig is stronger, and where confidence is still limited
 
-rssig offers a more complete verification policy than the four inspected Rust
+rssig offers a more complete verification than the four inspected Rust
 PE implementations (authenticode-rs, cross-authenticode, rsigncode, and pe-sign):
 CMS checks, configured trust anchors, signer/TSA EKUs, timestamp
 binding, chain revocation, and explicit reporting when trust or revocation is
-disabled. Its shared engine applies that policy across Windows formats.
+disabled. Its shared engine applies those checks across Windows formats.
 `src/crypto.rs`, `src/trust.rs`, and `src/verify.rs` are the implementation
 references; `src/domain.rs` defines the consumer contract.
 
@@ -313,11 +313,11 @@ Jsign or Relic. Important limits remain:
 
 - Parser/resource hardening and broader adversarial input coverage remain
   priorities. Existing truncation/bounds tests do not replace fuzzing.
-- Certificate policy needs more alternative-chain, constraint, and critical
+- Certificate-path checks need more alternative-chain, constraint, and critical
   extension coverage. A TLS-oriented path library requires explicit Authenticode
-  policy decisions; current code adds leaf and intermediate KeyUsage checks.
+  decisions; current code adds leaf and intermediate KeyUsage checks.
 - Timestamp multiplicity, lifetime signing and time encodings are pinned
-  (SEC-08/09); historical revocation needs clearer policy coverage. Current CRLs conservatively reject a
+  (SEC-08/09); historical revocation needs clearer rules. Current CRLs conservatively reject a
   revoked signer even when the recorded revocation date follows signing.
 - No automatic AIA/CRL fetching, OCSP, RSA-PSS, standalone catalog verification,
   or generic detached Authenticode input. Some PE layouts, script encodings,
@@ -336,13 +336,13 @@ expansion of this existing corpus rather than treating it as absent.
 
 ## Verification-focused priorities
 
-1. Harden parsers and bound total work; extend path-policy and timestamp-policy
+1. Harden parsers and bound total work; extend path-check and timestamp-profile
    fixtures before adding formats.
 2. Expand independent PE, nested-signature, timestamp, and revocation fixtures
-   from Jsign/Relic. Record expected policy differences rather than assuming
+   from Jsign/Relic. Record expected behavior differences rather than assuming
    either tool is an oracle. Preserve offline, fixture-first Cargo tests.
-3. Make historical revocation policy explicit (lifetime-signing and duplicate
-   timestamp policy are documented). Improve reporting of which supplied CRLs actually validated paths.
+3. Make historical revocation rules explicit (lifetime-signing and duplicate
+   timestamp rules are documented). Improve reporting of which supplied CRLs actually validated paths.
 4. Add controlled retrieval, OCSP, RSA-PSS, catalog signatures/membership, or
    detached inputs only when each has evidence-backed demand and test coverage.
 
