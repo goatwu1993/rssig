@@ -123,7 +123,7 @@ issuer/serial (original issuer Name SEQUENCE and serial INTEGER DER) and
 subject-key-identifier bytes. The issuer Name is opaque beyond its sequence
 framing. Versions and serials must be canonical nonnegative integers; unfamiliar
 version numbers are preserved without asserting that verification supports them.
-Identity/version compatibility and certificate matching remain verification policy.
+Identity/version compatibility and certificate matching remain verification checks.
 
 `AlgorithmIdentifier::parse` also decodes standalone identifiers. Unknown valid
 OIDs, absent parameters, NULL parameters, and unfamiliar parameter DER are
@@ -151,14 +151,14 @@ signer parsing fails. The parse CLI reports both raw signer DER and bounded recu
 and recognized unsigned-attribute children. `InspectionKind` identifies nested
 Authenticode CMS, RFC 3161 tokens (Microsoft and standard CMS attribute OIDs),
 and PKCS#9 countersignatures. Every value in a recognized attribute is visited;
-multiple timestamps are inspectable even when verification policy rejects them.
+multiple timestamps are inspectable even when verification rejects them.
 Unknown attributes remain available as opaque values in each `SignerInfo`.
 
 RFC 3161 tokens expose `TstInfo`: original DER, version DER, policy OID, imprint
 algorithm/parameters, imprint bytes, serial DER, `parsed_time`, and optional
 field DER. Optional fields have ordered, unique envelope tags; accuracy, TSA
 names, and extensions retain opaque semantics. Versions, policy OIDs, algorithms,
-and imprint lengths are not checked against verification policy. PKCS#9 children
+and imprint lengths are not checked against verification rules. PKCS#9 children
 contain a countersigner and its optional signed `signingTime` assertion.
 Missing signingTime is inspectable; malformed or multiple signingTime values
 fail. `ParsedTime` exposes original DER, nonnegative Unix seconds, and an optional
@@ -167,7 +167,7 @@ must use canonical DER; GeneralizedTime fractions have at most 64 digits and
 no trailing zero. TSTInfo requires GeneralizedTime. These assertions are never
 verified signing times: no signature, imprint binding, certificate, clock, trust,
 or revocation checks run. The verifier shares time decoding while retaining
-its own authentication and time-policy checks.
+its own authentication and time checks.
 
 `InspectionBudget` is consumable across siblings, timestamp/countersigner edges,
 and repeated top-level calls. Defaults are depth eight (root zero), 64 decoded
@@ -218,7 +218,7 @@ end at EOF. External views can report no certificate table to hash an unsigned
 image; `Pe::parse` still requires an embedded signature. Views must supply offsets
 from the actual PE encoding; range validation does not reparse the headers.
 
-This is rssig's existing bounded layout policy, not arbitrary Windows layout
+This is rssig's existing bounded layout rule, not arbitrary Windows layout
 support. In particular, generic hashing no longer applies Google's sum-of-section-
 sizes suffix calculation to gapped layouts: that could hash section bytes twice
 and disagree with verification. Gaps between nonempty sections are rejected.
@@ -404,13 +404,13 @@ paths are checked at the whole second (including notBefore), then the selected
 leaf and intermediates are checked against the fractional expiry boundary.
 A timestamp even slightly after notAfter is rejected for both the TSA and the
 publisher chain. Configured trust anchors retain the existing webpki validity
-policy. For a timestamped signer without lifetime signing, and for TSA reports,
+rules. For a timestamped signer without lifetime signing, and for TSA reports,
 `TrustReport.validation_time` is the timestamp's whole-second part; consult the
 timestamp's `fractional_seconds` for its full precision.
 
 A signer with the lifetime-signing EKU is validated at `VerifyOptions.now`
 rather than the timestamp, and `TrustReport.lifetime_signing` is `true`. See
-[time policy](time-policy.md) for every time boundary.
+[validation time](validation-time.md) for every time boundary.
 
 ## Regression evidence
 
@@ -551,7 +551,7 @@ parsed values. Reparse the same immutable input for another call. They do not
 cache trusted state. `verify_parsed_msi(&mut package, ...)` and
 `verify_parsed_appx(&package, ...)` reuse the parsed adapter. MSI's mutable
 borrow serves its read cursor; repeated hashing restarts stream reads. Neither
-adapter caches verification results. A failed policy check does not prevent
+adapter caches verification results. A failed verification does not prevent
 subsequent verification under another explicit policy. Every verification call
 checks hashes, CMS, timestamps and the configured trust/revocation policy anew;
 reuse does not bypass validation. Caller-supplied digest sinks must still be
@@ -612,7 +612,7 @@ parser error is a summary of its kind (`unsigned PE`, `malformed CMS`); `{:#}`
 adds the causes once, and `source()` walks them. Parser
 errors are not JSON verification errors; the verifier maps them at its existing
 stage boundaries into `domain::VerificationError` with stable code, stage,
-details and causes. No JSON schema fields or policy claims change in LIB-08.
+details and causes. No JSON schema fields or verification claims change in LIB-08.
 
 Trust loading is `add_roots`, `add_crl`, and (with `system-roots`)
 `from_system`. They return `TrustLoadError`, whose
@@ -624,7 +624,7 @@ I/O is added to explicit loaders. Successfully loading a CRL never authenticates
 it. Successful DER roots and CRLs are owned by the store; caller buffers can be
 dropped. Existing valid entries survive a subsequent invalid DER load.
 
-All loaders use the [SEC-07 atomic loading policy](trust-loading.md).
+All loaders use the [SEC-07 atomic loading rules](trust-loading.md).
 Every explicit DER/PEM load is atomic, rejects empty/malformed input and
 unsupported anchor conversion, preserves exact DER, and deduplicates identical
 artifacts. Root and CRL PEM bundles are supported. Native enumeration errors,
@@ -757,7 +757,7 @@ The core verifies PE, CAB, NAVX, PowerShell hash/XML comments, WSH (including
 WSF XML), and RDP. It includes CMS signatures, nested signatures, PE page hashes,
 RSA PKCS#1 v1.5, P-256/P-384, SHA-256/384/512, opt-in SHA-1 content digests,
 RFC 3161 and PKCS#9 timestamps, configured certificate paths, and local CRLs.
-The existing algorithm, format and policy limits remain in force. This is
+The existing algorithm, format and verification limits remain in force. This is
 verification, not parser-only support, and does not claim Windows policy parity.
 
 Call `TrustStore::add_roots`/`add_crl` with DER/PEM bytes and construct
@@ -802,7 +802,7 @@ the shared code on the host using committed inert artifacts, fixed time, explici
 roots and local CRLs. `tests/verification_core.rs` checks supported containers,
 both timestamp types, trusted and revoked chains, image/timestamp tampering,
 serialized trust/revocation flags, and disabled package dispatch. The portable
-`lib09-core-trusted-pe` case and named CLI test check the same public policy.
+`lib09-core-trusted-pe` case and named CLI test check the same public verification options.
 Existing fixture bytes and manifest provenance are reused unchanged.
 
 This is bare-metal compilation plus host execution, not execution on a device.

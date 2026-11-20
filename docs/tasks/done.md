@@ -72,19 +72,19 @@ first match. Identical certificates are accepted as duplicate candidates;
 distinct matches fail with `ambiguous_signer_certificate` before crypto/trust
 selection. Paired/reordered fixtures cover different keys, same-key identity
 conflicts and missing signers. Shared-path tests cover RFC3161, countersigners
-and direct RDP signatures. Policy: `docs/cms-security.md`.
+and direct RDP signatures. Rules: `docs/cms-security.md`.
 
-## SEC-06: Expand certificate-path policy coverage.
+## SEC-06: Expand certificate-path rule coverage.
 
 Added 38 portable
 cases and named in-process CLI tests for BasicConstraints, path length,
 permitted/excluded DNS constraints, unknown critical extensions, leaf/CA
 EKU and KeyUsage, cross-signing, same-subject/different-key issuers and cycles.
 Exact selected-chain hashes/DER and typed failures are pinned with explicit
-roots, time and local CRLs. Signature-math checks isolate path-policy faults.
+roots, time and local CRLs. Signature-math checks isolate path-check faults.
 The initial selected-anchor regression reported a same-subject/key root whose
 name constraints rejected the path; reporting now matches name constraints
-too. [Policy inventory and limits](../../docs/certificate-path-policy.md) document
+too. [Rule inventory and limits](../../docs/certificate-paths.md) document
 webpki's profile and configured-anchor validity/constraint treatment. Full
 locked tests, fmt, Clippy, verify-core and CLI-without-system-roots tests, and
 bare-metal verify-core Clippy pass on macOS. Dependencies are unchanged; Linux
@@ -100,7 +100,7 @@ Fetched bundles enforce the combined 64-CRL limit before final verification.
 Added 18 fixtures and 21 portable cases covering mixed bundles, empty stores,
 duplicates, native loading failures and retrieval limits. Loaded CRLs remain
 supplied artifacts without individual authentication claims. See
-[loading policy, migration and validation evidence](../../docs/trust-loading.md).
+[loading rules, migration and validation evidence](../../docs/trust-loading.md).
 Full locked tests (799 cases), formatting, Clippy and documented feature/target
 checks pass on macOS. Dependencies are unchanged; Linux runtime validation
 remains in CI. CRL selection/evidence remain SEC-10/SEC-11.
@@ -117,9 +117,9 @@ Independent signature-math/image/issuer checks isolate the intended faults;
 parser tests cover accuracy bounds and truncation. Focused tests first accepted
 malformed correctly signed tokens. Multiple timestamps remain unsupported;
 existing CMS duplicate-attribute failure precedence is preserved. See
-[profile, limits and evidence](../../docs/timestamp-policy.md).
+[profile, limits and evidence](../../docs/timestamp-profile.md).
 
-## SEC-09: Define lifetime-signing and time-boundary policy ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).
+## SEC-09: Define lifetime-signing and time-boundary rules ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).
 
 A leaf with the
 lifetime-signing EKU is validated at the validation time instead of its
@@ -138,8 +138,8 @@ boundary, lifetime notAfter/notBefore,
 leaf/intermediate whole-second and fractional notAfter/notBefore, and
 untimestamped/timestamp validation-time boundaries. Before the change, the lifetime fixtures were
 accepted at the timestamp time. Non-lifetime boundaries already matched and
-are pinned. Signer, TSA, anchor and CRL time policies:
-[time policy](../../docs/time-policy.md). Full locked tests, fmt, Clippy,
+are pinned. Signer, TSA, anchor and CRL time rules:
+[validation time](../../docs/validation-time.md). Full locked tests, fmt, Clippy,
 verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
 Review items decided against or deferred are recorded in SEC-14.
@@ -236,7 +236,7 @@ Added borrowed `SignerInfo`, `SignerIdentifier`, `Attribute`, `Attributes`, and
 `Content` views, standalone algorithm parsing, and `SignedData::content()`.
 Unknown OIDs/parameters and original DER remain available. Shared algorithm,
 signer framing and attribute helpers run at the existing verification stages;
-algorithm support and trust remain verifier policy. Added committed paired CMS
+algorithm support and trust remain verifier checks. Added committed paired CMS
 fixtures, portable cases, named CLI checks, and parser-only API/bounds tests;
 API tests first failed on missing exports. All 678 previous specification
 reports compared exactly equal; the full suite now covers 682 portable cases.
@@ -293,7 +293,7 @@ reports. MSI generic RustCrypto sinks expose canonical metadata/content;
 extended-digest checks remain in verification. Immutable AppX structures
 never accumulate digest evidence or reports. Added borrowed reusable
 `verify_parsed_msi`/`verify_parsed_appx` entry points, retaining extended
-metadata, publisher binding, bundle identity/child signer policy, check order,
+metadata, publisher binding, bundle identity/child signer rules, check order,
 and catalog `signature_verified: false`. Reused committed fixtures and
 provenance, linked four additional portable cases, and added named CLI/domain
 and parser-only tests for borrowing, repeated hash input, policy reuse,
@@ -349,7 +349,7 @@ CMS adapters move decoded certificate storage and signers borrow selected
 certificates, guarded by pointer-identity tests. Added optional typed root/CRL/
 native-root loading methods without changing policy (the loaders have since
 been retyped to `TrustLoadError`; see the docs/library.md migration notes);
-remaining copies and loading-policy limits are explicit in docs/library.md.
+remaining copies and loading limits are explicit in docs/library.md.
 Reused committed fixtures/provenance, added a repeated-file portable case and
 named CLI/domain checks. Signer borrowing first failed its pointer assertion;
 loader API tests first failed on missing exports. All 704 prior complete
@@ -391,7 +391,7 @@ existing cases. Identify missing good/bad pairs and independent producers;
 copied format cases are not new cryptographic evidence. Add meaningful gaps
 with exact domain assertions and pinned inputs, time, roots, and CRLs.
 Added `tests/coverage-inventory.json`, validated case/error references and
-`docs/coverage-inventory.md` with explicit path-policy/algorithm/producer gaps.
+`docs/coverage-inventory.md` with explicit path-check/algorithm/producer gaps.
 Closed CRL provider-call coverage gaps with exact portable request traces
 and offline/supplied-good/supplied-stale cases using existing fixtures.
 

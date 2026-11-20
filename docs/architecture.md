@@ -14,11 +14,11 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `parse` | `no_std + alloc` PE/CAB/NAVX/CMS/script/RDP structures, typed parsing errors, and borrowed container digest chunks; no signature verification, trust, clocks, or file I/O. |
 | `parse/msi.rs` | Optional `msi`/`std` CFB structure, extracted signature streams, and generic canonical metadata/content input; no digest comparison or reports. |
 | `parse/appx.rs` / `parse/appx/zip.rs` | Optional `appx`/`std` ZIP/DEFLATE/XML structures, parts, component inputs, identities, bundle entries and lazy block-map views. |
-| `msi` / `appx` | Package integrity policy, digest comparisons and report construction over shared structural parsers. |
+| `msi` / `appx` | Package integrity checks, digest comparisons and report construction over shared structural parsers. |
 | `parse/signer.rs` | Borrowed untrusted CMS signer, identifier, attribute and content views; shared structural helpers preserve verification check order. |
 | `verify/mod.rs` | Public verification entry points, explicit options, and container construction. |
 | `verify/container.rs` | Embedded CMS extraction and each container's padding/framing rules. |
-| `verify/integrity.rs` | SIP/content binding, algorithm policy, image/package/script digests, and PE page hashes. Returns digest evidence to the signer pipeline. |
+| `verify/integrity.rs` | SIP/content binding, algorithm checks, image/package/script digests, and PE page hashes. Returns digest evidence to the signer pipeline. |
 | `verify/authenticode.rs` | Ordered signer pipeline: integrity, CMS authentication, publisher binding, timestamp, configured trust, report, nested signatures. |
 | `verify/appx.rs` | Embedded bundle package verification and package identity/signer binding. |
 | `verify/timestamp.rs` | RFC 3161/PKCS#9 binding, TSA validation, canonical time decoding, and fractional expiry checks. Shared with RDP verification. |
@@ -51,7 +51,7 @@ live under `parse`; the optional `parse/wsf_xml.rs` adapter validates WSF XML.
 MSI/MSP and AppX structural parsing lives under `parse` through explicit
 `std` adapters. AppX objects hold immutable structural state; hashing returns
 component evidence and integrity validation returns reports, without mutating
-those objects. Parsed MSI/MSP objects change only their CFB read cursor. RDP verification retains its detached-content pipeline, trust policy, and
+those objects. Parsed MSI/MSP objects change only their CFB read cursor. RDP verification retains its detached-content pipeline, trust checks, and
 coverage-report projection; its parser has no hashes or verification state.
 Full verification still requires `std`, including the CFB reader and AppX compression/XML stack. There is no format plugin trait or
 separate workspace crate hierarchy.

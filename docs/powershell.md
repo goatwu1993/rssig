@@ -21,7 +21,7 @@ Supported text encodings are strict UTF-8, with or without a BOM, and UTF-16LE o
 UTF-16BE with a BOM. Invalid UTF-8, odd UTF-16 byte counts, unpaired surrogates,
 NULs, UTF-16 without a BOM, UTF-32, and legacy code-page encodings are rejected.
 There is no lossy decoding or platform-dependent ANSI fallback. BOM-less UTF-8
-is an explicit rssig encoding policy; these checks do not establish how every
+is an explicit rssig encoding rule; these checks do not establish how every
 Windows PowerShell version interprets a script.
 
 ## Hashing and block rules
@@ -61,7 +61,7 @@ SHA-1 requires `--allow-sha1`. Certificate/CRL SHA-1 remains unsupported.
 
 XML-comment `.ps1xml` signatures use the separate
 [PowerShell XML verifier](powershell-xml.md), including its stricter BOM-less
-encoding policy. `.psc1`, `.cdxml`, MOF, other script signature styles, detached
+encoding rules. `.psc1`, `.cdxml`, MOF, other script signature styles, detached
 signatures, execution-policy enforcement, script syntax validation, and Windows
 trust-policy equivalence are outside this hash-comment scope.
 

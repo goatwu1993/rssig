@@ -7,7 +7,7 @@ Distinguish supplied artifacts
 from CRLs authenticated and used for each selected chain. Include affected
 certificates/CRLs in structured failures. Preserve conservative rejection when
 a current CRL lists a signer even after its signing time; historical good status
-requires separate evidence and policy.
+requires separate evidence and a decision.
 Observed today: a CRL excluded as non-applicable still appears in
 `revocation.crls` with role `supplied` beside status `good` (for example
 `crl-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.

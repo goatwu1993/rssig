@@ -5,7 +5,7 @@ RFC 3161 (Microsoft or CMS timestamp attribute OID) or a PKCS#9 countersignature
 Multiple attribute values, mixed types, and the two RFC 3161 aliases together
 are rejected. Duplicate attribute OIDs are rejected earlier during CMS attribute
 validation (`invalid_signature`, `cms`); other multiplicity failures use
-`invalid_timestamp`, `timestamp`. There is no timestamp selection policy.
+`invalid_timestamp`, `timestamp`. There is no timestamp selection rule.
 The numbered decisions behind this page, with their status and sources, are
 [Timestamp token decisions](tsa.md) (`TSA-001` to `TSA-007`).
 
@@ -22,7 +22,7 @@ The verifier uses the same borrowed TSTInfo structural parser as inspection:
   is preserved by inspection. No global serial-uniqueness or request/nonce
   matching claim is made for embedded timestamps.
 - MessageImprint has exactly an AlgorithmIdentifier and OCTET STRING. Existing
-  digest/parameter/SHA-1 policy applies; its digest must bind the parent's exact
+  digest, parameter and SHA-1 rules apply; its digest must bind the parent's exact
   signature bytes, independently of image/CMS content hashes.
 - genTime is GeneralizedTime, with the existing strict calendar, UTC and exact
   fractional-decimal checks. PKCS#9 signingTime also permits canonical UTCTime.
@@ -37,7 +37,7 @@ The verifier uses the same borrowed TSTInfo structural parser as inspection:
   including noncritical extensions. They fail with `invalid_timestamp` at
   `timestamp` rather than being ignored. Inspection retains their framed DER
   without authenticating or interpreting it. Identity matching and extension
-  policies require separately scoped work.
+  rules require separately scoped work.
 
 The field layout and accuracy bounds follow
 [RFC 3161 section 2.4.2](https://www.rfc-editor.org/rfc/rfc3161.html#section-2.4.2).
@@ -53,7 +53,7 @@ apply to both timestamp kinds. Integrity-only mode authenticates the signature
 and parent binding but explicitly omits certificate-path, EKU/KeyUsage and
 revocation policy. Embedded TSA certificates remain untrusted candidates;
 configured roots and current local CRLs determine trust. Certificate/time
-boundaries and lifetime signing are documented in [time policy](time-policy.md).
+boundaries and lifetime signing are documented in [validation time](validation-time.md).
 
 ## Evidence and maintenance
 

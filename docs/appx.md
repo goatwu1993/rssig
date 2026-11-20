@@ -42,7 +42,7 @@ SHA-256, SHA-384, and SHA-512 package/block-map digests are supported. The block
 algorithm must match the signed package DigestInfo algorithm. SHA-1 package/block
 hashes remain unsupported even with `--allow-sha1`. CMS signing algorithms retain
 the shared RustCrypto limits; a legacy CMS digest still follows the explicit
-SHA-1 policy. Nested signatures and RFC 3161/PKCS#9 timestamps use the existing
+SHA-1 opt-in. Nested signatures and RFC 3161/PKCS#9 timestamps use the existing
 engine and fail if any selected verification fails.
 
 ## ZIP and compression scope
@@ -102,7 +102,7 @@ Each package's Name must match the bundle Name. Its Version, effective architect
 (defaulting to neutral), ResourceId, and ResourcePackage flag must match its package
 entry. The primary signing certificate must be identical to the bundle's primary
 signing certificate. Every selected package signature and timestamp is verified
-with the same configured trust roots, CRLs, time, and algorithm policy as the bundle.
+with the same configured trust roots, CRLs, time, and algorithm options as the bundle.
 Bundle Version may differ from the per-package versions.
 
 Resources qualifiers and base/2018 TargetDeviceFamily dependency metadata are
@@ -135,7 +135,7 @@ values retain their DER-based comparison. This is deliberately strict: Windows
 `S=` aliases, alternative DN orderings/case/spacing conventions, and arbitrary
 Windows name-comparison policy are not inferred. Code-signing EKU, configured roots,
 key usage, certificate times, verified timestamps, and revocation remain required
-under the existing selected policy. Embedded certificates are untrusted candidates.
+under the existing verification options. Embedded certificates are untrusted candidates.
 
 An optional CodeIntegrity catalog is authenticated as package content through
 `AXPC`/`AXCI`, but its own catalog signature, membership, and Windows code-integrity

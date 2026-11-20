@@ -142,7 +142,7 @@ fn validate_oid(bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
-// Shared framing only: verifier policy checks and deferred attributes retain
+// Shared framing only: verifier checks and deferred attributes retain
 // their existing order relative to digests, certificates, and signature checks.
 pub(crate) fn signer_fields(node: Node<'_>) -> Result<Vec<Node<'_>>> {
     node.expect(0x30)?.children()

@@ -16,9 +16,9 @@ intermediates, incomplete issuer coverage, distribution-point scope, unknown
 critical extensions, delta/indirect CRLs, and competing or unrelated supplied
 CRLs. Specify whether an unusable extra CRL rejects a request or is excluded.
 Never silently treat unknown status as good; pin freshness boundaries and
-unsupported-policy errors.
+unsupported-feature errors.
 
-The rules are stated in the CRL row of [time policy](../time-policy.md). The
+The rules are stated in the CRL row of [validation time](../validation-time.md). The
 cases named below are in `tests/cases.json`, with named tests in
 `tests/cli/crl_applicability.rs` and `tests/cli/crl_fetch.rs`.
 
@@ -90,7 +90,7 @@ One box per item in the scope above.
   and a request whose supplied CRLs all fail to apply is `revocation_unknown`.
   `crl-only-unrelated-crl-is-unknown`, `crl-034-dp-other-idp-unknown`,
   `crl-dp-other-idp-revoked-unknown`.
-- [x] **Unsupported-policy errors.** Every applicable CRL that cannot be used is
+- [x] **Unsupported-feature errors.** Every applicable CRL that cannot be used is
   `invalid_crl` with a `details.reason` listed in [problems](../problems.md).
   Limit: reasons without a fixture are SEC-19.
 - [x] **Freshness boundaries.** A CRL is usable from its thisUpdate (inclusive)
@@ -264,7 +264,7 @@ items.
 - **SEC-20:** error precedence.
 - **SEC-21:** listed serials are not bound to the path's issuer key.
 - **TEST-11:** fixture builders and provenance.
-- **PRODUCT-04:** CRL policy document.
+- **PRODUCT-04:** CRL rules document.
 
 ## Case reasons (PR #60)
 
@@ -606,7 +606,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 - **An RDP signer that only lacks a CRL under one of its usages reports the
   missing CRL.** Decided by written argument; no reference library has an
   equivalent, since accepting an RDP signer under any one of several EKUs is
-  rssig's RDP policy (`docs/rdp.md`). The signer of
+  an rssig RDP rule (`docs/rdp.md`). The signer of
   `good-rdp-eku-retry-ca.rdp` has codeSigning and serverAuth under a CA
   whose EKU admits serverAuth only: the codeSigning attempt fails on the
   path (`invalid_eku`) and the serverAuth attempt lacks only the CA's CRL.

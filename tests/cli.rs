@@ -55,8 +55,8 @@ mod signer_selection;
 #[path = "cli/coverage_inventory.rs"]
 mod coverage_inventory;
 
-#[path = "cli/path_policy.rs"]
-mod path_policy;
+#[path = "cli/certificate_paths.rs"]
+mod certificate_paths;
 
 #[path = "cli/trust_loading.rs"]
 mod trust_loading;
@@ -67,8 +67,8 @@ mod timestamp_structure;
 #[path = "cli/crl_applicability.rs"]
 mod crl_applicability;
 
-#[path = "cli/time_policy.rs"]
-mod time_policy;
+#[path = "cli/validation_time.rs"]
+mod validation_time;
 
 #[path = "cli/logging.rs"]
 mod logging;

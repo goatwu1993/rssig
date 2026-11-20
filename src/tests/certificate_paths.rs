@@ -470,7 +470,7 @@ pub(super) fn write(dir: &std::path::Path) {
                     .unwrap(),
                 ),
             ),
-            // cRLSign but no keyCertSign: CRL checking must not mask the CA policy.
+            // cRLSign but no keyCertSign: CRL checking must not mask the CA rule.
             "ca-ku" => extension(&mut changed, "2.5.29.15", true, Some(tlv(3, &[1, 2]))),
             "ca-no-ku" => extension(&mut changed, "2.5.29.15", true, None),
             _ => unreachable!(),
@@ -738,7 +738,7 @@ pub(super) fn write(dir: &std::path::Path) {
         &[cross.clone(), other.clone(), ca.clone()],
     );
     // SEC-10: a cross certificate whose KeyUsage lacks keyCertSign (cRLSign
-    // only), first, so that its path fails path policy whatever its CRLs say.
+    // only), first, so that its path fails the path checks whatever its CRLs say.
     let mut cross_no_cert_sign = cross.clone();
     extension(
         &mut cross_no_cert_sign,
@@ -903,7 +903,7 @@ fn regenerate_path_fixtures() {
 }
 
 #[test]
-fn path_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
+fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
     use ::der::Decode;
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let manifest: serde_json::Value =
@@ -963,7 +963,7 @@ fn path_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
             });
             assert!(
                 valid,
-                "{filename}: certificate signature must be valid before exercising path policy"
+                "{filename}: certificate signature must be valid before exercising the path checks"
             );
         }
     }

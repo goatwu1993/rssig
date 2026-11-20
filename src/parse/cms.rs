@@ -22,7 +22,7 @@ pub struct AlgorithmIdentifier<'a> {
     parameters: Option<&'a [u8]>,
 }
 impl<'a> AlgorithmIdentifier<'a> {
-    /// Decode an algorithm without applying verification support/parameter policy.
+    /// Decode an algorithm without applying verification support or parameter checks.
     pub fn parse(bytes: &'a [u8]) -> core::result::Result<Self, Error> {
         der::one(bytes, 0x30)
             .and_then(Self::from_node)
@@ -242,7 +242,7 @@ fn certificate_choice(node: Node<'_>) -> Result<CertificateChoice<'_>> {
     Ok(CertificateChoice { node, x509: None })
 }
 
-// Check framing of opaque constructed values without interpreting their policy.
+// Check framing of opaque constructed values without interpreting them.
 fn validate_opaque(node: Node<'_>, depth: usize, remaining: &mut usize) -> Result<()> {
     ensure!(
         depth <= 32 && *remaining > 0,

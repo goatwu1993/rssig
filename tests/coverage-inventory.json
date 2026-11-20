@@ -185,7 +185,7 @@
       ]
     },
     {
-      "id": "trust-policy",
+      "id": "trust-checks",
       "claim": "Leaf/CA EKU and KeyUsage restrictions",
       "cases": [
         "path-007-intermediate-without-eku",

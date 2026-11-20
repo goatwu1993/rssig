@@ -2,18 +2,42 @@
 
 A spec case pins what the verifier does, not proof that it is right. Every
 pinned result is backed by a numbered **decision entry** that says why it is
-right. This page defines the format of every decision index; each index
-holds only its entries.
+right. Terms are defined in the [glossary](glossary.md). This page defines
+the format of every decision index. An index holds
+its entries and, until every case it claims names one, a "Candidate rules"
+section; a skeleton index has only the latter.
 
 | Prefix | Index | Subject |
 |---|---|---|
 | `CRL-` | [crl.md](crl.md) | CRL selection, scope, issuer keys, candidate paths and CRL retrieval |
 | `TIME-` | [time.md](time.md) | Validation time: at which instant certificates are checked |
-| `PATH-` | [path.md](path.md) | Certificate-path policy: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
+| `PATH-` | [path.md](path.md) | Certificate-path rules: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
 | `TSA-` | [tsa.md](tsa.md) | Timestamp tokens: whether an RFC 3161 token or countersignature can be trusted at all |
+| `CMS-` | [cms.md](cms.md) (skeleton) | CMS SignedData structure, signer identification and signature, nested signatures |
+| `ALG-` | [alg.md](alg.md) (skeleton) | Algorithm acceptance, SHA-1 opt-in |
+| `TRUST-` | [trust.md](trust.md) (skeleton) | Loading roots and CRLs |
+| `LIMIT-` | [limit.md](limit.md) (skeleton) | Verification budgets, nesting depth, host input limits |
+| `POLICY-` | [policy.md](policy.md) (skeleton) | Verification modes: trusted, integrity-only, no revocation |
+| `CLI-` | [cli.md](cli.md) (skeleton) | Command-line arguments, help, exit codes, read errors |
+| `INSPECT-` | [inspect.md](inspect.md) (skeleton) | What `parse` reports |
+| `PE-` | [pe-decisions.md](pe-decisions.md) (skeleton) | PE parsing and hashing |
+| `MSI-` | [msi-decisions.md](msi-decisions.md) (skeleton) | MSI and MSP parsing and hashing |
+| `CAB-` | [cab-decisions.md](cab-decisions.md) (skeleton) | CAB parsing and hashing |
+| `NAVX-` | [navx-decisions.md](navx-decisions.md) (skeleton) | NAVX parsing and hashing |
+| `PS-` | [ps-decisions.md](ps-decisions.md) (skeleton) | PowerShell and PowerShell XML scripts |
+| `WSH-` | [wsh-decisions.md](wsh-decisions.md) (skeleton) | Windows Script Host scripts |
+| `RDP-` | [rdp-decisions.md](rdp-decisions.md) (skeleton) | RDP signed settings |
+| `APPX-` | [appx-decisions.md](appx-decisions.md) (skeleton) | MSIX/AppX packages and bundles |
 
 A new subject gets its own prefix and index file directly under `docs/`, and
-a row here.
+a row here. Format indexes are named `<format>-decisions.md` because the
+format's own document already has the plain name.
+
+Every case in `tests/cases.json` without a `decision` is claimed by exactly
+one index and one of its candidate rules in `tests/decision-claims.json`;
+`tests/spec.rs` checks this, and that each candidate key is listed in its
+index's "Candidate rules". Filling an index moves its cases from the claims
+file to their entries.
 
 ## Which index
 
@@ -26,12 +50,28 @@ The usual error codes are a hint, not the rule.
 | At which instant are certificates checked: validation time, signing time, lifetime signing, validity boundaries? | `TIME-` | `certificate_expired`, `certificate_not_yet_valid`, `timestamp_in_future` |
 | Can this timestamp token be trusted at all: binding, TSA signature and EKU, multiplicity, TSTInfo profile? | `TSA-` | `invalid_timestamp`, `timestamp_imprint_mismatch`, `invalid_eku` at `timestamp` |
 | Is this certificate path acceptable: anchors, issuer identity, constraints, EKU and KeyUsage, path building? | `PATH-` | `untrusted_root`, `certificate_chain_invalid`, `invalid_eku`, `invalid_key_usage` |
+| Is the CMS SignedData and its signer binding acceptable? | `CMS-` | `malformed_cms`, `invalid_signature`, `ambiguous_signer_certificate`, `content_digest_mismatch` at `cms` |
+| Is this algorithm acceptable here? | `ALG-` | `unsupported_algorithm`, `weak_algorithm` |
+| What becomes a configured root or CRL? | `TRUST-` | configuration errors (exit 2) for trust inputs |
+| When does rssig stop work? | `LIMIT-` | `resource_limit_exceeded` |
+| Which checks does this verification mode run? | `POLICY-` | results of integrity-only and no-revocation runs |
+| What does the command line accept and report? | `CLI-` | exit codes, `read_failed`, argument errors |
+| What does `parse` report about a file? | `INSPECT-` | `parse` output |
+| How is a file of this format parsed and hashed for signing? | `PE-`, `MSI-`, `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-`, `APPX-` | the format's `invalid_*`, digest-mismatch and `unsigned` codes |
 
 A rule that touches two questions goes where its decision is made: the
 precedence between a lifetime-signing failure and a revocation is set by the
-lifetime-signing policy, so it is a `TIME-` entry (TIME-012); whether a root
+lifetime-signing rules, so it is a `TIME-` entry (TIME-012); whether a root
 or an intermediate may sign CRLs without cRLSign is a CRL-issuer rule, so it
-is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011.
+is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011. A rule
+that is the same in every format stays in its subject index, and the format
+index links to it: every format's SHA-1, integrity-only, nested-signature,
+revocation and expired-with-timestamp cases name `ALG-`, `POLICY-`, `CMS-`,
+`CRL-` and `TIME-` entries. Limits on CRL retrieval (URIs per certificate, the
+built-in source's size, time and request bounds) stay `CRL-`; engine budgets
+are `LIMIT-`, including the count of loaded CRLs (at most 64, supplied and
+fetched together). How a loaded root is
+used is `PATH-`; how it is loaded is `TRUST-`.
 
 ## Entry format
 

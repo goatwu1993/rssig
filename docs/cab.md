@@ -9,8 +9,8 @@ It never extracts, decompresses, or executes cabinet contents.
 Library inspection is available without default features through
 `parse::Cab`. It exposes borrowed container bytes, signature bytes, and
 `authenticode_chunks()` without authenticating them. With `verify` enabled,
-`verify_parsed_cab` reuses that parsed layout and applies the full verification
-policy. See the [library API](library.md) for structural errors and the distinction
+`verify_parsed_cab` reuses that parsed layout and applies full
+verification. See the [library API](library.md) for structural errors and the distinction
 between container parsing and CMS framing checks.
 
 ## Supported layout
@@ -37,7 +37,7 @@ the folder table at offset 60 through `cbCabinet`. It excludes the header
 checksum and signature reserve metadata. The indirect-data type must be
 `SPC_CAB_DATA_OBJID` (`1.3.6.1.4.1.311.2.1.25`); PE/MSI signatures cannot be
 substituted. SHA-256/384/512 are supported; SHA-1 requires `--allow-sha1`.
-CMS signing algorithms and trust policies retain the shared engine's limits.
+CMS signing algorithms and trust checks retain the shared engine's limits.
 
 ## JSON contract
 

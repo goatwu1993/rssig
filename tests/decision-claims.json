@@ -1,0 +1,981 @@
+{
+  "description": "Temporary: assigns every case in tests/cases.json that names no decision to exactly one decision index and one of its candidate rules (docs/decisions.md, 'Which index'). tests/spec.rs checks it. Remove a case from here when it gets a decision; delete the file when it is empty.",
+  "claims": {
+    "ALG": {
+      "key-size": [
+        "msi-independent-signtool"
+      ],
+      "sha1": [
+        "cab-sha1-allowed",
+        "cab-sha1-denied",
+        "msi-good-sha1",
+        "msi-sha1-explicit-opt-in",
+        "navx-sha1-allowed",
+        "navx-sha1-denied",
+        "powershell-sha1-allowed",
+        "powershell-sha1-denied",
+        "psxml-sha1-allowed",
+        "psxml-sha1-denied",
+        "rdp-sha1-allowed",
+        "rdp-sha1-denied",
+        "wsh-good-sha1-js",
+        "wsh-good-sha1-js-allowed",
+        "wsh-good-sha1-vbs",
+        "wsh-good-sha1-vbs-allowed",
+        "wsh-good-sha1-wsf",
+        "wsh-good-sha1-wsf-allowed"
+      ],
+      "unsupported": [
+        "appx-block-algorithm",
+        "bad-signature-digest-algorithm",
+        "msi-bad-signature-digest-algorithm",
+        "msi-unsupported-digest",
+        "msi-unsupported-signature",
+        "unsupported-digest",
+        "unsupported-signature"
+      ]
+    },
+    "APPX": {
+      "hash": [
+        "appx-block-hash",
+        "appx-digest-AXBM",
+        "appx-digest-AXCD",
+        "appx-digest-AXCT",
+        "appx-digest-AXPC",
+        "appx-independent-tampered",
+        "appx-payload",
+        "appxbundle-block-hash",
+        "appxbundle-child-digest",
+        "appxbundle-independent-payload"
+      ],
+      "publisher": [
+        "appx-publisher",
+        "appxbundle-different-signer",
+        "appxbundle-publisher",
+        "lib05-appx-publisher"
+      ],
+      "sip": [
+        "appxbundle-sip"
+      ],
+      "structure": [
+        "appx-block-extra",
+        "appx-block-missing",
+        "appx-bundle-mixed-manifests",
+        "appx-compressed-size",
+        "appx-content-types",
+        "appx-dtd",
+        "appx-duplicate",
+        "appx-lfh",
+        "appx-namespace",
+        "appx-path",
+        "appx-pkcx",
+        "appx-signature-order",
+        "appx-trailing",
+        "appx-truncated",
+        "appxbundle-architecture",
+        "appxbundle-architecture-default",
+        "appxbundle-child-crc",
+        "appxbundle-compressed",
+        "appxbundle-content-types",
+        "appxbundle-duplicate",
+        "appxbundle-empty",
+        "appxbundle-flat",
+        "appxbundle-missing",
+        "appxbundle-name",
+        "appxbundle-namespace",
+        "appxbundle-offset",
+        "appxbundle-orphan",
+        "appxbundle-orphan-other",
+        "appxbundle-package-child",
+        "appxbundle-package-ctype",
+        "appxbundle-resource-boolean",
+        "appxbundle-resource-id",
+        "appxbundle-resource-type",
+        "appxbundle-size",
+        "appxbundle-stub",
+        "appxbundle-unknown",
+        "appxbundle-version",
+        "lib05-bundle-identity"
+      ],
+      "support": [
+        "appx-appx-extension",
+        "appx-bundle",
+        "appx-catalog",
+        "appx-deflate",
+        "appx-descriptor",
+        "appx-empty",
+        "appx-independent-jsign",
+        "appx-independent-signtool",
+        "appx-misnamed",
+        "appx-multi",
+        "appx-sha384",
+        "appx-sha512",
+        "appx-trusted",
+        "appx-zip64",
+        "appxbundle-descriptor",
+        "appxbundle-independent-jsign",
+        "appxbundle-msix-extension",
+        "appxbundle-multi",
+        "appxbundle-resource",
+        "appxbundle-schema5",
+        "appxbundle-sha384",
+        "appxbundle-sha512",
+        "appxbundle-zip64"
+      ],
+      "unsigned": [
+        "appx-appx-jsign-input",
+        "appx-unsigned",
+        "appxbundle-child-unsigned",
+        "appxbundle-jsign-input"
+      ],
+      "unsupported": [
+        "appxbundle-nested-bundle"
+      ]
+    },
+    "CAB": {
+      "hash": [
+        "cab-digest",
+        "cab-independent-tampered"
+      ],
+      "sip": [
+        "cab-framing-before-digest",
+        "cab-wrong-sip"
+      ],
+      "structure": [
+        "cab-flags",
+        "cab-folder-offset",
+        "cab-no-reserve-trailing",
+        "cab-offset",
+        "cab-reserve",
+        "cab-trailing",
+        "cab-truncated"
+      ],
+      "support": [
+        "cab-independent-jsign",
+        "cab-sha384",
+        "cab-sha512",
+        "cab-trusted"
+      ],
+      "unsigned": [
+        "cab-unsigned",
+        "cab-unsigned-no-reserve"
+      ]
+    },
+    "CLI": {
+      "arguments": [
+        "cli-conflicting-policies",
+        "cli-missing-files-plain-error",
+        "cli-retired-test-subcommand",
+        "cli-unknown-subcommand",
+        "missing-crl-policy",
+        "msi-missing-crl-policy",
+        "msi-rfc9457-invalid-arguments",
+        "parse-rejects-recursive-flag",
+        "parse-rejects-verification-policy",
+        "parse-unknown-format",
+        "rfc9457-invalid-arguments"
+      ],
+      "exit-codes": [
+        "cli-mixed-results",
+        "parse-mixed-inputs"
+      ],
+      "help-version": [
+        "cli-help",
+        "cli-version",
+        "msp-help",
+        "parse-help"
+      ],
+      "read-errors": [
+        "missing-input",
+        "parse-missing-files"
+      ]
+    },
+    "CMS": {
+      "attributes": [
+        "bad-long-attribute-oid",
+        "bad-sec04-value-order",
+        "good-long-attribute-oid"
+      ],
+      "certificate-choices": [
+        "bad-rfc3161-certificate-choice-der",
+        "bad-rfc3161-certificate-choice-no-signer",
+        "bad-rfc3161-certificate-choice-tag",
+        "good-pe-certificate-choice",
+        "good-rfc3161-certificate-choice"
+      ],
+      "content-binding": [
+        "bad-cms-content-type",
+        "bad-cms-digest-set",
+        "msi-bad-cms-content-type",
+        "msi-bad-cms-digest-set"
+      ],
+      "content-digest": [
+        "bad-cms-content-digest",
+        "msi-bad-cms-content-digest"
+      ],
+      "nested": [
+        "appx-nested",
+        "bad-nested-signature",
+        "cab-nested",
+        "msi-bad-nested-signature",
+        "msi-nested-signatures",
+        "msp-nested",
+        "navx-bad-nested",
+        "navx-good-navx-nested",
+        "nested-signatures",
+        "powershell-bad-nested",
+        "powershell-nested",
+        "psxml-nested",
+        "wsh-bad-bad-nested-js",
+        "wsh-bad-bad-nested-vbs",
+        "wsh-bad-bad-nested-wsf",
+        "wsh-good-nested-js",
+        "wsh-good-nested-vbs",
+        "wsh-good-nested-wsf"
+      ],
+      "signer-identification": [
+        "bad-sec05-key-first",
+        "bad-sec05-key-last",
+        "bad-sec05-missing",
+        "bad-sec05-policy-first",
+        "bad-sec05-policy-last",
+        "bad-signer-issuer",
+        "bad-signer-serial",
+        "good-sec05-duplicate",
+        "good-sec05-reordered",
+        "msi-bad-signer-issuer",
+        "msi-bad-signer-serial"
+      ],
+      "signer-signature": [
+        "appx-cms-signature",
+        "appxbundle-child-signature",
+        "bad-cms",
+        "bad-sec04-ecdsa-parameters",
+        "bad-signature-key-algorithm",
+        "bad-signer-public-key",
+        "cab-cms-signature",
+        "msi-bad-cms",
+        "msi-bad-signature-key-algorithm",
+        "msi-bad-signer-public-key",
+        "msp-cms-tampered",
+        "navx-cms-signature",
+        "powershell-bad-cms-signature",
+        "psxml-cms-signature",
+        "rdp-cms-signature",
+        "wsh-bad-cms-signature-js",
+        "wsh-bad-cms-signature-vbs",
+        "wsh-bad-cms-signature-wsf"
+      ],
+      "structure": [
+        "appx-cms-trailing",
+        "bad-sec04-signeddata-version",
+        "bad-sec04-signer-version",
+        "cab-malformed-cms",
+        "msi-bad-cms-trailer",
+        "msi-bad-empty-signer-set",
+        "msi-bad-malformed-cms",
+        "msi-bad-signer-count",
+        "navx-cms-trailing",
+        "navx-malformed-cms",
+        "powershell-cms-trailing",
+        "powershell-malformed-cms",
+        "psxml-cms-trailing",
+        "rdp-cms-trailing",
+        "rdp-malformed-cms",
+        "wsh-bad-cms-trailing-js",
+        "wsh-bad-cms-trailing-vbs",
+        "wsh-bad-cms-trailing-wsf",
+        "wsh-bad-malformed-cms-js",
+        "wsh-bad-malformed-cms-vbs",
+        "wsh-bad-malformed-cms-wsf"
+      ],
+      "support": [
+        "good-sec04-cms"
+      ]
+    },
+    "CRL": {
+      "attach": [
+        "appx-revoked",
+        "bad-crl-not-yet-valid",
+        "cab-revoked",
+        "crl-ca-crl-dp-ca-scope-covers-issuer",
+        "crl-ca-crl-dp-user-scope-excludes-issuer",
+        "crl-ca-crl-sign",
+        "crl-ca-crl-sign-fallback",
+        "crl-ca-no-crl-sign",
+        "crl-competing-crls-good-first-revoked",
+        "crl-competing-crls-revoked-first-revoked",
+        "crl-discovery-local",
+        "crl-dp-ca-scope-excludes-signer",
+        "crl-dp-case-variant-idp-unknown",
+        "crl-dp-crl-issuer-full-crl",
+        "crl-dp-crl-issuer-point-unknown",
+        "crl-dp-dns-full-crl",
+        "crl-dp-dns-name-unknown",
+        "crl-dp-full-crl",
+        "crl-dp-idp-second-name-matches",
+        "crl-dp-matching-idp",
+        "crl-dp-matching-idp-first",
+        "crl-dp-matching-idp-revoked",
+        "crl-dp-multi-full-crl",
+        "crl-dp-multi-second-point-matches",
+        "crl-dp-multi-unlisted-point-unknown",
+        "crl-dp-other-idp-first",
+        "crl-dp-other-idp-revoked-unknown",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-dp-reasons-full-crl",
+        "crl-dp-reasons-point-unknown",
+        "crl-dp-relative-expanded-name-unknown",
+        "crl-dp-relative-full-crl",
+        "crl-dp-relative-idp-unsupported",
+        "crl-dp-user-scope-covers-signer",
+        "crl-fetch-ca-ca-scope-idp-not-fetched",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-fetch-full-crl-not-fetched",
+        "crl-fetch-injected-expired",
+        "crl-fetch-injected-forged",
+        "crl-fetch-injected-good",
+        "crl-fetch-injected-revoked",
+        "crl-fetch-injected-undecodable",
+        "crl-fetch-integrity-first",
+        "crl-fetch-matching-idp-not-fetched",
+        "crl-fetch-no-listed-point-not-fetched",
+        "crl-fetch-other-idp-fetched-other-unknown",
+        "crl-fetch-other-idp-fetched-revoked",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-user-scope-idp-not-fetched",
+        "crl-local-provider-unused",
+        "crl-next-update-exact",
+        "crl-next-update-one-second-left",
+        "crl-offline-provider-unused",
+        "crl-only-unrelated-crl-is-unknown",
+        "crl-partition-crl-no-listed-point",
+        "crl-partition-crl-relative-no-listed-point",
+        "crl-revoked-issuer",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-revoked-issuer-issuer-crl-first",
+        "crl-root-name-other-aki-crl-excluded",
+        "crl-root-unknown-noncritical-extension-crl-accepted",
+        "crl-this-update-exact",
+        "crl-this-update-one-second-ahead",
+        "crl-unrelated-expired-crl-excluded",
+        "crl-unrelated-malformed-aki-crl-excluded",
+        "crl-unrelated-no-next-update-crl-excluded",
+        "crl-unrelated-not-yet-valid-crl-excluded",
+        "current-crl",
+        "expired-crl",
+        "forged-crl",
+        "intermediate-current-crls",
+        "msi-bad-crl-not-yet-valid",
+        "msi-current-crl",
+        "msi-expired-crl",
+        "msi-forged-crl",
+        "msi-intermediate-current-crls",
+        "msi-revoked",
+        "msp-revoked",
+        "navx-revoked",
+        "powershell-expired-crl",
+        "powershell-revoked",
+        "psxml-revoked",
+        "rdp-expired-crl",
+        "rdp-revoked",
+        "revoked",
+        "sec07-forged-crl",
+        "wsh-revoked"
+      ]
+    },
+    "INSPECT": {
+      "malformed": [
+        "parse-cms-eoc-parameter",
+        "parse-cms-truncated",
+        "parse-pe-header-offset",
+        "parse-pe-truncated",
+        "parse-pe-unsigned",
+        "parse-recursive-bad-time",
+        "parse-signer-bad-signature-tag"
+      ],
+      "recursion": [
+        "parse-recursive-countersignature",
+        "parse-recursive-nested",
+        "parse-recursive-rfc3161"
+      ],
+      "views": [
+        "lib06-parse-cab",
+        "lib06-parse-navx",
+        "parse-cms",
+        "parse-explicit-pe",
+        "parse-invalid-signature",
+        "parse-opaque-certificate",
+        "parse-pe",
+        "parse-signer-views",
+        "parse-tampered-image",
+        "parse-unknown-algorithm"
+      ]
+    },
+    "LIMIT": {
+      "budgets": [
+        "msi-bad-nested-depth",
+        "parse-recursive-depth8",
+        "parse-recursive-depth9",
+        "sec02-depth-8",
+        "sec02-depth-9-malformed",
+        "sec02-entries-65",
+        "sec02-wide-64",
+        "sec02-wide-65"
+      ],
+      "crl-count": [
+        "sec07-fetch-64-crls",
+        "sec07-fetch-65-crls",
+        "sec07-fetch-supplied-plus-bundle"
+      ],
+      "host-input": [
+        "sec03-batch-count",
+        "sec03-batch-input",
+        "sec03-input",
+        "sec03-parse-input",
+        "sec03-report"
+      ]
+    },
+    "MSI": {
+      "embedded-signature": [
+        "msi-bad-empty-signature"
+      ],
+      "extended": [
+        "lib05-msi-empty-extended",
+        "lib05-msi-extended",
+        "msi-bad-empty-extended",
+        "msi-bad-extended-digest",
+        "msi-bad-extended-size",
+        "msi-bad-metadata-flags",
+        "msi-bad-metadata-name",
+        "msi-bad-metadata-time",
+        "msi-bad-storage-clsid",
+        "msi-bad-stream-size",
+        "msp-metadata-tampered"
+      ],
+      "hash": [
+        "msi-bad-legacy-clsid",
+        "msi-bad-legacy-stream",
+        "msi-bad-stream-content",
+        "msp-cab-tampered",
+        "msp-clsid-tampered",
+        "msp-independent-jsign-tampered",
+        "msp-transform-tampered"
+      ],
+      "sip": [
+        "msi-bad-sip-reserved",
+        "msi-bad-sip-type",
+        "msi-bad-sip-uuid",
+        "msi-bad-sip-version"
+      ],
+      "structure": [
+        "msi-bad-directory-cycle",
+        "msi-bad-encoded-signature",
+        "msi-bad-extended-storage",
+        "msi-bad-name-length",
+        "msi-bad-nested-signature-stream",
+        "msi-bad-oversized-extended",
+        "msi-bad-sector-size",
+        "msi-bad-signature-name-case",
+        "msi-bad-signature-storage",
+        "msi-bad-storage-depth",
+        "msi-bad-stream-chain",
+        "msi-bad-stream-overflow",
+        "msi-bad-total-stream-size",
+        "msi-bad-trailing-data",
+        "msi-bad-truncated"
+      ],
+      "support": [
+        "msi-good-legacy",
+        "msi-good-sha384",
+        "msi-good-sha512",
+        "msi-good-v4",
+        "msi-independent-jsign",
+        "msi-pe64",
+        "msp-independent-jsign",
+        "msp-legacy",
+        "msp-trusted",
+        "msp-v4"
+      ],
+      "unsigned": [
+        "msi-unsigned",
+        "msp-unsigned"
+      ]
+    },
+    "NAVX": {
+      "hash": [
+        "navx-digest",
+        "navx-independent-digest"
+      ],
+      "sip": [
+        "navx-framing-before-digest",
+        "navx-sip-reserved",
+        "navx-sip-type",
+        "navx-sip-uuid",
+        "navx-sip-version"
+      ],
+      "structure": [
+        "navx-block",
+        "navx-header",
+        "navx-offset",
+        "navx-size",
+        "navx-trailer",
+        "navx-trailing",
+        "navx-truncated"
+      ],
+      "support": [
+        "navx-good",
+        "navx-good-navx-sha384",
+        "navx-good-navx-sha512",
+        "navx-independent",
+        "navx-navx-misnamed"
+      ],
+      "unsigned": [
+        "navx-unsigned"
+      ]
+    },
+    "PATH": {
+      "attach": [
+        "appx-untrusted",
+        "cab-untrusted",
+        "msi-unknown-root",
+        "msp-untrusted",
+        "navx-untrusted",
+        "powershell-untrusted",
+        "psxml-untrusted",
+        "rdp-key-usage",
+        "rdp-untrusted",
+        "sec07-empty-store",
+        "unknown-root",
+        "wsh-untrusted"
+      ],
+      "certificate-signature": [
+        "bad-certificate-signature",
+        "bad-intermediate-signature",
+        "msi-bad-certificate-signature",
+        "msi-bad-intermediate-signature"
+      ]
+    },
+    "PE": {
+      "hash": [
+        "bad-page-hashes",
+        "bad-pe-gap-overlay-digest",
+        "tampered-image"
+      ],
+      "structure": [
+        "bad-pe-certificate-range",
+        "certificate-payload",
+        "not-pe",
+        "trailing-data",
+        "truncated",
+        "verify-pe-header-offset"
+      ],
+      "support": [
+        "checksum-excluded",
+        "page-hashes",
+        "pe32",
+        "pe64"
+      ],
+      "unsigned": [
+        "unsigned"
+      ]
+    },
+    "POLICY": {
+      "modes": [
+        "appx-integrity",
+        "appx-no-revocation",
+        "appxbundle-integrity",
+        "cab-integrity",
+        "integrity-only",
+        "lib07-policy-integrity",
+        "lib07-policy-no-revocation",
+        "lib07-policy-trusted",
+        "msi-integrity-only",
+        "navx-integrity",
+        "powershell-integrity",
+        "powershell-no-revocation",
+        "psxml-integrity",
+        "psxml-no-revocation",
+        "rdp-integrity",
+        "rdp-no-revocation",
+        "wsh-integrity",
+        "wsh-no-revocation"
+      ],
+      "repeatable": [
+        "lib08-repeated-verification",
+        "lib09-core-trusted-pe"
+      ]
+    },
+    "PS": {
+      "hash": [
+        "lib04-powershell-independent-tampered",
+        "powershell-digest",
+        "powershell-independent-tampered",
+        "powershell-line-endings",
+        "powershell-missing-bom",
+        "psxml-digest",
+        "psxml-independent-tampered",
+        "psxml-line-endings",
+        "psxml-missing-bom"
+      ],
+      "sip": [
+        "powershell-sip-reserved",
+        "powershell-sip-type",
+        "powershell-sip-uuid",
+        "powershell-sip-version",
+        "psxml-sip"
+      ],
+      "structure": [
+        "powershell-base64",
+        "powershell-comment",
+        "powershell-duplicate",
+        "powershell-empty-signature",
+        "powershell-marker-lf",
+        "powershell-missing-begin",
+        "powershell-missing-end",
+        "powershell-no-utf16-bom",
+        "powershell-odd-utf16",
+        "powershell-payload-no-crlf",
+        "powershell-surrogate",
+        "powershell-trailing",
+        "powershell-utf8",
+        "psxml-ambiguous-utf8",
+        "psxml-base64",
+        "psxml-comment-end",
+        "psxml-duplicate",
+        "psxml-encoding",
+        "psxml-hash-style",
+        "psxml-independent-windows1252",
+        "psxml-marker-lf",
+        "psxml-missing-end",
+        "psxml-odd-utf16",
+        "psxml-payload-no-crlf",
+        "psxml-trailing"
+      ],
+      "support": [
+        "lib04-powershell-independent-jsign",
+        "lib04-psxml-independent-ascii",
+        "powershell-binary-precedence",
+        "powershell-data",
+        "powershell-empty",
+        "powershell-independent-jsign",
+        "powershell-independent-jsign-utf16be",
+        "powershell-independent-jsign-utf16le",
+        "powershell-lf",
+        "powershell-misnamed",
+        "powershell-module",
+        "powershell-no-newline",
+        "powershell-sha384",
+        "powershell-sha512",
+        "powershell-trusted",
+        "powershell-utf16be",
+        "powershell-utf16le",
+        "powershell-utf8-bom",
+        "psxml-ascii-bom",
+        "psxml-independent-ascii",
+        "psxml-independent-utf16be",
+        "psxml-independent-utf16le",
+        "psxml-independent-utf8-bom",
+        "psxml-lf",
+        "psxml-misnamed",
+        "psxml-sha384",
+        "psxml-sha512",
+        "psxml-trusted",
+        "psxml-utf16be",
+        "psxml-utf16le",
+        "psxml-utf8-bom"
+      ],
+      "unsigned": [
+        "powershell-unsigned",
+        "psxml-unsigned"
+      ]
+    },
+    "RDP": {
+      "eku": [
+        "rdp-eku",
+        "rdp-multiple-ekus",
+        "rdp-no-eku"
+      ],
+      "embedded-signature": [
+        "rdp-attached-cms",
+        "rdp-pe-requires-attributes"
+      ],
+      "hash": [
+        "bad-rdp-independent-setting",
+        "lib04-bad-rdp-independent-setting",
+        "rdp-attributes-setting",
+        "rdp-scope-order",
+        "rdp-setting"
+      ],
+      "structure": [
+        "rdp-base64",
+        "rdp-blank-line",
+        "rdp-case-duplicate",
+        "rdp-duplicate",
+        "rdp-duplicate-scope",
+        "rdp-duplicate-signature",
+        "rdp-empty-host",
+        "rdp-empty-scope",
+        "rdp-header",
+        "rdp-invalid-integer",
+        "rdp-invalid-line",
+        "rdp-length",
+        "rdp-lone-cr",
+        "rdp-missing-scope",
+        "rdp-missing-setting",
+        "rdp-odd-utf16",
+        "rdp-scope-no-host",
+        "rdp-short-header",
+        "rdp-utf8",
+        "rdp-version",
+        "rdp-wrong-type"
+      ],
+      "support": [
+        "good-rdp-independent-unsigned-change",
+        "lib04-rdp-independent-nfedera",
+        "rdp-attributes",
+        "rdp-independent-nfedera",
+        "rdp-lf",
+        "rdp-misnamed",
+        "rdp-no-final-newline",
+        "rdp-powershell-comment",
+        "rdp-remote-auth",
+        "rdp-rsa",
+        "rdp-server-auth",
+        "rdp-sha384",
+        "rdp-sha512",
+        "rdp-trusted",
+        "rdp-unicode-unsigned",
+        "rdp-unsigned-change",
+        "rdp-utf16be",
+        "rdp-utf16le",
+        "rdp-utf8-bom"
+      ],
+      "unsigned": [
+        "rdp-unsigned"
+      ],
+      "unsupported": [
+        "rdp-nested-unsupported",
+        "rdp-unknown-scope"
+      ]
+    },
+    "TIME": {
+      "attach": [
+        "appx-expired",
+        "appx-expired-with-countersignature",
+        "appx-expired-with-rfc3161",
+        "bad-certificate-expired",
+        "bad-certificate-not-yet-valid",
+        "expired-with-counter",
+        "expired-with-rfc3161",
+        "expired-without-timestamp",
+        "future-timestamp",
+        "msi-bad-certificate-expired",
+        "msi-bad-certificate-not-yet-valid",
+        "msi-expired-with-counter",
+        "msi-expired-with-rfc3161",
+        "msi-expired-without-timestamp",
+        "msi-future-timestamp",
+        "powershell-expired",
+        "powershell-expired-with-countersignature",
+        "powershell-expired-with-rfc3161",
+        "psxml-expired",
+        "psxml-expired-with-countersignature",
+        "psxml-expired-with-rfc3161",
+        "rdp-expired",
+        "rdp-expired-with-countersignature",
+        "rdp-expired-with-rfc3161",
+        "rfc3161-fractional",
+        "rfc3161-fractional-expired",
+        "rfc3161-fractional-future"
+      ]
+    },
+    "TRUST": {
+      "accepted-input": [
+        "sec07-duplicates",
+        "sec07-good",
+        "sec07-whitespace"
+      ],
+      "loading": [
+        "cli-malformed-crl",
+        "cli-malformed-root",
+        "cli-missing-crl",
+        "cli-missing-root",
+        "sec07-crls-good-roots",
+        "sec07-crls-invalid-crl",
+        "sec07-crls-invalid-first-crl",
+        "sec07-crls-trailing-crl",
+        "sec07-empty-crl",
+        "sec07-empty-roots",
+        "sec07-root-unsupported-roots",
+        "sec07-roots-good-crl",
+        "sec07-roots-invalid-first-roots",
+        "sec07-roots-invalid-roots",
+        "sec07-roots-trailing-roots",
+        "sec07-roots-truncated-roots",
+        "sec07-roots-unsupported-roots"
+      ]
+    },
+    "TSA": {
+      "attach": [
+        "appx-countersignature",
+        "appx-rfc3161",
+        "appxbundle-countersignature",
+        "appxbundle-rfc3161",
+        "cab-countersignature",
+        "cab-rfc3161",
+        "legacy-counter",
+        "msi-legacy-counter",
+        "msi-rfc3161",
+        "msp-rfc3161",
+        "navx-good-navx-countersignature",
+        "navx-good-navx-rfc3161",
+        "powershell-countersignature",
+        "powershell-rfc3161",
+        "psxml-countersignature",
+        "psxml-rfc3161",
+        "rdp-countersignature",
+        "rdp-rfc3161",
+        "rfc3161",
+        "wsh-good-countersignature-js",
+        "wsh-good-countersignature-vbs",
+        "wsh-good-countersignature-wsf",
+        "wsh-good-rfc3161-js",
+        "wsh-good-rfc3161-vbs",
+        "wsh-good-rfc3161-wsf"
+      ]
+    },
+    "WSH": {
+      "hash": [
+        "wsh-bad-digest-js",
+        "wsh-bad-digest-jse",
+        "wsh-bad-digest-vbe",
+        "wsh-bad-digest-vbs",
+        "wsh-bad-digest-wsf",
+        "wsh-bad-independent-digest-js",
+        "wsh-bad-independent-digest-jse",
+        "wsh-bad-independent-digest-utf8-bom-js",
+        "wsh-bad-independent-digest-utf8-bom-vbs",
+        "wsh-bad-independent-digest-utf8-bom-wsf",
+        "wsh-bad-independent-digest-vbe",
+        "wsh-bad-independent-digest-vbs",
+        "wsh-bad-independent-digest-wsf",
+        "wsh-bad-no-offset-js",
+        "wsh-bad-no-offset-vbs",
+        "wsh-bad-no-offset-wsf",
+        "wsh-bad-offset-js",
+        "wsh-bad-offset-vbs",
+        "wsh-bad-offset-wsf",
+        "wsh-bad-tail-wsf"
+      ],
+      "sip": [
+        "wsh-bad-sip-cross-js",
+        "wsh-bad-sip-cross-vbs",
+        "wsh-bad-sip-cross-wsf",
+        "wsh-bad-sip-reserved-js",
+        "wsh-bad-sip-reserved-vbs",
+        "wsh-bad-sip-reserved-wsf",
+        "wsh-bad-sip-type-js",
+        "wsh-bad-sip-type-vbs",
+        "wsh-bad-sip-type-wsf",
+        "wsh-bad-sip-uuid-js",
+        "wsh-bad-sip-uuid-vbs",
+        "wsh-bad-sip-uuid-wsf",
+        "wsh-bad-sip-version-js",
+        "wsh-bad-sip-version-vbs",
+        "wsh-bad-sip-version-wsf"
+      ],
+      "structure": [
+        "wsh-bad-attributes-wsf",
+        "wsh-bad-base64-js",
+        "wsh-bad-base64-vbs",
+        "wsh-bad-base64-wsf",
+        "wsh-bad-bomless-unicode-js",
+        "wsh-bad-bomless-unicode-vbs",
+        "wsh-bad-cdata-wsf",
+        "wsh-bad-dtd-wsf",
+        "wsh-bad-duplicate-js",
+        "wsh-bad-duplicate-vbs",
+        "wsh-bad-duplicate-wsf",
+        "wsh-bad-empty-signature-js",
+        "wsh-bad-empty-signature-vbs",
+        "wsh-bad-empty-signature-wsf",
+        "wsh-bad-long-line-js",
+        "wsh-bad-long-line-vbs",
+        "wsh-bad-long-line-wsf",
+        "wsh-bad-marker-lf-js",
+        "wsh-bad-marker-lf-vbs",
+        "wsh-bad-marker-lf-wsf",
+        "wsh-bad-missing-begin-js",
+        "wsh-bad-missing-begin-vbs",
+        "wsh-bad-missing-begin-wsf",
+        "wsh-bad-missing-end-js",
+        "wsh-bad-missing-end-vbs",
+        "wsh-bad-missing-end-wsf",
+        "wsh-bad-mixed-vbs",
+        "wsh-bad-multijob-wsf",
+        "wsh-bad-nested-job-wsf",
+        "wsh-bad-nul-vbs",
+        "wsh-bad-odd-utf16-vbs",
+        "wsh-bad-placement-wsf",
+        "wsh-bad-surrogate-js",
+        "wsh-bad-trailing-js",
+        "wsh-bad-trailing-vbs",
+        "wsh-bad-utf8-wsf",
+        "wsh-bad-wrong-style-js",
+        "wsh-bad-xml-wsf"
+      ],
+      "support": [
+        "lib04-wsh-wsh-independent-jsign-vbs",
+        "wsh-good-bomless-unicode-wsf",
+        "wsh-good-js",
+        "wsh-good-jse",
+        "wsh-good-sha384-js",
+        "wsh-good-sha384-vbs",
+        "wsh-good-sha384-wsf",
+        "wsh-good-sha512-js",
+        "wsh-good-sha512-vbs",
+        "wsh-good-sha512-wsf",
+        "wsh-good-utf16be-js",
+        "wsh-good-utf16be-vbs",
+        "wsh-good-utf16be-wsf",
+        "wsh-good-utf16le-js",
+        "wsh-good-utf16le-vbs",
+        "wsh-good-utf16le-wsf",
+        "wsh-good-utf8-bom-js",
+        "wsh-good-utf8-bom-vbs",
+        "wsh-good-utf8-bom-wsf",
+        "wsh-good-vbe",
+        "wsh-good-vbs",
+        "wsh-good-wsf",
+        "wsh-wsh-binary-precedence-js",
+        "wsh-wsh-independent-jsign-js",
+        "wsh-wsh-independent-jsign-jse",
+        "wsh-wsh-independent-jsign-utf8-bom-js",
+        "wsh-wsh-independent-jsign-utf8-bom-vbs",
+        "wsh-wsh-independent-jsign-utf8-bom-wsf",
+        "wsh-wsh-independent-jsign-vbe",
+        "wsh-wsh-independent-jsign-vbs",
+        "wsh-wsh-independent-jsign-wsf",
+        "wsh-wsh-misnamed-js-bin",
+        "wsh-wsh-misnamed-vbs-bin",
+        "wsh-wsh-misnamed-wsf-bin"
+      ],
+      "unsigned": [
+        "wsh-unsigned-js",
+        "wsh-unsigned-vbs",
+        "wsh-unsigned-wsf",
+        "wsh-wsh-jsign-input-js",
+        "wsh-wsh-jsign-input-jse",
+        "wsh-wsh-jsign-input-vbe",
+        "wsh-wsh-jsign-input-vbs",
+        "wsh-wsh-jsign-input-wsf",
+        "wsh-wsh-jsign-utf8-bom-input-js",
+        "wsh-wsh-jsign-utf8-bom-input-vbs",
+        "wsh-wsh-jsign-utf8-bom-input-wsf"
+      ]
+    }
+  }
+}

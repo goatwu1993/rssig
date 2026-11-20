@@ -1,6 +1,7 @@
 mod appx_fixtures;
 mod cab_fixtures;
 mod certificate_choices;
+mod certificate_paths;
 mod cms_audit;
 mod crl_applicability;
 mod crl_fetch_fixtures;
@@ -10,15 +11,14 @@ mod msi_fixtures;
 mod msp_fixtures;
 mod navx_fixtures;
 mod parser_boundaries;
-mod path_policy;
 mod powershell_fixtures;
 mod psxml_fixtures;
 mod rdp_fixtures;
 mod signer_selection;
 mod signer_views;
-mod time_policy;
 mod timestamp_structure;
 mod trust_loading;
+mod validation_time;
 mod wsh_fixtures;
 
 use super::*;
@@ -661,12 +661,12 @@ fn regenerate_cli_fixtures() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     std::fs::create_dir_all(&dir).unwrap();
     timestamp_structure::write(&dir);
-    time_policy::write(&dir);
+    validation_time::write(&dir);
     fixture_faults::write(&dir);
     crl_fetch_fixtures::write(&dir);
     cms_audit::write(&dir);
     signer_selection::write(&dir);
-    path_policy::write(&dir);
+    certificate_paths::write(&dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
     let good = make_pe(true, false, false);
     let mutate_oid = |needle: &[u8]| {

@@ -2834,7 +2834,7 @@
       "file": "bad-rdp-pe-no-attributes.exe",
       "sha256": "5314db4059773a0d278f5b0612ec0bd44761f21d156bf8646e9102a50fcabc64",
       "bytes": 2096,
-      "description": "Correct PE image digest with a mathematically valid direct CMS signature over its indirect content, but authenticated attributes removed. Existing Authenticode policy must still reject invalid_signature at cms.",
+      "description": "Correct PE image digest with a mathematically valid direct CMS signature over its indirect content, but authenticated attributes removed. Existing Authenticode rules must still reject invalid_signature at cms.",
       "cases": [
         "rdp-pe-requires-attributes"
       ]
@@ -6774,7 +6774,7 @@
       "file": "good-rdp-multiple-ekus.rdp",
       "sha256": "01619003da614cde76d3a52e6565c61d8f17b644f148bd059456633310894a9f",
       "bytes": 1506,
-      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; exercises RDP policy retries and shared-budget error propagation.",
+      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; exercises RDP EKU retries and shared-budget error propagation.",
       "provenance": {
         "generator": "src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
         "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
@@ -7016,10 +7016,10 @@
       "file": "bad-path-ca-critical.exe",
       "sha256": "de9f66d38097fb4642ff3be7b50fc84e1ade56d18057724ca91b4900ed961154",
       "bytes": 2216,
-      "description": "SEC-06 signed inert PE; ca-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; ca-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7032,10 +7032,10 @@
       "file": "bad-path-ca-eku.exe",
       "sha256": "992197ec41a67130f7665ec3af3c578a1853c3683d26537c57fe99d7a787337f",
       "bytes": 2224,
-      "description": "SEC-06 signed inert PE; ca-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate_chain.",
+      "description": "SEC-06 signed inert PE; ca-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7048,10 +7048,10 @@
       "file": "bad-path-ca-false.exe",
       "sha256": "fffc6405825ff09996e2d8ba35ad7f2eb21cbc54ef9a1277ace09c168a5ce864",
       "bytes": 2192,
-      "description": "SEC-06 signed inert PE; ca-false. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; ca-false. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7064,10 +7064,10 @@
       "file": "bad-path-ca-ku.exe",
       "sha256": "34cf1b9d70a5c45da6c1425e0e2c696169036e655cbe9b5e2e1e342bc8589d0e",
       "bytes": 2200,
-      "description": "SEC-06 signed inert PE; ca-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_key_usage at certificate_chain.",
+      "description": "SEC-06 signed inert PE; ca-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_key_usage at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7083,10 +7083,10 @@
       "file": "bad-path-ca-missing-bc.exe",
       "sha256": "fa4a3497e15cbe40fb255d2227da8c375480b87d22cf977bdc0661e24d8524e2",
       "bytes": 2184,
-      "description": "SEC-06 signed inert PE; ca-missing-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; ca-missing-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7099,10 +7099,10 @@
       "file": "bad-path-cross-untrusted.exe",
       "sha256": "a55bc766f0192edeeb8e35226c494ea031c38867895f179a1580f16fa5746533",
       "bytes": 2576,
-      "description": "SEC-06 signed inert PE; cross-untrusted. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
+      "description": "SEC-06 signed inert PE; cross-untrusted. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7115,10 +7115,10 @@
       "file": "bad-path-cycle-reversed.exe",
       "sha256": "ba71e5874a5b4fe36f5d0274ad29c6975218627d6a1ec303ba2aac74f0f49fd4",
       "bytes": 2520,
-      "description": "SEC-06 signed inert PE; cycle-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
+      "description": "SEC-06 signed inert PE; cycle-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7131,10 +7131,10 @@
       "file": "bad-path-cycle.exe",
       "sha256": "524dc111afdffb975561d29d16a05bfd827bc865b6f9a9776d956baacca71f4f",
       "bytes": 2520,
-      "description": "SEC-06 signed inert PE; cycle. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
+      "description": "SEC-06 signed inert PE; cycle. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7147,10 +7147,10 @@
       "file": "bad-path-leaf-ca.exe",
       "sha256": "1313d217544de0d878626a83b07da40ed49d6e7d5f4c5ca0ebae47ecf8e0fca6",
       "bytes": 2200,
-      "description": "SEC-06 signed inert PE; leaf-ca. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; leaf-ca. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7163,10 +7163,10 @@
       "file": "bad-path-leaf-critical.exe",
       "sha256": "adf584c52b71c688872b0fd9cf0ff25e0b68227077497fa6adcf19ac166cfe56",
       "bytes": 2216,
-      "description": "SEC-06 signed inert PE; leaf-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; leaf-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7179,10 +7179,10 @@
       "file": "bad-path-leaf-no-eku.exe",
       "sha256": "3c1892ee8c827ac360f961e49412bb1ececdd96bdf0de1b726c6910f8ff798a3",
       "bytes": 2176,
-      "description": "SEC-06 signed inert PE; leaf-no-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate.",
+      "description": "SEC-06 signed inert PE; leaf-no-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7195,10 +7195,10 @@
       "file": "bad-path-name-excluded.exe",
       "sha256": "62f41c957969ede08dfd9b482dc9c6419f00dd303b485cb7f01e03ae92db9250",
       "bytes": 2304,
-      "description": "SEC-06 signed inert PE; name-excluded. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; name-excluded. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7211,10 +7211,10 @@
       "file": "bad-path-name-outside.exe",
       "sha256": "e5c195e2076a4d82dab7f19f17968d287e5ff152d2fdc436f255da06360327ec",
       "bytes": 2296,
-      "description": "SEC-06 signed inert PE; name-outside. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; name-outside. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7227,10 +7227,10 @@
       "file": "bad-path-pathlen.exe",
       "sha256": "6f2ef048819ebf6aab631821724aca226e9ddc70fc5e8ec01d66a83ee207db6f",
       "bytes": 2560,
-      "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7243,10 +7243,10 @@
       "file": "bad-path-wrong-key.exe",
       "sha256": "f46879badb6f931ce9a27a36931bbe362ea67b1c1db7cd4705acda1080faadd5",
       "bytes": 2200,
-      "description": "SEC-06 signed inert PE; wrong-key. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; wrong-key. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7259,10 +7259,10 @@
       "file": "good-path-basic.exe",
       "sha256": "321b9f2f98ff4e3707c9d66b27fef173176d70ac041bde65758c2969debadcbd",
       "bytes": 2200,
-      "description": "SEC-06 signed inert PE; basic. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; basic. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7287,10 +7287,10 @@
       "file": "good-path-ca-good-eku.exe",
       "sha256": "e34f4bc39b806b0dd7a75a7c81e2a27ace2554ee5c61bac06bf5be3891e27bc0",
       "bytes": 2224,
-      "description": "SEC-06 signed inert PE; ca-good-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; ca-good-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7303,10 +7303,10 @@
       "file": "good-path-ca-ku-first.exe",
       "sha256": "27097cbb751fbee4a5759c41c753abd850f9eff92508d1cf0e7b37e2ae957be6",
       "bytes": 2592,
-      "description": "SEC-06 signed inert PE; ca-ku-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; ca-ku-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7319,10 +7319,10 @@
       "file": "good-path-ca-ku-last.exe",
       "sha256": "2897fc7216b3055be565ab401fdf9496eaae06d80aa1d2191aea5f990bc1d539",
       "bytes": 2592,
-      "description": "SEC-06 signed inert PE; ca-ku-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; ca-ku-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7335,10 +7335,10 @@
       "file": "good-path-ca-no-ku.exe",
       "sha256": "e48ae9c995daeea57eb9f616dcf7f1e5e0d0fe081fa596da24d2198c2621f765",
       "bytes": 2184,
-      "description": "SEC-06 signed inert PE; ca-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; ca-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7351,10 +7351,10 @@
       "file": "good-path-ca-noncritical.exe",
       "sha256": "1d65551ac1d3e166cbe859012cd91d705fd8387ff8253caa7ea13e3ef65e3447",
       "bytes": 2216,
-      "description": "SEC-06 signed inert PE; ca-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; ca-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7367,10 +7367,10 @@
       "file": "good-path-cross-first.exe",
       "sha256": "892f981dee104c5fa30d97929e785ae7d95af1819d5536da9ec0a0ba4c5a2d1a",
       "bytes": 2968,
-      "description": "SEC-06 signed inert PE; cross-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; cross-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7393,7 +7393,7 @@
       "description": "SEC-16 signed inert PE: a self-issued key rollover. The SEC-06 root's name is carried by a second key, certified by the root, and the signer is issued under that name by the second key, so two certificates on the path have issuers of the same name and different keys. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7407,10 +7407,10 @@
       "file": "good-path-cross-last.exe",
       "sha256": "fba166ffdf7bfe6c97faa79694d5df438c1feb98447c7c673524596bf1c0b1a1",
       "bytes": 2968,
-      "description": "SEC-06 signed inert PE; cross-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; cross-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7423,10 +7423,10 @@
       "file": "good-path-cycle-escape-reversed.exe",
       "sha256": "d8e9d80c9bb2a3411b9c783c731699be85c6e66c417340f8826d8c794605f4c6",
       "bytes": 2912,
-      "description": "SEC-06 signed inert PE; cycle-escape-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; cycle-escape-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7439,10 +7439,10 @@
       "file": "good-path-cycle-escape.exe",
       "sha256": "70183b53830c3d4fb988f8222812209b49cc3634745b29280d775b87f360c316",
       "bytes": 2912,
-      "description": "SEC-06 signed inert PE; cycle-escape. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; cycle-escape. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7455,10 +7455,10 @@
       "file": "good-path-leaf-no-bc.exe",
       "sha256": "1f47b7b006a714887b751cc153ce71cb6ff264abddb32f2fe5c3a29ffff9ae52",
       "bytes": 2184,
-      "description": "SEC-06 signed inert PE; leaf-no-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; leaf-no-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7471,10 +7471,10 @@
       "file": "good-path-leaf-no-ku.exe",
       "sha256": "972c93b80ca61c38de05c3f9013249055a9e3f11eb940e12dfc9e6513d138270",
       "bytes": 2184,
-      "description": "SEC-06 signed inert PE; leaf-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; leaf-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7487,10 +7487,10 @@
       "file": "good-path-leaf-noncritical.exe",
       "sha256": "9696a5fd9ea5f6b316d1e1a36509b77beb5e82760fc34978d09ebb87ba34cb49",
       "bytes": 2216,
-      "description": "SEC-06 signed inert PE; leaf-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; leaf-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7503,10 +7503,10 @@
       "file": "good-path-name-good.exe",
       "sha256": "25e901434d3bf52b4b11f5247b19b4d4df061a268c66f651c7dadffccbba8feb",
       "bytes": 2296,
-      "description": "SEC-06 signed inert PE; name-good. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; name-good. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7519,10 +7519,10 @@
       "file": "good-path-pathlen.exe",
       "sha256": "fc00ff5d42cec65e5829a074b554f0b3c87c381c6c608e3f7f8da0b2d464dce7",
       "bytes": 2560,
-      "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7535,10 +7535,10 @@
       "file": "good-path-root-name.exe",
       "sha256": "ef35e3465816bba63f71d96b7396db1234a7ae3fbef6e98b9f9c8b2b87d30c91",
       "bytes": 2232,
-      "description": "SEC-06 signed inert PE; root-name. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation; certificate_chain_invalid at certificate_chain.",
+      "description": "SEC-06 signed inert PE; root-name. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation; certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7553,10 +7553,10 @@
       "file": "good-path-wrong-key-first.exe",
       "sha256": "723582fefd02a58705f73ee02b78d0fc87102c324f6274366b1271913eb52a42",
       "bytes": 2592,
-      "description": "SEC-06 signed inert PE; wrong-key-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; wrong-key-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7569,10 +7569,10 @@
       "file": "good-path-wrong-key-last.exe",
       "sha256": "0e6a29edd5a3612f5bda09e6a3f0422ae39539433fe511151665d91a31472643",
       "bytes": 2592,
-      "description": "SEC-06 signed inert PE; wrong-key-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
+      "description": "SEC-06 signed inert PE; wrong-key-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7588,7 +7588,7 @@
       "description": "SEC-06 certificate witness/configured anchor: ca-good-eku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7604,7 +7604,7 @@
       "description": "SEC-06 certificate witness/configured anchor: ca-no-ku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7620,7 +7620,7 @@
       "description": "SEC-06 certificate witness/configured anchor: ca-noncritical. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7636,7 +7636,7 @@
       "description": "SEC-06 certificate witness/configured anchor: constrained. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7652,7 +7652,7 @@
       "description": "SEC-06 certificate witness/configured anchor: cross. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7668,7 +7668,7 @@
       "description": "SEC-06 certificate witness/configured anchor: dns-good. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7686,7 +7686,7 @@
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7775,7 +7775,7 @@
       "description": "SEC-06 certificate witness/configured anchor: issuer. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7806,7 +7806,7 @@
       "description": "SEC-06 certificate witness/configured anchor: leaf-no-bc. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7822,7 +7822,7 @@
       "description": "SEC-06 certificate witness/configured anchor: leaf-no-ku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7838,7 +7838,7 @@
       "description": "SEC-06 certificate witness/configured anchor: leaf-noncritical. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7854,7 +7854,7 @@
       "description": "SEC-06 certificate witness/configured anchor: leaf. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7885,7 +7885,7 @@
       "description": "SEC-06 certificate witness/configured anchor: lower. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7901,7 +7901,7 @@
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7954,7 +7954,7 @@
       "description": "SEC-06 certificate witness/configured anchor: other-root. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7976,7 +7976,7 @@
       "description": "SEC-06 certificate witness/configured anchor: root-constrained. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -7993,7 +7993,7 @@
       "description": "SEC-06 certificate witness/configured anchor: root-denied. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8009,7 +8009,7 @@
       "description": "SEC-06 certificate witness/configured anchor: root-expired. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8025,7 +8025,7 @@
       "description": "SEC-06 certificate witness/configured anchor: root-profile. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8041,7 +8041,7 @@
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8160,7 +8160,7 @@
       "description": "SEC-06 certificate witness/configured anchor: root. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8285,7 +8285,7 @@
       "description": "SEC-06 configured roots with identical subject/key and different DNS constraints: rejecting root first, accepting root second. Report must identify the accepting anchor.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8301,7 +8301,7 @@
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8354,7 +8354,7 @@
       "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8370,7 +8370,7 @@
       "description": "SEC-10: empty, correctly signed CRL of the SEC-06 root, expired at 1800000000 (nextUpdate 1000 seconds before): on good-path-cross-first.exe the root path's only CRL then needs a refresh while the cross path is revoked; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8387,7 +8387,7 @@
       "description": "SEC-23: empty, correctly signed CRL of the SEC-06 root, not yet valid at 1800000000 (thisUpdate 1000 seconds after): a CRL a source could replace, so the certificates it fails to cover are named in certificates_with_replaceable_crl; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8406,7 +8406,7 @@
       "description": "SEC-16: empty, correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8423,7 +8423,7 @@
       "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key and carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8440,7 +8440,7 @@
       "description": "SEC-16: correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it and revoking the rollover certificate (serial 140), valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -8456,7 +8456,7 @@
       "description": "SEC-06 certificate witness/configured anchor: upper. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
         "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
@@ -9159,7 +9159,7 @@
       "sha256": "677b59d145c14375aa9913417b98b66b90b7da41d637723f86d7d7cb6013891a",
       "bytes": 3768,
       "description": "SEC-09: Signer expired before validation time; RFC 3161 timestamp inside its validity. Deterministic public test keys; image unchanged. Expected trusted success validated at the timestamp time.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-003-expired-timestamped",
@@ -9172,7 +9172,7 @@
       "sha256": "ed50dfad8b31980592eb02e960359ad5b17e3f071747c756512e16c2ffaf6dc3",
       "bytes": 3784,
       "description": "SEC-09: Same expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-expired"
@@ -9184,7 +9184,7 @@
       "sha256": "113cd7962b1c603d28a94083c5aa22fe9f3be6765452bed893ac481d01f0f8f9",
       "bytes": 2856,
       "description": "SEC-09: Signer expired before validation time; PKCS#9 countersignature inside its validity. Deterministic public test keys; image unchanged. Expected trusted success validated at the timestamp time.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-003-counter-expired-timestamped"
@@ -9195,7 +9195,7 @@
       "sha256": "0c0be414a53f64c3a129a2cf4bda7a66a66ce715543998f7ef8313d098bfb856",
       "bytes": 2864,
       "description": "SEC-09: Same expired signer and PKCS#9 countersignature, plus lifetime-signing EKU. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-counter-expired"
@@ -9207,7 +9207,7 @@
       "sha256": "d2bed667a3d6a364368f018d09353c60a8b7f7c39acf3b41a74b379a828fcb74",
       "bytes": 3776,
       "description": "SEC-09: Lifetime-signing signer whose notAfter equals the pinned validation time; RFC 3161 timestamp. Deterministic public test keys; image unchanged. Expected trusted success validated at the validation time; certificate_expired one second later.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-valid",
@@ -9219,7 +9219,7 @@
       "sha256": "37eba1f7e6ace64919cce582c47dd89f2ad3d7f2bda34830755b66a45cfc50ec",
       "bytes": 3792,
       "description": "SEC-09: Lifetime-signing signer whose notBefore follows the RFC 3161 timestamp; time-timestamp-before-not-before.exe is the same without the EKU. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-before-not-before",
@@ -9231,7 +9231,7 @@
       "sha256": "09d505494db30a4abad0d860bb1d6315af8c1e57e1120b1892bdbbe6965309ff",
       "bytes": 3776,
       "description": "SEC-09: Signer whose notBefore follows the RFC 3161 timestamp, without lifetime signing. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-004-timestamp-before-not-before",
@@ -9243,7 +9243,7 @@
       "sha256": "d23f278802f29c358d09b6c323c1605499be06c0452ab9adf16f84fe109f41df",
       "bytes": 2200,
       "description": "SEC-09: Lifetime-signing signer without a timestamp. Deterministic public test keys; image unchanged. Expected trusted success reporting lifetime_signing; certificate_expired without signing_time after notAfter.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-untimestamped",
@@ -9255,7 +9255,7 @@
       "sha256": "8ea17e333062109ec9ee850364314ca5daf8a6cce91c9094d6a7b771b7dc8bf6",
       "bytes": 4600,
       "description": "SEC-09: Lifetime-signing signer with two same-subject/key intermediates; the first embedded is issued after the RFC 3161 time. Deterministic public test keys; image unchanged. Expected success through the second intermediate with revocation disabled.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-009-lifetime-intermediate-rollover",
@@ -9270,7 +9270,7 @@
       "sha256": "37cb5c382ec2c0c588a1f4706306c6894e6da536f0fe02e87f1107d23b15dfe8",
       "bytes": 4200,
       "description": "SEC-09: Same signer with only the intermediate issued after the RFC 3161 time. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-intermediate-late",
@@ -9284,7 +9284,7 @@
       "sha256": "cb4d85b10f26140fa94e538640129107f3162f23ed860574ecb5cb6e04aaea4c",
       "bytes": 3768,
       "description": "SEC-09: RFC 3161 time equals signer notAfter at whole seconds. Deterministic public test keys; image unchanged. Expected trusted success.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-leaf-not-after-exact"
@@ -9295,7 +9295,7 @@
       "sha256": "3b0e0eb7a5c66b53bbb504a9348fc8a590d0df93ddab8b1b01d147b0d574b950",
       "bytes": 3776,
       "description": "SEC-09: RFC 3161 time is signer notAfter plus .5 seconds. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-leaf-not-after-fraction"
@@ -9307,7 +9307,7 @@
       "sha256": "97baed290ce47382a0e14ba4d3bbc7b9b2f18586edab7d4eec0abc0773e844f0",
       "bytes": 3784,
       "description": "SEC-09: RFC 3161 time is signer notBefore plus .5 seconds. Deterministic public test keys; image unchanged. Expected trusted success.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-leaf-not-before-fraction-inside"
@@ -9318,7 +9318,7 @@
       "sha256": "818e0fc0e457774775d20c0fed9c3be7f0ab5f3e546a1aee948ae29e005fd745",
       "bytes": 3784,
       "description": "SEC-09: RFC 3161 time is .5 seconds before signer notBefore. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-leaf-not-before-fraction-early"
@@ -9330,7 +9330,7 @@
       "sha256": "41feb341cd89d93c620e502a6ad4c8b76d829ee26a934681156fe6697d8a567e",
       "bytes": 4192,
       "description": "SEC-09: Root-issued intermediate; RFC 3161 time equals intermediate notAfter. Deterministic public test keys; image unchanged. Expected success with revocation disabled.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-intermediate-not-after-exact"
@@ -9341,7 +9341,7 @@
       "sha256": "4fa93658b3090843b468de5ccba385a2dcda6ab5c07b13674f7b90081bdec985",
       "bytes": 4192,
       "description": "SEC-09: RFC 3161 time is intermediate notAfter plus .5 seconds. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-intermediate-not-after-fraction"
@@ -9353,7 +9353,7 @@
       "sha256": "23a86a6e969bfa821ac13c1547a9e808bc485e3678dd361890142ca01020c386",
       "bytes": 4176,
       "description": "SEC-09: RFC 3161 time is one second after intermediate notAfter. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-003-intermediate-expired"
@@ -9365,7 +9365,7 @@
       "sha256": "237653f975567e122649d975acb75a43edf3a94150ed8a8d7dec0279d73a9df1",
       "bytes": 4200,
       "description": "SEC-09: RFC 3161 time is intermediate notBefore plus .5 seconds. Deterministic public test keys; image unchanged. Expected success with revocation disabled.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-intermediate-not-before-fraction-inside"
@@ -9376,7 +9376,7 @@
       "sha256": "408dd3b3d2f85cebbfc274caa68a258529342e463b8a54d7da4fe16b548984ef",
       "bytes": 4200,
       "description": "SEC-09: RFC 3161 time is .5 seconds before intermediate notBefore. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-006-intermediate-not-before-fraction-early"
@@ -9388,7 +9388,7 @@
       "sha256": "6e057d59c1a23b716e05de51772a95489b5dd168643ef7c14006f7ed29d1496d",
       "bytes": 2176,
       "description": "SEC-09: Untimestamped signer valid for 100 seconds either side of 1800000000. Deterministic public test keys; image unchanged. Expected success at both inclusive bounds; not-yet-valid/expired one second outside.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-007-untimestamped-before-not-before",
@@ -9402,7 +9402,7 @@
       "sha256": "2fe4740ce7bf4639d258e9b343d726f4e7f71f524eb09f4de72b54984cc8067f",
       "bytes": 4600,
       "description": "SEC-09: Lifetime-signing signer with two same-subject/key intermediates: first issued after the RFC 3161 time, second valid at signing but lacking keyCertSign. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-010-lifetime-intermediate-late-ca-usage"
@@ -9414,7 +9414,7 @@
       "sha256": "f762f74f73b3485c3e044bbaf36248decd675b859735036c8f3cc67b58d2c4d8",
       "bytes": 4608,
       "description": "SEC-09: Same as time-010-lifetime-intermediate-late-ca-usage with the intermediates embedded in reverse order. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-010-lifetime-intermediate-ca-usage-late"
@@ -9426,7 +9426,7 @@
       "sha256": "75a41d3634aad0115bacaddf965bdf97b113639cd8cfccce8d530d3ffab275f1",
       "bytes": 4616,
       "description": "SEC-09: Lifetime-signing signer on one path leaf <- intermediate 0 (lacks keyCertSign) <- intermediate 1 (issued after the RFC 3161 time) <- root. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-010-lifetime-chain-ca-usage-late"
@@ -9437,7 +9437,7 @@
       "sha256": "718aa31ca41474588eb813d4ad00080431ddae8a3ca71386b6c6f337302297ff",
       "bytes": 4608,
       "description": "SEC-09: Same defects on one path with their positions swapped: intermediate 0 issued after the RFC 3161 time, intermediate 1 lacking keyCertSign. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-010-lifetime-chain-late-ca-usage"
@@ -9448,7 +9448,7 @@
       "sha256": "dd3d7be736e79dc6fc4fe85af3220cd9be768001599a65300649e935c4805bf5",
       "bytes": 4944,
       "description": "SEC-09: Ordinary publisher primary signature with a nested signature by a signer expired before validation time; RFC 3161 timestamp inside its validity. Expected trusted success, nested signer validated at the timestamp time. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-003-nested-expired-timestamped"
@@ -9459,7 +9459,7 @@
       "sha256": "d42fa6da72528cda923f7083911c5e84c3ad4cc74034e01f915e24bcbb1e509b",
       "bytes": 4960,
       "description": "SEC-09: Same nested expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Expected certificate_expired at certificate_chain. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-nested-expired"
@@ -9471,7 +9471,7 @@
       "sha256": "dc6eb9b35cc50a656a0a4ca6c5094f6294ad08b0a3006a42025ae3aac2f8ff84",
       "bytes": 3622,
       "description": "SEC-09: Inert RDP settings with a direct signature by a signer expired before validation time; RFC 3161 timestamp inside its validity. Never open in an RDP client. Expected trusted success validated at the timestamp time. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-003-rdp-expired-timestamped"
@@ -9482,7 +9482,7 @@
       "sha256": "0b58cb9aab6342ecb3822f2e2be352f82bfae2c70ef1ea49d74ad5ee0f6d91f5",
       "bytes": 3638,
       "description": "SEC-09: Same RDP settings, expired signer and RFC 3161 timestamp, plus lifetime-signing EKU. Never open in an RDP client. Expected certificate_expired at certificate_chain. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-001-lifetime-rdp-expired"
@@ -9494,7 +9494,7 @@
       "sha256": "e1e9472a2358b5c12d18117ad6c4c43547bb2fc9692b178423fd64bb800cc5ea",
       "bytes": 187,
       "description": "SEC-09: Empty, correctly signed CRL from the rolled-over SEC-09 intermediate, valid at 1800000000; supporting revocation evidence, not an individual verification claim. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-008-lifetime-rollover-revocation",
@@ -9509,7 +9509,7 @@
       "sha256": "5c8c2bd5a0f0b6c22e562e762e3a9d9840aca09e0bd09df6efbdcc21acc2705a",
       "bytes": 212,
       "description": "SEC-09: Correctly signed CRL from the rolled-over SEC-09 intermediate revoking the SEC-09 leaf serial 902, valid at 1800000000. Expected certificate_revoked at revocation. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-011-lifetime-late-revoked-leaf",
@@ -9522,7 +9522,7 @@
       "sha256": "3e248f58cf520772c67d35b98ea4901955a7ce3651b77e179dc86a4b2eef5330",
       "bytes": 209,
       "description": "SEC-09: Correctly signed test-root CRL revoking only SEC-09 intermediate serial 911 (the rollover issuer valid at signing), valid at 1800000000. Covers the TSA as good. Deterministic public test keys.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-012-lifetime-rollover-revoked-issuer"
@@ -9534,7 +9534,7 @@
       "sha256": "efd6cf784b4781a0221ae8d9f14529707df08108d997fa0fcc4db7beea57f536",
       "bytes": 3792,
       "description": "SEC-09: Lifetime-signing signer whose notBefore equals the RFC 3161 time. Expected trusted success validated at the validation time. Deterministic public test keys; image unchanged.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-leaf-not-before-exact"
@@ -9545,7 +9545,7 @@
       "sha256": "2a3680de82a5977b78aaf1d4342b9b7979b171725ea37313d6cc284a83aff729",
       "bytes": 3792,
       "description": "SEC-09: Lifetime-signing signer whose notBefore is one second after the RFC 3161 time. Expected certificate_not_yet_valid at certificate_chain. Deterministic public test keys; image unchanged.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-leaf-not-before-early"
@@ -9557,7 +9557,7 @@
       "sha256": "8207dc34e5ac2413d0c521e647372ba3d16cc36a8375958aa19225368bf53301",
       "bytes": 4208,
       "description": "SEC-09: Lifetime-signing signer whose intermediate notBefore equals the RFC 3161 time. Expected trusted success with CRLs from the root and the intermediate. Deterministic public test keys; image unchanged.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-intermediate-not-before-exact"
@@ -9568,7 +9568,7 @@
       "sha256": "46fd4b0489ec021ce05deb09261a2eca4259c719c3040d9fd09e8e986d00b311",
       "bytes": 4208,
       "description": "SEC-09: Lifetime-signing signer whose intermediate notBefore is one second after the RFC 3161 time. Expected certificate_not_yet_valid at certificate_chain naming the intermediate. Deterministic public test keys; image unchanged.",
-      "generator": "src/tests/time_policy.rs::regenerate_time_fixtures",
+      "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-intermediate-not-before-early"
@@ -9859,7 +9859,7 @@
       "sha256": "68deb4f76146716589efed0ea8b5d36447653f3ffb30c95d3f62eb53893e1989",
       "bytes": 2200,
       "description": "SEC-10: Inert PE signed by the SEC-06 leaf; its issuer candidate has a critical KeyUsage with keyCertSign but not cRLSign, so the issuer's CRL (path-issuer.crl) cannot be used. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-no-crl-sign"
@@ -9870,7 +9870,7 @@
       "sha256": "4fe6d2d91b24de6ad1202dfb8cf229f67e4e46131a1d371601df119580a0d674",
       "bytes": 2200,
       "description": "SEC-10: Paired good PE; the issuer candidate's critical KeyUsage has keyCertSign and cRLSign. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-sign"
@@ -9881,7 +9881,7 @@
       "sha256": "d5f94de933b84101b3e6f29c2a37f25b1bdf6d16ce23c64c23de1dfc3c1081ab",
       "bytes": 2592,
       "description": "SEC-10: Inert PE embedding both issuer candidates, the one without cRLSign first; path building must fall back to the candidate with cRLSign. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-sign-fallback"
@@ -9952,7 +9952,7 @@
       "sha256": "fb83f8902d84788e4a13c83e25f2974b28fec21a6288d1ee3a377e34a5e381f0",
       "bytes": 386,
       "description": "SEC-10: Trust anchor with the SEC-06 root's name and key whose critical KeyUsage has keyCertSign but not cRLSign. Configured anchors are keys, so CRLs it signs remain usable. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-015-root-no-crl-sign-accepted"
@@ -9963,7 +9963,7 @@
       "sha256": "fe672939a8507db27ac21072a8f14418f565ccebc2ae99cebb79408aa7fdff92",
       "bytes": 2248,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf with its own serial (121) whose cRLDistributionPoints lists one fullName URI (http://crl.invalid/sec10-a.crl); issuer candidate is the SEC-06 issuer. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp",
@@ -9999,7 +9999,7 @@
       "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
       "bytes": 233,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl, the point the crl-leaf-crl-dp signer lists. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp",
@@ -10029,7 +10029,7 @@
       "sha256": "f538f815d11ab48b72d20de0ce26f7e01225513b96e51448cea19be95a511fd7",
       "bytes": 258,
       "description": "SEC-10: As crl-issuer-idp-match.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp-revoked",
@@ -10041,7 +10041,7 @@
       "sha256": "2cefb7b9ee82b6378dc6eb750dca47522a1c62a301bc4c045d907790e33e9bb7",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the signer does not list; not authoritative for it. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-034-dp-other-idp-unknown",
@@ -10060,7 +10060,7 @@
       "sha256": "b2e3aaa8744c3beffca0da753bd46d65357cdc80ea1e052ffcb267023131d461",
       "bytes": 233,
       "description": "SEC-10: Correctly signed CRL from the SEC-06 issuer, expired, whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the crl-leaf-crl-dp signer does not list. Not authoritative for that signer, so its age does not decide it. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-034-expired-partition-for-another-point-leaves-status-unknown",
@@ -10072,7 +10072,7 @@
       "sha256": "04ce40d26b3f3025fbfd306a13bf784f548106c6de37c915553a179ed3f7a050",
       "bytes": 256,
       "description": "SEC-10: As crl-issuer-idp-other.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-013-dp-other-partition-revocation-is-ignored",
@@ -10085,7 +10085,7 @@
       "sha256": "2ff1d4c6d45a4f0414f5f9886273d3b5453a2ab22ebc919c891c3ebd640b8229",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names HTTP://CRL.INVALID/sec10-a.crl, the signer's listed point with scheme and host in upper case; URIs are compared byte-exactly, so it is not authoritative. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-case-variant-idp-unknown"
@@ -10096,7 +10096,7 @@
       "sha256": "c477222bbc572a7b594eaaa6e2184161c638bc5f588ae73311c8d598b60c2269",
       "bytes": 2320,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints lists two points: one naming http://crl.invalid/sec10-c.crl and one naming both sec10-d.crl and sec10-e.crl; serial 122. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-multi-second-point-matches",
@@ -10110,7 +10110,7 @@
       "sha256": "efb05fb4d9bcbd1ef50dd0b72e9eb53f45d9b2656d18b58e7aee6a67490f3289",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names only a dNSName (crl.invalid), not a URI; serial 123. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-dns-name-unknown",
@@ -10123,7 +10123,7 @@
       "sha256": "48dcab237ebc87ef8b4cd96a9c046f120bddbddd6aeec4d56b8a5241a95419e1",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints uses nameRelativeToCRLIssuer (CN=sec10); serial 124. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-idp-unsupported",
@@ -10136,7 +10136,7 @@
       "sha256": "7df2d2b0361704d66aa657967c0b4bb037bd95bc3098960e6db54e293a13b0be",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a reasons field (keyCompromise); serial 125. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-reasons-point-unknown",
@@ -10149,7 +10149,7 @@
       "sha256": "25df07c6d83110ce0924c6f721324b6d36aad110ab6860c650f70b795297897d",
       "bytes": 2280,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a cRLIssuer (CN=SEC-06 upper); serial 126. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-crl-issuer-point-unknown",
@@ -10162,7 +10162,7 @@
       "sha256": "e3fc096b982386c2cfb42ae25e7f14408327caf19a6cd9b6c9a16f256e959a45",
       "bytes": 2296,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 127) whose cRLDistributionPoints lists a reason-partitioned point (http://crl.invalid/sec10-c.crl, keyCompromise) and then http://crl.invalid/sec10-a.crl as a plain point. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-mixed-full-crl",
@@ -10174,7 +10174,7 @@
       "sha256": "0e6efbf1f5056074d3efab81f19183fb9f0f12a587b9c67712748a6a566a1421",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 128) whose cRLDistributionPoints names https://crl.invalid/sec10-a.crl. The engine passes it to the CRL source; the built-in HTTP source refuses it. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-https-full-crl",
@@ -10187,7 +10187,7 @@
       "sha256": "88efc22e200f6819c1be90582945da132e29712b1a922a1f72daa81b5ac8f2d8",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by the base SEC-06 leaf; its issuer candidate is a SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-dp-ca-scope-covers-issuer",
@@ -10201,7 +10201,7 @@
       "sha256": "d6bc19962ae073701b65f095457ae87f347de994130c03145e35acdede113ed2",
       "bytes": 2312,
       "description": "SEC-10: Inert PE signed by the crl-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl, so both selected certificates list a point. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-chain-crl-dp-full-crls",
@@ -10219,7 +10219,7 @@
       "sha256": "993f0d528b7f965f097f756eab8a84756386d9a1f406140a7adc9236b73ea446",
       "bytes": 235,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl with onlyContainsUserCerts TRUE. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-user-scope-covers-signer",
@@ -10231,7 +10231,7 @@
       "sha256": "98c8265f27f3c639045eaa42f2be2012ee34e9ecef13052ad27a760300bc9cbf",
       "bytes": 235,
       "description": "SEC-10: As crl-issuer-idp-match-user.crl, but with onlyContainsCACerts TRUE; not authoritative for an end-entity signer. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-ca-scope-excludes-signer",
@@ -10245,7 +10245,7 @@
       "sha256": "27c22f2761c99791430e03b1ca87f51c7183d52d1681a0927b8a408c1c85c848",
       "bytes": 266,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName lists http://crl.invalid/sec10-b.crl and then http://crl.invalid/sec10-a.crl. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-idp-second-name-matches"
@@ -10256,7 +10256,7 @@
       "sha256": "228cc78f5751145b4d5555106fcd1368459f5d3556c893b68f3fa817de3061c7",
       "bytes": 232,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-e.crl, the second name of the crl-leaf-crl-dp-multi signer's second point. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-multi-second-point-matches",
@@ -10268,7 +10268,7 @@
       "sha256": "da1f60f8471c913d5dd7612baeda84a6f02b56d54012a71d655a14ccc8963079",
       "bytes": 213,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is only a dNSName (crl.invalid). Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-dns-name-unknown",
@@ -10280,7 +10280,7 @@
       "sha256": "c86e2c5ba3f049aead69efaeb92ee4fefd482951f329cafa1124c9619ee93d76",
       "bytes": 214,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint uses nameRelativeToCRLIssuer (CN=sec10); unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-idp-unsupported",
@@ -10294,7 +10294,7 @@
       "sha256": "7449402a8b071aae56f6adeadffe41afa351a7557dd1917c250c92c358705f6c",
       "bytes": 240,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 root whose critical issuingDistributionPoint names http://crl.invalid/sec10-issuer.crl with onlyContainsCACerts TRUE. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-dp-ca-scope-covers-issuer",
@@ -10308,7 +10308,7 @@
       "sha256": "4c3fb765004d20286ed6dca24d712b110fd4c17738b3b3a562bc010b2d11f20d",
       "bytes": 240,
       "description": "SEC-10: As crl-path-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-031-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
@@ -10322,7 +10322,7 @@
       "sha256": "9ecc7636c6365c1cce8f7920f5e8deda7602727e5930462531969824019284ab",
       "bytes": 204,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 root (no issuingDistributionPoint) revoking serial 110, the SEC-06 issuer certificate and its variants. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-031-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
@@ -10338,7 +10338,7 @@
       "sha256": "fb97e26855f42eb9735347fcd8723e24e8b8343a8c2d3d5d4a7700ec5ba16e04",
       "bytes": 209,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 other root (no issuingDistributionPoint) revoking serial 110, the cross certificate (the SEC-06 issuer re-signed by the other root). Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
@@ -10355,8 +10355,8 @@
       "file": "crl-path-cross-no-cert-sign.exe",
       "sha256": "3a82bed7c92c1a5bccf4763ae6352f5f2e79816c21b2e130cab6e354d57f7c4c",
       "bytes": 2960,
-      "description": "SEC-10 signed inert PE: the SEC-06 signer with a cross certificate (the issuer re-signed by the other root) whose KeyUsage has cRLSign but lacks keyCertSign, embedded first, then the other root and the issuer. Its cross path fails path policy whatever its CRLs say. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "description": "SEC-10 signed inert PE: the SEC-06 signer with a cross certificate (the issuer re-signed by the other root) whose KeyUsage has cRLSign but lacks keyCertSign, embedded first, then the other root and the issuer. Its cross path fails the path checks whatever its CRLs say. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
@@ -10368,7 +10368,7 @@
       "sha256": "2918f55141fe79bba16639cc2e642249b5701d4fd204b9c3747acd3a3e79bfdf",
       "bytes": 2968,
       "description": "SEC-10 signed inert PE: the SEC-06 signer with an expired cross certificate (the issuer re-signed by the other root, notAfter one second before 1800000000) embedded first, then the other root and the issuer. webpki's highest-ranked error comes from the expired path, while the issuer's path only lacks a root CRL. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-029-cross-expired-path-beside-path-without-crl-names-the-gap",
@@ -10380,7 +10380,7 @@
       "sha256": "7abe814aef630857f23d5be49d7c2ca4d0b2e7f2d248283680f75aafcc26429d",
       "bytes": 244,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is the directoryName CN=SEC-06 issuer, CN=sec10: what the crl-leaf-crl-dp-relative signer's issuer-relative name expands to under RFC 5280 6.3.3. Relative names are not expanded, so it is not authoritative. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+      "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-expanded-name-unknown"

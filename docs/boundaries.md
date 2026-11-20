@@ -20,7 +20,7 @@ shared verification engine as hash-comment scripts, not XMLDSig.
 Windows Script Host `.vbs`/`.vbe`/`.js`/`.jse` and single-job `.wsf` signatures are supported;
 see `docs/wsh.md` for strict encoding/block limits and opaque encoded-text handling.
 RDP detached CMS over selected settings is supported; `rdp` JSON reports signed and
-unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust-policy limits.
+unsigned settings explicitly. See `docs/rdp.md` for canonicalization and trust limits.
 MSIX/AppX package and bundle embedded signatures, package components, block maps,
 Publisher binding, and embedded package verification are supported; see `docs/appx.md`
 for ZIP/compression and bundle limits. Flat/external, stub, and nested bundles are
@@ -36,7 +36,7 @@ Windows-specific trust lists, and Windows policy parity are not implemented.
 Revocation of a timestamped signer is handled conservatively: an entry on a
 current CRL rejects it even if its revocation date is after the signing time.
 Signers with the lifetime-signing EKU are validated at the validation time, not
-the timestamp; see `docs/time-policy.md`.
+the timestamp; see `docs/validation-time.md`.
 
 Diagnostic logging is opt-in through an injected `rssig::log::Logger` (`verify::Verifier`,
 `cli::Host`); see `docs/logging.md`. There is no global logger, the binary injects none,

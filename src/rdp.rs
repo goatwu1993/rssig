@@ -319,7 +319,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
 /// revocation (a revocation is chosen before any ranking): 2 when the
 /// failure is an unknown status or an expired or replaceable CRL that names
 /// the certificates to ask about, and 0 otherwise. An empty list names nothing:
-/// it is what the verifier returns when no path passes path policy.
+/// it is what the verifier returns when no path passes the path checks.
 fn completable_by_crl(e: &anyhow::Error) -> u8 {
     e.chain()
         .filter_map(|cause| cause.downcast_ref::<VerificationError>())
@@ -490,7 +490,7 @@ mod tests {
             rank(error(ErrorCode::CertificateRevoked).detail("certificates_without_crl", &named)),
             0
         );
-        // An empty list names nothing to ask: no path passes path policy.
+        // An empty list names nothing to ask: no path passes the path checks.
         let empty = serde_json::json!([]);
         assert_eq!(
             rank(error(ErrorCode::RevocationUnknown).detail("certificates_without_crl", &empty)),

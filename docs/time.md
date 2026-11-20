@@ -6,8 +6,8 @@ lifetime signing and the validity boundaries, and how a failure at that
 instant ranks against other failures. Whether a timestamp token can be trusted
 at all is a [timestamp token decision](tsa.md); see
 [which index](decisions.md#which-index). The entry format is defined in
-[Decision indexes](decisions.md); the policy is explained in
-[time policy](time-policy.md), and the review history is in SEC-09 and SEC-14
+[Decision indexes](decisions.md); the rules are explained in
+[validation time](validation-time.md), and the review history is in SEC-09 and SEC-14
 ([done](tasks/done.md), [TODO.md](../TODO.md)).
 
 TIME-004 and TIME-005 check a timestamp's time, but against certificate
@@ -62,7 +62,7 @@ format, and RDP signers.
 - **Sources:**
   - The purpose of the lifetime-signing EKU: a signature it marks does not
     outlive the signer certificate, whatever its timestamp.
-  - Written argument in [time policy](time-policy.md#lifetime-signing); no
+  - Written argument in [validation time](validation-time.md#lifetime-signing); no
     Windows equivalence is claimed.
 
 ### TIME-002: A lifetime signer's chain must be valid at the signing time
@@ -95,7 +95,7 @@ validated at the signing time too.
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 4 (a timestamp proves the datum existed at that time).
-  - [time policy](time-policy.md) table, "Signer chain, timestamped".
+  - [validation time](validation-time.md) table, "Signer chain, timestamped".
 
 ### TIME-004: A timestamp before the signer's notBefore is rejected
 
@@ -103,7 +103,7 @@ A timestamp claiming a signing time before a non-lifetime signer's notBefore
 is `certificate_not_yet_valid`, as for a lifetime signer (TIME-002).
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43 (SEC-09); kept as policy in SEC-14
+- **Decided by:** written choice, PR #43 (SEC-09); kept as a decision in SEC-14
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: the same consistency check as TIME-002.
@@ -153,7 +153,7 @@ and a revoked leaf is rejected even when another path would verify. Historical
 (signing-time) revocation status is not modeled.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43; kept as policy in SEC-14
+- **Decided by:** written choice, PR #43; kept as a decision in SEC-14
 - **Pins:** acceptance
 - **Sources:**
   - AGENTS.md, "Fail closed" for unknown revocation status; CRL-001.
@@ -196,17 +196,17 @@ The signing-time check runs after webpki's own checks of a candidate path, so
 a revocation on that path is reported instead. Both outcomes reject.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as policy in SEC-14
+- **Decided by:** written choice, kept as a decision in SEC-14
 - **Pins:** diagnostics
 - **Sources:**
-  - Written argument in [time policy](time-policy.md#lifetime-signing).
+  - Written argument in [validation time](validation-time.md#lifetime-signing).
 
 ### TIME-012: Lifetime-signing validity outranks revocation on another path
 
 Across candidate paths, a CA issued after the lifetime signing time on one path outranks a revocation on another; both reject.
 
 - **Status:** Decided
-- **Decided by:** written choice (the references disagree and neither has lifetime signing); kept as policy in SEC-14
+- **Decided by:** written choice (the references disagree and neither has lifetime signing); kept as a decision in SEC-14
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL builds one chain and checks revocation before validity.
@@ -219,10 +219,10 @@ so an expired or not-yet-valid CRL is reported first, with or without the
 lifetime EKU. Both outcomes reject.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as policy in SEC-14
+- **Decided by:** written choice, kept as a decision in SEC-14
 - **Pins:** diagnostics
 - **Sources:**
-  - Written argument in [time policy](time-policy.md#lifetime-signing).
+  - Written argument in [validation time](validation-time.md#lifetime-signing).
 
 ### TIME-014: Failure details name the chain certificate that failed
 
@@ -234,10 +234,16 @@ generic chain error is reported. Successful reports set
 `TrustReport.lifetime_signing` and `validation_time`.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as policy in SEC-14
+- **Decided by:** written choice, kept as a decision in SEC-14
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: a change in webpki's search order must not name the
     wrong certificate.
-- **Note:** pinned by named tests in `tests/cli/time_policy.rs`; no spec case
+- **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec case
   names this entry yet.
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing TIME entry but do not name it yet: the pre-SEC-09 time cases (TEST-21) and every format's expired-with-timestamp and validity cases.

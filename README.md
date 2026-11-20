@@ -17,6 +17,10 @@ inspection, and digest input are usable without host integrations. These project
 dependencies, and this attribution does not imply their endorsement or verified
 compatibility.
 
+Project terms (policy, rule, decision, spec) are defined in the
+[glossary](docs/glossary.md); the reasons behind pinned results are in the
+[decision indexes](docs/decisions.md).
+
 ## Comparison with other tools
 
 This comparison covers **verification only**, based on source snapshots reviewed
@@ -31,13 +35,13 @@ necessarily establish a trusted publisher.
 | [authenticode-parser 0.5.0](https://docs.rs/authenticode-parser/0.5.0/authenticode_parser/) | Rust bindings to Avast's C/OpenSSL engine | PE digest, CMS, nested-signature, and timestamp cryptographic checks. Chains are reconstructed without validating trust; `Valid` does not mean trusted. `parse()` leaves file-digest comparison to the caller; `parse_pe()` includes it. |
 | [cross-authenticode](https://github.com/secana/cross-authenticode) | Rust PE library | `verify()` compares the computed PE digest with the embedded digest. It does not verify CMS public-key signatures, certificate trust, timestamps, or revocation. |
 | [rsigncode](https://github.com/divvun/rsigncode) | Rust PE tool with CMS verification | Checks PE digests and CMS signatures, including immediate nested signatures. Trust checking is optional and uses a limited certificate-signature walk; timestamp verification has binding/trust gaps. No implemented CRL validation path found. |
-| [pe-sign](https://github.com/0xlane/pe-sign) | RustCrypto RSA with a custom chain verifier | PE digest and RSA/CMS checks; bundled or explicit CA certificates and automatic AIA retrieval. Lacks full path-policy enforcement, timestamp validation in normal verification, and revocation checks. Inspected source uses `std`; CLI invalid statuses do not produce failure exits. |
+| [pe-sign](https://github.com/0xlane/pe-sign) | RustCrypto RSA with a custom chain verifier | PE digest and RSA/CMS checks; bundled or explicit CA certificates and automatic AIA retrieval. Lacks full path checks, timestamp validation in normal verification, and revocation checks. Inspected source uses `std`; CLI invalid statuses do not produce failure exits. |
 | [verifysign](https://docs.rs/verifysign/1.0.1/verifysign/) | Native WinTrust on Windows; Apple Security code-signing services on macOS | Native file/process verification, including Windows system catalogs. macOS support verifies Apple code signatures, not Windows Authenticode. No Linux support. Revocation is configurable and disabled by default. |
-| [Jsign](https://github.com/ebourg/jsign) | Java / Bouncy Castle | Broad Windows format handlers. **8.0 development** adds file/CMS integrity, PKIX trust, and timestamp verification; this verifier is not a 7.6 feature. Uses different trust-anchor and timestamp policies; inspected verification rules leave revocation disabled. |
+| [Jsign](https://github.com/ebourg/jsign) | Java / Bouncy Castle | Broad Windows format handlers. **8.0 development** adds file/CMS integrity, PKIX trust, and timestamp verification; this verifier is not a 7.6 feature. Uses different trust-anchor and timestamp rules; inspected verification rules leave revocation disabled. |
 | [Relic](https://github.com/sassoftware/relic) | Go cryptography and X.509 | Broad package verification, including PE/MSI/CAB/AppX, PowerShell, catalogs, and detached inputs. Checks CMS, timestamps, and chains; inspected CLI uses any primary-signer EKU and adds no CRL/OCSP checks. Low-level Authenticode APIs leave chain validation to callers. |
 
 See the [detailed comparison](docs/comparison.md) for exact revisions, source
-references, policy differences, and remaining rssig gaps. These are source-level
+references, behavior differences, and remaining rssig gaps. These are source-level
 findings, not a shared-corpus benchmark, security audit, or validation of Windows
 policy equivalence.
 
@@ -235,9 +239,9 @@ hashing, and CAB JSON fields.
 See [PowerShell support and fixture provenance](docs/powershell.md) for encodings,
 text hashing, signature-block limits, and script JSON fields.
 See [PowerShell XML support](docs/powershell-xml.md) for `.ps1xml` signature blocks
-and its BOM-less ASCII / BOM-marked Unicode encoding policy.
+and its BOM-less ASCII / BOM-marked Unicode encoding rules.
 See [RDP support and fixture provenance](docs/rdp.md) for signed-setting coverage,
-canonicalization, and trust-policy limits.
+canonicalization, and trust limits.
 See [MSIX/AppX support and provenance](docs/appx.md) for ZIP limits, block maps,
 manifest publisher binding, and optional embedded catalog reporting.
 See [testing and coverage](docs/testing.md) for the testable Clap interface,
@@ -249,8 +253,8 @@ embedded certificates and either supplied CRLs or explicit `--fetch-crls`;
 AIA downloads and OCSP are not implemented. Signers with the lifetime-signing EKU
 are validated at the validation time rather than their timestamp; configured root
 validity and historical revocation are not evaluated at the signing time. See
-[time policy](docs/time-policy.md) and SEC-14 in the [roadmap](TODO.md) for the
-recorded policy decisions and deferred follow-ups. System root sets can differ from Windows publisher roots,
+[validation time](docs/validation-time.md) and SEC-14 in the [roadmap](TODO.md) for the
+recorded decisions and deferred follow-ups. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
 roots for controlled publisher policies. [Root/CRL loading](docs/trust-loading.md)
 is atomic: unsupported anchors, malformed bundles and partial native enumeration

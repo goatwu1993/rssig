@@ -87,7 +87,7 @@ The canonical standard base64 `signature` value decodes to little-endian DWORDs
 Unknown headers, inconsistent lengths, empty/truncated signatures, trailing
 payload, and trailing CMS DER bytes are rejected.
 
-## CMS and trust policy
+## CMS and trust rules
 
 The RDP entry point requires version-1 detached `id-data` CMS and issuer/serial
 SignerInfo identities. It supports signers with authenticated attributes and
@@ -117,7 +117,7 @@ without a CRL, with only expired ones, or with only ones a source's CRL could re
 (an unknown status, or an expired or replaceable CRL, that names the certificates to ask about; an
 empty list names nothing) is reported ahead of another purpose's failure, so that `--fetch-crls` can
 ask for the CRL (`crl-033-rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted
-by this policy. Digital-signature key usage, configured roots, certificate times,
+by these rules. Digital-signature key usage, configured roots, certificate times,
 and current local CRLs retain their existing checks. Embedded certificates remain
 untrusted candidates. Root enumeration is the only OS trust integration.
 

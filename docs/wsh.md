@@ -52,7 +52,7 @@ variants, detached signatures, and arbitrary XMLDSig are unsupported. This is no
 WSF schema or script runtime validation; external script references are never
 fetched. Each input is limited to 64 MiB and encoded signature text to 16 MiB.
 
-## SIP, policy, and JSON
+## SIP, checks, and JSON
 
 The signed indirect data requires `SPC_SIPINFO_OBJID` (`1.3.6.1.4.1.311.2.1.30`),
 version 1, five zero reserved integers, and the exact style-specific SIP bytes:

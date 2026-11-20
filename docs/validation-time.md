@@ -13,7 +13,7 @@ and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-014`)
 | Signer chain, lifetime-signing EKU | Validation time, and notBefore at the signing time | See below. `TrustReport.lifetime_signing` is `true`. |
 | TSA chain | Timestamp `signing_time` | The TSA EKU must be exclusively timeStamping, so lifetime signing never applies to it. |
 | Timestamp itself | Validation time | `signing_time` equal to the validation time is accepted; any nonzero fraction in that second, or a later second, is `timestamp_in_future`. |
-| Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [path policy](certificate-path-policy.md). Checking them at a lifetime signing time is SEC-14. |
+| Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [certificate paths](certificate-paths.md). Checking them at a lifetime signing time is SEC-14. |
 | CRLs | Validation time | Which CRL decides, its scope, freshness and revocation are [CRL decisions](crl.md). A current CRL listing a certificate rejects it even after a valid timestamp, and a lifetime path is revocation-checked at the validation time ([TIME-008](time.md#time-008-a-lifetime-path-is-still-revocation-checked-at-the-validation-time)). |
 
 ## Lifetime signing
@@ -81,7 +81,7 @@ A signer certificate whose ExtendedKeyUsage contains Microsoft lifetime signing
   other signer and every TSA report, and defaults to `false` when reading
   older reports.
 
-This conservative policy does not claim Windows equivalence, including
+These conservative rules do not claim Windows equivalence, including
 WinVerifyTrust flags that change timestamp or lifetime-signing treatment.
 
 ## Fractional time boundaries
@@ -105,7 +105,7 @@ Consequences pinned by fixtures:
 32 committed deterministic test-only signed fixtures (28 single-signature PE
 files, 2 PE files with a nested signature and 2 inert RDP files) and 3 CRLs
 (`time-*`) back 47 portable cases and 37 named in-process CLI tests in
-`tests/cli/time_policy.rs`. Paired cases isolate:
+`tests/cli/validation_time.rs`. Paired cases isolate:
 
 - the lifetime-signing EKU: the same expired signer and valid RFC 3161 or
   PKCS#9 timestamp, with and without the EKU, as a PE signer, as a nested PE
@@ -149,7 +149,7 @@ intermediate. The RDP, nested and revocation cases were added afterwards and
 passed on first run; they pin behavior rather than reproduce a failure. The
 signing-time boundary pairs were added after a review showed that changing the
 comparison to `>=` passed the suite; both that mutation and `> at + 1` now
-fail `tests/cli/time_policy.rs`.
+fail `tests/cli/validation_time.rs`.
 
 Maintenance: `cargo test --locked regenerate_time_fixtures -- --ignored`
 (also run by `regenerate_cli_fixtures`). Ordinary tests consume committed bytes.

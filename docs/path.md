@@ -1,9 +1,9 @@
 # Certificate-path decisions
 
-Numbered decisions behind rssig's certificate-path policy. The entry format is
+Numbered decisions behind rssig's certificate-path rules. The entry format is
 defined in [Decision indexes](decisions.md); the explanation of the profile,
 webpki's role and its limits is in
-[certificate-path policy](certificate-path-policy.md), and the history in
+[certificate paths](certificate-paths.md), and the history in
 SEC-06 ([done](tasks/done.md), PR #40). Path rules for CRL issuers are CRL
 entries ([CRL decisions](crl.md)); time rules are [time decisions](time.md).
 
@@ -100,7 +100,7 @@ name constraints are applied too. A publisher CN is not a DNS identity.
 - **Sources:**
   - RFC 5280 section 4.2.1.10.
   - webpki `subject_name/mod.rs` for the supported name forms; see
-    [certificate-path policy](certificate-path-policy.md#applicable-profile-and-boundaries).
+    [certificate paths](certificate-paths.md#applicable-profile-and-boundaries).
 
 ### PATH-006: Unknown critical extensions are rejected
 
@@ -120,7 +120,7 @@ For every Authenticode format (PE, MSI and the others that share its
 verifier), the signing leaf must list the code-signing EKU (`invalid_eku` at
 `certificate`); an intermediate EKU, when present, must permit it
 (`invalid_eku` at `certificate_chain`); an intermediate without EKU is
-unrestricted. RDP signers follow RDP's own EKU policy (codeSigning, serverAuth
+unrestricted. RDP signers follow RDP's own EKU rule (codeSigning, serverAuth
 or Remote Desktop signing; see [RDP](rdp.md)), which a future `RDP-` entry
 will state; TSA certificates follow TSA-003.
 
@@ -178,12 +178,12 @@ shortest, newest or strongest preference is promised.
 
 Only subject, public key and name constraints are taken from a configured
 root. Its expiry, self-signature, BasicConstraints, path length, KeyUsage and
-EKU are not checked as path policy, at the validation time or at a lifetime
+EKU are not checked as path rules, at the validation time or at a lifetime
 signing time, so a lifetime path through a root re-issued after the signing
 time is accepted.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #40 (SEC-06), and kept as policy for
+- **Decided by:** written choice, PR #40 (SEC-06), and kept as a decision for
   lifetime signing in the PR #43 review (SEC-14). CRL-015 applies the same
   rule to CRL signing
 - **Pins:** acceptance
@@ -208,3 +208,10 @@ whose name constraints accepted the path.
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: the report must name the anchor webpki actually used.
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing PATH entry but do not name it yet: every format's untrusted-root case, verification against an empty trust store (PATH-001) and RDP's key-usage case.
+- `certificate-signature`: a certificate whose signature does not verify under its correct issuer's key breaks the path (`certificate_chain_invalid`); this needs a new entry. It differs from PATH-002, where the issuer is a same-name certificate with the wrong key.

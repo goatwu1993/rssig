@@ -95,7 +95,7 @@ Left open by the refresh of unusable supplied CRLs (SEC-10, "Case reasons
 - A listing that a newer CRL cleared is not logged: only an accepted
   path's ignored listings reach the logger.
 - A CRL whose only defect is a missing nextUpdate is not offered to a
-  source (rank above replaceable), by policy: OpenSSL, BoringSSL and
+  source (rank above replaceable), by decision: OpenSSL, BoringSSL and
   Bouncy Castle would use it and not look again. So a stray such CRL for
   the issuer beside an expired one keeps `--fetch-crls` from asking,
   though a fetched CRL with nextUpdate would decide. Offering it would

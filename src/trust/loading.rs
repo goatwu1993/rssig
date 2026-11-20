@@ -9,7 +9,7 @@ use x509_cert::{Certificate, crl::CertificateList};
 impl TrustStore {
     /// Atomically load DER or a nonempty CERTIFICATE PEM bundle.
     /// Reject every undecodable/unsupported anchor; deduplicate exact DER bytes.
-    /// Anchor extraction does not authenticate certificates or validate root policy.
+    /// Anchor extraction does not authenticate certificates or check root certificate fields.
     pub fn add_roots(&mut self, bytes: &[u8]) -> Result<(), TrustLoadError> {
         let pending = decode_input(bytes, Kind::Roots)?;
         for bytes in pending {

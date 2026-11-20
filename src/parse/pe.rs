@@ -18,7 +18,7 @@ pub struct PeOffsets {
     pub after_header: usize,
 }
 
-/// A PE range or offset is out of bounds or violates the supported layout policy.
+/// A PE range or offset is out of bounds or violates the supported layout rules.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PeOffsetError;
 
@@ -35,7 +35,7 @@ impl core::error::Error for PeOffsetError {}
 /// Implement this for another PE reader to reuse [`super::authenticode_digest`].
 /// Implementations must report the actual header offsets and file ranges.
 /// [`super::authenticode_digest`] validates them against rssig's bounded layout
-/// policy before hashing; it does not reparse the PE encoding or authenticate it.
+/// rules before hashing; it does not reparse the PE encoding or authenticate it.
 pub trait PeTrait {
     /// Complete immutable PE byte slice.
     fn data(&self) -> &[u8];
@@ -99,7 +99,7 @@ impl<'a> Pe<'a> {
     /// digest does not authenticate it or establish certificate trust.
     ///
     /// Only the bounded, contiguous layouts accepted by [`Self::parse`] are
-    /// supported; this does not implement arbitrary Windows PE hashing policy.
+    /// supported; this does not implement arbitrary Windows PE hashing.
     pub fn authenticode_chunks(&self) -> [&'a [u8]; 3] {
         digest_chunks(self.data, self.checksum, self.directory, self.cert_start)
     }

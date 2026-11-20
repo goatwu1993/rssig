@@ -6,6 +6,10 @@ read-only implementation references. Use them to understand formats, hashing,
 nested signatures, timestamps, and verification behavior. Do not require either
 project at build or runtime.
 
+Terms such as policy, rule, decision and spec have one meaning each, defined
+in [docs/glossary.md](docs/glossary.md); use them consistently and add new
+terms there.
+
 ## Release status
 
 rssig is pre-release (0.x, unpublished). Its public interfaces and contracts
@@ -100,7 +104,9 @@ A case pins what the verifier does, not proof that it is right.
 1. **Every pinned result needs a reason:** a numbered decision entry (format
    and the index for each prefix, such as `CRL-`, `TIME-` and `PATH-`, in
    [docs/decisions.md](docs/decisions.md)) that the case names in
-   `"decision"`. "The code did this" is not a reason.
+   `"decision"`. "The code did this" is not a reason. Until it names one, a
+   case is claimed by an index and candidate rule in
+   `tests/decision-claims.json`.
 2. **Decided or observed:** a Decided entry changes only with the repository
    owner's approval, recorded in the PR; an Observed one may change when a
    better result is argued.
@@ -114,6 +120,17 @@ A case pins what the verifier does, not proof that it is right.
    is no reason to decline a fix.
 6. **Compare with a second implementation** for a disputed revocation, path
    or CRL result, as [docs/decisions.md](docs/decisions.md) describes.
+7. **Audit before adding:** before adding or changing an entry, check it
+   against every index ([which index](docs/decisions.md#which-index)): it must
+   not duplicate, contradict or overlap another entry, and it must sit in the
+   index that asks its question.
+8. **Reindex on a real conflict:** when an entry turns out to duplicate,
+   contradict or sit in the wrong index, record it as a task and fix it in a
+   reindex PR: merge or move the entry, renumber and reorder the affected
+   indexes, and rename its cases and fixtures, in one owner-approved PR that
+   says so and records the mapping in
+   [reindex history](docs/decisions.md#reindex-history). Doing it in the PR
+   that found it also needs the owner's approval.
 
 ## Native Rust tests and coverage
 

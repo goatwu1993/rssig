@@ -1,4 +1,4 @@
-//! Timestamp binding, TSA trust, and exact fractional-time policy.
+//! Timestamp binding, TSA trust, and exact fractional-time checks.
 use super::{VerifyOptions, budget::Budget};
 use crate::{
     cms::{self, SignedData},
@@ -40,7 +40,7 @@ pub(crate) fn verify_timestamp(
                 parsed.version_der == [2, 1, 1],
                 "unsupported TSTInfo version"
             );
-            // These fields need a separate identity/extension policy before support.
+            // These fields need separate identity/extension rules before support.
             for field in &parsed.optional_fields {
                 ensure!(field[0] != 0xa0, "TSTInfo tsa identity is unsupported");
                 ensure!(field[0] != 0xa1, "TSTInfo extensions are unsupported");
@@ -180,7 +180,7 @@ pub(crate) fn check_fractional_validity(
     if let (Some(trust), Some(fraction)) = (trust, fraction) {
         // webpki checks notBefore and notAfter at whole seconds. Also check the
         // nonzero fraction against leaf/intermediate expiry. Trust anchors are
-        // configured keys and retain webpki's validity policy.
+        // configured keys and retain webpki's validity checks.
         for cert in trust.chain.iter().take(trust.chain.len().saturating_sub(1)) {
             if cert.not_after <= seconds {
                 return Err(VerificationError::new(
