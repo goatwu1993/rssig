@@ -394,9 +394,14 @@ fn listed_points(
 }
 
 /// Verify with required revocation against the supplied CRLs; while the
-/// result is `revocation_unknown`, ask the source about exactly the
-/// certificates the verifier reports without a usable CRL, and verify again.
-/// A good result or any other failure is final. Whether a CRL applies is
+/// result names certificates without a usable CRL (`revocation_unknown`, a
+/// revocation naming another path's gap, or the failure of a CRL a source
+/// could replace: `crl_expired`, `crl_not_yet_valid`, `invalid_crl`), ask
+/// the source about exactly those certificates, and verify again. A good
+/// result or any other failure is final. When the source aborts before the
+/// named certificates were asked about, an unknown status becomes
+/// `crl_fetch_aborted` and the other results keep their code with
+/// `details.retrieval_aborted`. Whether a CRL applies is
 /// decided only by verification. See `docs/crl-retrieval.md`. The passes share
 /// one SEC-02 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
@@ -1043,11 +1048,13 @@ fn retrieve(
             ));
         }
         // The verifier decides first, with the supplied CRLs: a good result
-        // or any failure but unknown status is final, and an unknown status
-        // names the certificates that lacked a usable CRL. A revocation on
-        // one candidate path is final too, unless it names certificates of
-        // another path that could still verify with a CRL: then those are
-        // asked about, and the revocation stands if none is found.
+        // is final, and so is any failure that names no certificate to ask
+        // about. An unknown status names the certificates that lacked a
+        // usable CRL; a revocation on one candidate path may name those of
+        // another path that could still verify with a CRL; and the failure
+        // of a CRL a source could replace (expired, not yet valid, or
+        // another replaceable `invalid_crl`) names its certificates. Those
+        // are asked about, and the result stands if nothing usable is found.
         let mut result = verify_with(bytes, options, &state.store, format, budget);
         let mut asked = BTreeSet::new();
         let mut authenticated = false;

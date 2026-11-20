@@ -549,9 +549,11 @@ timestamps, and local CRL validation already exist.
     second time on every verification pass (each retrieval round included)
     to judge it apart from nextUpdate; that work is not charged to the
     decode budget. Cache the verdict per CRL or charge it.
-  - The cRLSign requirement for a revocation by a CRL without nextUpdate has
-    only code review behind it: no fixture has an intermediate without
-    cRLSign issuing such a CRL.
+  - The conditions for a CRL without nextUpdate (when it revokes, clears
+    an older listing or is set aside) are pinned by unit tests on
+    `evaluate_crls` in `src/trust.rs`, not all by spec cases: the cRLSign,
+    delta, removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point
+    variants have no committed fixture.
   - `unknown_status` names every outcome passed to it, and relies on its
     callers to exclude paths no source could complete (`completable_first`,
     or the key strip in the no-viable-path branch of

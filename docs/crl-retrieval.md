@@ -80,8 +80,13 @@ rule is restated for retrieval.
    certificate with a CRL that cannot be replaced is not offered: a bad
    signature (`crl-forged-local-asks-nothing`; OpenSSL and BoringSSL report
    it without another lookup), an unsupported signature algorithm, an issuer
-   without cRLSign, or one without nextUpdate
-   (`crl-no-next-update-local-asks-nothing`). A malformed CRL is replaceable,
+   without cRLSign, or one whose only defect is a missing nextUpdate
+   (`crl-no-next-update-local-asks-nothing`; the references would use such a
+   CRL and not look again). A CRL without nextUpdate that has another,
+   replaceable defect is offered for that defect, as it would be with
+   nextUpdate present
+   (`sec10-no-next-update-point-scope-crl-is-replaceable`,
+   `sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate`). A malformed CRL is replaceable,
    alone or beside an expired one: BoringSSL drops it when decoding and
    OpenSSL still consults its store
    (`crl-malformed-aki-local-refreshed-by-provider`,
@@ -118,12 +123,17 @@ rule is restated for retrieval.
    the verifier could not name) asks nothing.
 3. Verify again with what was added, and repeat steps 2 and 3 while a round
    adds a CRL and another certificate is still reported without one.
-4. If evidence is still missing, the result is the verifier's own
-   `revocation_unknown` or revocation. When the source aborted and that cut
-   retrieval short (a certificate still without a CRL was never asked
-   about, or was being asked about), an unknown status is
-   `crl_fetch_aborted` (the verifier's message under `revocation_unknown`),
-   and a revocation keeps its code with `retrieval_aborted: true`. An abort
+4. If evidence is still missing, the result is the verifier's own:
+   `revocation_unknown`, a revocation, or the failure of a CRL a source
+   could have replaced (`crl_expired`, `crl_not_yet_valid`, `invalid_crl`).
+   When the source aborted and that cut retrieval short (a certificate
+   still named was never asked about, or was being asked about), an unknown
+   status is `crl_fetch_aborted` (the verifier's message under
+   `revocation_unknown`), and a revocation or CRL failure keeps its code
+   with `retrieval_aborted: true`
+   (`crl-stale-local-source-abort-is-marked`,
+   `crl-not-yet-valid-local-source-abort-is-marked`,
+   `crl-unknown-critical-extension-local-source-abort-is-marked`). An abort
    that left nothing unasked changes nothing.
 
 Two kinds of error, and nothing in between:

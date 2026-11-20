@@ -35528,6 +35528,108 @@
       }
     },
     {
+      "id": "sec10-no-next-update-point-scope-crl-is-replaceable",
+      "input": "good-pe64.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "diagnostics",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.",
+          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches."
+        ]
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-idp-named-point-no-next-update.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl",
+                "stage": "revocation",
+                "details": {
+                  "reason": "distribution_point_scope",
+                  "certificates_with_replaceable_crl": [
+                    {
+                      "sha256": "c7c035de80f09cba3d044a9879f12fea45541bdd6d8957c47f59521b3f9051d8"
+                    },
+                    {}
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+      "input": "good-pe64.exe",
+      "decision": {
+        "basis": "decided",
+        "pins": "acceptance",
+        "reason": "docs/tasks/sec-10-crl-applicability.md#case-reasons-refresh-of-an-unusable-supplied-crl",
+        "references": [
+          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1576-1588 (get_crl_delta): a CRL without the scope score is not valid, so lookup_crls consults the store, which here answers by certificate.",
+          "BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl): a CRL scored below valid, here without the scope score, is followed by a store lookup by issuer name.",
+          "OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.",
+          "Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches."
+        ]
+      },
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "c7c035de80f09cba3d044a9879f12fea45541bdd6d8957c47f59521b3f9051d8": "good.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/sec10-root-idp-named-point-no-next-update.crl",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "sec10-fetch-unusable-scope-supplied-crl-refreshed",
       "input": "sec10-leaf-crl-dp.exe",
       "decision": {

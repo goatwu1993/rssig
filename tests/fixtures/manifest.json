@@ -218,7 +218,9 @@
         "sec10-crl-next-update-exact",
         "sec10-no-next-update-crl-revocation-alone-revokes",
         "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "sec10-no-next-update-point-scope-crl-is-replaceable",
+        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -286,7 +288,8 @@
         "crl-unknown-critical-extension-local-refreshed-by-provider",
         "crl-no-next-update-local-asks-nothing",
         "crl-malformed-aki-local-refreshed-by-provider",
-        "crl-malformed-aki-beside-expired-local-refreshed-by-provider"
+        "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
+        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -360,7 +363,9 @@
         "crl-malformed-aki-beside-expired-local-asks-provider",
         "sec10-no-next-update-crl-revocation-alone-revokes",
         "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "sec10-no-next-update-point-scope-crl-is-replaceable",
+        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -9610,7 +9615,7 @@
       "file": "sec10-root-no-next-update-revoked.crl",
       "sha256": "7d0d8b004e3388475d60f81b4b7e213a375f7ade83bf59378255fb5e305ef99b",
       "bytes": 191,
-      "description": "SEC-10: Correctly signed root CRL without nextUpdate, newer than good.crl (thisUpdate 50 seconds before the pinned time), revoking serial 2, the test signer. It claims no expiry, so as in OpenSSL, Bouncy Castle and BoringSSL its listing counts: beside good.crl the certificate is revoked; alone the CRL is unusable (missing_next_update). Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed root CRL without nextUpdate, newer than good.crl (thisUpdate 50 seconds before the pinned time), revoking serial 2, the test signer. It claims no expiry, so as in OpenSSL, Bouncy Castle and BoringSSL its listing counts: the certificate is revoked beside good.crl and alone (certificate_revoked), unless a newer complete CRL of the root leaves the signer out. On a timestamped file the timestamp authority, which it does not list, is checked first and is invalid_crl (missing_next_update). Deterministic public test keys.",
       "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
       "license": "Apache-2.0",
       "cases": [
@@ -9927,6 +9932,18 @@
       "cases": [
         "sec10-root-idp-named-point-crl-rejected",
         "sec10-root-idp-named-point-crl-rejected-beside-good-crl"
+      ]
+    },
+    {
+      "file": "sec10-root-idp-named-point-no-next-update.crl",
+      "sha256": "21a6bed1ee2b0e2a84816ba2cf7db84894fefdbacd47558c3086dfdacaa9cc4d",
+      "bytes": 215,
+      "description": "SEC-23: correctly signed root CRL scoped to the named distribution point http://crl.invalid/root.crl and without nextUpdate. For a certificate that lists no point the scope defect decides (invalid_crl, distribution_point_scope), as for the same CRL with nextUpdate, and a CRL source is asked; supporting revocation evidence, not an individual verification claim.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "sec10-no-next-update-point-scope-crl-is-replaceable",
+        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {

@@ -844,7 +844,8 @@ fetches from the certificate's distribution points.
 | malformed (extensions, authorityKeyIdentifier, CRL number, version, entry extensions) | BoringSSL drops it when decoding (`x_crl.cc:122-160`); OpenSSL flags it `EXFLAG_INVALID`, which verification never tests, and an invalid issuingDistributionPoint scores 0 (`x509_vfy.c:1292`): either way the store is still consulted | fetches | asked about: the three agree |
 | a point-scoped CRL for a certificate that lists none | no scope score, store lookup | fetches | asked about, by certificate and issuer |
 | the certificate's own points unreadable | no equivalent | fetches | not asked: the certificate is at fault |
-| no nextUpdate | usable | usable | not asked; a listing in it revokes (see "Case reasons (a CRL without nextUpdate that lists the certificate)") |
+| no nextUpdate, as the only defect | usable | usable | not asked; a listing in it revokes (see "Case reasons (a CRL without nextUpdate that lists the certificate)") |
+| no nextUpdate, with another defect from the rows above | that defect decides | that defect decides | that defect decides, as with nextUpdate present |
 
 A certificate whose only CRLs are unusable for one of the "asked about"
 reasons other than expiry is named in `details.certificates_with_replaceable_crl`
@@ -879,6 +880,20 @@ path is not one a source could complete.
   (`sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate`). A source
   that answers only by URL has nothing to fetch, so the `invalid_crl` stands
   (`sec10-fetch-no-listed-point-role-excluded-scope-rejected`).
+- **A missing nextUpdate blocks retrieval only as a CRL's sole defect.**
+  To OpenSSL, BoringSSL and Bouncy Castle a missing nextUpdate is no defect
+  (`x509_vfy.c:1112`, `x509_vfy.cc:414`, `PKIXCRLUtil`), so a CRL's other
+  defects decide exactly as they would with nextUpdate present: a point
+  scope on a certificate that lists none, a malformed
+  authorityKeyIdentifier, a feature webpki rejects (judged on a copy with a
+  stand-in nextUpdate) or a thisUpdate in the future is reported and is
+  replaceable. Only a CRL with no other defect is `invalid_crl`
+  (`missing_next_update`), rssig's stricter rule, and is not asked about:
+  the references would use it and not look again. Decided, diagnostics:
+  `sec10-no-next-update-point-scope-crl-is-replaceable`; Decided,
+  acceptance: `sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate`.
+  An earlier revision of this branch checked the missing nextUpdate first,
+  which made the same CRL replaceable with nextUpdate and stuck without it.
 - **Decided, acceptance:** a malformed CRL does not stop the search for
   another, alone or beside an expired one
   (`crl-malformed-aki-local-refreshed-by-provider`,
@@ -968,12 +983,17 @@ scope match cannot be read. The newest such CRL decides even if it lists
 the certificate too: a newer entry released by removeFromCRL leaves an
 older listing without effect, as OpenSSL reads only the newest
 best-scored CRL. A CRL without nextUpdate known to cover another scope is
-set aside only if it is otherwise complete and direct. The newest CRL that counts must
-also be one rssig would otherwise use (a well-formed authorityKeyIdentifier,
-an issuer with cRLSign, webpki's acceptance unless only nextUpdate is
-missing) and must cover the certificate, never a partition for a point the
-certificate does not list; if it lists the certificate too, the revocation
-stands.
+set aside only if webpki would admit it apart from the missing nextUpdate.
+The newest CRL that counts must also be one rssig would otherwise use (a
+well-formed authorityKeyIdentifier, and webpki's acceptance apart from a
+missing nextUpdate) and must cover the certificate, never a partition for
+a point the certificate does not list. Each of these conditions, and each
+condition for the revocation itself, has a unit test that fails without it
+(`a_crl_without_next_update_is_judged_by_its_other_defects`,
+`only_a_usable_covering_crl_clears_a_listing_without_next_update`,
+`a_crl_without_next_update_for_another_point_is_set_aside_if_admitted`,
+`a_crl_that_does_not_reencode_to_its_bytes_is_not_judged`), checked by
+removing each in turn.
 
 The detail was first named `certificates_with_unusable_crl`; it is
 `certificates_with_replaceable_crl`, as it names only certificates whose CRL
