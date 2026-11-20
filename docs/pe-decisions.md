@@ -24,5 +24,5 @@ Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of 
 
 - `hash`: the format's content hash must match what was signed.
 - `structure`: a malformed or unsupported container fails closed with the format's `invalid_*` code.
-- `support`: supported layouts and signers verify (trusted, independent producers, timestamps kept by the format).
+- `support`: supported PE32 and PE32+ layouts, page hashes and checksum exclusion verify; timestamp controls are TSA-007.
 - `unsigned`: a file without a signature is reported as `unsigned`.

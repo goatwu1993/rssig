@@ -25,4 +25,3 @@ Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of 
 
 - `loading`: malformed, truncated, unsupported or mismatched root and CRL files are configuration errors (exit 2), atomically.
 - `accepted-input`: PEM and DER bundles, duplicates and whitespace are accepted.
-- `empty-store`: an empty trust store is reported before path building.

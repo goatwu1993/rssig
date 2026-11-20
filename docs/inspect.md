@@ -24,5 +24,5 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
 - `views`: inspection reports structure and preserves unfamiliar DER without verifying it.
-- `malformed`: malformed input is reported with a typed error.
+- `malformed`: malformed or unsigned input, including a malformed nested token, is reported with a typed error.
 - `recursion`: inspection recurses into nested signatures, timestamps and countersignatures and reports each; how deep it may go is `LIMIT-` `budgets`.

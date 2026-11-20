@@ -25,5 +25,5 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
 - `unsupported`: an unsupported digest or signature algorithm is `unsupported_algorithm`.
-- `sha1`: SHA-1 digests are `weak_algorithm` unless `--allow-sha1` is given, in every format.
+- `sha1`: SHA-1 image, script, package and CMS content digests are `weak_algorithm` unless `--allow-sha1` is given. AppX package and block-map hashes and certificate and CRL signatures stay unsupported for SHA-1 even with it.
 - `key-size`: an RSA key below 2048 bits is `weak_algorithm`, even with `--allow-sha1`.

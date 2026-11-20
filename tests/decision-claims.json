@@ -164,6 +164,7 @@
     "CLI": {
       "arguments": [
         "cli-conflicting-policies",
+        "cli-missing-files-plain-error",
         "cli-retired-test-subcommand",
         "cli-unknown-subcommand",
         "missing-crl-policy",
@@ -181,10 +182,10 @@
       "help-version": [
         "cli-help",
         "cli-version",
+        "msp-help",
         "parse-help"
       ],
       "read-errors": [
-        "cli-missing-files-plain-error",
         "missing-input",
         "parse-missing-files"
       ]
@@ -192,6 +193,7 @@
     "CMS": {
       "attributes": [
         "bad-long-attribute-oid",
+        "bad-sec04-value-order",
         "good-long-attribute-oid"
       ],
       "certificate-choices": [
@@ -200,6 +202,12 @@
         "bad-rfc3161-certificate-choice-tag",
         "good-pe-certificate-choice",
         "good-rfc3161-certificate-choice"
+      ],
+      "content-binding": [
+        "bad-cms-content-type",
+        "bad-cms-digest-set",
+        "msi-bad-cms-content-type",
+        "msi-bad-cms-digest-set"
       ],
       "content-digest": [
         "bad-cms-content-digest",
@@ -260,14 +268,9 @@
       ],
       "structure": [
         "appx-cms-trailing",
-        "bad-cms-content-type",
-        "bad-cms-digest-set",
         "bad-sec04-signeddata-version",
         "bad-sec04-signer-version",
-        "bad-sec04-value-order",
         "cab-malformed-cms",
-        "msi-bad-cms-content-type",
-        "msi-bad-cms-digest-set",
         "msi-bad-cms-trailer",
         "msi-bad-empty-signer-set",
         "msi-bad-malformed-cms",
@@ -390,10 +393,10 @@
         "parse-pe-header-offset",
         "parse-pe-truncated",
         "parse-pe-unsigned",
+        "parse-recursive-bad-time",
         "parse-signer-bad-signature-tag"
       ],
       "recursion": [
-        "parse-recursive-bad-time",
         "parse-recursive-countersignature",
         "parse-recursive-nested",
         "parse-recursive-rfc3161"
@@ -441,24 +444,24 @@
       ],
       "extended": [
         "lib05-msi-empty-extended",
-        "lib05-msi-extended"
-      ],
-      "hash": [
+        "lib05-msi-extended",
         "msi-bad-empty-extended",
         "msi-bad-extended-digest",
         "msi-bad-extended-size",
-        "msi-bad-legacy-clsid",
-        "msi-bad-legacy-stream",
         "msi-bad-metadata-flags",
         "msi-bad-metadata-name",
         "msi-bad-metadata-time",
         "msi-bad-storage-clsid",
-        "msi-bad-stream-content",
         "msi-bad-stream-size",
+        "msp-metadata-tampered"
+      ],
+      "hash": [
+        "msi-bad-legacy-clsid",
+        "msi-bad-legacy-stream",
+        "msi-bad-stream-content",
         "msp-cab-tampered",
         "msp-clsid-tampered",
         "msp-independent-jsign-tampered",
-        "msp-metadata-tampered",
         "msp-transform-tampered"
       ],
       "sip": [
@@ -491,7 +494,6 @@
         "msi-good-v4",
         "msi-independent-jsign",
         "msi-pe64",
-        "msp-help",
         "msp-independent-jsign",
         "msp-legacy",
         "msp-trusted",
@@ -545,6 +547,7 @@
         "psxml-untrusted",
         "rdp-key-usage",
         "rdp-untrusted",
+        "sec07-empty-store",
         "unknown-root",
         "wsh-untrusted"
       ],
@@ -794,9 +797,6 @@
         "sec07-duplicates",
         "sec07-good",
         "sec07-whitespace"
-      ],
-      "empty-store": [
-        "sec07-empty-store"
       ],
       "loading": [
         "cli-malformed-crl",

@@ -22,8 +22,8 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
-- `extended`: the MSI extended (metadata) hash.
-- `hash`: the format's content hash must match what was signed.
+- `extended`: the extended hash over storage and stream metadata (names, sizes, times, flags, CLSIDs) must match (`extended_digest_mismatch`).
+- `hash`: the package hash over streams and storages must match what was signed (`package_digest_mismatch`).
 - `structure`: a malformed or unsupported container fails closed with the format's `invalid_*` code.
 - `support`: supported layouts and signers verify, including signatures from independent producers (jsign, nfedera); timestamp controls are TSA-007.
 - `unsigned`: a file without a signature is reported as `unsigned`.

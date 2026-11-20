@@ -145,4 +145,4 @@ identifiers; no policy allowlist is applied.
 
 Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
 
-- `attach`: cases that pin an existing TSA entry but do not name it yet: the legacy countersignature controls.
+- `attach`: cases that pin an existing TSA entry but do not name it yet: every format's RFC 3161 and countersignature success controls, including the legacy countersignature (TSA-007).

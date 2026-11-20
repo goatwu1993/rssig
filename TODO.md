@@ -178,7 +178,7 @@ TDD workflow and checks in AGENTS.md.
   duplicated-attribute-OID clause and its two `invalid_signature` cases
   (`tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) here.
 - [ ] **TEST-16: Number the `TRUST-` index.** Fill [docs/trust.md](docs/trust.md);
-  rename the `sec07-*` cases.
+  rename the `sec07-*` cases it claims (the others belong to TEST-17 and TEST-28).
 - [ ] **TEST-17: Number the `LIMIT-` index.** Fill [docs/limit.md](docs/limit.md);
   rename the `sec02-*` and `sec03-*` cases.
 - [ ] **TEST-18: Number the format indexes, one PR per format.** `PE-`, `MSI-`,
