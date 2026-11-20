@@ -2575,8 +2575,9 @@
       }
     },
     {
-      "id": "msi-intermediate-without-eku",
+      "id": "path-007-msi-intermediate-without-eku",
       "input": "msi-good-intermediate.msi",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -2594,8 +2595,9 @@
       }
     },
     {
-      "id": "msi-ca-key-usage",
+      "id": "path-008-msi-ca-key-usage",
       "input": "msi-bad-ca-key-usage.msi",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -3201,8 +3203,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-eku",
+      "id": "path-007-msi-bad-signer-eku",
       "input": "msi-bad-signer-eku.msi",
+      "decision": "PATH-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -3240,8 +3243,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-key-usage",
+      "id": "path-008-msi-bad-signer-key-usage",
       "input": "msi-bad-signer-key-usage.msi",
+      "decision": "PATH-008",
       "command": [
         "verify",
         "--no-system-roots",

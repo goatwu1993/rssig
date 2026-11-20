@@ -551,7 +551,7 @@
         "msi::ca_key_usage"
       ],
       "cases": [
-        "msi-ca-key-usage"
+        "path-008-msi-ca-key-usage"
       ]
     },
     {
@@ -1014,7 +1014,7 @@
         "msi::bad_signer_eku"
       ],
       "cases": [
-        "msi-bad-signer-eku"
+        "path-007-msi-bad-signer-eku"
       ]
     },
     {
@@ -1042,7 +1042,7 @@
         "msi::bad_signer_key_usage"
       ],
       "cases": [
-        "msi-bad-signer-key-usage"
+        "path-008-msi-bad-signer-key-usage"
       ]
     },
     {
@@ -1282,7 +1282,7 @@
       ],
       "cases": [
         "msi-intermediate-current-crls",
-        "msi-intermediate-without-eku"
+        "path-007-msi-intermediate-without-eku"
       ]
     },
     {

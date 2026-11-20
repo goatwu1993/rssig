@@ -857,7 +857,7 @@
         "crl-030-fetch-path-failing-key-usage-asks-nothing",
         "path-008-ca-key-usage",
         "path-008-bad-signer-key-usage",
-        "msi-ca-key-usage",
+        "path-008-msi-ca-key-usage",
         "path-008-bad-ca-ku",
         "crl-ca-no-crl-sign"
       ],

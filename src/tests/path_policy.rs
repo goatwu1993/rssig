@@ -930,7 +930,11 @@ fn path_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
         let form = point_forms()
             .iter()
             .any(|(label, ..)| filename == format!("crl-leaf-crl-dp-{label}.exe"));
-        let on_path_chain = filename.contains("-path-") || sec10.contains(&filename) || form;
+        let on_path_chain = ["good-path-", "bad-path-", "crl-path-"]
+            .iter()
+            .any(|prefix| filename.starts_with(prefix))
+            || sec10.contains(&filename)
+            || form;
         if !on_path_chain || !filename.ends_with(".exe") {
             continue;
         }
