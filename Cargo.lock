@@ -891,6 +891,7 @@ dependencies = [
  "rand",
  "roxmltree",
  "rsa",
+ "rssig",
  "rustls-native-certs",
  "rustls-pki-types",
  "rustls-webpki",

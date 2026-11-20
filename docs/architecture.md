@@ -23,7 +23,7 @@ modules are organized around the work they own, rather than a new crate hierarch
 | `verify/appx.rs` | Embedded bundle package verification and package identity/signer binding. |
 | `verify/timestamp.rs` | RFC 3161/PKCS#9 binding, TSA validation, canonical time decoding, and fractional expiry checks. Shared with RDP verification. |
 | `cms` / `crypto` | Authenticode/CMS interpretation and signature verification using RustCrypto primitives. |
-| `trust` | Configured trust anchors, native-root enumeration, webpki path/CRL validation; `trust/error.rs` maps adapter errors. |
+| `trust` | Configured trust anchors, native-root enumeration, webpki path building, rssig's per-certificate CRL evaluation (the only revocation check); `trust/error.rs` maps adapter errors. |
 | `domain` | Public Serde result/error declarations and stable diagnostics. |
 | `report` | Conversion from decoded certificate/CRL metadata to domain reports, preserving unfamiliar values. |
 

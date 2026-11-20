@@ -2853,7 +2853,7 @@ mod tests {
     #[test]
     fn a_confirmation_disagreement_is_final_for_retrieval() {
         let unknown = || error(ErrorCode::RevocationUnknown, "unknown");
-        // webpki rejected the path every certificate of which had a CRL.
+        // The verifier rejected a path every certificate of which had a CRL.
         assert!(matches!(
             uncovered(&unknown().detail("reason", "confirmation")),
             Uncovered::Final
