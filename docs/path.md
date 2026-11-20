@@ -214,4 +214,4 @@ whose name constraints accepted the path.
 Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
 
 - `attach`: cases that pin an existing PATH entry but do not name it yet: every format's untrusted-root case and RDP's key-usage case.
-- `certificate-signature`: a certificate whose issuer's signature does not verify breaks the path (`certificate_chain_invalid`); this needs a new entry.
+- `certificate-signature`: a certificate whose signature does not verify under its correct issuer's key breaks the path (`certificate_chain_invalid`); this needs a new entry. It differs from PATH-002, where the issuer is a same-name certificate with the wrong key.

@@ -23,6 +23,6 @@ When numbered, entries follow the tiers of [CRL decisions](crl.md#order): fail-o
 
 Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of these keys; numbering them is the task for this index in `TODO.md`.
 
-- `budgets`: per-file budgets bound entries, width and nesting depth; exceeding one is `resource_limit_exceeded` or a fail-closed parse error.
+- `budgets`: per-file budgets bound entries, width and nesting depth (eight, for verification and `parse` alike); exceeding one is `resource_limit_exceeded` or a fail-closed parse error.
 - `host-input`: input, report and batch sizes are bounded by the host.
 - `crl-count`: the number of supplied and fetched CRLs is bounded.

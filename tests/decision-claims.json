@@ -376,9 +376,7 @@
         "parse-recursive-rfc3161",
         "parse-recursive-countersignature",
         "parse-recursive-nested",
-        "parse-recursive-bad-time",
-        "parse-recursive-depth8",
-        "parse-recursive-depth9"
+        "parse-recursive-bad-time"
       ],
       "views": [
         "parse-pe",
@@ -400,7 +398,9 @@
         "sec02-wide-65",
         "sec02-entries-65",
         "sec02-depth-8",
-        "sec02-depth-9-malformed"
+        "sec02-depth-9-malformed",
+        "parse-recursive-depth8",
+        "parse-recursive-depth9"
       ],
       "crl-count": [
         "sec07-fetch-64-crls",

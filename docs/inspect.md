@@ -9,6 +9,7 @@ Inspection output: views of PE and CMS structures, preserved DER for unfamiliar 
 ## Boundaries
 
 - Verification results are other indexes; inspection never claims trust.
+- The nesting depth limit is `LIMIT-`, shared with verification.
 
 ## Sources
 
@@ -24,4 +25,4 @@ Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of 
 
 - `views`: inspection reports structure and preserves unfamiliar DER without verifying it.
 - `malformed`: malformed input is reported with a typed error.
-- `recursion`: recursion into nested signatures and timestamps is bounded at depth 8.
+- `recursion`: inspection recurses into nested signatures, timestamps and countersignatures and reports each; how deep it may go is `LIMIT-` `budgets`.

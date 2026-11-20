@@ -121,10 +121,12 @@ A case pins what the verifier does, not proof that it is right.
    not duplicate, contradict or overlap another entry, and it must sit in the
    index that asks its question.
 8. **Reindex on a real conflict:** when an entry turns out to duplicate,
-   contradict or sit in the wrong index, fix it at once: merge or move it,
-   renumber and reorder the affected indexes, and rename its cases and
-   fixtures, all in one owner-approved PR that says so and records the
-   mapping in [reindex history](docs/decisions.md#reindex-history).
+   contradict or sit in the wrong index, record it as a task and fix it in a
+   reindex PR: merge or move the entry, renumber and reorder the affected
+   indexes, and rename its cases and fixtures, in one owner-approved PR that
+   says so and records the mapping in
+   [reindex history](docs/decisions.md#reindex-history). Doing it in the PR
+   that found it also needs the owner's approval.
 
 ## Native Rust tests and coverage
 

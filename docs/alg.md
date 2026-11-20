@@ -9,6 +9,7 @@ Digest and signature algorithms, SHA-1 and its explicit opt-in, key types and si
 ## Boundaries
 
 - Where an algorithm sits in CMS is `CMS-`; whether a certificate path is valid is `PATH-`.
+- Which algorithms are supported is decided here; what an unusable CRL signature means for revocation is CRL-003.
 
 ## Sources
 
