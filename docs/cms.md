@@ -208,9 +208,9 @@ attributes on one signer, which are rejected here before the timestamp
 multiplicity rule (TSA-004) is reached.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (SEC-04) for signed attributes,
-  extended to unsigned timestamp attributes in PR #42 (SEC-08); moved from
-  TSA-004 in PR #72 (owner approval requested there)
+- **Decided by:** owner, PR #72 (moved from TSA-004); first a written
+  choice in PR #37 (SEC-04) for signed attributes, extended to unsigned
+  timestamp attributes in PR #42 (SEC-08)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 11.1 to 11.3: contentType, messageDigest and
