@@ -45,7 +45,7 @@ TDD workflow and checks in AGENTS.md.
     path. Store-wide CRL freshness errors are still reported first, by the TSA
     check. A rejected issuer issued after signing ranks as a webpki validity
     error, so it can hide a revoked or wrongly signed issuer on another
-    candidate path (pinned by `crl-032-lifetime-rollover-revoked-issuer`); the
+    candidate path (pinned by `time-012-lifetime-rollover-revoked-issuer`); the
     signature is still rejected. Equal-rank failures report the first
     encountered.
   - CRL/revocation: revocation is evaluated only at the validation time, and a
@@ -172,10 +172,16 @@ TDD workflow and checks in AGENTS.md.
 
 - [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
 - [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
-- [ ] **TEST-14: Index timestamp decisions as `TSA-NNN`.** From
-  `docs/timestamp-policy.md` (SEC-08); rename the `sec08-*` cases.
+- [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
 - [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`
   (SEC-04, SEC-05): signed-attribute binding and signer selection.
+  Include `bad-rfc3161-certificate-choice-der`,
+  `bad-rfc3161-certificate-choice-tag` and
+  `bad-rfc3161-certificate-choice-no-signer`, which pin CertificateChoices
+  parsing inside a timestamp token.
+  Move TSA-004's duplicated-attribute-OID clause and its two
+  `invalid_signature` cases (`tsa-004-duplicate-rfc`,
+  `tsa-004-duplicate-counter`) to `CMS-`.
 - [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
   `docs/trust-loading.md` (SEC-07); rename the `sec07-*` cases.
 - [ ] **TEST-17: Index limit decisions as `LIMIT-NNN`.** From
@@ -186,9 +192,21 @@ TDD workflow and checks in AGENTS.md.
   choice checked against jsign, osslsigncode or Windows behavior; one PR per
   format.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
-  `docs/crl-retrieval.md` restates rules now in `CRL-029` to `CRL-048`.
+  `docs/crl-retrieval.md` restates rules now in `CRL-028` to `CRL-045`.
 - [ ] **TEST-20: Rename task-named library cases.** `lib04-*` to `lib07-*` are
   API and feature checks; rename them by subject without decision entries.
+- [ ] **TEST-21: Attach pre-SEC-09 time cases to `TIME-` entries.**
+  `future-timestamp`, `rfc3161`, `expired-with-rfc3161`,
+  `expired-without-timestamp`, `rfc3161-fractional`,
+  `rfc3161-fractional-future`, `rfc3161-fractional-expired` and their MSI
+  copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
+  decision. Found while doing TEST-14.
+- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
+- [ ] **TEST-23: Scaffold the remaining decision indexes.** Before TEST-15 to
+  TEST-18, add a skeleton per future index (`CMS-`, `TRUST-`, `LIMIT-` and the
+  format prefixes): its question, scope, boundaries with neighboring indexes
+  and an unnumbered list of candidate rules with their cases, so that every
+  unindexed case is claimed by exactly one index before any is numbered.
 
 ## P1 — CLI, reporting, and distribution
 

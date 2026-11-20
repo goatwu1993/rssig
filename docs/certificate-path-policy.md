@@ -10,7 +10,7 @@ The numbered decisions behind this page, with their status and sources, are
 
 ## Existing coverage and added evidence
 
-Before SEC-06, `path-007-bad-signer-eku`, `path-008-bad-signer-key-usage`, `wrong-tsa-eku`,
+Before SEC-06, `path-007-bad-signer-eku`, `path-008-bad-signer-key-usage`, `tsa-003-wrong-tsa-eku`,
 `path-007-intermediate-without-eku` and `path-008-ca-key-usage` covered wrong leaf EKU/KeyUsage,
 TSA EKU, unrestricted intermediate EKU and missing intermediate keyCertSign.
 `intermediate-current-crls`, certificate validity and certificate-signature cases

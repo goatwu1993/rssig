@@ -715,7 +715,7 @@ fn path_error(
     // is the one a CRL could complete: it outranks every other path's error,
     // including a CA issued after the lifetime signing time. A definite
     // revocation does not: a higher-ranked error on another path still
-    // decides, as pinned by `crl-032-lifetime-rollover-revoked-issuer` (SEC-14).
+    // decides, as pinned by `time-012-lifetime-rollover-revoked-issuer` (SEC-14).
     let revocation_rejected = matches!(
         e,
         webpki::Error::CertRevoked | webpki::Error::UnknownRevocationStatus

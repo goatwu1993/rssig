@@ -4,7 +4,7 @@ The verifier never reads the clock. `VerifyOptions.now` (the CLI's `--time`, or
 the host clock when `--time` is omitted) is the single whole-second validation
 time for one verification. Each kind of certificate or artifact is checked at a
 documented time. The numbered decisions behind this page, with their status
-and sources, are [Time decisions](time.md) (`TIME-001` to `TIME-014`).
+and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-014`).
 
 | Subject | Time used | Notes |
 | --- | --- | --- |
