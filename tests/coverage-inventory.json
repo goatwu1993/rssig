@@ -124,8 +124,8 @@
         "rdp-rsa",
         "pe64",
         "bad-signature-digest-algorithm",
-        "bad-signature-key-algorithm",
-        "bad-signer-public-key"
+        "cms-002-bad-signature-key-algorithm",
+        "cms-001-bad-signer-public-key"
       ]
     },
     {
@@ -133,39 +133,39 @@
       "claim": "CMS content digest/type and digest-set membership",
       "cases": [
         "pe64",
-        "bad-cms-content-digest",
-        "bad-cms-content-type",
-        "bad-cms-digest-set"
+        "cms-005-bad-cms-content-digest",
+        "cms-006-bad-cms-content-type",
+        "cms-007-bad-cms-digest-set"
       ]
     },
     {
       "id": "cms-structure",
       "claim": "CMS versions, signed SET ordering and parameters",
       "cases": [
-        "good-sec04-cms",
-        "bad-sec04-value-order",
-        "bad-sec04-signer-version",
-        "bad-sec04-ecdsa-parameters"
+        "cms-014-good-structure",
+        "cms-008-bad-value-order",
+        "cms-010-bad-signer-version",
+        "cms-002-bad-ecdsa-parameters"
       ]
     },
     {
       "id": "signer-selection",
       "claim": "Duplicate, conflicting and missing signer certificates",
       "cases": [
-        "good-sec05-duplicate",
-        "good-sec05-reordered",
-        "bad-sec05-key-first",
-        "bad-sec05-key-last",
-        "bad-sec05-policy-first",
-        "bad-sec05-missing"
+        "cms-004-good-signer-duplicate",
+        "cms-004-good-signer-reordered",
+        "cms-004-bad-signer-key-first",
+        "cms-004-bad-signer-key-last",
+        "cms-004-bad-signer-policy-first",
+        "cms-003-bad-signer-missing"
       ]
     },
     {
       "id": "nested",
       "claim": "Nested signatures independently verified",
       "cases": [
-        "nested-signatures",
-        "bad-nested-signature"
+        "cms-013-nested-signatures",
+        "cms-013-bad-nested-signature"
       ]
     },
     {
@@ -285,8 +285,8 @@
         "tsa-005-accuracy-unknown",
         "tsa-006-tsa",
         "tsa-006-extensions",
-        "tsa-004-duplicate-rfc",
-        "tsa-004-duplicate-counter",
+        "cms-009-duplicate-rfc",
+        "cms-009-duplicate-counter",
         "tsa-004-mixed",
         "tsa-004-mixed-reverse",
         "tsa-004-aliases",
@@ -726,8 +726,8 @@
     "malformed_cms": {
       "cases": [
         "msi-bad-empty-signature",
-        "msi-bad-malformed-cms",
-        "msi-bad-cms-trailer"
+        "cms-010-msi-bad-malformed-cms",
+        "cms-010-msi-bad-cms-trailer"
       ],
       "gap": ""
     },
@@ -771,25 +771,25 @@
     },
     "invalid_signature": {
       "cases": [
-        "bad-cms",
-        "bad-cms-content-type",
-        "bad-signer-issuer"
+        "cms-001-bad-cms",
+        "cms-006-bad-cms-content-type",
+        "cms-003-bad-signer-issuer"
       ],
       "gap": ""
     },
     "ambiguous_signer_certificate": {
       "cases": [
-        "bad-sec05-key-first",
-        "bad-sec05-key-last",
-        "bad-sec05-policy-first"
+        "cms-004-bad-signer-key-first",
+        "cms-004-bad-signer-key-last",
+        "cms-004-bad-signer-policy-first"
       ],
       "gap": ""
     },
     "content_digest_mismatch": {
       "cases": [
-        "bad-cms-content-digest",
+        "cms-005-bad-cms-content-digest",
         "tsa-001-bad-countersignature-digest",
-        "msi-bad-cms-content-digest"
+        "cms-005-msi-bad-cms-content-digest"
       ],
       "gap": ""
     },

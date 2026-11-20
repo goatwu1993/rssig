@@ -2,19 +2,21 @@
 
 The verifier supports legacy Authenticode PKCS#7 envelopes, attached RFC 3161
 CMS tokens, and detached RDP id-data. Parsing metadata does not establish trust;
-verification applies the following profile before accepting a signature.
+verification applies the following profile before accepting a signature. The
+rules themselves, with their status and sources, are the numbered
+[CMS decisions](cms.md); this page explains the profile and its limits.
 
-| Boundary | Enforced rule and coverage |
-| --- | --- |
-| SignedData version | Attached envelopes accept legacy version 1, or CMS version 3 (ordinary attached non-data content), 4 (v2 attribute certificate), or 5 (other certificate/revocation choice), as indicated by the envelope. Detached RDP requires version 1. SEC-04 rejects version 9 with otherwise valid content and signature. |
-| SignerInfo version and identity | Verification supports issuer-and-serial version 1 only, including countersignatures. SKI identities remain inspectable but unsupported for verification. Versions and serials use canonical nonnegative INTEGER encodings; exact issuer/serial matching remains required. |
-| Signed attribute sets | Attribute encodings and each value SET must be lexicographically ordered. Duplicate attribute OIDs and empty value SETs are rejected. Unknown attributes retain their original opaque values. SEC-04 includes a correctly signed out-of-order value SET and its valid counterpart. |
-| Signed bytes | Only the implicit signed-attributes tag is replaced with the SET tag for signature verification. Original lengths and bodies are retained. No sorting or re-encoding repairs malformed signed data. A focused test verifies the mathematics of every new fixture independently of the verification checks. |
-| Digest algorithms | Every attached/detached signer digest must appear in SignedData.digestAlgorithms. Countersignatures have no enclosing digest-set requirement. Unsupported digest algorithms or parameters fail; absent and NULL digest parameters remain supported. Existing PE/MSI digest-set fixtures cover the membership check. |
-| Signature parameters | Supported RSA identifiers accept absent or NULL parameters. Supported ECDSA SHA-256/SHA-384 identifiers require absent parameters. Crypto dispatch checks key type, digest/OID agreement, key size and signature mathematics. SEC-04 adds a mathematically valid ECDSA signature with forbidden NULL parameters. |
-| Content binding | Exactly one signed messageDigest is required and compared to the computed content digest. Signed contentType must match the enclosing type; countersignatures must omit it. Existing PE/MSI content-type and content-digest fixtures isolate these failures. |
-| Direct signatures | Only the detached RDP entry point permits omission of signed attributes. Authenticode and countersignatures require attributes. Existing RDP-to-PE rejection fixtures and a focused countersigner test cover this separation. |
-| DER framing | Bounded definite minimal lengths, complete consumption and supported tags are required. Known INTEGER fields are canonical. Unknown attribute payloads are opaque; the engine does not claim recursive validation of every unfamiliar ASN.1 schema. |
+| Boundary | Decision | Profile notes |
+| --- | --- | --- |
+| SignedData version | [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions), [CMS-014](cms.md#cms-014-legacy-version-1-signeddata-and-signerinfo-verify) | Version 3 is ordinary attached non-data content, 4 a v2 attribute certificate, 5 another certificate or revocation choice, as the envelope indicates. Detached RDP requires version 1. |
+| SignerInfo version and identity | [CMS-003](cms.md#cms-003-the-signer-certificate-is-matched-by-exact-issuer-and-serial), [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions) | Includes countersignatures. Versions and serials use canonical nonnegative INTEGER encodings. |
+| Signed attribute sets | [CMS-008](cms.md#cms-008-signed-attributes-are-verified-exactly-as-encoded-in-canonical-order), [CMS-009](cms.md#cms-009-an-attribute-oid-appears-at-most-once-in-a-signerinfo), [CMS-011](cms.md#cms-011-unknown-attributes-stay-opaque-and-their-oids-must-be-minimally-encoded) | A correctly signed out-of-order value SET is paired with its valid counterpart. |
+| Signed bytes | [CMS-001](cms.md#cms-001-the-signers-signature-must-verify-with-the-signer-certificates-key), [CMS-008](cms.md#cms-008-signed-attributes-are-verified-exactly-as-encoded-in-canonical-order) | Only the implicit signed-attributes tag is replaced with the SET tag. Original lengths and bodies are retained; nothing is sorted or re-encoded. A focused test verifies the mathematics of every structure fixture independently of the verification checks. |
+| Digest algorithms | [CMS-007](cms.md#cms-007-the-signers-digest-algorithm-must-be-listed-in-digestalgorithms) | Unsupported digest algorithms or parameters are `ALG-`; absent and NULL digest parameters remain supported. |
+| Signature parameters | [CMS-002](cms.md#cms-002-the-signature-algorithm-must-agree-with-the-signer-key-and-take-no-forbidden-parameters) | Crypto dispatch checks key type, digest/OID agreement, key size and signature mathematics. |
+| Content binding | [CMS-005](cms.md#cms-005-the-messagedigest-attribute-must-match-the-content), [CMS-006](cms.md#cms-006-the-signed-contenttype-must-match-the-encapsulated-content) | |
+| Direct signatures | — | Only the detached RDP entry point permits omission of signed attributes. Authenticode and countersignatures require attributes. RDP-to-PE rejection fixtures and a focused countersigner test cover this separation; it belongs to a future `RDP-` entry. |
+| DER framing | [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions), [CMS-011](cms.md#cms-011-unknown-attributes-stay-opaque-and-their-oids-must-be-minimally-encoded), [CMS-012](cms.md#cms-012-non-x509-certificatechoices-stay-opaque-and-cannot-supply-a-signer) | Unknown attribute payloads are opaque; the engine does not claim recursive validation of every unfamiliar ASN.1 schema. |
 
 Legacy version 1 is deliberately retained for the committed Authenticode and
 historical timestamp/opaque-certificate-choice corpus. This is a compatibility
@@ -37,31 +39,33 @@ and declarative CLI cases are recorded in the fixture manifest and
 
 ## Signer certificate selection (SEC-05)
 
-All verification paths match the SignerInfo issuer and serial against the
-embedded X.509 candidates. Exact matching remains based on canonical DER issuer
-and serial encodings. No match retains the existing missing-signer failure.
-Identical decoded certificates are accepted as duplicates; all fields participate
-in equality, including the certificate signature. Distinct matching certificates
-are rejected before signature verification or trust-path selection, even when
-they contain the same public key. The engine never searches for whichever match
-happens to verify or be trusted.
+The rules are
+[CMS-003](cms.md#cms-003-the-signer-certificate-is-matched-by-exact-issuer-and-serial)
+(exact issuer and serial; no match fails),
+[CMS-004](cms.md#cms-004-distinct-certificates-matching-the-signer-identifier-are-rejected)
+(distinct matches are rejected, duplicates and order do not matter) and
+[CMS-015](cms.md#cms-015-an-ambiguous-signer-reports-the-number-of-matching-certificates)
+(the reported match count).
 
-The stable `ambiguous_signer_certificate` error uses stage `cms` and includes
-`details.matching_certificates`, the number of matching entries including exact
-duplicates. Selection scans the complete bounded candidate list and retains one
-borrowed candidate plus a count; it allocates no candidate search tree. Existing
-certificate and decoded-byte budgets continue to charge duplicate entries.
-Certificate order cannot change acceptance or select a different signer.
+Identical decoded certificates are duplicates; all fields participate in
+equality, including the certificate signature. Selection scans the complete
+bounded candidate list and retains one borrowed candidate plus a count; it
+allocates no candidate search tree. Existing certificate and decoded-byte
+budgets continue to charge duplicate entries. The engine never searches for
+whichever match happens to verify or be trusted.
 
 This applies to Authenticode, RFC 3161 (including candidates inherited from the
 parent envelope), PKCS#9 countersignatures and RDP direct/attributed signatures.
 Success still requires the configured trust store and selected revocation policy.
 Embedded roots and duplicate signers do not establish trust. Candidate ambiguity
-is rejected in integrity-only mode too. The rule intentionally fails closed for
-reissued certificates sharing issuer/serial even when one candidate is trusted.
+is rejected in integrity-only mode too.
 
-Seven committed SEC-05 PE fixtures cover duplicate/reordered success, both orders
-of different-key and same-key conflicts, and a missing signer. Their CMS signature
-and image content are unchanged; conflicting test certificates are signed by the
-test root. Focused tests exercise the shared timestamp/countersignature/detached
-paths and prove embedded duplicates cannot supply a missing trust anchor.
+Seven committed PE fixtures (`good-cms-signer-duplicate.exe`,
+`good-cms-signer-reordered.exe`, `bad-cms-signer-key-first.exe`,
+`bad-cms-signer-key-last.exe`, `bad-cms-signer-policy-first.exe`,
+`bad-cms-signer-policy-last.exe` and `bad-cms-signer-missing.exe`) cover
+duplicate/reordered success, both orders of different-key and same-key
+conflicts, and a missing signer. Their CMS signature and image content are
+unchanged; conflicting test certificates are signed by the test root. Focused
+tests exercise the shared timestamp/countersignature/detached paths and prove
+embedded duplicates cannot supply a missing trust anchor.

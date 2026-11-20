@@ -83,9 +83,9 @@ omits it explicitly.
 
 Multiple attribute values, an RFC 3161 token beside a countersignature in
 either order, and the two RFC 3161 attribute aliases together are
-`invalid_timestamp`. A duplicated attribute OID is rejected earlier by CMS
-attribute validation (`invalid_signature` at `cms`). There is no selection
-rule.
+`invalid_timestamp`. There is no selection rule. A duplicated timestamp or
+countersignature attribute OID is rejected earlier, as a CMS attribute rule
+([CMS-009](cms.md#cms-009-an-attribute-oid-appears-at-most-once-in-a-signerinfo)).
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #42 (SEC-08): failing closed instead of

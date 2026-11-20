@@ -173,10 +173,7 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
 - [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
 - [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
-- [ ] **TEST-15: Number the `CMS-` index.** Fill [docs/cms.md](docs/cms.md)
-  from its candidate rules and claimed cases. Move TSA-004's
-  duplicated-attribute-OID clause and its two `invalid_signature` cases
-  (`tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) here.
+- [x] **TEST-15: Index CMS decisions as `CMS-NNN`.** Done ([PR #72](https://github.com/goatwu1993/rssig/pull/72)); [CMS decisions](docs/cms.md).
 - [ ] **TEST-16: Number the `TRUST-` index.** Fill [docs/trust.md](docs/trust.md);
   rename the `sec07-*` cases it claims (the others belong to TEST-17 and TEST-28).
 - [ ] **TEST-17: Number the `LIMIT-` index.** Fill [docs/limit.md](docs/limit.md);

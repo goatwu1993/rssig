@@ -13,7 +13,7 @@ section; a skeleton index has only the latter.
 | `TIME-` | [time.md](time.md) | Validation time: at which instant certificates are checked |
 | `PATH-` | [path.md](path.md) | Certificate-path rules: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
 | `TSA-` | [tsa.md](tsa.md) | Timestamp tokens: whether an RFC 3161 token or countersignature can be trusted at all |
-| `CMS-` | [cms.md](cms.md) (skeleton) | CMS SignedData structure, signer identification and signature, nested signatures |
+| `CMS-` | [cms.md](cms.md) | CMS SignedData structure, signer identification and signature, nested signatures |
 | `ALG-` | [alg.md](alg.md) (skeleton) | Algorithm acceptance, SHA-1 opt-in |
 | `TRUST-` | [trust.md](trust.md) (skeleton) | Loading roots and CRLs |
 | `LIMIT-` | [limit.md](limit.md) (skeleton) | Verification budgets, nesting depth, host input limits |
@@ -150,6 +150,7 @@ with this table; an ID not listed kept its number.
 | PR #70 | CRL-045 to CRL-048 | CRL-042 to CRL-045 (each three lower) |
 | PR #70 | TIME-010 | merged into PATH-011 |
 | PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
+| PR #72 | TSA-004, duplicated attribute OID clause (cases `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) | CMS-009 (cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter`); TSA-004 keeps its number |
 
 ## Task documents
 

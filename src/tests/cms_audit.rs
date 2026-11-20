@@ -3,11 +3,11 @@ use super::*;
 pub(super) fn write(dir: &std::path::Path) {
     let id = identity();
     for (name, sd_version, si_version, values, null_signature) in [
-        ("good-sec04-cms.exe", 1, 1, vec![1, 2], false),
-        ("bad-sec04-signeddata-version.exe", 9, 1, vec![1, 2], false),
-        ("bad-sec04-signer-version.exe", 1, 3, vec![1, 2], false),
-        ("bad-sec04-value-order.exe", 1, 1, vec![2, 1], false),
-        ("bad-sec04-ecdsa-parameters.exe", 1, 1, vec![1, 2], true),
+        ("good-cms-structure.exe", 1, 1, vec![1, 2], false),
+        ("bad-cms-signeddata-version.exe", 9, 1, vec![1, 2], false),
+        ("bad-cms-signer-version.exe", 1, 3, vec![1, 2], false),
+        ("bad-cms-value-order.exe", 1, 1, vec![2, 1], false),
+        ("bad-cms-ecdsa-parameters.exe", 1, 1, vec![1, 2], true),
     ] {
         let base = base_pe(true);
         let content = image_content(&base, true, None);
@@ -55,18 +55,18 @@ pub(super) fn write(dir: &std::path::Path) {
 }
 #[test]
 #[ignore = "explicit fixture maintenance"]
-fn regenerate_sec04_fixtures() {
+fn regenerate_cms_structure_fixtures() {
     write(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 }
 
 #[test]
-fn sec04_fixtures_preserve_signature_math() {
+fn cms_structure_fixtures_preserve_signature_math() {
     for name in [
-        "good-sec04-cms.exe",
-        "bad-sec04-signeddata-version.exe",
-        "bad-sec04-signer-version.exe",
-        "bad-sec04-value-order.exe",
-        "bad-sec04-ecdsa-parameters.exe",
+        "good-cms-structure.exe",
+        "bad-cms-signeddata-version.exe",
+        "bad-cms-signer-version.exe",
+        "bad-cms-value-order.exe",
+        "bad-cms-ecdsa-parameters.exe",
     ] {
         let bytes = std::fs::read(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -100,7 +100,7 @@ fn sec04_fixtures_preserve_signature_math() {
 }
 
 #[test]
-fn sec04_attribute_and_integer_boundaries() {
+fn cms_attribute_and_integer_boundaries() {
     let attribute = attr(&[42, 3, 4], tlv(2, &[1]));
     assert!(
         crate::parse::Attributes::parse(&tlv(0xa0, &[attribute.clone(), attribute].concat()))

@@ -21,30 +21,30 @@ pub(super) fn write(dir: &std::path::Path) {
     let id = identity();
     for (name, certs) in [
         (
-            "good-sec05-duplicate.exe",
+            "good-cms-signer-duplicate.exe",
             vec![id.cert.clone(), id.cert.clone(), id.root.clone()],
         ),
         (
-            "good-sec05-reordered.exe",
+            "good-cms-signer-reordered.exe",
             vec![id.root.clone(), id.cert.clone(), id.cert.clone()],
         ),
         (
-            "bad-sec05-key-first.exe",
+            "bad-cms-signer-key-first.exe",
             vec![conflict(false), id.cert.clone(), id.root.clone()],
         ),
         (
-            "bad-sec05-key-last.exe",
+            "bad-cms-signer-key-last.exe",
             vec![id.cert.clone(), conflict(false), id.root.clone()],
         ),
         (
-            "bad-sec05-policy-first.exe",
+            "bad-cms-signer-policy-first.exe",
             vec![conflict(true), id.cert.clone(), id.root.clone()],
         ),
         (
-            "bad-sec05-policy-last.exe",
+            "bad-cms-signer-policy-last.exe",
             vec![id.cert.clone(), conflict(true), id.root.clone()],
         ),
-        ("bad-sec05-missing.exe", vec![id.root.clone()]),
+        ("bad-cms-signer-missing.exe", vec![id.root.clone()]),
     ] {
         let base = base_pe(true);
         let content = image_content(&base, true, None);
@@ -77,19 +77,19 @@ pub(super) fn write(dir: &std::path::Path) {
 }
 #[test]
 #[ignore = "explicit fixture maintenance"]
-fn regenerate_sec05_fixtures() {
+fn regenerate_cms_signer_fixtures() {
     write(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 }
 
 #[test]
-fn sec05_shared_timestamp_and_detached_selection() {
+fn cms_signer_selection_shared_timestamp_and_detached() {
     let id = identity();
     for name in [
-        "good-sec05-duplicate.exe",
-        "bad-sec05-key-first.exe",
-        "bad-sec05-key-last.exe",
-        "bad-sec05-policy-first.exe",
-        "bad-sec05-policy-last.exe",
+        "good-cms-signer-duplicate.exe",
+        "bad-cms-signer-key-first.exe",
+        "bad-cms-signer-key-last.exe",
+        "bad-cms-signer-policy-first.exe",
+        "bad-cms-signer-policy-last.exe",
     ] {
         let bytes = std::fs::read(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -169,8 +169,8 @@ fn sec05_shared_timestamp_and_detached_selection() {
 }
 
 #[test]
-fn sec05_embedded_duplicates_do_not_supply_trust() {
-    let bytes = include_bytes!("../../tests/fixtures/good-sec05-duplicate.exe");
+fn cms_signer_embedded_duplicates_do_not_supply_trust() {
+    let bytes = include_bytes!("../../tests/fixtures/good-cms-signer-duplicate.exe");
     let empty = trust::TrustStore::default();
     let error = verify::verify_pe(bytes, &verify::VerifyOptions::trusted(&empty, NOW)).unwrap_err();
     assert_eq!(error.code, domain::ErrorCode::UntrustedRoot);
