@@ -14,13 +14,13 @@ fn run(input: &str, roots: &str) -> Output {
             "--time",
             "1800000000",
             "--crl",
-            "fixtures/sec06-root.crl",
+            "fixtures/path-root.crl",
             "--crl",
-            "fixtures/sec06-issuer.crl",
+            "fixtures/path-issuer.crl",
             "--crl",
-            "fixtures/sec06-upper.crl",
+            "fixtures/path-upper.crl",
             "--crl",
-            "fixtures/sec06-other-root.crl",
+            "fixtures/path-other-root.crl",
         ],
     )
 }
@@ -40,7 +40,7 @@ fn selected(input: &str, roots: &str, certificates: &[&str]) {
     for (actual, name) in chain.iter().zip(certificates) {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures")
-            .join(format!("sec06-{name}.der"));
+            .join(format!("path-{name}.der"));
         let bytes = std::fs::read(path).unwrap();
         let digest = format!("{:x}", Sha256::digest(&bytes));
         assert_eq!(actual["sha256"], digest, "selected certificate {name}");
@@ -80,19 +80,19 @@ fn rejected(input: &str, roots: &str, code: ErrorCode, stage: Stage, diagnostic:
 }
 
 #[test]
-fn good_sec06_basic() {
+fn good_path_basic() {
     selected(
-        "good-sec06-basic.exe",
-        "fixtures/sec06-root.der",
+        "good-path-basic.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn bad_sec06_ca_false() {
+fn bad_path_ca_false() {
     rejected(
-        "bad-sec06-ca-false.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-ca-false.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "EndEntityUsedAsCa",
@@ -100,10 +100,10 @@ fn bad_sec06_ca_false() {
 }
 
 #[test]
-fn bad_sec06_ca_missing_bc() {
+fn bad_path_ca_missing_bc() {
     rejected(
-        "bad-sec06-ca-missing-bc.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-ca-missing-bc.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "EndEntityUsedAsCa",
@@ -111,10 +111,10 @@ fn bad_sec06_ca_missing_bc() {
 }
 
 #[test]
-fn bad_sec06_leaf_ca() {
+fn bad_path_leaf_ca() {
     rejected(
-        "bad-sec06-leaf-ca.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-leaf-ca.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "CaUsedAsEndEntity",
@@ -122,10 +122,10 @@ fn bad_sec06_leaf_ca() {
 }
 
 #[test]
-fn bad_sec06_ca_critical() {
+fn bad_path_ca_critical() {
     rejected(
-        "bad-sec06-ca-critical.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-ca-critical.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "UnsupportedCriticalExtension",
@@ -133,10 +133,10 @@ fn bad_sec06_ca_critical() {
 }
 
 #[test]
-fn bad_sec06_leaf_critical() {
+fn bad_path_leaf_critical() {
     rejected(
-        "bad-sec06-leaf-critical.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-leaf-critical.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "UnsupportedCriticalExtension",
@@ -144,10 +144,10 @@ fn bad_sec06_leaf_critical() {
 }
 
 #[test]
-fn bad_sec06_pathlen() {
+fn bad_path_pathlen() {
     rejected(
-        "bad-sec06-pathlen.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-pathlen.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "PathLenConstraintViolated",
@@ -155,10 +155,10 @@ fn bad_sec06_pathlen() {
 }
 
 #[test]
-fn bad_sec06_name_outside() {
+fn bad_path_name_outside() {
     rejected(
-        "bad-sec06-name-outside.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-name-outside.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "NameConstraintViolation",
@@ -166,10 +166,10 @@ fn bad_sec06_name_outside() {
 }
 
 #[test]
-fn bad_sec06_name_excluded() {
+fn bad_path_name_excluded() {
     rejected(
-        "bad-sec06-name-excluded.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-name-excluded.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "NameConstraintViolation",
@@ -177,10 +177,10 @@ fn bad_sec06_name_excluded() {
 }
 
 #[test]
-fn bad_sec06_wrong_key() {
+fn bad_path_wrong_key() {
     rejected(
-        "bad-sec06-wrong-key.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-wrong-key.exe",
+        "fixtures/path-root.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "InvalidSignatureForPublicKey",
@@ -188,64 +188,64 @@ fn bad_sec06_wrong_key() {
 }
 
 #[test]
-fn good_sec06_leaf_no_bc() {
+fn good_path_leaf_no_bc() {
     selected(
-        "good-sec06-leaf-no-bc.exe",
-        "fixtures/sec06-root.der",
+        "good-path-leaf-no-bc.exe",
+        "fixtures/path-root.der",
         &["leaf-no-bc", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_leaf_no_ku() {
+fn good_path_leaf_no_ku() {
     selected(
-        "good-sec06-leaf-no-ku.exe",
-        "fixtures/sec06-root.der",
+        "good-path-leaf-no-ku.exe",
+        "fixtures/path-root.der",
         &["leaf-no-ku", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_leaf_noncritical() {
+fn good_path_leaf_noncritical() {
     selected(
-        "good-sec06-leaf-noncritical.exe",
-        "fixtures/sec06-root.der",
+        "good-path-leaf-noncritical.exe",
+        "fixtures/path-root.der",
         &["leaf-noncritical", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_ca_noncritical() {
+fn good_path_ca_noncritical() {
     selected(
-        "good-sec06-ca-noncritical.exe",
-        "fixtures/sec06-root.der",
+        "good-path-ca-noncritical.exe",
+        "fixtures/path-root.der",
         &["leaf", "ca-noncritical", "root"],
     );
 }
 
 #[test]
-fn good_sec06_ca_no_ku() {
+fn good_path_ca_no_ku() {
     selected(
-        "good-sec06-ca-no-ku.exe",
-        "fixtures/sec06-root.der",
+        "good-path-ca-no-ku.exe",
+        "fixtures/path-root.der",
         &["leaf", "ca-no-ku", "root"],
     );
 }
 
 #[test]
-fn good_sec06_ca_good_eku() {
+fn good_path_ca_good_eku() {
     selected(
-        "good-sec06-ca-good-eku.exe",
-        "fixtures/sec06-root.der",
+        "good-path-ca-good-eku.exe",
+        "fixtures/path-root.der",
         &["leaf", "ca-good-eku", "root"],
     );
 }
 
 #[test]
-fn bad_sec06_ca_eku() {
+fn bad_path_ca_eku() {
     rejected(
-        "bad-sec06-ca-eku.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-ca-eku.exe",
+        "fixtures/path-root.der",
         ErrorCode::InvalidEku,
         Stage::CertificateChain,
         "RequiredEkuNotFoundContext",
@@ -253,10 +253,10 @@ fn bad_sec06_ca_eku() {
 }
 
 #[test]
-fn bad_sec06_leaf_no_eku() {
+fn bad_path_leaf_no_eku() {
     rejected(
-        "bad-sec06-leaf-no-eku.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-leaf-no-eku.exe",
+        "fixtures/path-root.der",
         ErrorCode::InvalidEku,
         Stage::Certificate,
         "lacks required EKU",
@@ -264,10 +264,10 @@ fn bad_sec06_leaf_no_eku() {
 }
 
 #[test]
-fn bad_sec06_ca_ku() {
+fn bad_path_ca_ku() {
     rejected(
-        "bad-sec06-ca-ku.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-ca-ku.exe",
+        "fixtures/path-root.der",
         ErrorCode::InvalidKeyUsage,
         Stage::CertificateChain,
         "lacks keyCertSign",
@@ -275,100 +275,100 @@ fn bad_sec06_ca_ku() {
 }
 
 #[test]
-fn good_sec06_pathlen() {
+fn good_path_pathlen() {
     selected(
-        "good-sec06-pathlen.exe",
-        "fixtures/sec06-root.der",
+        "good-path-pathlen.exe",
+        "fixtures/path-root.der",
         &["leaf", "lower", "upper", "root"],
     );
 }
 
 #[test]
-fn good_sec06_name_good() {
+fn good_path_name_good() {
     selected(
-        "good-sec06-name-good.exe",
-        "fixtures/sec06-root.der",
+        "good-path-name-good.exe",
+        "fixtures/path-root.der",
         &["dns-good", "constrained", "root"],
     );
 }
 
 #[test]
-fn good_sec06_wrong_key_first() {
+fn good_path_wrong_key_first() {
     selected(
-        "good-sec06-wrong-key-first.exe",
-        "fixtures/sec06-root.der",
+        "good-path-wrong-key-first.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_wrong_key_last() {
+fn good_path_wrong_key_last() {
     selected(
-        "good-sec06-wrong-key-last.exe",
-        "fixtures/sec06-root.der",
+        "good-path-wrong-key-last.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_cross_first() {
+fn good_path_cross_first() {
     selected(
-        "good-sec06-cross-first.exe",
-        "fixtures/sec06-root.der",
+        "good-path-cross-first.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_cross_last() {
+fn good_path_cross_last() {
     selected(
-        "good-sec06-cross-last.exe",
-        "fixtures/sec06-root.der",
+        "good-path-cross-last.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_cycle_escape() {
+fn good_path_cycle_escape() {
     selected(
-        "good-sec06-cycle-escape.exe",
-        "fixtures/sec06-root.der",
+        "good-path-cycle-escape.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_cycle_escape_reversed() {
+fn good_path_cycle_escape_reversed() {
     selected(
-        "good-sec06-cycle-escape-reversed.exe",
-        "fixtures/sec06-root.der",
+        "good-path-cycle-escape-reversed.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_ca_ku_first() {
+fn good_path_ca_ku_first() {
     selected(
-        "good-sec06-ca-ku-first.exe",
-        "fixtures/sec06-root.der",
+        "good-path-ca-ku-first.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn good_sec06_ca_ku_last() {
+fn good_path_ca_ku_last() {
     selected(
-        "good-sec06-ca-ku-last.exe",
-        "fixtures/sec06-root.der",
+        "good-path-ca-ku-last.exe",
+        "fixtures/path-root.der",
         &["leaf", "issuer", "root"],
     );
 }
 
 #[test]
-fn bad_sec06_cross_untrusted() {
+fn bad_path_cross_untrusted() {
     rejected(
-        "bad-sec06-cross-untrusted.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-cross-untrusted.exe",
+        "fixtures/path-root.der",
         ErrorCode::UntrustedRoot,
         Stage::CertificateChain,
         "UnknownIssuer",
@@ -376,10 +376,10 @@ fn bad_sec06_cross_untrusted() {
 }
 
 #[test]
-fn bad_sec06_cycle() {
+fn bad_path_cycle() {
     rejected(
-        "bad-sec06-cycle.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-cycle.exe",
+        "fixtures/path-root.der",
         ErrorCode::UntrustedRoot,
         Stage::CertificateChain,
         "UnknownIssuer",
@@ -387,10 +387,10 @@ fn bad_sec06_cycle() {
 }
 
 #[test]
-fn bad_sec06_cycle_reversed() {
+fn bad_path_cycle_reversed() {
     rejected(
-        "bad-sec06-cycle-reversed.exe",
-        "fixtures/sec06-root.der",
+        "bad-path-cycle-reversed.exe",
+        "fixtures/path-root.der",
         ErrorCode::UntrustedRoot,
         Stage::CertificateChain,
         "UnknownIssuer",
@@ -398,46 +398,46 @@ fn bad_sec06_cycle_reversed() {
 }
 
 #[test]
-fn good_sec06_cross_other_root() {
+fn good_path_cross_other_root() {
     selected(
-        "good-sec06-cross-first.exe",
-        "fixtures/sec06-other-root.der",
+        "good-path-cross-first.exe",
+        "fixtures/path-other-root.der",
         &["leaf", "cross", "other-root"],
     );
 }
 
 #[test]
-fn good_sec06_root_expired() {
+fn good_path_root_expired() {
     selected(
-        "good-sec06-basic.exe",
-        "fixtures/sec06-root-expired.der",
+        "good-path-basic.exe",
+        "fixtures/path-root-expired.der",
         &["leaf", "issuer", "root-expired"],
     );
 }
 
 #[test]
-fn good_sec06_root_profile() {
+fn good_path_root_profile() {
     selected(
-        "good-sec06-basic.exe",
-        "fixtures/sec06-root-profile.der",
+        "good-path-basic.exe",
+        "fixtures/path-root-profile.der",
         &["leaf", "issuer", "root-profile"],
     );
 }
 
 #[test]
-fn good_sec06_root_name() {
+fn good_path_root_name() {
     selected(
-        "good-sec06-root-name.exe",
-        "fixtures/sec06-root-constrained.der",
+        "good-path-root-name.exe",
+        "fixtures/path-root-constrained.der",
         &["dns-good", "issuer", "root-constrained"],
     );
 }
 
 #[test]
-fn bad_sec06_root_name() {
+fn bad_path_root_name() {
     rejected(
-        "good-sec06-root-name.exe",
-        "fixtures/sec06-root-denied.der",
+        "good-path-root-name.exe",
+        "fixtures/path-root-denied.der",
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
         "NameConstraintViolation",
@@ -445,10 +445,10 @@ fn bad_sec06_root_name() {
 }
 
 #[test]
-fn good_sec06_root_selection() {
+fn good_path_root_selection() {
     selected(
-        "good-sec06-root-name.exe",
-        "fixtures/sec06-roots-alternative.pem",
+        "good-path-root-name.exe",
+        "fixtures/path-roots-alternative.pem",
         &["dns-good", "issuer", "root-constrained"],
     );
 }

@@ -234,13 +234,13 @@ fn crl_unknown_noncritical_crl_extension_is_ignored() {
     expect_success(&run_with("crl-root-unknown-noncritical-extension.crl"));
 }
 
-fn run_sec06(input: &str) -> Output {
-    run_sec06_crls(input, &["sec06-issuer.crl"])
+fn run_path(input: &str) -> Output {
+    run_path_crls(input, &["path-issuer.crl"])
 }
 
 #[test]
 fn crl_from_an_issuer_without_crl_sign_is_rejected() {
-    let output = run_sec06("crl-ca-no-crl-sign.exe");
+    let output = run_path("crl-ca-no-crl-sign.exe");
     expect_failure(
         &output,
         1,
@@ -253,13 +253,13 @@ fn crl_from_an_issuer_without_crl_sign_is_rejected() {
 
 #[test]
 fn crl_from_an_issuer_with_crl_sign_is_used() {
-    revocation_good(&run_sec06("crl-ca-crl-sign.exe"));
+    revocation_good(&run_path("crl-ca-crl-sign.exe"));
 }
 
 #[test]
 fn crl_path_building_falls_back_to_the_issuer_with_crl_sign() {
-    let fallback = run_sec06("crl-ca-crl-sign-fallback.exe");
-    let usable = run_sec06("crl-ca-crl-sign.exe");
+    let fallback = run_path("crl-ca-crl-sign-fallback.exe");
+    let usable = run_path("crl-ca-crl-sign.exe");
     expect_success(&fallback);
     let chain =
         |output: &Output| output.json["results"][0]["signatures"][0]["trust"]["chain"].clone();
@@ -298,14 +298,14 @@ fn crl_named_distribution_point_crl_without_matching_certificate_point_fails_clo
     assert_eq!(details["reason"], "distribution_point_scope");
 }
 
-fn run_sec06_root(root: &str) -> Output {
-    run_sec06_with(root, "good-sec06-basic.exe", &["sec06-issuer.crl"])
+fn run_path_root(root: &str) -> Output {
+    run_path_with(root, "good-path-basic.exe", &["path-issuer.crl"])
 }
 
 #[test]
 fn crl_from_a_root_without_crl_sign_is_used() {
     // Configured anchors are keys: their KeyUsage does not restrict CRL signing.
-    revocation_good(&run_sec06_root("crl-root-no-crl-sign.der"));
+    revocation_good(&run_path_root("crl-root-no-crl-sign.der"));
 }
 
 #[test]
@@ -338,20 +338,20 @@ fn crl_revocation_in_any_applicable_crl_wins_regardless_of_order() {
 }
 
 /// Verify a SEC-06 chain input with the root CRL and these issuer CRLs, in order.
-fn run_sec06_crls(input: &str, crls: &[&str]) -> Output {
-    run_sec06_with("sec06-root.der", input, crls)
+fn run_path_crls(input: &str, crls: &[&str]) -> Output {
+    run_path_with("path-root.der", input, crls)
 }
 
-fn run_sec06_with(root: &str, input: &str, crls: &[&str]) -> Output {
-    let crls: Vec<&str> = ["sec06-root.crl"]
+fn run_path_with(root: &str, input: &str, crls: &[&str]) -> Output {
+    let crls: Vec<&str> = ["path-root.crl"]
         .into_iter()
         .chain(crls.iter().copied())
         .collect();
-    run_sec06_exact(root, input, &crls)
+    run_path_exact(root, input, &crls)
 }
 
 /// Verify a SEC-06 chain input with exactly these CRLs, in order.
-fn run_sec06_exact(root: &str, input: &str, crls: &[&str]) -> Output {
+fn run_path_exact(root: &str, input: &str, crls: &[&str]) -> Output {
     let mut args = vec![
         "verify".to_string(),
         "--no-system-roots".into(),
@@ -369,7 +369,7 @@ fn run_sec06_exact(root: &str, input: &str, crls: &[&str]) -> Output {
 
 /// The signer that lists distribution point A.
 fn run_crl_dp(crls: &[&str]) -> Output {
-    run_sec06_crls("crl-leaf-crl-dp.exe", crls)
+    run_path_crls("crl-leaf-crl-dp.exe", crls)
 }
 
 fn revocation_failure(output: &Output, code: &str, title: &str) {
@@ -439,18 +439,18 @@ fn crl_revocation_in_another_partition_of_the_issuer_does_not_count() {
 
 #[test]
 fn crl_full_crl_covers_a_certificate_that_lists_a_distribution_point() {
-    revocation_good(&run_crl_dp(&["sec06-issuer.crl"]));
+    revocation_good(&run_crl_dp(&["path-issuer.crl"]));
     // The full CRL is authoritative even next to a non-matching partition.
     revocation_good(&run_crl_dp(&[
         "crl-issuer-idp-other.crl",
-        "sec06-issuer.crl",
+        "path-issuer.crl",
     ]));
 }
 
 #[test]
 fn crl_partition_crl_is_rejected_for_a_signer_listing_no_distribution_point() {
     // The same matching-partition CRL, but the base SEC-06 leaf lists no point.
-    let output = run_sec06_crls("good-sec06-basic.exe", &["crl-issuer-idp-match.crl"]);
+    let output = run_path_crls("good-path-basic.exe", &["crl-issuer-idp-match.crl"]);
     revocation_failure(&output, "invalid_crl", "Invalid CRL");
     assert_eq!(
         output.json["results"][0]["error"]["details"]["reason"],
@@ -473,14 +473,14 @@ fn crl_scope_flag_with_a_named_point_restricts_the_signer_role() {
 fn crl_scope_flag_with_a_named_point_restricts_the_issuer_role() {
     // The intermediate lists a point; the root CRLs name it with a role scope.
     let run = |root_crl: &str| {
-        run_sec06_exact(
-            "sec06-root.der",
+        run_path_exact(
+            "path-root.der",
             "crl-ca-crl-dp.exe",
-            &[root_crl, "sec06-issuer.crl"],
+            &[root_crl, "path-issuer.crl"],
         )
     };
-    revocation_good(&run("crl-sec06-root-idp-ca.crl"));
-    unknown(&run("crl-sec06-root-idp-user.crl"));
+    revocation_good(&run("crl-path-root-idp-ca.crl"));
+    unknown(&run("crl-path-root-idp-user.crl"));
 }
 
 #[test]
@@ -489,22 +489,22 @@ fn crl_any_matching_uri_among_several_names_or_points_is_authoritative() {
     revocation_good(&run_crl_dp(&["crl-issuer-idp-two-names.crl"]));
     // The CRL names the second name of the signer's second point.
     let multi = "crl-leaf-crl-dp-multi.exe";
-    revocation_good(&run_sec06_crls(multi, &["crl-issuer-idp-second-point.crl"]));
+    revocation_good(&run_path_crls(multi, &["crl-issuer-idp-second-point.crl"]));
     // A point the multi-point signer does not list.
-    unknown(&run_sec06_crls(multi, &["crl-issuer-idp-match.crl"]));
+    unknown(&run_path_crls(multi, &["crl-issuer-idp-match.crl"]));
 }
 
 #[test]
 fn crl_non_uri_and_issuer_relative_names_never_match() {
     // The same dNSName on both sides is not compared.
-    unknown(&run_sec06_crls(
+    unknown(&run_path_crls(
         "crl-leaf-crl-dp-dns.exe",
         &["crl-issuer-idp-dns.crl"],
     ));
     // The CRL names the directoryName that the signer's issuer-relative name
     // expands to; relative names are not expanded.
     let relative = "crl-leaf-crl-dp-relative.exe";
-    unknown(&run_sec06_crls(
+    unknown(&run_path_crls(
         relative,
         &["crl-issuer-idp-relative-expanded.crl"],
     ));
@@ -519,12 +519,12 @@ fn crl_scoped_by_an_issuer_relative_name_is_rejected() {
     let crl = ["crl-issuer-idp-relative.crl"];
     // Unsupported form when every covered certificate lists a point.
     assert_eq!(
-        reason(&run_sec06_crls("crl-leaf-crl-dp-relative.exe", &crl)),
+        reason(&run_path_crls("crl-leaf-crl-dp-relative.exe", &crl)),
         "issuing_distribution_point"
     );
     // The scope rule is checked first for a signer that lists no point.
     assert_eq!(
-        reason(&run_sec06_crls("good-sec06-basic.exe", &crl)),
+        reason(&run_path_crls("good-path-basic.exe", &crl)),
         "distribution_point_scope"
     );
 }
@@ -536,7 +536,7 @@ fn crl_certificate_point_with_reasons_or_crl_issuer_never_matches() {
         "crl-leaf-crl-dp-reasons.exe",
         "crl-leaf-crl-dp-crl-issuer.exe",
     ] {
-        unknown(&run_sec06_crls(signer, &["crl-issuer-idp-match.crl"]));
+        unknown(&run_path_crls(signer, &["crl-issuer-idp-match.crl"]));
     }
 }
 
@@ -549,20 +549,20 @@ fn crl_full_crl_covers_every_distribution_point_form() {
         "crl-leaf-crl-dp-reasons.exe",
         "crl-leaf-crl-dp-crl-issuer.exe",
     ] {
-        revocation_good(&run_sec06_crls(signer, &["sec06-issuer.crl"]));
+        revocation_good(&run_path_crls(signer, &["path-issuer.crl"]));
     }
 }
 
 #[test]
 fn crl_revoked_intermediate_is_rejected_whatever_the_crl_order() {
-    let revoked = "crl-sec06-root-revoked-issuer.crl";
+    let revoked = "crl-path-root-revoked-issuer.crl";
     for crls in [
-        vec![revoked, "sec06-issuer.crl"],
-        vec!["sec06-issuer.crl", revoked],
-        vec!["sec06-root.crl", revoked, "sec06-issuer.crl"],
-        vec![revoked, "sec06-root.crl", "sec06-issuer.crl"],
+        vec![revoked, "path-issuer.crl"],
+        vec!["path-issuer.crl", revoked],
+        vec!["path-root.crl", revoked, "path-issuer.crl"],
+        vec![revoked, "path-root.crl", "path-issuer.crl"],
     ] {
-        let output = run_sec06_exact("sec06-root.der", "good-sec06-basic.exe", &crls);
+        let output = run_path_exact("path-root.der", "good-path-basic.exe", &crls);
         revocation_failure(&output, "certificate_revoked", "Certificate revoked");
     }
 }
@@ -579,18 +579,18 @@ fn crl_a_revoked_path_names_what_another_path_still_lacks() {
             "verify",
             "--no-system-roots",
             "--roots",
-            "fixtures/sec06-root.der",
+            "fixtures/path-root.der",
             "--roots",
-            "fixtures/sec06-other-root.der",
+            "fixtures/path-other-root.der",
             "--time",
             T,
             "--crl",
-            "fixtures/sec06-issuer.crl",
+            "fixtures/path-issuer.crl",
             "--crl",
-            "fixtures/crl-sec06-other-root-revoked-cross.crl",
+            "fixtures/crl-path-other-root-revoked-cross.crl",
         ];
         args.extend_from_slice(extra);
-        run_fixture("good-sec06-cross-first.exe", &args)
+        run_fixture("good-path-cross-first.exe", &args)
     };
     let output = run(&[]);
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
@@ -598,7 +598,7 @@ fn crl_a_revoked_path_names_what_another_path_still_lacks() {
     let missing = details["certificates_without_crl"].as_array().unwrap();
     assert_eq!(missing.len(), 1);
     assert_eq!(missing[0]["subject"]["display"], "CN=SEC-06 issuer");
-    revocation_good(&run(&["--crl", "fixtures/sec06-root.crl"]));
+    revocation_good(&run(&["--crl", "fixtures/path-root.crl"]));
 }
 
 /// The other path's cross certificate lacks keyCertSign, so a CRL for it could
@@ -611,20 +611,20 @@ fn crl_a_revoked_path_decides_when_the_other_path_fails_key_usage() {
             "verify",
             "--no-system-roots",
             "--roots",
-            "fixtures/sec06-root.der",
+            "fixtures/path-root.der",
             "--roots",
-            "fixtures/sec06-other-root.der",
+            "fixtures/path-other-root.der",
             "--time",
             T,
             "--crl",
-            "fixtures/sec06-issuer.crl",
+            "fixtures/path-issuer.crl",
             "--crl",
-            "fixtures/crl-sec06-root-revoked-issuer.crl",
+            "fixtures/crl-path-root-revoked-issuer.crl",
         ];
         args.extend_from_slice(extra);
-        run_fixture("crl-sec06-cross-no-cert-sign.exe", &args)
+        run_fixture("crl-path-cross-no-cert-sign.exe", &args)
     };
-    for extra in [&[][..], &["--crl", "fixtures/sec06-other-root.crl"]] {
+    for extra in [&[][..], &["--crl", "fixtures/path-other-root.crl"]] {
         let output = run(extra);
         revocation_failure(&output, "certificate_revoked", "Certificate revoked");
         assert!(
@@ -642,20 +642,20 @@ fn crl_a_revoked_path_decides_when_the_other_path_fails_key_usage() {
 #[test]
 fn crl_an_unknown_status_ignores_a_path_failing_key_usage() {
     let output = run_fixture(
-        "crl-sec06-cross-no-cert-sign.exe",
+        "crl-path-cross-no-cert-sign.exe",
         &[
             "verify",
             "--no-system-roots",
             "--roots",
-            "fixtures/sec06-root.der",
+            "fixtures/path-root.der",
             "--roots",
-            "fixtures/sec06-other-root.der",
+            "fixtures/path-other-root.der",
             "--time",
             T,
             "--crl",
-            "fixtures/sec06-issuer.crl",
+            "fixtures/path-issuer.crl",
             "--crl",
-            "fixtures/crl-sec06-root-idp-ca.crl",
+            "fixtures/crl-path-root-idp-ca.crl",
         ],
     );
     revocation_failure(&output, "invalid_crl", "Invalid CRL");
@@ -768,7 +768,7 @@ fn crl_a_revocation_in_a_role_partition_without_a_point_counts() {
 fn crl_an_expired_partition_for_another_point_does_not_decide_the_signer() {
     // Not authoritative for the signer, so its age is irrelevant: the status
     // is unknown and the signer is named, not crl_expired.
-    let output = run_crl_dp(&["sec06-root.crl", "crl-issuer-idp-other-expired.crl"]);
+    let output = run_crl_dp(&["path-root.crl", "crl-issuer-idp-other-expired.crl"]);
     revocation_failure(&output, "revocation_unknown", "Revocation status unknown");
     let missing = &output.json["results"][0]["error"]["details"]["certificates_without_crl"];
     assert_eq!(missing.as_array().unwrap().len(), 1);
@@ -799,17 +799,17 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
             "verify",
             "--no-system-roots",
             "--roots",
-            "fixtures/sec06-root.der",
+            "fixtures/path-root.der",
             "--time",
             T,
         ];
         args.extend_from_slice(extra);
-        run_fixture("good-sec06-self-issued-rollover.exe", &args)
+        run_fixture("good-path-self-issued-rollover.exe", &args)
     };
     expect_success(&run(&["--no-revocation"]));
     for crls in [
-        ["fixtures/sec06-root.crl", "fixtures/sec06-rollover.crl"],
-        ["fixtures/sec06-rollover.crl", "fixtures/sec06-root.crl"],
+        ["fixtures/path-root.crl", "fixtures/path-rollover.crl"],
+        ["fixtures/path-rollover.crl", "fixtures/path-root.crl"],
     ] {
         let output = run(&["--crl", crls[0], "--crl", crls[1]]);
         assert_eq!(output.exit_code, 1);
@@ -819,12 +819,12 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
     }
     for crls in [
         [
-            "fixtures/sec06-root-akid.crl",
-            "fixtures/sec06-rollover-akid.crl",
+            "fixtures/path-root-akid.crl",
+            "fixtures/path-rollover-akid.crl",
         ],
         [
-            "fixtures/sec06-rollover-akid.crl",
-            "fixtures/sec06-root-akid.crl",
+            "fixtures/path-rollover-akid.crl",
+            "fixtures/path-root-akid.crl",
         ],
     ] {
         let output = run(&["--crl", crls[0], "--crl", crls[1]]);
@@ -837,9 +837,9 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
     // key's CRL, it rejects the path.
     let output = run(&[
         "--crl",
-        "fixtures/sec06-root-akid-revoked-rollover.crl",
+        "fixtures/path-root-akid-revoked-rollover.crl",
         "--crl",
-        "fixtures/sec06-rollover-akid.crl",
+        "fixtures/path-rollover-akid.crl",
     ]);
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }

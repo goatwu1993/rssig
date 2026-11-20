@@ -10,9 +10,9 @@ test builders construct a `TbsCertList` by hand (`src/tests.rs::crl`,
 arguments and stamps the signature algorithm from the main test identity
 whatever issuer it is given (every test key is P-256 today). The 45 SEC-10
 fixtures come from two generators (`regenerate_crl_fixtures` for the rssig
-test root's CRLs, `regenerate_sec06_fixtures` for the SEC-06 chain), and the
+test root's CRLs, `regenerate_path_fixtures` for the SEC-06 chain), and the
 names do not say which: `crl-root-*.crl` is the rssig test root,
-`crl-sec06-root-*` and `crl-root-no-crl-sign.der` the SEC-06 root. 57
+`crl-path-root-*` and `crl-root-no-crl-sign.der` the SEC-06 root. 57
 SEC-06 manifest entries have no `generator` field, so tests select those
 fixtures by filename. The single-URI distribution-point encoding is written
 by hand in three builders (`path_policy.rs`, `crl_applicability.rs`,

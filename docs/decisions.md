@@ -9,6 +9,7 @@ holds only its entries.
 |---|---|---|
 | `CRL-` | [crl.md](crl.md) | CRL selection, scope, issuer keys, candidate paths and CRL retrieval |
 | `TIME-` | [time.md](time.md) | Validation time, timestamp time, lifetime signing and time boundaries |
+| `PATH-` | [path.md](path.md) | Certificate-path policy: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
 
 A new subject gets its own prefix and index file directly under `docs/`, and
 a row here.

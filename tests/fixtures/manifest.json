@@ -551,7 +551,7 @@
         "msi::ca_key_usage"
       ],
       "cases": [
-        "msi-ca-key-usage"
+        "path-008-msi-ca-key-usage"
       ]
     },
     {
@@ -1014,7 +1014,7 @@
         "msi::bad_signer_eku"
       ],
       "cases": [
-        "msi-bad-signer-eku"
+        "path-007-msi-bad-signer-eku"
       ]
     },
     {
@@ -1042,7 +1042,7 @@
         "msi::bad_signer_key_usage"
       ],
       "cases": [
-        "msi-bad-signer-key-usage"
+        "path-008-msi-bad-signer-key-usage"
       ]
     },
     {
@@ -1282,7 +1282,7 @@
       ],
       "cases": [
         "msi-intermediate-current-crls",
-        "msi-intermediate-without-eku"
+        "path-007-msi-intermediate-without-eku"
       ]
     },
     {
@@ -7013,264 +7013,264 @@
       ]
     },
     {
-      "file": "bad-sec06-ca-critical.exe",
+      "file": "bad-path-ca-critical.exe",
       "sha256": "de9f66d38097fb4642ff3be7b50fc84e1ade56d18057724ca91b4900ed961154",
       "bytes": 2216,
       "description": "SEC-06 signed inert PE; ca-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-ca-critical"
+        "path-006-bad-ca-critical"
       ]
     },
     {
-      "file": "bad-sec06-ca-eku.exe",
+      "file": "bad-path-ca-eku.exe",
       "sha256": "992197ec41a67130f7665ec3af3c578a1853c3683d26537c57fe99d7a787337f",
       "bytes": 2224,
       "description": "SEC-06 signed inert PE; ca-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-ca-eku"
+        "path-007-bad-ca-eku"
       ]
     },
     {
-      "file": "bad-sec06-ca-false.exe",
+      "file": "bad-path-ca-false.exe",
       "sha256": "fffc6405825ff09996e2d8ba35ad7f2eb21cbc54ef9a1277ace09c168a5ce864",
       "bytes": 2192,
       "description": "SEC-06 signed inert PE; ca-false. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-ca-false"
+        "path-003-bad-ca-false"
       ]
     },
     {
-      "file": "bad-sec06-ca-ku.exe",
+      "file": "bad-path-ca-ku.exe",
       "sha256": "34cf1b9d70a5c45da6c1425e0e2c696169036e655cbe9b5e2e1e342bc8589d0e",
       "bytes": 2200,
       "description": "SEC-06 signed inert PE; ca-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_key_usage at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
         "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
-        "bad-sec06-ca-ku",
+        "path-008-bad-ca-ku",
         "crl-030-fetch-path-failing-key-usage-asks-nothing"
       ]
     },
     {
-      "file": "bad-sec06-ca-missing-bc.exe",
+      "file": "bad-path-ca-missing-bc.exe",
       "sha256": "fa4a3497e15cbe40fb255d2227da8c375480b87d22cf977bdc0661e24d8524e2",
       "bytes": 2184,
       "description": "SEC-06 signed inert PE; ca-missing-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-ca-missing-bc"
+        "path-003-bad-ca-missing-bc"
       ]
     },
     {
-      "file": "bad-sec06-cross-untrusted.exe",
+      "file": "bad-path-cross-untrusted.exe",
       "sha256": "a55bc766f0192edeeb8e35226c494ea031c38867895f179a1580f16fa5746533",
       "bytes": 2576,
       "description": "SEC-06 signed inert PE; cross-untrusted. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-cross-untrusted"
+        "path-001-bad-cross-untrusted"
       ]
     },
     {
-      "file": "bad-sec06-cycle-reversed.exe",
+      "file": "bad-path-cycle-reversed.exe",
       "sha256": "ba71e5874a5b4fe36f5d0274ad29c6975218627d6a1ec303ba2aac74f0f49fd4",
       "bytes": 2520,
       "description": "SEC-06 signed inert PE; cycle-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-cycle-reversed"
+        "path-001-bad-cycle-reversed"
       ]
     },
     {
-      "file": "bad-sec06-cycle.exe",
+      "file": "bad-path-cycle.exe",
       "sha256": "524dc111afdffb975561d29d16a05bfd827bc865b6f9a9776d956baacca71f4f",
       "bytes": 2520,
       "description": "SEC-06 signed inert PE; cycle. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: untrusted_root at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-cycle"
+        "path-001-bad-cycle"
       ]
     },
     {
-      "file": "bad-sec06-leaf-ca.exe",
+      "file": "bad-path-leaf-ca.exe",
       "sha256": "1313d217544de0d878626a83b07da40ed49d6e7d5f4c5ca0ebae47ecf8e0fca6",
       "bytes": 2200,
       "description": "SEC-06 signed inert PE; leaf-ca. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-leaf-ca"
+        "path-003-bad-leaf-ca"
       ]
     },
     {
-      "file": "bad-sec06-leaf-critical.exe",
+      "file": "bad-path-leaf-critical.exe",
       "sha256": "adf584c52b71c688872b0fd9cf0ff25e0b68227077497fa6adcf19ac166cfe56",
       "bytes": 2216,
       "description": "SEC-06 signed inert PE; leaf-critical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-leaf-critical"
+        "path-006-bad-leaf-critical"
       ]
     },
     {
-      "file": "bad-sec06-leaf-no-eku.exe",
+      "file": "bad-path-leaf-no-eku.exe",
       "sha256": "3c1892ee8c827ac360f961e49412bb1ececdd96bdf0de1b726c6910f8ff798a3",
       "bytes": 2176,
       "description": "SEC-06 signed inert PE; leaf-no-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: invalid_eku at certificate.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-leaf-no-eku"
+        "path-007-bad-leaf-no-eku"
       ]
     },
     {
-      "file": "bad-sec06-name-excluded.exe",
+      "file": "bad-path-name-excluded.exe",
       "sha256": "62f41c957969ede08dfd9b482dc9c6419f00dd303b485cb7f01e03ae92db9250",
       "bytes": 2304,
       "description": "SEC-06 signed inert PE; name-excluded. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-name-excluded"
+        "path-005-bad-name-excluded"
       ]
     },
     {
-      "file": "bad-sec06-name-outside.exe",
+      "file": "bad-path-name-outside.exe",
       "sha256": "e5c195e2076a4d82dab7f19f17968d287e5ff152d2fdc436f255da06360327ec",
       "bytes": 2296,
       "description": "SEC-06 signed inert PE; name-outside. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-name-outside"
+        "path-005-bad-name-outside"
       ]
     },
     {
-      "file": "bad-sec06-pathlen.exe",
+      "file": "bad-path-pathlen.exe",
       "sha256": "6f2ef048819ebf6aab631821724aca226e9ddc70fc5e8ec01d66a83ee207db6f",
       "bytes": 2560,
       "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-pathlen"
+        "path-004-bad-pathlen"
       ]
     },
     {
-      "file": "bad-sec06-wrong-key.exe",
+      "file": "bad-path-wrong-key.exe",
       "sha256": "f46879badb6f931ce9a27a36931bbe362ea67b1c1db7cd4705acda1080faadd5",
       "bytes": 2200,
       "description": "SEC-06 signed inert PE; wrong-key. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-wrong-key"
+        "path-002-bad-wrong-key"
       ]
     },
     {
-      "file": "good-sec06-basic.exe",
+      "file": "good-path-basic.exe",
       "sha256": "321b9f2f98ff4e3707c9d66b27fef173176d70ac041bde65758c2969debadcbd",
       "bytes": 2200,
       "description": "SEC-06 signed inert PE; basic. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-basic",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
+        "path-003-good-basic",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
         "crl-015-root-no-crl-sign-accepted",
         "crl-partition-crl-no-listed-point",
         "crl-revoked-issuer",
@@ -7284,102 +7284,102 @@
       ]
     },
     {
-      "file": "good-sec06-ca-good-eku.exe",
+      "file": "good-path-ca-good-eku.exe",
       "sha256": "e34f4bc39b806b0dd7a75a7c81e2a27ace2554ee5c61bac06bf5be3891e27bc0",
       "bytes": 2224,
       "description": "SEC-06 signed inert PE; ca-good-eku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-good-eku"
+        "path-007-good-ca-good-eku"
       ]
     },
     {
-      "file": "good-sec06-ca-ku-first.exe",
+      "file": "good-path-ca-ku-first.exe",
       "sha256": "27097cbb751fbee4a5759c41c753abd850f9eff92508d1cf0e7b37e2ae957be6",
       "bytes": 2592,
       "description": "SEC-06 signed inert PE; ca-ku-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-ku-first"
+        "path-009-good-ca-ku-first"
       ]
     },
     {
-      "file": "good-sec06-ca-ku-last.exe",
+      "file": "good-path-ca-ku-last.exe",
       "sha256": "2897fc7216b3055be565ab401fdf9496eaae06d80aa1d2191aea5f990bc1d539",
       "bytes": 2592,
       "description": "SEC-06 signed inert PE; ca-ku-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-ku-last"
+        "path-009-good-ca-ku-last"
       ]
     },
     {
-      "file": "good-sec06-ca-no-ku.exe",
+      "file": "good-path-ca-no-ku.exe",
       "sha256": "e48ae9c995daeea57eb9f616dcf7f1e5e0d0fe081fa596da24d2198c2621f765",
       "bytes": 2184,
       "description": "SEC-06 signed inert PE; ca-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-no-ku"
+        "path-008-good-ca-no-ku"
       ]
     },
     {
-      "file": "good-sec06-ca-noncritical.exe",
+      "file": "good-path-ca-noncritical.exe",
       "sha256": "1d65551ac1d3e166cbe859012cd91d705fd8387ff8253caa7ea13e3ef65e3447",
       "bytes": 2216,
       "description": "SEC-06 signed inert PE; ca-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-noncritical"
+        "path-006-good-ca-noncritical"
       ]
     },
     {
-      "file": "good-sec06-cross-first.exe",
+      "file": "good-path-cross-first.exe",
       "sha256": "892f981dee104c5fa30d97929e785ae7d95af1819d5536da9ec0a0ba4c5a2d1a",
       "bytes": 2968,
       "description": "SEC-06 signed inert PE; cross-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
         "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "good-sec06-cross-first",
-        "good-sec06-cross-other-root",
+        "path-010-good-cross-first",
+        "path-010-good-cross-other-root",
         "crl-030-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
@@ -7387,14 +7387,14 @@
       ]
     },
     {
-      "file": "good-sec06-self-issued-rollover.exe",
+      "file": "good-path-self-issued-rollover.exe",
       "sha256": "0fd3346a669eb9c10afded9b88c48de51cba880c2a1ac7cdae6627b50aab16cf",
       "bytes": 2192,
       "description": "SEC-16 signed inert PE: a self-issued key rollover. The SEC-06 root's name is carried by a second key, certified by the root, and the signer is issued under that name by the second key, so two certificates on the path have issuers of the same name and different keys. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -7404,290 +7404,290 @@
       ]
     },
     {
-      "file": "good-sec06-cross-last.exe",
+      "file": "good-path-cross-last.exe",
       "sha256": "fba166ffdf7bfe6c97faa79694d5df438c1feb98447c7c673524596bf1c0b1a1",
       "bytes": 2968,
       "description": "SEC-06 signed inert PE; cross-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-cross-last"
+        "path-010-good-cross-last"
       ]
     },
     {
-      "file": "good-sec06-cycle-escape-reversed.exe",
+      "file": "good-path-cycle-escape-reversed.exe",
       "sha256": "d8e9d80c9bb2a3411b9c783c731699be85c6e66c417340f8826d8c794605f4c6",
       "bytes": 2912,
       "description": "SEC-06 signed inert PE; cycle-escape-reversed. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-cycle-escape-reversed"
+        "path-010-good-cycle-escape-reversed"
       ]
     },
     {
-      "file": "good-sec06-cycle-escape.exe",
+      "file": "good-path-cycle-escape.exe",
       "sha256": "70183b53830c3d4fb988f8222812209b49cc3634745b29280d775b87f360c316",
       "bytes": 2912,
       "description": "SEC-06 signed inert PE; cycle-escape. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-cycle-escape"
+        "path-010-good-cycle-escape"
       ]
     },
     {
-      "file": "good-sec06-leaf-no-bc.exe",
+      "file": "good-path-leaf-no-bc.exe",
       "sha256": "1f47b7b006a714887b751cc153ce71cb6ff264abddb32f2fe5c3a29ffff9ae52",
       "bytes": 2184,
       "description": "SEC-06 signed inert PE; leaf-no-bc. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-no-bc"
+        "path-003-good-leaf-no-bc"
       ]
     },
     {
-      "file": "good-sec06-leaf-no-ku.exe",
+      "file": "good-path-leaf-no-ku.exe",
       "sha256": "972c93b80ca61c38de05c3f9013249055a9e3f11eb940e12dfc9e6513d138270",
       "bytes": 2184,
       "description": "SEC-06 signed inert PE; leaf-no-ku. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-no-ku"
+        "path-008-good-leaf-no-ku"
       ]
     },
     {
-      "file": "good-sec06-leaf-noncritical.exe",
+      "file": "good-path-leaf-noncritical.exe",
       "sha256": "9696a5fd9ea5f6b316d1e1a36509b77beb5e82760fc34978d09ebb87ba34cb49",
       "bytes": 2216,
       "description": "SEC-06 signed inert PE; leaf-noncritical. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-noncritical"
+        "path-006-good-leaf-noncritical"
       ]
     },
     {
-      "file": "good-sec06-name-good.exe",
+      "file": "good-path-name-good.exe",
       "sha256": "25e901434d3bf52b4b11f5247b19b4d4df061a268c66f651c7dadffccbba8feb",
       "bytes": 2296,
       "description": "SEC-06 signed inert PE; name-good. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-name-good"
+        "path-005-good-name-good"
       ]
     },
     {
-      "file": "good-sec06-pathlen.exe",
+      "file": "good-path-pathlen.exe",
       "sha256": "fc00ff5d42cec65e5829a074b554f0b3c87c381c6c608e3f7f8da0b2d464dce7",
       "bytes": 2560,
       "description": "SEC-06 signed inert PE; pathlen. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-pathlen"
+        "path-004-good-pathlen"
       ]
     },
     {
-      "file": "good-sec06-root-name.exe",
+      "file": "good-path-root-name.exe",
       "sha256": "ef35e3465816bba63f71d96b7396db1234a7ae3fbef6e98b9f9c8b2b87d30c91",
       "bytes": 2232,
       "description": "SEC-06 signed inert PE; root-name. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation; certificate_chain_invalid at certificate_chain.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "good-sec06-wrong-key-first.exe",
+      "file": "good-path-wrong-key-first.exe",
       "sha256": "723582fefd02a58705f73ee02b78d0fc87102c324f6274366b1271913eb52a42",
       "bytes": 2592,
       "description": "SEC-06 signed inert PE; wrong-key-first. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-wrong-key-first"
+        "path-002-good-wrong-key-first"
       ]
     },
     {
-      "file": "good-sec06-wrong-key-last.exe",
+      "file": "good-path-wrong-key-last.exe",
       "sha256": "0e6a29edd5a3612f5bda09e6a3f0422ae39539433fe511151665d91a31472643",
       "bytes": 2592,
       "description": "SEC-06 signed inert PE; wrong-key-last. Image, CMS, and certificate signatures are valid; see linked cases for isolated path policy and exact selected chain or typed failure. Expected outcomes under the linked configurations: trusted chain with CRL validation.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-wrong-key-last"
+        "path-002-good-wrong-key-last"
       ]
     },
     {
-      "file": "sec06-ca-good-eku.der",
+      "file": "path-ca-good-eku.der",
       "sha256": "6213cc5bb34381575e1567886030324d11d1eed6e62ac0ad384a9bdb85626cd8",
       "bytes": 412,
       "description": "SEC-06 certificate witness/configured anchor: ca-good-eku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-good-eku"
+        "path-007-good-ca-good-eku"
       ]
     },
     {
-      "file": "sec06-ca-no-ku.der",
+      "file": "path-ca-no-ku.der",
       "sha256": "19ceb28b89d179e0bfda3884976369782d848daf3a86492edd24b429a4d0a281",
       "bytes": 375,
       "description": "SEC-06 certificate witness/configured anchor: ca-no-ku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-no-ku"
+        "path-008-good-ca-no-ku"
       ]
     },
     {
-      "file": "sec06-ca-noncritical.der",
+      "file": "path-ca-noncritical.der",
       "sha256": "7f5d32e7168beee01dc6203ff08d5dba8b0eb6db436090181b4332790ef2911c",
       "bytes": 404,
       "description": "SEC-06 certificate witness/configured anchor: ca-noncritical. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-ca-noncritical"
+        "path-006-good-ca-noncritical"
       ]
     },
     {
-      "file": "sec06-constrained.der",
+      "file": "path-constrained.der",
       "sha256": "bc6c6576cf5f9b55f92a29b2390392cf67904a837207c1dbd85c4040ff7a38f2",
       "bytes": 457,
       "description": "SEC-06 certificate witness/configured anchor: constrained. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-name-good"
+        "path-005-good-name-good"
       ]
     },
     {
-      "file": "sec06-cross.der",
+      "file": "path-cross.der",
       "sha256": "2c5247a68292af69f006664227e21ac7cb8ce3065d323ea2fb94e615dfe7e8be",
       "bytes": 365,
       "description": "SEC-06 certificate witness/configured anchor: cross. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-cross-other-root"
+        "path-010-good-cross-other-root"
       ]
     },
     {
-      "file": "sec06-dns-good.der",
+      "file": "path-dns-good.der",
       "sha256": "2b1033c557c346f35157cca0a88bfc402bc71ec919d4de4b350bb2e5bdbaa32d",
       "bytes": 448,
       "description": "SEC-06 certificate witness/configured anchor: dns-good. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-name-good",
-        "good-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-005-good-name-good",
+        "path-005-good-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-issuer.crl",
+      "file": "path-issuer.crl",
       "sha256": "ff4b0fde7497af4be99fa0a2df9bb049e112ba9b08ddd07c5767d1dc3e51b3b9",
       "bytes": 182,
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -7696,44 +7696,44 @@
         "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "bad-sec06-wrong-key",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-pathlen",
-        "good-sec06-name-good",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-cross-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
-        "good-sec06-cross-other-root",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection",
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-002-bad-wrong-key",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-004-good-pathlen",
+        "path-005-good-name-good",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-001-bad-cross-untrusted",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
+        "path-010-good-cross-other-root",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection",
         "crl-ca-no-crl-sign",
         "crl-ca-crl-sign",
         "crl-ca-crl-sign-fallback",
@@ -7769,200 +7769,200 @@
       ]
     },
     {
-      "file": "sec06-issuer.der",
+      "file": "path-issuer.der",
       "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea",
       "bytes": 391,
       "description": "SEC-06 certificate witness/configured anchor: issuer. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-basic",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-003-good-basic",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-leaf-no-bc.der",
+      "file": "path-leaf-no-bc.der",
       "sha256": "be55aa8d42359158b7442232ef0bdc489b40fabfac7b5f7f7ed3025d59327d97",
       "bytes": 401,
       "description": "SEC-06 certificate witness/configured anchor: leaf-no-bc. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-no-bc"
+        "path-003-good-leaf-no-bc"
       ]
     },
     {
-      "file": "sec06-leaf-no-ku.der",
+      "file": "path-leaf-no-ku.der",
       "sha256": "d4fba6c4bba52be0ce76dd121e9fe73b8b5a01294a71f68b6faa91bb6f9894b5",
       "bytes": 398,
       "description": "SEC-06 certificate witness/configured anchor: leaf-no-ku. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-no-ku"
+        "path-008-good-leaf-no-ku"
       ]
     },
     {
-      "file": "sec06-leaf-noncritical.der",
+      "file": "path-leaf-noncritical.der",
       "sha256": "8f8cd13f07000ceaf80d9d718a2c5aad98d70e0ec28d6e2f9dbf6f8ca4118ad9",
       "bytes": 428,
       "description": "SEC-06 certificate witness/configured anchor: leaf-noncritical. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-leaf-noncritical"
+        "path-006-good-leaf-noncritical"
       ]
     },
     {
-      "file": "sec06-leaf.der",
+      "file": "path-leaf.der",
       "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf",
       "bytes": 415,
       "description": "SEC-06 certificate witness/configured anchor: leaf. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-basic",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "good-sec06-pathlen",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "good-sec06-cross-other-root",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile"
+        "path-003-good-basic",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-004-good-pathlen",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-010-good-cross-other-root",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile"
       ]
     },
     {
-      "file": "sec06-lower.der",
+      "file": "path-lower.der",
       "sha256": "6a572512a93a54dde0f6dc4be257ee26aeeab5613661fb625e12f4bdd5bd731d",
       "bytes": 359,
       "description": "SEC-06 certificate witness/configured anchor: lower. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-pathlen"
+        "path-004-good-pathlen"
       ]
     },
     {
-      "file": "sec06-other-root.crl",
+      "file": "path-other-root.crl",
       "sha256": "53d230dab4f3fcc57b91f5390effe3e4b99fb245af25dcaebc64fd102a12dd8a",
       "bytes": 185,
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "bad-sec06-wrong-key",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-pathlen",
-        "good-sec06-name-good",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-cross-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
-        "good-sec06-cross-other-root",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-002-bad-wrong-key",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-004-good-pathlen",
+        "path-005-good-name-good",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-001-bad-cross-untrusted",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
+        "path-010-good-cross-other-root",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-other-root.der",
+      "file": "path-other-root.der",
       "sha256": "30b29d397a5b706309be9fbcc6df9c39667d358df19603be24554116c518ad05",
       "bytes": 399,
       "description": "SEC-06 certificate witness/configured anchor: other-root. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
         "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "good-sec06-cross-other-root",
+        "path-010-good-cross-other-root",
         "crl-030-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
@@ -7970,122 +7970,122 @@
       ]
     },
     {
-      "file": "sec06-root-constrained.der",
+      "file": "path-root-constrained.der",
       "sha256": "89978bd8d1aacb06c9f4b202859d5eea4d8c3c5b78622dbfeaf7ec465848cfdd",
       "bytes": 423,
       "description": "SEC-06 certificate witness/configured anchor: root-constrained. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-005-good-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-root-denied.der",
+      "file": "path-root-denied.der",
       "sha256": "865b279a32ba2f6b596be449cac808fa6275e52b04e8923aa23f29d056bb2022",
       "bytes": 425,
       "description": "SEC-06 certificate witness/configured anchor: root-denied. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "bad-sec06-root-name"
+        "path-005-bad-root-name"
       ]
     },
     {
-      "file": "sec06-root-expired.der",
+      "file": "path-root-expired.der",
       "sha256": "6046e5b3cf820ab132f65da39c6153fdb73ee73e33c204de6db74bcdb2dd2319",
       "bytes": 389,
       "description": "SEC-06 certificate witness/configured anchor: root-expired. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-root-expired"
+        "path-011-good-root-expired"
       ]
     },
     {
-      "file": "sec06-root-profile.der",
+      "file": "path-root-profile.der",
       "sha256": "8b47c207dcee8d410d427a618ae114dd047736ba540105e4d6d76600be634cd2",
       "bytes": 406,
       "description": "SEC-06 certificate witness/configured anchor: root-profile. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-root-profile"
+        "path-011-good-root-profile"
       ]
     },
     {
-      "file": "sec06-root.crl",
+      "file": "path-root.crl",
       "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
       "bytes": 180,
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
         "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "bad-sec06-wrong-key",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-pathlen",
-        "good-sec06-name-good",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-cross-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
-        "good-sec06-cross-other-root",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection",
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-002-bad-wrong-key",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-004-good-pathlen",
+        "path-005-good-name-good",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-001-bad-cross-untrusted",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
+        "path-010-good-cross-other-root",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection",
         "crl-ca-no-crl-sign",
         "crl-ca-crl-sign",
         "crl-ca-crl-sign-fallback",
@@ -8154,52 +8154,52 @@
       ]
     },
     {
-      "file": "sec06-root.der",
+      "file": "path-root.der",
       "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c",
       "bytes": 387,
       "description": "SEC-06 certificate witness/configured anchor: root. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
         "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
         "crl-024-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "bad-sec06-wrong-key",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-pathlen",
-        "good-sec06-name-good",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-cross-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-002-bad-wrong-key",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-004-good-pathlen",
+        "path-005-good-name-good",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-001-bad-cross-untrusted",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
         "crl-ca-no-crl-sign",
         "crl-ca-crl-sign",
         "crl-ca-crl-sign-fallback",
@@ -8279,83 +8279,83 @@
       ]
     },
     {
-      "file": "sec06-roots-alternative.pem",
+      "file": "path-roots-alternative.pem",
       "sha256": "71a82516481be8ecb62d84b65604a5dfbfd3aa1f9b352fdbd3710b4ec6be1eea",
       "bytes": 1258,
       "description": "SEC-06 configured roots with identical subject/key and different DNS constraints: rejecting root first, accepting root second. Report must identify the accepting anchor.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-root-selection"
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-upper.crl",
+      "file": "path-upper.crl",
       "sha256": "b4caa1f021cca3e8ebd0b6bc177df6103ad53d03a5488335acfe8c5112892173",
       "bytes": 181,
       "description": "SEC-06 empty, correctly signed local issuer CRL, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-basic",
-        "bad-sec06-ca-false",
-        "bad-sec06-ca-missing-bc",
-        "bad-sec06-leaf-ca",
-        "bad-sec06-ca-critical",
-        "bad-sec06-leaf-critical",
-        "bad-sec06-pathlen",
-        "bad-sec06-name-outside",
-        "bad-sec06-name-excluded",
-        "bad-sec06-wrong-key",
-        "good-sec06-leaf-no-bc",
-        "good-sec06-leaf-no-ku",
-        "good-sec06-leaf-noncritical",
-        "good-sec06-ca-noncritical",
-        "good-sec06-ca-no-ku",
-        "good-sec06-ca-good-eku",
-        "bad-sec06-ca-eku",
-        "bad-sec06-leaf-no-eku",
-        "bad-sec06-ca-ku",
-        "good-sec06-pathlen",
-        "good-sec06-name-good",
-        "good-sec06-wrong-key-first",
-        "good-sec06-wrong-key-last",
-        "good-sec06-cross-first",
-        "good-sec06-cross-last",
-        "good-sec06-cycle-escape",
-        "good-sec06-cycle-escape-reversed",
-        "good-sec06-ca-ku-first",
-        "good-sec06-ca-ku-last",
-        "bad-sec06-cross-untrusted",
-        "bad-sec06-cycle",
-        "bad-sec06-cycle-reversed",
-        "good-sec06-cross-other-root",
-        "good-sec06-root-expired",
-        "good-sec06-root-profile",
-        "good-sec06-root-name",
-        "bad-sec06-root-name",
-        "good-sec06-root-selection"
+        "path-003-good-basic",
+        "path-003-bad-ca-false",
+        "path-003-bad-ca-missing-bc",
+        "path-003-bad-leaf-ca",
+        "path-006-bad-ca-critical",
+        "path-006-bad-leaf-critical",
+        "path-004-bad-pathlen",
+        "path-005-bad-name-outside",
+        "path-005-bad-name-excluded",
+        "path-002-bad-wrong-key",
+        "path-003-good-leaf-no-bc",
+        "path-008-good-leaf-no-ku",
+        "path-006-good-leaf-noncritical",
+        "path-006-good-ca-noncritical",
+        "path-008-good-ca-no-ku",
+        "path-007-good-ca-good-eku",
+        "path-007-bad-ca-eku",
+        "path-007-bad-leaf-no-eku",
+        "path-008-bad-ca-ku",
+        "path-004-good-pathlen",
+        "path-005-good-name-good",
+        "path-002-good-wrong-key-first",
+        "path-002-good-wrong-key-last",
+        "path-010-good-cross-first",
+        "path-010-good-cross-last",
+        "path-010-good-cycle-escape",
+        "path-010-good-cycle-escape-reversed",
+        "path-009-good-ca-ku-first",
+        "path-009-good-ca-ku-last",
+        "path-001-bad-cross-untrusted",
+        "path-001-bad-cycle",
+        "path-001-bad-cycle-reversed",
+        "path-010-good-cross-other-root",
+        "path-011-good-root-expired",
+        "path-011-good-root-profile",
+        "path-005-good-root-name",
+        "path-005-bad-root-name",
+        "path-012-good-root-selection"
       ]
     },
     {
-      "file": "sec06-rollover.crl",
+      "file": "path-rollover.crl",
       "sha256": "a91ec23e7f7edb7130c565964390b6b6b0d81daf1bd860363fc55b57ce58eeff",
       "bytes": 179,
       "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8364,14 +8364,14 @@
       ]
     },
     {
-      "file": "sec06-root-expired.crl",
+      "file": "path-root-expired.crl",
       "sha256": "62e265cf033bc00a2070fd771184f65810c4b9b6bd089559fe6ebf810acd6b6b",
       "bytes": 179,
-      "description": "SEC-10: empty, correctly signed CRL of the SEC-06 root, expired at 1800000000 (nextUpdate 1000 seconds before): on good-sec06-cross-first.exe the root path's only CRL then needs a refresh while the cross path is revoked; supporting revocation evidence, not an individual verification claim.",
+      "description": "SEC-10: empty, correctly signed CRL of the SEC-06 root, expired at 1800000000 (nextUpdate 1000 seconds before): on good-path-cross-first.exe the root path's only CRL then needs a refresh while the cross path is revoked; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8381,14 +8381,14 @@
       ]
     },
     {
-      "file": "sec06-root-not-yet-valid.crl",
+      "file": "path-root-not-yet-valid.crl",
       "sha256": "1fcb6f9b8aeaf794176106e5cdadd584831548a15e3867ef1c13675cb3b2223b",
       "bytes": 180,
       "description": "SEC-23: empty, correctly signed CRL of the SEC-06 root, not yet valid at 1800000000 (thisUpdate 1000 seconds after): a CRL a source could replace, so the certificates it fails to cover are named in certificates_with_replaceable_crl; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8400,14 +8400,14 @@
       ]
     },
     {
-      "file": "sec06-root-akid.crl",
+      "file": "path-root-akid.crl",
       "sha256": "bccd76ffb872ce98e91e1a094a5a14cd776602c80cef95ca7834dc2526d94fce",
       "bytes": 214,
       "description": "SEC-16: empty, correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8417,14 +8417,14 @@
       ]
     },
     {
-      "file": "sec06-rollover-akid.crl",
+      "file": "path-rollover-akid.crl",
       "sha256": "c9e0532d1cf2849bd4fd082b711b5bca7e7ed542b38c2efaf004431abddd9ecc",
       "bytes": 212,
       "description": "SEC-16: empty, correctly signed CRL under the SEC-06 root's name, signed by the rollover key and carrying an authorityKeyIdentifier that names it, valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8434,14 +8434,14 @@
       ]
     },
     {
-      "file": "sec06-root-akid-revoked-rollover.crl",
+      "file": "path-root-akid-revoked-rollover.crl",
       "sha256": "0f4ccc1555dc0df663d2530de004b3780ad71a5e46a4e65e3b505e665ff66876",
       "bytes": 240,
       "description": "SEC-16: correctly signed CRL of the SEC-06 root key, carrying an authorityKeyIdentifier that names it and revoking the rollover certificate (serial 140), valid at 1800000000; supporting revocation evidence, not an individual verification claim.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
@@ -8450,19 +8450,19 @@
       ]
     },
     {
-      "file": "sec06-upper.der",
+      "file": "path-upper.der",
       "sha256": "107f152b465a61b437f68773ef102807d4cce7f85a87c0f5e8a6c73546a2da65",
       "bytes": 391,
       "description": "SEC-06 certificate witness/configured anchor: upper. Exact DER and SHA-256 pin selected-chain identity; variants are re-signed with public deterministic test keys.",
       "provenance": {
         "kind": "synthetic",
-        "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
-        "command": "cargo test --locked --lib regenerate_sec06_fixtures -- --ignored",
+        "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
         "license": "Apache-2.0",
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "good-sec06-pathlen"
+        "path-004-good-pathlen"
       ]
     },
     {
@@ -9858,8 +9858,8 @@
       "file": "crl-ca-no-crl-sign.exe",
       "sha256": "68deb4f76146716589efed0ea8b5d36447653f3ffb30c95d3f62eb53893e1989",
       "bytes": 2200,
-      "description": "SEC-10: Inert PE signed by the SEC-06 leaf; its issuer candidate has a critical KeyUsage with keyCertSign but not cRLSign, so the issuer's CRL (sec06-issuer.crl) cannot be used. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "description": "SEC-10: Inert PE signed by the SEC-06 leaf; its issuer candidate has a critical KeyUsage with keyCertSign but not cRLSign, so the issuer's CRL (path-issuer.crl) cannot be used. Never execute. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-no-crl-sign"
@@ -9870,7 +9870,7 @@
       "sha256": "4fe6d2d91b24de6ad1202dfb8cf229f67e4e46131a1d371601df119580a0d674",
       "bytes": 2200,
       "description": "SEC-10: Paired good PE; the issuer candidate's critical KeyUsage has keyCertSign and cRLSign. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-sign"
@@ -9881,7 +9881,7 @@
       "sha256": "d5f94de933b84101b3e6f29c2a37f25b1bdf6d16ce23c64c23de1dfc3c1081ab",
       "bytes": 2592,
       "description": "SEC-10: Inert PE embedding both issuer candidates, the one without cRLSign first; path building must fall back to the candidate with cRLSign. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-sign-fallback"
@@ -9952,7 +9952,7 @@
       "sha256": "fb83f8902d84788e4a13c83e25f2974b28fec21a6288d1ee3a377e34a5e381f0",
       "bytes": 386,
       "description": "SEC-10: Trust anchor with the SEC-06 root's name and key whose critical KeyUsage has keyCertSign but not cRLSign. Configured anchors are keys, so CRLs it signs remain usable. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-015-root-no-crl-sign-accepted"
@@ -9963,7 +9963,7 @@
       "sha256": "fe672939a8507db27ac21072a8f14418f565ccebc2ae99cebb79408aa7fdff92",
       "bytes": 2248,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf with its own serial (121) whose cRLDistributionPoints lists one fullName URI (http://crl.invalid/sec10-a.crl); issuer candidate is the SEC-06 issuer. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp",
@@ -9999,7 +9999,7 @@
       "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
       "bytes": 233,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl, the point the crl-leaf-crl-dp signer lists. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp",
@@ -10029,7 +10029,7 @@
       "sha256": "f538f815d11ab48b72d20de0ce26f7e01225513b96e51448cea19be95a511fd7",
       "bytes": 258,
       "description": "SEC-10: As crl-issuer-idp-match.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp-revoked",
@@ -10041,7 +10041,7 @@
       "sha256": "2cefb7b9ee82b6378dc6eb750dca47522a1c62a301bc4c045d907790e33e9bb7",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the signer does not list; not authoritative for it. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-036-dp-other-idp-unknown",
@@ -10060,7 +10060,7 @@
       "sha256": "b2e3aaa8744c3beffca0da753bd46d65357cdc80ea1e052ffcb267023131d461",
       "bytes": 233,
       "description": "SEC-10: Correctly signed CRL from the SEC-06 issuer, expired, whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the crl-leaf-crl-dp signer does not list. Not authoritative for that signer, so its age does not decide it. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-036-expired-partition-for-another-point-leaves-status-unknown",
@@ -10072,7 +10072,7 @@
       "sha256": "04ce40d26b3f3025fbfd306a13bf784f548106c6de37c915553a179ed3f7a050",
       "bytes": 256,
       "description": "SEC-10: As crl-issuer-idp-other.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-013-dp-other-partition-revocation-is-ignored",
@@ -10085,7 +10085,7 @@
       "sha256": "2ff1d4c6d45a4f0414f5f9886273d3b5453a2ab22ebc919c891c3ebd640b8229",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names HTTP://CRL.INVALID/sec10-a.crl, the signer's listed point with scheme and host in upper case; URIs are compared byte-exactly, so it is not authoritative. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-case-variant-idp-unknown"
@@ -10096,7 +10096,7 @@
       "sha256": "c477222bbc572a7b594eaaa6e2184161c638bc5f588ae73311c8d598b60c2269",
       "bytes": 2320,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints lists two points: one naming http://crl.invalid/sec10-c.crl and one naming both sec10-d.crl and sec10-e.crl; serial 122. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-multi-second-point-matches",
@@ -10110,7 +10110,7 @@
       "sha256": "efb05fb4d9bcbd1ef50dd0b72e9eb53f45d9b2656d18b58e7aee6a67490f3289",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names only a dNSName (crl.invalid), not a URI; serial 123. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-dns-name-unknown",
@@ -10123,7 +10123,7 @@
       "sha256": "48dcab237ebc87ef8b4cd96a9c046f120bddbddd6aeec4d56b8a5241a95419e1",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints uses nameRelativeToCRLIssuer (CN=sec10); serial 124. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-idp-unsupported",
@@ -10136,7 +10136,7 @@
       "sha256": "7df2d2b0361704d66aa657967c0b4bb037bd95bc3098960e6db54e293a13b0be",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a reasons field (keyCompromise); serial 125. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-reasons-point-unknown",
@@ -10149,7 +10149,7 @@
       "sha256": "25df07c6d83110ce0924c6f721324b6d36aad110ab6860c650f70b795297897d",
       "bytes": 2280,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a cRLIssuer (CN=SEC-06 upper); serial 126. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-crl-issuer-point-unknown",
@@ -10162,7 +10162,7 @@
       "sha256": "e3fc096b982386c2cfb42ae25e7f14408327caf19a6cd9b6c9a16f256e959a45",
       "bytes": 2296,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 127) whose cRLDistributionPoints lists a reason-partitioned point (http://crl.invalid/sec10-c.crl, keyCompromise) and then http://crl.invalid/sec10-a.crl as a plain point. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-mixed-full-crl",
@@ -10174,7 +10174,7 @@
       "sha256": "0e6efbf1f5056074d3efab81f19183fb9f0f12a587b9c67712748a6a566a1421",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 128) whose cRLDistributionPoints names https://crl.invalid/sec10-a.crl. The engine passes it to the CRL source; the built-in HTTP source refuses it. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-https-full-crl",
@@ -10187,7 +10187,7 @@
       "sha256": "88efc22e200f6819c1be90582945da132e29712b1a922a1f72daa81b5ac8f2d8",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by the base SEC-06 leaf; its issuer candidate is a SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-dp-ca-scope-covers-issuer",
@@ -10201,7 +10201,7 @@
       "sha256": "d6bc19962ae073701b65f095457ae87f347de994130c03145e35acdede113ed2",
       "bytes": 2312,
       "description": "SEC-10: Inert PE signed by the crl-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl, so both selected certificates list a point. Never execute. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-014-chain-crl-dp-full-crls",
@@ -10219,7 +10219,7 @@
       "sha256": "993f0d528b7f965f097f756eab8a84756386d9a1f406140a7adc9236b73ea446",
       "bytes": 235,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl with onlyContainsUserCerts TRUE. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-user-scope-covers-signer",
@@ -10231,7 +10231,7 @@
       "sha256": "98c8265f27f3c639045eaa42f2be2012ee34e9ecef13052ad27a760300bc9cbf",
       "bytes": 235,
       "description": "SEC-10: As crl-issuer-idp-match-user.crl, but with onlyContainsCACerts TRUE; not authoritative for an end-entity signer. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-ca-scope-excludes-signer",
@@ -10245,7 +10245,7 @@
       "sha256": "27c22f2761c99791430e03b1ca87f51c7183d52d1681a0927b8a408c1c85c848",
       "bytes": 266,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName lists http://crl.invalid/sec10-b.crl and then http://crl.invalid/sec10-a.crl. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-idp-second-name-matches"
@@ -10256,7 +10256,7 @@
       "sha256": "228cc78f5751145b4d5555106fcd1368459f5d3556c893b68f3fa817de3061c7",
       "bytes": 232,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-e.crl, the second name of the crl-leaf-crl-dp-multi signer's second point. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-multi-second-point-matches",
@@ -10268,7 +10268,7 @@
       "sha256": "da1f60f8471c913d5dd7612baeda84a6f02b56d54012a71d655a14ccc8963079",
       "bytes": 213,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is only a dNSName (crl.invalid). Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-dns-name-unknown",
@@ -10280,7 +10280,7 @@
       "sha256": "c86e2c5ba3f049aead69efaeb92ee4fefd482951f329cafa1124c9619ee93d76",
       "bytes": 214,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint uses nameRelativeToCRLIssuer (CN=sec10); unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-idp-unsupported",
@@ -10290,11 +10290,11 @@
       ]
     },
     {
-      "file": "crl-sec06-root-idp-ca.crl",
+      "file": "crl-path-root-idp-ca.crl",
       "sha256": "7449402a8b071aae56f6adeadffe41afa351a7557dd1917c250c92c358705f6c",
       "bytes": 240,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 root whose critical issuingDistributionPoint names http://crl.invalid/sec10-issuer.crl with onlyContainsCACerts TRUE. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-ca-crl-dp-ca-scope-covers-issuer",
@@ -10304,11 +10304,11 @@
       ]
     },
     {
-      "file": "crl-sec06-root-idp-user.crl",
+      "file": "crl-path-root-idp-user.crl",
       "sha256": "4c3fb765004d20286ed6dca24d712b110fd4c17738b3b3a562bc010b2d11f20d",
       "bytes": 240,
-      "description": "SEC-10: As crl-sec06-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "description": "SEC-10: As crl-path-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
@@ -10318,11 +10318,11 @@
       ]
     },
     {
-      "file": "crl-sec06-root-revoked-issuer.crl",
+      "file": "crl-path-root-revoked-issuer.crl",
       "sha256": "9ecc7636c6365c1cce8f7920f5e8deda7602727e5930462531969824019284ab",
       "bytes": 204,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 root (no issuingDistributionPoint) revoking serial 110, the SEC-06 issuer certificate and its variants. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
@@ -10334,11 +10334,11 @@
       ]
     },
     {
-      "file": "crl-sec06-other-root-revoked-cross.crl",
+      "file": "crl-path-other-root-revoked-cross.crl",
       "sha256": "fb97e26855f42eb9735347fcd8723e24e8b8343a8c2d3d5d4a7700ec5ba16e04",
       "bytes": 209,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 other root (no issuingDistributionPoint) revoking serial 110, the cross certificate (the SEC-06 issuer re-signed by the other root). Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
@@ -10352,11 +10352,11 @@
       ]
     },
     {
-      "file": "crl-sec06-cross-no-cert-sign.exe",
+      "file": "crl-path-cross-no-cert-sign.exe",
       "sha256": "3a82bed7c92c1a5bccf4763ae6352f5f2e79816c21b2e130cab6e354d57f7c4c",
       "bytes": 2960,
       "description": "SEC-10 signed inert PE: the SEC-06 signer with a cross certificate (the issuer re-signed by the other root) whose KeyUsage has cRLSign but lacks keyCertSign, embedded first, then the other root and the issuer. Its cross path fails path policy whatever its CRLs say. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-030-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
@@ -10364,11 +10364,11 @@
       ]
     },
     {
-      "file": "crl-sec06-cross-expired-first.exe",
+      "file": "crl-path-cross-expired-first.exe",
       "sha256": "2918f55141fe79bba16639cc2e642249b5701d4fd204b9c3747acd3a3e79bfdf",
       "bytes": 2968,
       "description": "SEC-10 signed inert PE: the SEC-06 signer with an expired cross certificate (the issuer re-signed by the other root, notAfter one second before 1800000000) embedded first, then the other root and the issuer. webpki's highest-ranked error comes from the expired path, while the issuer's path only lacks a root CRL. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-030-cross-expired-path-beside-path-without-crl-names-the-gap",
@@ -10380,7 +10380,7 @@
       "sha256": "7abe814aef630857f23d5be49d7c2ca4d0b2e7f2d248283680f75aafcc26429d",
       "bytes": 244,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is the directoryName CN=SEC-06 issuer, CN=sec10: what the crl-leaf-crl-dp-relative signer's issuer-relative name expands to under RFC 5280 6.3.3. Relative names are not expanded, so it is not authoritative. Deterministic public test keys.",
-      "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
+      "generator": "src/tests/path_policy.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-relative-expanded-name-unknown"

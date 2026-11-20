@@ -5,11 +5,13 @@ signature adapter. The operating system supplies roots only. This profile is
 shared by Authenticode, timestamp and RDP verification; the SEC-06 fixtures
 exercise it through signed PE files with code-signing certificates. It is not
 Windows trust-policy equivalence or a complete RFC 5280 policy implementation.
+The numbered decisions behind this page, with their status and sources, are
+[Certificate-path decisions](path.md) (`PATH-001` to `PATH-012`).
 
 ## Existing coverage and added evidence
 
-Before SEC-06, `bad-signer-eku`, `bad-signer-key-usage`, `wrong-tsa-eku`,
-`intermediate-without-eku` and `ca-key-usage` covered wrong leaf EKU/KeyUsage,
+Before SEC-06, `path-007-bad-signer-eku`, `path-008-bad-signer-key-usage`, `wrong-tsa-eku`,
+`path-007-intermediate-without-eku` and `path-008-ca-key-usage` covered wrong leaf EKU/KeyUsage,
 TSA EKU, unrestricted intermediate EKU and missing intermediate keyCertSign.
 `intermediate-current-crls`, certificate validity and certificate-signature cases
 provided basic trusted-chain evidence. They did not isolate the path policies
@@ -26,17 +28,17 @@ which policy was exercised, but are not stable consumer identifiers.
 
 | Policy | Focused evidence | Expected behavior |
 | --- | --- | --- |
-| BasicConstraints | `good-sec06-basic`, `bad-sec06-ca-false`, `bad-sec06-ca-missing-bc`, `bad-sec06-leaf-ca`, `good-sec06-leaf-no-bc` | Intermediates need cA=true. A CA cannot act as the signing leaf. A leaf may omit BasicConstraints. |
-| Path length | `good-sec06-basic`, `good-sec06-pathlen`, `bad-sec06-pathlen` | pathLen=0 allows an issuing CA directly above the leaf; an upper CA with one subordinate CA needs pathLen at least 1. Only the upper CA's limit changes in the rejection pair. |
-| DNS name constraints | `good-sec06-name-good`, `bad-sec06-name-outside`, `bad-sec06-name-excluded` | Permit a SAN within the allowed subtree; reject an outside SAN or one in an excluded subtree. The permitted subtree and excluded subtree coexist. |
-| Unknown extensions | `good-sec06-{leaf,ca}-noncritical`, `bad-sec06-{leaf,ca}-critical` | Ignore an unfamiliar noncritical extension, preserving certificate DER; reject the same extension when critical on the leaf or intermediate. |
-| EKU/KeyUsage | `good-sec06-ca-good-eku`, `bad-sec06-ca-eku`, `bad-sec06-leaf-no-eku`, `bad-sec06-ca-ku`, `good-sec06-{leaf,ca}-no-ku` | Require explicit leaf code-signing EKU; a present CA EKU must permit it. A present leaf KU needs digitalSignature, a present CA KU needs keyCertSign. Absent KU is unrestricted. The bad CA KU retains cRLSign so a CRL-usage failure cannot mask the target policy. |
-| Callback rejection and retry | `good-sec06-ca-ku-{first,last}` | An otherwise valid CA missing keyCertSign cannot prevent selection of an acceptable alternative with the same subject/key. |
-| Same subject, different keys | `bad-sec06-wrong-key`, `good-sec06-wrong-key-{first,last}` | A matching issuer DN alone does not establish issuer identity. Reject when only the wrong key is available; choose the signature-valid issuer in either order. |
-| Cross-signing | `bad-sec06-cross-untrusted`, `good-sec06-cross-{first,last,other-root}` | An embedded root does not establish trust. Choose the cross-signature leading to the configured root, including when the other cross-signature appears first; changing the configured root changes the selected chain. |
-| Cycles | `bad-sec06-cycle`, `bad-sec06-cycle-reversed`, `good-sec06-cycle-escape`, `good-sec06-cycle-escape-reversed` | The cryptographically valid A→B→A cycle terminates with untrusted_root in either order. Adding an anchored variant of A yields the direct trusted path in either order. |
-| Anchor profile | `good-sec06-root-expired`, `good-sec06-root-profile`, `crl-015-root-no-crl-sign-accepted` | Configured anchors retain the treatment described below, separate from intermediate policy. An anchor's KeyUsage does not restrict CRL signing either: a root without cRLSign still issues usable CRLs, while an intermediate CRL issuer without cRLSign is `invalid_key_usage` at `revocation`. |
-| Anchor constraints and reporting | `good-sec06-root-name`, `bad-sec06-root-name`, `good-sec06-root-selection` | Apply anchor name constraints, and report the anchor whose constraints actually accepted the path when subject/key are identical. |
+| BasicConstraints | `path-003-good-basic`, `path-003-bad-ca-false`, `path-003-bad-ca-missing-bc`, `path-003-bad-leaf-ca`, `path-003-good-leaf-no-bc` | Intermediates need cA=true. A CA cannot act as the signing leaf. A leaf may omit BasicConstraints. |
+| Path length | `path-003-good-basic`, `path-004-good-pathlen`, `path-004-bad-pathlen` | pathLen=0 allows an issuing CA directly above the leaf; an upper CA with one subordinate CA needs pathLen at least 1. Only the upper CA's limit changes in the rejection pair. |
+| DNS name constraints | `path-005-good-name-good`, `path-005-bad-name-outside`, `path-005-bad-name-excluded` | Permit a SAN within the allowed subtree; reject an outside SAN or one in an excluded subtree. The permitted subtree and excluded subtree coexist. |
+| Unknown extensions | `path-006-good-leaf-noncritical`, `path-006-good-ca-noncritical`, `path-006-bad-leaf-critical`, `path-006-bad-ca-critical` | Ignore an unfamiliar noncritical extension, preserving certificate DER; reject the same extension when critical on the leaf or intermediate. |
+| EKU/KeyUsage | `path-007-good-ca-good-eku`, `path-007-bad-ca-eku`, `path-007-bad-leaf-no-eku`, `path-008-bad-ca-ku`, `path-008-good-leaf-no-ku`, `path-008-good-ca-no-ku` | Require explicit leaf code-signing EKU; a present CA EKU must permit it. A present leaf KU needs digitalSignature, a present CA KU needs keyCertSign. Absent KU is unrestricted. The bad CA KU retains cRLSign so a CRL-usage failure cannot mask the target policy. |
+| Callback rejection and retry | `path-009-good-ca-ku-first`, `path-009-good-ca-ku-last` | An otherwise valid CA missing keyCertSign cannot prevent selection of an acceptable alternative with the same subject/key. |
+| Same subject, different keys | `path-002-bad-wrong-key`, `path-002-good-wrong-key-first`, `path-002-good-wrong-key-last` | A matching issuer DN alone does not establish issuer identity. Reject when only the wrong key is available; choose the signature-valid issuer in either order. |
+| Cross-signing | `path-001-bad-cross-untrusted`, `path-010-good-cross-first`, `path-010-good-cross-last`, `path-010-good-cross-other-root` | An embedded root does not establish trust. Choose the cross-signature leading to the configured root, including when the other cross-signature appears first; changing the configured root changes the selected chain. |
+| Cycles | `path-001-bad-cycle`, `path-001-bad-cycle-reversed`, `path-010-good-cycle-escape`, `path-010-good-cycle-escape-reversed` | The cryptographically valid A→B→A cycle terminates with untrusted_root in either order. Adding an anchored variant of A yields the direct trusted path in either order. |
+| Anchor profile | `path-011-good-root-expired`, `path-011-good-root-profile`, `crl-015-root-no-crl-sign-accepted` | Configured anchors retain the treatment described below, separate from intermediate policy. An anchor's KeyUsage does not restrict CRL signing either: a root without cRLSign still issues usable CRLs, while an intermediate CRL issuer without cRLSign is `invalid_key_usage` at `revocation`. |
+| Anchor constraints and reporting | `path-005-good-root-name`, `path-005-bad-root-name`, `path-012-good-root-selection` | Apply anchor name constraints, and report the anchor whose constraints actually accepted the path when subject/key are identical. |
 
 BasicConstraints, path-length, name-constraint, critical-extension and wrong-key
 failures use `certificate_chain_invalid` at `certificate_chain`. Missing anchored
@@ -108,7 +110,7 @@ interoperability evidence.
 
 ## Regression and validation
 
-The first focused run passed 37 cases and failed `good_sec06_root_selection`:
+The first focused run passed 37 cases and failed `good_path_root_selection`:
 verification succeeded, but `trust.chain` named the configured root whose DNS
 constraints had rejected the leaf. The reporting lookup compared subject and
 SPKI only. Adding name-constraint equality makes it identify an anchor with the

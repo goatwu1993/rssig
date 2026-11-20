@@ -21,7 +21,7 @@ const MULTI_POINTS: [&str; 3] = [
 /// The point the `crl-ca-crl-dp` intermediate lists.
 const ISSUER_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
 /// The SEC-06 issuer certificate's serial, revoked by
-/// `crl-sec06-root-revoked-issuer.crl`.
+/// `crl-path-root-revoked-issuer.crl`.
 const ISSUER_SERIAL: u32 = 110;
 const PARTITIONS: [(&str, &str, bool); 5] = [
     ("match", LISTED_POINT, false),
@@ -145,7 +145,7 @@ fn scope_forms() -> Vec<(&'static str, Vec<u8>)> {
 }
 
 /// SEC-10 SEC-06 root CRLs naming `ISSUER_POINT` with a role scope, as (label,
-/// extension value). Each is `crl-sec06-root-idp-{label}.crl`.
+/// extension value). Each is `crl-path-root-idp-{label}.crl`.
 fn root_scope_forms() -> Vec<(&'static str, Vec<u8>)> {
     let point = full_name(&[uri(ISSUER_POINT)]);
     vec![
@@ -361,11 +361,7 @@ fn write_crl_at(
         signature_algorithm: algorithm,
         signature: BitString::from_bytes(sig.to_der().as_bytes()).unwrap(),
     };
-    std::fs::write(
-        dir.join(format!("sec06-{label}.crl")),
-        crl.to_der().unwrap(),
-    )
-    .unwrap();
+    std::fs::write(dir.join(format!("path-{label}.crl")), crl.to_der().unwrap()).unwrap();
 }
 /// Write a fresh SEC-10 CRL from `issuer` with this critical
 /// issuingDistributionPoint value, if any, revoking `revoked`, if any.
@@ -401,7 +397,7 @@ fn write_scoped_crl(
 }
 fn write_cert(dir: &std::path::Path, label: &str, cert: &Certificate) {
     std::fs::write(
-        dir.join(format!("sec06-{label}.der")),
+        dir.join(format!("path-{label}.der")),
         cert.to_der().unwrap(),
     )
     .unwrap();
@@ -438,7 +434,7 @@ pub(super) fn write(dir: &std::path::Path) {
         write_crl(dir, cert, key, label);
     }
     write_cert(dir, "leaf", &leaf);
-    write_pe(dir, "good-sec06-basic", &leaf, core::slice::from_ref(&ca));
+    write_pe(dir, "good-path-basic", &leaf, core::slice::from_ref(&ca));
     // Each bad variant retains valid image, CMS and certificate signatures.
     for label in [
         "ca-false",
@@ -487,20 +483,20 @@ pub(super) fn write(dir: &std::path::Path) {
         if label == "ca-ku" {
             write_pe(
                 dir,
-                "good-sec06-ca-ku-first",
+                "good-path-ca-ku-first",
                 &leaf,
                 &[changed.clone(), ca.clone()],
             );
             write_pe(
                 dir,
-                "good-sec06-ca-ku-last",
+                "good-path-ca-ku-last",
                 &leaf,
                 &[ca.clone(), changed.clone()],
             );
         }
         write_pe(
             dir,
-            &format!("{}-sec06-{label}", if good { "good" } else { "bad" }),
+            &format!("{}-path-{label}", if good { "good" } else { "bad" }),
             &leaf,
             &[changed],
         );
@@ -523,7 +519,7 @@ pub(super) fn write(dir: &std::path::Path) {
     // The candidate without cRLSign comes first; path building must fall back.
     write_pe(dir, "crl-ca-crl-sign-fallback", &leaf, &usages);
     // SEC-10: the same root key and name as a configured anchor whose KeyUsage
-    // lacks cRLSign; anchors are keys, so sec06-root.crl is still usable.
+    // lacks cRLSign; anchors are keys, so path-root.crl is still usable.
     let mut anchor = root.clone();
     extension(&mut anchor, "2.5.29.15", true, Some(tlv(3, &[2, 0x04])));
     sign(&mut anchor, &root_key);
@@ -610,13 +606,13 @@ pub(super) fn write(dir: &std::path::Path) {
         core::slice::from_ref(&pointed),
     );
     for (label, scope) in root_scope_forms() {
-        let file = format!("crl-sec06-root-idp-{label}.crl");
+        let file = format!("crl-path-root-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
     }
     // SEC-10: a full root CRL that revokes the intermediate issuer.
     write_scoped_crl(
         dir,
-        "crl-sec06-root-revoked-issuer.crl",
+        "crl-path-root-revoked-issuer.crl",
         (&root, &root_key),
         None,
         Some(&ca),
@@ -626,7 +622,7 @@ pub(super) fn write(dir: &std::path::Path) {
     // path is revoked while the other only lacks a root CRL.
     write_scoped_crl(
         dir,
-        "crl-sec06-other-root-revoked-cross.crl",
+        "crl-path-other-root-revoked-cross.crl",
         (&other, &other_key),
         None,
         Some(&ca),
@@ -659,7 +655,7 @@ pub(super) fn write(dir: &std::path::Path) {
         }
         write_pe(
             dir,
-            &format!("{}-sec06-{label}", if good { "good" } else { "bad" }),
+            &format!("{}-path-{label}", if good { "good" } else { "bad" }),
             &changed,
             &[ca.clone()],
         );
@@ -672,14 +668,14 @@ pub(super) fn write(dir: &std::path::Path) {
     write_cert(dir, "lower", &lower);
     write_pe(
         dir,
-        "good-sec06-pathlen",
+        "good-path-pathlen",
         &leaf,
         &[lower.clone(), upper.clone()],
     );
     let mut short = upper.clone();
     bc(&mut short, true, Some(0));
     sign(&mut short, &root_key);
-    write_pe(dir, "bad-sec06-pathlen", &leaf, &[lower, short]);
+    write_pe(dir, "bad-path-pathlen", &leaf, &[lower, short]);
     let mut constrained = ca.clone();
     constraints(
         &mut constrained,
@@ -702,7 +698,7 @@ pub(super) fn write(dir: &std::path::Path) {
         write_pe(
             dir,
             &format!(
-                "{}-sec06-name-{label}",
+                "{}-path-name-{label}",
                 if label == "good" { "good" } else { "bad" }
             ),
             &changed,
@@ -713,22 +709,17 @@ pub(super) fn write(dir: &std::path::Path) {
     let wrong = certificate("issuer", 111, &key(45), "root", &root_key, true);
     write_pe(
         dir,
-        "bad-sec06-wrong-key",
+        "bad-path-wrong-key",
         &leaf,
         core::slice::from_ref(&wrong),
     );
     write_pe(
         dir,
-        "good-sec06-wrong-key-first",
+        "good-path-wrong-key-first",
         &leaf,
         &[wrong.clone(), ca.clone()],
     );
-    write_pe(
-        dir,
-        "good-sec06-wrong-key-last",
-        &leaf,
-        &[ca.clone(), wrong],
-    );
+    write_pe(dir, "good-path-wrong-key-last", &leaf, &[ca.clone(), wrong]);
     let mut cross = ca.clone();
     cross.tbs_certificate.issuer = name("other root");
     extension(&mut cross, "2.5.29.35", false, None);
@@ -736,13 +727,13 @@ pub(super) fn write(dir: &std::path::Path) {
     write_cert(dir, "cross", &cross);
     write_pe(
         dir,
-        "bad-sec06-cross-untrusted",
+        "bad-path-cross-untrusted",
         &leaf,
         &[cross.clone(), other.clone()],
     );
     write_pe(
         dir,
-        "good-sec06-cross-first",
+        "good-path-cross-first",
         &leaf,
         &[cross.clone(), other.clone(), ca.clone()],
     );
@@ -758,7 +749,7 @@ pub(super) fn write(dir: &std::path::Path) {
     sign(&mut cross_no_cert_sign, &other_key);
     write_pe(
         dir,
-        "crl-sec06-cross-no-cert-sign",
+        "crl-path-cross-no-cert-sign",
         &leaf,
         &[cross_no_cert_sign, other.clone(), ca.clone()],
     );
@@ -771,7 +762,7 @@ pub(super) fn write(dir: &std::path::Path) {
     let rolled_leaf = certificate("publisher", 141, &leaf_key, "root", &rollover_key, false);
     write_pe(
         dir,
-        "good-sec06-self-issued-rollover",
+        "good-path-self-issued-rollover",
         &rolled_leaf,
         core::slice::from_ref(&rollover),
     );
@@ -820,13 +811,13 @@ pub(super) fn write(dir: &std::path::Path) {
     sign(&mut cross_expired, &other_key);
     write_pe(
         dir,
-        "crl-sec06-cross-expired-first",
+        "crl-path-cross-expired-first",
         &leaf,
         &[cross_expired, other.clone(), ca.clone()],
     );
     write_pe(
         dir,
-        "good-sec06-cross-last",
+        "good-path-cross-last",
         &leaf,
         &[ca.clone(), cross, other],
     );
@@ -843,25 +834,25 @@ pub(super) fn write(dir: &std::path::Path) {
     sign(&mut cycle_b, &ca_key);
     write_pe(
         dir,
-        "bad-sec06-cycle",
+        "bad-path-cycle",
         &leaf,
         &[cycle_a.clone(), cycle_b.clone()],
     );
     write_pe(
         dir,
-        "bad-sec06-cycle-reversed",
+        "bad-path-cycle-reversed",
         &leaf,
         &[cycle_b.clone(), cycle_a.clone()],
     );
     write_pe(
         dir,
-        "good-sec06-cycle-escape",
+        "good-path-cycle-escape",
         &leaf,
         &[cycle_a.clone(), cycle_b.clone(), ca.clone()],
     );
     write_pe(
         dir,
-        "good-sec06-cycle-escape-reversed",
+        "good-path-cycle-escape-reversed",
         &leaf,
         &[ca.clone(), cycle_b, cycle_a],
     );
@@ -896,23 +887,23 @@ pub(super) fn write(dir: &std::path::Path) {
     let mut named = leaf.clone();
     dns(&mut named, "app.allowed.invalid");
     sign(&mut named, &ca_key);
-    write_pe(dir, "good-sec06-root-name", &named, &[ca]);
+    write_pe(dir, "good-path-root-name", &named, &[ca]);
     use ::der::EncodePem;
     let pem = [
         root_deny.to_pem(::der::pem::LineEnding::LF).unwrap(),
         root_nc.to_pem(::der::pem::LineEnding::LF).unwrap(),
     ]
     .concat();
-    std::fs::write(dir.join("sec06-roots-alternative.pem"), pem).unwrap();
+    std::fs::write(dir.join("path-roots-alternative.pem"), pem).unwrap();
 }
 #[test]
 #[ignore = "explicit fixture maintenance; review binaries and update manifest"]
-fn regenerate_sec06_fixtures() {
+fn regenerate_path_fixtures() {
     write(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 }
 
 #[test]
-fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
+fn path_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
     use ::der::Decode;
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let manifest: serde_json::Value =
@@ -920,7 +911,7 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
     let witnesses: Vec<Certificate> = ["root", "issuer", "upper", "other-root"]
         .iter()
         .map(|label| {
-            Certificate::from_der(&std::fs::read(dir.join(format!("sec06-{label}.der"))).unwrap())
+            Certificate::from_der(&std::fs::read(dir.join(format!("path-{label}.der"))).unwrap())
                 .unwrap()
         })
         .collect();
@@ -939,8 +930,12 @@ fn sec06_policy_fixtures_preserve_image_cms_and_certificate_signatures() {
         let form = point_forms()
             .iter()
             .any(|(label, ..)| filename == format!("crl-leaf-crl-dp-{label}.exe"));
-        let sec06 = filename.contains("-sec06-") || sec10.contains(&filename) || form;
-        if !sec06 || !filename.ends_with(".exe") {
+        let on_path_chain = ["good-path-", "bad-path-", "crl-path-"]
+            .iter()
+            .any(|prefix| filename.starts_with(prefix))
+            || sec10.contains(&filename)
+            || form;
+        if !on_path_chain || !filename.ends_with(".exe") {
             continue;
         }
         count += 1;
@@ -1051,7 +1046,7 @@ fn assert_crl(name: &str, issuer: &Certificate, scope: Option<&[u8]>, revoked: &
 
 #[test]
 fn crl_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
-    let issuer = committed_certificate("sec06-issuer.der");
+    let issuer = committed_certificate("path-issuer.der");
     let leaf = embedded("crl-leaf-crl-dp.exe", &issuer);
     assert_eq!(extension_value(&leaf, "2.5.29.31"), listed_points());
     assert_eq!(
@@ -1071,8 +1066,8 @@ fn crl_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
 
 #[test]
 fn crl_distribution_point_forms_are_signed_and_encoded() {
-    let root = committed_certificate("sec06-root.der");
-    let issuer = committed_certificate("sec06-issuer.der");
+    let root = committed_certificate("path-root.der");
+    let issuer = committed_certificate("path-issuer.der");
     for (label, serial, points) in point_forms() {
         let name = format!("crl-leaf-crl-dp-{label}.exe");
         let leaf = embedded(&name, &issuer);
@@ -1102,21 +1097,21 @@ fn crl_distribution_point_forms_are_signed_and_encoded() {
     );
     for (label, scope) in root_scope_forms() {
         assert_crl(
-            &format!("crl-sec06-root-idp-{label}.crl"),
+            &format!("crl-path-root-idp-{label}.crl"),
             &root,
             Some(&scope),
             &[],
         );
     }
     assert_crl(
-        "crl-sec06-root-revoked-issuer.crl",
+        "crl-path-root-revoked-issuer.crl",
         &root,
         None,
         &[ISSUER_SERIAL],
     );
     assert_crl(
-        "crl-sec06-other-root-revoked-cross.crl",
-        &committed_certificate("sec06-other-root.der"),
+        "crl-path-other-root-revoked-cross.crl",
+        &committed_certificate("path-other-root.der"),
         None,
         &[ISSUER_SERIAL],
     );
@@ -1162,7 +1157,7 @@ fn uris(values: &[&str]) -> NameForm {
 fn crl_distribution_point_forms_decode_as_intended() {
     use ::der::Decode;
     use x509_cert::ext::pkix::{CrlDistributionPoints, crl::dp::IssuingDistributionPoint};
-    let issuer = committed_certificate("sec06-issuer.der");
+    let issuer = committed_certificate("path-issuer.der");
     // Per point: its name, and whether it has reasons or a cRLIssuer.
     let points = |label: &str| -> Vec<(NameForm, bool, bool)> {
         let leaf = embedded(&format!("crl-leaf-crl-dp-{label}.exe"), &issuer);
@@ -1241,15 +1236,15 @@ fn crl_distribution_point_forms_decode_as_intended() {
         (NameForm::Directory(2), false, false)
     );
     assert_eq!(
-        scope("crl-sec06-root-idp-ca.crl"),
+        scope("crl-path-root-idp-ca.crl"),
         (uris(&[ISSUER_POINT]), false, true)
     );
     assert_eq!(
-        scope("crl-sec06-root-idp-user.crl"),
+        scope("crl-path-root-idp-user.crl"),
         (uris(&[ISSUER_POINT]), true, false)
     );
     // The intermediate lists the point; its signer is the plain SEC-06 leaf.
-    let root = committed_certificate("sec06-root.der");
+    let root = committed_certificate("path-root.der");
     let pointed = embedded("crl-ca-crl-dp.exe", &root);
     let listed = CrlDistributionPoints::from_der(&extension_value(&pointed, "2.5.29.31")).unwrap();
     assert_eq!(listed.0.len(), 1);

@@ -98,7 +98,7 @@ GitHub issues to track tasks or sub-items.
 A case pins what the verifier does, not proof that it is right.
 
 1. **Every pinned result needs a reason:** a numbered decision entry (format
-   and the index for each prefix, such as `CRL-` and `TIME-`, in
+   and the index for each prefix, such as `CRL-`, `TIME-` and `PATH-`, in
    [docs/decisions.md](docs/decisions.md)) that the case names in
    `"decision"`. "The code did this" is not a reason.
 2. **Decided or observed:** a Decided entry changes only with the repository

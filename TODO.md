@@ -170,10 +170,8 @@ TDD workflow and checks in AGENTS.md.
   with measured benefit, immutable input, bounded work, and deterministic results.
 - [ ] **TEST-11: Consolidate CRL fixture builders and SEC-10 fixture provenance.** Recorded from PR #44 to #53 reviews; none affects verifier behavior. Detail in [test-11.md](docs/tasks/test-11.md).
 
-- [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done; [time decisions](docs/time.md).
-- [ ] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** From
-  `docs/certificate-path-policy.md` (SEC-06): key usage, EKU, basic and name
-  constraints, path building.
+- [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
+- [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
 - [ ] **TEST-14: Index timestamp decisions as `TSA-NNN`.** From
   `docs/timestamp-policy.md` (SEC-08); rename the `sec08-*` cases.
 - [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`

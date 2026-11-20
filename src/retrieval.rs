@@ -2137,7 +2137,7 @@ mod tests {
     fn a_certificate_named_twice_is_one_target() {
         use ::der::Decode;
         let cert =
-            Certificate::from_der(include_bytes!("../tests/fixtures/sec06-issuer.der")).unwrap();
+            Certificate::from_der(include_bytes!("../tests/fixtures/path-issuer.der")).unwrap();
         let report = serde_json::to_value(CertificateReport::parse(&cert).unwrap()).unwrap();
         let error = error(ErrorCode::RevocationUnknown, "x")
             .detail("certificates_without_crl", vec![report.clone()])
@@ -2783,7 +2783,7 @@ mod tests {
         impl CrlSource for Unrelated {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
                 Ok(CrlResponse::new().with_crl(SourcedCrl::new(
-                    include_bytes!("../tests/fixtures/sec06-root.crl").to_vec(),
+                    include_bytes!("../tests/fixtures/path-root.crl").to_vec(),
                 )))
             }
         }
