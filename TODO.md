@@ -552,6 +552,13 @@ timestamps, and local CRL validation already exist.
     rule), so the code depends on whether an older usable CRL is supplied.
     Releasing it there too would turn a revocation into acceptance: owner's
     decision.
+  - A CRL without nextUpdate that does not re-encode to its own bytes is
+    never judged by webpki, so even one known to cover another point is
+    reported as malformed (replaceable) instead of set aside, and a source
+    may be asked about the certificate. By design, as for any CRL webpki
+    would reject: its scope is not trusted enough to set it aside silently.
+    A canonical encoding of the same CRL is set aside. Acceptance is the
+    same either way.
   - A listing that a newer CRL cleared is not logged: only an accepted
     path's ignored listings reach the logger.
   - A CRL whose only defect is a missing nextUpdate is not offered to a
