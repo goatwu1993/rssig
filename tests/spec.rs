@@ -512,10 +512,14 @@ fn undecided_cases_are_claimed_by_exactly_one_index() {
             .get(prefix.as_str())
             .unwrap_or_else(|| panic!("{prefix} is not listed in docs/decisions.md"));
         let text = std::fs::read_to_string(root.join("docs").join(file)).unwrap();
+        let section = text
+            .split_once("\n## Candidate rules\n")
+            .map(|(_, rest)| rest.split("\n## ").next().unwrap_or(rest))
+            .unwrap_or_else(|| panic!("docs/{file} has no Candidate rules section"));
         for (key, ids) in keys.as_object().expect("candidate keys") {
             assert!(
-                text.contains(&format!("- `{key}`:")),
-                "docs/{file} does not list candidate rule `{key}`"
+                section.contains(&format!("- `{key}`:")),
+                "docs/{file} does not list candidate rule `{key}` under Candidate rules"
             );
             for id in ids.as_array().expect("case list") {
                 let id = id.as_str().expect("case id");

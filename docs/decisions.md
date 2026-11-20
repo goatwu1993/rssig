@@ -67,8 +67,10 @@ is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011. A r
 that is the same in every format stays in its subject index, and the format
 index links to it: every format's SHA-1, integrity-only, nested-signature,
 revocation and expired-with-timestamp cases name `ALG-`, `POLICY-`, `CMS-`,
-`CRL-` and `TIME-` entries. Limits on CRL retrieval (URIs per certificate,
-source bounds) stay `CRL-`; engine budgets are `LIMIT-`. How a loaded root is
+`CRL-` and `TIME-` entries. Limits on CRL retrieval (URIs per certificate, the
+built-in source's size, time and request bounds) stay `CRL-`; engine budgets
+are `LIMIT-`, including the count of loaded CRLs (at most 64, supplied and
+fetched together). How a loaded root is
 used is `PATH-`; how it is loaded is `TRUST-`.
 
 ## Entry format

@@ -205,7 +205,7 @@ TDD workflow and checks in AGENTS.md.
   existing entries for the cases claimed under `attach` (remaining SEC-10
   audit cases, every format's revocation and untrusted-root case), and add a
   PATH entry for `certificate-signature`.
-- [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); [glossary](docs/glossary.md).
+- [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
 
 ## P1 — CLI, reporting, and distribution
 

@@ -8,8 +8,8 @@ same change.
 
 | Term | Meaning | Not to be confused with |
 |---|---|---|
-| **policy** | A behavior the caller **selects**: `VerifyOptions` and its `RevocationPolicy`, integrity-only mode, `--no-revocation`, the `--allow-sha1` opt-in, a `CrlSource`'s own URL policy. The `POLICY-` index records these modes. | Fixed behavior, which is a rule. |
-| **rule** | Fixed verifier behavior that no option turns off, stated in prose ("the best usable CRL decides"). A decision entry states one rule. | A policy, which is selectable. |
+| **policy** | A behavior the caller **selects**: `VerifyOptions` and its `RevocationPolicy`, integrity-only mode, `--no-revocation`, the `--allow-sha1` opt-in, a `CrlSource`'s own URL policy. The `POLICY-` index records the verification modes; the SHA-1 opt-in is `ALG-` and a source's URL policy is `CRL-`. | Fixed behavior, which is a rule. |
+| **rule** | Fixed verifier behavior that no option turns off, stated in prose ("the best usable CRL decides"). A decision entry states one rule, or what one policy does. | A policy, which is selectable. |
 | **check** | The code or verification step that enforces a rule ("path checks", "signature checks"). | |
 | **profile** | The supported subset of an external format or standard, for example the [timestamp profile](timestamp-profile.md) of RFC 3161. | |
 | **verification mode** | One of the selectable policies above: trusted, integrity-only or revocation disabled. | |
@@ -22,7 +22,7 @@ X.509 `certificatePolicies`, and other tools' policies.
 
 | Term | Meaning |
 |---|---|
-| **decision** (entry) | A numbered statement of one rule with its reason, `PREFIX-NNN` ([format](decisions.md#entry-format)). |
+| **decision** (entry) | A numbered statement of one rule, or of what one policy does, with its reason, `PREFIX-NNN` ([format](decisions.md#entry-format)). |
 | **decision index** | The file holding one prefix's entries, such as [crl.md](crl.md); listed in [decision indexes](decisions.md). |
 | **skeleton index** | An index with candidate rules but no numbered entries yet. |
 | **Status** | `Decided` (argued right; changes only with the owner's approval), `Observed` (current behavior, kept visible), `Retired` or `Superseded by`. |

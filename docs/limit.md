@@ -8,7 +8,7 @@ Aggregate verification budgets, nesting depth, host input and report size, batch
 
 ## Boundaries
 
-- Retrieval limits (URIs per certificate, source bounds) stay `CRL-`.
+- Retrieval limits (URIs per certificate, the built-in source's bounds) stay `CRL-`; the count of loaded CRLs, supplied and fetched together, is here.
 
 ## Sources
 

@@ -26,3 +26,4 @@ Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of 
 
 - `unsupported`: an unsupported digest or signature algorithm is `unsupported_algorithm`.
 - `sha1`: SHA-1 digests are `weak_algorithm` unless `--allow-sha1` is given, in every format.
+- `key-size`: an RSA key below 2048 bits is `weak_algorithm`, even with `--allow-sha1`.
