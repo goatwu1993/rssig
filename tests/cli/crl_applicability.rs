@@ -821,7 +821,7 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
         assert_eq!(output.exit_code, 1);
         let error = &output.json["results"][0]["error"];
         assert_eq!(error["code"], "certificate_chain_invalid");
-        assert_eq!(error["details"]["reason"], "confirmation");
+        assert_eq!(error["details"]["reason"], "ambiguous_issuer_keys");
     }
     for crls in [
         [
@@ -892,4 +892,49 @@ fn sec10_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside() {
             "invalid_crl_signature"
         );
     }
+}
+
+/// SEC-23: a root CRL without nextUpdate that lists the signer revokes alone,
+/// as in OpenSSL, BoringSSL and Bouncy Castle, unless a newer complete CRL of
+/// the root leaves the signer out; an older one does not clear it. Run on
+/// `good-pe64.exe`, which has no timestamp, so the signer is checked first.
+#[test]
+fn sec10_a_crl_without_next_update_revokes_unless_a_newer_crl_clears_it() {
+    let run = |crls: &[&str]| {
+        let mut args = vec![
+            "verify".to_owned(),
+            "--no-system-roots".to_owned(),
+            "--roots".to_owned(),
+            "fixtures/root.der".to_owned(),
+            "--time".to_owned(),
+            T.to_owned(),
+        ];
+        for crl in crls {
+            args.extend(["--crl".to_owned(), format!("fixtures/{crl}")]);
+        }
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        run_fixture("good-pe64.exe", &args)
+    };
+    let alone = run(&["sec10-root-no-next-update-revoked.crl"]);
+    assert_eq!(alone.exit_code, 1);
+    assert_eq!(
+        alone.json["results"][0]["error"]["code"],
+        "certificate_revoked"
+    );
+    let older = run(&[
+        "sec10-root-no-next-update-revoked.crl",
+        "sec10-root-no-next-update.crl",
+    ]);
+    assert_eq!(
+        older.json["results"][0]["error"]["code"],
+        "certificate_revoked"
+    );
+    let cleared = run(&[
+        "sec10-root-no-next-update-revoked.crl",
+        "sec10-root-no-next-update-newer.crl",
+    ]);
+    assert_eq!(cleared.exit_code, 1);
+    let error = &cleared.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_crl");
+    assert_eq!(error["details"]["reason"], "missing_next_update");
 }

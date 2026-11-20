@@ -463,7 +463,13 @@
         "sec10-fetch-dns-name-point-denied",
         "sec10-fetch-excluded-name-match-fetches-listed-point",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-not-yet-valid-local-refreshed-by-provider",
+        "crl-not-yet-valid-local-asks-provider",
+        "crl-forged-local-asks-nothing",
+        "crl-unknown-critical-extension-local-refreshed-by-provider",
+        "crl-no-next-update-local-asks-nothing",
         "sec10-fetch-covered-signer-point-not-requested",
         "sec10-fetch-asks-each-certificate-without-crl",
         "sec10-fetch-covered-signer-is-not-asked",
@@ -480,7 +486,15 @@
         "sec10-fetch-expired-partition-for-another-point-still-fetches",
         "crl-fetch-untrusted-chain-requests-nothing",
         "crl-stale-local-refreshed-by-provider",
-        "crl-stale-local-source-abort-is-marked"
+        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+        "crl-malformed-aki-local-refreshed-by-provider",
+        "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
+        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
+        "crl-stale-local-source-abort-is-marked",
+        "crl-not-yet-valid-local-source-abort-is-marked",
+        "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
@@ -851,6 +865,9 @@
     "certificate_revoked": {
       "cases": [
         "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "sec10-no-next-update-crl-revocation-alone-revokes",
+        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
         "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "revoked",
@@ -916,7 +933,8 @@
         "sec10-crl-dp-reasons-point-unknown",
         "sec10-crl-dp-crl-issuer-point-unknown",
         "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap"
+        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl"
       ],
       "gap": ""
     },
@@ -960,9 +978,13 @@
         "sec10-partition-crl-relative-no-listed-point",
         "sec10-fetch-no-listed-point-not-fetched",
         "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-supplied-crl-not-fetched",
+        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-no-next-update-local-asks-nothing",
         "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported"
+        "sec10-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-malformed-aki-beside-expired-local-asks-provider",
+        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "sec10-no-next-update-point-scope-crl-is-replaceable"
       ],
       "gap": ""
     },

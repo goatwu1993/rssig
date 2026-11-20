@@ -313,7 +313,7 @@ also compiled out without `debug_assertions`, so release test runs skip it; see
 Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 
-- An error with `details.reason` `confirmation` is final for retrieval. Since
+- An error with `details.reason` `ambiguous_issuer_keys` is final for retrieval. Since
   SEC-24 it is produced only by the accepted-path rule for same-name issuers
   with different keys whose CRLs do not name those keys
   (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Its code is
