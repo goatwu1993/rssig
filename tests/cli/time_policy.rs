@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 
 const T: u64 = 1_800_000_000;
 
-/// Run a `sec09-` fixture file at the pinned time with these CRL fixtures;
+/// Run a `time-` fixture file at the pinned time with these CRL fixtures;
 /// no CRLs selects `--no-revocation`.
 fn run_file(file: &str, crls: &[&str]) -> Output {
     run_file_at(file, T, crls)
@@ -28,7 +28,7 @@ fn run_file_at(file: &str, time: u64, crls: &[&str]) -> Output {
     }
     args.extend(["--time".into(), time.to_string()]);
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    run_fixture(&format!("sec09-{file}"), &args)
+    run_fixture(&format!("time-{file}"), &args)
 }
 
 fn run(label: &str, time: u64, revocation: bool) -> Output {
@@ -68,7 +68,7 @@ fn not_yet_valid(output: &Output, fragment: Option<&str>) {
 }
 
 #[test]
-fn sec09_expired_timestamped_signer_is_validated_at_timestamp() {
+fn time_expired_timestamped_signer_is_validated_at_timestamp() {
     let output = run("expired-timestamped", T, true);
     let signature = signature(&output);
     assert_eq!(signature["timestamp"], T - 5000);
@@ -84,7 +84,7 @@ fn sec09_expired_timestamped_signer_is_validated_at_timestamp() {
 }
 
 #[test]
-fn sec09_timestamp_equal_to_validation_time_is_not_future() {
+fn time_timestamp_equal_to_validation_time_is_not_future() {
     let output = run("expired-timestamped", T - 5000, false);
     let signature = signature(&output);
     assert_eq!(
@@ -95,7 +95,7 @@ fn sec09_timestamp_equal_to_validation_time_is_not_future() {
 }
 
 #[test]
-fn sec09_timestamp_one_second_after_validation_time_is_future() {
+fn time_timestamp_one_second_after_validation_time_is_future() {
     let output = run("expired-timestamped", T - 5001, false);
     expect_failure(
         &output,
@@ -110,7 +110,7 @@ fn sec09_timestamp_one_second_after_validation_time_is_future() {
 }
 
 #[test]
-fn sec09_lifetime_signing_expired_signer_rejects_valid_rfc3161_timestamp() {
+fn time_lifetime_signing_expired_signer_rejects_valid_rfc3161_timestamp() {
     let output = run("lifetime-expired", T, true);
     expired(&output, None);
     let details = details(&output);
@@ -122,7 +122,7 @@ fn sec09_lifetime_signing_expired_signer_rejects_valid_rfc3161_timestamp() {
 }
 
 #[test]
-fn sec09_lifetime_signing_expired_signer_rejects_valid_countersignature() {
+fn time_lifetime_signing_expired_signer_rejects_valid_countersignature() {
     let output = run("lifetime-counter-expired", T, true);
     expired(&output, None);
     let details = details(&output);
@@ -133,7 +133,7 @@ fn sec09_lifetime_signing_expired_signer_rejects_valid_countersignature() {
 }
 
 #[test]
-fn sec09_lifetime_signing_valid_signer_is_validated_at_validation_time() {
+fn time_lifetime_signing_valid_signer_is_validated_at_validation_time() {
     let output = run("lifetime-valid", T, true);
     let signature = signature(&output);
     assert_eq!(signature["timestamp"], T - 5000);
@@ -152,7 +152,7 @@ fn sec09_lifetime_signing_valid_signer_is_validated_at_validation_time() {
 }
 
 #[test]
-fn sec09_lifetime_signing_expires_one_second_after_not_after() {
+fn time_lifetime_signing_expires_one_second_after_not_after() {
     let output = run("lifetime-valid", T + 1, false);
     expired(&output, None);
     let details = details(&output);
@@ -163,7 +163,7 @@ fn sec09_lifetime_signing_expires_one_second_after_not_after() {
 }
 
 #[test]
-fn sec09_lifetime_signing_requires_validity_at_signing_time() {
+fn time_lifetime_signing_requires_validity_at_signing_time() {
     let output = run("lifetime-before-not-before", T, true);
     not_yet_valid(
         &output,
@@ -182,7 +182,7 @@ fn sec09_lifetime_signing_requires_validity_at_signing_time() {
 }
 
 #[test]
-fn sec09_timestamp_before_signer_not_before_is_rejected() {
+fn time_timestamp_before_signer_not_before_is_rejected() {
     let output = run("timestamp-before-not-before", T, true);
     not_yet_valid(&output, Some("CertNotValidYet"));
     let details = details(&output);
@@ -192,7 +192,7 @@ fn sec09_timestamp_before_signer_not_before_is_rejected() {
 }
 
 #[test]
-fn sec09_lifetime_signing_without_timestamp_is_reported() {
+fn time_lifetime_signing_without_timestamp_is_reported() {
     let output = run("lifetime-untimestamped", T, true);
     let signature = signature(&output);
     assert_eq!(signature["timestamp"], Value::Null);
@@ -202,7 +202,7 @@ fn sec09_lifetime_signing_without_timestamp_is_reported() {
 }
 
 #[test]
-fn sec09_leaf_not_after_is_inclusive_at_whole_seconds() {
+fn time_leaf_not_after_is_inclusive_at_whole_seconds() {
     let output = run("leaf-not-after-exact", T, true);
     let signature = signature(&output);
     assert_eq!(signature["trust"]["validation_time"], T - 2000);
@@ -215,7 +215,7 @@ fn sec09_leaf_not_after_is_inclusive_at_whole_seconds() {
 }
 
 #[test]
-fn sec09_leaf_fraction_after_not_after_is_expired() {
+fn time_leaf_fraction_after_not_after_is_expired() {
     let output = run("leaf-not-after-fraction", T, true);
     expired(
         &output,
@@ -231,7 +231,7 @@ fn sec09_leaf_fraction_after_not_after_is_expired() {
 }
 
 #[test]
-fn sec09_leaf_fraction_inside_not_before_second_is_valid() {
+fn time_leaf_fraction_inside_not_before_second_is_valid() {
     let output = run("leaf-not-before-fraction-inside", T, true);
     let signature = signature(&output);
     assert_eq!(signature["trust"]["validation_time"], T - 3000);
@@ -242,7 +242,7 @@ fn sec09_leaf_fraction_inside_not_before_second_is_valid() {
 }
 
 #[test]
-fn sec09_leaf_fraction_before_not_before_is_not_yet_valid() {
+fn time_leaf_fraction_before_not_before_is_not_yet_valid() {
     let output = run("leaf-not-before-fraction-early", T, true);
     not_yet_valid(&output, None);
     assert_eq!(details(&output)["validation_time"], T - 3001);
@@ -264,7 +264,7 @@ fn intermediate_chain(signature: &Value) {
 }
 
 #[test]
-fn sec09_intermediate_not_after_is_inclusive_at_whole_seconds() {
+fn time_intermediate_not_after_is_inclusive_at_whole_seconds() {
     let output = run("intermediate-not-after-exact", T, false);
     let signature = signature(&output);
     intermediate_chain(signature);
@@ -274,7 +274,7 @@ fn sec09_intermediate_not_after_is_inclusive_at_whole_seconds() {
 }
 
 #[test]
-fn sec09_intermediate_fraction_after_not_after_is_expired() {
+fn time_intermediate_fraction_after_not_after_is_expired() {
     let output = run("intermediate-not-after-fraction", T, false);
     expired(
         &output,
@@ -291,7 +291,7 @@ fn sec09_intermediate_fraction_after_not_after_is_expired() {
 }
 
 #[test]
-fn sec09_intermediate_one_second_after_not_after_is_expired() {
+fn time_intermediate_one_second_after_not_after_is_expired() {
     let output = run("intermediate-expired", T, false);
     expired(&output, Some("CertExpired"));
     assert_eq!(details(&output)["validation_time"], T - 1999);
@@ -299,7 +299,7 @@ fn sec09_intermediate_one_second_after_not_after_is_expired() {
 }
 
 #[test]
-fn sec09_intermediate_fraction_inside_not_before_second_is_valid() {
+fn time_intermediate_fraction_inside_not_before_second_is_valid() {
     let output = run("intermediate-not-before-fraction-inside", T, false);
     let signature = signature(&output);
     intermediate_chain(signature);
@@ -312,7 +312,7 @@ fn sec09_intermediate_fraction_inside_not_before_second_is_valid() {
 }
 
 #[test]
-fn sec09_intermediate_fraction_before_not_before_is_not_yet_valid() {
+fn time_intermediate_fraction_before_not_before_is_not_yet_valid() {
     let output = run("intermediate-not-before-fraction-early", T, false);
     not_yet_valid(&output, None);
     assert_eq!(details(&output)["validation_time"], T - 3001);
@@ -320,7 +320,7 @@ fn sec09_intermediate_fraction_before_not_before_is_not_yet_valid() {
 }
 
 #[test]
-fn sec09_untimestamped_signer_validity_is_inclusive_at_validation_time() {
+fn time_untimestamped_signer_validity_is_inclusive_at_validation_time() {
     let output = run("untimestamped", T - 101, false);
     not_yet_valid(&output, None);
     assert_eq!(details(&output)["validation_time"], T - 101);
@@ -339,7 +339,7 @@ fn sec09_untimestamped_signer_validity_is_inclusive_at_validation_time() {
 }
 
 #[test]
-fn sec09_expired_signer_with_countersignature_is_validated_at_timestamp() {
+fn time_expired_signer_with_countersignature_is_validated_at_timestamp() {
     let output = run("counter-expired-timestamped", T, true);
     let signature = signature(&output);
     assert_eq!(
@@ -351,7 +351,7 @@ fn sec09_expired_signer_with_countersignature_is_validated_at_timestamp() {
 }
 
 #[test]
-fn sec09_untimestamped_lifetime_failure_reports_no_signing_time() {
+fn time_untimestamped_lifetime_failure_reports_no_signing_time() {
     let output = run("lifetime-untimestamped", T + 9001, false);
     expired(&output, None);
     let details = details(&output);
@@ -362,7 +362,7 @@ fn sec09_untimestamped_lifetime_failure_reports_no_signing_time() {
 }
 
 #[test]
-fn sec09_lifetime_signing_rejects_intermediate_issued_after_signing() {
+fn time_lifetime_signing_rejects_intermediate_issued_after_signing() {
     let output = run("lifetime-intermediate-late", T, false);
     not_yet_valid(
         &output,
@@ -381,7 +381,7 @@ fn sec09_lifetime_signing_rejects_intermediate_issued_after_signing() {
 }
 
 #[test]
-fn sec09_lifetime_signing_selects_issuer_valid_at_signing_time() {
+fn time_lifetime_signing_selects_issuer_valid_at_signing_time() {
     let output = run("lifetime-intermediate-rollover", T, false);
     let signature = signature(&output);
     intermediate_chain(signature);
@@ -395,7 +395,7 @@ fn sec09_lifetime_signing_selects_issuer_valid_at_signing_time() {
 }
 
 #[test]
-fn sec09_signing_time_rejection_outranks_issuer_key_usage_in_either_order() {
+fn time_signing_time_rejection_outranks_issuer_key_usage_in_either_order() {
     for label in [
         "lifetime-intermediate-late-ca-usage",
         "lifetime-intermediate-ca-usage-late",
@@ -418,7 +418,7 @@ fn sec09_signing_time_rejection_outranks_issuer_key_usage_in_either_order() {
 }
 
 #[test]
-fn sec09_signing_time_rejection_outranks_key_usage_within_one_path() {
+fn time_signing_time_rejection_outranks_key_usage_within_one_path() {
     for (label, late) in [
         ("lifetime-chain-ca-usage-late", "CN=SEC-09 intermediate 1"),
         ("lifetime-chain-late-ca-usage", "CN=SEC-09 intermediate 0"),
@@ -443,7 +443,7 @@ fn revocation_failure(output: &Output, code: &str, title: &str) {
 }
 
 #[test]
-fn sec09_rdp_expired_signer_is_validated_at_timestamp() {
+fn time_rdp_expired_signer_is_validated_at_timestamp() {
     let output = run_file("rdp-expired-timestamped.rdp", &["good.crl"]);
     let signature = signature(&output);
     assert_eq!(output.json["results"][0]["format"], "rdp_signed_settings");
@@ -454,7 +454,7 @@ fn sec09_rdp_expired_signer_is_validated_at_timestamp() {
 }
 
 #[test]
-fn sec09_rdp_lifetime_signing_expired_signer_rejects_valid_timestamp() {
+fn time_rdp_lifetime_signing_expired_signer_rejects_valid_timestamp() {
     let output = run_file("lifetime-rdp-expired.rdp", &["good.crl"]);
     expired(&output, None);
     let details = details(&output);
@@ -466,7 +466,7 @@ fn sec09_rdp_lifetime_signing_expired_signer_rejects_valid_timestamp() {
 }
 
 #[test]
-fn sec09_nested_expired_signer_is_validated_at_timestamp() {
+fn time_nested_expired_signer_is_validated_at_timestamp() {
     let output = run_file("nested-expired-timestamped.exe", &["good.crl"]);
     expect_success(&output);
     let signatures = output.json["results"][0]["signatures"].as_array().unwrap();
@@ -485,7 +485,7 @@ fn sec09_nested_expired_signer_is_validated_at_timestamp() {
 }
 
 #[test]
-fn sec09_nested_lifetime_signing_expired_signer_rejects_file() {
+fn time_nested_lifetime_signing_expired_signer_rejects_file() {
     let output = run_file("lifetime-nested-expired.exe", &["good.crl"]);
     expired(&output, None);
     let details = details(&output);
@@ -500,10 +500,10 @@ fn sec09_nested_lifetime_signing_expired_signer_rejects_file() {
 }
 
 #[test]
-fn sec09_lifetime_signing_through_intermediate_checks_revocation() {
+fn time_lifetime_signing_through_intermediate_checks_revocation() {
     let output = run_file(
         "lifetime-intermediate-rollover.exe",
-        &["good.crl", "sec09-intermediate.crl"],
+        &["good.crl", "time-intermediate.crl"],
     );
     let signature = signature(&output);
     intermediate_chain(signature);
@@ -521,10 +521,10 @@ fn sec09_lifetime_signing_through_intermediate_checks_revocation() {
 }
 
 #[test]
-fn sec09_lifetime_signing_time_check_runs_with_revocation_enabled() {
+fn time_lifetime_signing_time_check_runs_with_revocation_enabled() {
     let output = run_file(
         "lifetime-intermediate-late.exe",
-        &["good.crl", "sec09-intermediate.crl"],
+        &["good.crl", "time-intermediate.crl"],
     );
     not_yet_valid(
         &output,
@@ -537,12 +537,12 @@ fn sec09_lifetime_signing_time_check_runs_with_revocation_enabled() {
 }
 
 #[test]
-fn sec09_revoked_leaf_is_reported_before_signing_time_on_the_same_path() {
+fn time_revoked_leaf_is_reported_before_signing_time_on_the_same_path() {
     for file in [
         "lifetime-intermediate-late.exe",
         "lifetime-intermediate-rollover.exe",
     ] {
-        let output = run_file(file, &["good.crl", "sec09-intermediate-revoked-leaf.crl"]);
+        let output = run_file(file, &["good.crl", "time-intermediate-revoked-leaf.crl"]);
         revocation_failure(&output, "certificate_revoked", "Certificate revoked");
         assert_eq!(details(&output)["lifetime_signing"], true, "{file}");
         assert_eq!(details(&output)["signing_time"], T - 5000, "{file}");
@@ -550,14 +550,14 @@ fn sec09_revoked_leaf_is_reported_before_signing_time_on_the_same_path() {
 }
 
 #[test]
-fn sec09_signing_time_rejection_outranks_revoked_issuer_on_another_path() {
+fn time_signing_time_rejection_outranks_revoked_issuer_on_another_path() {
     // Kept policy: the only issuer valid at signing is revoked, and the
     // rejection of the late issuer is the reported reason.
     let output = run_file(
         "lifetime-intermediate-rollover.exe",
         &[
-            "sec09-root-revoked-intermediate.crl",
-            "sec09-intermediate.crl",
+            "time-root-revoked-intermediate.crl",
+            "time-intermediate.crl",
         ],
     );
     not_yet_valid(
@@ -570,7 +570,7 @@ fn sec09_signing_time_rejection_outranks_revoked_issuer_on_another_path() {
 }
 
 #[test]
-fn sec09_crl_freshness_is_reported_before_signer_time_checks() {
+fn time_crl_freshness_is_reported_before_signer_time_checks() {
     // The TSA chain is verified first against the same store-wide CRLs, with
     // or without the lifetime EKU.
     for file in [
@@ -585,7 +585,7 @@ fn sec09_crl_freshness_is_reported_before_signer_time_checks() {
 }
 
 #[test]
-fn sec09_lifetime_leaf_not_before_is_inclusive_at_signing_time() {
+fn time_lifetime_leaf_not_before_is_inclusive_at_signing_time() {
     let output = run("lifetime-leaf-not-before-exact", T, true);
     let signature = signature(&output);
     assert_eq!(signature["timestamp"], T - 5000);
@@ -603,8 +603,8 @@ fn sec09_lifetime_leaf_not_before_is_inclusive_at_signing_time() {
 }
 
 #[test]
-fn sec09_lifetime_intermediate_not_before_is_inclusive_at_signing_time() {
-    let crls = ["good.crl", "sec09-intermediate.crl"];
+fn time_lifetime_intermediate_not_before_is_inclusive_at_signing_time() {
+    let crls = ["good.crl", "time-intermediate.crl"];
     let output = run_file("lifetime-intermediate-not-before-exact.exe", &crls);
     let signature = signature(&output);
     intermediate_chain(signature);

@@ -29148,8 +29148,9 @@
       }
     },
     {
-      "id": "sec09-expired-timestamped",
-      "input": "sec09-expired-timestamped.exe",
+      "id": "time-003-expired-timestamped",
+      "input": "time-expired-timestamped.exe",
+      "decision": "TIME-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29189,8 +29190,9 @@
       }
     },
     {
-      "id": "sec09-expired-timestamped-at-validation-time",
-      "input": "sec09-expired-timestamped.exe",
+      "id": "time-005-expired-timestamped-at-validation-time",
+      "input": "time-expired-timestamped.exe",
+      "decision": "TIME-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29222,8 +29224,9 @@
       }
     },
     {
-      "id": "sec09-expired-timestamped-future",
-      "input": "sec09-expired-timestamped.exe",
+      "id": "time-005-expired-timestamped-future",
+      "input": "time-expired-timestamped.exe",
+      "decision": "TIME-005",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29254,8 +29257,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-expired",
-      "input": "sec09-lifetime-expired.exe",
+      "id": "time-001-lifetime-expired",
+      "input": "time-lifetime-expired.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29289,8 +29293,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-counter-expired",
-      "input": "sec09-lifetime-counter-expired.exe",
+      "id": "time-001-lifetime-counter-expired",
+      "input": "time-lifetime-counter-expired.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29324,8 +29329,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-valid",
-      "input": "sec09-lifetime-valid.exe",
+      "id": "time-001-lifetime-valid",
+      "input": "time-lifetime-valid.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29368,8 +29374,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-valid-after-expiry",
-      "input": "sec09-lifetime-valid.exe",
+      "id": "time-001-lifetime-valid-after-expiry",
+      "input": "time-lifetime-valid.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29402,8 +29409,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-before-not-before",
-      "input": "sec09-lifetime-before-not-before.exe",
+      "id": "time-002-lifetime-before-not-before",
+      "input": "time-lifetime-before-not-before.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29441,8 +29449,9 @@
       }
     },
     {
-      "id": "sec09-timestamp-before-not-before",
-      "input": "sec09-timestamp-before-not-before.exe",
+      "id": "time-004-timestamp-before-not-before",
+      "input": "time-timestamp-before-not-before.exe",
+      "decision": "TIME-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29474,8 +29483,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-untimestamped",
-      "input": "sec09-lifetime-untimestamped.exe",
+      "id": "time-001-lifetime-untimestamped",
+      "input": "time-lifetime-untimestamped.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29509,8 +29519,9 @@
       }
     },
     {
-      "id": "sec09-leaf-not-after-exact",
-      "input": "sec09-leaf-not-after-exact.exe",
+      "id": "time-006-leaf-not-after-exact",
+      "input": "time-leaf-not-after-exact.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29543,8 +29554,9 @@
       }
     },
     {
-      "id": "sec09-leaf-not-after-fraction",
-      "input": "sec09-leaf-not-after-fraction.exe",
+      "id": "time-006-leaf-not-after-fraction",
+      "input": "time-leaf-not-after-fraction.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29582,8 +29594,9 @@
       }
     },
     {
-      "id": "sec09-leaf-not-before-fraction-inside",
-      "input": "sec09-leaf-not-before-fraction-inside.exe",
+      "id": "time-006-leaf-not-before-fraction-inside",
+      "input": "time-leaf-not-before-fraction-inside.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29620,8 +29633,9 @@
       }
     },
     {
-      "id": "sec09-leaf-not-before-fraction-early",
-      "input": "sec09-leaf-not-before-fraction-early.exe",
+      "id": "time-006-leaf-not-before-fraction-early",
+      "input": "time-leaf-not-before-fraction-early.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29653,8 +29667,9 @@
       }
     },
     {
-      "id": "sec09-intermediate-not-after-exact",
-      "input": "sec09-intermediate-not-after-exact.exe",
+      "id": "time-006-intermediate-not-after-exact",
+      "input": "time-intermediate-not-after-exact.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29689,8 +29704,9 @@
       }
     },
     {
-      "id": "sec09-intermediate-not-after-fraction",
-      "input": "sec09-intermediate-not-after-fraction.exe",
+      "id": "time-006-intermediate-not-after-fraction",
+      "input": "time-intermediate-not-after-fraction.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29730,8 +29746,9 @@
       }
     },
     {
-      "id": "sec09-intermediate-expired",
-      "input": "sec09-intermediate-expired.exe",
+      "id": "time-003-intermediate-expired",
+      "input": "time-intermediate-expired.exe",
+      "decision": "TIME-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29762,8 +29779,9 @@
       }
     },
     {
-      "id": "sec09-intermediate-not-before-fraction-inside",
-      "input": "sec09-intermediate-not-before-fraction-inside.exe",
+      "id": "time-006-intermediate-not-before-fraction-inside",
+      "input": "time-intermediate-not-before-fraction-inside.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29798,8 +29816,9 @@
       }
     },
     {
-      "id": "sec09-intermediate-not-before-fraction-early",
-      "input": "sec09-intermediate-not-before-fraction-early.exe",
+      "id": "time-006-intermediate-not-before-fraction-early",
+      "input": "time-intermediate-not-before-fraction-early.exe",
+      "decision": "TIME-006",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29830,8 +29849,9 @@
       }
     },
     {
-      "id": "sec09-untimestamped-before-not-before",
-      "input": "sec09-untimestamped.exe",
+      "id": "time-007-untimestamped-before-not-before",
+      "input": "time-untimestamped.exe",
+      "decision": "TIME-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29862,8 +29882,9 @@
       }
     },
     {
-      "id": "sec09-untimestamped-at-not-before",
-      "input": "sec09-untimestamped.exe",
+      "id": "time-007-untimestamped-at-not-before",
+      "input": "time-untimestamped.exe",
+      "decision": "TIME-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29895,8 +29916,9 @@
       }
     },
     {
-      "id": "sec09-untimestamped-at-not-after",
-      "input": "sec09-untimestamped.exe",
+      "id": "time-007-untimestamped-at-not-after",
+      "input": "time-untimestamped.exe",
+      "decision": "TIME-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29928,8 +29950,9 @@
       }
     },
     {
-      "id": "sec09-untimestamped-after-not-after",
-      "input": "sec09-untimestamped.exe",
+      "id": "time-007-untimestamped-after-not-after",
+      "input": "time-untimestamped.exe",
+      "decision": "TIME-007",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29960,8 +29983,9 @@
       }
     },
     {
-      "id": "sec09-counter-expired-timestamped",
-      "input": "sec09-counter-expired-timestamped.exe",
+      "id": "time-003-counter-expired-timestamped",
+      "input": "time-counter-expired-timestamped.exe",
+      "decision": "TIME-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -29998,8 +30022,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-untimestamped-expired",
-      "input": "sec09-lifetime-untimestamped.exe",
+      "id": "time-001-lifetime-untimestamped-expired",
+      "input": "time-lifetime-untimestamped.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30031,8 +30056,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-late",
-      "input": "sec09-lifetime-intermediate-late.exe",
+      "id": "time-002-lifetime-intermediate-late",
+      "input": "time-lifetime-intermediate-late.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30073,8 +30099,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-rollover",
-      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "id": "time-009-lifetime-intermediate-rollover",
+      "input": "time-lifetime-intermediate-rollover.exe",
+      "decision": "TIME-009",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30116,8 +30143,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-late-ca-usage",
-      "input": "sec09-lifetime-intermediate-late-ca-usage.exe",
+      "id": "time-011-lifetime-intermediate-late-ca-usage",
+      "input": "time-lifetime-intermediate-late-ca-usage.exe",
+      "decision": "TIME-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30159,8 +30187,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-ca-usage-late",
-      "input": "sec09-lifetime-intermediate-ca-usage-late.exe",
+      "id": "time-011-lifetime-intermediate-ca-usage-late",
+      "input": "time-lifetime-intermediate-ca-usage-late.exe",
+      "decision": "TIME-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30202,8 +30231,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-chain-ca-usage-late",
-      "input": "sec09-lifetime-chain-ca-usage-late.exe",
+      "id": "time-011-lifetime-chain-ca-usage-late",
+      "input": "time-lifetime-chain-ca-usage-late.exe",
+      "decision": "TIME-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30245,8 +30275,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-chain-late-ca-usage",
-      "input": "sec09-lifetime-chain-late-ca-usage.exe",
+      "id": "time-011-lifetime-chain-late-ca-usage",
+      "input": "time-lifetime-chain-late-ca-usage.exe",
+      "decision": "TIME-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30288,8 +30319,9 @@
       }
     },
     {
-      "id": "sec09-rdp-expired-timestamped",
-      "input": "sec09-rdp-expired-timestamped.rdp",
+      "id": "time-003-rdp-expired-timestamped",
+      "input": "time-rdp-expired-timestamped.rdp",
+      "decision": "TIME-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30327,8 +30359,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-rdp-expired",
-      "input": "sec09-lifetime-rdp-expired.rdp",
+      "id": "time-001-lifetime-rdp-expired",
+      "input": "time-lifetime-rdp-expired.rdp",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30362,8 +30395,9 @@
       }
     },
     {
-      "id": "sec09-nested-expired-timestamped",
-      "input": "sec09-nested-expired-timestamped.exe",
+      "id": "time-003-nested-expired-timestamped",
+      "input": "time-nested-expired-timestamped.exe",
+      "decision": "TIME-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30405,8 +30439,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-nested-expired",
-      "input": "sec09-lifetime-nested-expired.exe",
+      "id": "time-001-lifetime-nested-expired",
+      "input": "time-lifetime-nested-expired.exe",
+      "decision": "TIME-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30440,8 +30475,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-rollover-revocation",
-      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "id": "time-008-lifetime-rollover-revocation",
+      "input": "time-lifetime-intermediate-rollover.exe",
+      "decision": "TIME-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30450,7 +30486,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate.crl",
+        "fixtures/time-intermediate.crl",
         "--time",
         "1800000000"
       ],
@@ -30491,8 +30527,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-rollover-revocation-unknown",
-      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "id": "time-008-lifetime-rollover-revocation-unknown",
+      "input": "time-lifetime-intermediate-rollover.exe",
+      "decision": "TIME-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30524,8 +30561,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-late-revocation",
-      "input": "sec09-lifetime-intermediate-late.exe",
+      "id": "time-002-lifetime-late-revocation",
+      "input": "time-lifetime-intermediate-late.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30534,7 +30572,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate.crl",
+        "fixtures/time-intermediate.crl",
         "--time",
         "1800000000"
       ],
@@ -30568,8 +30606,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-late-revoked-leaf",
-      "input": "sec09-lifetime-intermediate-late.exe",
+      "id": "time-012-lifetime-late-revoked-leaf",
+      "input": "time-lifetime-intermediate-late.exe",
+      "decision": "TIME-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30578,7 +30617,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate-revoked-leaf.crl",
+        "fixtures/time-intermediate-revoked-leaf.crl",
         "--time",
         "1800000000"
       ],
@@ -30603,8 +30642,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-rollover-revoked-leaf",
-      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "id": "time-008-lifetime-rollover-revoked-leaf",
+      "input": "time-lifetime-intermediate-rollover.exe",
+      "decision": "TIME-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30613,7 +30653,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate-revoked-leaf.crl",
+        "fixtures/time-intermediate-revoked-leaf.crl",
         "--time",
         "1800000000"
       ],
@@ -30639,7 +30679,7 @@
     },
     {
       "id": "crl-032-lifetime-rollover-revoked-issuer",
-      "input": "sec09-lifetime-intermediate-rollover.exe",
+      "input": "time-lifetime-intermediate-rollover.exe",
       "decision": "CRL-032",
       "command": [
         "verify",
@@ -30647,9 +30687,9 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec09-root-revoked-intermediate.crl",
+        "fixtures/time-root-revoked-intermediate.crl",
         "--crl",
-        "fixtures/sec09-intermediate.crl",
+        "fixtures/time-intermediate.crl",
         "--time",
         "1800000000"
       ],
@@ -30684,8 +30724,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-before-not-before-crl-expired",
-      "input": "sec09-lifetime-before-not-before.exe",
+      "id": "time-013-lifetime-before-not-before-crl-expired",
+      "input": "time-lifetime-before-not-before.exe",
+      "decision": "TIME-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30716,8 +30757,9 @@
       }
     },
     {
-      "id": "sec09-timestamp-before-not-before-crl-expired",
-      "input": "sec09-timestamp-before-not-before.exe",
+      "id": "time-013-timestamp-before-not-before-crl-expired",
+      "input": "time-timestamp-before-not-before.exe",
+      "decision": "TIME-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30748,8 +30790,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-leaf-not-before-exact",
-      "input": "sec09-lifetime-leaf-not-before-exact.exe",
+      "id": "time-002-lifetime-leaf-not-before-exact",
+      "input": "time-lifetime-leaf-not-before-exact.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30788,8 +30831,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-leaf-not-before-early",
-      "input": "sec09-lifetime-leaf-not-before-early.exe",
+      "id": "time-002-lifetime-leaf-not-before-early",
+      "input": "time-lifetime-leaf-not-before-early.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30831,8 +30875,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-not-before-exact",
-      "input": "sec09-lifetime-intermediate-not-before-exact.exe",
+      "id": "time-002-lifetime-intermediate-not-before-exact",
+      "input": "time-lifetime-intermediate-not-before-exact.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30841,7 +30886,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate.crl",
+        "fixtures/time-intermediate.crl",
         "--time",
         "1800000000"
       ],
@@ -30880,8 +30925,9 @@
       }
     },
     {
-      "id": "sec09-lifetime-intermediate-not-before-early",
-      "input": "sec09-lifetime-intermediate-not-before-early.exe",
+      "id": "time-002-lifetime-intermediate-not-before-early",
+      "input": "time-lifetime-intermediate-not-before-early.exe",
+      "decision": "TIME-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30890,7 +30936,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec09-intermediate.crl",
+        "fixtures/time-intermediate.crl",
         "--time",
         "1800000000"
       ],
