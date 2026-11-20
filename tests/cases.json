@@ -23677,9 +23677,9 @@
       }
     },
     {
-      "id": "crl-035-rdp-eku-retry-ca-missing-crl-is-unknown",
+      "id": "crl-034-rdp-eku-retry-ca-missing-crl-is-unknown",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": "CRL-035",
+      "decision": "CRL-034",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23751,9 +23751,9 @@
       }
     },
     {
-      "id": "crl-034-rdp-eku-retry-ca-revoked-usage-is-revoked",
+      "id": "crl-033-rdp-eku-retry-ca-revoked-usage-is-revoked",
       "input": "good-rdp-eku-retry-ca.rdp",
-      "decision": "CRL-034",
+      "decision": "CRL-033",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24956,9 +24956,9 @@
       }
     },
     {
-      "id": "crl-043-not-yet-valid-local-asks-provider",
+      "id": "crl-042-not-yet-valid-local-asks-provider",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-043",
+      "decision": "CRL-042",
       "crl_responses": {},
       "command": [
         "verify",
@@ -25185,9 +25185,9 @@
       }
     },
     {
-      "id": "crl-044-malformed-aki-beside-expired-local-asks-provider",
+      "id": "crl-043-malformed-aki-beside-expired-local-asks-provider",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-044",
+      "decision": "CRL-043",
       "crl_responses": {},
       "command": [
         "verify",
@@ -25242,9 +25242,9 @@
       }
     },
     {
-      "id": "crl-041-no-next-update-local-asks-nothing",
+      "id": "crl-040-no-next-update-local-asks-nothing",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-041",
+      "decision": "CRL-040",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -25280,9 +25280,9 @@
       }
     },
     {
-      "id": "crl-042-stale-local-source-abort-is-marked",
+      "id": "crl-041-stale-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-042",
+      "decision": "CRL-041",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -25331,9 +25331,9 @@
       }
     },
     {
-      "id": "crl-043-not-yet-valid-local-source-abort-is-marked",
+      "id": "crl-042-not-yet-valid-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-043",
+      "decision": "CRL-042",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -25382,9 +25382,9 @@
       }
     },
     {
-      "id": "crl-043-unknown-critical-extension-local-source-abort-is-marked",
+      "id": "crl-042-unknown-critical-extension-local-source-abort-is-marked",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-043",
+      "decision": "CRL-042",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -30243,9 +30243,9 @@
       }
     },
     {
-      "id": "time-011-lifetime-intermediate-late-ca-usage",
+      "id": "time-010-lifetime-intermediate-late-ca-usage",
       "input": "time-lifetime-intermediate-late-ca-usage.exe",
-      "decision": "TIME-011",
+      "decision": "TIME-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30287,9 +30287,9 @@
       }
     },
     {
-      "id": "time-011-lifetime-intermediate-ca-usage-late",
+      "id": "time-010-lifetime-intermediate-ca-usage-late",
       "input": "time-lifetime-intermediate-ca-usage-late.exe",
-      "decision": "TIME-011",
+      "decision": "TIME-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30331,9 +30331,9 @@
       }
     },
     {
-      "id": "time-011-lifetime-chain-ca-usage-late",
+      "id": "time-010-lifetime-chain-ca-usage-late",
       "input": "time-lifetime-chain-ca-usage-late.exe",
-      "decision": "TIME-011",
+      "decision": "TIME-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30375,9 +30375,9 @@
       }
     },
     {
-      "id": "time-011-lifetime-chain-late-ca-usage",
+      "id": "time-010-lifetime-chain-late-ca-usage",
       "input": "time-lifetime-chain-late-ca-usage.exe",
-      "decision": "TIME-011",
+      "decision": "TIME-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30706,9 +30706,9 @@
       }
     },
     {
-      "id": "time-012-lifetime-late-revoked-leaf",
+      "id": "time-011-lifetime-late-revoked-leaf",
       "input": "time-lifetime-intermediate-late.exe",
-      "decision": "TIME-012",
+      "decision": "TIME-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -30778,9 +30778,9 @@
       }
     },
     {
-      "id": "crl-032-lifetime-rollover-revoked-issuer",
+      "id": "time-012-lifetime-rollover-revoked-issuer",
       "input": "time-lifetime-intermediate-rollover.exe",
-      "decision": "CRL-032",
+      "decision": "TIME-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31374,9 +31374,9 @@
       }
     },
     {
-      "id": "crl-048-forged-crl-naming-another-key-is-set-aside",
+      "id": "crl-047-forged-crl-naming-another-key-is-set-aside",
       "input": "good-countersignature.exe",
-      "decision": "CRL-048",
+      "decision": "CRL-047",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31404,9 +31404,9 @@
       }
     },
     {
-      "id": "crl-048-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+      "id": "crl-047-forged-crl-naming-a-same-key-roots-identifier-is-forged",
       "input": "good-countersignature.exe",
-      "decision": "CRL-048",
+      "decision": "CRL-047",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32067,9 +32067,9 @@
       }
     },
     {
-      "id": "crl-036-dp-other-idp-unknown",
+      "id": "crl-035-dp-other-idp-unknown",
       "input": "crl-leaf-crl-dp.exe",
-      "decision": "CRL-036",
+      "decision": "CRL-035",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33621,9 +33621,9 @@
       }
     },
     {
-      "id": "crl-037-cross-revoked-path-beside-path-with-expired-crl-names-it",
+      "id": "crl-036-cross-revoked-path-beside-path-with-expired-crl-names-it",
       "input": "good-path-cross-first.exe",
-      "decision": "CRL-037",
+      "decision": "CRL-036",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33664,9 +33664,9 @@
       }
     },
     {
-      "id": "crl-037-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+      "id": "crl-036-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
       "input": "good-path-cross-first.exe",
-      "decision": "CRL-037",
+      "decision": "CRL-036",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33756,9 +33756,9 @@
       }
     },
     {
-      "id": "crl-043-chain-unknown-names-missing-and-not-yet-valid-crl",
+      "id": "crl-042-chain-unknown-names-missing-and-not-yet-valid-crl",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-043",
+      "decision": "CRL-042",
       "command": [
         "verify",
         "--no-system-roots",
@@ -34177,9 +34177,9 @@
       }
     },
     {
-      "id": "crl-040-fetch-by-certificate-answer-requests-no-listed-point",
+      "id": "crl-039-fetch-by-certificate-answer-requests-no-listed-point",
       "input": "crl-leaf-crl-dp.exe",
-      "decision": "CRL-040",
+      "decision": "CRL-039",
       "crl_responses": {},
       "crl_certificate_responses": {
         "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "path-issuer.crl"
@@ -34227,9 +34227,9 @@
       }
     },
     {
-      "id": "crl-040-fetch-by-certificate-unusable-answer-records-unused-points",
+      "id": "crl-039-fetch-by-certificate-unusable-answer-records-unused-points",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-040",
+      "decision": "CRL-039",
       "crl_responses": {},
       "crl_certificate_responses": {
         "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": "expired.crl"
@@ -34304,9 +34304,9 @@
       }
     },
     {
-      "id": "crl-033-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+      "id": "crl-032-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
       "input": "bad-path-ca-ku.exe",
-      "decision": "CRL-033",
+      "decision": "CRL-032",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34342,9 +34342,9 @@
       }
     },
     {
-      "id": "crl-033-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+      "id": "crl-032-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
       "input": "bad-path-ca-ku.exe",
-      "decision": "CRL-033",
+      "decision": "CRL-032",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35038,9 +35038,9 @@
       "crl_responses": {}
     },
     {
-      "id": "crl-039-fetch-excluded-name-match-fetches-listed-point",
+      "id": "crl-038-fetch-excluded-name-match-fetches-listed-point",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.example.invalid/test.crl": "good.crl"
       },
@@ -35176,9 +35176,9 @@
       }
     },
     {
-      "id": "crl-041-no-next-update-point-scope-crl-is-replaceable",
+      "id": "crl-040-no-next-update-point-scope-crl-is-replaceable",
       "input": "good-pe64.exe",
-      "decision": "CRL-041",
+      "decision": "CRL-040",
       "command": [
         "verify",
         "--no-system-roots",
@@ -35306,9 +35306,9 @@
       }
     },
     {
-      "id": "crl-043-fetch-unusable-scope-supplied-crl-stands-without-answer",
+      "id": "crl-042-fetch-unusable-scope-supplied-crl-stands-without-answer",
       "input": "crl-leaf-crl-dp.exe",
-      "decision": "CRL-043",
+      "decision": "CRL-042",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35389,9 +35389,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-covered-signer-point-not-requested",
+      "id": "crl-038-fetch-covered-signer-point-not-requested",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "path-root.crl"
       },
@@ -35444,9 +35444,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-asks-each-certificate-without-crl",
+      "id": "crl-038-fetch-asks-each-certificate-without-crl",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "path-root.crl",
         "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
@@ -35509,9 +35509,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-covered-signer-is-not-asked",
+      "id": "crl-038-fetch-covered-signer-is-not-asked",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "path-root.crl"
       },
@@ -35604,9 +35604,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-mixed-point-requests-plain-uri",
+      "id": "crl-038-fetch-mixed-point-requests-plain-uri",
       "input": "crl-leaf-crl-dp-mixed.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
@@ -35667,9 +35667,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-asks-only-the-uncovered-certificate",
+      "id": "crl-038-fetch-asks-only-the-uncovered-certificate",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {},
       "command": [
         "verify",
@@ -35714,9 +35714,9 @@
       }
     },
     {
-      "id": "crl-039-fetch-bad-response-is-no-evidence-beside-another-point",
+      "id": "crl-038-fetch-bad-response-is-no-evidence-beside-another-point",
       "input": "crl-leaf-crl-dp-multi.exe",
-      "decision": "CRL-039",
+      "decision": "CRL-038",
       "crl_responses": {
         "http://crl.invalid/sec10-c.crl": "path-root.der",
         "http://crl.invalid/sec10-e.crl": "crl-issuer-idp-second-point.crl"
@@ -36121,9 +36121,9 @@
       }
     },
     {
-      "id": "crl-045-fetch-builtin-source-denies-https",
+      "id": "crl-044-fetch-builtin-source-denies-https",
       "input": "crl-leaf-crl-dp-https.exe",
-      "decision": "CRL-045",
+      "decision": "CRL-044",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37059,9 +37059,9 @@
       }
     },
     {
-      "id": "crl-036-expired-partition-for-another-point-leaves-status-unknown",
+      "id": "crl-035-expired-partition-for-another-point-leaves-status-unknown",
       "input": "crl-leaf-crl-dp.exe",
-      "decision": "CRL-036",
+      "decision": "CRL-035",
       "command": [
         "verify",
         "--no-system-roots",
@@ -37098,9 +37098,9 @@
       }
     },
     {
-      "id": "crl-036-fetch-expired-partition-for-another-point-still-fetches",
+      "id": "crl-035-fetch-expired-partition-for-another-point-still-fetches",
       "input": "crl-leaf-crl-dp.exe",
-      "decision": "CRL-036",
+      "decision": "CRL-035",
       "crl_responses": {
         "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },

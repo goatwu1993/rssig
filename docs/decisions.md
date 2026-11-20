@@ -8,12 +8,29 @@ holds only its entries.
 | Prefix | Index | Subject |
 |---|---|---|
 | `CRL-` | [crl.md](crl.md) | CRL selection, scope, issuer keys, candidate paths and CRL retrieval |
-| `TIME-` | [time.md](time.md) | Validation time, timestamp time, lifetime signing and time boundaries |
+| `TIME-` | [time.md](time.md) | Validation time: at which instant certificates are checked |
 | `PATH-` | [path.md](path.md) | Certificate-path policy: anchors, issuer identity, constraints, EKU and KeyUsage, path building |
-| `TSA-` | [tsa.md](tsa.md) | Timestamp tokens and countersignatures: binding, TSA signature and EKU, multiplicity, TSTInfo profile |
+| `TSA-` | [tsa.md](tsa.md) | Timestamp tokens: whether an RFC 3161 token or countersignature can be trusted at all |
 
 A new subject gets its own prefix and index file directly under `docs/`, and
 a row here.
+
+## Which index
+
+Each index answers one question; an entry goes where its question is asked.
+The usual error codes are a hint, not the rule.
+
+| Question | Index | Typical codes |
+|---|---|---|
+| Which CRL decides, does it apply, is a certificate revoked, and how is a missing CRL fetched? | `CRL-` | `invalid_crl`, `certificate_revoked`, `revocation_unknown`, `crl_expired` |
+| At which instant are certificates checked: validation time, signing time, lifetime signing, validity boundaries? | `TIME-` | `certificate_expired`, `certificate_not_yet_valid`, `timestamp_in_future` |
+| Can this timestamp token be trusted at all: binding, TSA signature and EKU, multiplicity, TSTInfo profile? | `TSA-` | `invalid_timestamp`, `timestamp_imprint_mismatch`, `invalid_eku` at `timestamp` |
+| Is this certificate path acceptable: anchors, issuer identity, constraints, EKU and KeyUsage, path building? | `PATH-` | `untrusted_root`, `certificate_chain_invalid`, `invalid_eku`, `invalid_key_usage` |
+
+A rule that touches two questions goes where its decision is made: the
+precedence between a lifetime-signing failure and a revocation is set by the
+lifetime-signing policy, so it is a `TIME-` entry (TIME-012); a CRL issuer's
+KeyUsage is a `CRL-` entry (CRL-015).
 
 ## Entry format
 
@@ -69,9 +86,12 @@ is `Decided` or `Observed`.
 
 An ID is a prefix and a three-digit number. Each index orders its entries by
 importance when it is first numbered and says how; a later entry takes the
-next free number. An ID is never reused or renumbered once it is on `main`: a
-dropped entry keeps it with Status `Retired` or `Superseded by`, and a changed
-rule keeps it while git history keeps the earlier text.
+next free number. A changed rule keeps its ID while git history keeps the
+earlier text. An ID is not renumbered except in a reindex the repository
+owner approves: a PR of its own that moves misplaced entries to the right
+index, renumbers every affected index to keep its order, and updates every
+case ID, decision and reference in the same change. Outside a reindex, a
+dropped entry keeps its ID with Status `Retired` or `Superseded by`.
 
 ## Task documents
 

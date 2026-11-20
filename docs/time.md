@@ -1,12 +1,18 @@
-# Time decisions
+# Validation-time decisions
 
-Numbered decisions behind rssig's validation-time, timestamp-time and
-lifetime-signing behavior. The entry format is defined in
-[Decision indexes](decisions.md); the explanation of the policy is in
-[time policy](time-policy.md), and the review history in SEC-09 and SEC-14
-([done](tasks/done.md),
-[TODO.md](../TODO.md)). Revocation-specific time rules are CRL entries
-([CRL decisions](crl.md)), such as CRL-032.
+Numbered decisions that answer one question: **at which instant are
+certificates checked?** The validation time, a timestamp's signing time,
+lifetime signing and the validity boundaries, and how a failure at that
+instant ranks against other failures. Whether a timestamp token can be trusted
+at all is a [timestamp token decision](tsa.md); see
+[which index](decisions.md#which-index). The entry format is defined in
+[Decision indexes](decisions.md); the policy is explained in
+[time policy](time-policy.md), and the review history is in SEC-09 and SEC-14
+([done](tasks/done.md), [TODO.md](../TODO.md)).
+
+TIME-004 and TIME-005 check a timestamp's time, but against certificate
+validity and the validation time, so they belong here rather than to the
+token decisions.
 
 ## Order
 
@@ -33,13 +39,15 @@ Observed ones. A new entry takes the next free number.
 | [TIME-007](#time-007-an-untimestamped-signer-is-validated-at-the-validation-time-inclusive-at-whole-seconds) | An untimestamped signer is validated at the validation time, inclusive at whole seconds | Decided | acceptance |
 | [TIME-008](#time-008-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) | A lifetime path is still revocation-checked at the validation time | Decided | acceptance |
 | [TIME-009](#time-009-path-building-skips-an-intermediate-issued-after-the-signing-time) | Path building skips an intermediate issued after the signing time | Decided | acceptance |
-| [TIME-010](#time-010-configured-anchors-are-not-checked-for-validity) | Configured anchors are not checked for validity | Decided | acceptance |
-| [TIME-011](#time-011-the-signing-time-rejection-ranks-as-a-validity-error) | The signing-time rejection ranks as a validity error | Decided | diagnostics |
-| [TIME-012](#time-012-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) | A revocation on the same path is reported before the signing-time check | Decided | diagnostics |
+| [TIME-010](#time-010-the-signing-time-rejection-ranks-as-a-validity-error) | The signing-time rejection ranks as a validity error | Decided | diagnostics |
+| [TIME-011](#time-011-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) | A revocation on the same path is reported before the signing-time check | Decided | diagnostics |
+| [TIME-012](#time-012-lifetime-signing-validity-outranks-revocation-on-another-path) | Lifetime-signing validity outranks revocation on another path | Decided | diagnostics |
 | [TIME-013](#time-013-crl-freshness-is-reported-before-the-signing-time-check) | CRL freshness is reported before the signing-time check | Decided | diagnostics |
 | [TIME-014](#time-014-failure-details-name-the-chain-certificate-that-failed) | Failure details name the chain certificate that failed | Decided | diagnostics |
 
 ## Tier 1: fail-open
+
+
 
 ### TIME-001: A lifetime-signing signer is validated at the validation time
 
@@ -154,6 +162,8 @@ and a revoked leaf is rejected even when another path would verify. Historical
 
 ## Tier 2: availability
 
+
+
 ### TIME-009: Path building skips an intermediate issued after the signing time
 
 The signing-time check of intermediates runs inside path building, so a
@@ -168,23 +178,11 @@ signing is rejected as a candidate and another valid issuer is used.
   - Written argument: a valid embedded issuer must not be lost because
     another candidate was tried first.
 
-### TIME-010: Configured anchors are not checked for validity
-
-Configured anchors are keys: their validity is not checked at the validation
-time or at a lifetime signing time, so a lifetime path through a root
-re-issued after the signing time is accepted.
-
-- **Status:** Decided
-- **Decided by:** written choice, kept as policy in SEC-14 (PR #43 review)
-- **Pins:** acceptance
-- **Sources:**
-  - webpki treats configured anchors as keys; see
-    [certificate-path policy](certificate-path-policy.md).
-- **Note:** no case names this entry yet.
-
 ## Tier 3: result diagnostics
 
-### TIME-011: The signing-time rejection ranks as a validity error
+
+
+### TIME-010: The signing-time rejection ranks as a validity error
 
 Candidate rejection follows webpki's error ranking: the signing-time
 rejection ranks above an intermediate lacking keyCertSign and above unknown
@@ -198,7 +196,7 @@ where each defect sits. Both outcomes reject.
 - **Sources:**
   - Written argument: the reported defect must not depend on embedding order.
 
-### TIME-012: A revocation on the same path is reported before the signing-time check
+### TIME-011: A revocation on the same path is reported before the signing-time check
 
 The signing-time check runs after webpki's own checks of a candidate path, so
 a revocation on that path is reported instead. Both outcomes reject.
@@ -208,6 +206,17 @@ a revocation on that path is reported instead. Both outcomes reject.
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument in [time policy](time-policy.md#lifetime-signing).
+
+### TIME-012: Lifetime-signing validity outranks revocation on another path
+
+Across candidate paths, a CA issued after the lifetime signing time on one path outranks a revocation on another; both reject.
+
+- **Status:** Decided
+- **Decided by:** written choice (the references disagree and neither has lifetime signing); kept as policy in SEC-14
+- **Pins:** diagnostics
+- **Sources:**
+  - OpenSSL builds one chain and checks revocation before validity.
+  - Bouncy Castle tries every path and checks validity before revocation per certificate.
 
 ### TIME-013: CRL freshness is reported before the signing-time check
 

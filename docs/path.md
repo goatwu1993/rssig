@@ -175,11 +175,13 @@ shortest, newest or strongest preference is promised.
 
 Only subject, public key and name constraints are taken from a configured
 root. Its expiry, self-signature, BasicConstraints, path length, KeyUsage and
-EKU are not checked as path policy.
+EKU are not checked as path policy, at the validation time or at a lifetime
+signing time, so a lifetime path through a root re-issued after the signing
+time is accepted.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #40 (SEC-06); the same rule holds at a
-  lifetime signing time (TIME-010) and for CRL signing (CRL-015)
+- **Decided by:** written choice, PR #40 (SEC-06), and kept as policy for
+  lifetime signing in SEC-14. CRL-015 applies the same rule to CRL signing
 - **Pins:** acceptance
 - **Sources:**
   - webpki `anchor_from_trusted_cert`: an anchor is subject, key and name

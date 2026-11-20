@@ -59,23 +59,22 @@ holds for the entries numbered when it was set.
 | [CRL-029](#crl-029-missing-evidence-is-revocation_unknown-a-source-has-four-outcome-kinds) | Missing evidence is `revocation_unknown`; a source has four outcome kinds | Retrieval | Decided | diagnostics |
 | [CRL-030](#crl-030-which-error-a-rejected-chain-reports) | Which error a rejected chain reports | Paths and usages | Decided | diagnostics |
 | [CRL-031](#crl-031-a-crl-without-nextupdate-alone-revokes-unless-a-newer-crl-clears-it) | A CRL without nextUpdate alone revokes, unless a newer CRL clears it | Choosing CRLs | Decided | diagnostics |
-| [CRL-032](#crl-032-lifetime-signing-validity-outranks-revocation-on-another-path) | Lifetime-signing validity outranks revocation on another path | Paths and usages | Decided | diagnostics |
-| [CRL-033](#crl-033-a-definite-result-keeps-its-code-with---fetch-crls) | A definite result keeps its code with `--fetch-crls` | Retrieval | Decided | diagnostics |
-| [CRL-034](#crl-034-a-revoked-rdp-usage-is-reported-over-another-usages-failure) | A revoked RDP usage is reported over another usage's failure | Paths and usages | Decided | diagnostics |
-| [CRL-035](#crl-035-an-rdp-signer-lacking-only-a-crl-under-one-usage-reports-the-missing-crl) | An RDP signer lacking only a CRL under one usage reports the missing CRL | Paths and usages | Decided | diagnostics |
-| [CRL-036](#crl-036-a-partition-for-another-point-is-no-evidence) | A partition for another point is no evidence | Scope | Decided | diagnostics |
-| [CRL-037](#crl-037-a-revocation-names-another-paths-refreshable-certificates) | A revocation names another path's refreshable certificates | Paths and usages | Decided | diagnostics |
-| [CRL-038](#crl-038-a-path-a-source-could-complete-is-reported-over-a-stuck-path) | A path a source could complete is reported over a stuck path | Paths and usages | Decided | diagnostics |
-| [CRL-039](#crl-039-retrieval-asks-per-certificate-only-about-what-lacks-a-crl) | Retrieval asks per certificate, only about what lacks a CRL | Retrieval | Decided | diagnostics |
-| [CRL-040](#crl-040-a-source-answering-by-certificate-leaves-no-per-point-failures) | A source answering by certificate leaves no per-point failures | Retrieval | Decided | diagnostics |
-| [CRL-041](#crl-041-a-missing-nextupdate-blocks-retrieval-only-as-a-crls-sole-defect) | A missing nextUpdate blocks retrieval only as a CRL's sole defect | Retrieval | Decided | diagnostics |
-| [CRL-042](#crl-042-an-abort-before-an-expired-crl-is-refreshed-is-marked) | An abort before an expired CRL is refreshed is marked | Retrieval | Decided | diagnostics |
-| [CRL-043](#crl-043-without-an-answer-a-replaceable-crls-error-stands-and-names-the-certificate) | Without an answer, a replaceable CRL's error stands and names the certificate | Retrieval | Decided | diagnostics |
-| [CRL-044](#crl-044-without-an-answer-a-malformed-crls-failure-stands) | Without an answer, a malformed CRL's failure stands | Retrieval | Decided | diagnostics |
-| [CRL-045](#crl-045-the-built-in-source-refuses-what-it-does-not-fetch) | The built-in source refuses what it does not fetch | Retrieval | Decided | diagnostics |
-| [CRL-046](#crl-046-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source) | A URI that is not an absolute URL is never offered to a source | Retrieval | Decided | diagnostics |
-| [CRL-047](#crl-047-fetch-limits-bound-one-verification) | Fetch limits bound one verification | Retrieval | Decided | diagnostics |
-| [CRL-048](#crl-048-a-crl-naming-a-same-key-roots-identifier-is-forged-not-set-aside) | A CRL naming a same-key root's identifier is forged, not set aside | Issuer keys | Observed | diagnostics |
+| [CRL-032](#crl-032-a-definite-result-keeps-its-code-with---fetch-crls) | A definite result keeps its code with `--fetch-crls` | Retrieval | Decided | diagnostics |
+| [CRL-033](#crl-033-a-revoked-rdp-usage-is-reported-over-another-usages-failure) | A revoked RDP usage is reported over another usage's failure | Paths and usages | Decided | diagnostics |
+| [CRL-034](#crl-034-an-rdp-signer-lacking-only-a-crl-under-one-usage-reports-the-missing-crl) | An RDP signer lacking only a CRL under one usage reports the missing CRL | Paths and usages | Decided | diagnostics |
+| [CRL-035](#crl-035-a-partition-for-another-point-is-no-evidence) | A partition for another point is no evidence | Scope | Decided | diagnostics |
+| [CRL-036](#crl-036-a-revocation-names-another-paths-refreshable-certificates) | A revocation names another path's refreshable certificates | Paths and usages | Decided | diagnostics |
+| [CRL-037](#crl-037-a-path-a-source-could-complete-is-reported-over-a-stuck-path) | A path a source could complete is reported over a stuck path | Paths and usages | Decided | diagnostics |
+| [CRL-038](#crl-038-retrieval-asks-per-certificate-only-about-what-lacks-a-crl) | Retrieval asks per certificate, only about what lacks a CRL | Retrieval | Decided | diagnostics |
+| [CRL-039](#crl-039-a-source-answering-by-certificate-leaves-no-per-point-failures) | A source answering by certificate leaves no per-point failures | Retrieval | Decided | diagnostics |
+| [CRL-040](#crl-040-a-missing-nextupdate-blocks-retrieval-only-as-a-crls-sole-defect) | A missing nextUpdate blocks retrieval only as a CRL's sole defect | Retrieval | Decided | diagnostics |
+| [CRL-041](#crl-041-an-abort-before-an-expired-crl-is-refreshed-is-marked) | An abort before an expired CRL is refreshed is marked | Retrieval | Decided | diagnostics |
+| [CRL-042](#crl-042-without-an-answer-a-replaceable-crls-error-stands-and-names-the-certificate) | Without an answer, a replaceable CRL's error stands and names the certificate | Retrieval | Decided | diagnostics |
+| [CRL-043](#crl-043-without-an-answer-a-malformed-crls-failure-stands) | Without an answer, a malformed CRL's failure stands | Retrieval | Decided | diagnostics |
+| [CRL-044](#crl-044-the-built-in-source-refuses-what-it-does-not-fetch) | The built-in source refuses what it does not fetch | Retrieval | Decided | diagnostics |
+| [CRL-045](#crl-045-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source) | A URI that is not an absolute URL is never offered to a source | Retrieval | Decided | diagnostics |
+| [CRL-046](#crl-046-fetch-limits-bound-one-verification) | Fetch limits bound one verification | Retrieval | Decided | diagnostics |
+| [CRL-047](#crl-047-a-crl-naming-a-same-key-roots-identifier-is-forged-not-set-aside) | A CRL naming a same-key root's identifier is forged, not set aside | Issuer keys | Observed | diagnostics |
 
 ## Tier 1: fail-open and privacy
 
@@ -362,7 +361,7 @@ The certificate is asked about by certificate and issuer, and a full CRL from th
 
 ### CRL-024: A source completes another path beside a revoked one
 
-With `--fetch-crls`, the path named under CRL-037 is refreshed and the file verifies through it.
+With `--fetch-crls`, the path named under CRL-036 is refreshed and the file verifies through it.
 
 - **Status:** Decided
 - **Decided by:** Bouncy Castle followed, under the owner's delegated call to refresh CRLs, PR #60 and PR #64
@@ -466,18 +465,7 @@ Alone, such a listing is `certificate_revoked` if webpki would admit the CRL apa
   - removeFromCRL releases the entry in OpenSSL 3.3 crypto/x509/x509_vfy.c:1686-1689 (cert_crl) and Bouncy Castle RFC3280CertPathUtilities.java:794 (step k); BoringSSL crypto/x509/x509_vfy.cc:768-790 (cert_crl) revokes on any entry, so OpenSSL and Bouncy Castle, which agree, are followed.
 - **Unit tests:** `a_crl_without_next_update_revokes_only_under_webpki_rules`, `a_crl_without_next_update_is_judged_by_its_other_defects`, `only_a_usable_covering_crl_clears_a_listing_without_next_update`, `a_crl_without_next_update_for_another_point_is_set_aside_if_admitted`, `a_crl_that_does_not_reencode_to_its_bytes_is_not_judged`.
 
-### CRL-032: Lifetime-signing validity outranks revocation on another path
-
-Across candidate paths, a CA issued after the lifetime signing time on one path outranks a revocation on another; both reject.
-
-- **Status:** Decided
-- **Decided by:** written choice (the references disagree and neither has lifetime signing); SEC-14 precedence kept
-- **Pins:** diagnostics
-- **Sources:**
-  - OpenSSL builds one chain and checks revocation before validity.
-  - Bouncy Castle tries every path and checks validity before revocation per certificate.
-
-### CRL-033: A definite result keeps its code with `--fetch-crls`
+### CRL-032: A definite result keeps its code with `--fetch-crls`
 
 A definite revocation or CRL failure is the result, as without fetching, and is not followed by a check of the rest of the input. Only an unknown status, which is no evidence, is replaced by the path's own failure. Both results reject.
 
@@ -489,7 +477,7 @@ A definite revocation or CRL failure is the result, as without fetching, and is 
   - Only an unknown status that names nothing is followed by a check without revocation (crl-030-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.
   - Diagnostics only: both results reject.
 
-### CRL-034: A revoked RDP usage is reported over another usage's failure
+### CRL-033: A revoked RDP usage is reported over another usage's failure
 
 The revocation is reported and names the certificates another usage only lacks a CRL for. Both reject.
 
@@ -501,7 +489,7 @@ The revocation is reported and names the certificates another usage only lacks a
   - Written argument, as for candidate paths (crl-030-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject.
 - **Unit test:** `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
 
-### CRL-035: An RDP signer lacking only a CRL under one usage reports the missing CRL
+### CRL-034: An RDP signer lacking only a CRL under one usage reports the missing CRL
 
 Without the CRL, the result is the missing CRL (`revocation_unknown`), not the other usage's `invalid_eku`, because a source can supply it.
 
@@ -512,7 +500,7 @@ Without the CRL, the result is the missing CRL (`revocation_unknown`), not the o
   - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md). Written argument: the signer is acceptable under serverAuth and only lacks a CRL, so the missing CRL, which a source can supply, is the result rather than the other EKU's path failure.
   - On main, retrieval ran after a preliminary pass without revocation, which succeeded through serverAuth, so the CRL was fetched and the file verified; the fetch case restores that.
 
-### CRL-036: A partition for another point is no evidence
+### CRL-035: A partition for another point is no evidence
 
 The certificate is without a CRL, so the status is `revocation_unknown` and retrieval fetches its own point.
 
@@ -523,7 +511,7 @@ The certificate is without a CRL, so the status is `revocation_unknown` and retr
   - OpenSSL crypto/x509/x509_vfy.c:2146-2198 (crl_crldp_check) and :1847-1853 (get_crl_score): a CRL whose issuingDistributionPoint does not match the certificate gets no CRL_SCORE_SCOPE and is not selected over a CRL that covers it.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1678 (processCRLB2) with core PKIXCRLValidator.java:151-158 (checkDistributionPointName): a distribution point mismatch rejects the CRL before processCRLJ (:1703) reads entries.
 
-### CRL-037: A revocation names another path's refreshable certificates
+### CRL-036: A revocation names another path's refreshable certificates
 
 A revocation on one candidate path names, in `details.certificates_with_expired_crl` or `details.certificates_with_replaceable_crl`, the certificates of another viable path whose only CRLs a source could refresh. Paths with a CRL no refresh can fix are not named.
 
@@ -539,7 +527,7 @@ A revocation on one candidate path names, in `details.certificates_with_expired_
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
 - **Unit test:** `a_revocation_names_only_paths_a_source_could_complete`.
 
-### CRL-038: A path a source could complete is reported over a stuck path
+### CRL-037: A path a source could complete is reported over a stuck path
 
 When no path is revoked, a viable path that only lacks, or has expired or replaceable, CRLs is reported ahead of a path whose CRL no refresh can fix; when every path is stuck, the most specific failure decides. Acceptance with `--fetch-crls` follows from CRL-024.
 
@@ -554,7 +542,7 @@ When no path is revoked, a viable path that only lacks, or has expired or replac
 
 Diagnostics pins on which requests a source receives and how retrieval is reported.
 
-### CRL-039: Retrieval asks per certificate, only about what lacks a CRL
+### CRL-038: Retrieval asks per certificate, only about what lacks a CRL
 
 Which requests are made; the verification result is the same either way.
 
@@ -565,7 +553,7 @@ Which requests are made; the verification result is the same either way.
   - OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/RFC3280CertPathUtilities.java:1754-1880 (checkCRLs): CRLs are looked up per certificate, per distribution point.
 
-### CRL-040: A source answering by certificate leaves no per-point failures
+### CRL-039: A source answering by certificate leaves no per-point failures
 
 Only a body that loads as a CRL of the certificate's issuer counts. When that answer settles the status, no per-point failure is recorded; when it does not, the listed points the source left unused are recorded as not used, so no listed point disappears from the report.
 
@@ -578,7 +566,7 @@ Only a body that loads as a CRL of the certificate's issuer counts. When that an
   - OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls) and Bouncy Castle CertPathValidatorUtilities.java:1100-1124 (getCompleteCRLs): CRLs are looked up by issuer, with no per-distribution-point outcome, so an answer by certificate leaves no per-point failure when it settles the status.
   - Written argument for the other case: when that answer does not settle the status, the report must still account for every listed point (docs/crl-retrieval.md: no listed point disappears from the report), so the points the source did not use are recorded as not used.
 
-### CRL-041: A missing nextUpdate blocks retrieval only as a CRL's sole defect
+### CRL-040: A missing nextUpdate blocks retrieval only as a CRL's sole defect
 
 A CRL whose only defect is a missing nextUpdate is `invalid_crl` (`missing_next_update`) and is not asked about; with another defect, that defect is reported and is replaceable.
 
@@ -596,7 +584,7 @@ A CRL whose only defect is a missing nextUpdate is `invalid_crl` (`missing_next_
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (ossl_x509_check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 check nextUpdate only when present, so the missing nextUpdate is no defect to them and the scope miss decides, as for the same CRL with nextUpdate.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns the scope failure into 'no valid CRL found' and :468-487 then fetches.
 
-### CRL-042: An abort before an expired CRL is refreshed is marked
+### CRL-041: An abort before an expired CRL is refreshed is marked
 
 Without an answer `crl_expired` stands, marked `retrieval_aborted` when the source aborted.
 
@@ -607,7 +595,7 @@ Without an answer `crl_expired` stands, marked `retrieval_aborted` when the sour
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.
   - OpenSSL crypto/x509/x509_vfy.c:2223-2231 (get_crl_delta): CRLs come from ctx->crls and the store lookup only; the verifier does not fetch.
 
-### CRL-043: Without an answer, a replaceable CRL's error stands and names the certificate
+### CRL-042: Without an answer, a replaceable CRL's error stands and names the certificate
 
 The certificate is named in `certificates_with_replaceable_crl` on the error that stands, and the error is marked `retrieval_aborted` when the source aborted.
 
@@ -619,7 +607,7 @@ The certificate is named in `certificates_with_replaceable_crl` on the error tha
   - BoringSSL crypto/x509/x509_vfy.cc:697-708 (get_crl) looks CRLs up in the store on the same condition.
   - Bouncy Castle pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:797-863 turns any checkCRL failure but a revocation into 'no valid CRL found', and :468-487 then fetches from the certificate's distribution points when fetching is enabled.
 
-### CRL-044: Without an answer, a malformed CRL's failure stands
+### CRL-043: Without an answer, a malformed CRL's failure stands
 
 Its failure stands and names the certificate.
 
@@ -633,7 +621,7 @@ Its failure stands and names the certificate.
   - BoringSSL crypto/x509/x_crl.cc:122-160 (ASN1_OP_D2I_POST): a CRL with an unsupported version, or a malformed issuingDistributionPoint or authorityKeyIdentifier, fails to decode and never joins the CRLs consulted, so the store is looked up as if it were absent.
   - OpenSSL 3.3 crypto/x509/x_crl.c:196-220 marks such a CRL EXFLAG_INVALID, which crypto/x509/x509_vfy.c never tests for a CRL; an invalid issuingDistributionPoint scores 0 (:1292) and the store lookup still runs when no CRL scores valid (:1576-1588).
 
-### CRL-045: The built-in source refuses what it does not fetch
+### CRL-044: The built-in source refuses what it does not fetch
 
 The built-in `HttpCrlSource` is stricter than the references (public addresses, `http` only, no redirects, size and time bounds) and reports a refused URL as denied; `retrieval::check_public_http_url` gives a custom source the same check.
 
@@ -645,7 +633,7 @@ The built-in `HttpCrlSource` is stricter than the references (public addresses, 
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.
   - BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches.
 
-### CRL-046: A URI that is not an absolute URL is never offered to a source
+### CRL-045: A URI that is not an absolute URL is never offered to a source
 
 It is recorded as `crl_fetch_denied` with its own message and no `url`.
 
@@ -657,7 +645,7 @@ It is recorded as `crl_fetch_denied` with its own message and no `url`.
   - Bouncy Castle `CrlCache.java:185`: `toURL()` fails on a relative URI.
 - **Unit test:** `a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason`.
 
-### CRL-047: Fetch limits bound one verification
+### CRL-046: Fetch limits bound one verification
 
 The engine renews a source's allowances for each verification (`CrlSource::begin_verification`). A DNS timeout still closes the built-in source for the invocation, keeping at most one unfinished resolver thread.
 
@@ -669,7 +657,7 @@ The engine renews a source's allowances for each verification (`CrlSource::begin
   - Bouncy Castle `CrlCache.java:41-46`: per-connection timeouts, process-wide cache.
 - **Unit test:** `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
 
-### CRL-048: A CRL naming a same-key root's identifier is forged, not set aside
+### CRL-047: A CRL naming a same-key root's identifier is forged, not set aside
 
 Two configured roots with one key and name may carry different subjectKeyIdentifiers. A CRL signed by another key that names any of them is `invalid_crl_signature`; one naming an identifier no configured root carries is another issuer's and is set aside. Both reject; the libraries have no equivalent for two same-key anchors.
 

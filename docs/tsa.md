@@ -1,11 +1,13 @@
-# Timestamp decisions
+# Timestamp token decisions
 
-Numbered decisions behind rssig's timestamp handling: what an RFC 3161 token
-or PKCS#9 countersignature must contain, bind and be signed by. The entry
-format is defined in [Decision indexes](decisions.md); the profile and its
-limits are explained in [timestamp policy](timestamp-policy.md), and the
-history in SEC-08 ([done](tasks/done.md), PR #42). When a timestamp's time is
-used, and how it meets certificate validity, are [time decisions](time.md).
+Numbered decisions that answer one question: **can this timestamp token be
+trusted at all?** What an RFC 3161 token or PKCS#9 countersignature must
+contain, bind and be signed by. Which instant certificates are then checked at
+is a [validation-time decision](time.md); see
+[which index](decisions.md#which-index). The entry format is defined in
+[Decision indexes](decisions.md); the profile and its limits are explained in
+[timestamp policy](timestamp-policy.md), and the history is in SEC-08
+([done](tasks/done.md), PR #42).
 
 ## Order
 

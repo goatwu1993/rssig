@@ -7,7 +7,7 @@ are rejected. Duplicate attribute OIDs are rejected earlier during CMS attribute
 validation (`invalid_signature`, `cms`); other multiplicity failures use
 `invalid_timestamp`, `timestamp`. There is no timestamp selection policy.
 The numbered decisions behind this page, with their status and sources, are
-[Timestamp decisions](tsa.md) (`TSA-001` to `TSA-007`).
+[Timestamp token decisions](tsa.md) (`TSA-001` to `TSA-007`).
 
 ## Supported TSTInfo profile
 
