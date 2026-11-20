@@ -596,7 +596,7 @@ impl PathEvaluator<'_, '_> {
             .iter()
             .enumerate()
             .filter(|(_, root)| same_anchor(root, anchor))
-            .filter_map(|(index, _)| self.anchor_certificates[index].as_ref());
+            .filter_map(|(index, _)| self.anchor_certificates.get(index)?.as_ref());
         let first = anchors.next().ok_or(webpki::Error::UnknownIssuer)?;
         let mut anchor_key = IssuerKey::of(first, true).map_err(|_| webpki::Error::BadDer)?;
         for same_key in anchors {
