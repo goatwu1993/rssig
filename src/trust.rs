@@ -1009,13 +1009,15 @@ fn evaluate_crls(
         // (`covers` also admits a CRL whose match cannot be ruled out, which
         // is right for counting a listing beside a usable CRL but not here;
         // `authority` alone admits a point-scoped CRL for a certificate that
-        // lists none), has a well-formed authorityKeyIdentifier, and webpki
-        // accepts it apart from a missing nextUpdate.
+        // lists none), has a well-formed authorityKeyIdentifier, comes from an
+        // issuer with cRLSign, and webpki accepts it apart from a missing
+        // nextUpdate.
         let complete = authority == Some(true)
             && covers
             && current
             && crl.webpki_admits()
-            && crl.authority_key.is_ok();
+            && crl.authority_key.is_ok()
+            && issuer.crl_sign;
         // The newest complete CRL decides, as OpenSSL and BoringSSL keep
         // only the newest of equally scored CRLs.
         if complete && newest_complete.is_none_or(|n| this_update > n) {
@@ -1027,7 +1029,6 @@ fn evaluate_crls(
         // revokes alone, unless the entry is removeFromCRL.
         if complete
             && crl.tbs.next_update.is_none()
-            && issuer.crl_sign
             && lists_revoking(&crl.tbs, serial)
             && revoking_without_next_update.is_none_or(|(_, newest)| this_update > newest)
         {
@@ -1493,12 +1494,14 @@ const NOT_YET_VALID: u8 = 2;
 /// unsupported feature, a malformed CRL, a point scope for a certificate
 /// that lists none): offered to a source.
 const REPLACEABLE: u8 = 3;
-/// A CRL with no other defect that lacks nextUpdate, or whose certificate
-/// points cannot be read: stuck, a source is not asked.
+/// Stuck, a source is not asked: a CRL signed with an algorithm the engine
+/// cannot verify, a CRL with no other defect that lacks nextUpdate, or one
+/// whose certificate points cannot be read.
 const UNUSABLE: u8 = 4;
 /// An issuer without cRLSign: stuck.
 const NO_CRL_SIGN: u8 = 5;
-/// A bad signature, or an unsupported signature algorithm: stuck.
+/// A bad signature: stuck. (An unsupported signature algorithm is
+/// `UNUSABLE`: it is not proof of forgery.)
 const FORGED: u8 = 6;
 // `stuck_paths`, `with_replaceable_crl` and `unknown_status` compare these
 // with `<=` and `>`: inserting a rank must keep the order, and the groups
@@ -1891,20 +1894,29 @@ mod revocation_reporting {
         .unwrap();
         let outer = crl.clone();
         let base = crl.tbs_cert_list;
-        // A CRL without nextUpdate revokes when webpki would accept it with
-        // one and its entry for the serial is not removeFromCRL.
-        let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList, serial: &[u8]| {
+        // Whether the test signer, listed by the CRL, is revoked by it alone:
+        // `evaluate_crls` decides, with every condition it applies.
+        let signer_cert = signer(include_bytes!("../tests/fixtures/good-pe64.exe"));
+        let load = |tbs: &x509_cert::crl::TbsCertList| {
             let mut list = outer.clone();
             list.tbs_cert_list = tbs.clone();
-            let der = list.to_der().unwrap();
-            stand_in_verdict(&list, &der) == Some(Ok(())) && lists_revoking(tbs, serial)
+            LoadedCrl::load(&list.to_der().unwrap()).unwrap()
         };
+        let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList, _: &[u8]| {
+            matches!(
+                evaluated(&signer_cert, true, &[load(tbs)]),
+                Outcome::Revoked(_)
+            )
+        };
+        // Whether webpki would accept the CRL apart from the missing
+        // nextUpdate. A scoped CRL is judged this way: the signer lists no
+        // point, so it would be a scope miss before it could revoke.
+        let admitted = |tbs: &x509_cert::crl::TbsCertList| load(tbs).webpki_admits();
         let serial = base.revoked_certificates.as_ref().unwrap()[0]
             .serial_number
             .as_bytes()
             .to_vec();
         assert!(revokes_without_next_update(&base, &serial));
-        assert!(!revokes_without_next_update(&base, &[0x7f, 0x7f]));
         let extension = |oid: &str, critical: bool, value: &[u8]| x509_cert::ext::Extension {
             extn_id: ::der::asn1::ObjectIdentifier::new_unwrap(oid),
             critical,
@@ -1945,14 +1957,14 @@ mod revocation_reporting {
             der
         };
         let plain = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
-        assert!(revokes_without_next_update(&plain, &serial));
+        assert!(admitted(&plain));
         for extra in [
             &[0x84u8, 1, 0xff][..],
             &[0x83, 2, 0x07, 0x80][..],
             &[0x85, 1, 0xff][..],
         ] {
             let tbs = with_crl_extension(extension("2.5.29.28", true, &idp(extra)));
-            assert!(!revokes_without_next_update(&tbs, &serial), "{extra:?}");
+            assert!(!admitted(&tbs), "{extra:?}");
         }
         // A malformed cRLNumber.
         let mut number = base.clone();
@@ -1992,7 +2004,7 @@ mod revocation_reporting {
         assert!(!revokes_without_next_update(&twice, &serial));
         // A role-only issuingDistributionPoint, which webpki 0.103 rejects.
         let role_only = with_crl_extension(extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]));
-        assert!(!revokes_without_next_update(&role_only, &serial));
+        assert!(!admitted(&role_only));
         // A non-critical unknown extension is ignorable.
         let tbs = with_crl_extension(extension("1.2.3.4", false, &[5, 0]));
         assert!(revokes_without_next_update(&tbs, &serial));
