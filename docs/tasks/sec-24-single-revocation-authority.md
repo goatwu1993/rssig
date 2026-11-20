@@ -139,6 +139,14 @@ on the same input, exits 0 without a panic.
   retrieval's finality rule stay unchanged. The name now describes history, not
   a webpki call. A rename (for example `ambiguous_issuer_keys`) is a
   wording-only change to the pinned diagnostic and needs its own case update.
+- `ambiguous_issuer_keys` tells two same-name issuers apart by their
+  complete SubjectPublicKeyInfo bytes, where the former rule compared the
+  chosen CRLs' authorityKeyIdentifiers. One key encoded two ways in one path
+  (for example RSA parameters NULL versus absent), with a chosen CRL that has
+  no authorityKeyIdentifier, now counts as two keys and is rejected, where
+  the former check would have gone on to accept it. It fails closed and no
+  committed fixture has such a path; compare the key bits, with a paired
+  fixture, if a case needs it.
 - SEC-17: drop `LoadedCrl.webpki`, detecting unsupported features without
   webpki, so each CRL is decoded once.
 - SEC-18: with no webpki veto, supporting delta CRLs or skipping known
