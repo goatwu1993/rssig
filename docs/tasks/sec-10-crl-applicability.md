@@ -50,7 +50,7 @@ One box per item in the scope above.
   `crl-revoked-issuer-issuer-crl-first`. Limit: the error details describe the
   signer (SEC-19).
 - [x] **Incomplete issuer coverage.** A chain certificate with no applicable CRL
-  is `revocation_unknown`. `sec09-lifetime-rollover-revocation-unknown`,
+  is `revocation_unknown`. `time-008-lifetime-rollover-revocation-unknown`,
   `crl-only-unrelated-crl-is-unknown`.
 - [x] **Distribution-point scope.** A CRL naming a point is authoritative only
   for a certificate listing the same URI, byte for byte; role flags restrict it

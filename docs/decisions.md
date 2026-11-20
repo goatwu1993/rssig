@@ -8,6 +8,7 @@ holds only its entries.
 | Prefix | Index | Subject |
 |---|---|---|
 | `CRL-` | [crl.md](crl.md) | CRL selection, scope, issuer keys, candidate paths and CRL retrieval |
+| `TIME-` | [time.md](time.md) | Validation time, timestamp time, lifetime signing and time boundaries |
 
 A new subject gets its own prefix and index file directly under `docs/`, and
 a row here.

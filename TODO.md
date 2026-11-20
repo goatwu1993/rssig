@@ -170,6 +170,28 @@ TDD workflow and checks in AGENTS.md.
   with measured benefit, immutable input, bounded work, and deterministic results.
 - [ ] **TEST-11: Consolidate CRL fixture builders and SEC-10 fixture provenance.** Recorded from PR #44 to #53 reviews; none affects verifier behavior. Detail in [test-11.md](docs/tasks/test-11.md).
 
+- [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done; [time decisions](docs/time.md).
+- [ ] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** From
+  `docs/certificate-path-policy.md` (SEC-06): key usage, EKU, basic and name
+  constraints, path building.
+- [ ] **TEST-14: Index timestamp decisions as `TSA-NNN`.** From
+  `docs/timestamp-policy.md` (SEC-08); rename the `sec08-*` cases.
+- [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`
+  (SEC-04, SEC-05): signed-attribute binding and signer selection.
+- [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
+  `docs/trust-loading.md` (SEC-07); rename the `sec07-*` cases.
+- [ ] **TEST-17: Index limit decisions as `LIMIT-NNN`.** From
+  `docs/verification-budgets.md` and `docs/host-limits.md` (SEC-02, SEC-03);
+  rename the `sec02-*` and `sec03-*` cases.
+- [ ] **TEST-18: Index format decisions per format.** `APPX-`, `MSI-`, `WSH-`,
+  `PS-`, `CAB-`, `RDP-` and `NAVX-` entries where a format document records a
+  choice checked against jsign, osslsigncode or Windows behavior; one PR per
+  format.
+- [ ] **TEST-19: Link CRL retrieval rules to their entries.**
+  `docs/crl-retrieval.md` restates rules now in `CRL-029` to `CRL-048`.
+- [ ] **TEST-20: Rename task-named library cases.** `lib04-*` to `lib07-*` are
+  API and feature checks; rename them by subject without decision entries.
+
 ## P1 — CLI, reporting, and distribution
 
 - [ ] **PRODUCT-01: Make remaining failure classifications precise.** Audit

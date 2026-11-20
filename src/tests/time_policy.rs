@@ -254,7 +254,7 @@ fn file_name(spec: &Spec) -> String {
         Container::Rdp => "rdp",
         Container::Pe | Container::NestedPe => "exe",
     };
-    format!("sec09-{}.{extension}", spec.label)
+    format!("time-{}.{extension}", spec.label)
 }
 
 fn intermediate_key(spec: &Spec, index: usize) -> SigningKey {
@@ -495,14 +495,14 @@ fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let intermediate = &intermediates[0];
     let key = intermediate_key(&rollover, 0);
     vec![
-        ("sec09-intermediate.crl", crl(intermediate, &key, None)),
+        ("time-intermediate.crl", crl(intermediate, &key, None)),
         (
-            "sec09-intermediate-revoked-leaf.crl",
+            "time-intermediate-revoked-leaf.crl",
             crl(intermediate, &key, Some(LEAF_SERIAL)),
         ),
         // Revokes only the rolled-over intermediate that is valid at signing.
         (
-            "sec09-root-revoked-intermediate.crl",
+            "time-root-revoked-intermediate.crl",
             crl(&root.root, &root.root_key, Some(VALID_ROLLOVER_SERIAL)),
         ),
     ]
@@ -520,7 +520,7 @@ pub(super) fn write(dir: &std::path::Path) {
 
 #[test]
 #[ignore = "explicit fixture maintenance"]
-fn regenerate_sec09_fixtures() {
+fn regenerate_time_fixtures() {
     write(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
 }
 
@@ -689,7 +689,7 @@ fn check_signer(spec: &Spec, certs: &[Certificate], si: der::Node<'_>, direct: O
 }
 
 #[test]
-fn sec09_committed_fixtures_preserve_image_signatures_and_times() {
+fn time_committed_fixtures_preserve_image_signatures_and_times() {
     for label in LABELS {
         let spec = spec(label);
         let bytes = fixture(&file_name(&spec));
@@ -722,20 +722,20 @@ fn sec09_committed_fixtures_preserve_image_signatures_and_times() {
 }
 
 #[test]
-fn sec09_committed_crls_are_signed_and_scoped() {
+fn time_committed_crls_are_signed_and_scoped() {
     use ::der::Decode;
     use x509_cert::crl::CertificateList;
     let (_, intermediates) = signer(&spec("lifetime-intermediate-rollover"));
     let root = &identity().root;
     for (name, issuer, revoked) in [
-        ("sec09-intermediate.crl", &intermediates[0], None),
+        ("time-intermediate.crl", &intermediates[0], None),
         (
-            "sec09-intermediate-revoked-leaf.crl",
+            "time-intermediate-revoked-leaf.crl",
             &intermediates[0],
             Some(LEAF_SERIAL),
         ),
         (
-            "sec09-root-revoked-intermediate.crl",
+            "time-root-revoked-intermediate.crl",
             root,
             Some(VALID_ROLLOVER_SERIAL),
         ),
