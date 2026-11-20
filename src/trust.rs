@@ -1116,8 +1116,8 @@ fn evaluate_crls(
                     ),
                     Rejection::NotJudged => (
                         String::from(
-                            "CRL without nextUpdate is not in canonical DER, so it cannot be \
-                             judged",
+                            "CRL without nextUpdate does not re-encode to its own bytes, so \
+                             it cannot be judged",
                         ),
                         "unsupported_or_malformed",
                     ),
@@ -1917,7 +1917,7 @@ mod revocation_reporting {
             list.tbs_cert_list = tbs.clone();
             LoadedCrl::load(&list.to_der().unwrap()).unwrap()
         };
-        let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList, _: &[u8]| {
+        let revokes_without_next_update = |tbs: &x509_cert::crl::TbsCertList| {
             matches!(
                 evaluated(&signer_cert, true, &[load(tbs)]),
                 Outcome::Revoked(_)
@@ -1927,11 +1927,7 @@ mod revocation_reporting {
         // nextUpdate. A scoped CRL is judged this way: the signer lists no
         // point, so it would be a scope miss before it could revoke.
         let admitted = |tbs: &x509_cert::crl::TbsCertList| load(tbs).webpki_admits();
-        let serial = base.revoked_certificates.as_ref().unwrap()[0]
-            .serial_number
-            .as_bytes()
-            .to_vec();
-        assert!(revokes_without_next_update(&base, &serial));
+        assert!(revokes_without_next_update(&base));
         let extension = |oid: &str, critical: bool, value: &[u8]| x509_cert::ext::Extension {
             extn_id: ::der::asn1::ObjectIdentifier::new_unwrap(oid),
             critical,
@@ -1950,15 +1946,12 @@ mod revocation_reporting {
             ("1.2.3.4", true, &[5, 0][..]),
         ] {
             let tbs = with_crl_extension(extension(oid, critical, value));
-            assert!(
-                !revokes_without_next_update(&tbs, &serial),
-                "{oid} {value:?}"
-            );
+            assert!(!revokes_without_next_update(&tbs), "{oid} {value:?}");
         }
         // webpki rejects a v1 CRL.
         let mut v1 = base.clone();
         v1.version = x509_cert::Version::V1;
-        assert!(!revokes_without_next_update(&v1, &serial));
+        assert!(!revokes_without_next_update(&v1));
         // Each issuingDistributionPoint condition on its own, with a fullName
         // point: plain is accepted; indirect, reasons, attribute-only are not.
         let point = [
@@ -1988,7 +1981,7 @@ mod revocation_reporting {
                 e.extn_value = ::der::asn1::OctetString::new([0x02, 1, 0xff]).unwrap();
             }
         }
-        assert!(!revokes_without_next_update(&number, &serial));
+        assert!(!revokes_without_next_update(&number));
         // Another entry webpki rejects makes the whole CRL unusable.
         let mut other = base.clone();
         let mut indirect_entry = other.revoked_certificates.as_ref().unwrap()[0].clone();
@@ -1999,15 +1992,15 @@ mod revocation_reporting {
             .as_mut()
             .unwrap()
             .push(indirect_entry);
-        assert!(!revokes_without_next_update(&other, &serial));
+        assert!(!revokes_without_next_update(&other));
         // No crlExtensions at all, which webpki requires.
         let mut bare = base.clone();
         bare.crl_extensions = None;
-        assert!(!revokes_without_next_update(&bare, &serial));
+        assert!(!revokes_without_next_update(&bare));
         // A tbsCertList signature algorithm that differs from the outer one.
         let mut mismatched = base.clone();
         mismatched.signature.oid = ::der::asn1::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.3");
-        assert!(!revokes_without_next_update(&mismatched, &serial));
+        assert!(!revokes_without_next_update(&mismatched));
         // A duplicate issuingDistributionPoint.
         let mut twice = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
         twice
@@ -2015,13 +2008,13 @@ mod revocation_reporting {
             .as_mut()
             .unwrap()
             .push(extension("2.5.29.28", true, &idp(&[])));
-        assert!(!revokes_without_next_update(&twice, &serial));
+        assert!(!revokes_without_next_update(&twice));
         // A role-only issuingDistributionPoint, which webpki 0.103 rejects.
         let role_only = with_crl_extension(extension("2.5.29.28", true, &[0x30, 3, 0x81, 1, 0xff]));
         assert!(!admitted(&role_only));
         // A non-critical unknown extension is ignorable.
         let tbs = with_crl_extension(extension("1.2.3.4", false, &[5, 0]));
-        assert!(revokes_without_next_update(&tbs, &serial));
+        assert!(revokes_without_next_update(&tbs));
         let with_entry_extension = |e: x509_cert::ext::Extension| {
             let mut tbs = base.clone();
             tbs.revoked_certificates.as_mut().unwrap()[0]
@@ -2031,14 +2024,14 @@ mod revocation_reporting {
             tbs
         };
         let removed = with_entry_extension(extension("2.5.29.21", false, &[0x0a, 1, 8]));
-        assert!(!revokes_without_next_update(&removed, &serial));
+        assert!(!revokes_without_next_update(&removed));
         let held = with_entry_extension(extension("2.5.29.21", false, &[0x0a, 1, 6]));
-        assert!(revokes_without_next_update(&held, &serial));
+        assert!(revokes_without_next_update(&held));
         let critical = with_entry_extension(extension("1.2.3.4", true, &[5, 0]));
-        assert!(!revokes_without_next_update(&critical, &serial));
+        assert!(!revokes_without_next_update(&critical));
         // webpki understands a critical reasonCode and invalidityDate.
         let compromised = with_entry_extension(extension("2.5.29.21", true, &[0x0a, 1, 1]));
-        assert!(revokes_without_next_update(&compromised, &serial));
+        assert!(revokes_without_next_update(&compromised));
         let invalidity = with_entry_extension(extension(
             "2.5.29.24",
             true,
@@ -2047,12 +2040,12 @@ mod revocation_reporting {
                 b'0', b'0', b'Z',
             ],
         ));
-        assert!(revokes_without_next_update(&invalidity, &serial));
+        assert!(revokes_without_next_update(&invalidity));
         // An undefined reason, and a certificateIssuer (indirect), do not.
         let unused = with_entry_extension(extension("2.5.29.21", false, &[0x0a, 1, 7]));
-        assert!(!revokes_without_next_update(&unused, &serial));
+        assert!(!revokes_without_next_update(&unused));
         let indirect = with_entry_extension(extension("2.5.29.29", false, &[0x30, 0]));
-        assert!(!revokes_without_next_update(&indirect, &serial));
+        assert!(!revokes_without_next_update(&indirect));
     }
 
     /// A revocation beside a path with a replaceable CRL names that path's
