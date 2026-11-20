@@ -225,7 +225,7 @@ impl TrustStore {
         // candidate path, as OpenSSL's check_cert_crl and Bouncy Castle's
         // X509RevocationChecker do: each certificate's CRLs are authenticated
         // under that path's real issuer key, and the best usable one decides.
-        // webpki then confirms the accepted path with only the chosen CRLs.
+        // This is the only revocation check; webpki builds paths without one.
         let crls = if revocation {
             let mut issuer_names = Vec::new();
             for root in &self.roots {
@@ -280,9 +280,7 @@ impl TrustStore {
         // Per candidate path: the revocation outcomes it produced, and the
         // CRLs chosen for an accepted path.
         let outcomes: core::cell::RefCell<Vec<CertificateEvidence>> = Default::default();
-        // Each with whether its authorityKeyIdentifier names the key of the
-        // issuer it was authenticated under.
-        let chosen: core::cell::RefCell<Vec<(usize, bool)>> = Default::default();
+        let chosen: core::cell::RefCell<Vec<ChosenCrl>> = Default::default();
         let paths_evaluated = core::cell::Cell::new(0usize);
         // The last path whose revocation passed: the accepted one on success.
         let accepted_path = core::cell::Cell::new(None::<usize>);
@@ -389,7 +387,11 @@ impl TrustStore {
                             // without an identifier.
                             let names_issuer =
                                 matches!(named, Ok(Some(named)) if issuer.names(named));
-                            path_chosen.push((*index, names_issuer));
+                            path_chosen.push(ChosenCrl {
+                                index: *index,
+                                names_issuer,
+                                issuer_spki: issuer.spki.clone(),
+                            });
                         }
                         Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
                         Outcome::Missing(_) => {
@@ -512,72 +514,23 @@ impl TrustStore {
             }
             error
         })?;
-        // webpki confirms the accepted path's revocation status with only the
-        // CRLs chosen for it, under its own rules and our crypto adapter. A
-        // disagreement rejects; it never accepts what the check above did not.
+        // rssig's per-certificate check above is the only revocation
+        // decision. Issuers of one name with different keys on the accepted
+        // path are rejected here when their CRLs cannot be told apart by key,
+        // as OpenSSL and BoringSSL do (see `ambiguous_issuer_keys`).
         if revocation_enabled {
-            //
-            // webpki picks a certificate's CRL by issuer name and scope alone.
-            // On a path where two certificates have issuers of one name and
-            // different keys (a self-issued key rollover) it would try one
-            // key's CRL for the other certificate. When each of those CRLs
-            // names its issuer's key in an authorityKeyIdentifier, OpenSSL
-            // (crl_akid_check), BoringSSL and Bouncy Castle (processCRLF) all
-            // give each certificate its own key's CRL, as the check above
-            // did; webpki then confirms the signer only, with the signer's
-            // CRL. Without key identifiers the confirmation is left whole,
-            // and it rejects such a path, as OpenSSL and BoringSSL do.
-            let chosen = chosen.borrow();
-            let key_rollover = same_name_keys_identified(&chosen, &crls);
-            let mut picked: Vec<usize> = if key_rollover {
-                chosen.iter().take(1).map(|(index, _)| *index).collect()
-            } else {
-                chosen.iter().map(|(index, _)| *index).collect()
-            };
-            picked.sort_unstable();
-            picked.dedup();
-            let picked: Vec<webpki::CertRevocationList<'_>> = picked
-                .iter()
-                .filter_map(|&index| crls[index].webpki.clone().ok())
-                .map(webpki::CertRevocationList::from)
-                .collect();
-            let picked_refs: Vec<_> = picked.iter().collect();
-            let options = webpki::RevocationOptionsBuilder::new(&picked_refs)
-                .map_err(|e| anyhow::anyhow!("CRLs required: {e:?}"))?
-                .with_depth(if key_rollover {
-                    webpki::RevocationCheckDepth::EndEntity
-                } else {
-                    webpki::RevocationCheckDepth::Chain
-                })
-                .with_status_policy(webpki::UnknownStatusPolicy::Deny)
-                .with_expiration_policy(webpki::ExpirationPolicy::Enforce)
-                .build();
-            // Only the accepted path is offered, so there is no search: the
-            // path work is covered by the reservation above, and its signature
-            // and CRL checks are charged through the budgeted algorithms.
-            let path_intermediates: Vec<CertificateDer<'static>> = path
-                .intermediate_certificates()
-                .map(|c| c.der().clone().into_owned())
-                .collect();
-            let path_anchor = [path.anchor().clone()];
-            let confirmed = leaf.verify_for_usage(
-                &algorithm_refs,
-                &path_anchor,
-                &path_intermediates,
-                UnixTime::since_unix_epoch(Duration::from_secs(validation_time)),
-                webpki::KeyUsage::required_if_present(eku),
-                Some(options),
-                None,
-            );
-            budget.crypto.check()?;
-            budget.hash_bytes.check()?;
-            budget.decoded_bytes.check()?;
-            confirmed.map_err(|e| {
-                webpki_error(e)
-                    .detail("certificate", &leaf_report)
-                    .detail("required_eku", eku_oid.to_string())
-                    .detail("reason", "confirmation")
-            })?;
+            if ambiguous_issuer_keys(&chosen.borrow(), &crls) {
+                return Err(VerificationError::new(
+                    ErrorCode::CertificateChainInvalid,
+                    Stage::CertificateChain,
+                    "CRLs of two issuers with one name and different keys cannot be told \
+                     apart: each must name its issuer's key in an authorityKeyIdentifier",
+                )
+                .detail("certificate", &leaf_report)
+                .detail("required_eku", eku_oid.to_string())
+                .detail("reason", "confirmation")
+                .into());
+            }
             // Once, for the accepted path only: a listing that was set aside
             // is never dropped silently.
             for evidence in outcomes
@@ -660,7 +613,9 @@ struct LoadedCrl {
     /// The authorityKeyIdentifier keyIdentifier; `Err` when malformed.
     authority_key: core::result::Result<Option<Vec<u8>>, ()>,
     revoked: Vec<Vec<u8>>,
-    /// webpki's own parse, which also rejects unsupported features.
+    /// webpki's own parse. It is not used to check revocation; its errors
+    /// name the CRL features rssig does not support (delta, indirect,
+    /// unknown critical extensions), reported as `invalid_crl`.
     webpki: core::result::Result<webpki::OwnedCertRevocationList, webpki::Error>,
 }
 
@@ -697,8 +652,9 @@ impl LoadedCrl {
         let webpki =
             webpki::BorrowedCertRevocationList::from_der(bytes).and_then(|crl| crl.to_owned());
         // The whole AlgorithmIdentifier, parameters included, must be one the
-        // webpki adapter accepts: the confirmation pass uses that adapter, so
-        // a CRL it would reject must not be chosen ahead of a usable one.
+        // webpki adapter accepts for certificates: a CRL signed with an
+        // identifier it rejects is unsupported and is never chosen ahead of a
+        // usable one.
         let algorithm_accepted = crl
             .signature_algorithm
             .to_der()
@@ -816,23 +772,37 @@ fn path_policy_failure(
     Ok(lacks_cert_sign.then_some(PathPolicyFailure::LacksCertSign))
 }
 
-/// Whether the CRLs chosen for a path include two of one issuer name for
-/// different keys, every one of them naming the key of the issuer it was
-/// authenticated under. `chosen` is in path order, the signer's first.
-fn same_name_keys_identified(chosen: &[(usize, bool)], crls: &[LoadedCrl]) -> bool {
-    let mut two_keys = false;
-    for (position, &(index, named)) in chosen.iter().enumerate() {
-        for &(other, other_named) in &chosen[position + 1..] {
-            if other == index || crls[other].issuer != crls[index].issuer {
-                continue;
-            }
-            if !named || !other_named {
-                return false;
-            }
-            two_keys |= crls[other].authority_key != crls[index].authority_key;
-        }
-    }
-    two_keys
+/// The CRL that decided one certificate's status on the accepted path.
+struct ChosenCrl {
+    index: usize,
+    /// Whether its authorityKeyIdentifier names the key of the issuer it was
+    /// authenticated under.
+    names_issuer: bool,
+    /// That issuer's subjectPublicKeyInfo.
+    issuer_spki: Vec<u8>,
+}
+
+/// Whether the accepted path has two issuers of one name with different
+/// keys whose CRLs cannot be told apart: at least one of the two CRLs chosen
+/// for them does not name its issuer's key in an authorityKeyIdentifier.
+/// `chosen` is in path order, the signer's first.
+///
+/// Matching a CRL to a certificate by issuer name alone gives both
+/// certificates the same CRL, which then fails its signature check under
+/// one of the two keys. OpenSSL (`get_crl_sk`, `check_crl`) and BoringSSL
+/// reject such a path; Bouncy Castle (`checkCRL`) tries the next CRL and
+/// accepts. rssig rejects, as pinned by
+/// `sec16-self-issued-rollover-with-both-crls-is-rejected`. When each CRL
+/// names its issuer's key, all three give each certificate its own key's CRL
+/// and accept (`sec16-self-issued-rollover-with-key-identified-crls-verifies`).
+fn ambiguous_issuer_keys(chosen: &[ChosenCrl], crls: &[LoadedCrl]) -> bool {
+    chosen.iter().enumerate().any(|(position, first)| {
+        chosen[position + 1..].iter().any(|second| {
+            crls[first.index].issuer == crls[second.index].issuer
+                && first.issuer_spki != second.issuer_spki
+                && !(first.names_issuer && second.names_issuer)
+        })
+    })
 }
 
 /// What one certificate's CRLs established on one candidate path.
@@ -1482,8 +1452,8 @@ fn listing_in_scope(
 
 /// Whether a CRL is authoritative for `cert`: no issuingDistributionPoint,
 /// or one whose role flags admit the certificate and that names a fullName
-/// URI the certificate lists (or the certificate lists none). This is webpki
-/// 0.103's rule; webpki re-checks it when confirming the path. `None` when
+/// URI the certificate lists (or the certificate lists none). This follows
+/// webpki 0.103's rule, kept from when webpki also checked revocation. `None` when
 /// the scope cannot be read (an undecodable issuingDistributionPoint, or one
 /// without a fullName), which webpki rejects as unsupported.
 fn authority_for(

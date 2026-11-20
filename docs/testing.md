@@ -305,10 +305,12 @@ its case. See AGENTS.md, "Pinned expectations".
 Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 
-- An unknown status from webpki's confirmation pass (`details.reason`
-  `confirmation`) is final for retrieval. The confirmation exists to catch a
-  disagreement between rssig's per-certificate evaluation and webpki's own
-  rules; no fixture produces one unless one side has a bug.
+- An error with `details.reason` `confirmation` is final for retrieval. Since
+  SEC-24 it is produced only by the accepted-path rule for same-name issuers
+  with different keys whose CRLs do not name those keys
+  (`sec16-self-issued-rollover-with-both-crls-is-rejected`). Its code is
+  `certificate_chain_invalid`, which retrieval never treats as missing CRLs,
+  so the `revocation_unknown` branch is unreachable through the CLI.
   `retrieval::tests::a_confirmation_disagreement_is_final_for_retrieval` pins
   the decision.
 - A certificate whose issuer name cannot be read is recorded as

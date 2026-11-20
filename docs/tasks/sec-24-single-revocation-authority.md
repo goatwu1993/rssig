@@ -1,0 +1,97 @@
+# SEC-24: Make rssig the only revocation authority
+
+Task detail for **SEC-24** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox. SEC-10, SEC-16, SEC-17 and SEC-18 are items in that file.
+
+**Status:** complete. No case in `tests/cases.json` changed.
+
+## Problem
+
+Since PR #60, revocation was decided twice for every verification with CRLs:
+
+1. rssig's per-certificate evaluation in the `verify_for_usage` path callback
+   (`evaluate_crls`), modelled on OpenSSL's `check_cert_crl` and Bouncy
+   Castle's `X509RevocationChecker`. It picks a CRL by issuer key and
+   authorityKeyIdentifier, and lets webpki try another path when one is
+   rejected.
+2. A second `verify_for_usage` call on the accepted path with webpki
+   `RevocationOptions` holding only the CRLs chosen in step 1. Any
+   disagreement rejected the file.
+
+webpki 0.103.16 picks a CRL by issuer name and issuingDistributionPoint only.
+It has no key matching, delta CRLs or indirect CRLs. So the second call could
+only reject what step 1 accepted. Keeping the two in step needed a special case
+for self-issued key rollover (confirming the signer only, at `EndEntity`
+depth). It also meant any CRL feature webpki lacks could never be accepted,
+whatever step 1 decided (SEC-18).
+
+## Change
+
+- The second webpki call is removed. webpki builds paths without revocation
+  options; the callback is the only revocation check.
+- The one result the second call decided on its own is now an rssig rule on
+  the accepted path, `ambiguous_issuer_keys` in `src/trust.rs`. It applies
+  when two certificates on the path have issuers of one name with different
+  keys, and the CRLs chosen for them do not both name their issuer's key in an
+  authorityKeyIdentifier. The result is the same as before:
+  `certificate_chain_invalid` at `certificate_chain` with `details.reason`
+  `confirmation`.
+- `LoadedCrl.webpki` (webpki's CRL parse) is kept, but only to report
+  unsupported CRL features as `invalid_crl`. Removing that parse, and with it
+  the extra CRL decoding, stays in SEC-17.
+
+## Why the rule is right
+
+The case it keeps is
+`sec16-self-issued-rollover-with-both-crls-is-rejected`, a **Decided**
+acceptance pin from PR #60. Its `decision` in `tests/cases.json` records what
+the references do. OpenSSL 3.0.13 and BoringSSL keep one CRL per issuer name
+and reject after its signature fails; Bouncy Castle tries the next CRL and
+accepts. The owner chose to reject. The references are unchanged by this task:
+only the code that enforces the decision moved from webpki into rssig. When
+both CRLs name their issuer's key, all three references give each certificate
+its own key's CRL and accept, as rssig still does
+(`sec16-self-issued-rollover-with-key-identified-crls-verifies`, both orders).
+
+## Evidence
+
+| Check | Result |
+| --- | --- |
+| Full `cargo test --locked` before the change | Passed |
+| Cross-check run: second webpki call kept, rssig rule added, panic on any disagreement, full suite | Passed, 0 disagreements. About 1,210 accepted-path confirmations (three log lines were interleaved with test output and not counted): at least 1,205 accepted by both, and 3 rejected by both (the SEC-16 case once in the spec and in both `--crl` orders in the named test). Not committed. |
+| Rule disabled (`if false && …`) | `sec16_a_self_issued_rollover_path_needs_key_identified_crls` and the spec case fail: the file verifies (exit 0). The rule is what rejects it. |
+| Full `cargo test --locked` after the change | Passed with the same test counts as before |
+| `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings` | Passed |
+
+The cross-check covers the committed corpus only. It shows that no committed
+case depends on the removed call, not that the two engines agree on every
+possible input.
+
+## Cases
+
+No case was added or changed.
+
+| Case | Kind | Pins | Status |
+| --- | --- | --- | --- |
+| `sec16-self-issued-rollover-with-both-crls-is-rejected` | Decided (PR #60), unchanged | Acceptance | Now enforced by `ambiguous_issuer_keys` |
+| `sec16-self-issued-rollover-with-key-identified-crls-verifies` and `-reversed` | Decided (PR #60), unchanged | Acceptance | Unchanged |
+| `sec16-self-issued-rollover-revoked-by-key-identified-crl-is-rejected` | Unchanged | Acceptance | Decided by rssig's per-key evaluation, as before |
+
+## What is given up
+
+A second, independent revocation engine. Before, a bug in `evaluate_crls` that
+accepted a revoked certificate would usually also have had to get past webpki.
+Now the SEC-10 and SEC-16 cases and their OpenSSL and Bouncy Castle comparisons
+are the only check on that code. Any later change to revocation follows
+AGENTS.md "Pinned expectations", item 6.
+
+## Left open
+
+- `details.reason` `confirmation` keeps its value so the pinned case and
+  retrieval's finality rule stay unchanged. The name now describes history, not
+  a webpki call. A rename (for example `ambiguous_issuer_keys`) is a
+  wording-only change to the pinned diagnostic and needs its own case update.
+- SEC-17: drop `LoadedCrl.webpki`, detecting unsupported features without
+  webpki, so each CRL is decoded once.
+- SEC-18: with no webpki veto, supporting delta CRLs or skipping known
+  unsupported CRLs is now rssig's own decision.

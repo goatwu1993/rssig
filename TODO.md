@@ -281,9 +281,9 @@ timestamps, and local CRL validation already exist.
   in [SEC-10](docs/tasks/sec-10-crl-applicability.md)): on a self-issued
   key-rollover path (two issuers of one name with different keys) CRLs that
   each name their issuer's key verify, as in all three libraries
-  (`sec16-self-issued-rollover-with-key-identified-crls-verifies`); webpki
-  cannot confirm two issuers of one name, so it confirms the signer only on
-  such a path. CRLs without key identifiers are rejected at confirmation, as
+  (`sec16-self-issued-rollover-with-key-identified-crls-verifies`). CRLs
+  without key identifiers are rejected (since SEC-24 by rssig's
+  `ambiguous_issuer_keys`, formerly by webpki's confirmation pass), as
   OpenSSL and BoringSSL reject them and unlike Bouncy Castle
   (`sec16-self-issued-rollover-with-both-crls-is-rejected`); the owner chose
   that tiebreaker, so it is Decided.
@@ -324,8 +324,9 @@ timestamps, and local CRL validation already exist.
   Repeated work found in the PR #60 review (results unchanged, bounded by
   existing limits):
   - `LoadedCrl::load` copies each applicable CRL's bytes and tbsCertList and
-    builds an owned webpki CRL on every verification and retrieval round; the
-    confirmation pass clones it again. Borrow from the store instead.
+    builds an owned webpki CRL on every verification and retrieval round,
+    only to read its unsupported-feature errors (SEC-24). Borrow from the
+    store instead, and detect those features without webpki.
   - The CRL signature cache key clones the issuer SPKI on every lookup, even
     on a hit; key it by CRL and issuer index.
   - The path callback re-encodes and hashes every certificate on every
@@ -460,6 +461,12 @@ timestamps, and local CRL validation already exist.
   source with an invalid signature and a sorted issuer key, and a portable
   `crl_certificate_responses` implementation hashing the original bytes
   disagrees. Add a fixture with such a name before changing it.
+- [x] **SEC-24: Make rssig the only revocation authority.** webpki's second
+  `verify_for_usage` call with `RevocationOptions` is removed; rssig's
+  per-certificate evaluation in the path callback decides alone, and an
+  accepted-path rule keeps the Decided SEC-16 rollover rejection. No case
+  changed. Detail and evidence:
+  [SEC-24](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of
   PR #60 was concluded with these items not changed in that PR. Reasons and
   references are in

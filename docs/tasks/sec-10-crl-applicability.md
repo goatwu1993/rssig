@@ -131,8 +131,10 @@ One box per item in the scope above.
 
 - The best CRL decides, checked per certificate on each path (PR #60):
   revocation is evaluated by rssig for every certificate on a candidate path,
-  as OpenSSL and Bouncy Castle do, and webpki confirms the accepted path with
-  only the chosen CRLs. An unusable CRL is set aside when another CRL of the
+  as OpenSSL and Bouncy Castle do, and webpki confirmed the accepted path with
+  only the chosen CRLs (removed in SEC-24, see
+  [SEC-24](sec-24-single-revocation-authority.md); rssig's own evaluation is
+  now the only revocation check). An unusable CRL is set aside when another CRL of the
   issuer is usable; the former `sec10-root-*` cases now pin each failure with
   the bad CRL alone and success beside `good.crl`. Changing those earlier
   failure expectations for the bad CRL beside `good.crl` was approved by the
@@ -576,7 +578,8 @@ relic 02c54d58 and BoringSSL `main`.
     (`RFC3280CertPathUtilities.java:1716-1721`) and accepts. The owner
     chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects,
     so rssig rejects, failing closed, at
-    webpki's confirmation
+    webpki's confirmation (since SEC-24, at rssig's own accepted-path rule
+    `ambiguous_issuer_keys`, which gives the same result)
     (`sec16-self-issued-rollover-with-both-crls-is-rejected`:
     `certificate_chain_invalid`, reason `confirmation`), in either order.
     An earlier note here said OpenSSL would accept this case; the run shows
