@@ -1032,6 +1032,13 @@ nextUpdate standing alone, where the alternative is a CRL failure that also
 rejects, so the check only decides the code and whether a source is asked.
 Named test `sec10_a_crl_without_next_update_revokes_unless_a_newer_crl_clears_it`.
 
+A missing nextUpdate is checked after the CRL's scope defects, inside the
+authority decision, so a CRL whose scope rssig cannot read is reported as
+`issuing_distribution_point` (replaceable) with or without nextUpdate. A
+CRL without nextUpdate that is not in canonical DER is reported as
+`unsupported_or_malformed` with its own message ("not in canonical DER, so
+it cannot be judged").
+
 Recorded, not changed:
 - Without `--fetch-crls`, a path whose only gap is a replaceable CRL is
   reported ahead of another path's error that webpki ranks higher (for

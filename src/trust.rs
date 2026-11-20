@@ -668,9 +668,14 @@ struct LoadedCrl {
     stand_in: Option<core::result::Result<(), webpki::Error>>,
 }
 
-/// The rejection reported for a CRL without nextUpdate that webpki was not
-/// asked about: `unsupported_or_malformed`.
-static NOT_JUDGED: webpki::Error = webpki::Error::BadDer;
+/// Why a CRL is rejected apart from a missing nextUpdate.
+enum Rejection<'a> {
+    /// webpki's own rejection.
+    Webpki(&'a webpki::Error),
+    /// A CRL without nextUpdate whose encoding is not canonical, so webpki
+    /// was not asked.
+    NotJudged,
+}
 
 impl LoadedCrl {
     /// Whether webpki accepts the CRL, or would if only its missing
@@ -680,14 +685,14 @@ impl LoadedCrl {
     }
 
     /// What webpki rejects the CRL for, other than a missing nextUpdate.
-    fn rejection(&self) -> Option<&webpki::Error> {
+    fn rejection(&self) -> Option<Rejection<'_>> {
         match (&self.stand_in, &self.webpki) {
-            (Some(verdict), _) => verdict.as_ref().err(),
-            (None, Err(e)) if self.tbs.next_update.is_some() => Some(e),
+            (Some(verdict), _) => verdict.as_ref().err().map(Rejection::Webpki),
+            (None, Err(e)) if self.tbs.next_update.is_some() => Some(Rejection::Webpki(e)),
             // A CRL without nextUpdate that could not be judged (it does not
-            // re-encode to its own bytes) is malformed to webpki, as it
-            // would be with nextUpdate: reported, and replaceable.
-            (None, _) if self.tbs.next_update.is_none() => Some(&NOT_JUDGED),
+            // re-encode to its own bytes): treated as malformed, as webpki
+            // would on a normalized copy it must not see; replaceable.
+            (None, _) if self.tbs.next_update.is_none() => Some(Rejection::NotJudged),
             _ => None,
         }
     }
@@ -1100,15 +1105,24 @@ fn evaluate_crls(
         }
         // Feature support is reported before freshness. Whatever webpki
         // rejects, unsupported or malformed, a source's CRL can replace.
-        if let Some(e) = crl.rejection() {
+        if let Some(rejection) = crl.rejection() {
             fail(REPLACEABLE, &|| {
-                with_crl(
-                    revocation_error(
-                        &sha256,
-                        ErrorCode::InvalidCrl,
+                let (message, reason) = match &rejection {
+                    Rejection::Webpki(e) => (
                         format!("unsupported or malformed CRL: {e:?}"),
-                    )
-                    .detail("reason", crl_rejection_reason(e)),
+                        crl_rejection_reason(e),
+                    ),
+                    Rejection::NotJudged => (
+                        String::from(
+                            "CRL without nextUpdate is not in canonical DER, so it cannot be \
+                             judged",
+                        ),
+                        "unsupported_or_malformed",
+                    ),
+                };
+                with_crl(
+                    revocation_error(&sha256, ErrorCode::InvalidCrl, message)
+                        .detail("reason", reason),
                 )
             });
             continue;
@@ -1124,22 +1138,14 @@ fn evaluate_crls(
             });
             continue;
         }
-        // A missing nextUpdate is checked last: to OpenSSL, BoringSSL and
-        // Bouncy Castle it is no defect, so the CRL's other defects decide as
-        // they would with nextUpdate present, and are replaceable. Only as
-        // the sole defect is it rssig's stricter `invalid_crl`, for which no
-        // source is asked: the references would use this CRL and not look
-        // again.
-        let Some(next_update) = crl.tbs.next_update else {
-            fail(UNUSABLE, &|| {
-                with_crl(
-                    revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
-                        .detail("reason", "missing_next_update"),
-                )
-            });
-            continue;
-        };
-        if next_update.to_unix_duration().as_secs() <= now {
+        // A missing nextUpdate is checked last, after the scope defects below:
+        // to OpenSSL, BoringSSL and Bouncy Castle it is no defect, so the
+        // CRL's other defects decide as they would with nextUpdate present,
+        // and are replaceable. Only as the sole defect is it rssig's stricter
+        // `invalid_crl`, for which no source is asked: the references would
+        // use this CRL and not look again.
+        let next_update = crl.tbs.next_update;
+        if next_update.is_some_and(|next| next.to_unix_duration().as_secs() <= now) {
             fail(EXPIRED, &|| {
                 with_crl(revocation_error(
                     &sha256,
@@ -1153,11 +1159,18 @@ fn evaluate_crls(
         match authority {
             // The newest usable CRL decides, as OpenSSL prefers the latest
             // lastUpdate among equally good CRLs.
-            Some(true) => {
+            Some(true) if next_update.is_some() => {
                 if usable.is_none_or(|(_, newest): (usize, u64)| this_update > newest) {
                     usable = Some((index, this_update));
                 }
             }
+            // Usable but for the missing nextUpdate (see above).
+            Some(true) => fail(UNUSABLE, &|| {
+                with_crl(
+                    revocation_error(&sha256, ErrorCode::InvalidCrl, "CRL lacks nextUpdate")
+                        .detail("reason", "missing_next_update"),
+                )
+            }),
             Some(false) => {}
             // webpki can use it, but its scope cannot be read here: reported,
             // never silently dropped.
@@ -1994,8 +2007,7 @@ mod revocation_reporting {
         mismatched.signature.oid = ::der::asn1::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.3");
         assert!(!revokes_without_next_update(&mismatched, &serial));
         // A duplicate issuingDistributionPoint.
-        let twice = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
-        let mut twice = twice;
+        let mut twice = with_crl_extension(extension("2.5.29.28", true, &idp(&[])));
         twice
             .crl_extensions
             .as_mut()
