@@ -212,7 +212,7 @@ impl VerificationError {
         self
     }
     /// Preserve explicitly typed causes across internal anyhow contexts.
-    pub fn from_internal(error: anyhow::Error, code: ErrorCode, stage: Stage) -> Self {
+    pub(crate) fn from_internal(error: anyhow::Error, code: ErrorCode, stage: Stage) -> Self {
         let error = match error.downcast::<crate::parse::Error>() {
             Ok(error) => return error.into(),
             Err(error) => error,

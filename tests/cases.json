@@ -24286,6 +24286,51 @@
       }
     },
     {
+      "id": "crl-fetch-injected-undecodable",
+      "input": "good-crl-discovery.exe",
+      "crl_responses": {
+        "http://crl.example.invalid/test.crl": "root.der"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "invalid_crl",
+                        "stage": "revocation"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.example.invalid/test.crl"
+        ]
+      }
+    },
+    {
       "id": "crl-fetch-injected-expired",
       "input": "good-crl-discovery.exe",
       "crl_responses": {
@@ -27437,6 +27482,9 @@
         "stdout": "",
         "stderr_contains": [
           "unsupported trust anchor"
+        ],
+        "stderr_once": [
+          "unsupported trust anchor"
         ]
       }
     },
@@ -27457,6 +27505,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "unsupported trust anchor"
+        ],
+        "stderr_once": [
           "unsupported trust anchor"
         ]
       }
@@ -27479,6 +27530,9 @@
         "stdout": "",
         "stderr_contains": [
           "entry 2"
+        ],
+        "stderr_once": [
+          "entry 2"
         ]
       }
     },
@@ -27499,6 +27553,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "entry 1"
+        ],
+        "stderr_once": [
           "entry 1"
         ]
       }
@@ -27521,6 +27578,9 @@
         "stdout": "",
         "stderr_contains": [
           "entry 2"
+        ],
+        "stderr_once": [
+          "entry 2"
         ]
       }
     },
@@ -27541,6 +27601,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "entry 2"
+        ],
+        "stderr_once": [
           "entry 2"
         ]
       }
@@ -27563,6 +27626,9 @@
         "stdout": "",
         "stderr_contains": [
           "entry 2"
+        ],
+        "stderr_once": [
+          "entry 2"
         ]
       }
     },
@@ -27583,6 +27649,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "entry 1"
+        ],
+        "stderr_once": [
           "entry 1"
         ]
       }
@@ -27605,6 +27674,9 @@
         "stdout": "",
         "stderr_contains": [
           "entry 2"
+        ],
+        "stderr_once": [
+          "entry 2"
         ]
       }
     },
@@ -27625,6 +27697,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "empty trust input"
+        ],
+        "stderr_once": [
           "empty trust input"
         ]
       }
@@ -27647,6 +27722,9 @@
         "stdout": "",
         "stderr_contains": [
           "empty trust input"
+        ],
+        "stderr_once": [
+          "empty trust input"
         ]
       }
     },
@@ -27668,6 +27746,9 @@
         "stdout": "",
         "stderr_contains": [
           "expected CERTIFICATE PEM label"
+        ],
+        "stderr_once": [
+          "expected CERTIFICATE PEM label"
         ]
       }
     },
@@ -27688,6 +27769,9 @@
         "exit_code": 2,
         "stdout": "",
         "stderr_contains": [
+          "expected X509 CRL PEM label"
+        ],
+        "stderr_once": [
           "expected X509 CRL PEM label"
         ]
       }

@@ -18,7 +18,7 @@ fuzz_target!(|data: &[u8]| {
     // Fuzzed roots. Revocation is disabled so path building is not cut short
     // by the absence of CRLs.
     let mut roots = TrustStore::default();
-    if roots.add_roots_typed(data).is_ok() {
+    if roots.add_roots(data).is_ok() {
         let options =
             VerifyOptions::trusted_with_revocation(&roots, NOW, RevocationPolicy::Disabled);
         let _ = verify_pe(SIGNED, &options);
@@ -26,7 +26,7 @@ fuzz_target!(|data: &[u8]| {
     // The committed root with fuzzed CRLs, revocation required.
     let mut crls = TrustStore::default();
     crls.add_roots(ROOT).expect("committed test root loads");
-    if crls.add_crl_typed(data).is_ok() {
+    if crls.add_crl(data).is_ok() {
         let _ = verify_pe(SIGNED, &VerifyOptions::trusted(&crls, NOW));
     }
 });

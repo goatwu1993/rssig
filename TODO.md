@@ -712,7 +712,8 @@ timestamps, and local CRL validation already exist.
   copying drops from 1142/1136/1169/1293 bytes to zero on committed good fixtures.
   CMS adapters move decoded certificate storage and signers borrow selected
   certificates, guarded by pointer-identity tests. Added optional typed root/CRL/
-  native-root loading methods without changing legacy signatures or policy;
+  native-root loading methods without changing policy (the loaders have since
+  been retyped to `TrustLoadError`; see the docs/library.md migration notes);
   remaining copies and loading-policy limits are explicit in docs/library.md.
   Reused committed fixtures/provenance, added a repeated-file portable case and
   named CLI/domain checks. Signer borrowing first failed its pointer assertion;

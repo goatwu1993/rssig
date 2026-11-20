@@ -28,7 +28,7 @@ separate work.
 | `verify_text` | `verify_as` for each text format, plus `verify` detection | script and `rdp` fixtures |
 | `verify_trusted` | `verify` against the committed test root and CRLs, with revocation required and disabled | container, script and `rdp` fixtures |
 | `verify_logged` | `Verifier::verify` with an injected logger that formats every record, compared with `verify` | container, script and `rdp` fixtures |
-| `trust_loading` | `TrustStore::add_roots_typed`/`add_crl_typed`, then `verify_pe` of one fixed valid image | `der`, `crl`, `pem` |
+| `trust_loading` | `TrustStore::add_roots`/`add_crl`, then `verify_pe` of one fixed valid image | `der`, `crl`, `pem` |
 
 `verify_binary` and `verify_text` use `VerifyOptions::integrity_only`.
 `verify_binary` repeats every format, including CAB and NAVX, with `allow_sha1`

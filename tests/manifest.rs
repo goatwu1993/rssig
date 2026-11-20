@@ -932,7 +932,7 @@ fn rejects_generators_that_do_not_exist() {
     // Accepted: a function in src/ or tests/, a whole file, and a trailing note.
     for generator in [
         "src/tests.rs::regenerate_cli_fixtures",
-        "tests/fixtures.rs::problem_details_preserve_typed_causes_and_roundtrip",
+        "tests/fixtures.rs::mismatched_image_fixture_preserves_the_original_signature",
         "src/tests/crl_fetch_fixtures.rs",
         "src/tests/trust_loading.rs::write via regenerate_cli_fixtures",
     ] {

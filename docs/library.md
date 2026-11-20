@@ -519,7 +519,8 @@ Constructors perform no I/O, load no roots, fetch no revocation data, and read n
 clock. The CLI remains responsible for root/CRL loading and its documented
 current-time default, and constructs the same explicit library policies.
 
-Public fields and existing entry points remain source-compatible. For legacy
+Public fields and these entry points remain source-compatible; the trust-loading
+signature changes are listed under [Migration notes](#migration-notes). For legacy
 struct literals, `trust: None` means integrity-only regardless of
 `check_revocation`; a true flag in that combination is ignored and reports never
 claim revocation was checked. Prefer the integrity-only constructor to express
@@ -606,21 +607,24 @@ error strings. Existing classifications retain their meanings:
 - `InspectionLimit`: recursive inspection budget exhaustion.
 
 `ErrorKind` is non-exhaustive; retain a fallback arm for future variants.
-Diagnostic prose and causal depth are not stable machine interfaces. Parser
+Diagnostic prose and causal depth are not stable machine interfaces. `{}` on a
+parser error is a summary of its kind (`unsigned PE`, `malformed CMS`); `{:#}`
+adds the causes once, and `source()` walks them. Parser
 errors are not JSON verification errors; the verifier maps them at its existing
 stage boundaries into `domain::VerificationError` with stable code, stage,
 details and causes. No JSON schema fields or policy claims change in LIB-08.
 
-Trust loading now offers `add_roots_typed`, `add_crl_typed`, and (with
-`system-roots`) `from_system_typed`. They return `TrustLoadError`, whose
+Trust loading is `add_roots`, `add_crl`, and (with `system-roots`)
+`from_system`. They return `TrustLoadError`, whose
 non-exhaustive `TrustLoadErrorKind` identifies `Roots`, `Crl`, or `SystemRoots`
-and whose source retains the original loading failure. These categories describe
+and whose `source()` walks the underlying loading failure. `EmptyInput` has no
+underlying failure, so its `source()` is `None`. These categories describe
 input loading, not certificate validation or revocation status. No filesystem
 I/O is added to explicit loaders. Successfully loading a CRL never authenticates
 it. Successful DER roots and CRLs are owned by the store; caller buffers can be
 dropped. Existing valid entries survive a subsequent invalid DER load.
 
-Both typed and legacy methods now use the [SEC-07 atomic loading policy](trust-loading.md).
+All loaders use the [SEC-07 atomic loading policy](trust-loading.md).
 Every explicit DER/PEM load is atomic, rejects empty/malformed input and
 unsupported anchor conversion, preserves exact DER, and deduplicates identical
 artifacts. Root and CRL PEM bundles are supported. Native enumeration errors,
@@ -631,14 +635,44 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
-All existing parser, verifier, options and `TrustStore` entry points retain their
-public signatures. Existing `add_roots`, `add_crl` and `from_system` continue to
-return `anyhow::Result`, wrapping the same typed error. Callers wanting typed loading
-diagnostics can switch to the corresponding `_typed` method and match `kind()`
-and `code()` with fallback arms; `?` still converts the error into `anyhow` if desired.
+Parser, verifier and options entry points retain their public signatures.
+`TrustStore::add_roots`, `add_crl` and `from_system` now return
+`Result<_, TrustLoadError>` instead of `anyhow::Result`, so no public signature
+names `anyhow`. Callers using `?` into `anyhow::Error` or `Box<dyn Error>`, or
+`.unwrap()`, compile unchanged; callers that named `anyhow::Result` or downcast
+the error to `TrustLoadError` now receive it directly and match `kind()` and
+`code()` with fallback arms. The `_typed` methods are deprecated aliases of the
+same functions. `VerificationError::from_internal`, which took an
+`anyhow::Error`, is no longer public; construct errors with
+`VerificationError::new` and `detail`.
+
+`TrustLoadError` and `parse::Error` no longer repeat their causes. Both follow
+one formatting contract:
+
+- `{}` (and `to_string()`) is a self-describing summary built from the typed
+  classification: `ErrorKind` for `parse::Error` (`unsigned PE`), and kind,
+  code and entry position for `TrustLoadError`
+  (`invalid CRL encoding in trust input entry 1`).
+- `{:#}` is that summary followed by every cause once.
+- `source()` walks those same causes, so a reporter that walks sources prints
+  each cause once.
+
+Previously `{}` printed the whole chain and `source()` returned that same chain,
+so the CLI and any chain-walking reporter printed every cause twice. Use `{:#}`
+where the dependency's detail is wanted; `{}` no longer includes it. CLI stderr
+for a rejected `--roots`/`--crl` file and for a system-root enumeration failure,
+and the `invalid_crl` message for an undecodable fetched CRL, now state each cause
+once. JSON `message` and `causes` for parser failures are unchanged, because the
+verifier maps the parser's inner causes directly.
+
+`TrustLoadError::source()` is now `None` for `EmptyInput` (empty explicit input or
+an error-free empty native store); its summary already states the whole failure.
+Previously every `TrustLoadError` returned `Some`, so code that unwraps `source()`
+must handle `None`. System-root enumeration lists every native error in one cause
+and reports no further `source()`.
 SEC-07 deliberately tightens silent exclusion/partial-load behavior; correct a
-rejected input or explicitly configure a controlled store. No signatures change,
-and no dependency or native crypto provider is added.
+rejected input or explicitly configure a controlled store. No dependency or
+native crypto provider is added.
 #### CRL sources (`--fetch-crls`, `crl-fetch` feature)
 
 `CrlSource` is now asked once per certificate rather than once per URL, and

@@ -41,7 +41,7 @@ fn sec07_failed_root_bundle_cannot_partially_establish_trust() {
     ] {
         let mut store = TrustStore::default();
         store.add_crl(CRL).unwrap();
-        let error = store.add_roots_typed(bytes).unwrap_err();
+        let error = store.add_roots(bytes).unwrap_err();
         assert_eq!(error.kind(), Kind::Roots);
         assert_eq!(error.code(), code);
         assert_eq!(error.entry_index(), Some(index));
@@ -52,7 +52,7 @@ fn sec07_failed_root_bundle_cannot_partially_establish_trust() {
         );
         store.add_roots(ROOT).unwrap();
         let before = verify(&store).unwrap();
-        assert!(store.add_roots_typed(bytes).is_err());
+        assert!(store.add_roots(bytes).is_err());
         assert_eq!(verify(&store).unwrap(), before);
     }
 }
@@ -75,7 +75,7 @@ fn sec07_failed_crl_bundle_cannot_partially_supply_revocation() {
     ] {
         let mut store = TrustStore::default();
         store.add_roots(ROOT).unwrap();
-        let error = store.add_crl_typed(bytes).unwrap_err();
+        let error = store.add_crl(bytes).unwrap_err();
         assert_eq!(error.kind(), Kind::Crl);
         assert_eq!(error.code(), Code::InvalidEncoding);
         assert_eq!(error.entry_index(), Some(index));
@@ -85,7 +85,7 @@ fn sec07_failed_crl_bundle_cannot_partially_supply_revocation() {
         );
         store.add_crl(CRL).unwrap();
         let before = verify(&store).unwrap();
-        assert!(store.add_crl_typed(bytes).is_err());
+        assert!(store.add_crl(bytes).is_err());
         assert_eq!(verify(&store).unwrap(), before);
     }
 }
@@ -119,8 +119,8 @@ fn sec07_empty_or_whitespace_input_is_explicitly_rejected() {
     let mut store = TrustStore::default();
     for bytes in [b"".as_slice(), b" \r\n\t"] {
         for error in [
-            store.add_roots_typed(bytes).unwrap_err(),
-            store.add_crl_typed(bytes).unwrap_err(),
+            store.add_roots(bytes).unwrap_err(),
+            store.add_crl(bytes).unwrap_err(),
         ] {
             assert_eq!(error.code(), Code::EmptyInput);
             assert_eq!(error.entry_index(), None);
@@ -133,7 +133,7 @@ fn sec07_loaded_forged_crl_is_not_authenticated_even_with_revocation_disabled() 
     let mut store = TrustStore::default();
     store.add_roots(ROOT).unwrap();
     store
-        .add_crl_typed(include_bytes!("fixtures/sec07-crls-forged.pem"))
+        .add_crl(include_bytes!("fixtures/sec07-crls-forged.pem"))
         .unwrap();
     assert_eq!(
         verify(&store).unwrap_err().code,

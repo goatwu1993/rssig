@@ -43,6 +43,10 @@ or reference GitHub issues to track tasks or sub-items.
   rssig alone decides revocation, in the path callback; webpki builds paths
   without revocation options. Review the resolved dependency graph when
   changing dependencies.
+- `anyhow` is internal error plumbing only and must not leak into the public
+  API. Public signatures, fields, and trait bounds name rssig's own error types
+  (`parse::Error`, `TrustLoadError`, `domain::VerificationError`) or `std`/`core`
+  ones; convert at the public boundary.
 - Trust anchors must come from the configured root store. Embedded certificates
   are untrusted chain candidates. A mathematically valid signature alone is not
   a trusted signature.

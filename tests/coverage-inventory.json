@@ -443,6 +443,7 @@
         "crl-fetch-injected-good",
         "crl-fetch-injected-revoked",
         "crl-fetch-injected-forged",
+        "crl-fetch-injected-undecodable",
         "crl-fetch-injected-expired",
         "crl-fetch-injected-unavailable",
         "crl-offline-provider-unused",
@@ -920,6 +921,7 @@
     },
     "revocation_unknown": {
       "cases": [
+        "crl-fetch-injected-undecodable",
         "sec09-lifetime-rollover-revocation-unknown",
         "sec10-only-unrelated-crl-is-unknown",
         "sec10-crl-dp-other-idp-unknown",

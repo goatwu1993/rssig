@@ -80,9 +80,45 @@ impl Error {
     }
 }
 
+impl ErrorKind {
+    fn summary(self) -> &'static str {
+        match self {
+            Self::InvalidMsi => "invalid MSI/MSP structure",
+            Self::UnsignedMsi => "unsigned MSI/MSP",
+            Self::InvalidAppx => "invalid MSIX/AppX package",
+            Self::UnsupportedAppx => "unsupported MSIX/AppX package",
+            Self::UnsignedAppx => "unsigned MSIX/AppX package",
+            Self::InvalidPe => "invalid PE",
+            Self::InvalidPowershell => "invalid PowerShell script",
+            Self::UnsignedPowershell => "unsigned PowerShell script",
+            Self::InvalidWsh => "invalid WSH script",
+            Self::UnsignedWsh => "unsigned WSH script",
+            Self::UnsupportedWsfXml => "unsupported WSF XML",
+            Self::InvalidRdp => "invalid RDP file",
+            Self::UnsignedRdp => "unsigned RDP file",
+            Self::UnsupportedRdpScope => "unsupported RDP signscope",
+            Self::Unsigned => "unsigned PE",
+            Self::InvalidCab => "invalid CAB",
+            Self::UnsignedCab => "unsigned CAB",
+            Self::InvalidNavx => "invalid NAVX",
+            Self::UnsignedNavx => "unsigned NAVX",
+            Self::InvalidCertificateTable => "invalid certificate table",
+            Self::MalformedCms => "malformed CMS",
+            Self::InspectionLimit => "inspection limit exceeded",
+        }
+    }
+}
+
+/// `{}` names what failed from the typed kind; `{:#}` adds the whole causal
+/// chain. `source()` is that chain, so a reporter walking sources prints each
+/// cause once.
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#}", self.inner)
+        f.write_str(self.kind.summary())?;
+        if f.alternate() {
+            write!(f, ": {:#}", self.inner)?;
+        }
+        Ok(())
     }
 }
 
@@ -104,3 +140,66 @@ impl fmt::Display for DecodeError {
 }
 
 impl error::Error for DecodeError {}
+
+#[cfg(test)]
+mod tests {
+    use super::{Error, ErrorKind};
+    use alloc::{format, string::ToString};
+
+    // One list generates both an exhaustive match and the rows it tests, so a
+    // new ErrorKind variant fails to compile until it is listed here.
+    macro_rules! summaries {
+        ($($kind:ident => $summary:literal,)*) => {
+            #[allow(dead_code)]
+            fn exhaustive(kind: ErrorKind) {
+                match kind {
+                    $(ErrorKind::$kind => {})*
+                }
+            }
+            const ROWS: &[(ErrorKind, &str)] = &[$((ErrorKind::$kind, $summary)),*];
+        };
+    }
+    summaries! {
+        InvalidMsi => "invalid MSI/MSP structure",
+        UnsignedMsi => "unsigned MSI/MSP",
+        InvalidAppx => "invalid MSIX/AppX package",
+        UnsupportedAppx => "unsupported MSIX/AppX package",
+        UnsignedAppx => "unsigned MSIX/AppX package",
+        InvalidPe => "invalid PE",
+        InvalidPowershell => "invalid PowerShell script",
+        UnsignedPowershell => "unsigned PowerShell script",
+        InvalidWsh => "invalid WSH script",
+        UnsignedWsh => "unsigned WSH script",
+        UnsupportedWsfXml => "unsupported WSF XML",
+        InvalidRdp => "invalid RDP file",
+        UnsignedRdp => "unsigned RDP file",
+        UnsupportedRdpScope => "unsupported RDP signscope",
+        Unsigned => "unsigned PE",
+        InvalidCab => "invalid CAB",
+        UnsignedCab => "unsigned CAB",
+        InvalidNavx => "invalid NAVX",
+        UnsignedNavx => "unsigned NAVX",
+        InvalidCertificateTable => "invalid certificate table",
+        MalformedCms => "malformed CMS",
+        InspectionLimit => "inspection limit exceeded",
+    }
+
+    #[test]
+    fn every_kind_has_a_distinct_summary_and_prints_each_cause_once() {
+        for (index, (kind, summary)) in ROWS.iter().enumerate() {
+            assert!(
+                ROWS[..index].iter().all(|(k, s)| k != kind && s != summary),
+                "duplicate row for {kind:?}"
+            );
+            let error = Error::new(
+                *kind,
+                anyhow::anyhow!("leaf cause").context("outer context"),
+            );
+            assert_eq!(error.kind(), *kind);
+            assert_eq!(error.to_string(), *summary);
+            let chain = format!("{error:#}");
+            assert_eq!(chain, format!("{summary}: outer context: leaf cause"));
+            crate::assert_causes_once(&error, &chain);
+        }
+    }
+}

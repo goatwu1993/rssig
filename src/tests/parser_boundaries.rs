@@ -48,10 +48,10 @@ fn opaque_choice_framing_and_recursive_limits_are_enforced() {
         deep = seq(&[deep]);
     }
     let error = parse::SignedData::parse(&other(deep)).unwrap_err();
-    assert!(error.to_string().contains("DER limit exceeded"));
+    assert!(format!("{error:#}").contains("DER limit exceeded"));
     let wide = tlv(0x30, &[5, 0].repeat(16384));
     let error = parse::SignedData::parse(&other(wide)).unwrap_err();
-    assert!(error.to_string().contains("DER limit exceeded"));
+    assert!(format!("{error:#}").contains("DER limit exceeded"));
 }
 
 #[test]

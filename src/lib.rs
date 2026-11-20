@@ -11,6 +11,20 @@ extern crate alloc;
 #[cfg(all(test, not(feature = "std")))]
 extern crate std;
 
+/// Error formatting contract: `{}` is the summary, `source()` walks the causes,
+/// and `{:#}` is exactly the summary followed by each cause once.
+#[cfg(test)]
+pub(crate) fn assert_causes_once(error: &dyn core::error::Error, alternate: &str) {
+    use alloc::string::ToString;
+    let mut walked = error.to_string();
+    let mut cause = error.source();
+    while let Some(next) = cause {
+        walked.push_str(&alloc::format!(": {next}"));
+        cause = next.source();
+    }
+    assert_eq!(walked, alternate);
+}
+
 #[cfg(all(feature = "verify-core", feature = "appx"))]
 mod appx;
 #[cfg(feature = "verify-core")]

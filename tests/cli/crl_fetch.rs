@@ -106,6 +106,73 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
 }
 
 #[test]
+fn crl_fetch_undecodable_response_reports_each_cause_once() {
+    struct Source;
+    impl rssig::retrieval::CrlSource for Source {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            // A certificate is valid DER but not a CertificateList.
+            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
+                Ok(rssig::retrieval::SourcedCrl::new(
+                    include_bytes!("../fixtures/root.der").to_vec(),
+                ))
+            }))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let input = base.join("good-crl-discovery.exe");
+    let root = base.join("root.der");
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    let code = rssig::cli::run_with_crl_source(
+        [
+            "rssig",
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            root.to_str().unwrap(),
+            "--time",
+            "1800000000",
+            "--fetch-crls",
+            input.to_str().unwrap(),
+        ],
+        &mut out,
+        &mut err,
+        &mut Source,
+    )
+    .unwrap();
+    assert!(err.is_empty());
+    assert_eq!(code, 1);
+    let json: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &json["results"][0]["error"];
+    // An undecodable body is no evidence: the file fails as revocation_unknown
+    // and the decode failure is reported per certificate.
+    assert_eq!(error["code"], "revocation_unknown");
+    assert_eq!(error["stage"], "revocation");
+    let failures = error["details"]["crl_retrieval"]["failures"]
+        .as_array()
+        .unwrap();
+    assert_eq!(failures.len(), 1);
+    let failure = &failures[0];
+    assert_eq!(failure["code"], "invalid_crl");
+    assert_eq!(failure["stage"], "revocation");
+    assert_eq!(failure["url"], "http://crl.example.invalid/test.crl");
+    let message = failure["message"].as_str().unwrap();
+    assert!(
+        message
+            .starts_with("decoding retrieved CRL: invalid CRL encoding in trust input entry 1: "),
+        "{message}"
+    );
+    assert_eq!(
+        message.matches("trust input entry 1").count(),
+        1,
+        "{message}"
+    );
+}
+
+#[test]
 fn usable_supplied_crls_and_offline_mode_do_not_call_the_provider() {
     struct NoCalls;
     impl rssig::retrieval::CrlSource for NoCalls {

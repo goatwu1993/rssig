@@ -88,6 +88,8 @@ pub struct Expectation {
     #[serde(default)]
     pub stderr_contains: Vec<String>,
     #[serde(default)]
+    pub stderr_once: Vec<String>,
+    #[serde(default)]
     pub contains: BTreeMap<String, String>,
 }
 
@@ -183,6 +185,7 @@ impl Case {
                     stderr: _,
                     stdout_contains: _,
                     stderr_contains: _,
+                    stderr_once: _,
                     contains: _,
                 },
         } = self;

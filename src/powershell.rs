@@ -4,9 +4,9 @@ use crate::domain::{ErrorCode, Stage};
 pub(crate) use crate::parse::powershell::Powershell;
 #[cfg(test)]
 use crate::parse::powershell::{MAX_SIGNATURE_TEXT, PREFIX, SUFFIX};
-use alloc::vec::Vec;
 #[cfg(test)]
-use alloc::{format, string::ToString};
+use alloc::format;
+use alloc::vec::Vec;
 #[cfg(test)]
 use std::path::Path;
 #[cfg(test)]
@@ -140,10 +140,7 @@ mod tests {
         }
         let text = format!("{PREFIX}{}{SUFFIX}", "A".repeat(MAX_SIGNATURE_TEXT + 1));
         assert!(
-            Powershell::parse(text.as_bytes())
-                .err()
-                .unwrap()
-                .to_string()
+            format!("{:#}", Powershell::parse(text.as_bytes()).err().unwrap())
                 .contains("oversized")
         );
     }
@@ -266,7 +263,7 @@ mod xml_tests {
             }
         }
         let bad = fixture("bad-psxml-comment-end.ps1xml");
-        let message = Powershell::parse_xml(&bad).err().unwrap().to_string();
+        let message = format!("{:#}", Powershell::parse_xml(&bad).err().unwrap());
         assert!(message.contains("invalid comment delimiters"), "{message}");
         assert!(has_xml_extension(Path::new("types.PS1XML")));
         assert!(!has_xml_extension(Path::new("types.ps1")));
