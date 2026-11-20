@@ -56,7 +56,8 @@ A token or countersignature whose TSA signature does not verify is
 `invalid_timestamp` at `timestamp`.
 
 - **Status:** Decided
-- **Decided by:** written argument
+- **Decided by:** written argument, PR #17 (the first TSA-signature case);
+  extended to CertificateChoices tokens with their fixtures
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 5.6 (signature verification) and RFC 3161 section 2.4.2.

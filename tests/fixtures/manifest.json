@@ -1224,7 +1224,7 @@
         "msi::bad_imprint"
       ],
       "cases": [
-        "msi-bad-imprint"
+        "tsa-001-msi-bad-imprint"
       ]
     },
     {

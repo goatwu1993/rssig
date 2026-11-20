@@ -29,8 +29,9 @@ The usual error codes are a hint, not the rule.
 
 A rule that touches two questions goes where its decision is made: the
 precedence between a lifetime-signing failure and a revocation is set by the
-lifetime-signing policy, so it is a `TIME-` entry (TIME-012); a CRL issuer's
-KeyUsage is a `CRL-` entry (CRL-015).
+lifetime-signing policy, so it is a `TIME-` entry (TIME-012); whether a root
+or an intermediate may sign CRLs without cRLSign is a CRL-issuer rule, so it
+is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011.
 
 ## Entry format
 
@@ -88,10 +89,23 @@ An ID is a prefix and a three-digit number. Each index orders its entries by
 importance when it is first numbered and says how; a later entry takes the
 next free number. A changed rule keeps its ID while git history keeps the
 earlier text. An ID is not renumbered except in a reindex the repository
-owner approves: a PR of its own that moves misplaced entries to the right
-index, renumbers every affected index to keep its order, and updates every
-case ID, decision and reference in the same change. Outside a reindex, a
-dropped entry keeps its ID with Status `Retired` or `Superseded by`.
+owner approves: a PR whose title and description say so, which moves
+misplaced entries to the right index, renumbers every affected index to keep
+its order, updates every case ID, decision and reference in the same change,
+and adds its old-to-new mapping below. Outside a reindex, a dropped entry keeps
+its ID with Status `Retired` or `Superseded by`.
+
+## Reindex history
+
+Older PRs, reviews and commit messages cite IDs as they were then. Map them
+with this table; an ID not listed kept its number.
+
+| Reindex | Old ID | New ID |
+|---|---|---|
+| PR #70 | CRL-032 | TIME-012 |
+| PR #70 | CRL-033 to CRL-048 | CRL-032 to CRL-047 (each one lower) |
+| PR #70 | TIME-010 | merged into PATH-011 |
+| PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
 
 ## Task documents
 

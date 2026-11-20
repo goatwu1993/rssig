@@ -175,6 +175,10 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
 - [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`
   (SEC-04, SEC-05): signed-attribute binding and signer selection.
+  Include `bad-rfc3161-certificate-choice-der`,
+  `bad-rfc3161-certificate-choice-tag` and
+  `bad-rfc3161-certificate-choice-no-signer`, which pin CertificateChoices
+  parsing inside a timestamp token.
 - [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
   `docs/trust-loading.md` (SEC-07); rename the `sec07-*` cases.
 - [ ] **TEST-17: Index limit decisions as `LIMIT-NNN`.** From
@@ -190,9 +194,11 @@ TDD workflow and checks in AGENTS.md.
   API and feature checks; rename them by subject without decision entries.
 - [ ] **TEST-21: Attach pre-SEC-09 time cases to `TIME-` entries.**
   `future-timestamp`, `rfc3161`, `expired-with-rfc3161`,
-  `expired-without-timestamp`, the `rfc3161-fractional*` time cases and their
-  MSI copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
+  `expired-without-timestamp`, `rfc3161-fractional`,
+  `rfc3161-fractional-future`, `rfc3161-fractional-expired` and their MSI
+  copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
   decision. Found while doing TEST-14.
+- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
 
 ## P1 — CLI, reporting, and distribution
 

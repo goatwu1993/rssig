@@ -391,8 +391,9 @@
       }
     },
     {
-      "id": "bad-imprint",
+      "id": "tsa-001-bad-imprint",
       "input": "bad-timestamp-imprint.exe",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -2128,8 +2129,9 @@
       }
     },
     {
-      "id": "msi-bad-imprint",
+      "id": "tsa-001-msi-bad-imprint",
       "input": "msi-bad-timestamp-imprint.msi",
+      "decision": "TSA-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -21475,8 +21477,9 @@
       }
     },
     {
-      "id": "bad-rfc3161-certificate-choice-signature",
+      "id": "tsa-002-bad-rfc3161-certificate-choice-signature",
       "input": "bad-rfc3161-certificate-choice-signature.exe",
+      "decision": "TSA-002",
       "command": [
         "verify",
         "--no-system-roots",

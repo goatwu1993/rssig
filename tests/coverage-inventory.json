@@ -264,7 +264,7 @@
       "cases": [
         "rfc3161",
         "legacy-counter",
-        "bad-imprint",
+        "tsa-001-bad-imprint",
         "future-timestamp",
         "tsa-002-bad-timestamp-signature",
         "tsa-002-bad-countersignature-signature",
@@ -803,8 +803,8 @@
     },
     "timestamp_imprint_mismatch": {
       "cases": [
-        "bad-imprint",
-        "msi-bad-imprint",
+        "tsa-001-bad-imprint",
+        "tsa-001-msi-bad-imprint",
         "tsa-001-cab-timestamp-imprint"
       ],
       "gap": ""

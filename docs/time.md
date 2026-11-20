@@ -47,8 +47,6 @@ Observed ones. A new entry takes the next free number.
 
 ## Tier 1: fail-open
 
-
-
 ### TIME-001: A lifetime-signing signer is validated at the validation time
 
 A signer whose ExtendedKeyUsage contains lifetime signing
@@ -162,8 +160,6 @@ and a revoked leaf is rejected even when another path would verify. Historical
 
 ## Tier 2: availability
 
-
-
 ### TIME-009: Path building skips an intermediate issued after the signing time
 
 The signing-time check of intermediates runs inside path building, so a
@@ -179,8 +175,6 @@ signing is rejected as a candidate and another valid issuer is used.
     another candidate was tried first.
 
 ## Tier 3: result diagnostics
-
-
 
 ### TIME-010: The signing-time rejection ranks as a validity error
 

@@ -181,13 +181,16 @@ time is accepted.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #40 (SEC-06), and kept as policy for
-  lifetime signing in SEC-14. CRL-015 applies the same rule to CRL signing
+  lifetime signing in the PR #43 review (SEC-14). CRL-015 applies the same
+  rule to CRL signing
 - **Pins:** acceptance
 - **Sources:**
   - webpki `anchor_from_trusted_cert`: an anchor is subject, key and name
     constraints.
   - RFC 5280 section 6.1.1 (d): trust anchor information is a name and key,
     optionally with constraints.
+- **Note:** the cases pin the rule at the validation time only; no case pins
+  a root re-issued after a lifetime signing time.
 
 ## Tier 3: result diagnostics
 
