@@ -996,34 +996,29 @@ fn evaluate_crls(
         if lists {
             listings.push(index);
         }
-        // Only a CRL OpenSSL or BoringSSL would prefer counts: current,
-        // positively in scope (`covers` also admits a CRL whose match cannot
-        // be ruled out, which is right for counting a listing but would let
-        // it clear one; `authority` alone admits a point-scoped CRL for a
-        // certificate that lists none), and one rssig would otherwise use: a
-        // well-formed authorityKeyIdentifier and webpki's acceptance apart
-        // from a missing nextUpdate.
-        if authority == Some(true)
+        // A CRL that is complete for this certificate: usable but for a
+        // possibly missing nextUpdate. It is current, positively in scope
+        // (`covers` also admits a CRL whose match cannot be ruled out, which
+        // is right for counting a listing beside a usable CRL but not here;
+        // `authority` alone admits a point-scoped CRL for a certificate that
+        // lists none), has a well-formed authorityKeyIdentifier, and webpki
+        // accepts it apart from a missing nextUpdate.
+        let complete = authority == Some(true)
             && covers
             && current
             && crl.webpki_admits()
-            && crl.authority_key.is_ok()
-            && newest_complete.is_none_or(|n| this_update > n)
-        {
+            && crl.authority_key.is_ok();
+        // The newest complete CRL decides, as OpenSSL and BoringSSL keep
+        // only the newest of equally scored CRLs.
+        if complete && newest_complete.is_none_or(|n| this_update > n) {
             newest_complete = Some(this_update);
         }
-        // A listing in a CRL whose only defect is a missing nextUpdate
-        // revokes alone, under the same conditions as beside another CRL
-        // (authenticated, current, covering; a malformed authorityKeyIdentifier
-        // does not matter, as decided for that listing), from an issuer with
-        // cRLSign. webpki cannot parse such a CRL, so its other checks are
-        // applied here.
-        if lists
-            && current
-            && covers
-            && crl.tbs.next_update.is_none()
+        // A complete CRL from an issuer with cRLSign is usable (below)
+        // unless it lacks nextUpdate, so one recorded here and used when no
+        // CRL is usable has that as its sole defect. Its listing then
+        // revokes alone, unless the entry is removeFromCRL.
+        if complete
             && issuer.crl_sign
-            && crl.webpki_admits()
             && lists_revoking(&crl.tbs, serial)
             && revoking_without_next_update.is_none_or(|(_, newest)| this_update > newest)
         {
@@ -2429,16 +2424,28 @@ mod revocation_reporting {
             unusable(&scoped),
             (REPLACEABLE, "distribution_point_scope".into())
         );
-        // A malformed authorityKeyIdentifier does not stop the listing, as
-        // decided for a listing beside another CRL.
-        let malformed = alone(&|crl| {
+        // A malformed authorityKeyIdentifier is another defect: reported and
+        // replaceable, as for the same CRL with nextUpdate, which alone does
+        // not revoke either.
+        let malformed = |crl: &mut CertificateList| {
             let extensions = crl
                 .tbs_cert_list
                 .crl_extensions
                 .get_or_insert_with(Vec::new);
             extensions.push(crl_extension("2.5.29.35", false, &[0x04, 0x00]));
+        };
+        assert_eq!(
+            unusable(&alone(&malformed)),
+            (REPLACEABLE, "malformed_authority_key_identifier".into())
+        );
+        let with_next_update = alone(&|crl| {
+            crl.tbs_cert_list.next_update = Some(at(AT + 1000));
+            malformed(crl);
         });
-        assert!(matches!(malformed, Outcome::Revoked(_)));
+        assert_eq!(
+            unusable(&with_next_update),
+            (REPLACEABLE, "malformed_authority_key_identifier".into())
+        );
     }
 
     /// A newer CRL clears an older listing in a CRL without nextUpdate only

@@ -968,9 +968,15 @@ them one by one. In addition, as OpenSSL's `cert_crl` and Bouncy Castle (unlike 
 entry with reasonCode removeFromCRL does not revoke (any revoking entry for the serial counts). Only a CRL that re-encodes to exactly its original bytes is judged this way; any other is not admitted, which fails closed. References to OpenSSL line numbers in these SEC-23 cases are to the 3.3 branch. It does not revoke
 either when a newer authenticated full CRL of the issuer
 covering the certificate leaves it out, as a listing beside a newer CRL
-does not count; and not from an issuer without cRLSign. A malformed
-authorityKeyIdentifier does not stop it, as decided for a listing beside
-another CRL. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
+does not count; and not from an issuer without cRLSign. The missing
+nextUpdate must be the CRL's sole defect: the CRL is otherwise one rssig
+would use (current, positively in scope, a well-formed
+authorityKeyIdentifier, admitted by webpki). With a malformed
+authorityKeyIdentifier it does not revoke alone, exactly as the same CRL
+with nextUpdate does not; that defect is reported and is replaceable.
+(Beside a usable CRL a listing in a CRL with a malformed
+authorityKeyIdentifier still counts, as the owner decided in PR #60.) An
+earlier revision of this branch let it revoke alone. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
 A newer such CRL that leaves the signer out clears the listing
 (`sec10-no-next-update-crl-revocation-cleared-by-newer-crl`, Decided,
 diagnostics: the result is `invalid_crl`, as for the CRL without nextUpdate
