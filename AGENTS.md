@@ -116,6 +116,15 @@ A case pins what the verifier does, not proof that it is right.
    is no reason to decline a fix.
 6. **Compare with a second implementation** for a disputed revocation, path
    or CRL result, as [docs/decisions.md](docs/decisions.md) describes.
+7. **Audit before adding:** before adding or changing an entry, check it
+   against every index ([which index](docs/decisions.md#which-index)): it must
+   not duplicate, contradict or overlap another entry, and it must sit in the
+   index that asks its question.
+8. **Reindex on a real conflict:** when an entry turns out to duplicate,
+   contradict or sit in the wrong index, fix it at once: merge or move it,
+   renumber and reorder the affected indexes, and rename its cases and
+   fixtures, all in one owner-approved PR that says so and records the
+   mapping in [reindex history](docs/decisions.md#reindex-history).
 
 ## Native Rust tests and coverage
 
