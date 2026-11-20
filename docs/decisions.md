@@ -100,10 +100,14 @@ its ID with Status `Retired` or `Superseded by`.
 Older PRs, reviews and commit messages cite IDs as they were then. Map them
 with this table; an ID not listed kept its number.
 
-| Reindex | Old ID | New ID |
+| Reindex | Old ID (on `main` before) | New ID |
 |---|---|---|
+| PR #70 | CRL-021 | merged into CRL-020 |
+| PR #70 | CRL-022 to CRL-031 | CRL-021 to CRL-030 (each one lower) |
 | PR #70 | CRL-032 | TIME-012 |
-| PR #70 | CRL-033 to CRL-048 | CRL-032 to CRL-047 (each one lower) |
+| PR #70 | CRL-033 to CRL-043 | CRL-031 to CRL-041 (each two lower) |
+| PR #70 | CRL-044 | merged into CRL-041 |
+| PR #70 | CRL-045 to CRL-048 | CRL-042 to CRL-045 (each three lower) |
 | PR #70 | TIME-010 | merged into PATH-011 |
 | PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
 

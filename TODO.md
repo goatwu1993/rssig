@@ -189,7 +189,7 @@ TDD workflow and checks in AGENTS.md.
   choice checked against jsign, osslsigncode or Windows behavior; one PR per
   format.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
-  `docs/crl-retrieval.md` restates rules now in `CRL-029` to `CRL-047`.
+  `docs/crl-retrieval.md` restates rules now in `CRL-028` to `CRL-045`.
 - [ ] **TEST-20: Rename task-named library cases.** `lib04-*` to `lib07-*` are
   API and feature checks; rename them by subject without decision entries.
 - [ ] **TEST-21: Attach pre-SEC-09 time cases to `TIME-` entries.**

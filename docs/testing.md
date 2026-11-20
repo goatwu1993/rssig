@@ -341,7 +341,7 @@ a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
 (`crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-`crl-039-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+`crl-038-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
 `crl_fetch_by_certificate_answer_leaves_no_point_failures`.

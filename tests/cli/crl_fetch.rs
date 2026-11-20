@@ -483,7 +483,7 @@ fn crl_fetch_follows_the_verification_result() {
         // A CRL scoped to a point, for a signer that lists none: no URL is requested
         // (the signer lists none); the signer is asked about by certificate, which
         // this source does not answer, so the error stands. A source answering by
-        // certificate completes it: crl-023-fetch-no-listed-point-scope-crl-replaced-by-certificate.
+        // certificate completes it: crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate.
         ("good-path-basic.exe", "path-root.der", &["path-root.crl", "crl-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         // A supplied CRL whose scope cannot be used is one a source's CRL can replace
         // (SEC-23): the listed point is requested, and without an answer the error stands.
