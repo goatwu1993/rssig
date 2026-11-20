@@ -1018,6 +1018,7 @@ fn evaluate_crls(
         // CRL is usable has that as its sole defect. Its listing then
         // revokes alone, unless the entry is removeFromCRL.
         if complete
+            && crl.tbs.next_update.is_none()
             && issuer.crl_sign
             && lists_revoking(&crl.tbs, serial)
             && revoking_without_next_update.is_none_or(|(_, newest)| this_update > newest)
@@ -1796,9 +1797,14 @@ fn lists_revoking(tbs: &x509_cert::crl::TbsCertList, serial: &[u8]) -> bool {
         .flatten()
         .filter(|r| r.serial_number.as_bytes() == serial)
         .any(|entry| {
-            !entry.crl_entry_extensions.iter().flatten().any(|e| {
-                e.extn_id.to_string() == "2.5.29.21" && e.extn_value.as_bytes() == [0x0a, 1, 8]
-            })
+            // reasonCode (2.5.29.21): compared as an OID, without allocating.
+            const REASON_CODE: ::der::asn1::ObjectIdentifier =
+                ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.21");
+            !entry
+                .crl_entry_extensions
+                .iter()
+                .flatten()
+                .any(|e| e.extn_id == REASON_CODE && e.extn_value.as_bytes() == [0x0a, 1, 8])
         })
 }
 

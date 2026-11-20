@@ -545,6 +545,12 @@ timestamps, and local CRL validation already exist.
     decision.
   - A listing that a newer CRL cleared is not logged: only an accepted
     path's ignored listings reach the logger.
+  - A CRL whose only defect is a missing nextUpdate is not offered to a
+    source (rank above replaceable), by policy: OpenSSL, BoringSSL and
+    Bouncy Castle would use it and not look again. So a stray such CRL for
+    the issuer beside an expired one keeps `--fetch-crls` from asking,
+    though a fetched CRL with nextUpdate would decide. Offering it would
+    make retrieval fire where the references stay quiet: owner's decision.
   - A CRL without nextUpdate is decoded, re-encoded and parsed by webpki a
     second time on every verification pass (each retrieval round included)
     to judge it apart from nextUpdate; that work is not charged to the
