@@ -241,3 +241,9 @@ generic chain error is reported. Successful reports set
     wrong certificate.
 - **Note:** pinned by named tests in `tests/cli/time_policy.rs`; no spec case
   names this entry yet.
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing TIME entry but do not name it yet: the pre-SEC-09 time cases (TEST-21) and every format's expired-with-timestamp and validity cases.

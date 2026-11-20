@@ -208,3 +208,10 @@ whose name constraints accepted the path.
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: the report must name the anchor webpki actually used.
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing PATH entry but do not name it yet: every format's untrusted-root case and RDP's key-usage case.
+- `certificate-signature`: a certificate whose issuer's signature does not verify breaks the path (`certificate_chain_invalid`); this needs a new entry.

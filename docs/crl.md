@@ -639,3 +639,9 @@ Two configured roots with one key and name may carry different subjectKeyIdentif
 - **Status:** Observed
 - **Decided by:** —
 - **Pins:** diagnostics
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing CRL entry but do not name it yet: the remaining SEC-10 audit cases and every format's revocation, CRL-freshness and forged-CRL cases.

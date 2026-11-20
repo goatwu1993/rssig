@@ -173,40 +173,38 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
 - [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
 - [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
-- [ ] **TEST-15: Index CMS decisions as `CMS-NNN`.** From `docs/cms-security.md`
-  (SEC-04, SEC-05): signed-attribute binding and signer selection.
-  Include `bad-rfc3161-certificate-choice-der`,
-  `bad-rfc3161-certificate-choice-tag` and
-  `bad-rfc3161-certificate-choice-no-signer`, which pin CertificateChoices
-  parsing inside a timestamp token.
-  Move TSA-004's duplicated-attribute-OID clause and its two
-  `invalid_signature` cases (`tsa-004-duplicate-rfc`,
-  `tsa-004-duplicate-counter`) to `CMS-`.
-- [ ] **TEST-16: Index trust-loading decisions as `TRUST-NNN`.** From
-  `docs/trust-loading.md` (SEC-07); rename the `sec07-*` cases.
-- [ ] **TEST-17: Index limit decisions as `LIMIT-NNN`.** From
-  `docs/verification-budgets.md` and `docs/host-limits.md` (SEC-02, SEC-03);
+- [ ] **TEST-15: Number the `CMS-` index.** Fill [docs/cms.md](docs/cms.md)
+  from its candidate rules and claimed cases. Move TSA-004's
+  duplicated-attribute-OID clause and its two `invalid_signature` cases
+  (`tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) here.
+- [ ] **TEST-16: Number the `TRUST-` index.** Fill [docs/trust.md](docs/trust.md);
+  rename the `sec07-*` cases.
+- [ ] **TEST-17: Number the `LIMIT-` index.** Fill [docs/limit.md](docs/limit.md);
   rename the `sec02-*` and `sec03-*` cases.
-- [ ] **TEST-18: Index format decisions per format.** `APPX-`, `MSI-`, `WSH-`,
-  `PS-`, `CAB-`, `RDP-` and `NAVX-` entries where a format document records a
-  choice checked against jsign, osslsigncode or Windows behavior; one PR per
-  format.
+- [ ] **TEST-18: Number the format indexes, one PR per format.** `PE-`, `MSI-`,
+  `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-` and `APPX-`, from their
+  `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
+  `CMS-` where its rule is shared.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
   `docs/crl-retrieval.md` restates rules now in `CRL-028` to `CRL-045`.
-- [ ] **TEST-20: Rename task-named library cases.** `lib04-*` to `lib07-*` are
-  API and feature checks; rename them by subject without decision entries.
-- [ ] **TEST-21: Attach pre-SEC-09 time cases to `TIME-` entries.**
-  `future-timestamp`, `rfc3161`, `expired-with-rfc3161`,
-  `expired-without-timestamp`, `rfc3161-fractional`,
-  `rfc3161-fractional-future`, `rfc3161-fractional-expired` and their MSI
-  copies pin TIME-003, TIME-005, TIME-006 and TIME-007 rules but name no
-  decision. Found while doing TEST-14.
+- [ ] **TEST-20: Rename task-named library cases.** The `lib04-*` to `lib09-*`
+  cases are claimed by the format, `INSPECT-` and `POLICY-` indexes; rename
+  them by subject when those are numbered.
+- [ ] **TEST-21: Attach the claimed `TIME-` cases.** The cases claimed under
+  `TIME` `attach` (the pre-SEC-09 time cases and every format's
+  expired-with-timestamp copy) name their TIME entries.
 - [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
-- [ ] **TEST-23: Scaffold the remaining decision indexes.** Before TEST-15 to
-  TEST-18, add a skeleton per future index (`CMS-`, `TRUST-`, `LIMIT-` and the
-  format prefixes): its question, scope, boundaries with neighboring indexes
-  and an unnumbered list of candidate rules with their cases, so that every
-  unindexed case is claimed by exactly one index before any is numbered.
+- [x] **TEST-23: Scaffold the remaining decision indexes.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); claims in `tests/decision-claims.json`.
+- [ ] **TEST-24: Number the `ALG-` index.** Fill [docs/alg.md](docs/alg.md):
+  unsupported algorithms and the SHA-1 opt-in in every format.
+- [ ] **TEST-25: Number the `POLICY-` index.** Fill [docs/policy.md](docs/policy.md):
+  every format's integrity-only case and the library policy cases.
+- [ ] **TEST-26: Number the `CLI-` index.** Fill [docs/cli.md](docs/cli.md).
+- [ ] **TEST-27: Number the `INSPECT-` index.** Fill [docs/inspect.md](docs/inspect.md).
+- [ ] **TEST-28: Attach the claimed `CRL-`, `PATH-` and `TSA-` cases.** Name
+  existing entries for the cases claimed under `attach` (remaining SEC-10
+  audit cases, every format's revocation and untrusted-root case), and add a
+  PATH entry for `certificate-signature`.
 
 ## P1 — CLI, reporting, and distribution
 

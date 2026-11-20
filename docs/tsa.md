@@ -140,3 +140,9 @@ identifiers; no policy allowlist is applied.
 - **Sources:**
   - RFC 3161 section 2.4.2; TSA policy documents are out of scope (see
     [timestamp policy](timestamp-policy.md)).
+
+## Candidate rules
+
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+
+- `attach`: cases that pin an existing TSA entry but do not name it yet: the legacy countersignature controls.

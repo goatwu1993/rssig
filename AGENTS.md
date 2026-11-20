@@ -100,7 +100,9 @@ A case pins what the verifier does, not proof that it is right.
 1. **Every pinned result needs a reason:** a numbered decision entry (format
    and the index for each prefix, such as `CRL-`, `TIME-` and `PATH-`, in
    [docs/decisions.md](docs/decisions.md)) that the case names in
-   `"decision"`. "The code did this" is not a reason.
+   `"decision"`. "The code did this" is not a reason. Until its index is
+   numbered, a case without one is claimed by an index and candidate rule in
+   `tests/decision-claims.json`.
 2. **Decided or observed:** a Decided entry changes only with the repository
    owner's approval, recorded in the PR; an Observed one may change when a
    better result is argued.

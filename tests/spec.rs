@@ -479,6 +479,68 @@ fn case_decisions_name_committed_entries() {
     );
 }
 
+/// Every case without a `decision` is claimed by exactly one decision index
+/// and one of its candidate rules in `tests/decision-claims.json`, and each
+/// candidate key is listed in that index's "Candidate rules" section.
+#[test]
+fn undecided_cases_are_claimed_by_exactly_one_index() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let suite: Suite =
+        serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap()).unwrap();
+    let claims: Value =
+        serde_json::from_slice(&std::fs::read(root.join("tests/decision-claims.json")).unwrap())
+            .unwrap();
+    let index = std::fs::read_to_string(root.join("docs/decisions.md")).unwrap();
+    let files: BTreeMap<&str, &str> = index
+        .lines()
+        .filter_map(|line| {
+            let rest = line.strip_prefix("| `")?;
+            let (prefix, rest) = rest.split_once("-` | [")?;
+            let (_, rest) = rest.split_once("](")?;
+            Some((prefix, rest.split_once(')')?.0))
+        })
+        .collect();
+    let decided: HashSet<&str> = suite
+        .cases
+        .iter()
+        .filter(|case| case.decision.is_some())
+        .map(|case| case.id.as_str())
+        .collect();
+    let mut claimed = HashSet::new();
+    for (prefix, keys) in claims["claims"].as_object().expect("claims object") {
+        let file = files
+            .get(prefix.as_str())
+            .unwrap_or_else(|| panic!("{prefix} is not listed in docs/decisions.md"));
+        let text = std::fs::read_to_string(root.join("docs").join(file)).unwrap();
+        for (key, ids) in keys.as_object().expect("candidate keys") {
+            assert!(
+                text.contains(&format!("- `{key}`:")),
+                "docs/{file} does not list candidate rule `{key}`"
+            );
+            for id in ids.as_array().expect("case list") {
+                let id = id.as_str().expect("case id");
+                assert!(
+                    !decided.contains(id),
+                    "{id} names a decision but is still claimed"
+                );
+                assert!(claimed.insert(id.to_owned()), "{id} is claimed twice");
+            }
+        }
+    }
+    let unclaimed: Vec<_> = suite
+        .cases
+        .iter()
+        .filter(|case| case.decision.is_none() && !claimed.contains(&case.id))
+        .map(|case| case.id.as_str())
+        .collect();
+    assert!(unclaimed.is_empty(), "unclaimed cases: {unclaimed:?}");
+    let unknown: Vec<_> = claimed
+        .iter()
+        .filter(|id| !suite.cases.iter().any(|case| &case.id == *id))
+        .collect();
+    assert!(unknown.is_empty(), "claims name unknown cases: {unknown:?}");
+}
+
 #[test]
 fn cli_conforms_to_committed_json_specification() {
     let parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
