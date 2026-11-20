@@ -75,9 +75,10 @@ members.
     SET encoding of signedAttrs and verified with the signer's public key.
   - [cms-security.md](cms-security.md), rows "Signed bytes" and "Signature
     parameters".
-  - relic `lib/pkcs7/verify.go:116-161` (`SignerInfo.Verify`) and jsign 7.6
-    (cf5d2ce) `verify/SignatureIntegrityRule.java:38-46` (Bouncy Castle
-    `SignerInformation.verify`) reject the same faults.
+  - References agree: OpenSSL `crypto/cms/cms_sd.c:1303-1393`
+    (`CMS_SignerInfo_verify`, over the re-tagged signed attributes) and
+    Bouncy Castle `cms/SignerInformation.java:357-496` (`doVerify`) reject
+    a signature that does not verify with the signer's key.
 - **Unit tests:** `cms_structure_fixtures_preserve_signature_math` in
   `src/tests/cms_audit.rs` proves each CMS structure fixture is signed
   correctly, so its failure comes from the targeted check.
@@ -115,8 +116,10 @@ countersignatures and RDP signatures.
   - RFC 5652 section 5.3: `sid` identifies the signer's certificate.
   - [cms-security.md](cms-security.md), row "SignerInfo version and
     identity" and "Signer certificate selection".
-  - relic `lib/pkcs7/verify.go:94-103` (`FindCertificate`) and jsign 7.6
-    `verify/SignatureVerifier.java:97-101` fail when no certificate matches.
+  - References agree: OpenSSL `crypto/cms/cms_smime.c:408-413` (`CMS_verify`,
+    `CMS_R_SIGNER_CERTIFICATE_NOT_FOUND`) fails when no certificate matches;
+    Bouncy Castle `cms/SignerInformation.java:85-97` reads the same `sid`
+    and leaves certificate lookup to the caller's store.
 
 ### CMS-004: Distinct certificates matching the signer identifier are rejected
 
@@ -132,10 +135,12 @@ or the selected signer. Embedded duplicates do not supply trust.
 - **Pins:** acceptance
 - **Sources:**
   - [cms-security.md](cms-security.md#signer-certificate-selection-sec-05).
-  - relic `lib/pkcs7/verify.go:94-103` and jsign 7.6
-    `verify/SignatureVerifier.java:98-105` take the first match; rssig
-    deliberately does not, so that certificate order cannot select a
-    different signer.
+  - References differ from rssig: OpenSSL `crypto/cms/cms_sd.c:890-935`
+    (`CMS_set1_signers_certs`) takes the first matching certificate, and
+    Bouncy Castle returns every match (`SignerInformationStore`,
+    `Store.getMatches`) for the caller to choose. rssig deliberately rejects
+    distinct matches, so that certificate order cannot select a different
+    signer.
 - **Unit tests:** `cms_signer_selection_shared_timestamp_and_detached` and
   `cms_signer_embedded_duplicates_do_not_supply_trust` in
   `src/tests/signer_selection.rs` cover RFC 3161, countersignature and RDP
@@ -154,7 +159,9 @@ parent signature is TSA-001.
 - **Sources:**
   - RFC 5652 sections 5.4 and 11.2.
   - [cms-security.md](cms-security.md), row "Content binding".
-  - relic `lib/pkcs7/verify.go:128-134`.
+  - References agree: OpenSSL `crypto/cms/cms_sd.c:1426-1474`
+    (`CMS_SignerInfo_verify_content`) and Bouncy Castle
+    `cms/SignerInformation.java:555-576` (`CMSSignerDigestMismatchException`).
 
 ### CMS-006: The signed contentType must match the encapsulated content
 
@@ -168,6 +175,10 @@ The signed contentType attribute must equal the encapsulated content type
   - RFC 5652 sections 5.3 and 11.1: contentType must be present in signed
     attributes and match eContentType; countersignatures carry none.
   - [cms-security.md](cms-security.md), row "Content binding".
+  - Bouncy Castle followed: `cms/SignerInformation.java:518-545` rejects a
+    mismatched contentType and one on a countersignature. OpenSSL
+    (`crypto/cms/cms_att.c:39-53`) only requires the attribute to be
+    present once, without comparing it.
 
 ### CMS-007: The signer's digest algorithm must be listed in digestAlgorithms
 
@@ -220,8 +231,13 @@ multiplicity rule (TSA-004) is reached.
     attacker who can add one chooses which copy is used.
   - [cms-security.md](cms-security.md), row "Signed attribute sets";
     [timestamp profile](timestamp-profile.md).
-  - relic `lib/pkcs7/attributes.go:58-73` (`GetOne`) rejects multiple values
-    for one attribute but takes the first of duplicated OIDs.
+  - References are narrower: OpenSSL `crypto/cms/cms_att.c:39-53` and
+    `:254-273` (`ossl_cms_si_check_attributes`) and Bouncy Castle
+    `cms/SignerInformation.java:678-715` (`getSingleValuedSignedAttribute`)
+    reject duplicates only for listed signed attributes (contentType,
+    messageDigest, signingTime, ESS). Bouncy Castle
+    `cms/SignerInformation.java:293-300` explicitly allows several unsigned
+    countersignature attributes; rssig rejects them.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
   `src/tests/cms_audit.rs`.
 
@@ -244,8 +260,9 @@ for a SignerInfo field such as its version (CMS-016).
   - RFC 5652 sections 5.1 and 5.3 (versions) and X.690 section 10 (DER).
   - [cms-security.md](cms-security.md), rows "SignedData version",
     "SignerInfo version and identity" and "DER framing".
-  - relic `lib/pkcs7/verify.go:66-68` and jsign 7.6
-    `verify/SignatureVerifier.java:90-93` reject an empty signer set.
+  - OpenSSL `crypto/cms/cms_smime.c:391-394` (`CMS_R_NO_SIGNERS`) rejects
+    an empty signer set. Neither reference enforces the version rules on
+    verification.
 - **Note:** the 64-signer bound is a parser bound reported as
   `malformed_cms`; budgets in general are `LIMIT-`.
 
@@ -295,9 +312,9 @@ signature), even when the primary one verifies.
 - **Sources:**
   - Microsoft Authenticode PE format (SpcNestedSignature, OID
     1.3.6.1.4.1.311.2.4.1).
-  - jsign 7.6 `SignatureUtils.java:91-112` (`getSignatures`) and
-    `verify/SignatureVerifier.java:89-125` verify each nested signature
-    separately.
+  - Neither OpenSSL nor Bouncy Castle has an equivalent: nested
+    Authenticode signatures are an unsigned attribute that generic CMS
+    verification ignores.
 - **Note:** SEC-12 is to decide the multi-signature semantics (all
   signatures required, ordering, first-failure precedence).
 
