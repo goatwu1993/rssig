@@ -210,7 +210,7 @@ A CRL that does not apply to the chain is excluded whatever its fault; an applic
 - **Pins:** acceptance
 - **Sources:**
   - AGENTS.md, "Fail closed".
-- **Note:** no case points here yet; the behavior is exercised by the `sec10-unrelated-*-excluded`, `sec10-only-unrelated-crl-is-unknown` and `sec10-root-delta-expired-crl-reports-feature` cases, which count as Observed.
+- **Note:** no case points here yet; the behavior is exercised by the `crl-unrelated-*-excluded`, `crl-only-unrelated-crl-is-unknown` and `crl-001-root-delta-expired-crl-reports-feature` cases, which count as Observed.
 
 ### CRL-009: A full CRL is in scope for any certificate
 
@@ -445,7 +445,7 @@ The revocation is reported and names the certificates another usage only lacks a
 - **Pins:** diagnostics
 - **Sources:**
   - No reference library has an equivalent: accepting an RDP signer under any one of several EKUs is rssig's RDP policy (docs/rdp.md).
-  - Written argument, as for candidate paths (sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject.
+  - Written argument, as for candidate paths (crl-021-cross-revoked-path-beside-path-failing-key-usage-is-revoked): a revocation is definite evidence and is reported over another usage's path failure (here invalid_eku for codeSigning). Both reject.
 - **Unit test:** `a_revoked_usage_is_reported_and_names_another_usages_gaps`.
 
 ## Retrieval (`--fetch-crls` and `CrlSource`)
@@ -469,8 +469,8 @@ A definite revocation or CRL failure is the result, as without fetching, and is 
 - **Decided by:** written argument
 - **Pins:** diagnostics
 - **Sources:**
-  - Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (sec10-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (sec10-fetch-path-failing-key-usage-asks-nothing).
-  - Only an unknown status that names nothing is followed by a check without revocation (sec10-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.
+  - Without --fetch-crls, a chain whose paths all fail path policy reports revocation first, as on main (crl-021-cross-unusable-crl-decides-beside-path-failing-key-usage); with --fetch-crls a definite CRL failure or revocation keeps that code. Only an unknown status, which is no evidence, is replaced by the path failure with fetching (crl-021-fetch-path-failing-key-usage-asks-nothing).
+  - Only an unknown status that names nothing is followed by a check without revocation (crl-021-fetch-path-failing-key-usage-asks-nothing): it is no evidence, while these are.
   - Diagnostics only: both results reject.
 
 ### CRL-031: Retrieval asks per certificate, only about what lacks a CRL

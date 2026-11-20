@@ -316,7 +316,7 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
 /// name. Each row is (input, supplied CRLs, fetched response, requested URLs,
 /// expected error code).
 #[test]
-fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
+fn crl_fetch_coverage_uses_the_verification_authority_rule() {
     struct Source {
         response: Option<Vec<u8>>,
         requests: Vec<String>,
@@ -334,8 +334,8 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
             }))
         }
     }
-    const LEAF: &str = "sec10-leaf-crl-dp.exe";
-    const CA: &str = "sec10-ca-crl-dp.exe";
+    const LEAF: &str = "crl-leaf-crl-dp.exe";
+    const CA: &str = "crl-ca-crl-dp.exe";
     const NO_POINT: &str = "good-sec06-basic.exe";
     const LEAF_POINT: &str = "http://crl.invalid/sec10-a.crl";
     const CA_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
@@ -351,25 +351,25 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
     #[rustfmt::skip]
     let rows: [Row; 13] = [
         // Another partition's CRL has the issuer's name but is not authoritative.
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-match-revoked.crl"), &[LEAF_POINT], Some("certificate_revoked")),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-other.crl"], Some("crl-issuer-idp-match.crl"), &[LEAF_POINT], None),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-other.crl"], Some("crl-issuer-idp-match-revoked.crl"), &[LEAF_POINT], Some("certificate_revoked")),
         // The fetched bytes are held to the same rule: still no authoritative CRL.
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-other.crl"], Some("sec10-issuer-idp-other.crl"), &[LEAF_POINT], Some("revocation_unknown")),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-other.crl"], Some("crl-issuer-idp-other.crl"), &[LEAF_POINT], Some("revocation_unknown")),
         // Role flags: a CA-only CRL does not cover the signer, nor a user-only CRL an issuer.
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], Some("sec10-issuer-idp-match.crl"), &[LEAF_POINT], None),
-        (CA, ["sec10-sec06-root-idp-user.crl", "sec06-issuer.crl"], Some("sec10-sec06-root-idp-ca.crl"), &[CA_POINT], None),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-match-ca.crl"], Some("crl-issuer-idp-match.crl"), &[LEAF_POINT], None),
+        (CA, ["crl-sec06-root-idp-user.crl", "sec06-issuer.crl"], Some("crl-sec06-root-idp-ca.crl"), &[CA_POINT], None),
         // Authoritative supplied CRLs still suppress retrieval.
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], None),
-        (LEAF, ["sec06-root.crl", "sec10-issuer-idp-match-user.crl"], None, &[], None),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-match.crl"], None, &[], None),
+        (LEAF, ["sec06-root.crl", "crl-issuer-idp-match-user.crl"], None, &[], None),
         (LEAF, ["sec06-root.crl", "sec06-issuer.crl"], None, &[], None),
-        (CA, ["sec10-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
+        (CA, ["crl-sec06-root-idp-ca.crl", "sec06-issuer.crl"], None, &[], None),
         // A signer listing no point has nothing to fetch: the partition is reported, not skipped.
-        (NO_POINT, ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
+        (NO_POINT, ["sec06-root.crl", "crl-issuer-idp-match.crl"], None, &[], Some("invalid_crl")),
         // A listed point that discovery does not support is not fetched. Verification
         // decides, as without --fetch-crls; the point is listed in the report's failures.
-        ("sec10-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
-        ("sec10-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "sec10-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
-        ("sec10-leaf-crl-dp-dns.exe", ["sec06-root.crl", "sec10-issuer-idp-dns.crl"], None, &[], Some("revocation_unknown")),
+        ("crl-leaf-crl-dp-reasons.exe", ["sec06-root.crl", "crl-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
+        ("crl-leaf-crl-dp-crl-issuer.exe", ["sec06-root.crl", "crl-issuer-idp-match.crl"], None, &[], Some("revocation_unknown")),
+        ("crl-leaf-crl-dp-dns.exe", ["sec06-root.crl", "crl-issuer-idp-dns.crl"], None, &[], Some("revocation_unknown")),
     ];
     for (input, supplied, response, requests, error) in rows {
         let label = format!("{input} with {supplied:?}");
@@ -438,7 +438,7 @@ fn sec10_fetch_coverage_uses_the_verification_authority_rule() {
 /// supplied CRLs, responses by URL, requested URLs in order, expected error
 /// code and `details.reason`). A URL without a response fails the request.
 #[test]
-fn sec10_fetch_follows_the_verification_result() {
+fn crl_fetch_follows_the_verification_result() {
     struct Source {
         responses: Vec<(&'static str, Vec<u8>)>,
         requests: Vec<String>,
@@ -479,28 +479,28 @@ fn sec10_fetch_follows_the_verification_result() {
     let rows: [Row; 8] = [
         // A CRL with the issuer's name from another key is excluded by verification,
         // so it does not stand in for the listed point.
-        ("good-crl-discovery.exe", "root.der", &["sec10-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
+        ("good-crl-discovery.exe", "root.der", &["crl-root-name-other-aki-expired.crl"], &[(EXAMPLE_POINT, "good.crl")], &[EXAMPLE_POINT], None),
         // A CRL scoped to a point, for a signer that lists none: no URL is requested
         // (the signer lists none); the signer is asked about by certificate, which
         // this source does not answer, so the error stands. A source answering by
-        // certificate completes it: sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate.
-        ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
+        // certificate completes it: crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate.
+        ("good-sec06-basic.exe", "sec06-root.der", &["sec06-root.crl", "crl-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         // A supplied CRL whose scope cannot be used is one a source's CRL can replace
         // (SEC-23): the listed point is requested, and without an answer the error stands.
-        ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT], None),
-        ("sec10-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-relative.crl"], &[], &[LEAF_POINT], Some(("invalid_crl", "issuing_distribution_point"))),
+        ("crl-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "crl-issuer-idp-relative.crl"], &[(LEAF_POINT, "crl-issuer-idp-match.crl")], &[LEAF_POINT], None),
+        ("crl-leaf-crl-dp.exe", "sec06-root.der", &["sec06-root.crl", "crl-issuer-idp-relative.crl"], &[], &[LEAF_POINT], Some(("invalid_crl", "issuing_distribution_point"))),
         // Both selected certificates list a point. The verifier reports only the
         // issuer as lacking a CRL, so only its point is requested.
-        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
+        ("crl-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
         // A partition that is not authoritative for the signer, and no root CRL: both
         // certificates lack a CRL and are asked about in path order, in one round.
-        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec10-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT, CA_POINT], None),
+        ("crl-chain-crl-dp.exe", "sec06-root.der", &["crl-issuer-idp-other.crl"], &[(CA_POINT, "sec06-root.crl"), (LEAF_POINT, "crl-issuer-idp-match.crl")], &[LEAF_POINT, CA_POINT], None),
         // The signer is covered and its issuer is not (a user-only root partition):
         // only the issuer is asked about; the signer's point is never requested.
-        ("sec10-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "sec10-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
+        ("crl-chain-crl-dp.exe", "sec06-root.der", &["sec06-issuer.crl", "crl-sec06-root-idp-user.crl"], &[(CA_POINT, "sec06-root.crl")], &[CA_POINT], None),
         // A reason-partitioned point beside a plain one: the plain URI is still requested,
         // and the partitioned point is listed in the report's failures.
-        ("sec10-leaf-crl-dp-mixed.exe", "sec06-root.der", &["sec06-root.crl", "sec10-issuer-idp-other.crl"], &[(LEAF_POINT, "sec10-issuer-idp-match.crl")], &[LEAF_POINT], None),
+        ("crl-leaf-crl-dp-mixed.exe", "sec06-root.der", &["sec06-root.crl", "crl-issuer-idp-other.crl"], &[(LEAF_POINT, "crl-issuer-idp-match.crl")], &[LEAF_POINT], None),
     ];
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
@@ -570,7 +570,7 @@ fn sec10_fetch_follows_the_verification_result() {
             let failures = result["crl_retrieval"]["failures"]
                 .as_array()
                 .map_or(0, Vec::len);
-            let partitioned = usize::from(input == "sec10-leaf-crl-dp-mixed.exe");
+            let partitioned = usize::from(input == "crl-leaf-crl-dp-mixed.exe");
             assert_eq!(
                 failures,
                 requests.len() - answered.len() + partitioned,
@@ -590,7 +590,7 @@ fn sec10_fetch_follows_the_verification_result() {
 /// about. The signer is covered by a supplied CRL and is never asked; the
 /// issuer's point fails, so the status stays unknown with that failure.
 #[test]
-fn sec10_fetch_asks_only_the_certificate_without_a_crl() {
+fn crl_fetch_asks_only_the_certificate_without_a_crl() {
     struct Unreachable(Vec<String>);
     impl rssig::retrieval::CrlSource for Unreachable {
         fn crls(
@@ -619,7 +619,7 @@ fn sec10_fetch_asks_only_the_certificate_without_a_crl() {
         "--crl".to_owned(),
         path("sec06-issuer.crl"),
         "--fetch-crls".to_owned(),
-        path("sec10-chain-crl-dp.exe"),
+        path("crl-chain-crl-dp.exe"),
     ];
     let mut source = Unreachable(Vec::new());
     let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -649,7 +649,7 @@ fn sec10_fetch_asks_only_the_certificate_without_a_crl() {
 /// SEC-10: a response that is not a CRL, and a failed request, are no evidence;
 /// another listed point of the same certificate still supplies its CRL.
 #[test]
-fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
+fn crl_fetch_bad_response_is_no_evidence_beside_another_point() {
     struct Source(Vec<String>);
     impl rssig::retrieval::CrlSource for Source {
         fn crls(
@@ -660,7 +660,7 @@ fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
                 self.0.push(url.into());
                 let file = match url {
                     "http://crl.invalid/sec10-c.crl" => "sec06-root.der", // a certificate
-                    "http://crl.invalid/sec10-e.crl" => "sec10-issuer-idp-second-point.crl",
+                    "http://crl.invalid/sec10-e.crl" => "crl-issuer-idp-second-point.crl",
                     _ => {
                         return Err(rssig::retrieval::CrlSourceError::new(
                             rssig::domain::CrlSourceErrorKind::Failed,
@@ -688,7 +688,7 @@ fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
         "--crl".to_owned(),
         path("sec06-root.crl"),
         "--fetch-crls".to_owned(),
-        path("sec10-leaf-crl-dp-multi.exe"),
+        path("crl-leaf-crl-dp-multi.exe"),
     ];
     let mut source = Source(Vec::new());
     let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -730,7 +730,7 @@ fn sec10_fetch_bad_response_is_no_evidence_beside_another_point() {
 /// lacks its root's CRL. Retrieval asks about exactly that path's issuer, by
 /// certificate and issuer name (it lists no point), and the path verifies.
 #[test]
-fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
+fn crl_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
     struct ByCertificate {
         crl: Vec<u8>,
         asked: Vec<(Vec<u8>, Vec<u8>, usize)>,
@@ -765,7 +765,7 @@ fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
         "--crl".to_owned(),
         path("sec06-issuer.crl"),
         "--crl".to_owned(),
-        path("sec10-sec06-other-root-revoked-cross.crl"),
+        path("crl-sec06-other-root-revoked-cross.crl"),
         "--fetch-crls".to_owned(),
         path("good-sec06-cross-first.exe"),
     ];
@@ -810,7 +810,7 @@ fn sec10_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
 /// offline that is the result, and a source answering with a fresh CRL
 /// completes the other path, as Bouncy Castle would.
 #[test]
-fn sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
+fn crl_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
     struct Fresh(Vec<u8>, usize);
     impl rssig::retrieval::CrlSource for Fresh {
         fn crls(
@@ -838,7 +838,7 @@ fn sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
             "--crl".to_owned(),
             path("sec06-issuer.crl"),
             "--crl".to_owned(),
-            path("sec10-sec06-other-root-revoked-cross.crl"),
+            path("crl-sec06-other-root-revoked-cross.crl"),
             "--crl".to_owned(),
             path("sec06-root-expired.crl"),
         ];
@@ -873,7 +873,7 @@ fn sec10_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
 /// source aborts before that path could be completed: the revocation keeps
 /// its code, and the result marks that retrieval was cut short.
 #[test]
-fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
+fn crl_fetch_abort_beside_a_revoked_path_is_reported() {
     struct Aborts(usize);
     impl rssig::retrieval::CrlSource for Aborts {
         fn crls(
@@ -902,7 +902,7 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
         "--crl".to_owned(),
         path("sec06-issuer.crl"),
         "--crl".to_owned(),
-        path("sec10-sec06-other-root-revoked-cross.crl"),
+        path("crl-sec06-other-root-revoked-cross.crl"),
         "--fetch-crls".to_owned(),
         path("good-sec06-cross-first.exe"),
     ];
@@ -931,14 +931,14 @@ fn sec10_fetch_abort_beside_a_revoked_path_is_reported() {
 /// is unusable or revokes it. That is definite evidence, so with retrieval
 /// it keeps its code, as without it, and no source is asked. (Only an
 /// unknown status naming nothing is replaced by the path failure with
-/// retrieval: `sec10_fetch_never_asks_about_a_path_failing_key_usage`.)
+/// retrieval: `crl_fetch_never_asks_about_a_path_failing_key_usage`.)
 #[test]
-fn sec10_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
+fn crl_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
     for (crl, code) in [
-        ("sec10-sec06-root-idp-user.crl", "invalid_crl"),
-        ("sec10-sec06-root-revoked-issuer.crl", "certificate_revoked"),
+        ("crl-sec06-root-idp-user.crl", "invalid_crl"),
+        ("crl-sec06-root-revoked-issuer.crl", "certificate_revoked"),
     ] {
         let mut results = Vec::new();
         for fetch in [false, true] {
@@ -974,7 +974,7 @@ fn sec10_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
 /// the source is never asked, and with retrieval the path failure itself is
 /// reported.
 #[test]
-fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
+fn crl_fetch_never_asks_about_a_path_failing_key_usage() {
     struct Counts(usize);
     impl rssig::retrieval::CrlSource for Counts {
         fn crls(
@@ -1038,7 +1038,7 @@ fn sec10_fetch_never_asks_about_a_path_failing_key_usage() {
 /// missing (the signer's CRL) was asked about before the abort, so the result
 /// is the verifier's own unknown status, not an abort.
 #[test]
-fn sec10_fetch_abort_that_cut_nothing_short_is_not_reported() {
+fn crl_fetch_abort_that_cut_nothing_short_is_not_reported() {
     struct Source(Vec<u8>);
     impl rssig::retrieval::CrlSource for Source {
         fn crls(
@@ -1072,7 +1072,7 @@ fn sec10_fetch_abort_that_cut_nothing_short_is_not_reported() {
         "--time".to_owned(),
         "1800000000".to_owned(),
         "--fetch-crls".to_owned(),
-        path("sec10-chain-crl-dp.exe"),
+        path("crl-chain-crl-dp.exe"),
     ];
     let mut source = Source(std::fs::read(base.join("sec06-root.crl")).unwrap());
     let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -1092,7 +1092,7 @@ fn sec10_fetch_abort_that_cut_nothing_short_is_not_reported() {
 /// about it whatever the scheme; the built-in HTTP source refuses it before
 /// any network work, so the status stays unknown with that denial.
 #[test]
-fn sec10_fetch_https_point_is_the_source_decision() {
+fn crl_fetch_https_point_is_the_source_decision() {
     struct Answers(Vec<u8>, Vec<String>);
     impl rssig::retrieval::CrlSource for Answers {
         fn crls(
@@ -1118,7 +1118,7 @@ fn sec10_fetch_https_point_is_the_source_decision() {
         "--crl".to_owned(),
         path("sec06-root.crl"),
         "--fetch-crls".to_owned(),
-        path("sec10-leaf-crl-dp-https.exe"),
+        path("crl-leaf-crl-dp-https.exe"),
     ];
     let mut source = Answers(
         std::fs::read(base.join("sec06-issuer.crl")).unwrap(),
@@ -1150,7 +1150,7 @@ fn sec10_fetch_https_point_is_the_source_decision() {
 /// only lacks its root's CRL. Offline the gap is named ahead of the expiry;
 /// with a source answering for that certificate, the issuer's path verifies.
 #[test]
-fn sec10_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
+fn crl_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
     struct ByCertificate(Vec<u8>, usize);
     impl rssig::retrieval::CrlSource for ByCertificate {
         fn crls(
@@ -1181,7 +1181,7 @@ fn sec10_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
         if fetch {
             args.push("--fetch-crls".to_owned());
         }
-        args.push(path("sec10-sec06-cross-expired-first.exe"));
+        args.push(path("crl-sec06-cross-expired-first.exe"));
         args
     };
     let issuer = "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea";
@@ -1285,7 +1285,7 @@ fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
 /// CRL, naming no URL, and never uses the signer's listed point. The point is
 /// not a failure: nothing is reported in `crl_retrieval.failures`.
 #[test]
-fn sec10_fetch_by_certificate_answer_leaves_no_point_failures() {
+fn crl_fetch_by_certificate_answer_leaves_no_point_failures() {
     struct ByCertificate(Vec<u8>, Vec<usize>);
     impl rssig::retrieval::CrlSource for ByCertificate {
         fn crls(
@@ -1310,7 +1310,7 @@ fn sec10_fetch_by_certificate_answer_leaves_no_point_failures() {
         "--crl".to_owned(),
         path("sec06-root.crl"),
         "--fetch-crls".to_owned(),
-        path("sec10-leaf-crl-dp.exe"),
+        path("crl-leaf-crl-dp.exe"),
     ];
     let mut source = ByCertificate(
         std::fs::read(base.join("sec06-issuer.crl")).unwrap(),
@@ -1387,7 +1387,7 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
     for (crl, offline, asked, fetched) in [
         ("bad-crl-not-yet-valid.crl", "crl_not_yet_valid", true, None),
         (
-            "sec10-root-unknown-critical-extension.crl",
+            "crl-root-unknown-critical-extension.crl",
             "invalid_crl",
             true,
             None,
@@ -1399,7 +1399,7 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
             Some("invalid_crl_signature"),
         ),
         (
-            "sec10-root-no-next-update.crl",
+            "crl-root-no-next-update.crl",
             "invalid_crl",
             false,
             Some("invalid_crl"),
@@ -1464,7 +1464,7 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
 /// without a CRL and the issuer whose CRL a source could replace; a source
 /// answering both points completes the path.
 #[test]
-fn sec10_unknown_status_names_a_missing_and_a_replaceable_crl() {
+fn crl_unknown_status_names_a_missing_and_a_replaceable_crl() {
     struct Points(Vec<(&'static str, Vec<u8>)>, Vec<String>);
     impl rssig::retrieval::CrlSource for Points {
         fn crls(
@@ -1497,7 +1497,7 @@ fn sec10_unknown_status_names_a_missing_and_a_replaceable_crl() {
         if fetch {
             args.push("--fetch-crls".to_owned());
         }
-        args.push(path("sec10-chain-crl-dp.exe"));
+        args.push(path("crl-chain-crl-dp.exe"));
         args
     };
     let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -1526,7 +1526,7 @@ fn sec10_unknown_status_names_a_missing_and_a_replaceable_crl() {
         vec![
             (
                 "http://crl.invalid/sec10-a.crl",
-                std::fs::read(base.join("sec10-issuer-idp-match.crl")).unwrap(),
+                std::fs::read(base.join("crl-issuer-idp-match.crl")).unwrap(),
             ),
             (
                 "http://crl.invalid/sec10-issuer.crl",

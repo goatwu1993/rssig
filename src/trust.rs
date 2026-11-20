@@ -2074,7 +2074,7 @@ mod revocation_reporting {
     fn a_crl_without_next_update_revokes_only_under_webpki_rules() {
         use ::der::Decode;
         let crl = x509_cert::crl::CertificateList::from_der(include_bytes!(
-            "../tests/fixtures/sec10-root-no-next-update-revoked.crl"
+            "../tests/fixtures/crl-root-no-next-update-revoked.crl"
         ))
         .unwrap();
         let outer = crl.clone();
@@ -2523,8 +2523,7 @@ mod revocation_reporting {
 
     /// The validation time of the direct `evaluate_crls` tests below.
     const AT: u64 = 1_800_000_000;
-    const REVOKING: &[u8] =
-        include_bytes!("../tests/fixtures/sec10-root-no-next-update-revoked.crl");
+    const REVOKING: &[u8] = include_bytes!("../tests/fixtures/crl-root-no-next-update-revoked.crl");
 
     fn at(seconds: u64) -> x509_cert::time::Time {
         x509_cert::time::Time::UtcTime(
@@ -2723,7 +2722,7 @@ mod revocation_reporting {
 
         // A partition whose match cannot be read (the certificate's own
         // points do not decode) cannot clear a listing in a full CRL.
-        let mut leaf = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
+        let mut leaf = signer(include_bytes!("../tests/fixtures/crl-leaf-crl-dp.exe"));
         let serial = leaf.tbs_certificate.serial_number.clone();
         let listing = |crl: &mut CertificateList| {
             crl.tbs_cert_list.next_update = None;
@@ -2735,7 +2734,7 @@ mod revocation_reporting {
             }]);
         };
         let full = include_bytes!("../tests/fixtures/sec06-issuer.crl");
-        let partition = include_bytes!("../tests/fixtures/sec10-issuer-idp-other.crl");
+        let partition = include_bytes!("../tests/fixtures/crl-issuer-idp-other.crl");
         let newer_partition = |crl: &mut CertificateList| {
             crl.tbs_cert_list.next_update = None;
             crl.tbs_cert_list.this_update = at(AT - 10);
@@ -2768,8 +2767,8 @@ mod revocation_reporting {
     /// like one with nextUpdate, but only if webpki would otherwise admit it.
     #[test]
     fn a_crl_without_next_update_for_another_point_is_set_aside_if_admitted() {
-        let leaf = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
-        let partition = include_bytes!("../tests/fixtures/sec10-issuer-idp-other.crl");
+        let leaf = signer(include_bytes!("../tests/fixtures/crl-leaf-crl-dp.exe"));
+        let partition = include_bytes!("../tests/fixtures/crl-issuer-idp-other.crl");
         let set_aside = evaluated(
             &leaf,
             true,
@@ -2854,19 +2853,19 @@ mod revocation_reporting {
     #[test]
     fn a_listing_counts_only_on_a_positive_scope_match() {
         // The signer lists http://crl.invalid/sec10-a.crl.
-        let listed = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
+        let listed = signer(include_bytes!("../tests/fixtures/crl-leaf-crl-dp.exe"));
         let plain = signer(include_bytes!("../tests/fixtures/good-sec06-basic.exe"));
         let matching = tbs(include_bytes!(
-            "../tests/fixtures/sec10-issuer-idp-match-revoked.crl"
+            "../tests/fixtures/crl-issuer-idp-match-revoked.crl"
         ));
         let other = tbs(include_bytes!(
-            "../tests/fixtures/sec10-issuer-idp-other-revoked.crl"
+            "../tests/fixtures/crl-issuer-idp-other-revoked.crl"
         ));
         let relative = tbs(include_bytes!(
-            "../tests/fixtures/sec10-issuer-idp-relative.crl"
+            "../tests/fixtures/crl-issuer-idp-relative.crl"
         ));
         let role_only = tbs(include_bytes!(
-            "../tests/fixtures/sec10-root-idp-user-certs-revoked.crl"
+            "../tests/fixtures/crl-root-idp-user-certs-revoked.crl"
         ));
         let full = tbs(include_bytes!("../tests/fixtures/sec06-issuer.crl"));
         assert!(listing_in_scope(&full, &listed, true));
@@ -2886,7 +2885,7 @@ mod revocation_reporting {
         // One name x509-cert cannot decode fails the whole extension: the
         // match is unknown, so the partition is neither set aside as out of
         // scope nor are its listings dropped.
-        let mut cert = signer(include_bytes!("../tests/fixtures/sec10-leaf-crl-dp.exe"));
+        let mut cert = signer(include_bytes!("../tests/fixtures/crl-leaf-crl-dp.exe"));
         cert.tbs_certificate
             .extensions
             .as_mut()
@@ -2896,7 +2895,7 @@ mod revocation_reporting {
             .unwrap()
             .extn_value = ::der::asn1::OctetString::new(vec![0x04, 0x00]).unwrap();
         let matching = tbs(include_bytes!(
-            "../tests/fixtures/sec10-issuer-idp-match-revoked.crl"
+            "../tests/fixtures/crl-issuer-idp-match-revoked.crl"
         ));
         assert_eq!(authority_for(&matching, &cert, true), None);
         assert!(listing_in_scope(&matching, &cert, true));

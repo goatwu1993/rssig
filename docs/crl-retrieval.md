@@ -33,29 +33,29 @@ rule is restated for retrieval.
    decides. When another tried path passes every other path policy and has
    certificates with no CRL at all, the revocation also names them in
    `details.certificates_without_crl`
-   (`sec10-cross-revoked-path-beside-path-without-crl-names-it`), and those
+   (`crl-021-cross-revoked-path-beside-path-without-crl-names-it`), and those
    whose only CRLs have expired in `details.certificates_with_expired_crl`
-   (`sec10-cross-revoked-path-beside-path-with-expired-crl-names-it`): those
+   (`crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it`): those
    are asked about, the other path verifies if one is found
-   (`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-   `sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`),
+   (`crl-020-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+   `crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`),
    and otherwise the revocation stands
-   (`sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl`). A
+   (`crl-021-fetch-revocation-stands-when-the-other-path-stays-without-crl`). A
    path that would fail another check, such as a missing keyCertSign, is
    neither named nor considered for an unknown status
-   (`sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
-   `sec10-cross-unusable-crl-decides-beside-path-failing-key-usage`), and its
+   (`crl-021-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
+   `crl-021-cross-unusable-crl-decides-beside-path-failing-key-usage`), and its
    revocation does not hide such a path's own CRL failure. When no path
    passes the other path policy, revocation is still reported first, as on
    `main`, with an empty `certificates_without_crl`: no CRL could make such
    a path verify, so retrieval asks nothing. With `--fetch-crls` the whole
    input is then checked without revocation and that failure, such as
    `invalid_key_usage`, is the result
-   (`sec10-fetch-path-failing-key-usage-asks-nothing`). The same
+   (`crl-021-fetch-path-failing-key-usage-asks-nothing`). The same
    empty list marks a certificate the verifier could not name. When a source
    answers by certificate and its answer does not settle that certificate's
    status, the listed points it left unused are recorded as not used
-   (`sec10-fetch-by-certificate-unusable-answer-records-unused-points`). A
+   (`crl-033-fetch-by-certificate-unusable-answer-records-unused-points`). A
    certificate whose only CRLs have expired is offered to the source too, as
    Bouncy Castle drops expired CRLs and fetches from the certificate's
    points: `crl_expired` names it in `details.certificates_with_expired_crl`
@@ -74,9 +74,9 @@ rule is restated for retrieval.
    fetched CRL verifies
    (`crl-not-yet-valid-local-refreshed-by-provider`,
    `crl-unknown-critical-extension-local-refreshed-by-provider`,
-   `sec10-fetch-unusable-scope-supplied-crl-refreshed`), and without one the
+   `crl-036-fetch-unusable-scope-supplied-crl-refreshed`), and without one the
    error stands (`crl-not-yet-valid-local-asks-provider`,
-   `sec10-fetch-unusable-scope-supplied-crl-stands-without-answer`). A
+   `crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer`). A
    certificate with a CRL that cannot be replaced is not offered: a bad
    signature (`crl-forged-local-asks-nothing`; OpenSSL and BoringSSL report
    it without another lookup), an unsupported signature algorithm, an issuer
@@ -85,8 +85,8 @@ rule is restated for retrieval.
    CRL and not look again). A CRL without nextUpdate that has another,
    replaceable defect is offered for that defect, as it would be with
    nextUpdate present
-   (`sec10-no-next-update-point-scope-crl-is-replaceable`,
-   `sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate`). A malformed CRL is replaceable,
+   (`crl-042-no-next-update-point-scope-crl-is-replaceable`,
+   `crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate`). A malformed CRL is replaceable,
    alone or beside an expired one: BoringSSL drops it when decoding and
    OpenSSL still consults its store
    (`crl-malformed-aki-local-refreshed-by-provider`,
@@ -95,18 +95,18 @@ rule is restated for retrieval.
    unusable supplied CRL)"). A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an
    expired cross certificate
-   (`sec10-cross-expired-path-beside-path-without-crl-names-the-gap`,
-   `sec10-fetch-completes-the-path-beside-an-expired-path`). An unknown
+   (`crl-021-cross-expired-path-beside-path-without-crl-names-the-gap`,
+   `crl-020-fetch-completes-the-path-beside-an-expired-path`). An unknown
    status carrying `details.reason` `ambiguous_issuer_keys` (a path whose every
    certificate had a CRL) is final: no source is asked.
 2. Ask the source about exactly those certificates, once each, as OpenSSL's
    `get_crl` and Bouncy Castle look up CRLs for the certificate being
    checked; a certificate that a supplied CRL covers is never asked about
-   (`sec10-fetch-covered-signer-is-not-asked`,
-   `sec10-fetch-asks-only-the-uncovered-certificate`). A source that answers
+   (`crl-031-fetch-covered-signer-is-not-asked`,
+   `crl-031-fetch-asks-only-the-uncovered-certificate`). A source that answers
    with a CRL naming no URL looked it up by certificate or issuer: the
    points it did not use are not recorded as failures
-   (`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Only a
+   (`crl-033-fetch-by-certificate-answer-requests-no-listed-point`). Only a
    body that loads as a CRL of the certificate's issuer counts as such an
    answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
    unused points stay open: a later certificate listing one still offers it.
@@ -185,7 +185,7 @@ evidence for every selected certificate. Each such point is listed in
 one, and the error's code, stage, message, details and causes. A URL is
 requested once; if it failed, it is listed again for each further certificate
 that lists it. An unsupported point is skipped on its own, so a plain URI
-beside it is still requested (`sec10-fetch-mixed-point-requests-plain-uri`). A
+beside it is still requested (`crl-031-fetch-mixed-point-requests-plain-uri`). A
 response identical to a CRL already loaded adds nothing and does not trigger
 another verification.
 
@@ -199,10 +199,10 @@ before the abort are enough. `crl_fetch_denied` and `crl_fetch_failed` appear
 only inside `crl_retrieval.failures`, never as the result.
 
 Certificates that all lack a CRL are asked about in path order, in one round
-(`sec10-fetch-asks-each-certificate-without-crl`). A response that is not a
+(`crl-031-fetch-asks-each-certificate-without-crl`). A response that is not a
 CRL, or a failed request, is no evidence while another listed point of the
 same certificate supplies it
-(`sec10-fetch-bad-response-is-no-evidence-beside-another-point`). Supplied CRLs
+(`crl-031-fetch-bad-response-is-no-evidence-beside-another-point`). Supplied CRLs
 stay loaded beside the fetched ones.
 
 Success is only ever the result of a pass with revocation required. A run

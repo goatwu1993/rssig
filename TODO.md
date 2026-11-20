@@ -174,7 +174,7 @@ timestamps, and local CRL validation already exist.
   requires separate evidence and policy.
   Observed today: a CRL excluded as non-applicable still appears in
   `revocation.crls` with role `supplied` beside status `good` (for example
-  `sec10-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
+  `crl-unrelated-expired.crl` with `good.crl`), and nothing marks it unused.
   A `certificate_revoked` result does not identify which supplied CRL listed
   the certificate.
   From the PR #60 review: a retrieved body that is not a CRL (for example an
@@ -297,7 +297,7 @@ timestamps, and local CRL validation already exist.
   exclude, reject or be reported, and pin each with fixtures.
   An AKI that carries only authorityCertIssuer and serial is not compared at
   all; the CRL is matched by issuer name
-  (`sec10-root-aki-issuer-serial-crl-name-matched`). That fixture names the
+  (`crl-001-root-aki-issuer-serial-crl-name-matched`). That fixture names the
   root's real issuer and serial and is signed by the root, so it cannot tell
   name-only matching from issuer/serial matching; a fixture with a wrong
   serial is needed to pin either behavior.
@@ -361,10 +361,10 @@ timestamps, and local CRL validation already exist.
   Decided in PR #60 for stale full CRLs: a listing counts only from a CRL
   that is current at the validation time, as in OpenSSL and Bouncy Castle,
   so a released `certificateHold` in an expired CRL no longer revokes
-  (`sec10-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
+  (`crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored`). Still open: a
   current delta or indirect CRL's entries, and the listing in a current CRL
   with a malformed authorityKeyIdentifier
-  (`sec10-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
+  (`crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
   both Bouncy Castle paths, BoringSSL and relic were compared and do not
   agree (`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"); the owner
   decided to keep counting it, so only delta and indirect entries are open. Original notes follow.
@@ -379,9 +379,9 @@ timestamps, and local CRL validation already exist.
   the request as `invalid_crl` (`distribution_point_scope`) when the signer
   lists no point, even if a full CRL from the same issuer is also supplied
   (observed with `good-sec06-basic.exe`, `sec06-issuer.crl` and
-  `sec10-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
+  `crl-issuer-idp-match.crl`; no case has the full CRL present). A stale CRL
   from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
-  same issuer is supplied (`sec10-root-expired-crl-still-rejected`), so an
+  same issuer is supplied (`crl-001-root-expired-crl-still-rejected`), so an
   operator who keeps old CRLs beside current ones is rejected. Decide these
   together with the delta case.
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped
@@ -399,8 +399,8 @@ timestamps, and local CRL validation already exist.
   For a CRL issuer without cRLSign, `details.certificate` names the leaf being
   checked rather than the issuer whose KeyUsage fails; add the issuer (or a
   `reason`) before consumers depend on the current detail. The same leaf
-  report is attached when an intermediate is revoked (`sec10-revoked-issuer`)
-  or has unknown status (`sec10-ca-crl-dp-user-scope-excludes-issuer`), so
+  report is attached when an intermediate is revoked (`crl-revoked-issuer`)
+  or has unknown status (`crl-ca-crl-dp-user-scope-excludes-issuer`), so
   the error does not identify the affected certificate; no test asserts it.
   `details.reason` values are string literals in `src/trust.rs`, documented in
   `docs/problems.md` but not a Serde domain enum in `src/domain.rs` and not
@@ -820,15 +820,15 @@ timestamps, and local CRL validation already exist.
   `crl_applicability.rs::crl_full`). `crl_full` takes seven positional
   arguments and stamps the signature algorithm from the main test identity
   whatever issuer it is given (every test key is P-256 today). The 45 SEC-10
-  fixtures come from two generators (`regenerate_sec10_fixtures` for the rssig
+  fixtures come from two generators (`regenerate_crl_fixtures` for the rssig
   test root's CRLs, `regenerate_sec06_fixtures` for the SEC-06 chain), and the
-  names do not say which: `sec10-root-*.crl` is the rssig test root,
-  `sec10-sec06-root-*` and `sec10-root-no-crl-sign.der` the SEC-06 root. 57
+  names do not say which: `crl-root-*.crl` is the rssig test root,
+  `crl-sec06-root-*` and `crl-root-no-crl-sign.der` the SEC-06 root. 57
   SEC-06 manifest entries have no `generator` field, so tests select those
   fixtures by filename. The single-URI distribution-point encoding is written
   by hand in three builders (`path_policy.rs`, `crl_applicability.rs`,
   `crl_fetch_fixtures.rs`), and the `ski` helper in `crl_applicability.rs`
-  compares the OID as a string. `sec10-ca-crl-sign-fallback` relies on
+  compares the OID as a string. `crl-ca-crl-sign-fallback` relies on
   embedded-certificate order to exercise fallback and does not assert that the
   first candidate was tried. Keep committed bytes unchanged when consolidating.
 

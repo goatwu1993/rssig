@@ -165,7 +165,7 @@ fn an_ignored_crl_listing_is_logged_and_the_result_is_unchanged() {
     let (input, root) = (fixture("good-pe64.exe"), fixture("root.der"));
     let (good, superseded) = (
         fixture("good.crl"),
-        fixture("sec10-root-superseded-revoked.crl"),
+        fixture("crl-root-superseded-revoked.crl"),
     );
     let args = [
         "rssig",

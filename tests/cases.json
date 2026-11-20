@@ -25032,7 +25032,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25078,7 +25078,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25124,7 +25124,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--crl",
         "fixtures/expired.crl",
         "--fetch-crls"
@@ -25170,7 +25170,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--crl",
         "fixtures/expired.crl",
         "--fetch-crls"
@@ -25229,7 +25229,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -25370,7 +25370,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -30926,7 +30926,7 @@
       }
     },
     {
-      "id": "sec10-root-crl-no-next-update",
+      "id": "crl-005-root-crl-no-next-update",
       "input": "good-countersignature.exe",
       "decision": "CRL-005",
       "command": [
@@ -30935,7 +30935,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -30959,7 +30959,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-expired-crl-excluded",
+      "id": "crl-unrelated-expired-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -30969,7 +30969,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-expired.crl",
+        "fixtures/crl-unrelated-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -30986,7 +30986,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-not-yet-valid-crl-excluded",
+      "id": "crl-unrelated-not-yet-valid-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -30996,7 +30996,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-not-yet-valid.crl",
+        "fixtures/crl-unrelated-not-yet-valid.crl",
         "--time",
         "1800000000"
       ],
@@ -31013,7 +31013,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-no-next-update-crl-excluded",
+      "id": "crl-unrelated-no-next-update-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31023,7 +31023,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-no-next-update.crl",
+        "fixtures/crl-unrelated-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -31040,7 +31040,7 @@
       }
     },
     {
-      "id": "sec10-root-expired-crl-still-rejected",
+      "id": "crl-001-root-expired-crl-still-rejected",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31073,7 +31073,7 @@
       }
     },
     {
-      "id": "sec10-only-unrelated-crl-is-unknown",
+      "id": "crl-only-unrelated-crl-is-unknown",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31081,7 +31081,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-unrelated-expired.crl",
+        "fixtures/crl-unrelated-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31102,7 +31102,7 @@
       }
     },
     {
-      "id": "sec10-root-name-other-aki-crl-excluded",
+      "id": "crl-root-name-other-aki-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31112,7 +31112,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-name-other-aki-expired.crl",
+        "fixtures/crl-root-name-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31129,7 +31129,7 @@
       }
     },
     {
-      "id": "sec10-root-aki-crl-still-rejected",
+      "id": "crl-001-root-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31138,7 +31138,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-aki-expired.crl",
+        "fixtures/crl-root-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31162,7 +31162,7 @@
       }
     },
     {
-      "id": "sec10-root-crl-malformed-aki",
+      "id": "crl-001-root-crl-malformed-aki",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31171,7 +31171,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -31195,7 +31195,7 @@
       }
     },
     {
-      "id": "sec10-root-signed-other-aki-crl-still-rejected",
+      "id": "crl-001-root-signed-other-aki-crl-still-rejected",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31204,7 +31204,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-signed-other-aki-expired.crl",
+        "fixtures/crl-root-signed-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31228,7 +31228,7 @@
       }
     },
     {
-      "id": "sec10-forged-crl-naming-another-key-is-set-aside",
+      "id": "crl-019-forged-crl-naming-another-key-is-set-aside",
       "input": "good-countersignature.exe",
       "decision": "CRL-019",
       "command": [
@@ -31239,7 +31239,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-forged-other-ski.crl"
+        "fixtures/crl-root-forged-other-ski.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31258,7 +31258,7 @@
       }
     },
     {
-      "id": "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+      "id": "crl-019-forged-crl-naming-a-same-key-roots-identifier-is-forged",
       "input": "good-countersignature.exe",
       "decision": "CRL-019",
       "command": [
@@ -31267,11 +31267,11 @@
         "--roots",
         "fixtures/root.der",
         "--roots",
-        "fixtures/sec10-root-other-ski.der",
+        "fixtures/crl-root-other-ski.der",
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-forged-other-ski.crl"
+        "fixtures/crl-root-forged-other-ski.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31295,7 +31295,7 @@
       }
     },
     {
-      "id": "sec10-unrelated-malformed-aki-crl-excluded",
+      "id": "crl-unrelated-malformed-aki-crl-excluded",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31305,7 +31305,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-unrelated-malformed-aki.crl",
+        "fixtures/crl-unrelated-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -31322,7 +31322,7 @@
       }
     },
     {
-      "id": "sec10-root-unknown-critical-extension-crl-unsupported",
+      "id": "crl-001-root-unknown-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31331,7 +31331,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31355,7 +31355,7 @@
       }
     },
     {
-      "id": "sec10-root-delta-crl-unsupported",
+      "id": "crl-001-root-delta-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31364,7 +31364,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-delta.crl",
+        "fixtures/crl-root-delta.crl",
         "--time",
         "1800000000"
       ],
@@ -31388,7 +31388,7 @@
       }
     },
     {
-      "id": "sec10-root-indirect-crl-unsupported",
+      "id": "crl-001-root-indirect-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31397,7 +31397,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-indirect.crl",
+        "fixtures/crl-root-indirect.crl",
         "--time",
         "1800000000"
       ],
@@ -31421,7 +31421,7 @@
       }
     },
     {
-      "id": "sec10-root-unknown-noncritical-extension-crl-accepted",
+      "id": "crl-root-unknown-noncritical-extension-crl-accepted",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31431,7 +31431,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-unknown-noncritical-extension.crl",
+        "fixtures/crl-root-unknown-noncritical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31448,7 +31448,7 @@
       }
     },
     {
-      "id": "sec10-root-entry-critical-extension-crl-unsupported",
+      "id": "crl-001-root-entry-critical-extension-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31457,7 +31457,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-entry-critical-extension.crl",
+        "fixtures/crl-root-entry-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -31481,7 +31481,7 @@
       }
     },
     {
-      "id": "sec10-root-delta-expired-crl-reports-feature",
+      "id": "crl-001-root-delta-expired-crl-reports-feature",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31490,7 +31490,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-delta-expired.crl",
+        "fixtures/crl-root-delta-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31514,8 +31514,8 @@
       }
     },
     {
-      "id": "sec10-ca-no-crl-sign",
-      "input": "sec10-ca-no-crl-sign.exe",
+      "id": "crl-ca-no-crl-sign",
+      "input": "crl-ca-no-crl-sign.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31545,8 +31545,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-sign",
-      "input": "sec10-ca-crl-sign.exe",
+      "id": "crl-ca-crl-sign",
+      "input": "crl-ca-crl-sign.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31593,8 +31593,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-sign-fallback",
-      "input": "sec10-ca-crl-sign-fallback.exe",
+      "id": "crl-ca-crl-sign-fallback",
+      "input": "crl-ca-crl-sign-fallback.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31641,7 +31641,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-user-certs-crl-unsupported",
+      "id": "crl-001-root-idp-user-certs-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31650,7 +31650,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs.crl",
+        "fixtures/crl-root-idp-user-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -31674,7 +31674,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-ca-certs-crl-unsupported",
+      "id": "crl-001-root-idp-ca-certs-crl-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31683,7 +31683,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-ca-certs.crl",
+        "fixtures/crl-root-idp-ca-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -31707,7 +31707,7 @@
       }
     },
     {
-      "id": "sec10-root-aki-issuer-serial-crl-name-matched",
+      "id": "crl-001-root-aki-issuer-serial-crl-name-matched",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31716,7 +31716,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-aki-issuer-serial-expired.crl",
+        "fixtures/crl-root-aki-issuer-serial-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -31740,7 +31740,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-named-point-crl-rejected",
+      "id": "crl-001-root-idp-named-point-crl-rejected",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -31749,7 +31749,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec10-root-idp-named-point.crl",
+        "fixtures/crl-root-idp-named-point.crl",
         "--time",
         "1800000000"
       ],
@@ -31773,14 +31773,14 @@
       }
     },
     {
-      "id": "sec10-root-no-crl-sign-accepted",
+      "id": "crl-016-root-no-crl-sign-accepted",
       "input": "good-sec06-basic.exe",
       "decision": "CRL-016",
       "command": [
         "verify",
         "--no-system-roots",
         "--roots",
-        "fixtures/sec10-root-no-crl-sign.der",
+        "fixtures/crl-root-no-crl-sign.der",
         "--time",
         "1800000000",
         "--crl",
@@ -31811,7 +31811,7 @@
       }
     },
     {
-      "id": "sec10-competing-crls-good-first-revoked",
+      "id": "crl-competing-crls-good-first-revoked",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31842,7 +31842,7 @@
       }
     },
     {
-      "id": "sec10-competing-crls-revoked-first-revoked",
+      "id": "crl-competing-crls-revoked-first-revoked",
       "input": "good-countersignature.exe",
       "command": [
         "verify",
@@ -31873,8 +31873,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31885,7 +31885,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -31921,8 +31921,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-011-dp-other-idp-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-011",
       "command": [
         "verify",
@@ -31934,7 +31934,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31960,8 +31960,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp-revoked",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp-revoked",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -31972,7 +31972,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-revoked.crl"
+        "fixtures/crl-issuer-idp-match-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -31991,8 +31991,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-first",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-first",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32003,9 +32003,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32041,8 +32041,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revocation-is-ignored",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-010-dp-other-partition-revocation-is-ignored",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-010",
       "command": [
         "verify",
@@ -32054,9 +32054,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl"
+        "fixtures/crl-issuer-idp-other-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32082,8 +32082,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-010-dp-other-partition-revocation-is-ignored-first",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-010",
       "command": [
         "verify",
@@ -32095,9 +32095,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl",
+        "fixtures/crl-issuer-idp-other-revoked.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32123,8 +32123,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-full-crl",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-full-crl",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32171,8 +32171,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-matching-idp-first",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-matching-idp-first",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32183,9 +32183,9 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32221,8 +32221,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-with-full-crl",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-with-full-crl",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32233,7 +32233,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32271,7 +32271,7 @@
       }
     },
     {
-      "id": "sec10-partition-crl-no-listed-point",
+      "id": "crl-partition-crl-no-listed-point",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -32283,7 +32283,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32305,8 +32305,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-other-idp-revoked-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-other-idp-revoked-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32317,7 +32317,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-revoked.crl"
+        "fixtures/crl-issuer-idp-other-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32336,8 +32336,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-case-variant-idp-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-case-variant-idp-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32348,7 +32348,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-case.crl"
+        "fixtures/crl-issuer-idp-case.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32367,8 +32367,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-user-scope-covers-signer",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-user-scope-covers-signer",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32379,7 +32379,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-user.crl"
+        "fixtures/crl-issuer-idp-match-user.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32415,8 +32415,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-ca-scope-excludes-signer",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-ca-scope-excludes-signer",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32427,7 +32427,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl"
+        "fixtures/crl-issuer-idp-match-ca.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32446,8 +32446,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-dp-ca-scope-covers-issuer",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-ca-crl-dp-ca-scope-covers-issuer",
+      "input": "crl-ca-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32456,7 +32456,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl",
+        "fixtures/crl-sec06-root-idp-ca.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32494,8 +32494,8 @@
       }
     },
     {
-      "id": "sec10-ca-crl-dp-user-scope-excludes-issuer",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-ca-crl-dp-user-scope-excludes-issuer",
+      "input": "crl-ca-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32504,7 +32504,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -32525,8 +32525,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-idp-second-name-matches",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-dp-idp-second-name-matches",
+      "input": "crl-leaf-crl-dp.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32537,7 +32537,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-two-names.crl"
+        "fixtures/crl-issuer-idp-two-names.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32573,8 +32573,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-second-point-matches",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-second-point-matches",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32585,7 +32585,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-second-point.crl"
+        "fixtures/crl-issuer-idp-second-point.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -32621,8 +32621,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-unlisted-point-unknown",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-unlisted-point-unknown",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32633,7 +32633,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32652,8 +32652,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-multi-full-crl",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-dp-multi-full-crl",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32700,8 +32700,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-dns-name-unknown",
-      "input": "sec10-leaf-crl-dp-dns.exe",
+      "id": "crl-dp-dns-name-unknown",
+      "input": "crl-leaf-crl-dp-dns.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32712,7 +32712,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-dns.crl"
+        "fixtures/crl-issuer-idp-dns.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32731,8 +32731,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-dns-full-crl",
-      "input": "sec10-leaf-crl-dp-dns.exe",
+      "id": "crl-dp-dns-full-crl",
+      "input": "crl-leaf-crl-dp-dns.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32779,8 +32779,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-idp-unsupported",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-idp-unsupported",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32791,7 +32791,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl"
+        "fixtures/crl-issuer-idp-relative.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32813,8 +32813,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-expanded-name-unknown",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-expanded-name-unknown",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32825,7 +32825,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative-expanded.crl"
+        "fixtures/crl-issuer-idp-relative-expanded.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32844,8 +32844,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-relative-full-crl",
-      "input": "sec10-leaf-crl-dp-relative.exe",
+      "id": "crl-dp-relative-full-crl",
+      "input": "crl-leaf-crl-dp-relative.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32892,8 +32892,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-reasons-point-unknown",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "id": "crl-dp-reasons-point-unknown",
+      "input": "crl-leaf-crl-dp-reasons.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32904,7 +32904,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -32923,8 +32923,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-reasons-full-crl",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "id": "crl-dp-reasons-full-crl",
+      "input": "crl-leaf-crl-dp-reasons.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32971,8 +32971,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-crl-issuer-point-unknown",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "id": "crl-dp-crl-issuer-point-unknown",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -32983,7 +32983,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33002,8 +33002,8 @@
       }
     },
     {
-      "id": "sec10-crl-dp-crl-issuer-full-crl",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "id": "crl-dp-crl-issuer-full-crl",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -33050,7 +33050,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer",
+      "id": "crl-revoked-issuer",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33060,7 +33060,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -33081,7 +33081,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-after-good-root-crl",
+      "id": "crl-revoked-issuer-after-good-root-crl",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33093,7 +33093,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -33114,7 +33114,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-before-good-root-crl",
+      "id": "crl-revoked-issuer-before-good-root-crl",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33124,7 +33124,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
@@ -33147,7 +33147,7 @@
       }
     },
     {
-      "id": "sec10-partition-crl-relative-no-listed-point",
+      "id": "crl-partition-crl-relative-no-listed-point",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33159,7 +33159,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl"
+        "fixtures/crl-issuer-idp-relative.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33181,7 +33181,7 @@
       }
     },
     {
-      "id": "sec10-revoked-issuer-issuer-crl-first",
+      "id": "crl-revoked-issuer-issuer-crl-first",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -33193,7 +33193,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-sec06-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33212,7 +33212,7 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-without-crl-names-it",
+      "id": "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-021",
       "command": [
@@ -33227,7 +33227,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl"
+        "fixtures/crl-sec06-other-root-revoked-cross.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33253,7 +33253,7 @@
       }
     },
     {
-      "id": "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+      "id": "crl-021-fetch-revocation-stands-when-the-other-path-stays-without-crl",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-021",
       "crl_responses": {},
@@ -33269,7 +33269,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33300,7 +33300,7 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-covered-path-verifies",
+      "id": "crl-020-cross-revoked-path-beside-covered-path-verifies",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-020",
       "command": [
@@ -33315,7 +33315,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root.crl"
       ],
@@ -33343,8 +33343,8 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-      "input": "sec10-sec06-cross-no-cert-sign.exe",
+      "id": "crl-021-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+      "input": "crl-sec06-cross-no-cert-sign.exe",
       "decision": "CRL-021",
       "command": [
         "verify",
@@ -33358,7 +33358,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl"
+        "fixtures/crl-sec06-root-revoked-issuer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33377,8 +33377,8 @@
       }
     },
     {
-      "id": "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage",
-      "input": "sec10-sec06-cross-no-cert-sign.exe",
+      "id": "crl-021-cross-unusable-crl-decides-beside-path-failing-key-usage",
+      "input": "crl-sec06-cross-no-cert-sign.exe",
       "decision": "CRL-021",
       "command": [
         "verify",
@@ -33392,7 +33392,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl"
+        "fixtures/crl-sec06-root-idp-ca.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -33414,7 +33414,7 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+      "id": "crl-020-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-020",
       "crl_responses": {},
@@ -33433,7 +33433,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -33475,7 +33475,7 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
+      "id": "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-022",
       "command": [
@@ -33490,7 +33490,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-expired.crl"
       ],
@@ -33518,7 +33518,7 @@
       }
     },
     {
-      "id": "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+      "id": "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-022",
       "command": [
@@ -33533,7 +33533,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-not-yet-valid.crl"
       ],
@@ -33561,7 +33561,7 @@
       }
     },
     {
-      "id": "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+      "id": "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-023",
       "crl_responses": {},
@@ -33580,7 +33580,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-not-yet-valid.crl",
         "--fetch-crls"
@@ -33610,8 +33610,8 @@
       }
     },
     {
-      "id": "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-037-chain-unknown-names-missing-and-not-yet-valid-crl",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-037",
       "command": [
         "verify",
@@ -33655,12 +33655,12 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-missing-and-not-yet-valid-crl",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-036-fetch-completes-missing-and-not-yet-valid-crl",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-036",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -33720,7 +33720,7 @@
       }
     },
     {
-      "id": "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+      "id": "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
       "input": "good-sec06-cross-first.exe",
       "decision": "CRL-023",
       "crl_responses": {},
@@ -33739,7 +33739,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-other-root-revoked-cross.crl",
+        "fixtures/crl-sec06-other-root-revoked-cross.crl",
         "--crl",
         "fixtures/sec06-root-expired.crl",
         "--fetch-crls"
@@ -33769,8 +33769,8 @@
       }
     },
     {
-      "id": "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
-      "input": "sec10-sec06-cross-expired-first.exe",
+      "id": "crl-021-cross-expired-path-beside-path-without-crl-names-the-gap",
+      "input": "crl-sec06-cross-expired-first.exe",
       "decision": "CRL-021",
       "command": [
         "verify",
@@ -33808,8 +33808,8 @@
       }
     },
     {
-      "id": "sec10-fetch-completes-the-path-beside-an-expired-path",
-      "input": "sec10-sec06-cross-expired-first.exe",
+      "id": "crl-020-fetch-completes-the-path-beside-an-expired-path",
+      "input": "crl-sec06-cross-expired-first.exe",
       "decision": "CRL-020",
       "crl_responses": {},
       "crl_certificate_responses": {
@@ -34031,8 +34031,8 @@
       }
     },
     {
-      "id": "sec10-fetch-by-certificate-answer-requests-no-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-033-fetch-by-certificate-answer-requests-no-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-033",
       "crl_responses": {},
       "crl_certificate_responses": {
@@ -34081,7 +34081,7 @@
       }
     },
     {
-      "id": "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
+      "id": "crl-033-fetch-by-certificate-unusable-answer-records-unused-points",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-033",
       "crl_responses": {},
@@ -34125,7 +34125,7 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-asks-nothing",
+      "id": "crl-021-fetch-path-failing-key-usage-asks-nothing",
       "input": "bad-sec06-ca-ku.exe",
       "decision": "CRL-021",
       "crl_responses": {},
@@ -34158,7 +34158,7 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+      "id": "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
       "input": "bad-sec06-ca-ku.exe",
       "decision": "CRL-030",
       "crl_responses": {},
@@ -34172,7 +34172,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34196,7 +34196,7 @@
       }
     },
     {
-      "id": "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+      "id": "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
       "input": "bad-sec06-ca-ku.exe",
       "decision": "CRL-030",
       "crl_responses": {},
@@ -34210,7 +34210,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-revoked-issuer.crl",
+        "fixtures/crl-sec06-root-revoked-issuer.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34231,7 +34231,7 @@
       }
     },
     {
-      "id": "sec10-crl-this-update-one-second-ahead",
+      "id": "crl-this-update-one-second-ahead",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34267,7 +34267,7 @@
       }
     },
     {
-      "id": "sec10-crl-this-update-exact",
+      "id": "crl-this-update-exact",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34304,7 +34304,7 @@
       }
     },
     {
-      "id": "sec10-crl-next-update-one-second-left",
+      "id": "crl-next-update-one-second-left",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34341,7 +34341,7 @@
       }
     },
     {
-      "id": "sec10-crl-next-update-exact",
+      "id": "crl-next-update-exact",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -34377,10 +34377,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetches-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetches-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -34393,7 +34393,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34417,10 +34417,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetched-revoked",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetched-revoked",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match-revoked.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match-revoked.crl"
       },
       "command": [
         "verify",
@@ -34433,7 +34433,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -34455,10 +34455,10 @@
       }
     },
     {
-      "id": "sec10-fetch-other-idp-fetched-other-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-other-idp-fetched-other-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-other.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-other.crl"
       },
       "command": [
         "verify",
@@ -34471,7 +34471,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl"
+        "fixtures/crl-issuer-idp-other.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -34493,10 +34493,10 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-scope-idp-fetches-listed-point",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-ca-scope-idp-fetches-listed-point",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -34509,7 +34509,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl"
+        "fixtures/crl-issuer-idp-match-ca.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34533,8 +34533,8 @@
       }
     },
     {
-      "id": "sec10-fetch-matching-idp-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-matching-idp-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34547,7 +34547,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl"
+        "fixtures/crl-issuer-idp-match.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34569,8 +34569,8 @@
       }
     },
     {
-      "id": "sec10-fetch-user-scope-idp-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-user-scope-idp-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34583,7 +34583,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-user.crl"
+        "fixtures/crl-issuer-idp-match-user.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -34605,8 +34605,8 @@
       }
     },
     {
-      "id": "sec10-fetch-full-crl-not-fetched",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-fetch-full-crl-not-fetched",
+      "input": "crl-leaf-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34641,10 +34641,10 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+      "input": "crl-ca-crl-dp.exe",
       "crl_responses": {
-        "http://crl.invalid/sec10-issuer.crl": "sec10-sec06-root-idp-ca.crl"
+        "http://crl.invalid/sec10-issuer.crl": "crl-sec06-root-idp-ca.crl"
       },
       "command": [
         "verify",
@@ -34655,7 +34655,7 @@
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -34681,8 +34681,8 @@
       }
     },
     {
-      "id": "sec10-fetch-ca-ca-scope-idp-not-fetched",
-      "input": "sec10-ca-crl-dp.exe",
+      "id": "crl-fetch-ca-ca-scope-idp-not-fetched",
+      "input": "crl-ca-crl-dp.exe",
       "crl_responses": {},
       "command": [
         "verify",
@@ -34693,7 +34693,7 @@
         "1800000000",
         "--fetch-crls",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-ca.crl",
+        "fixtures/crl-sec06-root-idp-ca.crl",
         "--crl",
         "fixtures/sec06-issuer.crl"
       ],
@@ -34717,7 +34717,7 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-not-fetched",
+      "id": "crl-fetch-no-listed-point-not-fetched",
       "input": "good-sec06-basic.exe",
       "command": [
         "verify",
@@ -34729,7 +34729,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34754,8 +34754,8 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-reasons-point-denied",
-      "input": "sec10-leaf-crl-dp-reasons.exe",
+      "id": "crl-032-fetch-reasons-point-denied",
+      "input": "crl-leaf-crl-dp-reasons.exe",
       "decision": "CRL-032",
       "command": [
         "verify",
@@ -34767,7 +34767,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34800,8 +34800,8 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-crl-issuer-point-denied",
-      "input": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "id": "crl-032-fetch-crl-issuer-point-denied",
+      "input": "crl-leaf-crl-dp-crl-issuer.exe",
       "decision": "CRL-032",
       "command": [
         "verify",
@@ -34813,7 +34813,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match.crl",
+        "fixtures/crl-issuer-idp-match.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34846,8 +34846,8 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-dns-name-point-denied",
-      "input": "sec10-leaf-crl-dp-dns.exe",
+      "id": "crl-032-fetch-dns-name-point-denied",
+      "input": "crl-leaf-crl-dp-dns.exe",
       "decision": "CRL-032",
       "command": [
         "verify",
@@ -34859,7 +34859,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-dns.crl",
+        "fixtures/crl-issuer-idp-dns.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34892,7 +34892,7 @@
       "crl_responses": {}
     },
     {
-      "id": "sec10-fetch-excluded-name-match-fetches-listed-point",
+      "id": "crl-031-fetch-excluded-name-match-fetches-listed-point",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-031",
       "crl_responses": {
@@ -34906,7 +34906,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-name-other-aki-expired.crl",
+        "fixtures/crl-root-name-other-aki-expired.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34947,7 +34947,7 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
+      "id": "crl-014-fetch-no-listed-point-role-excluded-scope-rejected",
       "input": "good-sec06-basic.exe",
       "decision": "CRL-014",
       "crl_responses": {},
@@ -34961,7 +34961,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl",
+        "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -34985,7 +34985,7 @@
       }
     },
     {
-      "id": "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+      "id": "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate",
       "input": "good-sec06-basic.exe",
       "decision": "CRL-043",
       "crl_responses": {},
@@ -34999,7 +34999,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-match-ca.crl",
+        "fixtures/crl-issuer-idp-match-ca.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35030,7 +35030,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-point-scope-crl-is-replaceable",
+      "id": "crl-042-no-next-update-point-scope-crl-is-replaceable",
       "input": "good-pe64.exe",
       "decision": "CRL-042",
       "command": [
@@ -35041,7 +35041,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-named-point-no-next-update.crl"
+        "fixtures/crl-root-idp-named-point-no-next-update.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -35069,7 +35069,7 @@
       }
     },
     {
-      "id": "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+      "id": "crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
       "input": "good-pe64.exe",
       "decision": "CRL-041",
       "crl_responses": {},
@@ -35084,7 +35084,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-named-point-no-next-update.crl",
+        "fixtures/crl-root-idp-named-point-no-next-update.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35112,11 +35112,11 @@
       }
     },
     {
-      "id": "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-036",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35128,7 +35128,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl",
+        "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35160,8 +35160,8 @@
       }
     },
     {
-      "id": "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-037",
       "crl_responses": {},
       "command": [
@@ -35174,7 +35174,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-relative.crl",
+        "fixtures/crl-issuer-idp-relative.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35203,8 +35203,8 @@
       }
     },
     {
-      "id": "sec10-chain-crl-dp-full-crls",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-009-chain-crl-dp-full-crls",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-009",
       "command": [
         "verify",
@@ -35243,8 +35243,8 @@
       }
     },
     {
-      "id": "sec10-fetch-covered-signer-point-not-requested",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-031-fetch-covered-signer-point-not-requested",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-031",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
@@ -35298,12 +35298,12 @@
       }
     },
     {
-      "id": "sec10-fetch-asks-each-certificate-without-crl",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-031-fetch-asks-each-certificate-without-crl",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-031",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl",
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35313,7 +35313,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35363,8 +35363,8 @@
       }
     },
     {
-      "id": "sec10-fetch-covered-signer-is-not-asked",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-031-fetch-covered-signer-is-not-asked",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-031",
       "crl_responses": {
         "http://crl.invalid/sec10-issuer.crl": "sec06-root.crl"
@@ -35379,7 +35379,7 @@
         "--crl",
         "fixtures/sec06-issuer.crl",
         "--crl",
-        "fixtures/sec10-sec06-root-idp-user.crl",
+        "fixtures/crl-sec06-root-idp-user.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35420,8 +35420,8 @@
       }
     },
     {
-      "id": "sec10-leaf-crl-dp-mixed-full-crl",
-      "input": "sec10-leaf-crl-dp-mixed.exe",
+      "id": "crl-009-leaf-crl-dp-mixed-full-crl",
+      "input": "crl-leaf-crl-dp-mixed.exe",
       "decision": "CRL-009",
       "command": [
         "verify",
@@ -35458,11 +35458,11 @@
       }
     },
     {
-      "id": "sec10-fetch-mixed-point-requests-plain-uri",
-      "input": "sec10-leaf-crl-dp-mixed.exe",
+      "id": "crl-031-fetch-mixed-point-requests-plain-uri",
+      "input": "crl-leaf-crl-dp-mixed.exe",
       "decision": "CRL-031",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -35474,7 +35474,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other.crl",
+        "fixtures/crl-issuer-idp-other.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -35521,8 +35521,8 @@
       }
     },
     {
-      "id": "sec10-fetch-asks-only-the-uncovered-certificate",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-031-fetch-asks-only-the-uncovered-certificate",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-031",
       "crl_responses": {},
       "command": [
@@ -35568,12 +35568,12 @@
       }
     },
     {
-      "id": "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
-      "input": "sec10-leaf-crl-dp-multi.exe",
+      "id": "crl-031-fetch-bad-response-is-no-evidence-beside-another-point",
+      "input": "crl-leaf-crl-dp-multi.exe",
       "decision": "CRL-031",
       "crl_responses": {
         "http://crl.invalid/sec10-c.crl": "sec06-root.der",
-        "http://crl.invalid/sec10-e.crl": "sec10-issuer-idp-second-point.crl"
+        "http://crl.invalid/sec10-e.crl": "crl-issuer-idp-second-point.crl"
       },
       "command": [
         "verify",
@@ -35834,8 +35834,8 @@
       }
     },
     {
-      "id": "sec10-fetch-source-abort-stops-requests",
-      "input": "sec10-chain-crl-dp.exe",
+      "id": "crl-032-fetch-source-abort-stops-requests",
+      "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-032",
       "crl_responses": {},
       "crl_errors": {
@@ -35882,8 +35882,8 @@
       }
     },
     {
-      "id": "sec10-leaf-crl-dp-https-full-crl",
-      "input": "sec10-leaf-crl-dp-https.exe",
+      "id": "crl-009-leaf-crl-dp-https-full-crl",
+      "input": "crl-leaf-crl-dp-https.exe",
       "decision": "CRL-009",
       "command": [
         "verify",
@@ -35920,8 +35920,8 @@
       }
     },
     {
-      "id": "sec10-fetch-source-is-asked-for-any-scheme",
-      "input": "sec10-leaf-crl-dp-https.exe",
+      "id": "crl-044-fetch-source-is-asked-for-any-scheme",
+      "input": "crl-leaf-crl-dp-https.exe",
       "decision": "CRL-044",
       "crl_responses": {
         "https://crl.invalid/sec10-a.crl": "sec06-issuer.crl"
@@ -35975,8 +35975,8 @@
       }
     },
     {
-      "id": "sec10-fetch-builtin-source-denies-https",
-      "input": "sec10-leaf-crl-dp-https.exe",
+      "id": "crl-045-fetch-builtin-source-denies-https",
+      "input": "crl-leaf-crl-dp-https.exe",
       "decision": "CRL-045",
       "command": [
         "verify",
@@ -36018,7 +36018,7 @@
       }
     },
     {
-      "id": "sec10-root-crl-no-next-update-beside-good-crl",
+      "id": "crl-001-root-crl-no-next-update-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36029,7 +36029,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl",
+        "fixtures/crl-root-no-next-update.crl",
         "--time",
         "1800000000"
       ],
@@ -36056,7 +36056,7 @@
       }
     },
     {
-      "id": "sec10-root-expired-crl-still-rejected-beside-good-crl",
+      "id": "crl-001-root-expired-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36094,7 +36094,7 @@
       }
     },
     {
-      "id": "sec10-root-aki-crl-still-rejected-beside-good-crl",
+      "id": "crl-001-root-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36105,7 +36105,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-aki-expired.crl",
+        "fixtures/crl-root-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -36132,7 +36132,7 @@
       }
     },
     {
-      "id": "sec10-root-crl-malformed-aki-beside-good-crl",
+      "id": "crl-001-root-crl-malformed-aki-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36143,7 +36143,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-malformed-aki.crl",
+        "fixtures/crl-root-malformed-aki.crl",
         "--time",
         "1800000000"
       ],
@@ -36170,7 +36170,7 @@
       }
     },
     {
-      "id": "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+      "id": "crl-001-root-signed-other-aki-crl-still-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36181,7 +36181,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-signed-other-aki-expired.crl",
+        "fixtures/crl-root-signed-other-aki-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -36208,7 +36208,7 @@
       }
     },
     {
-      "id": "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36219,7 +36219,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-unknown-critical-extension.crl",
+        "fixtures/crl-root-unknown-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -36246,7 +36246,7 @@
       }
     },
     {
-      "id": "sec10-root-delta-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-delta-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36257,7 +36257,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-delta.crl",
+        "fixtures/crl-root-delta.crl",
         "--time",
         "1800000000"
       ],
@@ -36284,7 +36284,7 @@
       }
     },
     {
-      "id": "sec10-root-indirect-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-indirect-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36295,7 +36295,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-indirect.crl",
+        "fixtures/crl-root-indirect.crl",
         "--time",
         "1800000000"
       ],
@@ -36322,7 +36322,7 @@
       }
     },
     {
-      "id": "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-entry-critical-extension-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36333,7 +36333,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-entry-critical-extension.crl",
+        "fixtures/crl-root-entry-critical-extension.crl",
         "--time",
         "1800000000"
       ],
@@ -36360,7 +36360,7 @@
       }
     },
     {
-      "id": "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
+      "id": "crl-001-root-delta-expired-crl-reports-feature-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36371,7 +36371,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-delta-expired.crl",
+        "fixtures/crl-root-delta-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -36398,7 +36398,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-idp-user-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36409,7 +36409,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs.crl",
+        "fixtures/crl-root-idp-user-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -36436,7 +36436,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+      "id": "crl-001-root-idp-ca-certs-crl-unsupported-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36447,7 +36447,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-ca-certs.crl",
+        "fixtures/crl-root-idp-ca-certs.crl",
         "--time",
         "1800000000"
       ],
@@ -36474,7 +36474,7 @@
       }
     },
     {
-      "id": "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+      "id": "crl-001-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36485,7 +36485,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-aki-issuer-serial-expired.crl",
+        "fixtures/crl-root-aki-issuer-serial-expired.crl",
         "--time",
         "1800000000"
       ],
@@ -36512,7 +36512,7 @@
       }
     },
     {
-      "id": "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
+      "id": "crl-001-root-idp-named-point-crl-rejected-beside-good-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-001",
       "command": [
@@ -36523,7 +36523,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-named-point.crl",
+        "fixtures/crl-root-idp-named-point.crl",
         "--time",
         "1800000000"
       ],
@@ -36550,7 +36550,7 @@
       }
     },
     {
-      "id": "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
+      "id": "crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored",
       "input": "good-countersignature.exe",
       "decision": "CRL-002",
       "command": [
@@ -36563,7 +36563,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-expired-revoked.crl"
+        "fixtures/crl-root-expired-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -36588,7 +36588,7 @@
       }
     },
     {
-      "id": "sec10-stale-crl-revocation-alone-is-expired",
+      "id": "crl-002-stale-crl-revocation-alone-is-expired",
       "input": "good-countersignature.exe",
       "decision": "CRL-002",
       "command": [
@@ -36599,7 +36599,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-expired-revoked.crl"
+        "fixtures/crl-root-expired-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36618,7 +36618,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
+      "id": "crl-003-no-next-update-crl-revocation-beside-older-crl-revokes",
       "input": "good-countersignature.exe",
       "decision": "CRL-003",
       "command": [
@@ -36631,7 +36631,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36650,7 +36650,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-alone-is-invalid",
+      "id": "crl-004-no-next-update-crl-revocation-alone-is-invalid",
       "input": "good-countersignature.exe",
       "decision": "CRL-004",
       "command": [
@@ -36661,7 +36661,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36683,7 +36683,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-alone-revokes",
+      "id": "crl-004-no-next-update-crl-revocation-alone-revokes",
       "input": "good-pe64.exe",
       "decision": "CRL-004",
       "command": [
@@ -36694,7 +36694,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl"
+        "fixtures/crl-root-no-next-update-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36713,7 +36713,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
+      "id": "crl-004-no-next-update-crl-revocation-cleared-by-newer-crl",
       "input": "good-pe64.exe",
       "decision": "CRL-004",
       "command": [
@@ -36724,9 +36724,9 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl",
+        "fixtures/crl-root-no-next-update-revoked.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update-newer.crl"
+        "fixtures/crl-root-no-next-update-newer.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36748,7 +36748,7 @@
       }
     },
     {
-      "id": "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+      "id": "crl-004-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
       "input": "good-pe64.exe",
       "decision": "CRL-004",
       "command": [
@@ -36759,9 +36759,9 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-no-next-update-revoked.crl",
+        "fixtures/crl-root-no-next-update-revoked.crl",
         "--crl",
-        "fixtures/sec10-root-no-next-update.crl"
+        "fixtures/crl-root-no-next-update.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36780,7 +36780,7 @@
       }
     },
     {
-      "id": "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
+      "id": "crl-002-superseded-crl-revocation-beside-newer-crl-is-ignored",
       "input": "good-countersignature.exe",
       "decision": "CRL-002",
       "command": [
@@ -36793,7 +36793,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-superseded-revoked.crl"
+        "fixtures/crl-root-superseded-revoked.crl"
       ],
       "expect": {
         "exit_code": 0,
@@ -36818,7 +36818,7 @@
       }
     },
     {
-      "id": "sec10-superseded-crl-revocation-alone-revokes",
+      "id": "crl-002-superseded-crl-revocation-alone-revokes",
       "input": "good-countersignature.exe",
       "decision": "CRL-002",
       "command": [
@@ -36829,7 +36829,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-superseded-revoked.crl"
+        "fixtures/crl-root-superseded-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36848,7 +36848,7 @@
       }
     },
     {
-      "id": "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+      "id": "crl-012-role-partition-crl-revocation-beside-full-crl-revokes",
       "input": "good-countersignature.exe",
       "decision": "CRL-012",
       "command": [
@@ -36861,7 +36861,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+        "fixtures/crl-root-idp-user-certs-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36880,7 +36880,7 @@
       }
     },
     {
-      "id": "sec10-role-partition-crl-revocation-alone-is-unsupported",
+      "id": "crl-013-role-partition-crl-revocation-alone-is-unsupported",
       "input": "good-countersignature.exe",
       "decision": "CRL-013",
       "command": [
@@ -36891,7 +36891,7 @@
         "--time",
         "1800000000",
         "--crl",
-        "fixtures/sec10-root-idp-user-certs-revoked.crl"
+        "fixtures/crl-root-idp-user-certs-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36913,8 +36913,8 @@
       }
     },
     {
-      "id": "sec10-expired-partition-for-another-point-leaves-status-unknown",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-011-expired-partition-for-another-point-leaves-status-unknown",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-011",
       "command": [
         "verify",
@@ -36926,7 +36926,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-expired.crl"
+        "fixtures/crl-issuer-idp-other-expired.crl"
       ],
       "expect": {
         "exit_code": 1,
@@ -36952,11 +36952,11 @@
       }
     },
     {
-      "id": "sec10-fetch-expired-partition-for-another-point-still-fetches",
-      "input": "sec10-leaf-crl-dp.exe",
+      "id": "crl-011-fetch-expired-partition-for-another-point-still-fetches",
+      "input": "crl-leaf-crl-dp.exe",
       "decision": "CRL-011",
       "crl_responses": {
-        "http://crl.invalid/sec10-a.crl": "sec10-issuer-idp-match.crl"
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl"
       },
       "command": [
         "verify",
@@ -36968,7 +36968,7 @@
         "--crl",
         "fixtures/sec06-root.crl",
         "--crl",
-        "fixtures/sec10-issuer-idp-other-expired.crl",
+        "fixtures/crl-issuer-idp-other-expired.crl",
         "--fetch-crls"
       ],
       "expect": {
@@ -37007,7 +37007,7 @@
       }
     },
     {
-      "id": "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+      "id": "crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes",
       "input": "good-countersignature.exe",
       "decision": "CRL-006",
       "command": [
@@ -37020,7 +37020,7 @@
         "--crl",
         "fixtures/good.crl",
         "--crl",
-        "fixtures/sec10-root-malformed-aki-revoked.crl"
+        "fixtures/crl-root-malformed-aki-revoked.crl"
       ],
       "expect": {
         "exit_code": 1,

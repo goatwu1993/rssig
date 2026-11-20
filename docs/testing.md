@@ -289,11 +289,11 @@ answer a request for that certificate with that CRL alone, without a URL, as
 a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
-(`sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-`sec10-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+(`crl-020-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
+`crl-033-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
-`sec10_fetch_by_certificate_answer_leaves_no_point_failures`.
+`crl_fetch_by_certificate_answer_leaves_no_point_failures`.
 
 A case may carry a `decision` (not used to run it): the ID of the entry it
 pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for

@@ -88,10 +88,10 @@
       "bytes": 184,
       "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
       "cases": [
-        "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
+        "crl-033-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-fetch-injected-expired",
-        "sec10-root-expired-crl-still-rejected",
-        "sec10-root-expired-crl-still-rejected-beside-good-crl",
+        "crl-001-root-expired-crl-still-rejected",
+        "crl-001-root-expired-crl-still-rejected-beside-good-crl",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-asks-provider"
       ]
@@ -112,50 +112,50 @@
       "bytes": 2832,
       "description": "PKCS#9 countersignature binding a signed signingTime to the publisher signature.",
       "cases": [
-        "sec10-root-crl-no-next-update",
-        "sec10-unrelated-expired-crl-excluded",
-        "sec10-unrelated-not-yet-valid-crl-excluded",
-        "sec10-unrelated-no-next-update-crl-excluded",
-        "sec10-root-expired-crl-still-rejected",
-        "sec10-only-unrelated-crl-is-unknown",
-        "sec10-root-name-other-aki-crl-excluded",
-        "sec10-root-aki-crl-still-rejected",
-        "sec10-root-crl-malformed-aki",
-        "sec10-root-signed-other-aki-crl-still-rejected",
-        "sec10-unrelated-malformed-aki-crl-excluded",
-        "sec10-root-unknown-critical-extension-crl-unsupported",
-        "sec10-root-delta-crl-unsupported",
-        "sec10-root-indirect-crl-unsupported",
-        "sec10-root-unknown-noncritical-extension-crl-accepted",
-        "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature",
-        "sec10-root-idp-user-certs-crl-unsupported",
-        "sec10-root-idp-ca-certs-crl-unsupported",
-        "sec10-root-aki-issuer-serial-crl-name-matched",
-        "sec10-root-idp-named-point-crl-rejected",
-        "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked",
-        "sec10-root-crl-no-next-update-beside-good-crl",
-        "sec10-root-expired-crl-still-rejected-beside-good-crl",
-        "sec10-root-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-crl-malformed-aki-beside-good-crl",
-        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-crl-unsupported-beside-good-crl",
-        "sec10-root-indirect-crl-unsupported-beside-good-crl",
-        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
-        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
-        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
-        "sec10-stale-crl-revocation-alone-is-expired",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
-        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-superseded-crl-revocation-alone-revokes",
-        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported"
+        "crl-005-root-crl-no-next-update",
+        "crl-unrelated-expired-crl-excluded",
+        "crl-unrelated-not-yet-valid-crl-excluded",
+        "crl-unrelated-no-next-update-crl-excluded",
+        "crl-001-root-expired-crl-still-rejected",
+        "crl-only-unrelated-crl-is-unknown",
+        "crl-root-name-other-aki-crl-excluded",
+        "crl-001-root-aki-crl-still-rejected",
+        "crl-001-root-crl-malformed-aki",
+        "crl-001-root-signed-other-aki-crl-still-rejected",
+        "crl-unrelated-malformed-aki-crl-excluded",
+        "crl-001-root-unknown-critical-extension-crl-unsupported",
+        "crl-001-root-delta-crl-unsupported",
+        "crl-001-root-indirect-crl-unsupported",
+        "crl-root-unknown-noncritical-extension-crl-accepted",
+        "crl-001-root-entry-critical-extension-crl-unsupported",
+        "crl-001-root-delta-expired-crl-reports-feature",
+        "crl-001-root-idp-user-certs-crl-unsupported",
+        "crl-001-root-idp-ca-certs-crl-unsupported",
+        "crl-001-root-aki-issuer-serial-crl-name-matched",
+        "crl-001-root-idp-named-point-crl-rejected",
+        "crl-competing-crls-good-first-revoked",
+        "crl-competing-crls-revoked-first-revoked",
+        "crl-001-root-crl-no-next-update-beside-good-crl",
+        "crl-001-root-expired-crl-still-rejected-beside-good-crl",
+        "crl-001-root-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-crl-malformed-aki-beside-good-crl",
+        "crl-001-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-crl-unsupported-beside-good-crl",
+        "crl-001-root-indirect-crl-unsupported-beside-good-crl",
+        "crl-001-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "crl-001-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "crl-001-root-idp-named-point-crl-rejected-beside-good-crl",
+        "crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "crl-002-stale-crl-revocation-alone-is-expired",
+        "crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "crl-002-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "crl-002-superseded-crl-revocation-alone-revokes",
+        "crl-012-role-partition-crl-revocation-beside-full-crl-revokes",
+        "crl-013-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -212,15 +212,15 @@
         "sec03-batch-input",
         "sec03-parse-input",
         "sec03-batch-count",
-        "sec10-crl-this-update-one-second-ahead",
-        "sec10-crl-this-update-exact",
-        "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact",
-        "sec10-no-next-update-crl-revocation-alone-revokes",
-        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
-        "sec10-no-next-update-point-scope-crl-is-replaceable",
-        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-this-update-one-second-ahead",
+        "crl-this-update-exact",
+        "crl-next-update-one-second-left",
+        "crl-next-update-exact",
+        "crl-004-no-next-update-crl-revocation-alone-revokes",
+        "crl-004-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-004-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "crl-042-no-next-update-point-scope-crl-is-replaceable",
+        "crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -237,59 +237,59 @@
       "cases": [
         "rdp-eku-retry-ca-revoked-usage-is-revoked",
         "crl-fetch-injected-good",
-        "sec10-root-crl-no-next-update",
-        "sec10-unrelated-expired-crl-excluded",
-        "sec10-unrelated-not-yet-valid-crl-excluded",
-        "sec10-unrelated-no-next-update-crl-excluded",
-        "sec10-root-expired-crl-still-rejected",
-        "sec10-root-name-other-aki-crl-excluded",
-        "sec10-root-aki-crl-still-rejected",
-        "sec10-root-crl-malformed-aki",
-        "sec10-root-signed-other-aki-crl-still-rejected",
-        "sec10-unrelated-malformed-aki-crl-excluded",
-        "sec10-root-unknown-critical-extension-crl-unsupported",
-        "sec10-root-delta-crl-unsupported",
-        "sec10-root-indirect-crl-unsupported",
-        "sec10-root-unknown-noncritical-extension-crl-accepted",
-        "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-delta-expired-crl-reports-feature",
-        "sec10-root-idp-user-certs-crl-unsupported",
-        "sec10-root-idp-ca-certs-crl-unsupported",
-        "sec10-root-aki-issuer-serial-crl-name-matched",
-        "sec10-root-idp-named-point-crl-rejected",
-        "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked",
-        "sec10-crl-this-update-one-second-ahead",
-        "sec10-crl-this-update-exact",
-        "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact",
-        "sec10-fetch-excluded-name-match-fetches-listed-point",
-        "sec10-root-crl-no-next-update-beside-good-crl",
-        "sec10-root-expired-crl-still-rejected-beside-good-crl",
-        "sec10-root-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-crl-malformed-aki-beside-good-crl",
-        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-crl-unsupported-beside-good-crl",
-        "sec10-root-indirect-crl-unsupported-beside-good-crl",
-        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
-        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
-        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "crl-005-root-crl-no-next-update",
+        "crl-unrelated-expired-crl-excluded",
+        "crl-unrelated-not-yet-valid-crl-excluded",
+        "crl-unrelated-no-next-update-crl-excluded",
+        "crl-001-root-expired-crl-still-rejected",
+        "crl-root-name-other-aki-crl-excluded",
+        "crl-001-root-aki-crl-still-rejected",
+        "crl-001-root-crl-malformed-aki",
+        "crl-001-root-signed-other-aki-crl-still-rejected",
+        "crl-unrelated-malformed-aki-crl-excluded",
+        "crl-001-root-unknown-critical-extension-crl-unsupported",
+        "crl-001-root-delta-crl-unsupported",
+        "crl-001-root-indirect-crl-unsupported",
+        "crl-root-unknown-noncritical-extension-crl-accepted",
+        "crl-001-root-entry-critical-extension-crl-unsupported",
+        "crl-001-root-delta-expired-crl-reports-feature",
+        "crl-001-root-idp-user-certs-crl-unsupported",
+        "crl-001-root-idp-ca-certs-crl-unsupported",
+        "crl-001-root-aki-issuer-serial-crl-name-matched",
+        "crl-001-root-idp-named-point-crl-rejected",
+        "crl-competing-crls-good-first-revoked",
+        "crl-competing-crls-revoked-first-revoked",
+        "crl-this-update-one-second-ahead",
+        "crl-this-update-exact",
+        "crl-next-update-one-second-left",
+        "crl-next-update-exact",
+        "crl-031-fetch-excluded-name-match-fetches-listed-point",
+        "crl-001-root-crl-no-next-update-beside-good-crl",
+        "crl-001-root-expired-crl-still-rejected-beside-good-crl",
+        "crl-001-root-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-crl-malformed-aki-beside-good-crl",
+        "crl-001-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-crl-unsupported-beside-good-crl",
+        "crl-001-root-indirect-crl-unsupported-beside-good-crl",
+        "crl-001-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "crl-001-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "crl-001-root-idp-named-point-crl-rejected-beside-good-crl",
+        "crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes",
         "crl-stale-local-refreshed-by-provider",
-        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
+        "crl-002-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "crl-012-role-partition-crl-revocation-beside-full-crl-revokes",
         "crl-not-yet-valid-local-refreshed-by-provider",
         "crl-forged-local-asks-nothing",
         "crl-unknown-critical-extension-local-refreshed-by-provider",
         "crl-no-next-update-local-asks-nothing",
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -310,8 +310,8 @@
       "description": "Authentic current root-issued CRL listing the test publisher serial.",
       "cases": [
         "crl-fetch-injected-revoked",
-        "sec10-competing-crls-good-first-revoked",
-        "sec10-competing-crls-revoked-first-revoked"
+        "crl-competing-crls-good-first-revoked",
+        "crl-competing-crls-revoked-first-revoked"
       ]
     },
     {
@@ -320,36 +320,36 @@
       "bytes": 362,
       "description": "Test root certificate. Trusted explicitly by corpus cases, never installed in the OS store.",
       "cases": [
-        "sec10-crl-this-update-one-second-ahead",
-        "sec10-crl-this-update-exact",
-        "sec10-crl-next-update-one-second-left",
-        "sec10-crl-next-update-exact",
-        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "crl-this-update-one-second-ahead",
+        "crl-this-update-exact",
+        "crl-next-update-one-second-left",
+        "crl-next-update-exact",
+        "crl-031-fetch-excluded-name-match-fetches-listed-point",
         "crl-fetch-source-denied-is-no-evidence",
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
         "crl-fetch-source-abort-is-reported",
-        "sec10-root-crl-no-next-update-beside-good-crl",
-        "sec10-root-expired-crl-still-rejected-beside-good-crl",
-        "sec10-root-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-crl-malformed-aki-beside-good-crl",
-        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl",
-        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-crl-unsupported-beside-good-crl",
-        "sec10-root-indirect-crl-unsupported-beside-good-crl",
-        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl",
-        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl",
-        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl",
-        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
-        "sec10-root-idp-named-point-crl-rejected-beside-good-crl",
-        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
-        "sec10-stale-crl-revocation-alone-is-expired",
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes",
-        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-superseded-crl-revocation-alone-revokes",
-        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-001-root-crl-no-next-update-beside-good-crl",
+        "crl-001-root-expired-crl-still-rejected-beside-good-crl",
+        "crl-001-root-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-crl-malformed-aki-beside-good-crl",
+        "crl-001-root-signed-other-aki-crl-still-rejected-beside-good-crl",
+        "crl-001-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-crl-unsupported-beside-good-crl",
+        "crl-001-root-indirect-crl-unsupported-beside-good-crl",
+        "crl-001-root-entry-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-delta-expired-crl-reports-feature-beside-good-crl",
+        "crl-001-root-idp-user-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-idp-ca-certs-crl-unsupported-beside-good-crl",
+        "crl-001-root-aki-issuer-serial-crl-name-matched-beside-good-crl",
+        "crl-001-root-idp-named-point-crl-rejected-beside-good-crl",
+        "crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "crl-002-stale-crl-revocation-alone-is-expired",
+        "crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes",
+        "crl-002-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "crl-002-superseded-crl-revocation-alone-revokes",
+        "crl-012-role-partition-crl-revocation-beside-full-crl-revokes",
+        "crl-013-role-partition-crl-revocation-alone-is-unsupported",
         "crl-fetch-invalid-nested-signature-requests-nothing",
         "crl-not-yet-valid-local-refreshed-by-provider",
         "crl-not-yet-valid-local-asks-provider",
@@ -361,11 +361,11 @@
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-asks-provider",
-        "sec10-no-next-update-crl-revocation-alone-revokes",
-        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
-        "sec10-no-next-update-point-scope-crl-is-replaceable",
-        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-004-no-next-update-crl-revocation-alone-revokes",
+        "crl-004-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-004-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "crl-042-no-next-update-point-scope-crl-is-replaceable",
+        "crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -6845,7 +6845,7 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "sec10-fetch-by-certificate-unusable-answer-records-unused-points",
+        "crl-033-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-discovery-local",
         "crl-fetch-injected-expired",
         "crl-fetch-injected-forged",
@@ -6856,7 +6856,7 @@
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
         "crl-stale-local-asks-provider",
-        "sec10-fetch-excluded-name-match-fetches-listed-point",
+        "crl-031-fetch-excluded-name-match-fetches-listed-point",
         "crl-fetch-source-denied-is-no-evidence",
         "crl-fetch-source-failed-is-no-evidence",
         "crl-fetch-source-unknown-is-no-evidence",
@@ -7073,10 +7073,10 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "bad-sec06-ca-ku",
-        "sec10-fetch-path-failing-key-usage-asks-nothing"
+        "crl-021-fetch-path-failing-key-usage-asks-nothing"
       ]
     },
     {
@@ -7271,16 +7271,16 @@
         "good-sec06-basic",
         "good-sec06-root-expired",
         "good-sec06-root-profile",
-        "sec10-root-no-crl-sign-accepted",
-        "sec10-partition-crl-no-listed-point",
-        "sec10-revoked-issuer",
-        "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-fetch-no-listed-point-not-fetched",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-016-root-no-crl-sign-accepted",
+        "crl-partition-crl-no-listed-point",
+        "crl-revoked-issuer",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-partition-crl-relative-no-listed-point",
+        "crl-revoked-issuer-issuer-crl-first",
+        "crl-fetch-no-listed-point-not-fetched",
+        "crl-014-fetch-no-listed-point-role-excluded-scope-rejected",
+        "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -7376,14 +7376,14 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-cross-first",
         "good-sec06-cross-other-root",
-        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -7692,10 +7692,10 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -7734,38 +7734,38 @@
         "good-sec06-root-name",
         "bad-sec06-root-name",
         "good-sec06-root-selection",
-        "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign",
-        "sec10-ca-crl-sign-fallback",
-        "sec10-root-no-crl-sign-accepted",
-        "sec10-crl-dp-full-crl",
-        "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-ca-crl-dp-ca-scope-covers-issuer",
-        "sec10-ca-crl-dp-user-scope-excludes-issuer",
-        "sec10-crl-dp-multi-full-crl",
-        "sec10-crl-dp-dns-full-crl",
-        "sec10-crl-dp-relative-full-crl",
-        "sec10-crl-dp-reasons-full-crl",
-        "sec10-crl-dp-crl-issuer-full-crl",
-        "sec10-revoked-issuer",
-        "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched",
-        "sec10-chain-crl-dp-full-crls",
-        "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-covered-signer-is-not-asked",
-        "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-asks-only-the-uncovered-certificate",
-        "sec10-leaf-crl-dp-https-full-crl",
-        "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-ca-no-crl-sign",
+        "crl-ca-crl-sign",
+        "crl-ca-crl-sign-fallback",
+        "crl-016-root-no-crl-sign-accepted",
+        "crl-dp-full-crl",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-ca-crl-dp-ca-scope-covers-issuer",
+        "crl-ca-crl-dp-user-scope-excludes-issuer",
+        "crl-dp-multi-full-crl",
+        "crl-dp-dns-full-crl",
+        "crl-dp-relative-full-crl",
+        "crl-dp-reasons-full-crl",
+        "crl-dp-crl-issuer-full-crl",
+        "crl-revoked-issuer",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-revoked-issuer-issuer-crl-first",
+        "crl-fetch-full-crl-not-fetched",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-fetch-ca-ca-scope-idp-not-fetched",
+        "crl-009-chain-crl-dp-full-crls",
+        "crl-031-fetch-covered-signer-point-not-requested",
+        "crl-031-fetch-covered-signer-is-not-asked",
+        "crl-009-leaf-crl-dp-mixed-full-crl",
+        "crl-031-fetch-asks-only-the-uncovered-certificate",
+        "crl-009-leaf-crl-dp-https-full-crl",
+        "crl-044-fetch-source-is-asked-for-any-scheme",
+        "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -7960,13 +7960,13 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-cross-other-root",
-        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -8047,7 +8047,7 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -8086,71 +8086,71 @@
         "good-sec06-root-name",
         "bad-sec06-root-name",
         "good-sec06-root-selection",
-        "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign",
-        "sec10-ca-crl-sign-fallback",
-        "sec10-root-no-crl-sign-accepted",
-        "sec10-crl-dp-matching-idp",
-        "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-first",
-        "sec10-crl-dp-other-partition-revocation-is-ignored",
-        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-        "sec10-crl-dp-full-crl",
-        "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown",
-        "sec10-crl-dp-user-scope-covers-signer",
-        "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-crl-dp-idp-second-name-matches",
-        "sec10-crl-dp-multi-second-point-matches",
-        "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-multi-full-crl",
-        "sec10-crl-dp-dns-name-unknown",
-        "sec10-crl-dp-dns-full-crl",
-        "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-expanded-name-unknown",
-        "sec10-crl-dp-relative-full-crl",
-        "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-reasons-full-crl",
-        "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-crl-dp-crl-issuer-full-crl",
-        "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-partition-crl-relative-no-listed-point",
-        "sec10-fetch-other-idp-fetches-listed-point",
-        "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-matching-idp-not-fetched",
-        "sec10-fetch-user-scope-idp-not-fetched",
-        "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched",
-        "sec10-fetch-reasons-point-denied",
-        "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-        "sec10-chain-crl-dp-full-crls",
-        "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-covered-signer-is-not-asked",
-        "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
-        "sec10-leaf-crl-dp-https-full-crl",
-        "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https",
-        "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "crl-ca-no-crl-sign",
+        "crl-ca-crl-sign",
+        "crl-ca-crl-sign-fallback",
+        "crl-016-root-no-crl-sign-accepted",
+        "crl-dp-matching-idp",
+        "crl-011-dp-other-idp-unknown",
+        "crl-dp-matching-idp-revoked",
+        "crl-dp-other-idp-first",
+        "crl-010-dp-other-partition-revocation-is-ignored",
+        "crl-010-dp-other-partition-revocation-is-ignored-first",
+        "crl-dp-full-crl",
+        "crl-dp-matching-idp-first",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-partition-crl-no-listed-point",
+        "crl-dp-other-idp-revoked-unknown",
+        "crl-dp-case-variant-idp-unknown",
+        "crl-dp-user-scope-covers-signer",
+        "crl-dp-ca-scope-excludes-signer",
+        "crl-dp-idp-second-name-matches",
+        "crl-dp-multi-second-point-matches",
+        "crl-dp-multi-unlisted-point-unknown",
+        "crl-dp-multi-full-crl",
+        "crl-dp-dns-name-unknown",
+        "crl-dp-dns-full-crl",
+        "crl-dp-relative-idp-unsupported",
+        "crl-dp-relative-expanded-name-unknown",
+        "crl-dp-relative-full-crl",
+        "crl-dp-reasons-point-unknown",
+        "crl-dp-reasons-full-crl",
+        "crl-dp-crl-issuer-point-unknown",
+        "crl-dp-crl-issuer-full-crl",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-partition-crl-relative-no-listed-point",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-other-idp-fetched-revoked",
+        "crl-fetch-other-idp-fetched-other-unknown",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-fetch-matching-idp-not-fetched",
+        "crl-fetch-user-scope-idp-not-fetched",
+        "crl-fetch-full-crl-not-fetched",
+        "crl-fetch-no-listed-point-not-fetched",
+        "crl-032-fetch-reasons-point-denied",
+        "crl-032-fetch-crl-issuer-point-denied",
+        "crl-032-fetch-dns-name-point-denied",
+        "crl-014-fetch-no-listed-point-role-excluded-scope-rejected",
+        "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+        "crl-009-chain-crl-dp-full-crls",
+        "crl-031-fetch-covered-signer-point-not-requested",
+        "crl-031-fetch-asks-each-certificate-without-crl",
+        "crl-031-fetch-covered-signer-is-not-asked",
+        "crl-009-leaf-crl-dp-mixed-full-crl",
+        "crl-031-fetch-mixed-point-requests-plain-uri",
+        "crl-031-fetch-bad-response-is-no-evidence-beside-another-point",
+        "crl-009-leaf-crl-dp-https-full-crl",
+        "crl-044-fetch-source-is-asked-for-any-scheme",
+        "crl-045-fetch-builtin-source-denies-https",
+        "crl-011-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-011-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
         "sec16-self-issued-rollover-with-both-crls-is-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
-        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-036-fetch-completes-missing-and-not-yet-valid-crl",
+        "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8166,8 +8166,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "good-sec06-basic",
         "bad-sec06-ca-false",
         "bad-sec06-ca-missing-bc",
@@ -8200,82 +8200,82 @@
         "bad-sec06-cross-untrusted",
         "bad-sec06-cycle",
         "bad-sec06-cycle-reversed",
-        "sec10-ca-no-crl-sign",
-        "sec10-ca-crl-sign",
-        "sec10-ca-crl-sign-fallback",
-        "sec10-crl-dp-matching-idp",
-        "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-first",
-        "sec10-crl-dp-other-partition-revocation-is-ignored",
-        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-        "sec10-crl-dp-full-crl",
-        "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown",
-        "sec10-crl-dp-user-scope-covers-signer",
-        "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-ca-crl-dp-ca-scope-covers-issuer",
-        "sec10-ca-crl-dp-user-scope-excludes-issuer",
-        "sec10-crl-dp-idp-second-name-matches",
-        "sec10-crl-dp-multi-second-point-matches",
-        "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-multi-full-crl",
-        "sec10-crl-dp-dns-name-unknown",
-        "sec10-crl-dp-dns-full-crl",
-        "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-expanded-name-unknown",
-        "sec10-crl-dp-relative-full-crl",
-        "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-reasons-full-crl",
-        "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-crl-dp-crl-issuer-full-crl",
-        "sec10-revoked-issuer",
-        "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-partition-crl-relative-no-listed-point",
-        "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-fetch-other-idp-fetches-listed-point",
-        "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-matching-idp-not-fetched",
-        "sec10-fetch-user-scope-idp-not-fetched",
-        "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched",
-        "sec10-fetch-reasons-point-denied",
-        "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-dns-name-point-denied",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-        "sec10-chain-crl-dp-full-crls",
-        "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-covered-signer-is-not-asked",
-        "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-asks-only-the-uncovered-certificate",
-        "sec10-fetch-bad-response-is-no-evidence-beside-another-point",
-        "sec10-fetch-source-abort-stops-requests",
-        "sec10-leaf-crl-dp-https-full-crl",
-        "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https",
-        "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
+        "crl-ca-no-crl-sign",
+        "crl-ca-crl-sign",
+        "crl-ca-crl-sign-fallback",
+        "crl-dp-matching-idp",
+        "crl-011-dp-other-idp-unknown",
+        "crl-dp-matching-idp-revoked",
+        "crl-dp-other-idp-first",
+        "crl-010-dp-other-partition-revocation-is-ignored",
+        "crl-010-dp-other-partition-revocation-is-ignored-first",
+        "crl-dp-full-crl",
+        "crl-dp-matching-idp-first",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-partition-crl-no-listed-point",
+        "crl-dp-other-idp-revoked-unknown",
+        "crl-dp-case-variant-idp-unknown",
+        "crl-dp-user-scope-covers-signer",
+        "crl-dp-ca-scope-excludes-signer",
+        "crl-ca-crl-dp-ca-scope-covers-issuer",
+        "crl-ca-crl-dp-user-scope-excludes-issuer",
+        "crl-dp-idp-second-name-matches",
+        "crl-dp-multi-second-point-matches",
+        "crl-dp-multi-unlisted-point-unknown",
+        "crl-dp-multi-full-crl",
+        "crl-dp-dns-name-unknown",
+        "crl-dp-dns-full-crl",
+        "crl-dp-relative-idp-unsupported",
+        "crl-dp-relative-expanded-name-unknown",
+        "crl-dp-relative-full-crl",
+        "crl-dp-reasons-point-unknown",
+        "crl-dp-reasons-full-crl",
+        "crl-dp-crl-issuer-point-unknown",
+        "crl-dp-crl-issuer-full-crl",
+        "crl-revoked-issuer",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-partition-crl-relative-no-listed-point",
+        "crl-revoked-issuer-issuer-crl-first",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-other-idp-fetched-revoked",
+        "crl-fetch-other-idp-fetched-other-unknown",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-fetch-matching-idp-not-fetched",
+        "crl-fetch-user-scope-idp-not-fetched",
+        "crl-fetch-full-crl-not-fetched",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-fetch-ca-ca-scope-idp-not-fetched",
+        "crl-fetch-no-listed-point-not-fetched",
+        "crl-032-fetch-reasons-point-denied",
+        "crl-032-fetch-crl-issuer-point-denied",
+        "crl-032-fetch-dns-name-point-denied",
+        "crl-014-fetch-no-listed-point-role-excluded-scope-rejected",
+        "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+        "crl-009-chain-crl-dp-full-crls",
+        "crl-031-fetch-covered-signer-point-not-requested",
+        "crl-031-fetch-asks-each-certificate-without-crl",
+        "crl-031-fetch-covered-signer-is-not-asked",
+        "crl-009-leaf-crl-dp-mixed-full-crl",
+        "crl-031-fetch-mixed-point-requests-plain-uri",
+        "crl-031-fetch-asks-only-the-uncovered-certificate",
+        "crl-031-fetch-bad-response-is-no-evidence-beside-another-point",
+        "crl-032-fetch-source-abort-stops-requests",
+        "crl-009-leaf-crl-dp-https-full-crl",
+        "crl-044-fetch-source-is-asked-for-any-scheme",
+        "crl-045-fetch-builtin-source-denies-https",
+        "crl-011-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-011-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
         "sec16-self-issued-rollover-without-revocation-verifies",
         "sec16-self-issued-rollover-with-both-crls-is-rejected",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer",
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl",
-        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-037-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-036-fetch-completes-missing-and-not-yet-valid-crl",
+        "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8376,8 +8376,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -8393,10 +8393,10 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-037-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-036-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
@@ -9576,814 +9576,814 @@
       "paired_good": "sec09-lifetime-intermediate-not-before-exact.exe"
     },
     {
-      "file": "sec10-root-no-next-update.crl",
+      "file": "crl-root-no-next-update.crl",
       "sha256": "b18bf50e2256110b49cdea57a855b1df21ca98f56d8bf0bd91ea85b9e7aef38e",
       "bytes": 167,
       "description": "SEC-10: Correctly signed, empty CRL from the test root that omits nextUpdate; supplied artifact, not an individual verification claim. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-crl-no-next-update",
-        "sec10-root-crl-no-next-update-beside-good-crl",
+        "crl-005-root-crl-no-next-update",
+        "crl-001-root-crl-no-next-update-beside-good-crl",
         "crl-no-next-update-local-asks-nothing",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "crl-004-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
-      "file": "sec10-root-no-next-update-newer.crl",
+      "file": "crl-root-no-next-update-newer.crl",
       "sha256": "4be2e327df39c2371c88dc837f9a6b3cbdecc84bbac1224f5e7fd65779ec908f",
       "bytes": 167,
-      "description": "SEC-23: empty, correctly signed root CRL without nextUpdate, newer than sec10-root-no-next-update-revoked.crl: a current, complete CRL that leaves the signer out, so the older listing does not revoke; supporting revocation evidence, not an individual verification claim.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "description": "SEC-23: empty, correctly signed root CRL without nextUpdate, newer than crl-root-no-next-update-revoked.crl: a current, complete CRL that leaves the signer out, so the older listing does not revoke; supporting revocation evidence, not an individual verification claim.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl"
+        "crl-004-no-next-update-crl-revocation-cleared-by-newer-crl"
       ]
     },
     {
-      "file": "sec10-root-expired-revoked.crl",
+      "file": "crl-root-expired-revoked.crl",
       "sha256": "4094a1192f39d0307ad1dbf2334b637319d9e1202fee9ececc9da758526e3711",
       "bytes": 208,
       "description": "SEC-10: Correctly signed root CRL, expired (nextUpdate one second before the pinned time), revoking serial 2, the test signer. A listing counts only from a current CRL: beside a fresh CRL that does not list the signer it is ignored; alone it is only expired. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-stale-crl-revocation-beside-fresh-crl-is-ignored",
-        "sec10-stale-crl-revocation-alone-is-expired"
+        "crl-002-stale-crl-revocation-beside-fresh-crl-is-ignored",
+        "crl-002-stale-crl-revocation-alone-is-expired"
       ]
     },
     {
-      "file": "sec10-root-no-next-update-revoked.crl",
+      "file": "crl-root-no-next-update-revoked.crl",
       "sha256": "7d0d8b004e3388475d60f81b4b7e213a375f7ade83bf59378255fb5e305ef99b",
       "bytes": 191,
       "description": "SEC-10: Correctly signed root CRL without nextUpdate, newer than good.crl (thisUpdate 50 seconds before the pinned time), revoking serial 2, the test signer. It claims no expiry, so as in OpenSSL, Bouncy Castle and BoringSSL its listing counts: the certificate is revoked beside good.crl and alone (certificate_revoked), unless a newer complete CRL of the root leaves the signer out. On a timestamped file the timestamp authority, which it does not list, is checked first and is invalid_crl (missing_next_update). Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-no-next-update-crl-revocation-beside-older-crl-revokes",
-        "sec10-no-next-update-crl-revocation-alone-is-invalid",
-        "sec10-no-next-update-crl-revocation-alone-revokes",
-        "sec10-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "sec10-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "crl-003-no-next-update-crl-revocation-beside-older-crl-revokes",
+        "crl-004-no-next-update-crl-revocation-alone-is-invalid",
+        "crl-004-no-next-update-crl-revocation-alone-revokes",
+        "crl-004-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-004-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
-      "file": "sec10-root-superseded-revoked.crl",
+      "file": "crl-root-superseded-revoked.crl",
       "sha256": "03d7b931fce4ea3bf9aeb2a7eac6cd412abb96e54e94b1d8ee21cd99dc648752",
       "bytes": 209,
       "description": "SEC-10: Correctly signed root CRL, still within its validity (thisUpdate 200 seconds before the pinned time, nextUpdate 1000 after) but older than good.crl, revoking serial 2, the test signer. Beside the newer good.crl its listing is superseded and ignored; alone it is usable and revokes. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-superseded-crl-revocation-beside-newer-crl-is-ignored",
-        "sec10-superseded-crl-revocation-alone-revokes"
+        "crl-002-superseded-crl-revocation-beside-newer-crl-is-ignored",
+        "crl-002-superseded-crl-revocation-alone-revokes"
       ]
     },
     {
-      "file": "sec10-root-idp-user-certs-revoked.crl",
+      "file": "crl-root-idp-user-certs-revoked.crl",
       "sha256": "67bd57d7c7775f5bcd06d256e4b7eac5068304fa3aa8e7d7b64bd427d483485f",
       "bytes": 226,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root with an issuingDistributionPoint of onlyContainsUserCerts TRUE and no distributionPoint, revoking serial 2, the test signer. In scope for an end entity in OpenSSL and Bouncy Castle, so its listing counts beside a full CRL; alone webpki cannot use it. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-role-partition-crl-revocation-beside-full-crl-revokes",
-        "sec10-role-partition-crl-revocation-alone-is-unsupported"
+        "crl-012-role-partition-crl-revocation-beside-full-crl-revokes",
+        "crl-013-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
-      "file": "sec10-unrelated-expired.crl",
+      "file": "crl-unrelated-expired.crl",
       "sha256": "341293836f1a01319a8ce1efbbda81194cd9a16528199258cfecc76656dc31ad",
       "bytes": 187,
       "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose nextUpdate precedes 1800000000. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-unrelated-expired-crl-excluded",
-        "sec10-only-unrelated-crl-is-unknown"
+        "crl-unrelated-expired-crl-excluded",
+        "crl-only-unrelated-crl-is-unknown"
       ]
     },
     {
-      "file": "sec10-unrelated-not-yet-valid.crl",
+      "file": "crl-unrelated-not-yet-valid.crl",
       "sha256": "806ffdd3812b7b6f2bee64d7fbabc99c7a892e15d1d213af13450de7eee99e61",
       "bytes": 188,
       "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose thisUpdate follows 1800000000. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-unrelated-not-yet-valid-crl-excluded"
+        "crl-unrelated-not-yet-valid-crl-excluded"
       ]
     },
     {
-      "file": "sec10-unrelated-no-next-update.crl",
+      "file": "crl-unrelated-no-next-update.crl",
       "sha256": "da3aeadca7f205c8e6e12cc72093ba5e6b0c4be3420d52ff0978098faa77feba",
       "bytes": 170,
       "description": "SEC-10: Correctly signed CRL from an issuer outside the chain that omits nextUpdate. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-unrelated-no-next-update-crl-excluded"
+        "crl-unrelated-no-next-update-crl-excluded"
       ]
     },
     {
-      "file": "sec10-root-name-other-aki-expired.crl",
+      "file": "crl-root-name-other-aki-expired.crl",
       "sha256": "5224adf3a441b618d2cdb86ddc5ce6b284713146d1f92d6cc603756c00eb6830",
       "bytes": 218,
       "description": "SEC-10: Correctly signed, expired CRL under the test root's name, signed by a different key that its authorityKeyIdentifier names (a rolled-over issuer). Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-name-other-aki-crl-excluded",
-        "sec10-fetch-excluded-name-match-fetches-listed-point"
+        "crl-root-name-other-aki-crl-excluded",
+        "crl-031-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
-      "file": "sec10-root-aki-expired.crl",
+      "file": "crl-root-aki-expired.crl",
       "sha256": "db0e2e4fc5e6e5184e657dedafcb43d1237663a70764af4a62f59488d58fe780",
       "bytes": 216,
       "description": "SEC-10: Correctly signed, expired CRL under the test root's name carrying the root's own authorityKeyIdentifier. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-aki-crl-still-rejected",
-        "sec10-root-aki-crl-still-rejected-beside-good-crl"
+        "crl-001-root-aki-crl-still-rejected",
+        "crl-001-root-aki-crl-still-rejected-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-malformed-aki.crl",
+      "file": "crl-root-malformed-aki.crl",
       "sha256": "f71b5eb912e7ef3ece9192f4d939205332b5696e911a4bd84f95291acba7c6e4",
       "bytes": 196,
       "description": "SEC-10: Correctly signed CRL under the test root's name whose authorityKeyIdentifier extension value is not a valid SEQUENCE. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-crl-malformed-aki",
-        "sec10-root-crl-malformed-aki-beside-good-crl",
+        "crl-001-root-crl-malformed-aki",
+        "crl-001-root-crl-malformed-aki-beside-good-crl",
         "crl-malformed-aki-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-refreshed-by-provider",
         "crl-malformed-aki-beside-expired-local-asks-provider"
       ]
     },
     {
-      "file": "sec10-root-malformed-aki-revoked.crl",
+      "file": "crl-root-malformed-aki-revoked.crl",
       "sha256": "b526e3f962cc53e0ab9af9732cd976266c8f281e1e7bebdd65fc690f895a61f2",
       "bytes": 220,
       "description": "SEC-10: Fresh root CRL, correctly signed, with a malformed authorityKeyIdentifier, revoking serial 2 (the test signer). Its listing counts beside a usable CRL that does not list the signer. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-malformed-aki-crl-revocation-beside-good-crl-revokes"
+        "crl-006-malformed-aki-crl-revocation-beside-good-crl-revokes"
       ]
     },
     {
-      "file": "sec10-root-signed-other-aki-expired.crl",
+      "file": "crl-root-signed-other-aki-expired.crl",
       "sha256": "62cbebecd066aab7f3a139511f8b97311c785a17a32536abea844307b078d70f",
       "bytes": 217,
       "description": "SEC-10: Expired CRL signed by the test root's own key whose authorityKeyIdentifier names a different key. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-signed-other-aki-crl-still-rejected",
-        "sec10-root-signed-other-aki-crl-still-rejected-beside-good-crl"
+        "crl-001-root-signed-other-aki-crl-still-rejected",
+        "crl-001-root-signed-other-aki-crl-still-rejected-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-forged-other-ski.crl",
+      "file": "crl-root-forged-other-ski.crl",
       "sha256": "e113f4b2769a4167735c32f5fc9720b03f0dc0901c71f053571c9eb6dbe11499",
       "bytes": 217,
-      "description": "SEC-10: Fresh CRL under the test root's name signed by another key and naming subjectKeyIdentifier 0xbb x20, the identifier of sec10-root-other-ski.der. Another issuer's CRL when only root.der is configured; forged when the same-key root is configured too. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "description": "SEC-10: Fresh CRL under the test root's name signed by another key and naming subjectKeyIdentifier 0xbb x20, the identifier of crl-root-other-ski.der. Another issuer's CRL when only root.der is configured; forged when the same-key root is configured too. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-forged-crl-naming-another-key-is-set-aside",
-        "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+        "crl-019-forged-crl-naming-another-key-is-set-aside",
+        "crl-019-forged-crl-naming-a-same-key-roots-identifier-is-forged"
       ]
     },
     {
-      "file": "sec10-root-other-ski.der",
+      "file": "crl-root-other-ski.der",
       "sha256": "aa98e555460c9af16f5c9ae172dca19e1f8734b2c457de426d25322753921b2a",
       "bytes": 361,
       "description": "SEC-10: The test root re-issued with the same key and name and subjectKeyIdentifier 0xbb x20: the same trust anchor to webpki, a second identifier for it. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+        "crl-019-forged-crl-naming-a-same-key-roots-identifier-is-forged"
       ]
     },
     {
-      "file": "sec10-unrelated-malformed-aki.crl",
+      "file": "crl-unrelated-malformed-aki.crl",
       "sha256": "7345feee7c3d869960f72ba94332325d4f4c2868b70c2128ef2099b4ac01fc02",
       "bytes": 200,
       "description": "SEC-10: Correctly signed CRL from an issuer outside the chain whose authorityKeyIdentifier extension value is not a valid SEQUENCE. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-unrelated-malformed-aki-crl-excluded"
+        "crl-unrelated-malformed-aki-crl-excluded"
       ]
     },
     {
-      "file": "sec10-root-unknown-critical-extension.crl",
+      "file": "crl-root-unknown-critical-extension.crl",
       "sha256": "16edd7bd1863b5e2d24688fc493b4b17a801ec982d86ff0490a702ae09222fcf",
       "bytes": 197,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an unrecognized critical extension (1.2.3.4); unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-unknown-critical-extension-crl-unsupported",
-        "sec10-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
+        "crl-001-root-unknown-critical-extension-crl-unsupported",
+        "crl-001-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
         "crl-unknown-critical-extension-local-refreshed-by-provider",
         "crl-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
-      "file": "sec10-root-delta.crl",
+      "file": "crl-root-delta.crl",
       "sha256": "6e691c706d50b4995f563d251e24b5712abe2504aed52240d27620cd00622aaf",
       "bytes": 199,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying a critical deltaCRLIndicator; unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-delta-crl-unsupported",
-        "sec10-root-delta-crl-unsupported-beside-good-crl"
+        "crl-001-root-delta-crl-unsupported",
+        "crl-001-root-delta-crl-unsupported-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-indirect.crl",
+      "file": "crl-root-indirect.crl",
       "sha256": "52fa26ed0d111ab6a9102c0dbc82681ab2f1373f1d63ed87ae3c00e4274a014c",
       "bytes": 202,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with indirectCRL TRUE; unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-indirect-crl-unsupported",
-        "sec10-root-indirect-crl-unsupported-beside-good-crl"
+        "crl-001-root-indirect-crl-unsupported",
+        "crl-001-root-indirect-crl-unsupported-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-unknown-noncritical-extension.crl",
+      "file": "crl-root-unknown-noncritical-extension.crl",
       "sha256": "ddfbaed4ae56a113145499f2c8caf8deb1a188b6c2ab80da6a5112548332dc28",
       "bytes": 196,
-      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an unrecognized non-critical extension (1.2.3.4); paired good case for sec10-root-unknown-critical-extension.crl. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an unrecognized non-critical extension (1.2.3.4); paired good case for crl-root-unknown-critical-extension.crl. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-unknown-noncritical-extension-crl-accepted"
+        "crl-root-unknown-noncritical-extension-crl-accepted"
       ]
     },
     {
-      "file": "sec10-root-entry-critical-extension.crl",
+      "file": "crl-root-entry-critical-extension.crl",
       "sha256": "8feaf092f3bd3f513967788ce2cf20f6becffbab43ece69f72c7aedd993f8051",
       "bytes": 227,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root revoking an unrelated serial (999) through an entry with an unrecognized critical entry extension (1.2.3.4); unsupported, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-entry-critical-extension-crl-unsupported",
-        "sec10-root-entry-critical-extension-crl-unsupported-beside-good-crl"
+        "crl-001-root-entry-critical-extension-crl-unsupported",
+        "crl-001-root-entry-critical-extension-crl-unsupported-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-delta-expired.crl",
+      "file": "crl-root-delta-expired.crl",
       "sha256": "6c4eaa154750fbd861952e3e69df73f21c65c6e0f3b4878062eec925e2d93514",
       "bytes": 198,
       "description": "SEC-10: Correctly signed, expired delta CRL (critical deltaCRLIndicator) from the test root; the unsupported feature is reported before freshness. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-delta-expired-crl-reports-feature",
-        "sec10-root-delta-expired-crl-reports-feature-beside-good-crl"
+        "crl-001-root-delta-expired-crl-reports-feature",
+        "crl-001-root-delta-expired-crl-reports-feature-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-ca-no-crl-sign.exe",
+      "file": "crl-ca-no-crl-sign.exe",
       "sha256": "68deb4f76146716589efed0ea8b5d36447653f3ffb30c95d3f62eb53893e1989",
       "bytes": 2200,
       "description": "SEC-10: Inert PE signed by the SEC-06 leaf; its issuer candidate has a critical KeyUsage with keyCertSign but not cRLSign, so the issuer's CRL (sec06-issuer.crl) cannot be used. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-no-crl-sign"
+        "crl-ca-no-crl-sign"
       ]
     },
     {
-      "file": "sec10-ca-crl-sign.exe",
+      "file": "crl-ca-crl-sign.exe",
       "sha256": "4fe6d2d91b24de6ad1202dfb8cf229f67e4e46131a1d371601df119580a0d674",
       "bytes": 2200,
       "description": "SEC-10: Paired good PE; the issuer candidate's critical KeyUsage has keyCertSign and cRLSign. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-sign"
+        "crl-ca-crl-sign"
       ]
     },
     {
-      "file": "sec10-ca-crl-sign-fallback.exe",
+      "file": "crl-ca-crl-sign-fallback.exe",
       "sha256": "d5f94de933b84101b3e6f29c2a37f25b1bdf6d16ce23c64c23de1dfc3c1081ab",
       "bytes": 2592,
       "description": "SEC-10: Inert PE embedding both issuer candidates, the one without cRLSign first; path building must fall back to the candidate with cRLSign. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-sign-fallback"
+        "crl-ca-crl-sign-fallback"
       ]
     },
     {
-      "file": "sec10-root-idp-user-certs.crl",
+      "file": "crl-root-idp-user-certs.crl",
       "sha256": "6394862da5aebe44a300e21967529a48c6fc5e308cd72e01e29c1f1cfafbe3e3",
       "bytes": 201,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsUserCerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-user-certs-crl-unsupported",
-        "sec10-root-idp-user-certs-crl-unsupported-beside-good-crl"
+        "crl-001-root-idp-user-certs-crl-unsupported",
+        "crl-001-root-idp-user-certs-crl-unsupported-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-idp-ca-certs.crl",
+      "file": "crl-root-idp-ca-certs.crl",
       "sha256": "de65fe111bfce855326508021d1c63fa282009470a7e325d844c8c0bed83ce2c",
       "bytes": 200,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root carrying an issuingDistributionPoint with onlyContainsCACerts TRUE and no distributionPoint; unsupported by webpki 0.103, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-ca-certs-crl-unsupported",
-        "sec10-root-idp-ca-certs-crl-unsupported-beside-good-crl"
+        "crl-001-root-idp-ca-certs-crl-unsupported",
+        "crl-001-root-idp-ca-certs-crl-unsupported-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-aki-issuer-serial-expired.crl",
+      "file": "crl-root-aki-issuer-serial-expired.crl",
       "sha256": "9308da68ce875a3d193c43edec123bd86f968855a521275cd94651ced7b8a188",
       "bytes": 230,
       "description": "SEC-10: Correctly signed, expired CRL from the test root whose authorityKeyIdentifier has authorityCertIssuer and authorityCertSerialNumber but no keyIdentifier, so it is matched by issuer name and fails closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-aki-issuer-serial-crl-name-matched",
-        "sec10-root-aki-issuer-serial-crl-name-matched-beside-good-crl"
+        "crl-001-root-aki-issuer-serial-crl-name-matched",
+        "crl-001-root-aki-issuer-serial-crl-name-matched-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-idp-named-point.crl",
+      "file": "crl-root-idp-named-point.crl",
       "sha256": "67c80b98999922010fb9c756d1b8096980e27d895e6a3cdb9d0aeb02dd53a837",
       "bytes": 232,
       "description": "SEC-10: Correctly signed, fresh CRL from the test root whose issuingDistributionPoint names a distribution point (http://crl.invalid/root.crl) that no test certificate lists; it may be a partition that does not cover them, so it must fail closed. Deterministic public test keys.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-idp-named-point-crl-rejected",
-        "sec10-root-idp-named-point-crl-rejected-beside-good-crl"
+        "crl-001-root-idp-named-point-crl-rejected",
+        "crl-001-root-idp-named-point-crl-rejected-beside-good-crl"
       ]
     },
     {
-      "file": "sec10-root-idp-named-point-no-next-update.crl",
+      "file": "crl-root-idp-named-point-no-next-update.crl",
       "sha256": "21a6bed1ee2b0e2a84816ba2cf7db84894fefdbacd47558c3086dfdacaa9cc4d",
       "bytes": 215,
       "description": "SEC-23: correctly signed root CRL scoped to the named distribution point http://crl.invalid/root.crl and without nextUpdate. For a certificate that lists no point the scope defect decides (invalid_crl, distribution_point_scope), as for the same CRL with nextUpdate, and a CRL source is asked; supporting revocation evidence, not an individual verification claim.",
-      "generator": "src/tests/crl_applicability.rs::regenerate_sec10_fixtures",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-no-next-update-point-scope-crl-is-replaceable",
-        "sec10-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-042-no-next-update-point-scope-crl-is-replaceable",
+        "crl-041-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
-      "file": "sec10-root-no-crl-sign.der",
+      "file": "crl-root-no-crl-sign.der",
       "sha256": "fb83f8902d84788e4a13c83e25f2974b28fec21a6288d1ee3a377e34a5e381f0",
       "bytes": 386,
       "description": "SEC-10: Trust anchor with the SEC-06 root's name and key whose critical KeyUsage has keyCertSign but not cRLSign. Configured anchors are keys, so CRLs it signs remain usable. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-root-no-crl-sign-accepted"
+        "crl-016-root-no-crl-sign-accepted"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp.exe",
+      "file": "crl-leaf-crl-dp.exe",
       "sha256": "fe672939a8507db27ac21072a8f14418f565ccebc2ae99cebb79408aa7fdff92",
       "bytes": 2248,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf with its own serial (121) whose cRLDistributionPoints lists one fullName URI (http://crl.invalid/sec10-a.crl); issuer candidate is the SEC-06 issuer. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-matching-idp",
-        "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-matching-idp-revoked",
-        "sec10-crl-dp-other-idp-first",
-        "sec10-crl-dp-other-partition-revocation-is-ignored",
-        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-        "sec10-crl-dp-full-crl",
-        "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-crl-dp-other-idp-revoked-unknown",
-        "sec10-crl-dp-case-variant-idp-unknown",
-        "sec10-crl-dp-user-scope-covers-signer",
-        "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-crl-dp-idp-second-name-matches",
-        "sec10-fetch-other-idp-fetches-listed-point",
-        "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-matching-idp-not-fetched",
-        "sec10-fetch-user-scope-idp-not-fetched",
-        "sec10-fetch-full-crl-not-fetched",
-        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-        "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-fetch-by-certificate-answer-requests-no-listed-point",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "crl-dp-matching-idp",
+        "crl-011-dp-other-idp-unknown",
+        "crl-dp-matching-idp-revoked",
+        "crl-dp-other-idp-first",
+        "crl-010-dp-other-partition-revocation-is-ignored",
+        "crl-010-dp-other-partition-revocation-is-ignored-first",
+        "crl-dp-full-crl",
+        "crl-dp-matching-idp-first",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-dp-other-idp-revoked-unknown",
+        "crl-dp-case-variant-idp-unknown",
+        "crl-dp-user-scope-covers-signer",
+        "crl-dp-ca-scope-excludes-signer",
+        "crl-dp-idp-second-name-matches",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-other-idp-fetched-revoked",
+        "crl-fetch-other-idp-fetched-other-unknown",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-fetch-matching-idp-not-fetched",
+        "crl-fetch-user-scope-idp-not-fetched",
+        "crl-fetch-full-crl-not-fetched",
+        "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+        "crl-011-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-011-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-033-fetch-by-certificate-answer-requests-no-listed-point",
+        "crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
-      "file": "sec10-issuer-idp-match.crl",
+      "file": "crl-issuer-idp-match.crl",
       "sha256": "56bc91fce1fcde688ec42916496004e0234cd3db239bcc78b02660eb4eea6a7f",
       "bytes": 233,
-      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl, the point the sec10-leaf-crl-dp signer lists. Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl, the point the crl-leaf-crl-dp signer lists. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-matching-idp",
-        "sec10-crl-dp-other-idp-first",
-        "sec10-crl-dp-other-partition-revocation-is-ignored",
-        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-        "sec10-crl-dp-matching-idp-first",
-        "sec10-partition-crl-no-listed-point",
-        "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-fetch-other-idp-fetches-listed-point",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-matching-idp-not-fetched",
-        "sec10-fetch-no-listed-point-not-fetched",
-        "sec10-fetch-reasons-point-denied",
-        "sec10-fetch-crl-issuer-point-denied",
-        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-        "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
+        "crl-dp-matching-idp",
+        "crl-dp-other-idp-first",
+        "crl-010-dp-other-partition-revocation-is-ignored",
+        "crl-010-dp-other-partition-revocation-is-ignored-first",
+        "crl-dp-matching-idp-first",
+        "crl-partition-crl-no-listed-point",
+        "crl-dp-multi-unlisted-point-unknown",
+        "crl-dp-reasons-point-unknown",
+        "crl-dp-crl-issuer-point-unknown",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-fetch-matching-idp-not-fetched",
+        "crl-fetch-no-listed-point-not-fetched",
+        "crl-032-fetch-reasons-point-denied",
+        "crl-032-fetch-crl-issuer-point-denied",
+        "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+        "crl-031-fetch-asks-each-certificate-without-crl",
+        "crl-031-fetch-mixed-point-requests-plain-uri",
+        "crl-011-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-036-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
-      "file": "sec10-issuer-idp-match-revoked.crl",
+      "file": "crl-issuer-idp-match-revoked.crl",
       "sha256": "f538f815d11ab48b72d20de0ce26f7e01225513b96e51448cea19be95a511fd7",
       "bytes": 258,
-      "description": "SEC-10: As sec10-issuer-idp-match.crl, but revoking serial 121, which only the sec10-leaf-crl-dp signer has. Deterministic public test keys.",
+      "description": "SEC-10: As crl-issuer-idp-match.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-matching-idp-revoked",
-        "sec10-fetch-other-idp-fetched-revoked"
+        "crl-dp-matching-idp-revoked",
+        "crl-fetch-other-idp-fetched-revoked"
       ]
     },
     {
-      "file": "sec10-issuer-idp-other.crl",
+      "file": "crl-issuer-idp-other.crl",
       "sha256": "2cefb7b9ee82b6378dc6eb750dca47522a1c62a301bc4c045d907790e33e9bb7",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the signer does not list; not authoritative for it. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-other-idp-unknown",
-        "sec10-crl-dp-other-idp-first",
-        "sec10-crl-dp-matching-idp-first",
-        "sec10-crl-dp-other-idp-with-full-crl",
-        "sec10-fetch-other-idp-fetches-listed-point",
-        "sec10-fetch-other-idp-fetched-revoked",
-        "sec10-fetch-other-idp-fetched-other-unknown",
-        "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri"
+        "crl-011-dp-other-idp-unknown",
+        "crl-dp-other-idp-first",
+        "crl-dp-matching-idp-first",
+        "crl-dp-other-idp-with-full-crl",
+        "crl-fetch-other-idp-fetches-listed-point",
+        "crl-fetch-other-idp-fetched-revoked",
+        "crl-fetch-other-idp-fetched-other-unknown",
+        "crl-031-fetch-asks-each-certificate-without-crl",
+        "crl-031-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
-      "file": "sec10-issuer-idp-other-expired.crl",
+      "file": "crl-issuer-idp-other-expired.crl",
       "sha256": "b2e3aaa8744c3beffca0da753bd46d65357cdc80ea1e052ffcb267023131d461",
       "bytes": 233,
-      "description": "SEC-10: Correctly signed CRL from the SEC-06 issuer, expired, whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the sec10-leaf-crl-dp signer does not list. Not authoritative for that signer, so its age does not decide it. Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed CRL from the SEC-06 issuer, expired, whose critical issuingDistributionPoint names http://crl.invalid/sec10-b.crl, a point the crl-leaf-crl-dp signer does not list. Not authoritative for that signer, so its age does not decide it. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-expired-partition-for-another-point-leaves-status-unknown",
-        "sec10-fetch-expired-partition-for-another-point-still-fetches"
+        "crl-011-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-011-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
-      "file": "sec10-issuer-idp-other-revoked.crl",
+      "file": "crl-issuer-idp-other-revoked.crl",
       "sha256": "04ce40d26b3f3025fbfd306a13bf784f548106c6de37c915553a179ed3f7a050",
       "bytes": 256,
-      "description": "SEC-10: As sec10-issuer-idp-other.crl, but revoking serial 121, which only the sec10-leaf-crl-dp signer has. Deterministic public test keys.",
+      "description": "SEC-10: As crl-issuer-idp-other.crl, but revoking serial 121, which only the crl-leaf-crl-dp signer has. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-other-partition-revocation-is-ignored",
-        "sec10-crl-dp-other-partition-revocation-is-ignored-first",
-        "sec10-crl-dp-other-idp-revoked-unknown"
+        "crl-010-dp-other-partition-revocation-is-ignored",
+        "crl-010-dp-other-partition-revocation-is-ignored-first",
+        "crl-dp-other-idp-revoked-unknown"
       ]
     },
     {
-      "file": "sec10-issuer-idp-case.crl",
+      "file": "crl-issuer-idp-case.crl",
       "sha256": "2ff1d4c6d45a4f0414f5f9886273d3b5453a2ab22ebc919c891c3ebd640b8229",
       "bytes": 234,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names HTTP://CRL.INVALID/sec10-a.crl, the signer's listed point with scheme and host in upper case; URIs are compared byte-exactly, so it is not authoritative. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-case-variant-idp-unknown"
+        "crl-dp-case-variant-idp-unknown"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-multi.exe",
+      "file": "crl-leaf-crl-dp-multi.exe",
       "sha256": "c477222bbc572a7b594eaaa6e2184161c638bc5f588ae73311c8d598b60c2269",
       "bytes": 2320,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints lists two points: one naming http://crl.invalid/sec10-c.crl and one naming both sec10-d.crl and sec10-e.crl; serial 122. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-multi-second-point-matches",
-        "sec10-crl-dp-multi-unlisted-point-unknown",
-        "sec10-crl-dp-multi-full-crl",
-        "sec10-fetch-bad-response-is-no-evidence-beside-another-point"
+        "crl-dp-multi-second-point-matches",
+        "crl-dp-multi-unlisted-point-unknown",
+        "crl-dp-multi-full-crl",
+        "crl-031-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-dns.exe",
+      "file": "crl-leaf-crl-dp-dns.exe",
       "sha256": "efb05fb4d9bcbd1ef50dd0b72e9eb53f45d9b2656d18b58e7aee6a67490f3289",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names only a dNSName (crl.invalid), not a URI; serial 123. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-dns-name-unknown",
-        "sec10-crl-dp-dns-full-crl",
-        "sec10-fetch-dns-name-point-denied"
+        "crl-dp-dns-name-unknown",
+        "crl-dp-dns-full-crl",
+        "crl-032-fetch-dns-name-point-denied"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-relative.exe",
+      "file": "crl-leaf-crl-dp-relative.exe",
       "sha256": "48dcab237ebc87ef8b4cd96a9c046f120bddbddd6aeec4d56b8a5241a95419e1",
       "bytes": 2232,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints uses nameRelativeToCRLIssuer (CN=sec10); serial 124. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-crl-dp-relative-expanded-name-unknown",
-        "sec10-crl-dp-relative-full-crl"
+        "crl-dp-relative-idp-unsupported",
+        "crl-dp-relative-expanded-name-unknown",
+        "crl-dp-relative-full-crl"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-reasons.exe",
+      "file": "crl-leaf-crl-dp-reasons.exe",
       "sha256": "7df2d2b0361704d66aa657967c0b4bb037bd95bc3098960e6db54e293a13b0be",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a reasons field (keyCompromise); serial 125. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-reasons-point-unknown",
-        "sec10-crl-dp-reasons-full-crl",
-        "sec10-fetch-reasons-point-denied"
+        "crl-dp-reasons-point-unknown",
+        "crl-dp-reasons-full-crl",
+        "crl-032-fetch-reasons-point-denied"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-crl-issuer.exe",
+      "file": "crl-leaf-crl-dp-crl-issuer.exe",
       "sha256": "25df07c6d83110ce0924c6f721324b6d36aad110ab6860c650f70b795297897d",
       "bytes": 2280,
       "description": "SEC-10: Inert PE signed by a SEC-06 leaf (issuer candidate: the SEC-06 issuer) whose cRLDistributionPoints names http://crl.invalid/sec10-a.crl with a cRLIssuer (CN=SEC-06 upper); serial 126. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-crl-issuer-point-unknown",
-        "sec10-crl-dp-crl-issuer-full-crl",
-        "sec10-fetch-crl-issuer-point-denied"
+        "crl-dp-crl-issuer-point-unknown",
+        "crl-dp-crl-issuer-full-crl",
+        "crl-032-fetch-crl-issuer-point-denied"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-mixed.exe",
+      "file": "crl-leaf-crl-dp-mixed.exe",
       "sha256": "e3fc096b982386c2cfb42ae25e7f14408327caf19a6cd9b6c9a16f256e959a45",
       "bytes": 2296,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 127) whose cRLDistributionPoints lists a reason-partitioned point (http://crl.invalid/sec10-c.crl, keyCompromise) and then http://crl.invalid/sec10-a.crl as a plain point. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-leaf-crl-dp-mixed-full-crl",
-        "sec10-fetch-mixed-point-requests-plain-uri"
+        "crl-009-leaf-crl-dp-mixed-full-crl",
+        "crl-031-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
-      "file": "sec10-leaf-crl-dp-https.exe",
+      "file": "crl-leaf-crl-dp-https.exe",
       "sha256": "0e6efbf1f5056074d3efab81f19183fb9f0f12a587b9c67712748a6a566a1421",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by a SEC-06 publisher variant (serial 128) whose cRLDistributionPoints names https://crl.invalid/sec10-a.crl. The engine passes it to the CRL source; the built-in HTTP source refuses it. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-leaf-crl-dp-https-full-crl",
-        "sec10-fetch-source-is-asked-for-any-scheme",
-        "sec10-fetch-builtin-source-denies-https"
+        "crl-009-leaf-crl-dp-https-full-crl",
+        "crl-044-fetch-source-is-asked-for-any-scheme",
+        "crl-045-fetch-builtin-source-denies-https"
       ]
     },
     {
-      "file": "sec10-ca-crl-dp.exe",
+      "file": "crl-ca-crl-dp.exe",
       "sha256": "88efc22e200f6819c1be90582945da132e29712b1a922a1f72daa81b5ac8f2d8",
       "bytes": 2256,
       "description": "SEC-10: Inert PE signed by the base SEC-06 leaf; its issuer candidate is a SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-dp-ca-scope-covers-issuer",
-        "sec10-ca-crl-dp-user-scope-excludes-issuer",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched"
+        "crl-ca-crl-dp-ca-scope-covers-issuer",
+        "crl-ca-crl-dp-user-scope-excludes-issuer",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-fetch-ca-ca-scope-idp-not-fetched"
       ]
     },
     {
-      "file": "sec10-chain-crl-dp.exe",
+      "file": "crl-chain-crl-dp.exe",
       "sha256": "d6bc19962ae073701b65f095457ae87f347de994130c03145e35acdede113ed2",
       "bytes": 2312,
-      "description": "SEC-10: Inert PE signed by the sec10-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl, so both selected certificates list a point. Never execute. Deterministic public test keys.",
+      "description": "SEC-10: Inert PE signed by the crl-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the SEC-06 issuer variant (serial 110) whose cRLDistributionPoints names http://crl.invalid/sec10-issuer.crl, so both selected certificates list a point. Never execute. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-chain-crl-dp-full-crls",
-        "sec10-fetch-covered-signer-point-not-requested",
-        "sec10-fetch-asks-each-certificate-without-crl",
-        "sec10-fetch-covered-signer-is-not-asked",
-        "sec10-fetch-asks-only-the-uncovered-certificate",
-        "sec10-fetch-source-abort-stops-requests",
-        "sec10-chain-unknown-names-missing-and-not-yet-valid-crl",
-        "sec10-fetch-completes-missing-and-not-yet-valid-crl"
+        "crl-009-chain-crl-dp-full-crls",
+        "crl-031-fetch-covered-signer-point-not-requested",
+        "crl-031-fetch-asks-each-certificate-without-crl",
+        "crl-031-fetch-covered-signer-is-not-asked",
+        "crl-031-fetch-asks-only-the-uncovered-certificate",
+        "crl-032-fetch-source-abort-stops-requests",
+        "crl-037-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-036-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
     {
-      "file": "sec10-issuer-idp-match-user.crl",
+      "file": "crl-issuer-idp-match-user.crl",
       "sha256": "993f0d528b7f965f097f756eab8a84756386d9a1f406140a7adc9236b73ea446",
       "bytes": 235,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-a.crl with onlyContainsUserCerts TRUE. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-user-scope-covers-signer",
-        "sec10-fetch-user-scope-idp-not-fetched"
+        "crl-dp-user-scope-covers-signer",
+        "crl-fetch-user-scope-idp-not-fetched"
       ]
     },
     {
-      "file": "sec10-issuer-idp-match-ca.crl",
+      "file": "crl-issuer-idp-match-ca.crl",
       "sha256": "98c8265f27f3c639045eaa42f2be2012ee34e9ecef13052ad27a760300bc9cbf",
       "bytes": 235,
-      "description": "SEC-10: As sec10-issuer-idp-match-user.crl, but with onlyContainsCACerts TRUE; not authoritative for an end-entity signer. Deterministic public test keys.",
+      "description": "SEC-10: As crl-issuer-idp-match-user.crl, but with onlyContainsCACerts TRUE; not authoritative for an end-entity signer. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-ca-scope-excludes-signer",
-        "sec10-fetch-ca-scope-idp-fetches-listed-point",
-        "sec10-fetch-no-listed-point-role-excluded-scope-rejected",
-        "sec10-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-dp-ca-scope-excludes-signer",
+        "crl-fetch-ca-scope-idp-fetches-listed-point",
+        "crl-014-fetch-no-listed-point-role-excluded-scope-rejected",
+        "crl-043-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
-      "file": "sec10-issuer-idp-two-names.crl",
+      "file": "crl-issuer-idp-two-names.crl",
       "sha256": "27c22f2761c99791430e03b1ca87f51c7183d52d1681a0927b8a408c1c85c848",
       "bytes": 266,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName lists http://crl.invalid/sec10-b.crl and then http://crl.invalid/sec10-a.crl. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-idp-second-name-matches"
+        "crl-dp-idp-second-name-matches"
       ]
     },
     {
-      "file": "sec10-issuer-idp-second-point.crl",
+      "file": "crl-issuer-idp-second-point.crl",
       "sha256": "228cc78f5751145b4d5555106fcd1368459f5d3556c893b68f3fa817de3061c7",
       "bytes": 232,
-      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-e.crl, the second name of the sec10-leaf-crl-dp-multi signer's second point. Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint names http://crl.invalid/sec10-e.crl, the second name of the crl-leaf-crl-dp-multi signer's second point. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-multi-second-point-matches",
-        "sec10-fetch-bad-response-is-no-evidence-beside-another-point"
+        "crl-dp-multi-second-point-matches",
+        "crl-031-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
-      "file": "sec10-issuer-idp-dns.crl",
+      "file": "crl-issuer-idp-dns.crl",
       "sha256": "da1f60f8471c913d5dd7612baeda84a6f02b56d54012a71d655a14ccc8963079",
       "bytes": 213,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is only a dNSName (crl.invalid). Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-dns-name-unknown",
-        "sec10-fetch-dns-name-point-denied"
+        "crl-dp-dns-name-unknown",
+        "crl-032-fetch-dns-name-point-denied"
       ]
     },
     {
-      "file": "sec10-issuer-idp-relative.crl",
+      "file": "crl-issuer-idp-relative.crl",
       "sha256": "c86e2c5ba3f049aead69efaeb92ee4fefd482951f329cafa1124c9619ee93d76",
       "bytes": 214,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint uses nameRelativeToCRLIssuer (CN=sec10); unsupported, so it must fail closed. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-relative-idp-unsupported",
-        "sec10-partition-crl-relative-no-listed-point",
-        "sec10-fetch-unusable-scope-supplied-crl-refreshed",
-        "sec10-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "crl-dp-relative-idp-unsupported",
+        "crl-partition-crl-relative-no-listed-point",
+        "crl-036-fetch-unusable-scope-supplied-crl-refreshed",
+        "crl-037-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
-      "file": "sec10-sec06-root-idp-ca.crl",
+      "file": "crl-sec06-root-idp-ca.crl",
       "sha256": "7449402a8b071aae56f6adeadffe41afa351a7557dd1917c250c92c358705f6c",
       "bytes": 240,
       "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 root whose critical issuingDistributionPoint names http://crl.invalid/sec10-issuer.crl with onlyContainsCACerts TRUE. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-ca-crl-dp-ca-scope-covers-issuer",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-ca-ca-scope-idp-not-fetched",
-        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "crl-ca-crl-dp-ca-scope-covers-issuer",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-fetch-ca-ca-scope-idp-not-fetched",
+        "crl-021-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
-      "file": "sec10-sec06-root-idp-user.crl",
+      "file": "crl-sec06-root-idp-user.crl",
       "sha256": "4c3fb765004d20286ed6dca24d712b110fd4c17738b3b3a562bc010b2d11f20d",
       "bytes": 240,
-      "description": "SEC-10: As sec10-sec06-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
+      "description": "SEC-10: As crl-sec06-root-idp-ca.crl, but with onlyContainsUserCerts TRUE; not authoritative for an intermediate. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-        "sec10-ca-crl-dp-user-scope-excludes-issuer",
-        "sec10-fetch-ca-user-scope-idp-fetches-listed-point",
-        "sec10-fetch-covered-signer-is-not-asked"
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-ca-crl-dp-user-scope-excludes-issuer",
+        "crl-fetch-ca-user-scope-idp-fetches-listed-point",
+        "crl-031-fetch-covered-signer-is-not-asked"
       ]
     },
     {
-      "file": "sec10-sec06-root-revoked-issuer.crl",
+      "file": "crl-sec06-root-revoked-issuer.crl",
       "sha256": "9ecc7636c6365c1cce8f7920f5e8deda7602727e5930462531969824019284ab",
       "bytes": 204,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 root (no issuingDistributionPoint) revoking serial 110, the SEC-06 issuer certificate and its variants. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
-        "sec10-revoked-issuer",
-        "sec10-revoked-issuer-after-good-root-crl",
-        "sec10-revoked-issuer-before-good-root-crl",
-        "sec10-revoked-issuer-issuer-crl-first",
-        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-revoked-issuer",
+        "crl-revoked-issuer-after-good-root-crl",
+        "crl-revoked-issuer-before-good-root-crl",
+        "crl-revoked-issuer-issuer-crl-first",
+        "crl-021-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
       ]
     },
     {
-      "file": "sec10-sec06-other-root-revoked-cross.crl",
+      "file": "crl-sec06-other-root-revoked-cross.crl",
       "sha256": "fb97e26855f42eb9735347fcd8723e24e8b8343a8c2d3d5d4a7700ec5ba16e04",
       "bytes": 209,
       "description": "SEC-10: Correctly signed, fresh, full CRL from the SEC-06 other root (no issuingDistributionPoint) revoking serial 110, the cross certificate (the SEC-06 issuer re-signed by the other root). Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "sec10-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "sec10-cross-revoked-path-beside-path-without-crl-names-it",
-        "sec10-cross-revoked-path-beside-covered-path-verifies",
-        "sec10-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
-        "sec10-fetch-revocation-stands-when-the-other-path-stays-without-crl",
-        "sec10-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "sec10-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-022-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-021-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-020-cross-revoked-path-beside-covered-path-verifies",
+        "crl-020-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
+        "crl-021-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "crl-022-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
-      "file": "sec10-sec06-cross-no-cert-sign.exe",
+      "file": "crl-sec06-cross-no-cert-sign.exe",
       "sha256": "3a82bed7c92c1a5bccf4763ae6352f5f2e79816c21b2e130cab6e354d57f7c4c",
       "bytes": 2960,
       "description": "SEC-10 signed inert PE: the SEC-06 signer with a cross certificate (the issuer re-signed by the other root) whose KeyUsage has cRLSign but lacks keyCertSign, embedded first, then the other root and the issuer. Its cross path fails path policy whatever its CRLs say. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-        "sec10-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "crl-021-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "crl-021-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
-      "file": "sec10-sec06-cross-expired-first.exe",
+      "file": "crl-sec06-cross-expired-first.exe",
       "sha256": "2918f55141fe79bba16639cc2e642249b5701d4fd204b9c3747acd3a3e79bfdf",
       "bytes": 2968,
       "description": "SEC-10 signed inert PE: the SEC-06 signer with an expired cross certificate (the issuer re-signed by the other root, notAfter one second before 1800000000) embedded first, then the other root and the issuer. webpki's highest-ranked error comes from the expired path, while the issuer's path only lacks a root CRL. Image, CMS, and certificate signatures are valid. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-cross-expired-path-beside-path-without-crl-names-the-gap",
-        "sec10-fetch-completes-the-path-beside-an-expired-path"
+        "crl-021-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "crl-020-fetch-completes-the-path-beside-an-expired-path"
       ]
     },
     {
-      "file": "sec10-issuer-idp-relative-expanded.crl",
+      "file": "crl-issuer-idp-relative-expanded.crl",
       "sha256": "7abe814aef630857f23d5be49d7c2ca4d0b2e7f2d248283680f75aafcc26429d",
       "bytes": 244,
-      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is the directoryName CN=SEC-06 issuer, CN=sec10: what the sec10-leaf-crl-dp-relative signer's issuer-relative name expands to under RFC 5280 6.3.3. Relative names are not expanded, so it is not authoritative. Deterministic public test keys.",
+      "description": "SEC-10: Correctly signed, fresh, empty CRL from the SEC-06 issuer whose critical issuingDistributionPoint fullName is the directoryName CN=SEC-06 issuer, CN=sec10: what the crl-leaf-crl-dp-relative signer's issuer-relative name expands to under RFC 5280 6.3.3. Relative names are not expanded, so it is not authoritative. Deterministic public test keys.",
       "generator": "src/tests/path_policy.rs::regenerate_sec06_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "sec10-crl-dp-relative-expanded-name-unknown"
+        "crl-dp-relative-expanded-name-unknown"
       ]
     }
   ]

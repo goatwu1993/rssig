@@ -697,7 +697,7 @@ fn specification_stderr_once_requires_text_stderr_and_counts_repeats() {
 #[test]
 fn specification_checks_case_decisions() {
     let case = serde_json::json!({
-        "id": "sec10-root-crl-no-next-update",
+        "id": "crl-005-root-crl-no-next-update",
         "command": ["verify"],
         "expect": {"exit_code": 1, "json": {}},
         "decision": "CRL-001"
