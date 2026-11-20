@@ -4,7 +4,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
-#[cfg(feature = "revocation-crosscheck")]
+#[cfg(all(feature = "revocation-crosscheck", debug_assertions))]
 mod crosscheck;
 mod error;
 mod loading;
@@ -523,7 +523,7 @@ impl TrustStore {
         if revocation_enabled {
             let rejects = ambiguous_issuer_keys(&chosen.borrow(), &crls);
             // Test builds only: webpki's own revocation check must agree.
-            #[cfg(feature = "revocation-crosscheck")]
+            #[cfg(all(feature = "revocation-crosscheck", debug_assertions))]
             crosscheck::confirm(
                 &leaf,
                 &path,
@@ -810,13 +810,28 @@ struct ChosenCrl {
 /// names its issuer's key, all three give each certificate its own key's CRL
 /// and accept (`sec16-self-issued-rollover-with-key-identified-crls-verifies`).
 fn ambiguous_issuer_keys(chosen: &[ChosenCrl], crls: &[LoadedCrl]) -> bool {
-    chosen.iter().enumerate().any(|(position, first)| {
-        chosen[position + 1..].iter().any(|second| {
-            crls[first.index].issuer == crls[second.index].issuer
-                && first.issuer_spki != second.issuer_spki
-                && !(first.names_issuer && second.names_issuer)
+    same_name_different_keys(chosen, crls)
+        .any(|(first, second)| !(first.names_issuer && second.names_issuer))
+}
+
+/// Pairs of CRLs chosen for a path whose issuers have one name and different
+/// keys, in path order.
+fn same_name_different_keys<'a>(
+    chosen: &'a [ChosenCrl],
+    crls: &'a [LoadedCrl],
+) -> impl Iterator<Item = (&'a ChosenCrl, &'a ChosenCrl)> {
+    chosen
+        .iter()
+        .enumerate()
+        .flat_map(move |(position, first)| {
+            chosen[position + 1..]
+                .iter()
+                .filter(move |second| {
+                    crls[first.index].issuer == crls[second.index].issuer
+                        && first.issuer_spki != second.issuer_spki
+                })
+                .map(move |second| (first, second))
         })
-    })
 }
 
 /// What one certificate's CRLs established on one candidate path.

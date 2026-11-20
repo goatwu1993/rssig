@@ -306,7 +306,8 @@ Every test build enables the internal `revocation-crosscheck` feature through
 a self dev-dependency in `Cargo.toml`. After rssig accepts a path's
 revocation status, it re-runs webpki's own revocation check with the CRLs
 rssig chose and panics on disagreement, so every fixture case with CRLs also
-checks that rssig and webpki agree. Product builds never enable it; see
+checks that rssig and webpki agree. Product builds never enable it, and it is
+also compiled out without `debug_assertions`, so release test runs skip it; see
 [SEC-24](tasks/sec-24-single-revocation-authority.md).
 
 Five retrieval behaviors have unit tests only, because no committed input can

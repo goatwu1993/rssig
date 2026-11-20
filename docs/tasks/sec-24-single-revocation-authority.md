@@ -91,6 +91,10 @@ every test build:
   panics if webpki and rssig disagree in either direction.
 - It uses the unbudgeted algorithms and logs nothing, so it cannot change a
   result, a budget outcome or a log.
+- It is compiled only with `debug_assertions`, in addition to the feature. A
+  release build can never contain it, even through `cargo build --release
+  --all-targets`, which unifies the self dev-dependency's feature. Release
+  test runs therefore skip the cross-check.
 - It is skipped when webpki cannot parse a chosen CRL, so later support for
   CRL features webpki lacks (SEC-18) does not trip it.
 - The `revocation-crosscheck` feature enables no other feature. A
@@ -116,6 +120,12 @@ on the same input, exits 0 without a panic.
 
 ## Left open
 
+- The accepted-path rule (`ambiguous_issuer_keys`) runs after webpki has
+  accepted a path, so a later candidate path with unambiguous issuer keys is
+  never tried. The removed webpki confirmation behaved the same way. Moving
+  the rule into the path callback would let the search continue, but it
+  changes error precedence and needs a fixture with two candidate paths
+  first.
 - `details.reason` `confirmation` keeps its value so the pinned case and
   retrieval's finality rule stay unchanged. The name now describes history, not
   a webpki call. A rename (for example `ambiguous_issuer_keys`) is a

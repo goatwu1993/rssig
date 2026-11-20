@@ -10,7 +10,7 @@
 //!
 //! It never changes a result: the unbudgeted algorithms are used so budgets
 //! are not charged, and nothing is logged.
-use super::{ChosenCrl, LoadedCrl};
+use super::{ChosenCrl, LoadedCrl, same_name_different_keys};
 use crate::crypto::ALGORITHMS;
 use alloc::vec::Vec;
 use core::time::Duration;
@@ -19,6 +19,12 @@ use rustls_pki_types::{CertificateDer, UnixTime};
 /// Panic unless webpki rejects the accepted path exactly when rssig does.
 /// `rejects` is rssig's decision for the path after its per-certificate
 /// evaluation accepted every certificate on it.
+///
+/// webpki judges CRL freshness at `validation_time`, rssig at `now`. They
+/// cannot disagree on freshness: a timestamp later than `now` is rejected
+/// (`timestamp_in_future`, pinned in `tests/cases.json`), so
+/// `validation_time <= now`, and a CRL current at `now` is current at any
+/// earlier time.
 pub(super) fn confirm(
     leaf: &webpki::EndEntityCert<'_>,
     path: &webpki::VerifiedPath<'_>,
@@ -28,26 +34,16 @@ pub(super) fn confirm(
     crls: &[LoadedCrl],
     rejects: bool,
 ) {
-    // webpki picks a CRL by issuer name alone. When two issuers of one name
-    // with different keys each have a CRL naming its key, rssig gives each
-    // certificate its own key's CRL; webpki can only check the signer with
-    // the signer's CRL. This is the rule the production check used.
-    let key_rollover = {
-        let mut two_keys = false;
-        let mut all_named = true;
-        for (position, first) in chosen.iter().enumerate() {
-            for second in &chosen[position + 1..] {
-                if first.index == second.index
-                    || crls[first.index].issuer != crls[second.index].issuer
-                {
-                    continue;
-                }
-                all_named &= first.names_issuer && second.names_issuer;
-                two_keys |= crls[first.index].authority_key != crls[second.index].authority_key;
-            }
-        }
-        two_keys && all_named
-    };
+    // webpki picks a CRL by issuer name alone. On a self-issued key rollover
+    // whose CRLs each name their issuer's key (two issuers of one name with
+    // different keys), rssig gives each certificate its own key's CRL; webpki
+    // can only check the signer with the signer's CRL. Decided from the CRL
+    // data, not from `rejects`, so a wrong rssig verdict cannot hide itself.
+    // The pairs come from the helper rssig's own rule uses, so they cannot
+    // drift.
+    let key_rollover = same_name_different_keys(chosen, crls).next().is_some()
+        && same_name_different_keys(chosen, crls)
+            .all(|(first, second)| first.names_issuer && second.names_issuer);
     let mut indices: Vec<usize> = if key_rollover {
         chosen.iter().take(1).map(|c| c.index).collect()
     } else {
