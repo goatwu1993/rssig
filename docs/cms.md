@@ -193,6 +193,26 @@ Countersignatures have no enclosing set to check.
   - RFC 5652 section 5.1: digestAlgorithms lists the digest algorithms of all
     signers; RFC 5652 does not require a verifier to check it, so this is a
     written choice to reject an inconsistent envelope.
+  - OpenSSL followed, implicitly: it digests the content only with the
+    algorithms in digestAlgorithms (`crypto/cms/cms_sd.c:1395-1424`,
+    `ossl_cms_SignedData_init_bio`) and then looks up the signer's algorithm
+    among them (`cms_sd.c:1457`, `crypto/cms/cms_lib.c:442-467`,
+    `CMS_R_NO_MATCHING_DIGEST`), so `CMS_verify` fails
+    (`crypto/cms/cms_smime.c:540-546`); the PKCS#7 API does the same
+    (`crypto/pkcs7/pk7_doit.c:265` and `:1056-1125`,
+    `PKCS7_R_UNABLE_TO_FIND_MESSAGE_DIGEST`). It skips this when the caller
+    passes `CMS_NO_CONTENT_VERIFY`.
+  - Bouncy Castle differs by API: in-memory `CMSSignedData` digests with the
+    signer's own algorithm and never consults the set
+    (`cms/SignerInformation.java:381-435`), so it accepts; the streaming
+    `CMSSignedDataParser` digests only the listed algorithms
+    (`cms/CMSSignedDataParser.java:177-205`, `:352-373`), so an unlisted
+    signer fails its messageDigest comparison.
+  - BoringSSL (main, 289645a4) has no SignedData verifier;
+    `crypto/pkcs7/pkcs7.cc:73` skips the set when parsing. relic
+    `lib/pkcs7/verify.go:116-117` uses the signer's algorithm and never reads
+    the set (`lib/pkcs7/structs.go:54` is only written by the builder), so it
+    accepts.
   - [cms-security.md](cms-security.md), row "Digest algorithms".
 
 ### CMS-008: Signed attributes are verified exactly as encoded, in canonical order
