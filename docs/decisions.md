@@ -20,7 +20,7 @@ section; a skeleton index has only the latter.
 | `POLICY-` | [policy.md](policy.md) (skeleton) | Verification modes: trusted, integrity-only, no revocation |
 | `CLI-` | [cli.md](cli.md) (skeleton) | Command-line arguments, help, exit codes, read errors |
 | `INSPECT-` | [inspect.md](inspect.md) (skeleton) | What `parse` reports |
-| `PE-` | [pe-decisions.md](pe-decisions.md) (skeleton) | PE parsing and hashing |
+| `PE-` | [pe-decisions.md](pe-decisions.md) | PE parsing and hashing |
 | `MSI-` | [msi-decisions.md](msi-decisions.md) (skeleton) | MSI and MSP parsing and hashing |
 | `CAB-` | [cab-decisions.md](cab-decisions.md) (skeleton) | CAB parsing and hashing |
 | `NAVX-` | [navx-decisions.md](navx-decisions.md) (skeleton) | NAVX parsing and hashing |
@@ -104,7 +104,11 @@ of the rule, and these fields as list items:
     change when a better result is argued.
 - **Decided by:** who or what settled it, with the PR where it applies:
   `owner, PR #N` (the owner decided or delegated the call),
-  `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named),
+  `Microsoft documents` (a Windows-format rule Microsoft's documentation
+  states),
+  `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named;
+  for a Windows-format entry Microsoft leaves open or contradicts itself on,
+  the osslsigncode, jsign and relic it names),
   `<library> followed` (one reference, the other having no equivalent),
   `written argument` or `written choice` (no reference equivalent), or `—`
   for an Observed entry.
@@ -115,8 +119,11 @@ of the rule, and these fields as list items:
 - **Sources:** reference locations, RFC sections or the written argument.
   Unless stated, line numbers are for OpenSSL 3a3f1356 (3.3 where a source
   says so), bc-java e03fee0b, BoringSSL `main` (commit not captured) and
-  webpki 0.103.16; for Windows-format entries only, osslsigncode 2.16
-  (04c9aa7e), jsign 7.6 (cf5d2ce) and relic 02c54d58 (see AGENTS.md).
+  webpki 0.103.16. A Windows-format entry cites Microsoft's documentation
+  first and, where Microsoft documents nothing or conflicts with itself,
+  osslsigncode 2.16 (04c9aa7e), jsign 7.6 (cf5d2ce) and relic 02c54d58; where
+  those disagree, it may name another implementation as a tiebreaker, with its
+  commit, in its own Sources (see AGENTS.md).
 - **Unit tests** and **Note**, where an entry has them.
 
 An entry does not list its cases. For a disputed revocation, path or CRL

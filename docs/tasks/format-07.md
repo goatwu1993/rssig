@@ -1,0 +1,26 @@
+# FORMAT-07: Decide skipped WIN_CERTIFICATE entries.
+
+Task detail for **FORMAT-07** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox.
+
+[PE-004](../pe-decisions.md#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding)
+rejects a revision 1.0 entry, an entry of another type and extra bytes in an
+entry, anywhere in the certificate table. A file with a valid revision 2.0
+PKCS#7 entry plus one such extra entry therefore fails with
+`invalid_certificate_table`.
+
+What the others do:
+
+- osslsigncode and jsign skip entries that are not revision 2.0 PKCS#7.
+- Microsoft's PE Format page allows entries of any certificate type and legacy
+  revision 1.0.
+- relic parses every entry as PKCS#7 and rejects extra bytes, as Windows does
+  with the opt-in `EnableCertPaddingCheck`.
+
+A payload that is not DER is `malformed_cms` in verification but
+`invalid_certificate_table` from `parse` and `Pe::signatures()`; decide whether
+to align them.
+
+Decide skip, verify or reject for each of the revision, the type and the extra
+bytes. Add a fixture and case for each, pairing a good file with a narrowly
+changed bad one, and settle PE-004's status.

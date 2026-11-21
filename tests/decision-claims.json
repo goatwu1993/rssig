@@ -455,30 +455,6 @@
         "msi-bad-intermediate-signature"
       ]
     },
-    "PE": {
-      "hash": [
-        "bad-page-hashes",
-        "bad-pe-gap-overlay-digest",
-        "tampered-image"
-      ],
-      "structure": [
-        "bad-pe-certificate-range",
-        "certificate-payload",
-        "not-pe",
-        "trailing-data",
-        "truncated",
-        "verify-pe-header-offset"
-      ],
-      "support": [
-        "checksum-excluded",
-        "page-hashes",
-        "pe32",
-        "pe64"
-      ],
-      "unsigned": [
-        "unsigned"
-      ]
-    },
     "POLICY": {
       "modes": [
         "appx-integrity",

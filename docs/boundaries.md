@@ -33,6 +33,14 @@ freshness, and revocation across the chain. Opt-in bounded HTTP CRL fetching is 
 `CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
+A PE certificate table may hold only revision 2.0 PKCS#7 WIN_CERTIFICATE
+entries; for now a legacy revision 1.0 entry or another certificate type is
+rejected, although Microsoft's PE Format page allows any type and legacy
+revision 1.0, pending FORMAT-07.
+Nonzero data after the signature inside an entry is rejected, as Windows does
+only with the opt-in `EnableCertPaddingCheck`
+([PE-004](pe-decisions.md#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding),
+FORMAT-07).
 Revocation of a timestamped signer is handled conservatively: an entry on a
 current CRL rejects it even if its revocation date is after the signing time.
 Signers with the lifetime-signing EKU are validated at the validation time, not
