@@ -25,9 +25,9 @@ of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 ## Order
 
 Entries are numbered from most to least important, in the tiers used by
-[CRL decisions](crl.md#order) (none of them is an availability tier at present);
-within a tier, Decided entries come before Observed ones. A new entry takes the
-next free number.
+[CRL decisions](crl.md#order); within a tier, Decided entries come before
+Observed ones. A new entry takes the next free number. No CMS entry is in the
+availability tier at present (legacy version 1 support is part of CMS-010).
 
 1. **Fail-open:** a broken rule could accept a signature that does not bind
    the signer's key to the signed content, or accept a structure outside the

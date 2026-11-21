@@ -775,7 +775,7 @@ fn specification_checks_case_decisions() {
             .validate()
     };
     validate(&suite).unwrap();
-    suite["cases"][0]["decision"] = "CRL-997".into();
+    suite["cases"][0]["decision"] = "CRL-999".into();
     assert!(validate(&suite).unwrap_err().contains("no index"));
 }
 
