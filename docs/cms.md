@@ -265,7 +265,7 @@ multiplicity rule (TSA-004) is reached.
     `cms/SignerInformation.java:293-300` explicitly allows several unsigned
     countersignature attributes, quoting RFC 5652 section 11.4; rssig
     rejects them.
-  - References agree on empty value SETs: OpenSSL `crypto/cms/cms_att.c:229-230`
+  - References agree on empty value SETs: OpenSSL `crypto/cms/cms_att.c:231-232`
     (`count == 0`) for the listed attributes, and Bouncy Castle
     `cms/SignerInformation.java:305-312` for countersignatures.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
