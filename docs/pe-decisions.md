@@ -56,7 +56,7 @@ Observed ones. A new entry takes the next free number.
 |---|---|---|---|
 | [PE-001](#pe-001-the-image-digest-covers-every-byte-but-the-checksum-the-certificate-table-entry-and-the-certificate-table) | The image digest covers every byte but the checksum, the certificate-table entry and the certificate table | Decided | acceptance |
 | [PE-002](#pe-002-signed-page-hashes-must-match-every-page) | Signed page hashes must match every page | Decided | acceptance |
-| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Observed | acceptance |
+| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Decided | acceptance |
 | [PE-004](#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding) | Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding | Observed | acceptance |
 | [PE-005](#pe-005-only-bounded-pe32-and-pe32-headers-with-contiguous-sections-are-supported) | Only bounded PE32 and PE32+ headers with contiguous sections are supported | Observed | acceptance |
 | [PE-006](#pe-006-signed-pe32-and-pe32-images-verify) | Signed PE32 and PE32+ images verify | Decided | acceptance |
@@ -140,8 +140,8 @@ at the end of the file. A byte after the table, or a range outside the file,
 is `invalid_pe` at `pe`: bytes after the table would be covered by neither the
 image digest nor the signature.
 
-- **Status:** Observed
-- **Decided by:** —
+- **Status:** Decided
+- **Decided by:** owner, PR #76
 - **Pins:** acceptance
 - **Sources:**
   - relic `pedigest.go:330-348` (`readTrailer`) rejects "trailing garbage
@@ -156,7 +156,7 @@ image digest nor the signature.
     certificate entries", with zero padding before it. Step 14 of the
     Authenticode PE hash also assumes the table ends the file.
   - Microsoft and two of the three references support the rule; jsign
-    differs, so this entry stays Observed until the owner decides.
+    differs. The owner decided for the rule.
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
