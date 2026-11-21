@@ -6,11 +6,15 @@ signatures and RDP signed settings on **macOS and Linux**.
 Reference implementations are read-only sources to read and cite, never
 dependencies; do not require any of them at build or runtime.
 
-- **CMS, CRL and certificate questions** (SignedData and signer binding,
-  timestamps, certificate paths, revocation): use OpenSSL and Bouncy Castle,
-  at the commits in [docs/decisions.md](docs/decisions.md#entry-format).
-- **PE-related questions only** (PE parsing, hashing and signature
-  embedding): use the local `jsign/` and `relic/` clones.
+- **Windows formats only** (how PE, MSI/MSP, CAB, NAVX, PowerShell, WSH,
+  RDP and MSIX/AppX files are parsed, hashed and embed their signature): use
+  osslsigncode, jsign and relic together (local `osslsigncode/`, `jsign/` and
+  `relic/` clones).
+- **Never for the underlying crypto.** CMS/PKCS#7, signatures, timestamps,
+  certificates, certificate paths, CRLs and revocation use OpenSSL and Bouncy
+  Castle, at the commits in [docs/decisions.md](docs/decisions.md#entry-format).
+  Do not cite osslsigncode, jsign or relic as evidence there, even where they
+  wrap one of those libraries.
 
 Terms such as policy, rule, decision and spec have one meaning each, defined
 in [docs/glossary.md](docs/glossary.md); use them consistently and add new

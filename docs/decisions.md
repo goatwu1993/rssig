@@ -97,8 +97,9 @@ of the rule, and these fields as list items:
   entry.
 - **Sources:** reference locations, RFC sections or the written argument.
   Unless stated, line numbers are for OpenSSL 3a3f1356 (3.3 where a source
-  says so), bc-java e03fee0b, relic 02c54d58, jsign 7.6 cf5d2ce, BoringSSL
-  `main` (commit not captured) and webpki 0.103.16.
+  says so), bc-java e03fee0b, BoringSSL `main` (commit not captured) and
+  webpki 0.103.16; for Windows-format entries only, osslsigncode 2.16
+  (04c9aa7e), jsign 7.6 (cf5d2ce) and relic 02c54d58 (see AGENTS.md).
 - **Unit tests** and **Note**, where an entry has them.
 
 An entry does not list its cases. For a disputed revocation, path or CRL

@@ -209,10 +209,7 @@ Countersignatures have no enclosing set to check.
     (`cms/CMSSignedDataParser.java:177-205`, `:352-373`), so an unlisted
     signer fails its messageDigest comparison.
   - BoringSSL (main, 289645a4) has no SignedData verifier;
-    `crypto/pkcs7/pkcs7.cc:73` skips the set when parsing. relic
-    `lib/pkcs7/verify.go:116-117` uses the signer's algorithm and never reads
-    the set (`lib/pkcs7/structs.go:54` is only written by the builder), so it
-    accepts.
+    `crypto/pkcs7/pkcs7.cc:73` skips the set when parsing.
   - [cms-security.md](cms-security.md), row "Digest algorithms".
 
 ### CMS-008: Signed attributes are verified exactly as encoded, in canonical order
