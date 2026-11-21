@@ -62,7 +62,7 @@ unverified metadata and does not establish a trusted publisher. See the
 | <a id="invalid_cab"></a>`invalid_cab` | Invalid CAB container | 422 | Supply a complete supported single-volume cabinet; see CAB layout limits. |
 | <a id="cab_digest_mismatch"></a>`cab_digest_mismatch` | CAB digest mismatch | 422 | The computed cabinet digest differs from its signed digest. Obtain the original signed cabinet or re-sign it. |
 | <a id="invalid_pe"></a>`invalid_pe` | Invalid PE image | 422 | Supply a complete supported PE image. |
-| <a id="unsigned"></a>`unsigned` | Missing embedded signature | 422 | Supply a supported PE, MSI, CAB, PowerShell script, or RDP file with an embedded Authenticode signature. |
+| <a id="unsigned"></a>`unsigned` | Missing embedded signature | 422 | Supply a file of a supported format (PE, MSI/MSP, CAB, NAVX, PowerShell, WSH, RDP or MSIX/AppX) that carries its signature; what counts as none is each format's `unsigned` rule. |
 | <a id="invalid_certificate_table"></a>`invalid_certificate_table` | Invalid certificate table | 422 | Replace the damaged or unsupported certificate table with a valid signed artifact. |
 | <a id="resource_limit_exceeded"></a>`resource_limit_exceeded` | Verification resource limit exceeded | 422 | Aggregate verification work exhausted; inspect `details.resource`, `limit`, `used`, and `requested`. No partial verdict is returned. See [verification budgets](verification-budgets.md) and [CLI host limits](host-limits.md). |
 | <a id="malformed_cms"></a>`malformed_cms` | Malformed CMS data | 422 | Supply a well-formed supported CMS signature. |

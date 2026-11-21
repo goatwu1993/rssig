@@ -73,6 +73,25 @@ are `LIMIT-`, including the count of loaded CRLs (at most 64, supplied and
 fetched together). How a loaded root is
 used is `PATH-`; how it is loaded is `TRUST-`.
 
+### Format indexes
+
+The format indexes share candidate keys but not rules: each format numbers
+its own `hash`, `structure`, `unsigned`, `support` and (where it has one)
+`sip` entries, and there is no cross-format index for them. The keys repeat
+because every format answers the same questions, but the answers differ:
+what is hashed, what is malformed and what counts as no signature are the
+format's own, and no two formats pin the same code and stage for a digest
+mismatch or a malformed container. Only the parts named below are shared,
+and those belong to the listed index, which the format entry links to.
+
+| Key | The format entry states | Shared part, owned elsewhere |
+|---|---|---|
+| `hash` | which bytes are hashed, and the format's mismatch code and stage | RDP has no format digest: its entry defines the signed settings, and the comparison is CMS-001 (direct) and CMS-005 (attributed) |
+| `structure` | what is malformed or unsupported in the container, and its `invalid_*` code | a malformed SignedData is `CMS-`, an unsupported algorithm `ALG-`, an exceeded budget `LIMIT-` |
+| `unsigned` | what counts as no signature (a missing table, stream, reserve, block or setting); a present but malformed one is `structure` | the `unsigned` code itself, defined in [problems.md](problems.md#unsigned) |
+| `support` | the layouts and producers that verify | timestamps are TSA-007; SHA-1 is `ALG-`; modes are `POLICY-` |
+| `sip` | the format's SIP identity and framing | the `malformed_cms` code |
+
 ## Entry format
 
 An entry is a level-three heading `### PREFIX-NNN: Title`, a short statement
