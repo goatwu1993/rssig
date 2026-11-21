@@ -22,11 +22,10 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-09: Define lifetime-signing and time-boundary rules ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).** Done; [record](docs/tasks/done.md#sec-09-define-lifetime-signing-and-time-boundary-rules-pr-43httpsgithubcomgoatwu1993rssigpull43).
 - [x] **SEC-10: Audit CRL applicability and competing evidence.** Done; detail in [sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md).
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [sec-11.md](docs/tasks/sec-11.md).
-- [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
-  all-required-signatures rule, primary/nested ordering, first-failure
-  precedence, and bundle/child identity and signer binding. Test a valid first
-  signature followed by a bad one and the reverse. Later parsing failures must
-  not mask earlier cryptographic failures during refactoring.
+- [ ] **SEC-12: Decide multi-signature and bundle failure semantics.** Make
+  "which signatures must verify" a policy (default all, opt-in any) and pin
+  ordering, first-failure precedence and bundle/child binding. Detail in
+  [sec-12.md](docs/tasks/sec-12.md).
 - [ ] **SEC-13: Complete cryptographic algorithm invariant coverage.** Inventory
   existing SHA-384/512 and P-384 cases before adding missing key/digest/signature
   combinations. Cover malformed RSA/ECDSA encodings, weak and excessive key
@@ -110,12 +109,10 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
-- [ ] **SEC-25: Accept repeated countersignature attributes (RFC 5652 §11.4).**
-  The owner considers CMS-009 wrong to reject a second countersignature
-  attribute. Allow a repeated countersignature OID in unsigned attributes
-  only; the file stays rejected by TSA-004 (`invalid_timestamp` at
-  `timestamp`). Move `cms-009-duplicate-counter` back to TSA-004 and amend
-  both entries with the owner's approval.
+- [ ] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Accept
+  repeated countersignature attributes (§11.4); files with more than one
+  timestamp stay rejected by TSA-004. Detail in
+  [sec-25.md](docs/tasks/sec-25.md).
 
 ## P1 — Clean parse/verify interfaces
 

@@ -191,8 +191,9 @@ Countersignatures have no enclosing set to check.
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 5.1: digestAlgorithms lists the digest algorithms of all
-    signers; RFC 5652 does not require a verifier to check it, so this is a
-    written choice to reject an inconsistent envelope.
+    signers, and implementations MAY fail to validate signatures that use a
+    digest algorithm not included in the set. Rejecting is the permitted
+    choice rssig takes.
   - OpenSSL followed, implicitly: it digests the content only with the
     algorithms in digestAlgorithms (`crypto/cms/cms_sd.c:1395-1424`,
     `ossl_cms_SignedData_init_bio`) and then looks up the signer's algorithm
@@ -268,10 +269,10 @@ multiplicity rule (TSA-004) is reached.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
   `src/tests/cms_audit.rs`.
 - **Note:** the owner considers the countersignature part of this rule wrong
-  (RFC 5652 section 11.4 allows repeated countersignature attributes). SEC-25
-  in [TODO.md](../TODO.md) is to change it; until then the case stays pinned
-  as `invalid_signature` at `cms`. The duplicated RFC 3161 attribute part is
-  unaffected.
+  (RFC 5652 section 11.4 allows repeated countersignature attributes), and
+  the references support the single-instance rule only for contentType,
+  messageDigest and signingTime. [SEC-25](tasks/sec-25.md) is to narrow the
+  rule; until then both cases stay pinned as `invalid_signature` at `cms`.
 
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
@@ -356,8 +357,9 @@ signature), even when the primary one verifies.
   - Neither OpenSSL nor Bouncy Castle has an equivalent: nested
     Authenticode signatures are an unsigned attribute that generic CMS
     verification ignores.
-- **Note:** SEC-12 is to decide the multi-signature semantics (all
-  signatures required, ordering, first-failure precedence).
+- **Note:** only "checked with the same rules" is meant to stay fixed.
+  Whether every signature must verify has no RFC, OpenSSL or Bouncy Castle
+  answer; [SEC-12](tasks/sec-12.md) proposes making it a policy.
 
 ## Tier 2: availability
 
