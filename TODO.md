@@ -204,7 +204,7 @@ TDD workflow and checks in AGENTS.md.
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
-- [x] **TEST-31: Settle the shared format-skeleton rules.** Done (PR pending); [format indexes](docs/decisions.md#format-indexes).
+- [x] **TEST-31: Settle the shared format-skeleton rules.** Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
 
 ## P1 — CLI, reporting, and distribution
 
