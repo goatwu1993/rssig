@@ -53,6 +53,97 @@ pub(super) fn write(dir: &std::path::Path) {
         std::fs::write(dir.join(name), attach(base, &cms, true)).unwrap();
     }
 }
+const SIGNING_TIME: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 5];
+const UNKNOWN: &[u8] = &[42, 3, 4];
+
+/// A signed PE whose SignerInfo carries the given extra signed and unsigned
+/// attributes. The signed set is sorted and signed, so each fixture is correctly
+/// signed and differs from `good-cms-structure.exe` only by its attributes.
+fn signed_pe(extra: Vec<Vec<u8>>, unsigned: Vec<Vec<u8>>) -> Vec<u8> {
+    let id = identity();
+    let base = base_pe(true);
+    let content = image_content(&base, true, None);
+    let signer = signer_info(
+        id,
+        der::one(&content, 0x30).unwrap().body,
+        Some(cms::INDIRECT),
+        extra,
+        unsigned,
+    );
+    attach(base, &signed_data(id, content, cms::INDIRECT, signer), true)
+}
+
+/// CMS-009 attribute multiplicity: RFC 5652 limits contentType, messageDigest
+/// and signingTime to one instance; repeats of other attributes pass the CMS
+/// layer, except the nested-signature attribute, which stays rejected.
+pub(super) fn write_attribute_multiplicity(dir: &std::path::Path) {
+    let id = identity();
+    let write = |name: &str, bytes: Vec<u8>| std::fs::write(dir.join(name), bytes).unwrap();
+    let time = |text: &[u8]| attr(SIGNING_TIME, tlv(0x17, text));
+    write(
+        "bad-cms-duplicate-content-type.exe",
+        signed_pe(
+            vec![attr(
+                &[42, 134, 72, 134, 247, 13, 1, 9, 3],
+                oid(cms::INDIRECT),
+            )],
+            vec![],
+        ),
+    );
+    write(
+        "bad-cms-duplicate-message-digest.exe",
+        signed_pe(
+            vec![attr(
+                &[42, 134, 72, 134, 247, 13, 1, 9, 4],
+                tlv(4, &crypto::Hash::Sha256.digest(b"other")),
+            )],
+            vec![],
+        ),
+    );
+    write(
+        "bad-cms-duplicate-signing-time.exe",
+        signed_pe(vec![time(b"260101000000Z"), time(b"260101000001Z")], vec![]),
+    );
+    write(
+        "bad-cms-empty-attribute-value.exe",
+        signed_pe(vec![seq(&[oid(UNKNOWN), tlv(0x31, &[])])], vec![]),
+    );
+    write(
+        "good-cms-duplicate-unknown-signed.exe",
+        signed_pe(
+            vec![attr(UNKNOWN, tlv(2, &[1])), attr(UNKNOWN, tlv(2, &[2]))],
+            vec![],
+        ),
+    );
+    write(
+        "good-cms-duplicate-unknown-unsigned.exe",
+        signed_pe(
+            vec![],
+            vec![attr(UNKNOWN, tlv(2, &[1])), attr(UNKNOWN, tlv(2, &[2]))],
+        ),
+    );
+    let base = base_pe(true);
+    let content = image_content(&base, true, None);
+    let body = der::one(&content, 0x30).unwrap().body;
+    let inner = signer_info(id, body, Some(cms::INDIRECT), vec![], vec![]);
+    let nested = signed_data(id, content.clone(), cms::INDIRECT, inner);
+    write(
+        "bad-cms-duplicate-nested.exe",
+        signed_pe(
+            vec![],
+            vec![attr(cms::NESTED, nested.clone()), attr(cms::NESTED, nested)],
+        ),
+    );
+}
+
+#[test]
+#[ignore = "explicit fixture maintenance"]
+fn regenerate_cms_attribute_multiplicity_fixtures() {
+    write_attribute_multiplicity(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
+    );
+}
+
 #[test]
 #[ignore = "explicit fixture maintenance"]
 fn regenerate_cms_structure_fixtures() {
@@ -100,11 +191,41 @@ fn cms_structure_fixtures_preserve_signature_math() {
 }
 
 #[test]
+fn inspection_rejects_a_countersigner_with_two_signing_times() {
+    // The parser keeps repeated attributes (CMS-009), so inspection must not pick
+    // one signingTime silently.
+    let id = identity();
+    let time = |text: &[u8]| attr(SIGNING_TIME, tlv(0x17, text));
+    let counter = signer_info(
+        id,
+        b"content",
+        None,
+        vec![time(b"260101000000Z"), time(b"260101000001Z")],
+        vec![],
+    );
+    let content = image_content(&base_pe(true), true, None);
+    let outer = signer_info(
+        id,
+        der::one(&content, 0x30).unwrap().body,
+        Some(cms::INDIRECT),
+        vec![],
+        vec![attr(cms::COUNTERSIGN, counter)],
+    );
+    let cms = signed_data(id, content, cms::INDIRECT, outer);
+    assert!(crate::parse::SignedData::inspect(&cms, &mut Default::default()).is_err());
+}
+
+#[test]
 fn cms_attribute_and_integer_boundaries() {
     let attribute = attr(&[42, 3, 4], tlv(2, &[1]));
-    assert!(
-        crate::parse::Attributes::parse(&tlv(0xa0, &[attribute.clone(), attribute].concat()))
-            .is_err()
+    // The parser accepts a repeated OID; the verifier limits which ones (CMS-009).
+    let repeated = tlv(0xa0, &[attribute.clone(), attribute].concat());
+    assert_eq!(
+        crate::parse::Attributes::parse(&repeated)
+            .unwrap()
+            .attributes()
+            .len(),
+        2
     );
     let empty = seq(&[oid(&[42, 3, 4]), tlv(0x31, &[])]);
     assert!(crate::parse::Attributes::parse(&tlv(0xa0, &empty)).is_err());

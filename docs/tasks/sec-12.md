@@ -53,7 +53,7 @@ the Windows default, because rssig fails closed unless the caller opts out.
 ## Decision
 
 Decided by the owner, who delegated the call in PR #72. Implementation is
-this task's own PR, after SEC-25.
+this task's own PR.
 
 - **Fixed rule (CMS-013, becomes Decided):** each nested signature is checked
   with the same CMS, signer, timestamp, path and revocation rules as the
@@ -83,6 +83,11 @@ its own; an attacker cannot add a passing signature without a trusted
 code-signing certificate.
 
 ## Work
+
+- Revisit [CMS-009](../cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo)'s
+  rejection of a repeated nested-signature attribute together with the policy.
+  It is a written choice: osslsigncode accepts every instance while jsign reads
+  only the first, so `any` mode may want to accept them.
 
 - Fixtures and cases under both policies: a good primary with a bad nested
   signature, the reverse, both bad, and a dual-signed file with a SHA-1

@@ -331,33 +331,35 @@ fn inspect_signer<'a>(
                 _ => continue,
             };
             for value in attr.values() {
-                let (cms, countersigner, parsed_time) = if kind
-                    == InspectionKind::Pkcs9Countersignature
-                {
-                    let counter = inspect_signer(value.as_der(), budget, depth + 1)?;
-                    let mut time = None;
-                    if let Some(attrs) = counter.signer.signed_attributes() {
-                        for attr in attrs.attributes() {
-                            if attr.oid_bytes() == SIGNING_TIME {
-                                ensure!(attr.values().len() == 1, "multiple signingTime values");
-                                time = Some(ParsedTime::parse(attr.values()[0].as_der())?);
+                let (cms, countersigner, parsed_time) =
+                    if kind == InspectionKind::Pkcs9Countersignature {
+                        let counter = inspect_signer(value.as_der(), budget, depth + 1)?;
+                        let mut time = None;
+                        if let Some(attrs) = counter.signer.signed_attributes() {
+                            for attr in attrs.attributes() {
+                                if attr.oid_bytes() == SIGNING_TIME {
+                                    ensure!(
+                                        time.is_none() && attr.values().len() == 1,
+                                        "multiple signingTime values"
+                                    );
+                                    time = Some(ParsedTime::parse(attr.values()[0].as_der())?);
+                                }
                             }
                         }
-                    }
-                    (None, Some(counter), time)
-                } else {
-                    let cms = inspect_cms(value.as_der(), budget, depth + 1)?;
-                    let time = if kind == InspectionKind::Rfc3161 {
-                        let info = cms
-                            .tst_info
-                            .as_ref()
-                            .ok_or_else(|| anyhow::anyhow!("timestamp token lacks TSTInfo"))?;
-                        Some(ParsedTime::parse(info.parsed_time.as_der())?)
+                        (None, Some(counter), time)
                     } else {
-                        None
+                        let cms = inspect_cms(value.as_der(), budget, depth + 1)?;
+                        let time = if kind == InspectionKind::Rfc3161 {
+                            let info = cms
+                                .tst_info
+                                .as_ref()
+                                .ok_or_else(|| anyhow::anyhow!("timestamp token lacks TSTInfo"))?;
+                            Some(ParsedTime::parse(info.parsed_time.as_der())?)
+                        } else {
+                            None
+                        };
+                        (Some(cms), None, time)
                     };
-                    (Some(cms), None, time)
-                };
                 children.push(InspectedChild {
                     kind,
                     value_der: value.as_der(),

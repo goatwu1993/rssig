@@ -3,10 +3,9 @@
 The shared Authenticode/RDP verifier accepts one timestamp per signer: either
 RFC 3161 (Microsoft or CMS timestamp attribute OID) or a PKCS#9 countersignature.
 Multiple attribute values, mixed types, and the two RFC 3161 aliases together
-are rejected. Duplicate attribute OIDs are rejected earlier during CMS attribute
-validation (`invalid_signature`, `cms`;
-[CMS-009](cms.md#cms-009-an-attribute-oid-appears-at-most-once-in-a-signerinfo));
-other multiplicity failures use
+are rejected, as are two attributes with the same timestamp OID (the CMS layer
+accepts repeated attributes other than those of
+[CMS-009](cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo)). All multiplicity failures use
 `invalid_timestamp`, `timestamp`. There is no timestamp selection rule.
 The numbered decisions behind this page, with their status and sources, are
 [Timestamp token decisions](tsa.md) (`TSA-001` to `TSA-007`).

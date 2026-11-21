@@ -152,6 +152,7 @@ with this table; an ID not listed kept its number.
 | PR #70 | TIME-010 | merged into PATH-011 |
 | PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
 | PR #72 | TSA-004, duplicated attribute OID clause (cases `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) | CMS-009 (cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter`); TSA-004 keeps its number |
+| PR #73 | CMS-009 cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter` | back to TSA-004 as `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`, now `invalid_timestamp` at `timestamp` (SEC-25 narrowed CMS-009) |
 
 ## Task documents
 

@@ -14,8 +14,8 @@ of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 - Algorithm acceptance is `ALG-`; where an algorithm identifier sits in CMS
   and whether it agrees with the signer key is here (CMS-002).
 - Timestamp tokens are `TSA-`, except CMS structure inside a token, such as
-  CertificateChoices (CMS-012) and duplicated unsigned attributes (CMS-009),
-  which is here.
+  CertificateChoices (CMS-012) and repeated attributes (CMS-009), which is
+  here.
 - Nesting depth limits are `LIMIT-`.
 - A format's own embedding of the CMS blob is that format's index.
 - Whether every signature of a file must verify, and which failure is
@@ -47,7 +47,7 @@ Observed ones. A new entry takes the next free number.
 | [CMS-006](#cms-006-the-signed-contenttype-must-match-the-encapsulated-content) | The signed contentType must match the encapsulated content | Decided | acceptance |
 | [CMS-007](#cms-007-the-signers-digest-algorithm-must-be-listed-in-digestalgorithms) | The signer's digest algorithm must be listed in digestAlgorithms | Decided | acceptance |
 | [CMS-008](#cms-008-signed-attributes-are-verified-exactly-as-encoded-in-canonical-order) | Signed attributes are verified exactly as encoded, in canonical order | Decided | acceptance |
-| [CMS-009](#cms-009-an-attribute-oid-appears-at-most-once-in-a-signerinfo) | An attribute OID appears at most once in a SignerInfo | Decided | acceptance |
+| [CMS-009](#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo) | Single-instance attributes occur at most once in a SignerInfo | Decided | acceptance |
 | [CMS-010](#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions) | SignedData and SignerInfo must be well-formed with supported versions | Decided | acceptance |
 | [CMS-011](#cms-011-unknown-attributes-stay-opaque-and-their-oids-must-be-minimally-encoded) | Unknown attributes stay opaque, and their OIDs must be minimally encoded | Decided | acceptance |
 | [CMS-012](#cms-012-non-x509-certificatechoices-stay-opaque-and-cannot-supply-a-signer) | Non-X.509 CertificateChoices stay opaque and cannot supply a signer | Decided | acceptance |
@@ -232,52 +232,64 @@ so a correctly signed but non-canonical set is `invalid_signature` at `cms`.
   - [cms-security.md](cms-security.md), rows "Signed attribute sets" and
     "Signed bytes".
 
-### CMS-009: An attribute OID appears at most once in a SignerInfo
+### CMS-009: Single-instance attributes occur at most once in a SignerInfo
 
-A duplicated attribute OID, in signed or unsigned attributes, and an
-attribute with an empty value SET are `invalid_signature` at `cms`. This
-includes two RFC 3161 timestamp attributes or two countersignature
-attributes on one signer, which are rejected here before the timestamp
-multiplicity rule (TSA-004) is reached.
+The signed contentType, messageDigest and signingTime attributes and the
+unsigned nested-signature attribute (SpcNestedSignature) occur at most once in
+a SignerInfo. A repeat, and an attribute with an empty value SET, are
+`invalid_signature` at `cms`. A repeat of any other OID, signed or unsigned,
+passes the CMS layer: rssig keeps such attributes opaque and never acts on
+them. That includes repeated countersignature and RFC 3161 timestamp
+attributes, which RFC 5652 section 11.4 allows and which TSA-004 then rejects
+as a second timestamp (`invalid_timestamp` at `timestamp`).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #72 (moved from TSA-004); first a written
-  choice in PR #37 (SEC-04) for signed attributes, extended to unsigned
-  timestamp attributes in PR #42 (SEC-08)
+- **Decided by:** owner, PR #72 (moved from TSA-004) and PR #73 (SEC-25,
+  narrowed to the attributes the references limit); first a written choice
+  in PR #37 (SEC-04) and PR #42 (SEC-08)
 - **Pins:** acceptance
 - **Sources:**
-  - RFC 5652 sections 11.1 to 11.3: contentType, messageDigest and
-    signingTime must not appear more than once; extending this to every
-    attribute OID is a written choice.
-  - RFC 5652 section 11.4 goes the other way for countersignatures: "The
-    UnsignedAttributes in a signerInfo may include multiple instances of the
-    countersignature attribute." Rejecting a second countersignature
-    attribute is a deliberate deviation from the RFC, argued below. The same
-    section requires one or more values, which supports rejecting an empty
-    value SET.
-  - Written argument (as TSA-004): if an unsigned attribute may repeat, an
-    attacker who can add one chooses which copy is used.
+  - RFC 5652 sections 11.1, 11.2 and 11.3: each of the three attributes "MUST
+    have a single attribute value", and the SignedAttributes "MUST NOT
+    include multiple instances" of it. OpenSSL `crypto/cms/cms_att.c:44-46`
+    (`CMS_ATTR_F_ONLY_ONE`, `CMS_ATTR_F_ONE_ATTR_VALUE`) checked at
+    `:213-232` and `:254-273`, and Bouncy Castle
+    `cms/SignerInformation.java:678-715` (`getSingleValuedSignedAttribute`)
+    agree.
+  - RFC 5652 section 11.4: "The UnsignedAttributes in a signerInfo may
+    include multiple instances of the countersignature attribute", each with
+    "one or more" values. Bouncy Castle `cms/SignerInformation.java:293-300`
+    reads every instance and `:305-312` rejects an empty one; OpenSSL
+    `crypto/cms/cms_att.c:47` lists countersignature without
+    `CMS_ATTR_F_ONLY_ONE` and rejects a zero count (`:231-232`) for the
+    attributes it checks.
+  - RFC 5652 section 5.3 defines `attrValues SET OF AttributeValue` with no
+    minimum, so rejecting an empty SET on an attribute outside the RFC's list
+    is a written choice: an attribute without a value states nothing.
+  - RFC 3161 Appendix A defines the timestamp attribute with no limit on
+    instances; RFC 5126 section 6.1.1 (no local copy): "Several instances of
+    this attribute may occur with an electronic signature, from different
+    TSAs." Neither OpenSSL nor Bouncy Castle limits it
+    (`crypto/cms/cms_att.c:39-53`). The count of timestamps is TSA-004's rule,
+    enforced at `src/verify/timestamp.rs:22-28` and `:114-118`.
+  - RFC 5652 section 5.3: both attribute sets are
+    `SET SIZE (1..MAX) OF Attribute` with no uniqueness rule, and OpenSSL and
+    Bouncy Castle restrict only the listed attributes, so a repeated unknown
+    OID is accepted.
+  - The nested-signature attribute is a written choice. No RFC covers it
+    (Microsoft, OID 1.3.6.1.4.1.311.2.4.1) and the Windows-format references
+    disagree: osslsigncode `osslsigncode.c:3387-3411` collects nested
+    signatures from every instance of the attribute, while jsign
+    `SignatureUtils.java:100-105` reads only the first. rssig acts on this
+    attribute, so a repeat would make "which signatures exist" ambiguous;
+    several values in one attribute remain the supported form.
   - [cms-security.md](cms-security.md), row "Signed attribute sets";
     [timestamp profile](timestamp-profile.md).
-  - References are narrower: OpenSSL `crypto/cms/cms_att.c:39-53` and
-    `:254-273` (`ossl_cms_si_check_attributes`) and Bouncy Castle
-    `cms/SignerInformation.java:678-715` (`getSingleValuedSignedAttribute`)
-    reject duplicates only for listed signed attributes (contentType,
-    messageDigest, signingTime, ESS). Bouncy Castle
-    `cms/SignerInformation.java:293-300` explicitly allows several unsigned
-    countersignature attributes, quoting RFC 5652 section 11.4; rssig
-    rejects them.
-  - References agree on empty value SETs: OpenSSL `crypto/cms/cms_att.c:231-232`
-    (`count == 0`) for the listed attributes, and Bouncy Castle
-    `cms/SignerInformation.java:305-312` for countersignatures.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
-  `src/tests/cms_audit.rs`.
-- **Note:** the owner considers the countersignature part of this rule wrong
-  (RFC 5652 section 11.4 allows repeated countersignature attributes), and
-  the references support the single-instance rule only for contentType,
-  messageDigest and signingTime. [SEC-25](tasks/sec-25.md) records the
-  decision to narrow the rule; until it is implemented both cases stay
-  pinned as `invalid_signature` at `cms`.
+  `src/tests/cms_audit.rs` and `cms_attribute_multiplicity` in
+  `tests/cli/cms_audit.rs`.
+- **Note:** the library's `Attributes::parse` accepts a repeated OID; the
+  single-instance check is part of verification.
 
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
@@ -410,10 +422,11 @@ duplicates included.
 ### CMS-016: Envelope defects are malformed_cms, SignerInfo defects invalid_signature
 
 A defect in the SignedData envelope is `malformed_cms` at `cms`; a defect in
-a SignerInfo field or its attributes (version, attribute order, duplicate or
-malformed attribute OID) is `invalid_signature` at `cms`, although the
-library's standalone `Attributes::parse` reports the same attribute defects
-as `MalformedCms`.
+a SignerInfo field or its attributes (version, attribute order, a repeated
+single-instance attribute, malformed attribute OID) is `invalid_signature` at
+`cms`, although the library's standalone `Attributes::parse` reports the
+structural attribute defects (order, empty value SET, malformed OID) as
+`MalformedCms`.
 
 - **Status:** Observed
 - **Decided by:** —

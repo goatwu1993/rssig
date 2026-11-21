@@ -4192,6 +4192,208 @@
       }
     },
     {
+      "id": "cms-009-bad-content-type-duplicate",
+      "input": "bad-cms-duplicate-content-type.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-bad-message-digest-duplicate",
+      "input": "bad-cms-duplicate-message-digest.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-bad-signing-time-duplicate",
+      "input": "bad-cms-duplicate-signing-time.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-bad-nested-duplicate",
+      "input": "bad-cms-duplicate-nested.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-good-unknown-signed-duplicate",
+      "input": "good-cms-duplicate-unknown-signed.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-good-unknown-unsigned-duplicate",
+      "input": "good-cms-duplicate-unknown-unsigned.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cms-009-bad-empty-value",
+      "input": "bad-cms-empty-attribute-value.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "cms-010-msi-bad-malformed-cms",
       "input": "msi-bad-malformed-cms.msi",
       "decision": "CMS-010",
@@ -28701,9 +28903,9 @@
       }
     },
     {
-      "id": "cms-009-duplicate-rfc",
+      "id": "tsa-004-duplicate-rfc",
       "input": "tsa-duplicate-rfc.exe",
-      "decision": "CMS-009",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28722,8 +28924,8 @@
             {
               "ok": false,
               "error": {
-                "code": "invalid_signature",
-                "stage": "cms"
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
               }
             }
           ]
@@ -28731,9 +28933,9 @@
       }
     },
     {
-      "id": "cms-009-duplicate-counter",
+      "id": "tsa-004-duplicate-counter",
       "input": "tsa-duplicate-counter.exe",
-      "decision": "CMS-009",
+      "decision": "TSA-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28752,8 +28954,68 @@
             {
               "ok": false,
               "error": {
-                "code": "invalid_signature",
-                "stage": "cms"
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tsa-004-duplicate-eku-rfc",
+      "input": "tsa-duplicate-eku-rfc.exe",
+      "decision": "TSA-004",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tsa-004-duplicate-eku-counter",
+      "input": "tsa-duplicate-eku-counter.exe",
+      "decision": "TSA-004",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
               }
             }
           ]

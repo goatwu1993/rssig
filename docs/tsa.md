@@ -81,15 +81,20 @@ omits it explicitly.
 
 ### TSA-004: A signer has at most one timestamp
 
-Multiple attribute values, an RFC 3161 token beside a countersignature in
-either order, and the two RFC 3161 attribute aliases together are
-`invalid_timestamp`. There is no selection rule. A duplicated timestamp or
-countersignature attribute OID is rejected earlier, as a CMS attribute rule
-([CMS-009](cms.md#cms-009-an-attribute-oid-appears-at-most-once-in-a-signerinfo)).
+Multiple attribute values, two attributes with the same timestamp or
+countersignature OID, an RFC 3161 token beside a countersignature in either
+order, and the two RFC 3161 attribute aliases together are
+`invalid_timestamp`. There is no selection rule. The CMS layer lets repeated
+timestamp attributes through
+([CMS-009](cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo));
+this rule rejects them. The timestamps are counted before any is verified, so
+a second one is never masked by the first one's own failure (an invalid EKU,
+for example).
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #42 (SEC-08): failing closed instead of
-  choosing a timestamp
+  choosing a timestamp; repeated attributes of one timestamp OID, owner
+  (delegated), PR #73 (SEC-25)
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: with more than one candidate time, any selection rule

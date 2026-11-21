@@ -134,7 +134,8 @@ while their original octets remain available. Canonical base-128 OID framing is
 validated independently of those adapter limits. Algorithm/content-type OIDs
 retain their existing fixed-size adapter limits. `Attributes::parse` accepts implicit signed `[0]` and unsigned `[1]` sets,
 preserving their original tags and bytes. Signed attribute order must be canonical;
-both sets reject duplicate OIDs and attributes with empty value sets. Empty
+both sets reject attributes with empty value sets and malformed OIDs, and keep
+a repeated OID (verification limits which attributes may repeat, CMS-009). Empty
 attribute sets are inspectable, but cannot meet mandatory verification attributes.
 Unsigned attribute order and opaque value semantics are not authenticated by
 inspection. Values are not recursively decoded or sorted by this API.

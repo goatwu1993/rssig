@@ -665,6 +665,7 @@ fn regenerate_cli_fixtures() {
     fixture_faults::write(&dir);
     crl_fetch_fixtures::write(&dir);
     cms_audit::write(&dir);
+    cms_audit::write_attribute_multiplicity(&dir);
     signer_selection::write(&dir);
     certificate_paths::write(&dir);
     let write = |name: &str, bytes: &[u8]| std::fs::write(dir.join(name), bytes).unwrap();
