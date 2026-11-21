@@ -68,6 +68,10 @@ holds for the entries numbered when it was set.
 | [CRL-038](#crl-038-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source) | A URI that is not an absolute URL is never offered to a source | Retrieval | Decided | diagnostics |
 | [CRL-039](#crl-039-fetch-limits-bound-one-verification) | Fetch limits bound one verification | Retrieval | Decided | diagnostics |
 | [CRL-040](#crl-040-a-crl-naming-a-same-key-roots-identifier-is-forged-not-set-aside) | A CRL naming a same-key root's identifier is forged, not set aside | Issuer keys | Observed | diagnostics |
+| [CRL-041](#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison) | A CRL's issuer name matches by RFC 5280 name comparison | Issuer keys | Decided | acceptance |
+| [CRL-042](#crl-042-an-issuer-without-a-usable-key-identifier-cannot-disprove-another-keys-crl) | An issuer without a usable key identifier cannot disprove another key's CRL | Issuer keys | Decided | diagnostics |
+| [CRL-043](#crl-043-a-crl-naming-another-certificate-by-issuer-and-serial-is-set-aside-when-its-signature-fails) | A CRL naming another certificate by issuer and serial is set aside when its signature fails | Issuer keys | Decided | diagnostics |
+| [CRL-044](#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial) | A CRL that verifies is used whatever its authorityKeyIdentifier names by issuer and serial | Issuer keys | Decided | acceptance |
 
 ## Tier 1: fail-open and privacy
 
@@ -577,6 +581,58 @@ Two configured roots with one key and name may carry different subjectKeyIdentif
 - **Status:** Observed
 - **Decided by:** —
 - **Pins:** diagnostics
+
+### CRL-041: A CRL's issuer name matches by RFC 5280 name comparison
+
+A CRL is a candidate for a certificate when its issuer name matches the certificate's issuer name as RFC 5280 section 7.1 compares names: the same attribute types in the same RDNs and order, and string values equal after lower-casing (each character's Unicode lowercase mapping, not the full RFC 3454 case folding, so `ß` and `ss` differ) and white-space compression, whether encoded as PrintableString, UTF8String or IA5String. A CRL whose issuer spells the name in another string type, case or spacing is matched, and is authenticated like any other by its signature under the path's issuer key. Other string types compare by exact bytes, and no Unicode normalization is applied, so rssig is stricter than the RFC there: such a CRL is not matched and the certificate's status is unknown.
+
+- **Status:** Decided
+- **Decided by:** owner, PR #79
+- **Pins:** acceptance
+- **Sources:**
+  - RFC 5280 section 7.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): "Conforming implementations MUST use the LDAP StringPrep profile (including insignificant space handling), as specified in [RFC4518], as the basis for comparison of distinguished name attributes encoded in either PrintableString or UTF8String."
+  - OpenSSL 3.3 (7f736187) `crypto/x509/x509_cmp.c:253-285` (`X509_NAME_cmp` compares the canonical encoding) and `crypto/x509/x_name.c:300-308` (UTF-8, lower case, white space collapsed); BoringSSL (289645a4) `crypto/x509/x509_cmp.cc:117-143` and `x_name.cc:45-100`; Bouncy Castle (bb81bfa7) `X500Name.java:265-290` (`equals`, then the style's `areEqual`). All three match names canonically, but OpenSSL (`x_name.c:414-460`) and BoringSSL lower-case and collapse spaces only for ASCII and copy any other byte as it is, while RFC 5280 and Bouncy Castle fold Unicode text. rssig follows the RFC, so a name that differs only in the case of a non-ASCII letter (`Zoë` and `ZOË`) matches in rssig and Bouncy Castle but not in OpenSSL or BoringSSL.
+- **Unit tests:** `names_match_as_rfc_5280_compares_them` in `src/trust/names.rs`.
+- **Note:** Before this entry rssig compared exact DER, so such a CRL was ignored and the certificate was `revocation_unknown`; webpki still requires a certificate's issuer to equal its issuer's subject byte for byte when it builds the path. CRL-008's rule for issuers of one name with different keys compares the names of the issuers on the path as webpki built it (exact bytes), not the CRLs' issuer fields, so a CRL cannot escape that rule by spelling its issuer differently (`crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected`); two issuers whose names differ only in case are two to it, as to webpki, where OpenSSL would treat them as one. Retrieval also uses exact bytes: the issuers it has asked about (CRL-033) are keyed by them, and a fetched CRL counts as an issuer's answer only when its issuer is the certificate's issuer byte for byte, since one equal only under this comparison may be another CA's, which verification sets aside. SEC-26 tracks both. A CRL whose issuer equals the certificate's only under this comparison, whose authorityKeyIdentifier does not claim the issuer (by its key identifier or by its certificate's issuer and serial), and that fails under the issuer's key or cannot be verified, is another CA's and is set aside, as one naming another key is, not forged or unsupported; one that claims the issuer, including by a key identifier the issuer cannot disprove (CRL-042), is judged like an exactly named CRL (`crl-041-forged-crl-naming-the-issuers-key-stays-forged`). A set-aside one neither names a forged CRL in the result nor stops retrieval (CRL-018), as before this entry, when it was ignored (`crl-041-forged-crl-matching-only-by-comparison-is-set-aside`).
+
+### CRL-042: An issuer without a usable key identifier cannot disprove another key's CRL
+
+A CRL whose issuer is spelled as the certificate's issuer and that is signed by another key is set aside as another issuer's only when its authorityKeyIdentifier names a key identifier and the issuer's certificate carries a parseable subjectKeyIdentifier that differs, or names another certificate (CRL-043); one spelled differently is CRL-041's. An issuer certificate with no subjectKeyIdentifier, or one that does not parse, cannot disprove the match: the CRL is forged (`invalid_crl_signature`). Both outcomes reject.
+
+- **Status:** Decided
+- **Decided by:** owner, PR #79
+- **Pins:** diagnostics
+- **Sources:**
+  - OpenSSL 3.3 (7f736187) `crypto/x509/v3_purp.c:1007` (`X509_check_akid` compares key identifiers only when the issuer has one, so the check passes) and `crypto/x509/x509_vfy.c:1676` (a signature that then fails is `CRL_SIGNATURE_FAILURE`); BoringSSL (289645a4) `v3_purp.cc:453-460`, `x509_vfy.cc:491-499`. Both agree with rssig.
+  - Bouncy Castle (bb81bfa7) `RFC3280CertPathUtilities.java:382-391` narrows candidate certificates by subjectKeyIdentifier and skips a CRL that fails to verify, then tries the next: it differs.
+  - A subjectKeyIdentifier that does not parse: OpenSSL (`v3_purp.c:550-552`) and BoringSSL (`v3_purp.cc:371-375`) mark the certificate invalid, which fails the path; rssig reads it as none. Both reject; whether a malformed extension in a CA certificate fails the path is a `PATH-` question.
+- **Unit tests:** `only_a_differing_key_identifier_sets_a_failed_crl_aside` in `src/trust.rs`.
+- **Note:** The owner kept rssig's rule, which OpenSSL and BoringSSL share: a CRL that cannot be shown to be another key's and fails its signature is forged, the fail-closed reading. Bouncy Castle's skip-and-try-the-next is looser.
+
+### CRL-043: A CRL naming another certificate by issuer and serial is set aside when its signature fails
+
+An authorityKeyIdentifier with authorityCertIssuer and authorityCertSerialNumber names the CRL signer's certificate. A CRL whose signature fails under the path's issuer key and whose authorityKeyIdentifier names no key identifier but another certificate (an issuer name, compared as in CRL-041, together with a serial that are not those of the issuer's certificate or of any configured root with the same key, name and constraints) is another certificate's CRL and is set aside, as one naming another key identifier is. RFC 5280 requires the two fields together, so an extension with only one names no certificate and is not judged; nor is one whose authorityCertIssuer holds no directoryName (only a URI or DNS name, say), which rssig cannot compare with a certificate's issuer. Such a CRL stays forged. A CRL that verifies is CRL-044's.
+
+- **Status:** Decided
+- **Decided by:** owner, PR #79
+- **Pins:** diagnostics
+- **Sources:**
+  - RFC 5280 sections 4.2.1.1 and 5.2.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): the extension "provides a means of identifying the public key corresponding to the private key used to sign a CRL", "based on either the key identifier ... or the issuer name and serial number", and "Conforming CRL issuers MUST use the key identifier method". It identifies a key, and one key can be certified more than once, so another serial alone does not show another key.
+  - OpenSSL 3.3 (7f736187) `v3_purp.c:1009-1032` compares the serial and the issuer name and returns `AKID_ISSUER_SERIAL_MISMATCH`, which excludes the CRL before its signature is read (`x509_vfy.c:1322-1326`); BoringSSL (289645a4) `v3_purp.cc:464-482`, `x509_vfy.cc:653-656`. They exclude a CRL that would verify; rssig does not.
+  - Bouncy Castle (bb81bfa7) `RFC3280CertPathUtilities.java:382-386` reads only the key identifier.
+- **Note:** Before this entry a CRL that failed under the issuer's key and named another serial or issuer was forged, and the result was `invalid_crl_signature`; now it is set aside and the certificate's status is unknown unless another CRL decides. Both reject. The owner kept the signature as the authority rather than follow OpenSSL and BoringSSL, which would drop a CRL that verifies; and kept no diagnostic for a CRL set aside this way, as none is left for one naming another key identifier.
+
+### CRL-044: A CRL that verifies is used whatever its authorityKeyIdentifier names by issuer and serial
+
+A CRL whose signature verifies under the path's issuer key is authenticated by that signature, and is used even when its authorityKeyIdentifier names another certificate by issuer and serial. OpenSSL and BoringSSL exclude such a CRL before reading its signature, which would reject a valid file.
+
+- **Status:** Decided
+- **Decided by:** owner, PR #79
+- **Pins:** acceptance
+- **Sources:**
+  - RFC 5280 sections 4.2.1.1 and 5.2.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): the extension identifies the public key that signed the CRL, by key identifier or by the issuer name and serial of a certificate for it; one key can be certified more than once, so another certificate named is not another key.
+  - OpenSSL 3.3 (7f736187) `v3_purp.c:1009-1032` and `x509_vfy.c:1322-1326`, BoringSSL (289645a4) `v3_purp.cc:464-482` and `x509_vfy.cc:653-656`: excluded on a mismatch; Bouncy Castle (bb81bfa7) `RFC3280CertPathUtilities.java:382-386` reads only the key identifier and uses it.
+- **Note:** The owner chose the signature as the authority over OpenSSL and BoringSSL's exclusion.
 
 ## Candidate rules
 

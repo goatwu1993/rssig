@@ -1,0 +1,25 @@
+# SEC-29: Identify a CRL's issuer by issuer and serial outside verification.
+
+Task detail for **SEC-29** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox.
+
+Verification now reads an authorityKeyIdentifier's authorityCertIssuer and
+serial ([CRL-043](../crl.md#crl-043-a-crl-naming-another-certificate-by-issuer-and-serial-is-set-aside-when-its-signature-fails),
+[CRL-044](../crl.md#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial)).
+Two other places still read only the key identifier:
+
+- **Retrieval.** A fetched full CRL whose issuer is the certificate's issuer
+  counts as that issuer's answer (`of_issuer` in `src/retrieval.rs`), even
+  when verification then sets it aside because its authorityKeyIdentifier
+  names another key (CRL-040) or another certificate (CRL-043). Retrieval
+  then asks no further point, and the certificate stays `revocation_unknown`
+  where another point might have served a usable CRL. Before SEC-16 the
+  CRL-043 case was forged, which CRL-018 does not refresh either, so the
+  outcome is unchanged; the CRL-040 case predates it. Count a body as an
+  answer only when it does not name another key or certificate.
+- **CRL-008.** `names_issuer` in `ChosenCrl` is set only when the key
+  identifier names the issuer, so on a self-issued rollover path whose CRLs
+  name their issuers' certificates by issuer and serial, the path is still
+  rejected as `ambiguous_issuer_keys`; OpenSSL tells them apart by issuer and
+  serial and accepts. Decide whether such CRLs count as naming their issuer,
+  with a rollover fixture pair.

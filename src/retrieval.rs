@@ -987,6 +987,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         let of_issuer: Vec<bool> = if without_url {
             crate::trust::crl_issuers(&crl.bytes)
                 .into_iter()
+                // Exact bytes: a body whose issuer equals the certificate's
+                // only under CRL-041 may be another CA's, which verification
+                // sets aside, so it does not count as this issuer's answer.
                 .filter(|(name, _, _)| name == issuer)
                 .map(|(_, full, der)| full && !self.store.has_crl(&der))
                 .collect()

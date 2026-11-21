@@ -29,7 +29,10 @@ signature-verified; JSON must report this explicitly.
 `verify` detects formats; `verify_pe`, `verify_msi`, `verify_cab`, `verify_navx`, `verify_powershell`, `verify_powershell_xml`, `verify_rdp`, `verify_appx`, and `verify_wsh` select formats explicitly (WSH detects its comment style).
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
-freshness, and revocation across the chain. Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
+freshness, and revocation across the chain. A CRL's issuer matches a
+certificate's by RFC 5280 name comparison limited to string type, lower case
+and white space ([CRL-041](crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison));
+Unicode normalization and other string types are not applied (SEC-26). Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.

@@ -932,3 +932,167 @@ fn crl_a_crl_without_next_update_revokes_unless_a_newer_crl_clears_it() {
     assert_eq!(error["code"], "invalid_crl");
     assert_eq!(error["details"]["reason"], "missing_next_update");
 }
+
+/// SEC-16, CRL-041: a CRL whose issuer is the root's name in another string
+/// type, case or spacing is matched by RFC 5280 section 7.1 and authenticated
+/// by its signature, so the root's status is good.
+#[test]
+fn crl_an_issuer_name_matches_by_rfc_5280_comparison() {
+    for crl in [
+        "fixtures/crl-root-issuer-printable.crl",
+        "fixtures/crl-root-issuer-case-space.crl",
+    ] {
+        let output = run_fixture(
+            "good-countersignature.exe",
+            &[
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                "fixtures/root.der",
+                "--time",
+                T,
+                "--crl",
+                crl,
+            ],
+        );
+        assert_eq!(output.json["ok"], true, "{crl}");
+        let revocation = &output.json["results"][0]["signatures"][0]["trust"]["revocation"];
+        assert_eq!(revocation["status"], "good", "{crl}");
+        assert_eq!(revocation["method"], "crl", "{crl}");
+    }
+}
+
+/// SEC-16, CRL-042: an issuer certificate with no subjectKeyIdentifier, or one
+/// that does not parse, cannot disprove a CRL's key, so a CRL signed by
+/// another key that names one is forged, where a root with an identifier sets
+/// it aside.
+#[test]
+fn crl_an_issuer_without_a_usable_key_identifier_cannot_disprove_another_keys_crl() {
+    for root in [
+        "fixtures/crl-root-no-ski.der",
+        "fixtures/crl-root-malformed-ski.der",
+    ] {
+        let output = run_fixture(
+            "good-countersignature.exe",
+            &[
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                root,
+                "--time",
+                T,
+                "--crl",
+                "fixtures/crl-root-forged-other-ski.crl",
+            ],
+        );
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "revocation_unknown", "{root}");
+        assert_eq!(error["stage"], "revocation", "{root}");
+        assert_eq!(
+            error["details"]["unusable_crl"]["code"], "invalid_crl_signature",
+            "{root}"
+        );
+    }
+}
+
+/// SEC-16, CRL-043 and CRL-044: a CRL signed by another key whose authorityKeyIdentifier
+/// names another serial or issuer than the root's is another certificate's CRL
+/// and is set aside, not forged; one the root signed verifies whatever its
+/// authorityKeyIdentifier names.
+#[test]
+fn crl_naming_another_certificate_by_issuer_and_serial_is_set_aside_when_it_fails() {
+    for crl in [
+        "crl-root-forged-aki-other-serial.crl",
+        "crl-root-forged-aki-other-issuer.crl",
+    ] {
+        let output = run_alone(crl);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "revocation_unknown", "{crl}");
+        assert_eq!(error["stage"], "revocation", "{crl}");
+        assert!(error["details"].get("unusable_crl").is_none(), "{crl}");
+    }
+    let signed = run_alone("crl-root-signed-aki-other-serial.crl");
+    assert_eq!(signed.json["ok"], true);
+    assert_eq!(
+        signed.json["results"][0]["signatures"][0]["trust"]["revocation"]["status"],
+        "good"
+    );
+}
+
+/// SEC-16, CRL-041: a CRL whose issuer equals the root's name only under RFC
+/// 5280 comparison (another case) and that fails under the root's key is
+/// another CA's and is set aside, not forged, so it cannot block retrieval
+/// (CRL-018) or name a forged CRL in the result.
+#[test]
+fn crl_a_failed_crl_matching_only_by_name_comparison_is_set_aside() {
+    let output = run_alone("crl-root-forged-issuer-case.crl");
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    assert_eq!(error["stage"], "revocation");
+    assert!(error["details"].get("unusable_crl").is_none());
+    // One whose authorityKeyIdentifier names the root's own key claims the
+    // root, so it stays forged whatever its spelling.
+    let claiming = run_alone("crl-root-forged-issuer-case-naming-root-key.crl");
+    assert_eq!(
+        claiming.json["results"][0]["error"]["code"],
+        "invalid_crl_signature"
+    );
+    // So does one naming a key that a root without a subjectKeyIdentifier
+    // cannot disprove (CRL-042).
+    let undisprovable = run_fixture(
+        "good-countersignature.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/crl-root-no-ski.der",
+            "--time",
+            T,
+            "--crl",
+            "fixtures/crl-root-forged-issuer-case-naming-root-key.crl",
+        ],
+    );
+    assert_eq!(
+        undisprovable.json["results"][0]["error"]["code"],
+        "invalid_crl_signature"
+    );
+}
+
+/// SEC-16, CRL-008: a rollover CRL that spells its issuer as a PrintableString
+/// cannot escape the rule for issuers of one name with different keys whose
+/// CRLs name no key, in either order of the CRLs.
+#[test]
+fn crl_a_differently_encoded_rollover_crl_is_still_ambiguous() {
+    for crls in [
+        [
+            "fixtures/path-root.crl",
+            "fixtures/path-rollover-printable.crl",
+        ],
+        [
+            "fixtures/path-rollover-printable.crl",
+            "fixtures/path-root.crl",
+        ],
+    ] {
+        let output = run_fixture(
+            "good-path-self-issued-rollover.exe",
+            &[
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                "fixtures/path-root.der",
+                "--time",
+                T,
+                "--crl",
+                crls[0],
+                "--crl",
+                crls[1],
+            ],
+        );
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "certificate_chain_invalid", "{crls:?}");
+        assert_eq!(
+            error["details"]["reason"], "ambiguous_issuer_keys",
+            "{crls:?}"
+        );
+    }
+}

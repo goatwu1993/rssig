@@ -100,7 +100,7 @@ TDD workflow and checks in AGENTS.md.
     bytes; keep per-task regeneration commands (as SEC-08 does) consistent with
     `regenerate_cli_fixtures`.
 - [x] **SEC-15: Select CRLs against the selected chain, not every candidate.** Done; [record](docs/tasks/done.md#sec-15-select-crls-against-the-selected-chain-not-every-candidate).
-- [ ] **SEC-16: Tighten AKI/SKI matching edge cases.** Since PR #60 a CRL is authenticated under the issuer key the path uses. Detail in [sec-16.md](docs/tasks/sec-16.md).
+- [x] **SEC-16: Tighten AKI/SKI matching edge cases.** Done ([PR #79](https://github.com/goatwu1993/rssig/pull/79)); [CRL-041](docs/crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison) to [CRL-044](docs/crl.md#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial).
 - [ ] **SEC-17: Budget and consolidate CRL applicability work.** Deliberately skipped in PRs #44 and #45. Detail in [sec-17.md](docs/tasks/sec-17.md).
 - [ ] **SEC-18: Decide unsupported-but-applicable CRL handling.** Partly decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a stale, delta, indirect, unsupported or out-of-scope CRL is set aside when another CRL of the issuer is usable and authoritative (full-plus-delta and old-beside-current deployments verify). Detail in [sec-18.md](docs/tasks/sec-18.md).
 - [ ] **SEC-19: Finish CRL rejection reason coverage.** Deliberately skipped in PR #46. Detail in [sec-19.md](docs/tasks/sec-19.md).
@@ -110,6 +110,15 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
 - [x] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
+- [ ] **SEC-26: Complete the RFC 4518 name preparation for CRL issuer matching.**
+  CRL-041 matches fewer names than RFC 5280 section 7.1. Detail in
+  [sec-26.md](docs/tasks/sec-26.md).
+- [ ] **SEC-27: Decide whether a malformed extension in a CA certificate fails the path.**
+  OpenSSL and BoringSSL do; rssig reads it as absent (CRL-042). Detail in
+  [sec-27.md](docs/tasks/sec-27.md).
+- [ ] **SEC-29: Identify a CRL's issuer by issuer and serial outside verification.**
+  Retrieval and CRL-008 read only key identifiers. Detail in
+  [sec-29.md](docs/tasks/sec-29.md).
 
 ## P1 — Clean parse/verify interfaces
 
@@ -206,6 +215,11 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **TEST-31: Settle the shared format-skeleton rules.** Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
 - [x] **TEST-32: Number the `PE-` index.** Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
+- [ ] **TEST-33: Let a spec case assert that a field is absent.** The
+  `tests/cases.json` matcher checks a subset, so the set-aside cases of
+  CRL-040, CRL-041 and CRL-043 cannot tell set aside from forged
+  (`unusable_crl` absent);
+  only their Rust tests pin it. Add an absence assertion to the schema.
 
 ## P1 — CLI, reporting, and distribution
 

@@ -37610,6 +37610,368 @@
         },
         "crl_requests": []
       }
+    },
+    {
+      "id": "crl-041-printable-string-issuer-matches-a-utf8-subject",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-printable.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-issuer-case-and-spacing-match",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-case-space.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-042-issuer-without-ski-cannot-disprove-another-keys-crl",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-042",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/crl-root-no-ski.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-other-ski.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "unusable_crl": {
+                    "code": "invalid_crl_signature"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-042-issuer-with-malformed-ski-cannot-disprove-another-keys-crl",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-042",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/crl-root-malformed-ski.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-other-ski.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "unusable_crl": {
+                    "code": "invalid_crl_signature"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-043-forged-crl-naming-another-serial-is-set-aside",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-043",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-aki-other-serial.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-043-forged-crl-naming-another-issuer-is-set-aside",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-043",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-aki-other-issuer.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-044-signed-crl-naming-another-serial-verifies",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-044",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-signed-aki-other-serial.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected",
+      "input": "good-path-self-issued-rollover.exe",
+      "decision": "CRL-008",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-rollover-printable.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "details": {
+                  "reason": "ambiguous_issuer_keys"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-forged-crl-matching-only-by-comparison-is-set-aside",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-issuer-case.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-forged-crl-naming-the-issuers-key-stays-forged",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-issuer-case-naming-root-key.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl_signature",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-forged-crl-naming-a-key-an-issuer-cannot-disprove-stays-forged",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/crl-root-no-ski.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-forged-issuer-case-naming-root-key.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl_signature",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }
