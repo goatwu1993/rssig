@@ -20,7 +20,7 @@ section; a skeleton index has only the latter.
 | `POLICY-` | [policy.md](policy.md) (skeleton) | Verification modes: trusted, integrity-only, no revocation |
 | `CLI-` | [cli.md](cli.md) (skeleton) | Command-line arguments, help, exit codes, read errors |
 | `INSPECT-` | [inspect.md](inspect.md) (skeleton) | What `parse` reports |
-| `PE-` | [pe-decisions.md](pe-decisions.md) (skeleton) | PE parsing and hashing |
+| `PE-` | [pe-decisions.md](pe-decisions.md) | PE parsing and hashing |
 | `MSI-` | [msi-decisions.md](msi-decisions.md) (skeleton) | MSI and MSP parsing and hashing |
 | `CAB-` | [cab-decisions.md](cab-decisions.md) (skeleton) | CAB parsing and hashing |
 | `NAVX-` | [navx-decisions.md](navx-decisions.md) (skeleton) | NAVX parsing and hashing |
@@ -104,7 +104,8 @@ of the rule, and these fields as list items:
     change when a better result is argued.
 - **Decided by:** who or what settled it, with the PR where it applies:
   `owner, PR #N` (the owner decided or delegated the call),
-  `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named),
+  `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named;
+  for a Windows-format entry, the osslsigncode, jsign and relic it names),
   `<library> followed` (one reference, the other having no equivalent),
   `written argument` or `written choice` (no reference equivalent), or `—`
   for an Observed entry.

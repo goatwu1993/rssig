@@ -3,7 +3,8 @@
   "fixtures": "fixtures",
   "cases": [
     {
-      "id": "pe32",
+      "id": "pe-006-pe32",
+      "decision": "PE-006",
       "input": "good-pe32.exe",
       "command": [
         "verify",
@@ -36,7 +37,8 @@
       }
     },
     {
-      "id": "pe64",
+      "id": "pe-006-pe64",
+      "decision": "PE-006",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -102,7 +104,8 @@
       }
     },
     {
-      "id": "page-hashes",
+      "id": "pe-002-page-hashes",
+      "decision": "PE-002",
       "input": "good-page-hashes.exe",
       "command": [
         "verify",
@@ -135,7 +138,8 @@
       }
     },
     {
-      "id": "checksum-excluded",
+      "id": "pe-001-checksum-excluded",
+      "decision": "PE-001",
       "input": "good-modified-checksum.exe",
       "command": [
         "verify",
@@ -282,7 +286,8 @@
       }
     },
     {
-      "id": "tampered-image",
+      "id": "pe-001-tampered-image",
+      "decision": "PE-001",
       "input": "bad-image-digest.exe",
       "command": [
         "verify",
@@ -359,7 +364,8 @@
       }
     },
     {
-      "id": "bad-page-hashes",
+      "id": "pe-002-bad-page-hashes",
+      "decision": "PE-002",
       "input": "bad-page-hashes.exe",
       "command": [
         "verify",
@@ -462,7 +468,8 @@
       }
     },
     {
-      "id": "unsigned",
+      "id": "pe-007-unsigned",
+      "decision": "PE-007",
       "input": "unsigned.exe",
       "command": [
         "verify",
@@ -496,7 +503,8 @@
       }
     },
     {
-      "id": "not-pe",
+      "id": "pe-005-not-pe",
+      "decision": "PE-005",
       "input": "not-pe.bin",
       "command": [
         "verify",
@@ -530,7 +538,8 @@
       }
     },
     {
-      "id": "truncated",
+      "id": "pe-005-truncated",
+      "decision": "PE-005",
       "input": "bad-truncated.exe",
       "command": [
         "verify",
@@ -564,7 +573,8 @@
       }
     },
     {
-      "id": "trailing-data",
+      "id": "pe-003-trailing-data",
+      "decision": "PE-003",
       "input": "bad-trailing-data.exe",
       "command": [
         "verify",
@@ -1125,7 +1135,8 @@
       }
     },
     {
-      "id": "certificate-payload",
+      "id": "pe-004-certificate-payload",
+      "decision": "PE-004",
       "input": "bad-certificate-payload.exe",
       "command": [
         "verify",
@@ -22601,7 +22612,8 @@
       }
     },
     {
-      "id": "verify-pe-header-offset",
+      "id": "pe-005-header-offset",
+      "decision": "PE-005",
       "input": "bad-pe-header-offset.exe",
       "command": [
         "verify",
@@ -22655,7 +22667,8 @@
       }
     },
     {
-      "id": "bad-pe-gap-overlay-digest",
+      "id": "pe-001-gap-overlay-digest",
+      "decision": "PE-001",
       "input": "bad-pe-gap-overlay-digest.exe",
       "command": [
         "verify",
@@ -22691,7 +22704,8 @@
       }
     },
     {
-      "id": "bad-pe-certificate-range",
+      "id": "pe-003-certificate-range",
+      "decision": "PE-003",
       "input": "bad-pe-certificate-range.exe",
       "command": [
         "verify",

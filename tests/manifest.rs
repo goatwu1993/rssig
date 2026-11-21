@@ -649,10 +649,10 @@ fn artifact<'a>(corpus: &'a mut Corpus, file: &str) -> &'a mut Value {
         .unwrap()
 }
 
-/// The first committed case, `pe32`, which reads only listed fixtures.
+/// The first committed case, `pe-006-pe32`, which reads only listed fixtures.
 fn first_case(corpus: &mut Corpus) -> &mut spec_suite::Case {
     let case = &mut corpus.cases.cases[0];
-    assert_eq!(case.id, "pe32");
+    assert_eq!(case.id, "pe-006-pe32");
     case
 }
 
@@ -679,7 +679,7 @@ fn sorted(mut problems: Vec<(Rule, String)>) -> Vec<(Rule, String)> {
 }
 
 fn outside(path: &str) -> String {
-    format!("pe32: {path} (outside the fixture directory)")
+    format!("pe-006-pe32: {path} (outside the fixture directory)")
 }
 
 #[test]
@@ -951,8 +951,8 @@ fn rejects_unknown_or_repeated_cases_and_unknown_tests() {
         one(Rule::UnknownCase, &format!("{FILE}: no-such-case"))
     );
     assert_eq!(
-        broken(|c| artifact(c, FILE)["cases"] = json!(["pe64", "pe64"])),
-        one(Rule::DuplicateCase, &format!("{FILE}: pe64"))
+        broken(|c| artifact(c, FILE)["cases"] = json!(["pe-006-pe64", "pe-006-pe64"])),
+        one(Rule::DuplicateCase, &format!("{FILE}: pe-006-pe64"))
     );
     for test in [
         "pe::no_such_test",
@@ -1003,14 +1003,20 @@ fn test_links_need_a_test_attribute_and_an_including_harness() {
 #[test]
 fn rejects_case_inputs_the_manifest_does_not_list() {
     let input = broken(|c| first_case(c).input = Some("unlisted.exe".to_owned()));
-    assert_eq!(input, one(Rule::UnlistedCaseInput, "pe32: unlisted.exe"));
+    assert_eq!(
+        input,
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: unlisted.exe")
+    );
 
     let argument = broken(|c| {
         first_case(c)
             .command
             .push("fixtures/unlisted.crl".to_owned())
     });
-    assert_eq!(argument, one(Rule::UnlistedCaseInput, "pe32: unlisted.crl"));
+    assert_eq!(
+        argument,
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: unlisted.crl")
+    );
 
     let response = broken(|c| {
         first_case(c).crl_responses = Some(BTreeMap::from([(
@@ -1018,14 +1024,20 @@ fn rejects_case_inputs_the_manifest_does_not_list() {
             "unlisted.crl".to_owned(),
         )]));
     });
-    assert_eq!(response, one(Rule::UnlistedCaseInput, "pe32: unlisted.crl"));
+    assert_eq!(
+        response,
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: unlisted.crl")
+    );
 
     let several = broken(|c| {
         let case = first_case(c);
         case.input = None;
         case.inputs = Some(vec!["good-pe32.exe".to_owned(), "unlisted.exe".to_owned()]);
     });
-    assert_eq!(several, one(Rule::UnlistedCaseInput, "pe32: unlisted.exe"));
+    assert_eq!(
+        several,
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: unlisted.exe")
+    );
 }
 
 #[test]
@@ -1033,11 +1045,11 @@ fn reads_path_options_in_both_forms_and_rejects_paths_outside_fixtures() {
     for (command, expected) in [
         (
             vec!["--crl=fixtures/unlisted.crl"],
-            "pe32: unlisted.crl".to_owned(),
+            "pe-006-pe32: unlisted.crl".to_owned(),
         ),
         (
             vec!["--roots=fixtures/unlisted.der"],
-            "pe32: unlisted.der".to_owned(),
+            "pe-006-pe32: unlisted.der".to_owned(),
         ),
         // A listed name without the prefix resolves beside cases.json, not to the fixture.
         (vec!["--crl", "good.crl"], outside("good.crl")),
@@ -1103,7 +1115,7 @@ fn plain_arguments_with_a_path_separator_are_case_inputs() {
 fn a_case_may_not_read_an_exempt_unlisted_file() {
     assert_eq!(
         broken(|c| first_case(c).input = Some(MANIFEST.to_owned())),
-        one(Rule::UnlistedCaseInput, "pe32: manifest.json")
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: manifest.json")
     );
 }
 
@@ -1351,8 +1363,11 @@ fn duplicate_case_ids_are_reported_and_keep_every_input() {
     assert_eq!(
         problems,
         sorted(vec![
-            (Rule::UnlistedCaseInput, "pe32: unlisted.crl".to_owned()),
-            (Rule::DuplicateCaseId, "pe32".to_owned()),
+            (
+                Rule::UnlistedCaseInput,
+                "pe-006-pe32: unlisted.crl".to_owned()
+            ),
+            (Rule::DuplicateCaseId, "pe-006-pe32".to_owned()),
         ])
     );
 }
@@ -1425,7 +1440,7 @@ fn response_bodies_must_be_listed_plain_names() {
     // Never an intentionally absent input: the runner would fail reading it.
     assert_eq!(
         broken(|c| response(c, "missing.crl")),
-        one(Rule::UnlistedCaseInput, "pe32: missing.crl")
+        one(Rule::UnlistedCaseInput, "pe-006-pe32: missing.crl")
     );
     for body in ["sub/good.crl", "./good.crl", "/abs.crl"] {
         assert_eq!(
