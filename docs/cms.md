@@ -244,6 +244,12 @@ multiplicity rule (TSA-004) is reached.
   - RFC 5652 sections 11.1 to 11.3: contentType, messageDigest and
     signingTime must not appear more than once; extending this to every
     attribute OID is a written choice.
+  - RFC 5652 section 11.4 goes the other way for countersignatures: "The
+    UnsignedAttributes in a signerInfo may include multiple instances of the
+    countersignature attribute." Rejecting a second countersignature
+    attribute is a deliberate deviation from the RFC, argued below. The same
+    section requires one or more values, which supports rejecting an empty
+    value SET.
   - Written argument (as TSA-004): if an unsigned attribute may repeat, an
     attacker who can add one chooses which copy is used.
   - [cms-security.md](cms-security.md), row "Signed attribute sets";
@@ -254,7 +260,11 @@ multiplicity rule (TSA-004) is reached.
     reject duplicates only for listed signed attributes (contentType,
     messageDigest, signingTime, ESS). Bouncy Castle
     `cms/SignerInformation.java:293-300` explicitly allows several unsigned
-    countersignature attributes; rssig rejects them.
+    countersignature attributes, quoting RFC 5652 section 11.4; rssig
+    rejects them.
+  - References agree on empty value SETs: OpenSSL `crypto/cms/cms_att.c:229-230`
+    (`count == 0`) for the listed attributes, and Bouncy Castle
+    `cms/SignerInformation.java:305-312` for countersignatures.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
   `src/tests/cms_audit.rs`.
 
