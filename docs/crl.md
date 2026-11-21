@@ -89,7 +89,7 @@ A CRL that does not apply to the chain is excluded whatever its fault. When no s
 
 ### CRL-002: A CRL without nextUpdate is not evidence of good status
 
-Without a listing, a chain issuer's CRL that lacks nextUpdate is `invalid_crl` (`missing_next_update`). RFC 5280 section 5.1.2.5 requires nextUpdate, and a CRL that never expires cannot show that the status is still current. Its listing still counts (CRL-004), so the rule fails closed.
+Without a listing, a chain issuer's CRL that lacks nextUpdate is `invalid_crl` (`missing_next_update`). RFC 5280 section 5.1.2.5 requires nextUpdate, and a CRL that never expires cannot show that the status is still current. Its listing still counts, beside an older CRL (CRL-004) or alone (CRL-029), so the rule fails closed.
 
 - **Status:** Decided
 - **Decided by:** written argument (stricter than the references, which would accept it)
@@ -352,7 +352,7 @@ With `--fetch-crls`, the path named under CRL-034 is refreshed and the file veri
 
 ### CRL-023: An RDP signer lacking only a CRL under one usage verifies once the CRL is present
 
-When one usage fails its path (`invalid_eku`) and another lacks only a CRL, supplying or fetching that CRL verifies the file. This is the RDP case of CRL-022: each usage is a candidate path.
+When one usage fails its path (`invalid_eku`) and another lacks only a CRL, supplying or fetching that CRL verifies the file. This is the RDP case of CRL-017: each usage is a candidate path.
 
 - **Status:** Decided
 - **Decided by:** written argument (no reference has multi-EKU acceptance; `docs/rdp.md`)
@@ -467,7 +467,7 @@ The revocation is reported and names the certificates another usage only lacks a
 
 ### CRL-032: An RDP signer lacking only a CRL under one usage reports the missing CRL
 
-Without the CRL, the result is the missing CRL (`revocation_unknown`), not the other usage's `invalid_eku`, because a source can supply it. This is the RDP case of CRL-035.
+Without the CRL, the result is the missing CRL (`revocation_unknown`), not the other usage's `invalid_eku`, because a source can supply it. This is the RDP case of CRL-028: only a usage that passes every other check and lacks a CRL can be completed.
 
 - **Status:** Decided
 - **Decided by:** written argument (no reference has multi-EKU acceptance; `docs/rdp.md`)

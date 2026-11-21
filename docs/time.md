@@ -4,10 +4,10 @@ Numbered decisions that answer one question: **at which instant are
 certificates checked?** The validation time, a timestamp's signing time,
 lifetime signing and the validity boundaries, and how a failure at that
 instant ranks against other failures. Whether a timestamp token can be trusted
-at all is a [timestamp token decision](tsa.md); see
-[which index](decisions.md#which-index). The entry format is defined in
-[Decision indexes](decisions.md); the rules are explained in
-[validation time](validation-time.md), and the review history is in SEC-09 and SEC-14
+at all is a [timestamp token decision](tsa.md); see [which
+index](decisions.md#which-index). The entry format is defined in [Decision
+indexes](decisions.md); the rules are explained in [validation
+time](validation-time.md), and the review history is in SEC-09 and SEC-14
 ([done](tasks/done.md), [TODO.md](../TODO.md)).
 
 TIME-003 and TIME-004 check a timestamp's time, but against certificate
@@ -61,8 +61,9 @@ format, and RDP signers.
 - **Sources:**
   - The purpose of the lifetime-signing EKU: a signature it marks does not
     outlive the signer certificate, whatever its timestamp.
-  - Written argument in [validation time](validation-time.md#lifetime-signing); no
-    Windows equivalence is claimed.
+  - Written argument in [validation
+    time](validation-time.md#lifetime-signing); no Windows equivalence is
+    claimed.
 
 ### TIME-002: A lifetime signer's chain must be valid at the signing time
 
@@ -87,15 +88,20 @@ the signing time").
 For a signer without the lifetime EKU, a valid timestamp moves chain
 validation to its `signing_time`: an expired signer remains trusted, and a
 certificate that was not valid at that time is rejected. The TSA chain is
-validated at the signing time too. A timestamp whose signing time is before the signer's notBefore is `certificate_not_yet_valid`, the same consistency check as for a lifetime signer (TIME-002).
+validated at the signing time too. A timestamp whose signing time is before
+the signer's notBefore is `certificate_not_yet_valid`, the same consistency
+check as for a lifetime signer (TIME-002).
 
 - **Status:** Decided
-- **Decided by:** written argument (Authenticode timestamp semantics); the notBefore check is a written choice, PR #43 (SEC-09), kept as a decision in SEC-14
+- **Decided by:** written argument (Authenticode timestamp semantics); the
+  notBefore check is a written choice, PR #43 (SEC-09), kept as a decision in
+  SEC-14
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 4 (a timestamp proves the datum existed at that time).
   - [validation time](validation-time.md) table, "Signer chain, timestamped".
-  - Written argument: the notBefore check is the same consistency check as TIME-002.
+  - Written argument: the notBefore check is the same consistency check as
+    TIME-002.
 
 ### TIME-004: A timestamp after the validation time is rejected
 
@@ -128,7 +134,9 @@ are kept; no floating point is used.
 
 ### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
 
-A signer without a timestamp has its chain validated at the validation time. A certificate is valid from notBefore to notAfter, both inclusive at whole seconds.
+A signer without a timestamp has its chain validated at the validation time. A
+certificate is valid from notBefore to notAfter, both inclusive at whole
+seconds.
 
 - **Status:** Decided
 - **Decided by:** written argument
@@ -155,7 +163,8 @@ and a revoked leaf is rejected even when another path would verify. Historical
 
 The signing-time check of intermediates runs inside path building, so a
 rolled-over intermediate with the same subject and key that was issued after
-signing is rejected as a candidate and another valid issuer is used. A candidate rejected by a path rule instead is PATH-009.
+signing is rejected as a candidate and another valid issuer is used. A
+candidate rejected by a path rule instead is PATH-009.
 
 - **Status:** Decided
 - **Decided by:** review fix, PR #43 (the first post-selection check rejected
@@ -194,14 +203,17 @@ a revocation on that path is reported instead. Both outcomes reject.
 
 ### TIME-011: Lifetime-signing validity outranks revocation on another path
 
-Across candidate paths, a CA issued after the lifetime signing time on one path outranks a revocation on another; both reject.
+Across candidate paths, a CA issued after the lifetime signing time on one
+path outranks a revocation on another; both reject.
 
 - **Status:** Decided
-- **Decided by:** written choice (the references disagree and neither has lifetime signing); kept as a decision in SEC-14
+- **Decided by:** written choice (the references disagree and neither has
+  lifetime signing); kept as a decision in SEC-14
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL builds one chain and checks revocation before validity.
-  - Bouncy Castle tries every path and checks validity before revocation per certificate.
+  - Bouncy Castle tries every path and checks validity before revocation per
+    certificate.
 
 ### TIME-012: CRL freshness is reported before the signing-time check
 
@@ -230,11 +242,14 @@ generic chain error is reported. Successful reports set
 - **Sources:**
   - Written argument: a change in webpki's search order must not name the
     wrong certificate.
-- **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec case
-  names this entry yet.
+- **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec
+  case names this entry yet.
 
 ## Candidate rules
 
-Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
+Unnumbered. `tests/decision-claims.json` assigns these cases here until they
+name an entry.
 
-- `attach`: cases that pin an existing TIME entry but do not name it yet: the pre-SEC-09 time cases (TEST-21) and every format's expired-with-timestamp and validity cases.
+- `attach`: cases that pin an existing TIME entry but do not name it yet: the
+  pre-SEC-09 time cases (TEST-21) and every format's expired-with-timestamp
+  and validity cases.

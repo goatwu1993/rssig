@@ -26,13 +26,15 @@ of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 
 Entries are numbered from most to least important, in the tiers used by
 [CRL decisions](crl.md#order); within a tier, Decided entries come before
-Observed ones. A new entry takes the next free number. No CMS entry is in the
-availability tier at present (legacy version 1 support is part of CMS-010).
+Observed ones. A new entry takes the next free number.
 
 1. **Fail-open:** a broken rule could accept a signature that does not bind
    the signer's key to the signed content, or accept a structure outside the
    supported profile.
-2. **Result diagnostics:** the error code, stage or details a consumer
+2. **Availability:** a broken rule would reject a well-formed signature.
+   No entry is in this tier at present; legacy version 1 support is part of
+   CMS-010.
+3. **Result diagnostics:** the error code, stage or details a consumer
    matches; both outcomes reject.
 
 ## Index
@@ -60,12 +62,12 @@ availability tier at present (legacy version 1 support is part of CMS-010).
 ### CMS-001: The signer's signature must verify with the signer certificate's key
 
 The SignerInfo signature must verify, under the declared algorithm, with the
-public key of the selected signer certificate over the exact signed bytes
-(the signed attributes with only their implicit tag replaced by SET). A
-corrupted signature, or a signer certificate carrying a different key, is
-`invalid_signature` at `cms` (CMS-008 pins that the signed bytes are never re-encoded), in every format: PE, MSI and MSP, CAB, NAVX,
-PowerShell and PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle
-members.
+public key of the selected signer certificate over the exact signed bytes (the
+signed attributes with only their implicit tag replaced by SET). A corrupted
+signature, or a signer certificate carrying a different key, is
+`invalid_signature` at `cms` (CMS-008 pins that the signed bytes are never
+re-encoded), in every format: PE, MSI and MSP, CAB, NAVX, PowerShell and
+PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle members.
 
 - **Status:** Decided
 - **Decided by:** written argument, PR #37 (SEC-04)
@@ -293,21 +295,28 @@ as a second timestamp (`invalid_timestamp` at `timestamp`).
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
 SignedData and SignerInfo must use bounded, definite, minimal DER lengths,
-consume their input completely, use the supported tags and canonical
-INTEGER encodings, and carry a supported version: SignedData version 1, or 3,
-4 or 5 as the envelope indicates (version 1 for detached RDP), and
-SignerInfo version 1. A SignedData needs at least one and at most 64
-SignerInfos. Anything else fails closed in every format: `malformed_cms` at
-`cms` for the envelope (truncated or trailing data, an unsupported SignedData
-version, an empty or oversized signer set), and `invalid_signature` at `cms`
-for a SignerInfo field such as its version (CMS-015). Legacy version 1 is deliberately supported: a well-formed SignedData with version 1, a version 1 SignerInfo and correctly ordered unknown signed attributes verifies, and rssig does not enforce RFC 5652's version-selection algorithm on it.
+consume their input completely, use the supported tags and canonical INTEGER
+encodings, and carry a supported version: SignedData version 1, or 3, 4 or 5
+as the envelope indicates (version 1 for detached RDP), and SignerInfo version
+1. A SignedData needs at least one and at most 64 SignerInfos. Anything else
+fails closed in every format: `malformed_cms` at `cms` for the envelope
+(truncated or trailing data, an unsupported SignedData version, an empty or
+oversized signer set), and `invalid_signature` at `cms` for a SignerInfo field
+such as its version (CMS-015). Legacy version 1 is deliberately supported: a
+well-formed SignedData with version 1, a version 1 SignerInfo and correctly
+ordered unknown signed attributes verifies, and rssig does not enforce RFC
+5652's version-selection algorithm, which would require version 3 for such
+content, on a version 1 envelope.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.1 and 5.3 (versions) and X.690 section 10 (DER).
-  - RFC 5652 section 5.1 (version selection) and RFC 2315 (PKCS#7 version 1): legacy version 1 is retained for the Authenticode and historical timestamp corpus; this is a compatibility profile ([cms-security.md](cms-security.md)).
+  - RFC 5652 section 5.1 (version selection) and RFC 2315 (PKCS#7 version 1):
+    legacy version 1 is retained for the Authenticode and historical timestamp
+    corpus; this is a compatibility profile
+    ([cms-security.md](cms-security.md)).
   - [cms-security.md](cms-security.md), rows "SignedData version",
     "SignerInfo version and identity" and "DER framing".
   - OpenSSL `crypto/cms/cms_smime.c:391-394` (`CMS_R_NO_SIGNERS`) rejects
@@ -342,12 +351,13 @@ minimally encoded OBJECT IDENTIFIER: a subidentifier starting with 0x80 is
 
 ### CMS-012: Non-X.509 CertificateChoices stay opaque and cannot supply a signer
 
-RFC 5652 CertificateChoices other than an X.509 certificate are kept as
-opaque DER in the publisher CMS and in an RFC 3161 token and never become a
-signer certificate, a chain candidate or a trust anchor. A malformed choice or
-an unknown choice tag fails, and an attribute certificate cannot replace a
+RFC 5652 CertificateChoices other than an X.509 certificate are kept as opaque
+DER in the publisher CMS and in an RFC 3161 token and never become a signer
+certificate, a chain candidate or a trust anchor. A malformed choice or an
+unknown choice tag fails, and an attribute certificate cannot replace a
 missing signer certificate; inside a timestamp token these are
-`invalid_timestamp` at `timestamp`. A failing TSA signature on such a token is TSA-002.
+`invalid_timestamp` at `timestamp`. A failing TSA signature on such a token is
+TSA-002.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
@@ -386,7 +396,7 @@ signature), even when the primary one verifies.
   answer; [SEC-12](tasks/sec-12.md) records the decision to make it a
   policy (default all, opt-in any).
 
-## Tier 2: result diagnostics
+## Tier 3: result diagnostics
 
 ### CMS-014: An ambiguous signer reports the number of matching certificates
 

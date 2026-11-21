@@ -204,6 +204,15 @@ TDD workflow and checks in AGENTS.md.
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in the [reindex history](docs/decisions.md#reindex-history).
+- [ ] **TEST-31: Settle the overlaps TEST-30 left.** Decide where the shared
+  candidate rules of the format skeletons (`hash`, `structure`, `unsigned`,
+  `support`) live before TEST-18 and its siblings number them; state the
+  whole-second validity boundary once instead of in TIME-002, TIME-005 and
+  TIME-006; and reword TIME-005, whose `notAfter > signing_time` reads against
+  "`notAfter` itself is valid".
+
+## P1 — CLI, reporting, and distribution
+
 - [ ] **PRODUCT-01: Make remaining failure classifications precise.** Audit
   generic anyhow conversions for unsupported structures, invalid certificates,
   root/CRL loading, timestamps, and exhausted limits. Preserve stable code/stage,
