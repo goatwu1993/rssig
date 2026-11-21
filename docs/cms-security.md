@@ -8,7 +8,7 @@ rules themselves, with their status and sources, are the numbered
 
 | Boundary | Decision | Profile notes |
 | --- | --- | --- |
-| SignedData version | [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions), [CMS-014](cms.md#cms-014-legacy-version-1-signeddata-and-signerinfo-verify) | Version 3 is ordinary attached non-data content, 4 a v2 attribute certificate, 5 another certificate or revocation choice, as the envelope indicates. Detached RDP requires version 1. |
+| SignedData version | [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions) | Version 3 is ordinary attached non-data content, 4 a v2 attribute certificate, 5 another certificate or revocation choice, as the envelope indicates. Detached RDP requires version 1. |
 | SignerInfo version and identity | [CMS-003](cms.md#cms-003-the-signer-certificate-is-matched-by-exact-issuer-and-serial), [CMS-010](cms.md#cms-010-signeddata-and-signerinfo-must-be-well-formed-with-supported-versions) | Includes countersignatures. Versions and serials use canonical nonnegative INTEGER encodings. |
 | Signed attribute sets | [CMS-008](cms.md#cms-008-signed-attributes-are-verified-exactly-as-encoded-in-canonical-order), [CMS-009](cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo), [CMS-011](cms.md#cms-011-unknown-attributes-stay-opaque-and-their-oids-must-be-minimally-encoded) | A correctly signed out-of-order value SET is paired with its valid counterpart. Only the single-instance attributes of CMS-009 may not repeat. |
 | Signed bytes | [CMS-001](cms.md#cms-001-the-signers-signature-must-verify-with-the-signer-certificates-key), [CMS-008](cms.md#cms-008-signed-attributes-are-verified-exactly-as-encoded-in-canonical-order) | Only the implicit signed-attributes tag is replaced with the SET tag. Original lengths and bodies are retained; nothing is sorted or re-encoded. A focused test verifies the mathematics of every structure fixture independently of the verification checks. |
@@ -44,7 +44,7 @@ The rules are
 (exact issuer and serial; no match fails),
 [CMS-004](cms.md#cms-004-distinct-certificates-matching-the-signer-identifier-are-rejected)
 (distinct matches are rejected, duplicates and order do not matter) and
-[CMS-015](cms.md#cms-015-an-ambiguous-signer-reports-the-number-of-matching-certificates)
+[CMS-014](cms.md#cms-014-an-ambiguous-signer-reports-the-number-of-matching-certificates)
 (the reported match count).
 
 Identical decoded certificates are duplicates; all fields participate in

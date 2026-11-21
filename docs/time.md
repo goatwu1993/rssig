@@ -10,7 +10,7 @@ at all is a [timestamp token decision](tsa.md); see
 [validation time](validation-time.md), and the review history is in SEC-09 and SEC-14
 ([done](tasks/done.md), [TODO.md](../TODO.md)).
 
-TIME-004 and TIME-005 check a timestamp's time, but against certificate
+TIME-003 and TIME-004 check a timestamp's time, but against certificate
 validity and the validation time, so they belong here rather than to the
 token decisions.
 
@@ -33,17 +33,16 @@ Observed ones. A new entry takes the next free number.
 | [TIME-001](#time-001-a-lifetime-signing-signer-is-validated-at-the-validation-time) | A lifetime-signing signer is validated at the validation time | Decided | acceptance |
 | [TIME-002](#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time) | A lifetime signer's chain must be valid at the signing time | Decided | acceptance |
 | [TIME-003](#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) | A timestamped signer's chain is validated at the signing time | Decided | acceptance |
-| [TIME-004](#time-004-a-timestamp-before-the-signers-notbefore-is-rejected) | A timestamp before the signer's notBefore is rejected | Decided | acceptance |
-| [TIME-005](#time-005-a-timestamp-after-the-validation-time-is-rejected) | A timestamp after the validation time is rejected | Decided | acceptance |
-| [TIME-006](#time-006-a-fractional-timestamp-is-compared-exactly-with-validity) | A fractional timestamp is compared exactly with validity | Decided | acceptance |
-| [TIME-007](#time-007-an-untimestamped-signer-is-validated-at-the-validation-time-inclusive-at-whole-seconds) | An untimestamped signer is validated at the validation time, inclusive at whole seconds | Decided | acceptance |
-| [TIME-008](#time-008-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) | A lifetime path is still revocation-checked at the validation time | Decided | acceptance |
-| [TIME-009](#time-009-path-building-skips-an-intermediate-issued-after-the-signing-time) | Path building skips an intermediate issued after the signing time | Decided | acceptance |
-| [TIME-010](#time-010-the-signing-time-rejection-ranks-as-a-validity-error) | The signing-time rejection ranks as a validity error | Decided | diagnostics |
-| [TIME-011](#time-011-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) | A revocation on the same path is reported before the signing-time check | Decided | diagnostics |
-| [TIME-012](#time-012-lifetime-signing-validity-outranks-revocation-on-another-path) | Lifetime-signing validity outranks revocation on another path | Decided | diagnostics |
-| [TIME-013](#time-013-crl-freshness-is-reported-before-the-signing-time-check) | CRL freshness is reported before the signing-time check | Decided | diagnostics |
-| [TIME-014](#time-014-failure-details-name-the-chain-certificate-that-failed) | Failure details name the chain certificate that failed | Decided | diagnostics |
+| [TIME-004](#time-004-a-timestamp-after-the-validation-time-is-rejected) | A timestamp after the validation time is rejected | Decided | acceptance |
+| [TIME-005](#time-005-a-fractional-timestamp-is-compared-exactly-with-validity) | A fractional timestamp is compared exactly with validity | Decided | acceptance |
+| [TIME-006](#time-006-an-untimestamped-signer-is-validated-at-the-validation-time-inclusive-at-whole-seconds) | An untimestamped signer is validated at the validation time, inclusive at whole seconds | Decided | acceptance |
+| [TIME-007](#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) | A lifetime path is still revocation-checked at the validation time | Decided | acceptance |
+| [TIME-008](#time-008-path-building-skips-an-intermediate-issued-after-the-signing-time) | Path building skips an intermediate issued after the signing time | Decided | acceptance |
+| [TIME-009](#time-009-the-signing-time-rejection-ranks-as-a-validity-error) | The signing-time rejection ranks as a validity error | Decided | diagnostics |
+| [TIME-010](#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) | A revocation on the same path is reported before the signing-time check | Decided | diagnostics |
+| [TIME-011](#time-011-lifetime-signing-validity-outranks-revocation-on-another-path) | Lifetime-signing validity outranks revocation on another path | Decided | diagnostics |
+| [TIME-012](#time-012-crl-freshness-is-reported-before-the-signing-time-check) | CRL freshness is reported before the signing-time check | Decided | diagnostics |
+| [TIME-013](#time-013-failure-details-name-the-chain-certificate-that-failed) | Failure details name the chain certificate that failed | Decided | diagnostics |
 
 ## Tier 1: fail-open
 
@@ -88,27 +87,17 @@ the signing time").
 For a signer without the lifetime EKU, a valid timestamp moves chain
 validation to its `signing_time`: an expired signer remains trusted, and a
 certificate that was not valid at that time is rejected. The TSA chain is
-validated at the signing time too.
+validated at the signing time too. A timestamp whose signing time is before the signer's notBefore is `certificate_not_yet_valid`, the same consistency check as for a lifetime signer (TIME-002).
 
 - **Status:** Decided
-- **Decided by:** written argument (Authenticode timestamp semantics)
+- **Decided by:** written argument (Authenticode timestamp semantics); the notBefore check is a written choice, PR #43 (SEC-09), kept as a decision in SEC-14
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 4 (a timestamp proves the datum existed at that time).
   - [validation time](validation-time.md) table, "Signer chain, timestamped".
+  - Written argument: the notBefore check is the same consistency check as TIME-002.
 
-### TIME-004: A timestamp before the signer's notBefore is rejected
-
-A timestamp claiming a signing time before a non-lifetime signer's notBefore
-is `certificate_not_yet_valid`, as for a lifetime signer (TIME-002).
-
-- **Status:** Decided
-- **Decided by:** written choice, PR #43 (SEC-09); kept as a decision in SEC-14
-- **Pins:** acceptance
-- **Sources:**
-  - Written argument: the same consistency check as TIME-002.
-
-### TIME-005: A timestamp after the validation time is rejected
+### TIME-004: A timestamp after the validation time is rejected
 
 A `signing_time` equal to the validation time is accepted; any nonzero
 fraction in that second, or a later second, is `timestamp_in_future`.
@@ -120,7 +109,7 @@ fraction in that second, or a later second, is `timestamp_in_future`.
   - A timestamp from the future cannot be evidence of when the signature
     existed; the validation time is the latest instant rssig can vouch for.
 
-### TIME-006: A fractional timestamp is compared exactly with validity
+### TIME-005: A fractional timestamp is compared exactly with validity
 
 A fractional timestamp is checked at its whole second, then the selected leaf
 and intermediates must have `notAfter > signing_time`: `notAfter` itself is
@@ -137,7 +126,9 @@ are kept; no floating point is used.
 - **Note:** the check runs after path selection, so it does not consider an
   alternative issuer with a later notAfter (open in SEC-14).
 
-### TIME-007: An untimestamped signer is validated at the validation time, inclusive at whole seconds
+### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
+
+A signer without a timestamp has its chain validated at the validation time. A certificate is valid from notBefore to notAfter, both inclusive at whole seconds.
 
 - **Status:** Decided
 - **Decided by:** written argument
@@ -145,7 +136,7 @@ are kept; no floating point is used.
 - **Sources:**
   - RFC 5280 section 4.1.2.5: notBefore and notAfter are inclusive.
 
-### TIME-008: A lifetime path is still revocation-checked at the validation time
+### TIME-007: A lifetime path is still revocation-checked at the validation time
 
 Lifetime signing changes only the validity time. A path through an
 intermediate needs that intermediate's CRL (otherwise `revocation_unknown`),
@@ -160,15 +151,15 @@ and a revoked leaf is rejected even when another path would verify. Historical
 
 ## Tier 2: availability
 
-### TIME-009: Path building skips an intermediate issued after the signing time
+### TIME-008: Path building skips an intermediate issued after the signing time
 
 The signing-time check of intermediates runs inside path building, so a
 rolled-over intermediate with the same subject and key that was issued after
-signing is rejected as a candidate and another valid issuer is used.
+signing is rejected as a candidate and another valid issuer is used. A candidate rejected by a path rule instead is PATH-009.
 
 - **Status:** Decided
 - **Decided by:** review fix, PR #43 (the first post-selection check rejected
-  `time-009-lifetime-intermediate-rollover`)
+  `time-008-lifetime-intermediate-rollover`)
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: a valid embedded issuer must not be lost because
@@ -176,7 +167,7 @@ signing is rejected as a candidate and another valid issuer is used.
 
 ## Tier 3: result diagnostics
 
-### TIME-010: The signing-time rejection ranks as a validity error
+### TIME-009: The signing-time rejection ranks as a validity error
 
 Candidate rejection follows webpki's error ranking: the signing-time
 rejection ranks above an intermediate lacking keyCertSign and above unknown
@@ -190,7 +181,7 @@ where each defect sits. Both outcomes reject.
 - **Sources:**
   - Written argument: the reported defect must not depend on embedding order.
 
-### TIME-011: A revocation on the same path is reported before the signing-time check
+### TIME-010: A revocation on the same path is reported before the signing-time check
 
 The signing-time check runs after webpki's own checks of a candidate path, so
 a revocation on that path is reported instead. Both outcomes reject.
@@ -201,7 +192,7 @@ a revocation on that path is reported instead. Both outcomes reject.
 - **Sources:**
   - Written argument in [validation time](validation-time.md#lifetime-signing).
 
-### TIME-012: Lifetime-signing validity outranks revocation on another path
+### TIME-011: Lifetime-signing validity outranks revocation on another path
 
 Across candidate paths, a CA issued after the lifetime signing time on one path outranks a revocation on another; both reject.
 
@@ -212,7 +203,7 @@ Across candidate paths, a CA issued after the lifetime signing time on one path 
   - OpenSSL builds one chain and checks revocation before validity.
   - Bouncy Castle tries every path and checks validity before revocation per certificate.
 
-### TIME-013: CRL freshness is reported before the signing-time check
+### TIME-012: CRL freshness is reported before the signing-time check
 
 The TSA chain is verified before the signer against the same store-wide CRLs,
 so an expired or not-yet-valid CRL is reported first, with or without the
@@ -224,7 +215,7 @@ lifetime EKU. Both outcomes reject.
 - **Sources:**
   - Written argument in [validation time](validation-time.md#lifetime-signing).
 
-### TIME-014: Failure details name the chain certificate that failed
+### TIME-013: Failure details name the chain certificate that failed
 
 `details.certificate` names the certificate that failed the signing-time or
 fractional-expiry check, an intermediate when it is the cause. A signing-time

@@ -88,12 +88,12 @@
       "bytes": 184,
       "description": "Authentic root-issued CRL whose nextUpdate is before the pinned validation time.",
       "cases": [
-        "crl-038-fetch-by-certificate-unusable-answer-records-unused-points",
+        "crl-037-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-fetch-injected-expired",
         "crl-012-root-expired-crl-still-rejected",
         "crl-012-root-expired-crl-still-rejected-beside-good-crl",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-041-malformed-aki-beside-expired-local-asks-provider"
+        "crl-039-malformed-aki-beside-expired-local-asks-provider"
       ]
     },
     {
@@ -155,7 +155,7 @@
         "crl-016-superseded-crl-revocation-beside-newer-crl-is-ignored",
         "crl-016-superseded-crl-revocation-alone-revokes",
         "crl-006-role-partition-crl-revocation-beside-full-crl-revokes",
-        "crl-027-role-partition-crl-revocation-alone-is-unsupported"
+        "crl-026-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -216,11 +216,11 @@
         "crl-this-update-exact",
         "crl-next-update-one-second-left",
         "crl-next-update-exact",
-        "crl-030-no-next-update-crl-revocation-alone-revokes",
-        "crl-030-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "crl-030-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
-        "crl-039-no-next-update-point-scope-crl-is-replaceable",
-        "crl-021-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-029-no-next-update-crl-revocation-alone-revokes",
+        "crl-029-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-029-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "crl-038-no-next-update-point-scope-crl-is-replaceable",
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -235,7 +235,7 @@
       "bytes": 183,
       "description": "Authentic current root-issued CRL with no revoked serials.",
       "cases": [
-        "crl-032-rdp-eku-retry-ca-revoked-usage-is-revoked",
+        "crl-031-rdp-eku-retry-ca-revoked-usage-is-revoked",
         "crl-fetch-injected-good",
         "crl-002-root-crl-no-next-update",
         "crl-unrelated-expired-crl-excluded",
@@ -263,7 +263,7 @@
         "crl-this-update-exact",
         "crl-next-update-one-second-left",
         "crl-next-update-exact",
-        "crl-037-fetch-excluded-name-match-fetches-listed-point",
+        "crl-036-fetch-excluded-name-match-fetches-listed-point",
         "crl-012-root-crl-no-next-update-beside-good-crl",
         "crl-012-root-expired-crl-still-rejected-beside-good-crl",
         "crl-012-root-aki-crl-still-rejected-beside-good-crl",
@@ -286,10 +286,10 @@
         "crl-020-not-yet-valid-local-refreshed-by-provider",
         "crl-018-forged-local-asks-nothing",
         "crl-020-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-039-no-next-update-local-asks-nothing",
+        "crl-038-no-next-update-local-asks-nothing",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-021-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -324,11 +324,11 @@
         "crl-this-update-exact",
         "crl-next-update-one-second-left",
         "crl-next-update-exact",
-        "crl-037-fetch-excluded-name-match-fetches-listed-point",
-        "crl-028-fetch-source-denied-is-no-evidence",
-        "crl-028-fetch-source-failed-is-no-evidence",
-        "crl-028-fetch-source-unknown-is-no-evidence",
-        "crl-028-fetch-source-abort-is-reported",
+        "crl-036-fetch-excluded-name-match-fetches-listed-point",
+        "crl-027-fetch-source-denied-is-no-evidence",
+        "crl-027-fetch-source-failed-is-no-evidence",
+        "crl-027-fetch-source-unknown-is-no-evidence",
+        "crl-027-fetch-source-abort-is-reported",
         "crl-012-root-crl-no-next-update-beside-good-crl",
         "crl-012-root-expired-crl-still-rejected-beside-good-crl",
         "crl-012-root-aki-crl-still-rejected-beside-good-crl",
@@ -349,23 +349,23 @@
         "crl-016-superseded-crl-revocation-beside-newer-crl-is-ignored",
         "crl-016-superseded-crl-revocation-alone-revokes",
         "crl-006-role-partition-crl-revocation-beside-full-crl-revokes",
-        "crl-027-role-partition-crl-revocation-alone-is-unsupported",
+        "crl-026-role-partition-crl-revocation-alone-is-unsupported",
         "crl-011-fetch-invalid-nested-signature-requests-nothing",
         "crl-020-not-yet-valid-local-refreshed-by-provider",
-        "crl-041-not-yet-valid-local-asks-provider",
+        "crl-039-not-yet-valid-local-asks-provider",
         "crl-018-forged-local-asks-nothing",
         "crl-020-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-039-no-next-update-local-asks-nothing",
-        "crl-041-not-yet-valid-local-source-abort-is-marked",
-        "crl-041-unknown-critical-extension-local-source-abort-is-marked",
+        "crl-038-no-next-update-local-asks-nothing",
+        "crl-039-not-yet-valid-local-source-abort-is-marked",
+        "crl-039-unknown-critical-extension-local-source-abort-is-marked",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-041-malformed-aki-beside-expired-local-asks-provider",
-        "crl-030-no-next-update-crl-revocation-alone-revokes",
-        "crl-030-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "crl-030-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
-        "crl-039-no-next-update-point-scope-crl-is-replaceable",
-        "crl-021-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-039-malformed-aki-beside-expired-local-asks-provider",
+        "crl-029-no-next-update-crl-revocation-alone-revokes",
+        "crl-029-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-029-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
+        "crl-038-no-next-update-point-scope-crl-is-replaceable",
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -529,8 +529,8 @@
       "paired_good": "good.crl",
       "cases": [
         "crl-020-not-yet-valid-local-refreshed-by-provider",
-        "crl-041-not-yet-valid-local-asks-provider",
-        "crl-041-not-yet-valid-local-source-abort-is-marked"
+        "crl-039-not-yet-valid-local-asks-provider",
+        "crl-039-not-yet-valid-local-source-abort-is-marked"
       ]
     },
     {
@@ -6797,10 +6797,10 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "crl-032-rdp-eku-retry-ca-revoked-usage-is-revoked",
-        "crl-024-rdp-eku-retry-ca-with-crls-verifies",
-        "crl-033-rdp-eku-retry-ca-missing-crl-is-unknown",
-        "crl-024-rdp-eku-retry-ca-fetches-the-missing-crl"
+        "crl-031-rdp-eku-retry-ca-revoked-usage-is-revoked",
+        "crl-023-rdp-eku-retry-ca-with-crls-verifies",
+        "crl-032-rdp-eku-retry-ca-missing-crl-is-unknown",
+        "crl-023-rdp-eku-retry-ca-fetches-the-missing-crl"
       ]
     },
     {
@@ -6815,8 +6815,8 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "crl-024-rdp-eku-retry-ca-with-crls-verifies",
-        "crl-024-rdp-eku-retry-ca-fetches-the-missing-crl"
+        "crl-023-rdp-eku-retry-ca-with-crls-verifies",
+        "crl-023-rdp-eku-retry-ca-fetches-the-missing-crl"
       ]
     },
     {
@@ -6831,7 +6831,7 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "crl-032-rdp-eku-retry-ca-revoked-usage-is-revoked"
+        "crl-031-rdp-eku-retry-ca-revoked-usage-is-revoked"
       ]
     },
     {
@@ -6845,35 +6845,35 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "crl-038-fetch-by-certificate-unusable-answer-records-unused-points",
+        "crl-037-fetch-by-certificate-unusable-answer-records-unused-points",
         "crl-discovery-local",
         "crl-fetch-injected-expired",
         "crl-fetch-injected-forged",
         "crl-fetch-injected-good",
         "crl-fetch-injected-revoked",
         "crl-fetch-injected-undecodable",
-        "crl-028-fetch-injected-unavailable",
+        "crl-027-fetch-injected-unavailable",
         "crl-offline-provider-unused",
         "crl-local-provider-unused",
         "crl-019-stale-local-asks-provider",
-        "crl-037-fetch-excluded-name-match-fetches-listed-point",
-        "crl-028-fetch-source-denied-is-no-evidence",
-        "crl-028-fetch-source-failed-is-no-evidence",
-        "crl-028-fetch-source-unknown-is-no-evidence",
-        "crl-028-fetch-source-abort-is-reported",
+        "crl-036-fetch-excluded-name-match-fetches-listed-point",
+        "crl-027-fetch-source-denied-is-no-evidence",
+        "crl-027-fetch-source-failed-is-no-evidence",
+        "crl-027-fetch-source-unknown-is-no-evidence",
+        "crl-027-fetch-source-abort-is-reported",
         "crl-011-fetch-untrusted-chain-requests-nothing",
         "crl-019-stale-local-refreshed-by-provider",
-        "crl-040-stale-local-source-abort-is-marked",
+        "crl-039-stale-local-source-abort-is-marked",
         "crl-020-not-yet-valid-local-refreshed-by-provider",
-        "crl-041-not-yet-valid-local-asks-provider",
+        "crl-039-not-yet-valid-local-asks-provider",
         "crl-018-forged-local-asks-nothing",
         "crl-020-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-039-no-next-update-local-asks-nothing",
-        "crl-041-not-yet-valid-local-source-abort-is-marked",
-        "crl-041-unknown-critical-extension-local-source-abort-is-marked",
+        "crl-038-no-next-update-local-asks-nothing",
+        "crl-039-not-yet-valid-local-source-abort-is-marked",
+        "crl-039-unknown-critical-extension-local-source-abort-is-marked",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-041-malformed-aki-beside-expired-local-asks-provider"
+        "crl-039-malformed-aki-beside-expired-local-asks-provider"
       ]
     },
     {
@@ -6887,7 +6887,7 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "crl-028-fetch-private"
+        "crl-027-fetch-private"
       ]
     },
     {
@@ -6946,7 +6946,7 @@
       "bytes": 2192,
       "description": "SEC-04 CMS structure regression; exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
       "cases": [
-        "cms-014-good-structure"
+        "cms-010-good-structure"
       ]
     },
     {
@@ -7143,10 +7143,10 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-031-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-        "crl-031-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "path-008-bad-ca-ku",
-        "crl-029-fetch-path-failing-key-usage-asks-nothing"
+        "crl-028-fetch-path-failing-key-usage-asks-nothing"
       ]
     },
     {
@@ -7350,7 +7350,7 @@
         "crl-revoked-issuer-issuer-crl-first",
         "crl-fetch-no-listed-point-not-fetched",
         "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
-        "crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -7446,14 +7446,14 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "path-010-good-cross-first",
         "path-010-good-cross-other-root",
-        "crl-029-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-028-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -7762,10 +7762,10 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "crl-031-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
-        "crl-031-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "path-003-good-basic",
         "path-003-bad-ca-false",
         "path-003-bad-ca-missing-bc",
@@ -7825,17 +7825,17 @@
         "crl-fetch-ca-user-scope-idp-fetches-listed-point",
         "crl-fetch-ca-ca-scope-idp-not-fetched",
         "crl-014-chain-crl-dp-full-crls",
-        "crl-037-fetch-covered-signer-point-not-requested",
-        "crl-037-fetch-covered-signer-is-not-asked",
+        "crl-036-fetch-covered-signer-point-not-requested",
+        "crl-036-fetch-covered-signer-is-not-asked",
         "crl-014-leaf-crl-dp-mixed-full-crl",
-        "crl-037-fetch-asks-only-the-uncovered-certificate",
+        "crl-036-fetch-asks-only-the-uncovered-certificate",
         "crl-014-leaf-crl-dp-https-full-crl",
-        "crl-025-fetch-source-is-asked-for-any-scheme",
-        "crl-029-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-024-fetch-source-is-asked-for-any-scheme",
+        "crl-028-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8030,13 +8030,13 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "path-010-good-cross-other-root",
-        "crl-029-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-028-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -8117,7 +8117,7 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "path-003-good-basic",
         "path-003-bad-ca-false",
         "path-003-bad-ca-missing-bc",
@@ -8161,7 +8161,7 @@
         "crl-ca-crl-sign-fallback",
         "crl-015-root-no-crl-sign-accepted",
         "crl-dp-matching-idp",
-        "crl-034-dp-other-idp-unknown",
+        "crl-033-dp-other-idp-unknown",
         "crl-dp-matching-idp-revoked",
         "crl-dp-other-idp-first",
         "crl-013-dp-other-partition-revocation-is-ignored",
@@ -8198,29 +8198,29 @@
         "crl-fetch-user-scope-idp-not-fetched",
         "crl-fetch-full-crl-not-fetched",
         "crl-fetch-no-listed-point-not-fetched",
-        "crl-028-fetch-reasons-point-denied",
-        "crl-028-fetch-crl-issuer-point-denied",
-        "crl-028-fetch-dns-name-point-denied",
+        "crl-027-fetch-reasons-point-denied",
+        "crl-027-fetch-crl-issuer-point-denied",
+        "crl-027-fetch-dns-name-point-denied",
         "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
         "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
         "crl-014-chain-crl-dp-full-crls",
-        "crl-037-fetch-covered-signer-point-not-requested",
-        "crl-037-fetch-asks-each-certificate-without-crl",
-        "crl-037-fetch-covered-signer-is-not-asked",
+        "crl-036-fetch-covered-signer-point-not-requested",
+        "crl-036-fetch-asks-each-certificate-without-crl",
+        "crl-036-fetch-covered-signer-is-not-asked",
         "crl-014-leaf-crl-dp-mixed-full-crl",
-        "crl-037-fetch-mixed-point-requests-plain-uri",
-        "crl-037-fetch-bad-response-is-no-evidence-beside-another-point",
+        "crl-036-fetch-mixed-point-requests-plain-uri",
+        "crl-036-fetch-bad-response-is-no-evidence-beside-another-point",
         "crl-014-leaf-crl-dp-https-full-crl",
-        "crl-025-fetch-source-is-asked-for-any-scheme",
-        "crl-042-fetch-builtin-source-denies-https",
-        "crl-034-expired-partition-for-another-point-leaves-status-unknown",
-        "crl-034-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-024-fetch-source-is-asked-for-any-scheme",
+        "crl-040-fetch-builtin-source-denies-https",
+        "crl-033-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-033-fetch-expired-partition-for-another-point-still-fetches",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-008-self-issued-rollover-with-both-crls-is-rejected",
-        "crl-041-fetch-unusable-scope-supplied-crl-stands-without-answer",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-039-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
-        "crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8236,8 +8236,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
         "path-003-good-basic",
         "path-003-bad-ca-false",
         "path-003-bad-ca-missing-bc",
@@ -8274,7 +8274,7 @@
         "crl-ca-crl-sign",
         "crl-ca-crl-sign-fallback",
         "crl-dp-matching-idp",
-        "crl-034-dp-other-idp-unknown",
+        "crl-033-dp-other-idp-unknown",
         "crl-dp-matching-idp-revoked",
         "crl-dp-other-idp-first",
         "crl-013-dp-other-partition-revocation-is-ignored",
@@ -8317,35 +8317,35 @@
         "crl-fetch-ca-user-scope-idp-fetches-listed-point",
         "crl-fetch-ca-ca-scope-idp-not-fetched",
         "crl-fetch-no-listed-point-not-fetched",
-        "crl-028-fetch-reasons-point-denied",
-        "crl-028-fetch-crl-issuer-point-denied",
-        "crl-028-fetch-dns-name-point-denied",
+        "crl-027-fetch-reasons-point-denied",
+        "crl-027-fetch-crl-issuer-point-denied",
+        "crl-027-fetch-dns-name-point-denied",
         "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
         "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
         "crl-014-chain-crl-dp-full-crls",
-        "crl-037-fetch-covered-signer-point-not-requested",
-        "crl-037-fetch-asks-each-certificate-without-crl",
-        "crl-037-fetch-covered-signer-is-not-asked",
+        "crl-036-fetch-covered-signer-point-not-requested",
+        "crl-036-fetch-asks-each-certificate-without-crl",
+        "crl-036-fetch-covered-signer-is-not-asked",
         "crl-014-leaf-crl-dp-mixed-full-crl",
-        "crl-037-fetch-mixed-point-requests-plain-uri",
-        "crl-037-fetch-asks-only-the-uncovered-certificate",
-        "crl-037-fetch-bad-response-is-no-evidence-beside-another-point",
-        "crl-028-fetch-source-abort-stops-requests",
+        "crl-036-fetch-mixed-point-requests-plain-uri",
+        "crl-036-fetch-asks-only-the-uncovered-certificate",
+        "crl-036-fetch-bad-response-is-no-evidence-beside-another-point",
+        "crl-027-fetch-source-abort-stops-requests",
         "crl-014-leaf-crl-dp-https-full-crl",
-        "crl-025-fetch-source-is-asked-for-any-scheme",
-        "crl-042-fetch-builtin-source-denies-https",
-        "crl-034-expired-partition-for-another-point-leaves-status-unknown",
-        "crl-034-fetch-expired-partition-for-another-point-still-fetches",
-        "crl-029-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-024-fetch-source-is-asked-for-any-scheme",
+        "crl-040-fetch-builtin-source-denies-https",
+        "crl-033-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-033-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-028-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-007-self-issued-rollover-without-revocation-verifies",
         "crl-008-self-issued-rollover-with-both-crls-is-rejected",
-        "crl-041-fetch-unusable-scope-supplied-crl-stands-without-answer",
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "crl-041-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-039-fetch-unusable-scope-supplied-crl-stands-without-answer",
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-039-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
-        "crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -8446,8 +8446,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -8463,9 +8463,9 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "crl-041-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
+        "crl-039-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
@@ -9257,8 +9257,8 @@
       "license": "Apache-2.0",
       "cases": [
         "time-003-expired-timestamped",
-        "time-005-expired-timestamped-at-validation-time",
-        "time-005-expired-timestamped-future"
+        "time-004-expired-timestamped-at-validation-time",
+        "time-004-expired-timestamped-future"
       ]
     },
     {
@@ -9317,7 +9317,7 @@
       "license": "Apache-2.0",
       "cases": [
         "time-002-lifetime-before-not-before",
-        "time-013-lifetime-before-not-before-crl-expired"
+        "time-012-lifetime-before-not-before-crl-expired"
       ]
     },
     {
@@ -9328,8 +9328,8 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-004-timestamp-before-not-before",
-        "time-013-timestamp-before-not-before-crl-expired"
+        "time-003-timestamp-before-not-before",
+        "time-012-timestamp-before-not-before-crl-expired"
       ]
     },
     {
@@ -9352,11 +9352,11 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-009-lifetime-intermediate-rollover",
-        "time-008-lifetime-rollover-revocation",
-        "time-008-lifetime-rollover-revocation-unknown",
-        "time-008-lifetime-rollover-revoked-leaf",
-        "time-012-lifetime-rollover-revoked-issuer"
+        "time-008-lifetime-intermediate-rollover",
+        "time-007-lifetime-rollover-revocation",
+        "time-007-lifetime-rollover-revocation-unknown",
+        "time-007-lifetime-rollover-revoked-leaf",
+        "time-011-lifetime-rollover-revoked-issuer"
       ]
     },
     {
@@ -9369,7 +9369,7 @@
       "cases": [
         "time-002-lifetime-intermediate-late",
         "time-002-lifetime-late-revocation",
-        "time-011-lifetime-late-revoked-leaf"
+        "time-010-lifetime-late-revoked-leaf"
       ],
       "paired_good": "time-lifetime-intermediate-rollover.exe"
     },
@@ -9381,7 +9381,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-leaf-not-after-exact"
+        "time-005-leaf-not-after-exact"
       ]
     },
     {
@@ -9392,7 +9392,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-leaf-not-after-fraction"
+        "time-005-leaf-not-after-fraction"
       ],
       "paired_good": "time-leaf-not-after-exact.exe"
     },
@@ -9404,7 +9404,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-leaf-not-before-fraction-inside"
+        "time-005-leaf-not-before-fraction-inside"
       ]
     },
     {
@@ -9415,7 +9415,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-leaf-not-before-fraction-early"
+        "time-005-leaf-not-before-fraction-early"
       ],
       "paired_good": "time-leaf-not-before-fraction-inside.exe"
     },
@@ -9427,7 +9427,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-intermediate-not-after-exact"
+        "time-005-intermediate-not-after-exact"
       ]
     },
     {
@@ -9438,7 +9438,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-intermediate-not-after-fraction"
+        "time-005-intermediate-not-after-fraction"
       ],
       "paired_good": "time-intermediate-not-after-exact.exe"
     },
@@ -9462,7 +9462,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-intermediate-not-before-fraction-inside"
+        "time-005-intermediate-not-before-fraction-inside"
       ]
     },
     {
@@ -9473,7 +9473,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-006-intermediate-not-before-fraction-early"
+        "time-005-intermediate-not-before-fraction-early"
       ],
       "paired_good": "time-intermediate-not-before-fraction-inside.exe"
     },
@@ -9485,10 +9485,10 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-007-untimestamped-before-not-before",
-        "time-007-untimestamped-at-not-before",
-        "time-007-untimestamped-at-not-after",
-        "time-007-untimestamped-after-not-after"
+        "time-006-untimestamped-before-not-before",
+        "time-006-untimestamped-at-not-before",
+        "time-006-untimestamped-at-not-after",
+        "time-006-untimestamped-after-not-after"
       ]
     },
     {
@@ -9499,7 +9499,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-010-lifetime-intermediate-late-ca-usage"
+        "time-009-lifetime-intermediate-late-ca-usage"
       ],
       "paired_good": "time-lifetime-intermediate-rollover.exe"
     },
@@ -9507,11 +9507,11 @@
       "file": "time-lifetime-intermediate-ca-usage-late.exe",
       "sha256": "f762f74f73b3485c3e044bbaf36248decd675b859735036c8f3cc67b58d2c4d8",
       "bytes": 4608,
-      "description": "SEC-09: Same as time-010-lifetime-intermediate-late-ca-usage with the intermediates embedded in reverse order. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
+      "description": "SEC-09: Same as time-009-lifetime-intermediate-late-ca-usage with the intermediates embedded in reverse order. Deterministic public test keys; image unchanged. Expected certificate_not_yet_valid at certificate_chain naming the late intermediate.",
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-010-lifetime-intermediate-ca-usage-late"
+        "time-009-lifetime-intermediate-ca-usage-late"
       ],
       "paired_good": "time-lifetime-intermediate-rollover.exe"
     },
@@ -9523,7 +9523,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-010-lifetime-chain-ca-usage-late"
+        "time-009-lifetime-chain-ca-usage-late"
       ]
     },
     {
@@ -9534,7 +9534,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-010-lifetime-chain-late-ca-usage"
+        "time-009-lifetime-chain-late-ca-usage"
       ]
     },
     {
@@ -9591,9 +9591,9 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-008-lifetime-rollover-revocation",
+        "time-007-lifetime-rollover-revocation",
         "time-002-lifetime-late-revocation",
-        "time-012-lifetime-rollover-revoked-issuer",
+        "time-011-lifetime-rollover-revoked-issuer",
         "time-002-lifetime-intermediate-not-before-exact",
         "time-002-lifetime-intermediate-not-before-early"
       ]
@@ -9606,8 +9606,8 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-011-lifetime-late-revoked-leaf",
-        "time-008-lifetime-rollover-revoked-leaf"
+        "time-010-lifetime-late-revoked-leaf",
+        "time-007-lifetime-rollover-revoked-leaf"
       ],
       "paired_good": "time-intermediate.crl"
     },
@@ -9619,7 +9619,7 @@
       "generator": "src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-012-lifetime-rollover-revoked-issuer"
+        "time-011-lifetime-rollover-revoked-issuer"
       ],
       "paired_good": "good.crl"
     },
@@ -9679,8 +9679,8 @@
       "cases": [
         "crl-002-root-crl-no-next-update",
         "crl-012-root-crl-no-next-update-beside-good-crl",
-        "crl-039-no-next-update-local-asks-nothing",
-        "crl-030-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "crl-038-no-next-update-local-asks-nothing",
+        "crl-029-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
@@ -9691,7 +9691,7 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-030-no-next-update-crl-revocation-cleared-by-newer-crl"
+        "crl-029-no-next-update-crl-revocation-cleared-by-newer-crl"
       ]
     },
     {
@@ -9715,10 +9715,10 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-004-no-next-update-crl-revocation-beside-older-crl-revokes",
-        "crl-030-no-next-update-crl-revocation-alone-is-invalid",
-        "crl-030-no-next-update-crl-revocation-alone-revokes",
-        "crl-030-no-next-update-crl-revocation-cleared-by-newer-crl",
-        "crl-030-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
+        "crl-029-no-next-update-crl-revocation-alone-is-invalid",
+        "crl-029-no-next-update-crl-revocation-alone-revokes",
+        "crl-029-no-next-update-crl-revocation-cleared-by-newer-crl",
+        "crl-029-no-next-update-crl-revocation-beside-older-clearing-crl-revokes"
       ]
     },
     {
@@ -9742,7 +9742,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-006-role-partition-crl-revocation-beside-full-crl-revokes",
-        "crl-027-role-partition-crl-revocation-alone-is-unsupported"
+        "crl-026-role-partition-crl-revocation-alone-is-unsupported"
       ]
     },
     {
@@ -9788,7 +9788,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-root-name-other-aki-crl-excluded",
-        "crl-037-fetch-excluded-name-match-fetches-listed-point"
+        "crl-036-fetch-excluded-name-match-fetches-listed-point"
       ]
     },
     {
@@ -9815,7 +9815,7 @@
         "crl-012-root-crl-malformed-aki-beside-good-crl",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-041-malformed-aki-beside-expired-local-asks-provider"
+        "crl-039-malformed-aki-beside-expired-local-asks-provider"
       ]
     },
     {
@@ -9849,8 +9849,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-045-forged-crl-naming-another-key-is-set-aside",
-        "crl-045-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+        "crl-043-forged-crl-naming-another-key-is-set-aside",
+        "crl-043-forged-crl-naming-a-same-key-roots-identifier-is-forged"
       ]
     },
     {
@@ -9861,7 +9861,7 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-045-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+        "crl-043-forged-crl-naming-a-same-key-roots-identifier-is-forged"
       ]
     },
     {
@@ -9886,7 +9886,7 @@
         "crl-012-root-unknown-critical-extension-crl-unsupported",
         "crl-012-root-unknown-critical-extension-crl-unsupported-beside-good-crl",
         "crl-020-unknown-critical-extension-local-refreshed-by-provider",
-        "crl-041-unknown-critical-extension-local-source-abort-is-marked"
+        "crl-039-unknown-critical-extension-local-source-abort-is-marked"
       ]
     },
     {
@@ -10037,8 +10037,8 @@
       "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-039-no-next-update-point-scope-crl-is-replaceable",
-        "crl-021-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-038-no-next-update-point-scope-crl-is-replaceable",
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -10061,7 +10061,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-matching-idp",
-        "crl-034-dp-other-idp-unknown",
+        "crl-033-dp-other-idp-unknown",
         "crl-dp-matching-idp-revoked",
         "crl-dp-other-idp-first",
         "crl-013-dp-other-partition-revocation-is-ignored",
@@ -10082,10 +10082,10 @@
         "crl-fetch-user-scope-idp-not-fetched",
         "crl-fetch-full-crl-not-fetched",
         "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
-        "crl-034-expired-partition-for-another-point-leaves-status-unknown",
-        "crl-034-fetch-expired-partition-for-another-point-still-fetches",
-        "crl-038-fetch-by-certificate-answer-requests-no-listed-point",
-        "crl-041-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "crl-033-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-033-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-037-fetch-by-certificate-answer-requests-no-listed-point",
+        "crl-039-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
@@ -10109,12 +10109,12 @@
         "crl-fetch-ca-scope-idp-fetches-listed-point",
         "crl-fetch-matching-idp-not-fetched",
         "crl-fetch-no-listed-point-not-fetched",
-        "crl-028-fetch-reasons-point-denied",
-        "crl-028-fetch-crl-issuer-point-denied",
+        "crl-027-fetch-reasons-point-denied",
+        "crl-027-fetch-crl-issuer-point-denied",
         "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
-        "crl-037-fetch-asks-each-certificate-without-crl",
-        "crl-037-fetch-mixed-point-requests-plain-uri",
-        "crl-034-fetch-expired-partition-for-another-point-still-fetches",
+        "crl-036-fetch-asks-each-certificate-without-crl",
+        "crl-036-fetch-mixed-point-requests-plain-uri",
+        "crl-033-fetch-expired-partition-for-another-point-still-fetches",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
@@ -10138,15 +10138,15 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-034-dp-other-idp-unknown",
+        "crl-033-dp-other-idp-unknown",
         "crl-dp-other-idp-first",
         "crl-dp-matching-idp-first",
         "crl-dp-other-idp-with-full-crl",
         "crl-fetch-other-idp-fetches-listed-point",
         "crl-fetch-other-idp-fetched-revoked",
         "crl-fetch-other-idp-fetched-other-unknown",
-        "crl-037-fetch-asks-each-certificate-without-crl",
-        "crl-037-fetch-mixed-point-requests-plain-uri"
+        "crl-036-fetch-asks-each-certificate-without-crl",
+        "crl-036-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -10157,8 +10157,8 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-034-expired-partition-for-another-point-leaves-status-unknown",
-        "crl-034-fetch-expired-partition-for-another-point-still-fetches"
+        "crl-033-expired-partition-for-another-point-leaves-status-unknown",
+        "crl-033-fetch-expired-partition-for-another-point-still-fetches"
       ]
     },
     {
@@ -10196,7 +10196,7 @@
         "crl-dp-multi-second-point-matches",
         "crl-dp-multi-unlisted-point-unknown",
         "crl-dp-multi-full-crl",
-        "crl-037-fetch-bad-response-is-no-evidence-beside-another-point"
+        "crl-036-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
@@ -10209,7 +10209,7 @@
       "cases": [
         "crl-dp-dns-name-unknown",
         "crl-dp-dns-full-crl",
-        "crl-028-fetch-dns-name-point-denied"
+        "crl-027-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -10235,7 +10235,7 @@
       "cases": [
         "crl-dp-reasons-point-unknown",
         "crl-dp-reasons-full-crl",
-        "crl-028-fetch-reasons-point-denied"
+        "crl-027-fetch-reasons-point-denied"
       ]
     },
     {
@@ -10248,7 +10248,7 @@
       "cases": [
         "crl-dp-crl-issuer-point-unknown",
         "crl-dp-crl-issuer-full-crl",
-        "crl-028-fetch-crl-issuer-point-denied"
+        "crl-027-fetch-crl-issuer-point-denied"
       ]
     },
     {
@@ -10260,7 +10260,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-mixed-full-crl",
-        "crl-037-fetch-mixed-point-requests-plain-uri"
+        "crl-036-fetch-mixed-point-requests-plain-uri"
       ]
     },
     {
@@ -10272,8 +10272,8 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-014-leaf-crl-dp-https-full-crl",
-        "crl-025-fetch-source-is-asked-for-any-scheme",
-        "crl-042-fetch-builtin-source-denies-https"
+        "crl-024-fetch-source-is-asked-for-any-scheme",
+        "crl-040-fetch-builtin-source-denies-https"
       ]
     },
     {
@@ -10299,12 +10299,12 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-014-chain-crl-dp-full-crls",
-        "crl-037-fetch-covered-signer-point-not-requested",
-        "crl-037-fetch-asks-each-certificate-without-crl",
-        "crl-037-fetch-covered-signer-is-not-asked",
-        "crl-037-fetch-asks-only-the-uncovered-certificate",
-        "crl-028-fetch-source-abort-stops-requests",
-        "crl-041-chain-unknown-names-missing-and-not-yet-valid-crl",
+        "crl-036-fetch-covered-signer-point-not-requested",
+        "crl-036-fetch-asks-each-certificate-without-crl",
+        "crl-036-fetch-covered-signer-is-not-asked",
+        "crl-036-fetch-asks-only-the-uncovered-certificate",
+        "crl-027-fetch-source-abort-stops-requests",
+        "crl-039-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
       ]
     },
@@ -10331,7 +10331,7 @@
         "crl-dp-ca-scope-excludes-signer",
         "crl-fetch-ca-scope-idp-fetches-listed-point",
         "crl-009-fetch-no-listed-point-role-excluded-scope-rejected",
-        "crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
       ]
     },
     {
@@ -10354,7 +10354,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-multi-second-point-matches",
-        "crl-037-fetch-bad-response-is-no-evidence-beside-another-point"
+        "crl-036-fetch-bad-response-is-no-evidence-beside-another-point"
       ]
     },
     {
@@ -10366,7 +10366,7 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-dp-dns-name-unknown",
-        "crl-028-fetch-dns-name-point-denied"
+        "crl-027-fetch-dns-name-point-denied"
       ]
     },
     {
@@ -10380,7 +10380,7 @@
         "crl-dp-relative-idp-unsupported",
         "crl-partition-crl-relative-no-listed-point",
         "crl-020-fetch-unusable-scope-supplied-crl-refreshed",
-        "crl-041-fetch-unusable-scope-supplied-crl-stands-without-answer"
+        "crl-039-fetch-unusable-scope-supplied-crl-stands-without-answer"
       ]
     },
     {
@@ -10394,7 +10394,7 @@
         "crl-ca-crl-dp-ca-scope-covers-issuer",
         "crl-fetch-ca-user-scope-idp-fetches-listed-point",
         "crl-fetch-ca-ca-scope-idp-not-fetched",
-        "crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "crl-028-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
@@ -10405,10 +10405,10 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-031-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
+        "crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure",
         "crl-ca-crl-dp-user-scope-excludes-issuer",
         "crl-fetch-ca-user-scope-idp-fetches-listed-point",
-        "crl-037-fetch-covered-signer-is-not-asked"
+        "crl-036-fetch-covered-signer-is-not-asked"
       ]
     },
     {
@@ -10419,12 +10419,12 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-031-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
+        "crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked",
         "crl-revoked-issuer",
         "crl-revoked-issuer-after-good-root-crl",
         "crl-revoked-issuer-before-good-root-crl",
         "crl-revoked-issuer-issuer-crl-first",
-        "crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
+        "crl-028-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
       ]
     },
     {
@@ -10435,14 +10435,14 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it",
-        "crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
-        "crl-029-cross-revoked-path-beside-path-without-crl-names-it",
+        "crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it",
+        "crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path",
+        "crl-028-cross-revoked-path-beside-path-without-crl-names-it",
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path",
-        "crl-029-fetch-revocation-stands-when-the-other-path-stays-without-crl",
-        "crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
-        "crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
+        "crl-028-fetch-revocation-stands-when-the-other-path-stays-without-crl",
+        "crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
+        "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path"
       ]
     },
     {
@@ -10453,8 +10453,8 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
-        "crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage"
+        "crl-028-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "crl-028-cross-unusable-crl-decides-beside-path-failing-key-usage"
       ]
     },
     {
@@ -10465,7 +10465,7 @@
       "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "crl-029-cross-expired-path-beside-path-without-crl-names-the-gap",
+        "crl-028-cross-expired-path-beside-path-without-crl-names-the-gap",
         "crl-017-fetch-completes-the-path-beside-an-expired-path"
       ]
     },

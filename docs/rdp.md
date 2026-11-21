@@ -116,7 +116,7 @@ without a CRL, with only expired ones, or with only ones a source's CRL could re
 (not yet valid, malformed, an unusable or point-scoped issuingDistributionPoint, an unsupported feature), as for candidate paths; otherwise the first failure is reported, except that a purpose which only lacks a current CRL
 (an unknown status, or an expired or replaceable CRL, that names the certificates to ask about; an
 empty list names nothing) is reported ahead of another purpose's failure, so that `--fetch-crls` can
-ask for the CRL (`crl-033-rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted
+ask for the CRL (`crl-032-rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted
 by these rules. Digital-signature key usage, configured roots, certificate times,
 and current local CRLs retain their existing checks. Embedded certificates remain
 untrusted candidates. Root enumeration is the only OS trust integration.

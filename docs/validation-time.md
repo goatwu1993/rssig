@@ -4,7 +4,7 @@ The verifier never reads the clock. `VerifyOptions.now` (the CLI's `--time`, or
 the host clock when `--time` is omitted) is the single whole-second validation
 time for one verification. Each kind of certificate or artifact is checked at a
 documented time. The numbered decisions behind this page, with their status
-and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-014`).
+and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-013`).
 
 | Subject | Time used | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-014`)
 | TSA chain | Timestamp `signing_time` | The TSA EKU must be exclusively timeStamping, so lifetime signing never applies to it. |
 | Timestamp itself | Validation time | `signing_time` equal to the validation time is accepted; any nonzero fraction in that second, or a later second, is `timestamp_in_future`. |
 | Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [certificate paths](certificate-paths.md). Checking them at a lifetime signing time is SEC-14. |
-| CRLs | Validation time | Which CRL decides, its scope, freshness and revocation are [CRL decisions](crl.md). A current CRL listing a certificate rejects it even after a valid timestamp, and a lifetime path is revocation-checked at the validation time ([TIME-008](time.md#time-008-a-lifetime-path-is-still-revocation-checked-at-the-validation-time)). |
+| CRLs | Validation time | Which CRL decides, its scope, freshness and revocation are [CRL decisions](crl.md). A current CRL listing a certificate rejects it even after a valid timestamp, and a lifetime path is revocation-checked at the validation time ([TIME-007](time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time)). |
 
 ## Lifetime signing
 

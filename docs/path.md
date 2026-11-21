@@ -158,7 +158,7 @@ acceptable alternative with the same subject and key, in either order.
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: a valid embedded issuer must not be lost because
-    another candidate was tried first (as TIME-009 for signing time).
+    another candidate was tried first (as TIME-008 for signing time).
 
 ### PATH-010: Cross-signed paths lead to the configured root
 

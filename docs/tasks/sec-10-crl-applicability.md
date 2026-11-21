@@ -50,7 +50,7 @@ One box per item in the scope above.
   `crl-revoked-issuer-issuer-crl-first`. Limit: the error details describe the
   signer (SEC-19).
 - [x] **Incomplete issuer coverage.** A chain certificate with no applicable CRL
-  is `revocation_unknown`. `time-008-lifetime-rollover-revocation-unknown`,
+  is `revocation_unknown`. `time-007-lifetime-rollover-revocation-unknown`,
   `crl-only-unrelated-crl-is-unknown`.
 - [x] **Distribution-point scope.** A CRL naming a point is authoritative only
   for a certificate listing the same URI, byte for byte; role flags restrict it
@@ -88,7 +88,7 @@ One box per item in the scope above.
   `crl-unrelated-*-excluded` cases. Limit: SEC-18.
 - [x] **Unknown status is never good.** Path validation denies unknown status,
   and a request whose supplied CRLs all fail to apply is `revocation_unknown`.
-  `crl-only-unrelated-crl-is-unknown`, `crl-034-dp-other-idp-unknown`,
+  `crl-only-unrelated-crl-is-unknown`, `crl-033-dp-other-idp-unknown`,
   `crl-dp-other-idp-revoked-unknown`.
 - [x] **Unsupported-feature errors.** Every applicable CRL that cannot be used is
   `invalid_crl` with a `details.reason` listed in [problems](../problems.md).
@@ -110,10 +110,10 @@ One box per item in the scope above.
   `crl-fetch-other-idp-fetched-other-unknown`,
   `crl-fetch-ca-scope-idp-fetches-listed-point`,
   `crl-fetch-ca-user-scope-idp-fetches-listed-point`,
-  `crl-037-fetch-excluded-name-match-fetches-listed-point`,
-  `crl-037-fetch-covered-signer-point-not-requested`,
-  `crl-037-fetch-asks-each-certificate-without-crl`,
-  `crl-037-fetch-covered-signer-is-not-asked`, and the
+  `crl-036-fetch-excluded-name-match-fetches-listed-point`,
+  `crl-036-fetch-covered-signer-point-not-requested`,
+  `crl-036-fetch-asks-each-certificate-without-crl`,
+  `crl-036-fetch-covered-signer-is-not-asked`, and the
   `crl-fetch-*-not-fetched` controls; named tests in
   `tests/cli/crl_fetch.rs`.
   A supplied CRL that verification rejects is reported as it is offline and
@@ -126,8 +126,8 @@ One box per item in the scope above.
   A listed point that discovery does not support (reasons, cRLIssuer or a
   non-URI name) is not requested and is listed in `crl_retrieval.failures`; the
   result is the verifier's `revocation_unknown`, as without `--fetch-crls`
-  (`crl-028-fetch-reasons-point-denied`, `crl-028-fetch-crl-issuer-point-denied`,
-  `crl-028-fetch-dns-name-point-denied`).
+  (`crl-027-fetch-reasons-point-denied`, `crl-027-fetch-crl-issuer-point-denied`,
+  `crl-027-fetch-dns-name-point-denied`).
   History: PR #55 first restated webpki's authority rule for this
   (`has_crl_for`); the follow-up replaced it with the flow above.
   Limits: see evidence limits.
@@ -172,7 +172,7 @@ One box per item in the scope above.
     Unit test `a_certificate_over_the_url_limits_is_skipped_point_by_point`.
   - **Decided by choice, diagnostics only.** Across candidate paths, a CA
     issued after the lifetime signing time on one path outranks a revocation
-    on another (`time-012-lifetime-rollover-revoked-issuer`); both reject. The
+    on another (`time-011-lifetime-rollover-revoked-issuer`); both reject. The
     libraries do not agree and neither has lifetime signing: OpenSSL builds
     one chain, preferring currently valid issuers, and checks revocation
     before validity on it; Bouncy Castle tries every path and reports the
@@ -225,24 +225,24 @@ Change these only with a new decision and paired fixtures.
   three `-denied` cases were added after the fix and passed at once; before it
   the same inputs were `revocation_unknown`, which was not run.
 - The three cases added with the retrieval redesign
-  (`crl-037-fetch-excluded-name-match-fetches-listed-point`,
+  (`crl-036-fetch-excluded-name-match-fetches-listed-point`,
   `crl-009-fetch-no-listed-point-role-excluded-scope-rejected`,
   `sec10-fetch-unusable-supplied-crl-not-fetched`, since replaced by
   `crl-020-fetch-unusable-scope-supplied-crl-refreshed` with the opposite
   result) failed before it, for the intended reason each.
 - `--fetch-crls` requests points in two steps (certificates whose issuer no
   supplied CRL names, then the rest), pinned on `crl-chain-crl-dp.exe` by
-  `crl-037-fetch-covered-signer-point-not-requested`,
-  `crl-037-fetch-asks-each-certificate-without-crl`,
-  `crl-037-fetch-covered-signer-is-not-asked` and
-  `crl-037-fetch-asks-only-the-uncovered-certificate`; the first, third and
+  `crl-036-fetch-covered-signer-point-not-requested`,
+  `crl-036-fetch-asks-each-certificate-without-crl`,
+  `crl-036-fetch-covered-signer-is-not-asked` and
+  `crl-036-fetch-asks-only-the-uncovered-certificate`; the first, third and
   fourth failed
   before the change that introduced them. In the second step a certificate
   that a supplied CRL does cover can still be fetched for; a failed request is
   skipped, but a fetched CRL that is stale or unusable still fails the run
   closed. No fixture has that shape. A certificate mixing a plain URI point
   with an unsupported one has the plain URI requested
-  (`crl-037-fetch-mixed-point-requests-plain-uri`, on
+  (`crl-036-fetch-mixed-point-requests-plain-uri`, on
   `crl-leaf-crl-dp-mixed.exe`, which failed first).
 - Validated on macOS locally and on Linux in CI. No Windows comparison
   (DEFER-01).
@@ -274,7 +274,7 @@ approval; **Observed** ones pin current behavior and may change when a better
 result is argued. **Acceptance** pins whether a file verifies or is rejected;
 **diagnostics** pins which error, detail or request. The rules and sources
 below are now stated once as numbered entries in [CRL decisions](../crl.md)
-(`CRL-001` to `CRL-045`), which each case names in its `decision` field; this
+(`CRL-001` to `CRL-043`), which each case names in its `decision` field; this
 section keeps the review history. Line numbers are for OpenSSL 3a3f1356,
 bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 
@@ -333,14 +333,14 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   read its entries:
   `crl-006-role-partition-crl-revocation-beside-full-crl-revokes`. Alone it is
   still `invalid_crl`, because webpki cannot use that form
-  (`crl-027-role-partition-crl-revocation-alone-is-unsupported`, Observed).
+  (`crl-026-role-partition-crl-revocation-alone-is-unsupported`, Observed).
 - **A partition for another point is no evidence.** Decided, diagnostics.
   Bouncy Castle's processCRLB2 rejects a CRL whose distribution point does not
   match; OpenSSL gives it no `CRL_SCORE_SCOPE`. The certificate is without a
   CRL, so the status is unknown and retrieval fetches its point:
-  `crl-034-expired-partition-for-another-point-leaves-status-unknown`,
-  `crl-034-fetch-expired-partition-for-another-point-still-fetches`,
-  `crl-034-dp-other-idp-unknown` (details updated).
+  `crl-033-expired-partition-for-another-point-leaves-status-unknown`,
+  `crl-033-fetch-expired-partition-for-another-point-still-fetches`,
+  `crl-033-dp-other-idp-unknown` (details updated).
 - **A CA-only CRL naming a point is rejected for an end entity.** Decided,
   acceptance; see the comparison above:
   `crl-009-fetch-no-listed-point-role-excluded-scope-rejected`.
@@ -370,11 +370,11 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   still unusable as evidence of good status: RFC 5280 requires nextUpdate,
   and alone, without a listing, it is `invalid_crl` / `missing_next_update`
   (`crl-002-root-crl-no-next-update`). Alone with a listing it revokes
-  (`crl-030-no-next-update-crl-revocation-alone-revokes`; see "Case reasons (a
+  (`crl-029-no-next-update-crl-revocation-alone-revokes`; see "Case reasons (a
   CRL without nextUpdate that lists the certificate)"). On a timestamped
   file the timestamp authority's chain is checked first, and that
   certificate is not listed, so the same CRL alone is `invalid_crl` there
-  (`crl-030-no-next-update-crl-revocation-alone-is-invalid`).
+  (`crl-029-no-next-update-crl-revocation-alone-is-invalid`).
 - **A listing in a current CRL with a malformed AKI counts.** Decided by the
   owner (PR #60), acceptance (fails closed): a correctly signed CRL of the
   issuer said the certificate is revoked, and a malformed identifier field
@@ -418,24 +418,24 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   rejected chain reports, and what retrieval is asked: Decided by the written
   argument in `docs/crl-retrieval.md` (only a path that passes every other
   check and lacks CRLs can be completed), diagnostics
-  (`crl-029-cross-revoked-path-beside-path-without-crl-names-it`,
-  `crl-029-fetch-revocation-stands-when-the-other-path-stays-without-crl`,
-  `crl-029-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
-  `crl-029-cross-unusable-crl-decides-beside-path-failing-key-usage`,
-  `crl-029-cross-expired-path-beside-path-without-crl-names-the-gap`,
-  `crl-029-fetch-path-failing-key-usage-asks-nothing`).
+  (`crl-028-cross-revoked-path-beside-path-without-crl-names-it`,
+  `crl-028-fetch-revocation-stands-when-the-other-path-stays-without-crl`,
+  `crl-028-cross-revoked-path-beside-path-failing-key-usage-is-revoked`,
+  `crl-028-cross-unusable-crl-decides-beside-path-failing-key-usage`,
+  `crl-028-cross-expired-path-beside-path-without-crl-names-the-gap`,
+  `crl-028-fetch-path-failing-key-usage-asks-nothing`).
   Changed after review (owner asked for the fix): with `--fetch-crls`, an
   unknown status that names nothing to ask is followed by the check of the
   whole input without revocation, so
-  `crl-029-fetch-path-failing-key-usage-asks-nothing` now reports the path's
+  `crl-028-fetch-path-failing-key-usage-asks-nothing` now reports the path's
   own failure (`invalid_key_usage`), as before PR #60, where that check ran
   first; still no request is made. Without `--fetch-crls` the result is
   `revocation_unknown` with an empty list, as before PR #60.
   Only that unknown status, which is no evidence, is followed by the check
   without revocation. A definite CRL failure or revocation on such a chain
   keeps its code with `--fetch-crls`, as without it
-  (`crl-031-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure`,
-  `crl-031-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked`;
+  (`crl-030-fetch-path-failing-key-usage-with-unusable-crl-keeps-the-crl-failure`,
+  `crl-030-fetch-path-failing-key-usage-with-revoked-issuer-is-revoked`;
   Decided, diagnostics: both reject). So with fetching the code differs from
   the offline one only for an unknown status (including one that also
   carries `unusable_crl` because another certificate on the path lacks a
@@ -448,8 +448,8 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   source can refresh them and that path verifies, as Bouncy Castle tries
   every path and fetches past an expired CRL (`PKIXCertPathBuilderSpi.java:135-270`,
   `PKIXCRLUtil.java:42-45`); OpenSSL has no equivalent (one chain, no fetch).
-  `crl-035-cross-revoked-path-beside-path-with-expired-crl-names-it`
-  (diagnostics), `crl-023-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`
+  `crl-034-cross-revoked-path-beside-path-with-expired-crl-names-it`
+  (diagnostics), `crl-022-fetch-refreshes-the-path-with-an-expired-crl-beside-a-revoked-path`
   (acceptance). The revoked path's own certificates are not named, and
   neither is anything on a path with a CRL a refresh cannot fix (forged,
   no cRLSign, `invalid_crl`): that path cannot verify, so no source is asked
@@ -491,15 +491,15 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   `x509_vfy.c:2206-2254` `get_crl_delta`, `lookup_crls` at `:2228`, called
   from `check_cert_crl` `:1444-1537`; Bouncy Castle
   `RFC3280CertPathUtilities.java:1754-1880`):
-  `crl-037-fetch-covered-signer-point-not-requested`,
-  `crl-037-fetch-asks-each-certificate-without-crl`,
-  `crl-037-fetch-covered-signer-is-not-asked`,
-  `crl-037-fetch-asks-only-the-uncovered-certificate`,
-  `crl-037-fetch-excluded-name-match-fetches-listed-point`,
-  `crl-037-fetch-mixed-point-requests-plain-uri`,
-  `crl-037-fetch-bad-response-is-no-evidence-beside-another-point`.
+  `crl-036-fetch-covered-signer-point-not-requested`,
+  `crl-036-fetch-asks-each-certificate-without-crl`,
+  `crl-036-fetch-covered-signer-is-not-asked`,
+  `crl-036-fetch-asks-only-the-uncovered-certificate`,
+  `crl-036-fetch-excluded-name-match-fetches-listed-point`,
+  `crl-036-fetch-mixed-point-requests-plain-uri`,
+  `crl-036-fetch-bad-response-is-no-evidence-beside-another-point`.
 - **An abort before an expired CRL could be refreshed is marked.** Decided,
-  diagnostics: `crl-040-stale-local-source-abort-is-marked` keeps `crl_expired`
+  diagnostics: `crl-039-stale-local-source-abort-is-marked` keeps `crl_expired`
   with `retrieval_aborted`.
 - **An expired supplied CRL is refreshed.** Decided, acceptance (owner
   delegated the call, PR #60). Bouncy Castle drops CRLs past nextUpdate and,
@@ -518,12 +518,12 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   and Bouncy Castle's store lookups have no per-point outcome. Only a body
   that loads as a CRL of the certificate's issuer counts, as both look CRLs
   up by issuer name:
-  `crl-038-fetch-by-certificate-answer-requests-no-listed-point`. When that
+  `crl-037-fetch-by-certificate-answer-requests-no-listed-point`. When that
   answer does not settle the certificate's status (for example an expired
   CRL), the listed points the source left unused are recorded as
   `crl_fetch_failed` ("not used"), so that no listed point disappears
   from the report of a failed retrieval (written argument, diagnostics):
-  `crl-038-fetch-by-certificate-unusable-answer-records-unused-points`.
+  `crl-037-fetch-by-certificate-unusable-answer-records-unused-points`.
 - **Missing evidence is `revocation_unknown`; a source has four kinds.**
   Decided by the owner in PR #60's design ("single error code", four kinds
   denied/failed/abort/unknown), diagnostics. The single code matches the
@@ -532,19 +532,19 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   "No CRLs found for issuer" error with lookup diagnostics in its message
   (`prov/.../jce/provider/CertPathValidatorUtilities.java:1340`). The four
   kinds have no reference equivalent. Changed:
-  `crl-028-fetch-private`, `crl-028-fetch-injected-unavailable`,
-  `crl-028-fetch-reasons-point-denied`, `crl-028-fetch-crl-issuer-point-denied`,
-  `crl-028-fetch-dns-name-point-denied` (`crl_fetch_denied`/`crl_fetch_failed`
+  `crl-027-fetch-private`, `crl-027-fetch-injected-unavailable`,
+  `crl-027-fetch-reasons-point-denied`, `crl-027-fetch-crl-issuer-point-denied`,
+  `crl-027-fetch-dns-name-point-denied` (`crl_fetch_denied`/`crl_fetch_failed`
   to `revocation_unknown`, cause in `crl_retrieval.failures`). Added:
-  `crl-028-fetch-source-denied-is-no-evidence`,
-  `crl-028-fetch-source-failed-is-no-evidence`,
-  `crl-028-fetch-source-unknown-is-no-evidence`,
-  `crl-028-fetch-source-abort-is-reported`, `crl-028-fetch-source-abort-stops-requests`.
+  `crl-027-fetch-source-denied-is-no-evidence`,
+  `crl-027-fetch-source-failed-is-no-evidence`,
+  `crl-027-fetch-source-unknown-is-no-evidence`,
+  `crl-027-fetch-source-abort-is-reported`, `crl-027-fetch-source-abort-stops-requests`.
 - **The source decides transport.** Decided (owner: the CLI's default HTTP
   source, library users provide their own), acceptance for the injected
   source, diagnostics for the built-in refusal:
-  `crl-025-fetch-source-is-asked-for-any-scheme`,
-  `crl-042-fetch-builtin-source-denies-https`. Sources under "Who screens a
+  `crl-024-fetch-source-is-asked-for-any-scheme`,
+  `crl-040-fetch-builtin-source-denies-https`. Sources under "Who screens a
   distribution-point address" below.
 - **An untrusted chain is never fetched for.** Decided, acceptance and
   privacy: path validation fails before any request, as `main`'s preliminary
@@ -615,11 +615,11 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   ranks below an unknown status or expired CRL (unit test
   `only_a_named_missing_crl_ranks_a_usage_failure_as_completable`).
   The missing CRL is reported, because a source can supply it
-  (`crl-033-rdp-eku-retry-ca-missing-crl-is-unknown`, diagnostics), and
+  (`crl-032-rdp-eku-retry-ca-missing-crl-is-unknown`, diagnostics), and
   `--fetch-crls` then verifies the file, as before PR #60, where retrieval
   followed a pass without revocation that succeeded through serverAuth
-  (`crl-024-rdp-eku-retry-ca-fetches-the-missing-crl`, acceptance). Control:
-  `crl-024-rdp-eku-retry-ca-with-crls-verifies`.
+  (`crl-023-rdp-eku-retry-ca-fetches-the-missing-crl`, acceptance). Control:
+  `crl-023-rdp-eku-retry-ca-with-crls-verifies`.
 - **A URI that is not an absolute URL is never offered to a source.**
   Decided, diagnostics: OpenSSL's `get_dp_url` returns only `http://` URIs
   (`apps/lib/apps.c:2833`) and Bouncy Castle's `distributionPoint.toURL()`
@@ -671,7 +671,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     (deduplicated by SHA-256), including another revocation's, and so is one
     whose only CRL expired (`certificates_with_expired_crl`), as for
     candidate paths. Spec case
-    `crl-032-rdp-eku-retry-ca-revoked-usage-is-revoked` (Decided, diagnostics): the
+    `crl-031-rdp-eku-retry-ca-revoked-usage-is-revoked` (Decided, diagnostics): the
     serverAuth usage is revoked and codeSigning fails its EKU; the revocation
     is reported, where the first usage's `invalid_eku` was before.
   - A delta CRL answered by certificate is not a full CRL, so it does not ask
@@ -715,7 +715,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     leaves no per-point failure (the Decided rule above). A run ended by an
     engine limit or a failed check reports what was recorded until then:
     that error is the result. Codes and URLs are pinned by
-    `crl-038-fetch-by-certificate-unusable-answer-records-unused-points`;
+    `crl-037-fetch-by-certificate-unusable-answer-records-unused-points`;
     message texts are diagnostics prose, not matched by consumers.
 - **Retrieval bookkeeping (unit-tested).** A request marks its points as
   offered only once every engine limit has passed, so a limit that ends the
@@ -761,8 +761,8 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     (`invalid_crl_signature`, recorded as `details.unusable_crl`), whichever
     root is listed first; one naming an identifier no configured root carries
     is another issuer's and is set aside
-    (`crl-045-forged-crl-naming-a-same-key-roots-identifier-is-forged`,
-    `crl-045-forged-crl-naming-another-key-is-set-aside`; **Observed**,
+    (`crl-043-forged-crl-naming-a-same-key-roots-identifier-is-forged`,
+    `crl-043-forged-crl-naming-another-key-is-set-aside`; **Observed**,
     diagnostics only, since it changes only which error is reported: both
     reject, and the libraries have no equivalent for two same-key anchors).
     An anchor whose same-key root has no identifier cannot disprove a match.
@@ -789,8 +789,8 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   rssig's built-in `HttpCrlSource` is stricter than all three (public
   addresses, `http` only, no redirects, size and time bounds), and
   `retrieval::check_public_http_url` gives a custom source the same check.
-  Pinned by `crl-025-fetch-source-is-asked-for-any-scheme` and
-  `crl-042-fetch-builtin-source-denies-https`.
+  Pinned by `crl-024-fetch-source-is-asked-for-any-scheme` and
+  `crl-040-fetch-builtin-source-denies-https`.
 - **Fetch limits bound one file.** Decided, diagnostics and availability: in
   OpenSSL the size, timeout and redirect limits are per fetch and nothing is
   cached or accumulated (`apps/lib/apps.c:2866-2867`; `apps/verify.c:220-232`
@@ -888,16 +888,16 @@ path is not one a source could complete.
   with a bad signature is `invalid_crl_signature` and nothing is requested,
   although the source holds a good CRL.
 - **Decided, diagnostics:**
-  `crl-041-fetch-unusable-scope-supplied-crl-stands-without-answer` and
-  `crl-041-not-yet-valid-local-asks-provider`: the point is requested, and
+  `crl-039-fetch-unusable-scope-supplied-crl-stands-without-answer` and
+  `crl-039-not-yet-valid-local-asks-provider`: the point is requested, and
   without an answer the original error stands, naming the certificate.
-  `crl-039-no-next-update-local-asks-nothing`: `invalid_crl`
+  `crl-038-no-next-update-local-asks-nothing`: `invalid_crl`
   (`missing_next_update`) asks nothing, pending the other SEC-23 question.
 
 - **Decided, acceptance:** a CRL scoped to a distribution point, for a
   certificate that lists none, is replaceable: the certificate is still asked
   about by certificate and issuer, and a full CRL from the source decides
-  (`crl-022-fetch-no-listed-point-scope-crl-replaced-by-certificate`). A source
+  (`crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate`). A source
   that answers only by URL has nothing to fetch, so the `invalid_crl` stands
   (`crl-009-fetch-no-listed-point-role-excluded-scope-rejected`).
 - **A missing nextUpdate blocks retrieval only as a CRL's sole defect.**
@@ -910,8 +910,8 @@ path is not one a source could complete.
   replaceable. Only a CRL with no other defect is `invalid_crl`
   (`missing_next_update`), rssig's stricter rule, and is not asked about:
   the references would use it and not look again. Decided, diagnostics:
-  `crl-039-no-next-update-point-scope-crl-is-replaceable`; Decided,
-  acceptance: `crl-021-fetch-no-next-update-point-scope-crl-replaced-by-certificate`.
+  `crl-038-no-next-update-point-scope-crl-is-replaceable`; Decided,
+  acceptance: `crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate`.
   An earlier revision of this branch checked the missing nextUpdate first,
   which made the same CRL replaceable with nextUpdate and stuck without it.
 - **Decided, acceptance:** a malformed CRL does not stop the search for
@@ -919,23 +919,23 @@ path is not one a source could complete.
   (`crl-020-malformed-aki-local-refreshed-by-provider`,
   `crl-020-malformed-aki-beside-expired-local-refreshed-by-provider`); without
   an answer its failure stands and names the certificate
-  (`crl-041-malformed-aki-beside-expired-local-asks-provider`, diagnostics).
+  (`crl-039-malformed-aki-beside-expired-local-asks-provider`, diagnostics).
 - **Decided, diagnostics:** the list's placement beside other evidence,
   on the `path` chain with the root's CRL not yet valid
   (`path-root-not-yet-valid.crl`): a revocation on the cross path names
   the root path's certificate in `certificates_with_replaceable_crl`
-  (`crl-035-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`),
+  (`crl-034-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it`),
   and an unknown status names the signer without a CRL in
   `certificates_without_crl` and the issuer with the not-yet-valid CRL in
   `certificates_with_replaceable_crl`
-  (`crl-041-chain-unknown-names-missing-and-not-yet-valid-crl`).
+  (`crl-039-chain-unknown-names-missing-and-not-yet-valid-crl`).
 - **Decided, acceptance:** with a source, both complete
-  (`crl-023-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path`,
+  (`crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path`,
   `crl-020-fetch-completes-missing-and-not-yet-valid-crl`).
 - **Decided, diagnostics:** a source abort is marked
   `retrieval_aborted: true` on `crl_not_yet_valid` and `invalid_crl` as on
-  `crl_expired` (`crl-041-not-yet-valid-local-source-abort-is-marked`,
-  `crl-041-unknown-critical-extension-local-source-abort-is-marked`), so a consumer
+  `crl_expired` (`crl-039-not-yet-valid-local-source-abort-is-marked`,
+  `crl-039-unknown-critical-extension-local-source-abort-is-marked`), so a consumer
   can tell that the CRL was never refreshed because the source stopped.
 
 Among a certificate's unusable CRLs, the one with the highest rank is
@@ -964,11 +964,11 @@ the references to be checked and the call made on them. They agree:
 A correctly signed, in-scope CRL of the issuer without nextUpdate that lists
 the certificate is therefore `certificate_revoked`, alone as beside another
 CRL. **Decided, diagnostics:** both results reject; only the code changes.
-`crl-030-no-next-update-crl-revocation-alone-revokes` pins it on
+`crl-029-no-next-update-crl-revocation-alone-revokes` pins it on
 `good-pe64.exe`, which has no timestamp, and failed before the change
 (`invalid_crl`).
 
-The Decided case `crl-030-no-next-update-crl-revocation-alone-is-invalid`,
+The Decided case `crl-029-no-next-update-crl-revocation-alone-is-invalid`,
 which this question was taken from, is unchanged. It uses
 `good-countersignature.exe`, whose timestamp authority's chain is checked
 first; that certificate is not on the CRL, so the result is the stricter
@@ -998,10 +998,10 @@ with nextUpdate does not; that defect is reported and is replaceable.
 authorityKeyIdentifier still counts, as the owner decided in PR #60.) An
 earlier revision of this branch let it revoke alone. Unit test `a_crl_without_next_update_revokes_only_under_webpki_rules`.
 A newer such CRL that leaves the signer out clears the listing
-(`crl-030-no-next-update-crl-revocation-cleared-by-newer-crl`, Decided,
+(`crl-029-no-next-update-crl-revocation-cleared-by-newer-crl`, Decided,
 diagnostics: the result is `invalid_crl`, as for the CRL without nextUpdate
 alone; both reject), and an older one does not
-(`crl-030-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`,
+(`crl-029-no-next-update-crl-revocation-beside-older-clearing-crl-revokes`,
 Decided, diagnostics). Only a current, complete, direct CRL clears: an
 expired or not-yet-valid one, or a delta, indirect or reason-partitioned
 one, would not be preferred by OpenSSL or BoringSSL; nor one whose
@@ -1070,6 +1070,6 @@ RFC 5280 section 5.1.2.5 requires nextUpdate in conforming CRLs, and a CRL
 that never expires cannot show the status is still current; the references
 would accept it. That rejection is an acceptance pin
 (`crl-002-root-crl-no-next-update`) and is not changed here. Nor is such a CRL
-refreshed by `--fetch-crls` (`crl-039-no-next-update-local-asks-nothing`): a
+refreshed by `--fetch-crls` (`crl-038-no-next-update-local-asks-nothing`): a
 source's CRL would decide only if newer, and the open question was the
 wording of a listing, not retrieval.

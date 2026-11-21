@@ -61,7 +61,7 @@ The usual error codes are a hint, not the rule.
 
 A rule that touches two questions goes where its decision is made: the
 precedence between a lifetime-signing failure and a revocation is set by the
-lifetime-signing rules, so it is a `TIME-` entry (TIME-012); whether a root
+lifetime-signing rules, so it is a `TIME-` entry (TIME-011); whether a root
 or an intermediate may sign CRLs without cRLSign is a CRL-issuer rule, so it
 is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011. A rule
 that is the same in every format stays in its subject index, and the format
@@ -153,6 +153,15 @@ with this table; an ID not listed kept its number.
 | PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
 | PR #72 | TSA-004, duplicated attribute OID clause (cases `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) | CMS-009 (cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter`); TSA-004 keeps its number |
 | PR #73 | CMS-009 cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter` | back to TSA-004 as `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`, now `invalid_timestamp` at `timestamp` (SEC-25 narrowed CMS-009) |
+| PR #74 | CRL-021 | merged into CRL-020 |
+| PR #74 | CRL-022 to CRL-039 | CRL-021 to CRL-038 (each one lower) |
+| PR #74 | CRL-040 | CRL-039 (also takes CRL-041) |
+| PR #74 | CRL-041 | merged into CRL-039 |
+| PR #74 | CRL-042 to CRL-045 | CRL-040 to CRL-043 (each two lower) |
+| PR #74 | TIME-004 | merged into TIME-003 |
+| PR #74 | TIME-005 to TIME-014 | TIME-004 to TIME-013 (each one lower) |
+| PR #74 | CMS-014 | merged into CMS-010 |
+| PR #74 | CMS-015, CMS-016 | CMS-014, CMS-015 |
 
 ## Task documents
 
