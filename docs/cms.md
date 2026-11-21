@@ -297,16 +297,17 @@ as a second timestamp (`invalid_timestamp` at `timestamp`).
 SignedData and SignerInfo must use bounded, definite, minimal DER lengths,
 consume their input completely, use the supported tags and canonical INTEGER
 encodings, and carry a supported version: SignedData version 1, or 3, 4 or 5
-as the envelope indicates (version 1 for detached RDP), and SignerInfo version
-1. A SignedData needs at least one and at most 64 SignerInfos. Anything else
-fails closed in every format: `malformed_cms` at `cms` for the envelope
-(truncated or trailing data, an unsupported SignedData version, an empty or
-oversized signer set), and `invalid_signature` at `cms` for a SignerInfo field
-such as its version (CMS-015). Legacy version 1 is deliberately supported: a
-well-formed SignedData with version 1, a version 1 SignerInfo and correctly
-ordered unknown signed attributes verifies, and rssig does not enforce RFC
-5652's version-selection algorithm, which would require version 3 for such
-content, on a version 1 envelope.
+as the envelope indicates (version 1 for detached RDP), and SignerInfo
+version 1. A SignedData needs at least one and at most 64 SignerInfos.
+Anything else fails closed in every format: `malformed_cms` at `cms` for the
+envelope (truncated or trailing data, an unsupported SignedData version, an
+empty or oversized signer set), and `invalid_signature` at `cms` for a
+SignerInfo field such as its version (CMS-015). Legacy version 1 is
+deliberately supported: a well-formed SignedData with version 1, a version 1
+SignerInfo and correctly ordered unknown signed attributes verifies. rssig
+does not enforce RFC 5652's version-selection algorithm on a version 1
+envelope, which would require version 3 for non-data content such as
+Authenticode's SpcIndirectDataContent.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
