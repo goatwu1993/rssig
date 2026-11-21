@@ -138,8 +138,10 @@ or the selected signer. Embedded duplicates do not supply trust.
   - [cms-security.md](cms-security.md#signer-certificate-selection-sec-05).
   - References differ from rssig: OpenSSL `crypto/cms/cms_sd.c:890-935`
     (`CMS_set1_signers_certs`) takes the first matching certificate, and
-    Bouncy Castle returns every match (`SignerInformationStore`,
-    `Store.getMatches`) for the caller to choose. rssig deliberately rejects
+    Bouncy Castle hands the caller every match
+    (`cms/CMSSignedData.java:387-390`, `getCertificates`, used as
+    `getMatches(signer.getSID())` in its class documentation, `:45-53`) and
+    leaves the choice to the caller. rssig deliberately rejects
     distinct matches, so that certificate order cannot select a different
     signer.
 - **Unit tests:** `cms_signer_selection_shared_timestamp_and_detached` and
@@ -340,6 +342,9 @@ missing signer certificate; inside a timestamp token these are
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 10.2.2 (CertificateChoices).
+  - OpenSSL followed: `crypto/cms/cms_sd.c:923-927`
+    (`CMS_set1_signers_certs`) skips every choice that is not an X.509
+    certificate when it looks for the signer.
   - [cms-security.md](cms-security.md): opaque certificate and revocation
     choices do not become trust anchors or CRL evidence.
 
@@ -360,6 +365,10 @@ signature), even when the primary one verifies.
   - Neither OpenSSL nor Bouncy Castle has an equivalent: nested
     Authenticode signatures are an unsigned attribute that generic CMS
     verification ignores.
+  - Windows-format references: osslsigncode 2.16 `osslsigncode.c:3387-3411`
+    collects every nested signature and `:3319-3346` verifies each, but it
+    succeeds when any one is valid; jsign 7.6 `SignatureUtils.java:91-112`
+    lists them. rssig requiring all of them is its own, stricter rule.
 - **Note:** only "checked with the same rules" is meant to stay fixed.
   Whether every signature must verify has no RFC, OpenSSL or Bouncy Castle
   answer; [SEC-12](tasks/sec-12.md) records the decision to make it a

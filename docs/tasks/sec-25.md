@@ -20,7 +20,7 @@ row is the owner's own decision. Implementation is this task's own PR.
 
 ## Sources
 
-RFC copies are in [docs/rfc](../rfc/README.md). Line numbers are for OpenSSL
+Copies of RFC 5652 and RFC 3161 are in [docs/rfc](../rfc/README.md). Line numbers are for OpenSSL
 3a3f1356, bc-java e03fee0b, osslsigncode 2.16 (04c9aa7e) and jsign 7.6
 (cf5d2ce).
 
