@@ -454,7 +454,7 @@ fn not_pe() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("missing MZ"),
     );
 }
@@ -467,7 +467,7 @@ fn truncated() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("truncated optional header"),
     );
 }
@@ -480,7 +480,7 @@ fn trailing_data() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("certificate table must end at EOF"),
     );
 }

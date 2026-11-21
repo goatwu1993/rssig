@@ -524,6 +524,7 @@
             {
               "error": {
                 "code": "invalid_pe",
+                "stage": "pe",
                 "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
                 "title": "Invalid PE image"
               }
@@ -559,6 +560,7 @@
             {
               "error": {
                 "code": "invalid_pe",
+                "stage": "pe",
                 "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
                 "title": "Invalid PE image"
               }
@@ -594,6 +596,7 @@
             {
               "error": {
                 "code": "invalid_pe",
+                "stage": "pe",
                 "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#invalid_pe",
                 "title": "Invalid PE image"
               }

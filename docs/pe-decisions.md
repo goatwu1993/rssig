@@ -52,6 +52,10 @@ PE images: image hash, page hashes, checksum, certificate table.
   (04c9aa7e) `pe.c`, jsign 7.6 (cf5d2ce)
   `jsign-core/src/main/java/net/jsign/pe/PEFile.java` and `DataDirectory.java`,
   relic 02c54d58 `lib/authenticode/pedigest.go` and `peverify.go`.
+- Tiebreakers where those three disagree, named only in the entry that uses
+  them: [signify](https://github.com/ralphje/signify) v0.9.3 (60fa494) and
+  [AuthHashCalc](https://github.com/hfiref0x/AuthHashCalc) (69ffce7), for the
+  PE-002 page size.
 
 ## Order
 
@@ -127,8 +131,8 @@ file-offset order, is hashed page by page from its file offset, the last page
 zero-padded; a final entry gives the end offset with a zero digest. The page
 size is 8192 for Itanium and Alpha machines and 4096 otherwise. A mismatch is
 `page_hash_mismatch` at `page_hashes`. Headers larger than one page cannot be
-page-hashed and are rejected; no case pins that error yet. An image without
-page hashes is checked by PE-001 alone.
+page-hashed and are rejected; no case pins that error yet (FORMAT-01). An
+image without page hashes is checked by PE-001 alone.
 
 - **Status:** Decided
 - **Decided by:** owner, PR #76
@@ -233,7 +237,7 @@ image digest nor the signature.
     differs: "attribute certificate and debug information must be placed at
     the very end of an image file, with the attribute certificate table
     immediately preceding the debug section", which allows debug data after
-    the table; MS12-024 later made appended content unsigned.
+    the table. MS12-024 treats appended content as unsigned.
 - **Note:** The PE Format page and jsign allow data after the table;
   MS12-024, the Authenticode PE hash, relic and osslsigncode do not. The owner
   decided, with the full PE Format text, to reject it: bytes after the table
@@ -308,6 +312,10 @@ it.
     hashed, so rssig rejects both rather than guess.
   - [boundaries.md](boundaries.md): arbitrary PE section layouts are not
     implemented.
+- **Note:** The committed cases pin a missing `MZ`, a truncated optional
+  header and an out-of-range `e_lfanew`. No case yet pins an unsupported
+  magic, NumberOfRvaAndSizes below 5, a bad SizeOfHeaders, or a section gap
+  or overlap; FORMAT-01 in `TODO.md` adds that layout evidence.
 
 ## Tier 2: availability
 
