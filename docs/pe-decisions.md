@@ -36,6 +36,13 @@ PE images: image hash, page hashes, checksum, certificate table.
   (updated 2026-09-10): "The Attribute Certificate Table (Image Only)",
   "Other Contents of the File" and "Appendix A: Calculating Authenticode PE
   Image Hash".
+- Microsoft page-hash documentation:
+  [SignTool](https://learn.microsoft.com/en-us/windows/win32/seccrypto/signtool),
+  [SignerSignEx2](https://learn.microsoft.com/en-us/windows/win32/seccrypto/signersignex2),
+  [event 6281](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-6281),
+  and Raymond Chen,
+  [What are the page sizes used by Windows on various processors?](https://devblogs.microsoft.com/oldnewthing/20210510-00/?p=105200)
+  (2021-05-10).
 - Microsoft Security Bulletin
   [MS12-024](https://learn.microsoft.com/en-us/security-updates/securitybulletins/2012/ms12-024)
   (WinVerifyTrust strict PE verification) and Security Advisory
@@ -157,19 +164,32 @@ page hashes is checked by PE-001 alone.
     page size (`GetSystemInfo`, `Source/main.cpp:697`), not a header field.
   - Microsoft documents no page-hash layout: the Authenticode PE document
     says the structure in serializedData "is outside the scope of this
-    paper". The
+    paper", and the
+    [SignTool](https://learn.microsoft.com/en-us/windows/win32/seccrypto/signtool),
+    [SignerSignEx2](https://learn.microsoft.com/en-us/windows/win32/seccrypto/signersignex2)
+    and
+    [event 6281](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-6281)
+    pages describe only creating (`/ph`, `SPC_INC_PE_PAGE_HASHES_FLAG`) and
+    checking page hashes.
+  - No Microsoft document names the page-hash page size, but two point to the
+    memory page size. Event 6281: Code Integrity validates "the integrity of a
+    driver or system file each time it's loaded into memory". Raymond Chen,
+    [What are the page sizes used by Windows on various processors?](https://devblogs.microsoft.com/oldnewthing/20210510-00/?p=105200)
+    (The Old New Thing, 2021-05-10): 8KB for Alpha AXP, Alpha AXP 64 and
+    Itanium, 4KB for x86-32, x86-64, SH-4, MIPS, PowerPC, ARM and ARM64. That
+    is the machine-type mapping above. The
     [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file)
-    page gives the architecture page sizes ("4 K for Intel x86 and for MIPS,
-    and 8 K for Itanium") for SectionAlignment, not for page hashes; the
-    Alpha value follows relic.
+    page gives the same sizes ("4 K for Intel x86 and for MIPS, and 8 K for
+    Itanium") for SectionAlignment.
 - **Unit tests:** `validates_page_hashes_and_image_integrity` in
   `src/tests.rs`.
 - **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule. The
-  owner decided the machine-type page size: relic, signify and AuthHashCalc
-  agree and osslsigncode differs. signify maps only Itanium to 8192; the Alpha
-  machines follow relic. rssig sorts sections by file offset; relic walks them
-  in table order but requires each to start where the previous one ended, so
-  for the layouts of PE-005 the order is the same.
+  owner decided the machine-type page size: Microsoft's page sizes, relic,
+  signify and AuthHashCalc agree and osslsigncode differs. signify maps only
+  Itanium to 8192; the Alpha sizes follow Microsoft and relic. rssig sorts
+  sections by file offset; relic walks them in table order but requires each
+  to start where the previous one ended, so for the layouts of PE-005 the
+  order is the same.
 
 ### PE-003: The certificate table ends the file, after the headers, on an 8-byte boundary
 
