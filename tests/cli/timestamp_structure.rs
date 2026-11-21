@@ -142,8 +142,8 @@ fn tsa_duplicate_rfc() {
     let output = run_fixture("tsa-duplicate-rfc.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
-    assert_eq!(error["code"], "invalid_signature");
-    assert_eq!(error["stage"], "cms");
+    assert_eq!(error["code"], "invalid_timestamp");
+    assert_eq!(error["stage"], "timestamp");
 }
 
 #[test]
@@ -151,8 +151,8 @@ fn tsa_duplicate_counter() {
     let output = run_fixture("tsa-duplicate-counter.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);
     let error = &output.json["results"][0]["error"];
-    assert_eq!(error["code"], "invalid_signature");
-    assert_eq!(error["stage"], "cms");
+    assert_eq!(error["code"], "invalid_timestamp");
+    assert_eq!(error["stage"], "timestamp");
 }
 
 #[test]

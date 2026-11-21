@@ -505,7 +505,8 @@ fn structured_signer_bounds_and_attribute_rules_are_explicit() {
         v
     };
     let duplicate = wrap(0xa0, &[attr, attr].concat());
-    assert!(format!("{:#}", Attributes::parse(&duplicate).unwrap_err()).contains("duplicate"));
+    // The parser keeps a repeated OID; the verifier limits which may repeat (CMS-009).
+    assert_eq!(Attributes::parse(&duplicate).unwrap().attributes().len(), 2);
     let mut empty_value = attr.to_vec();
     empty_value.truncate(7);
     empty_value[1] = 7;

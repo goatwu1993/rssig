@@ -64,8 +64,10 @@ impl<'a> Attribute<'a> {
 }
 
 /// An implicitly tagged signed or unsigned attribute set, with original bytes.
-/// Signed sets require canonical attribute order; both reject duplicate OIDs
-/// and empty value sets. Values remain opaque, including nested CMS/timestamps.
+/// Signed sets require canonical attribute order; both reject empty value sets
+/// and malformed OIDs. A repeated OID is accepted here: which attributes may
+/// occur once only is a verification rule (CMS-009). Values remain opaque,
+/// including nested CMS/timestamps.
 #[derive(Debug)]
 pub struct Attributes<'a> {
     node: Node<'a>,
@@ -97,10 +99,6 @@ impl<'a> Attributes<'a> {
         for attr in children {
             let f = der::fields(attr.expect(0x30)?, 2)?;
             f[0].expect(6)?;
-            ensure!(
-                !attributes.iter().any(|a| a.oid_bytes == f[0].body),
-                "duplicate CMS attribute"
-            );
             let values = f[1].expect(0x31)?.children()?;
             ensure!(!values.is_empty(), "empty CMS attribute");
             if node.tag == 0xa0 {

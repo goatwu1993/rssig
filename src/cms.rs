@@ -15,6 +15,7 @@ pub(crate) const INDIRECT: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 4];
 const PE_IMAGE: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 1, 15];
 const CONTENT_TYPE: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 3];
 const MESSAGE_DIGEST: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 4];
+const SIGNING_TIME: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 5];
 pub(crate) const NESTED: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 2, 4, 1];
 pub(crate) const RFC3161: &[u8] = &[43, 6, 1, 4, 1, 130, 55, 3, 3, 1];
 pub(crate) const CMS_TIMESTAMP: &[u8] = &[42, 134, 72, 134, 247, 13, 1, 9, 16, 2, 14];
@@ -397,6 +398,25 @@ impl<'a> SignedData<'a> {
 pub(crate) type Attributes<'a> = Vec<(Vec<u8>, Vec<Node<'a>>)>;
 fn attributes(node: Node<'_>) -> Result<Attributes<'_>> {
     let parsed = crate::parse::Attributes::from_node(node)?;
+    // CMS-009: only these attributes may occur once, and a repeat is rejected.
+    // RFC 5652 sections 11.1 to 11.3 limit contentType, messageDigest and
+    // signingTime in the signed set; the nested-signature attribute is
+    // rssig's own written choice. Any other OID, and a repeated countersignature
+    // or timestamp attribute (rejected later by TSA-004), passes.
+    let once: &[&[u8]] = if node.tag == 0xa0 {
+        &[CONTENT_TYPE, MESSAGE_DIGEST, SIGNING_TIME]
+    } else {
+        &[NESTED]
+    };
+    for (index, attribute) in parsed.attributes().iter().enumerate() {
+        ensure!(
+            !once.contains(&attribute.oid_bytes)
+                || !parsed.attributes()[..index]
+                    .iter()
+                    .any(|earlier| earlier.oid_bytes == attribute.oid_bytes),
+            "duplicate CMS attribute"
+        );
+    }
     Ok(parsed
         .attributes()
         .iter()

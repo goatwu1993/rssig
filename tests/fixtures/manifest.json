@@ -6950,6 +6950,66 @@
       ]
     },
     {
+      "file": "good-cms-duplicate-unknown-unsigned.exe",
+      "sha256": "9bf50e621c97e637fcde143fa3c74b3565002aa6fc21f3e0fb686bc2138030ca",
+      "bytes": 2200,
+      "description": "CMS-009 attribute multiplicity: Two unsigned attributes with the same unknown OID. Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-good-unknown-unsigned-duplicate"
+      ]
+    },
+    {
+      "file": "good-cms-duplicate-unknown-signed.exe",
+      "sha256": "9cab57fbd24876f9d86144279bd40c57934e1860a8605b48f9cfb48ebfa5a621",
+      "bytes": 2200,
+      "description": "CMS-009 attribute multiplicity: Two signed attributes with the same unknown OID. Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-good-unknown-signed-duplicate"
+      ]
+    },
+    {
+      "file": "bad-cms-duplicate-nested.exe",
+      "sha256": "e82e21641e25151be6a4ff3a78480cd0bd6ab8362f37e4bdae0245b0ffa138c2",
+      "bytes": 4504,
+      "description": "CMS-009 attribute multiplicity: Two nested-signature attributes, each holding the nested signature of good-nested.exe. Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-nested.exe",
+      "cases": [
+        "cms-009-bad-nested-duplicate"
+      ]
+    },
+    {
+      "file": "bad-cms-duplicate-signing-time.exe",
+      "sha256": "7d95baf90d3ced9dfcb777594bfea6540a6382be67f10dae709fba907a3e85e8",
+      "bytes": 2240,
+      "description": "CMS-009 attribute multiplicity: Two signed signingTime attributes (RFC 5652 11.3). Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-bad-signing-time-duplicate"
+      ]
+    },
+    {
+      "file": "bad-cms-duplicate-message-digest.exe",
+      "sha256": "0c3782ef2b158e936eb4f24440873d22cb88b79caa2e2a94f68cdb6ab9d34b73",
+      "bytes": 2232,
+      "description": "CMS-009 attribute multiplicity: A second signed messageDigest attribute with another digest (RFC 5652 11.2). Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-bad-message-digest-duplicate"
+      ]
+    },
+    {
+      "file": "bad-cms-duplicate-content-type.exe",
+      "sha256": "7e05531fd0feb535c14a497fb6e48bee4345fbed7f08bd147ac3552ea7efc640",
+      "bytes": 2208,
+      "description": "CMS-009 attribute multiplicity: A second signed contentType attribute (RFC 5652 11.1). Correctly signed; paired with good-cms-structure.exe. Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-bad-content-type-duplicate"
+      ]
+    },
+    {
       "file": "bad-cms-signer-key-first.exe",
       "sha256": "59da83fffd29af924253bda75f3f439bc239671ca9dbd9cbd923581be0bc8730",
       "bytes": 2600,
@@ -8921,11 +8981,11 @@
       "file": "tsa-duplicate-rfc.exe",
       "sha256": "4a9c37103e7734ce126d402f6afe545f167ff902c4538103a4e21aaf84c3a99e",
       "bytes": 4928,
-      "description": "SEC-08: duplicate-rfc. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_signature at cms.",
+      "description": "SEC-08: duplicate-rfc. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
       "generator": "src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "cms-009-duplicate-rfc"
+        "tsa-004-duplicate-rfc"
       ],
       "paired_good": "tsa-good.exe"
     },
@@ -8933,11 +8993,11 @@
       "file": "tsa-duplicate-counter.exe",
       "sha256": "f5080b7a8b4f091a4230ab18c8bd07ebdb352b0d983dba422e6e66ca893c3f5f",
       "bytes": 3072,
-      "description": "SEC-08: duplicate-counter. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_signature at cms.",
+      "description": "SEC-08: duplicate-counter. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
       "generator": "src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "cms-009-duplicate-counter"
+        "tsa-004-duplicate-counter"
       ],
       "paired_good": "tsa-good.exe"
     },

@@ -24,7 +24,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [sec-11.md](docs/tasks/sec-11.md).
 - [ ] **SEC-12: Add the signature policy and pin multi-signature semantics.**
   Decided: `--signatures all|any`, default `all`; pin ordering, first-failure
-  precedence and bundle/child binding. After SEC-25. Detail in
+  precedence and bundle/child binding. Detail in
   [sec-12.md](docs/tasks/sec-12.md).
 - [ ] **SEC-13: Complete cryptographic algorithm invariant coverage.** Inventory
   existing SHA-384/512 and P-384 cases before adding missing key/digest/signature
@@ -109,10 +109,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
-- [ ] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Decided:
-  repeated timestamp attributes pass the CMS layer and are rejected by
-  TSA-004; repeated opaque attributes are accepted. Detail in
-  [sec-25.md](docs/tasks/sec-25.md).
+- [x] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
 
 ## P1 — Clean parse/verify interfaces
 

@@ -53,7 +53,7 @@ the Windows default, because rssig fails closed unless the caller opts out.
 ## Decision
 
 Decided by the owner, who delegated the call in PR #72. Implementation is
-this task's own PR, after SEC-25.
+this task's own PR.
 
 - **Fixed rule (CMS-013, becomes Decided):** each nested signature is checked
   with the same CMS, signer, timestamp, path and revocation rules as the
