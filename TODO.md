@@ -181,7 +181,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **TEST-18: Number the format indexes, one PR per format.** `PE-`, `MSI-`,
   `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-` and `APPX-`, from their
   `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
-  `CMS-` where its rule is shared. `PE-` done (PR pending).
+  `CMS-` where its rule is shared. `PE-` done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)).
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
   `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
 - [ ] **TEST-20: Rename task-named library cases.** The `lib04-*` to `lib09-*`

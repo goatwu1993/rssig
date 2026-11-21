@@ -71,7 +71,7 @@ equal the digest in SpcIndirectDataContent; otherwise the result is
 digests in `details`. A changed CheckSum alone still verifies.
 
 - **Status:** Decided
-- **Decided by:** references agree (osslsigncode, jsign and relic)
+- **Decided by:** references agree (osslsigncode, jsign and relic), PR #76
 - **Pins:** acceptance
 - **Sources:**
   - osslsigncode `pe.c:775-829` (`pe_digest_calc_bio`): hashes from 0 to the
@@ -102,7 +102,7 @@ by PE-001 alone.
 
 - **Status:** Decided
 - **Decided by:** references agree (osslsigncode and relic; jsign does not
-  verify page hashes)
+  verify page hashes), PR #76
 - **Pins:** acceptance
 - **Sources:**
   - osslsigncode `pe.c:1005-1308` (`pe_page_hash_calc`) and `pe.c:1318`
@@ -185,7 +185,7 @@ and, where present, matching page hashes, verifies, subject to the CMS, path,
 time and revocation rules of the other indexes.
 
 - **Status:** Decided
-- **Decided by:** references agree (osslsigncode, jsign and relic)
+- **Decided by:** references agree (osslsigncode, jsign and relic), PR #76
 - **Pins:** acceptance
 - **Sources:**
   - All three accept both optional-header magics: osslsigncode
@@ -200,7 +200,7 @@ An image whose certificate-table entry has a zero offset or a zero size is
 `unsigned` (stage `pe`), not `invalid_pe`, once its headers parse.
 
 - **Status:** Decided
-- **Decided by:** references agree (osslsigncode, jsign and relic)
+- **Decided by:** references agree (osslsigncode, jsign and relic), PR #76
 - **Pins:** diagnostics
 - **Sources:**
   - osslsigncode `pe.c:575-581`: an entry with either field zero is no
