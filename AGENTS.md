@@ -7,9 +7,16 @@ Reference implementations are read-only sources to read and cite, never
 dependencies; do not require any of them at build or runtime.
 
 - **Windows formats only** (how PE, MSI/MSP, CAB, NAVX, PowerShell, WSH,
-  RDP and MSIX/AppX files are parsed, hashed and embed their signature): use
-  osslsigncode, jsign and relic together (local `osslsigncode/`, `jsign/` and
-  `relic/` clones).
+  RDP and MSIX/AppX files are parsed, hashed and embed their signature):
+  Microsoft's documentation comes first: its format specifications, the
+  learn.microsoft.com pages, and its security bulletins and advisories, which
+  record what Windows enforces. Cite each by title, URL and date, and quote
+  it; do not commit a copy whose licence forbids it. Where Microsoft documents
+  nothing, or its documents conflict, use osslsigncode, jsign and relic
+  together (local `osslsigncode/`, `jsign/` and `relic/` clones). Where those
+  disagree, another implementation may break the tie, named with its commit
+  in the entry that uses it. A rule that departs from what Microsoft
+  documents says so and why.
 - **Never for the underlying crypto.** CMS/PKCS#7, signatures, timestamps,
   certificates, certificate paths, CRLs and revocation use OpenSSL and Bouncy
   Castle, at the commits in [docs/decisions.md](docs/decisions.md#entry-format).

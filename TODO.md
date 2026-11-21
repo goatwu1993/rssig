@@ -178,8 +178,8 @@ TDD workflow and checks in AGENTS.md.
   rename the `sec07-*` cases it claims (the others belong to TEST-17 and TEST-28).
 - [ ] **TEST-17: Number the `LIMIT-` index.** Fill [docs/limit.md](docs/limit.md);
   rename the `sec02-*` and `sec03-*` cases.
-- [ ] **TEST-18: Number the format indexes, one PR per format.** `PE-`, `MSI-`,
-  `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-` and `APPX-`, from their
+- [ ] **TEST-18: Number the remaining format indexes, one PR per format.**
+  `MSI-`, `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-` and `APPX-`, from their
   `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
   `CMS-` where its rule is shared.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
@@ -205,6 +205,7 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **TEST-31: Settle the shared format-skeleton rules.** Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
+- [x] **TEST-32: Number the `PE-` index.** Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
 
 ## P1 — CLI, reporting, and distribution
 
@@ -259,10 +260,8 @@ TDD workflow and checks in AGENTS.md.
   then commit portable expectations. A competitor's success exit is not necessarily
   a trusted verdict; competitors remain maintenance tools.
 - [ ] **FORMAT-01: Extend PE layout evidence before broadening support.** Cover
-  multiple certificate entries, reordered sections, padding, overlays, PE32/PE32+,
-  page sizes, and page hashes. Document deliberately rejected gaps/overlaps and
-  certificate placement. Evaluate unsigned-PE inspection separately, with an
-  explicit API/CLI contract and unchanged unsigned rejection in verification.
+  PE layouts, page sizes and certificate placement, and add a case for each PE
+  rule no case pins yet. Detail in [format-01.md](docs/tasks/format-01.md).
 - [ ] **FORMAT-02: Audit MSI/MSP CFB and metadata variants.** Extend independent
   v3/v4, stream-name/order, FAT/miniFAT, metadata, and legacy/extended-signature
   coverage. Pin duplicate/aliased signature-stream handling and file-time details.
@@ -290,6 +289,9 @@ TDD workflow and checks in AGENTS.md.
   with producer evidence and aggregate budgets. Keep unsupported external/stub/
   nested bundles explicit; deployment selection and Windows Store acceptance
   are not established by package integrity.
+- [ ] **FORMAT-07: Decide skipped WIN_CERTIFICATE entries.** PE-004 rejects
+  entries Microsoft's documents allow and osslsigncode and jsign skip. Detail
+  in [format-07.md](docs/tasks/format-07.md).
 
 ## P3 — Additional capabilities requiring separate design
 

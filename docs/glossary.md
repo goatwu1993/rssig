@@ -26,7 +26,9 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **decision index** | The file holding one prefix's entries, such as [crl.md](crl.md); listed in [decision indexes](decisions.md). |
 | **skeleton index** | An index with candidate rules but no numbered entries yet. |
 | **Status** | `Decided` (argued right; changes only with the owner's approval), or `Observed` (current behavior, kept visible). |
-| **Decided by** | Who or what settled a Decided entry: the owner, the references, or a written argument. |
+| **Decided by** | Who or what settled a Decided entry: the owner, Microsoft's documentation (Windows formats), the references, or a written argument. |
+| **reference** (implementation) | A read-only implementation cited as evidence: OpenSSL and Bouncy Castle for the underlying crypto; osslsigncode, jsign and relic for Windows formats where Microsoft documents nothing or contradicts itself ([AGENTS.md](../AGENTS.md)). |
+| **tiebreaker** | Another implementation, named with its commit in the entry that uses it, that settles a Windows-format point on which osslsigncode, jsign and relic disagree. |
 | **Pins** | Whether an entry pins **acceptance** (verifies or rejects) or **diagnostics** (which code, stage, detail or request). |
 | **candidate rule** | An unnumbered rule in an index's "Candidate rules" section, waiting to become an entry. |
 | **claim** | The assignment of a case without a decision to one index and candidate rule, in `tests/decision-claims.json`. |
