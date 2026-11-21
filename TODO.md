@@ -203,6 +203,12 @@ TDD workflow and checks in AGENTS.md.
   audit cases, every format's revocation and untrusted-root case), and add a
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
+- [ ] **TEST-30: Remove duplicate and overlapping decisions.** An audit of the
+  94 numbered entries found five likely duplicates (CRL-002/021/039, CRL-020/021,
+  CRL-040/041, CRL-003/012, TIME-002/004), several instances of a general rule,
+  two entries that need a stated exception (CRL-029 and TIME-012, CRL-002 and
+  CRL-004), and two entries without a rule statement. Owner-approved reindex PR.
+  Detail in [test-30.md](docs/tasks/test-30.md).
 
 ## P1 — CLI, reporting, and distribution
 
