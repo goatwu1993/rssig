@@ -110,6 +110,12 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
+- [ ] **SEC-25: Accept repeated countersignature attributes (RFC 5652 §11.4).**
+  The owner considers CMS-009 wrong to reject a second countersignature
+  attribute. Allow a repeated countersignature OID in unsigned attributes
+  only; the file stays rejected by TSA-004 (`invalid_timestamp` at
+  `timestamp`). Move `cms-009-duplicate-counter` back to TSA-004 and amend
+  both entries with the owner's approval.
 
 ## P1 — Clean parse/verify interfaces
 

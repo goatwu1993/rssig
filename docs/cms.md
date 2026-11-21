@@ -267,6 +267,11 @@ multiplicity rule (TSA-004) is reached.
     `cms/SignerInformation.java:305-312` for countersignatures.
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
   `src/tests/cms_audit.rs`.
+- **Note:** the owner considers the countersignature part of this rule wrong
+  (RFC 5652 section 11.4 allows repeated countersignature attributes). SEC-25
+  in [TODO.md](../TODO.md) is to change it; until then the case stays pinned
+  as `invalid_signature` at `cms`. The duplicated RFC 3161 attribute part is
+  unaffected.
 
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
