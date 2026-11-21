@@ -108,8 +108,64 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-21: Bind listed-serial revocation to the verified path.** Done; [record](docs/tasks/done.md#sec-21-bind-listed-serial-revocation-to-the-verified-path).
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
-- [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
+- [x] **SEC-23: Follow-ups left open by the PR #60 review.** Split into one task per item: SEC-26 to SEC-38, TEST-33 to TEST-35, LIB-11 and PRODUCT-07, with additions to SEC-17, SEC-18 and SEC-22.
 - [x] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
+- [ ] **SEC-26: Bound CRL retrieval across a batch.** The CLI's fetch
+  limits are per file (up to 16 requests, 32 MiB and 30 s each), so a batch
+  is bounded only by its file count. Consider an optional batch-wide cap.
+- [ ] **SEC-27: Reopen the built-in CRL source after a DNS timeout.** A DNS
+  timeout closes `HttpCrlSource` for the rest of the run, even when only a
+  short remaining deadline caused it. Reopening once the stale resolver
+  finished was reverted in PR #60 (timing-dependent results, and the source
+  stopped being `Sync`); find a deterministic, `Sync`-safe way.
+- [ ] **SEC-28: Finish with the gathered evidence when an engine limit is reached.**
+  `retrieval_trust_bytes` and the other engine limits end the whole
+  verification with `resource_limit_exceeded`, rather than recording the
+  remaining points and finishing with the evidence gathered.
+- [ ] **SEC-29: Classify over-allowance CRL bodies consistently.** With
+  `fetch_each`, a request's first over-allowance body is the engine's
+  `resource_limit_exceeded` and later ones the source's `crl_fetch_failed`;
+  the allowance counts accepted bodies only.
+- [ ] **SEC-30: Record the points of a URL-less retrieval failure.** A
+  URL-less failure beside an answer by certificate is recorded without the
+  points it concerned.
+- [ ] **SEC-31: Refuse more private-use DNS suffixes before resolving.** The
+  built-in URL check lists reserved labels (`src/retrieval/http.rs`); other
+  private-use suffixes (`.lan`, `.corp`, `.localdomain`) rely on the
+  DNS-answer address check.
+- [ ] **SEC-32: Keep the outer error's causes on the RDP revocation fallback.**
+  When a revocation is another error type's source, the merged error loses
+  the outer error's cause messages.
+- [ ] **SEC-33: Decide case-insensitive distribution-point matching.** URIs
+  compare byte for byte (webpki's rule), so a scheme or host differing only
+  in case does not match; RFC 5280 section 7.4 compares them without regard
+  to case. A match can let a CRL decide that is now set aside or replaceable,
+  so it may turn a rejection into acceptance: owner's decision.
+- [ ] **SEC-34: Decide which certificates `unknown_status` names.** When no
+  completable path has a gap, it falls back to every path and names
+  certificates on stuck paths too (forged or no-cRLSign CRL), so
+  `--fetch-crls` asks about them in vain. Pinned on purpose by
+  `a_revocation_then_a_missing_crl_then_the_most_specific_failure_decides`;
+  covers the expired and replaceable lists too. Owner's decision. Whatever
+  is decided, make the stuck-path exclusion part of `unknown_status` (today
+  its callers, `completable_first` and `revocation_failure`, must do it).
+- [ ] **SEC-35: Decide whether a newer CRL without nextUpdate clears a listing beside a usable CRL.**
+  It clears an older listing only when no CRL is usable; OpenSSL's newest
+  best-scored CRL would give good status. Clearing would loosen an
+  acceptance pin: owner's decision. See [SEC-10](docs/tasks/sec-10-crl-applicability.md), "Recorded, not changed".
+- [ ] **SEC-36: Decide removeFromCRL beside a usable CRL.** An entry with
+  reasonCode removeFromCRL releases the certificate in a CRL without
+  nextUpdate standing alone (OpenSSL's `cert_crl`), but beside a usable CRL
+  any authenticated listing revokes (PR #60 rule). Releasing it there would
+  turn a revocation into acceptance: owner's decision.
+- [ ] **SEC-37: Decide whether a CRL missing only nextUpdate is offered to a source.**
+  It is not (ranked above replaceable), as OpenSSL, BoringSSL and Bouncy
+  Castle would use it and not look again; so beside an expired CRL it keeps
+  `--fetch-crls` from asking (`crl-035-no-next-update-local-asks-nothing`).
+  Offering it would make retrieval fire where the references stay quiet:
+  owner's decision.
+- [ ] **SEC-38: Log listings that a newer CRL cleared.** Only an accepted
+  path's ignored listings reach the logger.
 
 ## P1 — Clean parse/verify interfaces
 
@@ -125,6 +181,8 @@ TDD workflow and checks in AGENTS.md.
 - [x] **LIB-08: Audit borrowing, errors, and public API stability.** Done; [record](docs/tasks/done.md#lib-08-audit-borrowing-errors-and-public-api-stability).
 - [x] **LIB-09: Evaluate a `no_std` shared verification core.** Done; [record](docs/tasks/done.md#lib-09-evaluate-a-no_std-shared-verification-core).
 - [x] **LIB-10: Reassess shared interfaces and crate extraction after reuse.** Done; [record](docs/tasks/done.md#lib-10-reassess-shared-interfaces-and-crate-extraction-after-reuse).
+- [ ] **LIB-11: Remove the hidden public `cli::command()`.** It is kept
+  public only for the spec runner (PR #59); give the runner another way in.
 
 ## P1 — Tests, portable specification, and engineering checks
 
@@ -206,6 +264,20 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **TEST-31: Settle the shared format-skeleton rules.** Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
 - [x] **TEST-32: Number the `PE-` index.** Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
+- [ ] **TEST-33: Express retrieval edge cases in the case format.** The
+  injected CRL source maps URLs or certificates to bodies and error kinds, so
+  it cannot express URL-less failures, whole-request errors, several entries
+  per request, a point shared by certificates of two issuers, or the built-in
+  source's deadline and byte cap. They are unit-tested only
+  (`docs/testing.md`); extend the format (with TEST-05) before pinning them.
+- [ ] **TEST-34: Commit fixtures for CRLs without nextUpdate.** When such a
+  CRL revokes, clears an older listing or is set aside is pinned by unit
+  tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,
+  removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
+  have no fixture or spec case.
+- [ ] **TEST-35: Guard the manifest-sources scratch directory.**
+  `tests/manifest.rs` `fixtures_are_never_indexed_as_sources` creates its
+  directory without the drop guard its sibling test uses.
 
 ## P1 — CLI, reporting, and distribution
 
@@ -224,6 +296,10 @@ TDD workflow and checks in AGENTS.md.
   versions. Make parse-only, integrity-only, trusted, revocation-disabled, and
   package-hashed-but-not-independently-verified catalog states unambiguous.
   Keep supplied artifacts distinct from selected evidence.
+- [ ] **PRODUCT-07: Serialize absent retrieval URLs one way.**
+  `CrlRetrievalArtifact.url` and `final_url` are omitted when absent while
+  `CrlRetrievalFailure.url` serializes as `null`; pick one under PRODUCT-03's
+  rules.
 - [ ] **PRODUCT-04: Keep public API and decision documentation current.** Add
   compiling examples for parse-only and explicit trusted verification, feature
   combinations, and error handling. Update stale source paths in the comparison
