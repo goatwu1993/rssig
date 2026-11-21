@@ -26,8 +26,13 @@ PE images: image hash, page hashes, checksum, certificate table.
 ## Sources
 
 - [boundaries.md](boundaries.md)
-- Microsoft, *Windows Authenticode Portable Executable Signature Format*
-  (the PE image hash and the attribute certificate table).
+- Microsoft, *Windows Authenticode Portable Executable Signature Format*,
+  version 1.0, March 21, 2008 ([Authenticode PE](https://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184a/Authenticode_PE.docx)): "Extracting and
+  Verifying PKCS #7" and "Calculating the PE Image Hash". Its licence forbids
+  reproduction, so no copy is committed.
+- Microsoft, [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format) (updated 2026-09-10):
+  "The Attribute Certificate Table (Image Only)", "Other Contents of the
+  File" and "Appendix A: Calculating Authenticode PE Image Hash".
 - Windows-format references, as AGENTS.md describes: osslsigncode 2.16
   (04c9aa7e) `pe.c`, jsign 7.6 (cf5d2ce)
   `jsign-core/src/main/java/net/jsign/pe/PEFile.java`, relic 02c54d58
@@ -80,14 +85,22 @@ digests in `details`. A changed CheckSum alone still verifies.
   - relic `pedigest.go:48-109` (`DigestPE`): headers without the two fields,
     the gap before the first section, the sections, then the trailer up to the
     certificate table (`readTrailer`, `pedigest.go:330-348`).
-  - The Microsoft document describes hashing the sorted sections and the data
-    after them; for the contiguous layouts of PE-005 that is the same byte
-    sequence, except that the references, like rssig, also hash a gap before
-    the first section.
+  - Microsoft Authenticode PE, "Calculating the PE Image Hash", steps 3-14:
+    the headers to SizeOfHeaders without CheckSum and the Certificate Table
+    entry, the sections sorted by PointerToRawData, then the extra data after
+    them less the certificate table. For the contiguous layouts of PE-005 that
+    is the same byte sequence. The steps count from SizeOfHeaders and do not
+    describe a gap before the first section; the three references and rssig
+    hash it.
 - **Unit tests:** `checksum_is_excluded_but_section_data_is_not` and
   `validates_page_hashes_and_image_integrity` in `src/tests.rs`;
   `borrowed_pe_chunks_preserve_the_authenticode_digest` in
   `tests/parse_core.rs`.
+- **Note:** Microsoft's [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#process-for-generating-the-authenticode-pe-image-hash)
+  Appendix A says that the area past the last section "is not hashed". That
+  contradicts step 14 of the Authenticode PE document and all three
+  references, which hash data between the last section and the certificate
+  table; rssig follows the Authenticode PE document.
 
 ### PE-002: Signed page hashes must match every page
 
@@ -111,6 +124,10 @@ by PE-001 alone.
     page short by the removed bytes, the trailing null digest) and
     `pedigest.go:236-242` (page size by machine); `peverify.go:137-139`
     rejects a page-hash mismatch.
+  - Microsoft documents no page-hash layout: the Authenticode PE document
+    says the structure in serializedData "is outside the scope of this
+    paper". The [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file) page gives the
+    page size: "4 K for Intel x86 and for MIPS, and 8 K for Itanium".
 - **Unit tests:** `validates_page_hashes_and_image_integrity` in
   `src/tests.rs`.
 - **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule.
@@ -131,8 +148,15 @@ image digest nor the signature.
     after existing certificate".
   - osslsigncode `pe.c:575-588` ignores a signature that does not end the
     file or overlaps the headers, so the image verifies as unsigned.
-  - jsign `PEFile.java:424-425` hashes bytes after the table instead; the
-    references differ, so this entry stays Observed until the owner decides.
+  - jsign `PEFile.java:424-425` hashes bytes after the table instead.
+  - Microsoft [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file): "attribute
+    certificate and debug information must be placed at the very end of an
+    image file"; [the attribute certificate table](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only)
+    is "composed of a set of contiguous, quadword-aligned attribute
+    certificate entries", with zero padding before it. Step 14 of the
+    Authenticode PE hash also assumes the table ends the file.
+  - Microsoft and two of the three references support the rule; jsign
+    differs, so this entry stays Observed until the owner decides.
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
@@ -150,7 +174,15 @@ one DER object followed only by zero bytes; entries are padded with zeros to
     revision 2.0 PKCS#7 entry and skips others.
   - relic `peverify.go:86-103` checks each entry's length and alignment but
     not its revision or type.
-  - The references differ in what they skip; rssig rejects instead.
+  - Microsoft [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only):
+    entries are walked by dwLength rounded up to 8 until the sum equals the
+    table size, otherwise "either the attribute certificate table or the Size
+    field is corrupted"; bCertificate is padded with zeros to a quadword.
+    Entries "can contain any certificate type", and revision 0x0100 is
+    "supported only for purposes of verifying legacy Authenticode signatures".
+  - The references differ in what they skip. rssig is stricter than
+    Microsoft: it rejects a revision 1.0 entry and an entry of another type
+    instead of skipping it.
 
 ### PE-005: Only bounded PE32 and PE32+ headers with contiguous sections are supported
 
@@ -175,6 +207,9 @@ it.
     SizeOfHeaders and NumberOfRvaAndSizes.
   - [boundaries.md](boundaries.md): arbitrary PE section layouts are not
     implemented.
+  - Microsoft Authenticode PE, step 10, sorts the sections by
+    PointerToRawData; it does not say how a gap or an overlap between them is
+    hashed, so rssig rejects both rather than guess.
 
 ## Tier 2: availability
 
