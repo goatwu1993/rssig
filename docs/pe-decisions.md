@@ -132,20 +132,29 @@ page hashes is checked by PE-001 alone.
     `pedigest.go:236-242` (page size by machine); `peverify.go:139-141`
     rejects a page-hash mismatch.
   - osslsigncode `pe.c:1005-1308` (`pe_page_hash_calc`) and `pe.c:1318`
-    (`pe_verify_page_hash`) build the same entries but take the page size from
+    (`pe_verify_page_hash`) build the same entries: the header page without
+    CheckSum and the Certificate Table entry, zero-padded to the page size
+    (`pe.c:1145-1180`, rejecting headers larger than a page at `pe.c:1166`),
+    each section page by page, and a final entry with the end offset and a
+    zero digest (`pe.c:1290-1303`). It differs in taking the page size from
     the optional header's SectionAlignment (`pe.c:1052-1056`, rejecting 0)
-    and walk the sections in table order (`pe.c:1196`). It would reject the
-    committed page-hash fixtures, whose SectionAlignment is 0.
+    and in walking the sections in table order (`pe.c:1196`), so it would
+    reject the committed page-hash fixtures, whose SectionAlignment is 0.
   - jsign does not verify page hashes; it only declares the ASN.1
     `SpcSerializedObject` that carries them.
-  - signify (Python, v0.9.3, 60fa494) `signify/authenticode/signed_file/pe.py`
-    `page_size`: 8192 for Itanium, 4096 otherwise. Its commit 25e7046 (v0.9.2,
-    issue #58) replaced a SectionAlignment page size, osslsigncode's method,
-    because it reported page-hash errors on a real signed binary, now a test
-    sample.
-  - AuthHashCalc (69ffce7) `Source/hash.cpp` `CalculateFirstPageHash`
-    computes the WDAC header page hash with the Windows memory page size
-    (`GetSystemInfo`, `Source/main.cpp:697`), not a header field.
+  - [signify](https://github.com/ralphje/signify) (Python, v0.9.3,
+    60fa494): `signify/authenticode/signed_file/pe.py:280-293` (`page_size`:
+    8192 for Itanium, 4096 otherwise) and `pe.py:358-376`
+    (`verify_additional_hashes` rejects a page-hash mismatch);
+    `signify/authenticode/indirect_data.py:194-216` reads entries of a
+    4-byte offset and a digest, the last with a zero digest. Its commit
+    25e7046 (v0.9.2, issue #58) replaced a SectionAlignment page size,
+    osslsigncode's method, because it reported page-hash errors on a real
+    signed binary, now a test sample.
+  - [AuthHashCalc](https://github.com/hfiref0x/AuthHashCalc) (69ffce7):
+    `Source/hash.cpp:342-394` (`CalculateFirstPageHash`) computes the WDAC
+    header page hash, zero-padded to the page size, with the Windows memory
+    page size (`GetSystemInfo`, `Source/main.cpp:697`), not a header field.
   - Microsoft documents no page-hash layout: the Authenticode PE document
     says the structure in serializedData "is outside the scope of this
     paper". The
@@ -158,7 +167,9 @@ page hashes is checked by PE-001 alone.
 - **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule. The
   owner decided the machine-type page size: relic, signify and AuthHashCalc
   agree and osslsigncode differs. signify maps only Itanium to 8192; the Alpha
-  machines follow relic.
+  machines follow relic. rssig sorts sections by file offset; relic walks them
+  in table order but requires each to start where the previous one ended, so
+  for the layouts of PE-005 the order is the same.
 
 ### PE-003: The certificate table ends the file, after the headers, on an 8-byte boundary
 
