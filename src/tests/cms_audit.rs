@@ -105,6 +105,10 @@ pub(super) fn write_attribute_multiplicity(dir: &std::path::Path) {
         signed_pe(vec![time(b"260101000000Z"), time(b"260101000001Z")], vec![]),
     );
     write(
+        "bad-cms-empty-attribute-value.exe",
+        signed_pe(vec![seq(&[oid(UNKNOWN), tlv(0x31, &[])])], vec![]),
+    );
+    write(
         "good-cms-duplicate-unknown-signed.exe",
         signed_pe(
             vec![attr(UNKNOWN, tlv(2, &[1])), attr(UNKNOWN, tlv(2, &[2]))],
@@ -184,6 +188,31 @@ fn cms_structure_fixtures_preserve_signature_math() {
         )
         .unwrap();
     }
+}
+
+#[test]
+fn inspection_rejects_a_countersigner_with_two_signing_times() {
+    // The parser keeps repeated attributes (CMS-009), so inspection must not pick
+    // one signingTime silently.
+    let id = identity();
+    let time = |text: &[u8]| attr(SIGNING_TIME, tlv(0x17, text));
+    let counter = signer_info(
+        id,
+        b"content",
+        None,
+        vec![time(b"260101000000Z"), time(b"260101000001Z")],
+        vec![],
+    );
+    let content = image_content(&base_pe(true), true, None);
+    let outer = signer_info(
+        id,
+        der::one(&content, 0x30).unwrap().body,
+        Some(cms::INDIRECT),
+        vec![],
+        vec![attr(cms::COUNTERSIGN, counter)],
+    );
+    let cms = signed_data(id, content, cms::INDIRECT, outer);
+    assert!(crate::parse::SignedData::inspect(&cms, &mut Default::default()).is_err());
 }
 
 #[test]

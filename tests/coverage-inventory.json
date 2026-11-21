@@ -140,12 +140,19 @@
     },
     {
       "id": "cms-structure",
-      "claim": "CMS versions, signed SET ordering and parameters",
+      "claim": "CMS versions, signed SET ordering, parameters and attribute multiplicity",
       "cases": [
         "cms-014-good-structure",
         "cms-008-bad-value-order",
         "cms-010-bad-signer-version",
-        "cms-002-bad-ecdsa-parameters"
+        "cms-002-bad-ecdsa-parameters",
+        "cms-009-bad-content-type-duplicate",
+        "cms-009-bad-message-digest-duplicate",
+        "cms-009-bad-signing-time-duplicate",
+        "cms-009-bad-nested-duplicate",
+        "cms-009-bad-empty-value",
+        "cms-009-good-unknown-signed-duplicate",
+        "cms-009-good-unknown-unsigned-duplicate"
       ]
     },
     {
@@ -287,6 +294,8 @@
         "tsa-006-extensions",
         "tsa-004-duplicate-rfc",
         "tsa-004-duplicate-counter",
+        "tsa-004-duplicate-eku-rfc",
+        "tsa-004-duplicate-eku-counter",
         "tsa-004-mixed",
         "tsa-004-mixed-reverse",
         "tsa-004-aliases",

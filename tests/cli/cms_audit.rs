@@ -50,6 +50,7 @@ fn cms_attribute_multiplicity() {
         "bad-cms-duplicate-message-digest.exe",
         "bad-cms-duplicate-signing-time.exe",
         "bad-cms-duplicate-nested.exe",
+        "bad-cms-empty-attribute-value.exe",
     ] {
         let out = run_fixture(file, &args);
         assert_eq!(out.exit_code, 1, "{file}");

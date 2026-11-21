@@ -86,7 +86,10 @@ countersignature OID, an RFC 3161 token beside a countersignature in either
 order, and the two RFC 3161 attribute aliases together are
 `invalid_timestamp`. There is no selection rule. The CMS layer lets repeated
 timestamp attributes through
-([CMS-009](cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo)); this rule rejects them.
+([CMS-009](cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo));
+this rule rejects them. The timestamps are counted before any is verified, so
+a second one is never masked by the first one's own failure (an invalid EKU,
+for example).
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #42 (SEC-08): failing closed instead of

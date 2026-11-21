@@ -18,6 +18,20 @@ pub(crate) fn verify_timestamp(
     options: &VerifyOptions<'_>,
     budget: &Budget,
 ) -> Result<Option<TimestampReport>> {
+    // TSA-004: a signer has at most one timestamp. Count them before judging any,
+    // so a second timestamp is never masked by the first one's own failure.
+    let timestamps: usize = signer
+        .unsigned
+        .iter()
+        .filter(|(oid, _)| {
+            matches!(
+                oid.as_slice(),
+                cms::RFC3161 | cms::CMS_TIMESTAMP | cms::COUNTERSIGN
+            )
+        })
+        .map(|(_, values)| values.len())
+        .sum();
+    ensure!(timestamps <= 1, "multiple timestamps are unsupported");
     let mut timestamp = None;
     for (oid, values) in &signer.unsigned {
         if oid.as_slice() == cms::RFC3161 || oid.as_slice() == cms::CMS_TIMESTAMP {

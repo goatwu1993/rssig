@@ -19,6 +19,8 @@ pub(super) const FAULTS: &[&str] = &[
     "extensions",
     "duplicate-rfc",
     "duplicate-counter",
+    "duplicate-eku-rfc",
+    "duplicate-eku-counter",
     "mixed",
     "mixed-reverse",
     "aliases",
@@ -39,7 +41,13 @@ pub(super) const FAULTS: &[&str] = &[
 fn artifact(fault: &str) -> Vec<u8> {
     let id = identity();
     let mut tsa = tsa_identity();
-    let policy_fault = fault.strip_prefix("counter-").unwrap_or(fault);
+    // The duplicate-eku fixtures carry two timestamps whose TSA certificate has no
+    // EKU, so a verifier that checks the first token before counting them reports
+    // invalid_eku instead of the multiplicity rule (TSA-004).
+    let policy_fault = match fault {
+        "duplicate-eku-rfc" | "duplicate-eku-counter" => "eku-missing",
+        other => other.strip_prefix("counter-").unwrap_or(other),
+    };
     if policy_fault.starts_with("eku-") || policy_fault == "key-usage" {
         let exts = tsa.cert.tbs_certificate.extensions.as_mut().unwrap();
         if policy_fault == "eku-missing" {
@@ -145,6 +153,8 @@ fn artifact(fault: &str) -> Vec<u8> {
     let unsigned = match fault {
         "duplicate-rfc" => vec![rfc.clone(), rfc],
         "duplicate-counter" => vec![counter.clone(), counter],
+        "duplicate-eku-rfc" => vec![rfc.clone(), rfc],
+        "duplicate-eku-counter" => vec![counter.clone(), counter],
         "mixed" => vec![rfc, counter],
         "mixed-reverse" => vec![counter, rfc],
         "aliases" => vec![rfc, attr(cms::CMS_TIMESTAMP, token)],

@@ -156,6 +156,25 @@ fn tsa_duplicate_counter() {
 }
 
 #[test]
+fn tsa_duplicate_eku_rfc() {
+    // Two timestamps are counted before the first token is judged (TSA-004).
+    let output = run_fixture("tsa-duplicate-eku-rfc.exe", TRUSTED);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_timestamp");
+    assert_eq!(error["stage"], "timestamp");
+}
+
+#[test]
+fn tsa_duplicate_eku_counter() {
+    let output = run_fixture("tsa-duplicate-eku-counter.exe", TRUSTED);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_timestamp");
+    assert_eq!(error["stage"], "timestamp");
+}
+
+#[test]
 fn tsa_mixed() {
     let output = run_fixture("tsa-mixed.exe", TRUSTED);
     assert_eq!(output.exit_code, 1);

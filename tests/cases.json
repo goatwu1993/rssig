@@ -4364,6 +4364,36 @@
       }
     },
     {
+      "id": "cms-009-bad-empty-value",
+      "input": "bad-cms-empty-attribute-value.exe",
+      "decision": "CMS-009",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "stage": "cms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "cms-010-msi-bad-malformed-cms",
       "input": "msi-bad-malformed-cms.msi",
       "decision": "CMS-010",
@@ -28905,6 +28935,66 @@
     {
       "id": "tsa-004-duplicate-counter",
       "input": "tsa-duplicate-counter.exe",
+      "decision": "TSA-004",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tsa-004-duplicate-eku-rfc",
+      "input": "tsa-duplicate-eku-rfc.exe",
+      "decision": "TSA-004",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_timestamp",
+                "stage": "timestamp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "tsa-004-duplicate-eku-counter",
+      "input": "tsa-duplicate-eku-counter.exe",
       "decision": "TSA-004",
       "command": [
         "verify",

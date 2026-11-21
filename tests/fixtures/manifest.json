@@ -6980,6 +6980,16 @@
       ]
     },
     {
+      "file": "bad-cms-empty-attribute-value.exe",
+      "sha256": "9fd12aad5223da88b29ab42a79deec061594a84fb8694b8ed5bb161ee4350ed4",
+      "bytes": 2184,
+      "description": "CMS-009 attribute multiplicity: a signed attribute with an empty value SET (RFC 5652 11.4 requires one or more values). Exact attribute bytes signed with deterministic test-only RustCrypto keys. Generator src/tests/cms_audit.rs; Apache-2.0.",
+      "paired_good": "good-cms-structure.exe",
+      "cases": [
+        "cms-009-bad-empty-value"
+      ]
+    },
+    {
       "file": "bad-cms-duplicate-signing-time.exe",
       "sha256": "7d95baf90d3ced9dfcb777594bfea6540a6382be67f10dae709fba907a3e85e8",
       "bytes": 2240,
@@ -8998,6 +9008,30 @@
       "license": "Apache-2.0",
       "cases": [
         "tsa-004-duplicate-counter"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-duplicate-eku-rfc.exe",
+      "sha256": "e4a6cb7ab8ac0afc1666a8aefcde4666c34d5e713fb36cc67101924f004176e4",
+      "bytes": 4856,
+      "description": "SEC-25: two RFC 3161 timestamps on one signer whose TSA certificate has no EKU, so a verifier that judges the first token before counting reports invalid_eku. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "tsa-004-duplicate-eku-rfc"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-duplicate-eku-counter.exe",
+      "sha256": "f20a741a907c72ef44737628fc6b0a514f21b04d413c71342d14e727b0d77e68",
+      "bytes": 3048,
+      "description": "SEC-25: two PKCS#9 countersignature timestamps on one signer whose TSA certificate has no EKU, so a verifier that judges the first token before counting reports invalid_eku. Parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected invalid_timestamp at timestamp.",
+      "generator": "src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "tsa-004-duplicate-eku-counter"
       ],
       "paired_good": "tsa-good.exe"
     },
