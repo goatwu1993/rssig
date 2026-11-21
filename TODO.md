@@ -263,6 +263,11 @@ TDD workflow and checks in AGENTS.md.
   page sizes, and page hashes. Document deliberately rejected gaps/overlaps and
   certificate placement. Evaluate unsigned-PE inspection separately, with an
   explicit API/CLI contract and unchanged unsigned rejection in verification.
+  Add a fixture and case for each PE rule no case pins yet: an unsupported
+  optional-header magic, NumberOfRvaAndSizes below 5, a bad SizeOfHeaders, a
+  section gap or overlap (PE-005), an unaligned certificate table or one
+  overlapping the headers (PE-003), and headers larger than a page with page
+  hashes (PE-002).
 - [ ] **FORMAT-02: Audit MSI/MSP CFB and metadata variants.** Extend independent
   v3/v4, stream-name/order, FAT/miniFAT, metadata, and legacy/extended-signature
   coverage. Pin duplicate/aliased signature-stream handling and file-time details.

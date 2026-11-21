@@ -240,9 +240,14 @@ image digest nor the signature.
     the table. MS12-024 treats appended content as unsigned.
 - **Note:** The PE Format page and jsign allow data after the table;
   MS12-024, the Authenticode PE hash, relic and osslsigncode do not. The owner
-  decided, with the full PE Format text, to reject it: bytes after the table
-  are covered by neither the image digest nor the signature, so rejecting
-  fails closed.
+  decided, with the full PE Format text, to reject it: bytes after the table are
+  covered by neither the image digest nor the signature, so rejecting fails
+  closed. The lower bound, at or after SizeOfHeaders, is rssig's own:
+  osslsigncode checks only the PE header up to the Certificate Table field, and
+  relic requires the table after the last section, which PE-005 also requires
+  whenever the image has sections. The committed cases pin data after the table
+  and a range past the end of the file; no case yet pins an unaligned table or
+  one overlapping the headers (FORMAT-01).
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
