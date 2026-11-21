@@ -1,10 +1,16 @@
 # rssig
 
 rssig is a Rust CLI and library for verifying embedded Windows PE/MSI/MSP/CAB/NAVX/PowerShell/WSH/MSIX/AppX Authenticode
-signatures and RDP signed settings on **macOS and Linux**. The local `jsign/` and `relic/` clones are
-read-only implementation references. Use them to understand formats, hashing,
-nested signatures, timestamps, and verification behavior. Do not require either
-project at build or runtime.
+signatures and RDP signed settings on **macOS and Linux**.
+
+Reference implementations are read-only sources to read and cite, never
+dependencies; do not require any of them at build or runtime.
+
+- **CMS, CRL and certificate questions** (SignedData and signer binding,
+  timestamps, certificate paths, revocation): use OpenSSL and Bouncy Castle,
+  at the commits in [docs/decisions.md](docs/decisions.md#entry-format).
+- **PE-related questions only** (PE parsing, hashing and signature
+  embedding): use the local `jsign/` and `relic/` clones.
 
 Terms such as policy, rule, decision and spec have one meaning each, defined
 in [docs/glossary.md](docs/glossary.md); use them consistently and add new

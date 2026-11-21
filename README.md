@@ -8,7 +8,8 @@ This project is **vibe coded** with AI assistance and developed through local
 fixtures, a portable JSON specification, and native Rust tests. It is inspired by
 [jsign](https://github.com/ebourg/jsign) and
 [relic](https://github.com/sassoftware/relic), whose source code serves as a
-reference for PE/MSI Authenticode hashing, signatures, and verification behavior.
+reference for PE hashing and signature embedding; OpenSSL and Bouncy Castle
+source serve as the reference for CMS, CRL and certificate behavior.
 [osslsigncode](https://github.com/mtrojnar/osslsigncode) and
 [rcodesign](https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign)
 also inform the project's design discussions. The library boundary follows
