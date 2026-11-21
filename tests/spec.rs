@@ -7,32 +7,20 @@ use serde::Serialize;
 use serde_json::Value;
 use spec_suite::{Argument, Case, Suite};
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     ffi::OsString,
     path::{Path, PathBuf},
 };
 
-/// One `### CRL-001: title` entry of a decision index under `docs/`
-/// (AGENTS.md, "Pinned expectations").
-#[derive(Debug)]
-struct DecisionEntry {
-    status: String,
-}
-
-impl DecisionEntry {
-    /// `Decided` and `Observed` entries may be named by a case; `Retired` and
-    /// `Superseded by` ones may not.
-    fn in_force(&self) -> bool {
-        matches!(self.status.as_str(), "Decided" | "Observed")
-    }
-}
-
-/// Reads every decision entry from the given documents: a level-three
-/// heading `### PREFIX-NNN: title` followed by `- **Status:**`,
-/// `- **Decided by:**` and `- **Pins:**` lines before the next heading.
+/// Reads the IDs of every decision entry (AGENTS.md, "Pinned expectations")
+/// from the given documents: a level-three heading `### PREFIX-NNN: title`
+/// followed by `- **Status:**`, `- **Decided by:**` and `- **Pins:**` lines
+/// before the next heading. Status is `Decided` or `Observed`: a dropped entry
+/// leaves its index in a reindex instead of staying as a tombstone
+/// (docs/decisions.md, "IDs").
 fn parse_decisions(
     documents: impl IntoIterator<Item = (String, String)>,
-) -> Result<BTreeMap<String, DecisionEntry>, String> {
+) -> Result<BTreeSet<String>, String> {
     let is_id = |id: &str| {
         id.split_once('-').is_some_and(|(prefix, number)| {
             !prefix.is_empty()
@@ -41,8 +29,7 @@ fn parse_decisions(
                 && number.bytes().all(|b| b.is_ascii_digit())
         })
     };
-    let mut entries = BTreeMap::new();
-    let mut superseded = Vec::new();
+    let mut entries = BTreeSet::new();
     for (name, text) in documents {
         let mut lines = text.lines().peekable();
         while let Some(line) = lines.next() {
@@ -63,10 +50,7 @@ fn parse_decisions(
             }
             let get = |key| field.get(key).cloned().unwrap_or_default();
             let (status, by, pins) = (get("Status"), get("Decided by"), get("Pins"));
-            let target = status.strip_prefix("Superseded by ");
-            if !matches!(status.as_str(), "Decided" | "Observed" | "Retired")
-                && !target.is_some_and(is_id)
-            {
+            if !matches!(status.as_str(), "Decided" | "Observed") {
                 return Err(format!("{name}: {id} has an unknown status {status:?}"));
             }
             if by.is_empty() || (by == "—") != (status == "Observed") {
@@ -79,30 +63,17 @@ fn parse_decisions(
                     "{name}: {id} pins must be acceptance or diagnostics, got {pins:?}"
                 ));
             }
-            if let Some(target) = target {
-                superseded.push((id.to_owned(), target.to_owned()));
-            }
-            if entries
-                .insert(id.to_owned(), DecisionEntry { status })
-                .is_some()
-            {
+            if !entries.insert(id.to_owned()) {
                 return Err(format!("{name}: duplicate decision {id}"));
             }
-        }
-    }
-    for (id, target) in superseded {
-        if !entries.contains_key(&target) {
-            return Err(format!(
-                "{id} is superseded by {target}, which is not defined"
-            ));
         }
     }
     Ok(entries)
 }
 
 /// The decision entries of every Markdown document directly under `docs/`.
-fn committed_decisions() -> Result<&'static BTreeMap<String, DecisionEntry>, String> {
-    static INDEX: std::sync::OnceLock<Result<BTreeMap<String, DecisionEntry>, String>> =
+fn committed_decisions() -> Result<&'static BTreeSet<String>, String> {
+    static INDEX: std::sync::OnceLock<Result<BTreeSet<String>, String>> =
         std::sync::OnceLock::new();
     INDEX
         .get_or_init(|| {
@@ -142,22 +113,13 @@ impl Suite {
         }
         let mut ids = HashSet::new();
         for case in &self.cases {
-            if let Some(id) = &case.decision {
-                match committed_decisions()?.get(id) {
-                    None => {
-                        return Err(format!(
-                            "case {} names decision {id}, which no index under docs/ defines",
-                            case.id
-                        ));
-                    }
-                    Some(entry) if !entry.in_force() => {
-                        return Err(format!(
-                            "case {} names decision {id}, whose status is {}",
-                            case.id, entry.status
-                        ));
-                    }
-                    Some(_) => {}
-                }
+            if let Some(id) = &case.decision
+                && !committed_decisions()?.contains(id)
+            {
+                return Err(format!(
+                    "case {} names decision {id}, which no index under docs/ defines",
+                    case.id
+                ));
             }
             let expect = &case.expect;
             if case.crl_errors.is_some() && case.crl_responses.is_none() {
@@ -469,10 +431,7 @@ fn case_decisions_name_committed_entries() {
         serde_json::from_slice(&std::fs::read(root.join("tests/cases.json")).unwrap()).unwrap();
     suite.validate().unwrap();
     let decisions = committed_decisions().unwrap();
-    assert!(
-        decisions.contains_key("CRL-001"),
-        "docs/crl.md is not indexed"
-    );
+    assert!(decisions.contains("CRL-001"), "docs/crl.md is not indexed");
     assert!(
         suite.cases.iter().any(|case| case.decision.is_some()),
         "no case names a decision"
@@ -787,20 +746,21 @@ fn decision_index_rejects_malformed_entries() {
         )
     };
     let parse = |text: String| parse_decisions([("docs/x.md".to_owned(), text)]);
-    let good = parse(entry("Decided", "owner, PR #1", "acceptance")).unwrap();
-    assert!(good["CRL-001"].in_force());
-    assert!(parse(entry("Observed", "—", "diagnostics")).unwrap()["CRL-001"].in_force());
+    assert!(parse(entry("Decided", "owner, PR #1", "acceptance")).is_ok());
+    assert!(parse(entry("Observed", "—", "diagnostics")).is_ok());
     for (status, by, pins, error) in [
         ("Approved", "owner, PR #1", "acceptance", "status"),
         ("Decided", "—", "acceptance", "decided by"),
         ("Decided", "", "acceptance", "decided by"),
         ("Observed", "owner, PR #1", "acceptance", "decided by"),
         ("Decided", "owner, PR #1", "both", "pins"),
+        // No tombstones: a dropped entry leaves its index in a reindex.
+        ("Retired", "owner, PR #1", "acceptance", "status"),
         (
             "Superseded by CRL-002",
             "owner, PR #1",
             "acceptance",
-            "superseded",
+            "status",
         ),
     ] {
         let err = parse(entry(status, by, pins)).err().unwrap_or_default();
@@ -811,11 +771,4 @@ fn decision_index_rejects_malformed_entries() {
     assert!(parse(two).unwrap_err().contains("duplicate"));
     let missing = "### CRL-001: A rule\n\n- **Status:** Decided\n".to_owned();
     assert!(parse(missing).unwrap_err().contains("decided by"));
-    let mut superseded = entry("Superseded by CRL-002", "owner, PR #1", "acceptance");
-    superseded.push_str(
-        "\n### CRL-002: Its replacement\n\n- **Status:** Decided\n- **Decided by:** owner, PR #2\n- **Pins:** acceptance\n",
-    );
-    let index = parse(superseded).unwrap();
-    assert!(!index["CRL-001"].in_force());
-    assert!(index["CRL-002"].in_force());
 }

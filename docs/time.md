@@ -69,7 +69,7 @@ format, and RDP signers.
 
 When a timestamp is present, the lifetime signer's leaf and every
 intermediate on the selected path must also have notBefore at or before the
-signing time, inclusive at whole seconds. The result is
+signing time (the inclusive boundary of TIME-006). The result is
 `certificate_not_yet_valid` ("lifetime-signing certificate was not valid at
 the signing time").
 
@@ -118,11 +118,12 @@ fraction in that second, or a later second, is `timestamp_in_future`.
 
 ### TIME-005: A fractional timestamp is compared exactly with validity
 
-A fractional timestamp is checked at its whole second, then the selected leaf
-and intermediates must have `notAfter > signing_time`: `notAfter` itself is
-valid and `notAfter + .5` is `certificate_expired`; `notBefore + .5` is valid
-and `notBefore - 1 + .5` is `certificate_not_yet_valid`. Exact decimal digits
-are kept; no floating point is used.
+A fractional signing time is compared exactly with the inclusive validity of
+TIME-006: the selected leaf and intermediates must have notBefore at or before
+it and notAfter at or after it. So `notAfter` itself is valid and
+`notAfter + .5` is `certificate_expired`; `notBefore + .5` is valid and
+`notBefore - 1 + .5` is `certificate_not_yet_valid`. Exact decimal digits are
+kept; no floating point is used.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #43 (SEC-09)

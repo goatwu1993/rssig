@@ -83,8 +83,6 @@ of the rule, and these fields as list items:
     approval, recorded in the PR and in "Decided by".
   - `Observed`: current behavior, pinned so that a change is visible; may
     change when a better result is argued.
-  - `Retired`: no longer in force; one line says why.
-  - `Superseded by PREFIX-NNN`: replaced by the named entry.
 - **Decided by:** who or what settled it, with the PR where it applies:
   `owner, PR #N` (the owner decided or delegated the call),
   `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named),
@@ -121,8 +119,7 @@ jq -r '.cases[] | select(.decision == "CRL-001") | .id' tests/cases.json
 ```
 
 `tests/spec.rs` reads every entry in `docs/*.md`, checks its fields and that
-IDs are unique, and checks that every case's `decision` names an entry that
-is `Decided` or `Observed`.
+IDs are unique, and checks that every case's `decision` names an entry.
 
 ## IDs
 
@@ -133,8 +130,9 @@ earlier text. An ID is not renumbered except in a reindex the repository
 owner approves: a PR whose title and description say so, which moves
 misplaced entries to the right index, renumbers every affected index to keep
 its order, updates every case ID, decision and reference in the same change,
-and adds its old-to-new mapping below. Outside a reindex, a dropped entry keeps
-its ID with Status `Retired` or `Superseded by`.
+and adds its old-to-new mapping below. There are no tombstones: a rule that is
+dropped or merged leaves its index in a reindex, and its cases move to the
+entry that now states their rule.
 
 ## Reindex history
 
@@ -154,17 +152,21 @@ with this table; an ID not listed kept its number.
 | PR #72 | TSA-004, duplicated attribute OID clause (cases `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) | CMS-009 (cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter`); TSA-004 keeps its number |
 | PR #73 | CMS-009 cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter` | back to TSA-004 as `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`, now `invalid_timestamp` at `timestamp` (SEC-25 narrowed CMS-009) |
 | PR #74 | CRL-021 | merged into CRL-020 |
-| PR #74 | CRL-022 to CRL-039 | CRL-021 to CRL-038 (each one lower) |
-| PR #74 | CRL-040 | CRL-039 (also takes CRL-041) |
-| PR #74 | CRL-041 | merged into CRL-039 |
-| PR #74 | CRL-042 to CRL-045 | CRL-040 to CRL-043 (each two lower) |
+| PR #74 | CRL-022, CRL-023 | CRL-021, CRL-022 |
+| PR #74 | CRL-024 | merged into CRL-017 |
+| PR #74 | CRL-025 to CRL-031 | CRL-023 to CRL-029 (each two lower) |
+| PR #74 | CRL-032, CRL-033 | merged into CRL-027 |
+| PR #74 | CRL-034 to CRL-039 | CRL-030 to CRL-035 (each four lower) |
+| PR #74 | CRL-040 | CRL-036 (also takes CRL-041) |
+| PR #74 | CRL-041 | merged into CRL-036 |
+| PR #74 | CRL-042 to CRL-045 | CRL-037 to CRL-040 (each five lower) |
 | PR #74 | TIME-004 | merged into TIME-003 |
 | PR #74 | TIME-005 to TIME-014 | TIME-004 to TIME-013 (each one lower) |
 | PR #74 | CMS-014 | merged into CMS-010 |
 | PR #74 | CMS-015, CMS-016 | CMS-014, CMS-015 |
 
 In PR #74 every case was renamed with its entry, including the cases of a
-merged entry (for example `crl-041-…` is now `crl-039-…`).
+merged entry (for example `crl-038-…` is now `crl-036-…`).
 
 ## Task documents
 

@@ -183,7 +183,7 @@ TDD workflow and checks in AGENTS.md.
   `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
   `CMS-` where its rule is shared.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
-  `docs/crl-retrieval.md` restates rules now in `CRL-027` to `CRL-043`.
+  `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
 - [ ] **TEST-20: Rename task-named library cases.** The `lib04-*` to `lib09-*`
   cases are claimed by the format, `INSPECT-` and `POLICY-` indexes; rename
   them by subject when those are numbered.
@@ -204,12 +204,9 @@ TDD workflow and checks in AGENTS.md.
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
 - [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in the [reindex history](docs/decisions.md#reindex-history).
-- [ ] **TEST-31: Settle the overlaps TEST-30 left.** Decide where the shared
-  candidate rules of the format skeletons (`hash`, `structure`, `unsigned`,
-  `support`) live before TEST-18 and its siblings number them; state the
-  whole-second validity boundary once instead of in TIME-002, TIME-005 and
-  TIME-006; and reword TIME-005, whose `notAfter > signing_time` reads against
-  "`notAfter` itself is valid".
+- [ ] **TEST-31: Settle the shared format-skeleton rules.** Decide where the
+  candidate rules repeated by the format skeletons (`hash`, `structure`,
+  `unsigned`, `support`) live before TEST-18 and its siblings number them.
 
 ## P1 — CLI, reporting, and distribution
 
