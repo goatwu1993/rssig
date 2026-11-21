@@ -2,11 +2,22 @@
 
 Today every nested signature must verify
 ([CMS-013](../cms.md#cms-013-a-nested-signature-is-verified-like-the-primary-one),
-Observed). No RFC defines nested Authenticode signatures, and OpenSSL and
-Bouncy Castle ignore the unsigned attribute that carries them, so the
-all-required rule is rssig's own. osslsigncode 2.16 (a Windows-format
-reference) verifies every signature and succeeds when any one is valid
-(`osslsigncode.c:3319-3346`).
+Observed). The all-required rule is rssig's own:
+
+- No RFC defines nested Authenticode signatures. RFC 5652 section 5.3
+  ([copy](../rfc/rfc5652.txt)) only says unsigned attributes are not signed
+  by the signer; SpcNestedSignature (OID 1.3.6.1.4.1.311.2.4.1) is
+  Microsoft's.
+- OpenSSL 3a3f1356 and Bouncy Castle e03fee0b have no equivalent: neither
+  knows the attribute (`crypto/cms/cms_att.c:39-53` lists the attributes
+  OpenSSL interprets; Bouncy Castle `cms/SignerInformation.java` reads only
+  countersignatures from unsigned attributes, `:293-300`), so their
+  verification covers the primary SignerInfo only.
+- The Windows-format references differ. osslsigncode 2.16 (04c9aa7e)
+  collects every nested signature (`osslsigncode.c:3387-3411`), verifies
+  each, and succeeds when any one is valid (`osslsigncode.c:3319-3346`,
+  "success if at least one valid signature is found"). jsign 7.6 (cf5d2ce)
+  lists them (`SignatureUtils.java:91-112`) and has no released verifier.
 
 ## Decision
 
