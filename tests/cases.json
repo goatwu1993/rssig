@@ -197,8 +197,9 @@
       }
     },
     {
-      "id": "nested-signatures",
+      "id": "cms-013-nested-signatures",
       "input": "good-nested.exe",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -323,8 +324,9 @@
       }
     },
     {
-      "id": "bad-cms",
+      "id": "cms-001-bad-cms",
       "input": "bad-cms-signature.exe",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -1169,8 +1171,9 @@
       }
     },
     {
-      "id": "bad-cms-content-digest",
+      "id": "cms-005-bad-cms-content-digest",
       "input": "bad-cms-content-digest.exe",
+      "decision": "CMS-005",
       "command": [
         "verify",
         "--integrity-only",
@@ -1204,8 +1207,9 @@
       }
     },
     {
-      "id": "bad-cms-content-type",
+      "id": "cms-006-bad-cms-content-type",
       "input": "bad-cms-content-type.exe",
+      "decision": "CMS-006",
       "command": [
         "verify",
         "--integrity-only",
@@ -1239,8 +1243,9 @@
       }
     },
     {
-      "id": "bad-signer-issuer",
+      "id": "cms-003-bad-signer-issuer",
       "input": "bad-signer-issuer.exe",
+      "decision": "CMS-003",
       "command": [
         "verify",
         "--integrity-only",
@@ -1274,8 +1279,9 @@
       }
     },
     {
-      "id": "bad-signer-serial",
+      "id": "cms-003-bad-signer-serial",
       "input": "bad-signer-serial.exe",
+      "decision": "CMS-003",
       "command": [
         "verify",
         "--integrity-only",
@@ -1309,8 +1315,9 @@
       }
     },
     {
-      "id": "bad-cms-digest-set",
+      "id": "cms-007-bad-cms-digest-set",
       "input": "bad-cms-digest-set.exe",
+      "decision": "CMS-007",
       "command": [
         "verify",
         "--integrity-only",
@@ -1379,8 +1386,9 @@
       }
     },
     {
-      "id": "bad-signature-key-algorithm",
+      "id": "cms-002-bad-signature-key-algorithm",
       "input": "bad-signature-key-algorithm.exe",
+      "decision": "CMS-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -1414,8 +1422,9 @@
       }
     },
     {
-      "id": "bad-signer-public-key",
+      "id": "cms-001-bad-signer-public-key",
       "input": "bad-signer-public-key.exe",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -1557,8 +1566,9 @@
       }
     },
     {
-      "id": "bad-nested-signature",
+      "id": "cms-013-bad-nested-signature",
       "input": "bad-nested-signature.exe",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--integrity-only",
@@ -2009,8 +2019,9 @@
       }
     },
     {
-      "id": "msi-nested-signatures",
+      "id": "cms-013-msi-nested-signatures",
       "input": "msi-good-nested.msi",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -2095,8 +2106,9 @@
       }
     },
     {
-      "id": "msi-bad-cms",
+      "id": "cms-001-msi-bad-cms",
       "input": "msi-bad-cms-signature.msi",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -2712,8 +2724,9 @@
       }
     },
     {
-      "id": "msi-bad-cms-content-digest",
+      "id": "cms-005-msi-bad-cms-content-digest",
       "input": "msi-bad-cms-content-digest.msi",
+      "decision": "CMS-005",
       "command": [
         "verify",
         "--integrity-only",
@@ -2747,8 +2760,9 @@
       }
     },
     {
-      "id": "msi-bad-cms-content-type",
+      "id": "cms-006-msi-bad-cms-content-type",
       "input": "msi-bad-cms-content-type.msi",
+      "decision": "CMS-006",
       "command": [
         "verify",
         "--integrity-only",
@@ -2782,8 +2796,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-issuer",
+      "id": "cms-003-msi-bad-signer-issuer",
       "input": "msi-bad-signer-issuer.msi",
+      "decision": "CMS-003",
       "command": [
         "verify",
         "--integrity-only",
@@ -2817,8 +2832,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-serial",
+      "id": "cms-003-msi-bad-signer-serial",
       "input": "msi-bad-signer-serial.msi",
+      "decision": "CMS-003",
       "command": [
         "verify",
         "--integrity-only",
@@ -2852,8 +2868,9 @@
       }
     },
     {
-      "id": "msi-bad-cms-digest-set",
+      "id": "cms-007-msi-bad-cms-digest-set",
       "input": "msi-bad-cms-digest-set.msi",
+      "decision": "CMS-007",
       "command": [
         "verify",
         "--integrity-only",
@@ -2922,8 +2939,9 @@
       }
     },
     {
-      "id": "msi-bad-signature-key-algorithm",
+      "id": "cms-002-msi-bad-signature-key-algorithm",
       "input": "msi-bad-signature-key-algorithm.msi",
+      "decision": "CMS-002",
       "command": [
         "verify",
         "--integrity-only",
@@ -2957,8 +2975,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-public-key",
+      "id": "cms-001-msi-bad-signer-public-key",
       "input": "msi-bad-signer-public-key.msi",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -3100,8 +3119,9 @@
       }
     },
     {
-      "id": "msi-bad-nested-signature",
+      "id": "cms-013-msi-bad-nested-signature",
       "input": "msi-bad-nested-signature.msi",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--integrity-only",
@@ -4172,8 +4192,9 @@
       }
     },
     {
-      "id": "msi-bad-malformed-cms",
+      "id": "cms-010-msi-bad-malformed-cms",
       "input": "msi-bad-malformed-cms.msi",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--integrity-only",
@@ -4205,8 +4226,9 @@
       }
     },
     {
-      "id": "msi-bad-cms-trailer",
+      "id": "cms-010-msi-bad-cms-trailer",
       "input": "msi-bad-cms-trailer.msi",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--integrity-only",
@@ -4838,8 +4860,9 @@
       }
     },
     {
-      "id": "msi-bad-empty-signer-set",
+      "id": "cms-010-msi-bad-empty-signer-set",
       "input": "msi-bad-empty-signer-set.msi",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--integrity-only",
@@ -4870,8 +4893,9 @@
       }
     },
     {
-      "id": "msi-bad-signer-count",
+      "id": "cms-010-msi-bad-signer-count",
       "input": "msi-bad-signer-count.msi",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--integrity-only",
@@ -5362,8 +5386,9 @@
       }
     },
     {
-      "id": "cab-nested",
+      "id": "cms-013-cab-nested",
       "input": "good-cab-nested.cab",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -5510,8 +5535,9 @@
       }
     },
     {
-      "id": "cab-cms-signature",
+      "id": "cms-001-cab-cms-signature",
       "input": "bad-cab-cms-signature.cab",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -5571,8 +5597,9 @@
       }
     },
     {
-      "id": "cab-malformed-cms",
+      "id": "cms-010-cab-malformed-cms",
       "input": "bad-cab-malformed-cms.cab",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -6630,8 +6657,9 @@
       }
     },
     {
-      "id": "powershell-nested",
+      "id": "cms-013-powershell-nested",
       "input": "good-powershell-nested.ps1",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -6918,8 +6946,9 @@
       }
     },
     {
-      "id": "powershell-bad-cms-signature",
+      "id": "cms-001-powershell-bad-cms-signature",
       "input": "bad-powershell-cms-signature.ps1",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -6948,8 +6977,9 @@
       }
     },
     {
-      "id": "powershell-bad-nested",
+      "id": "cms-013-powershell-bad-nested",
       "input": "bad-powershell-nested.ps1",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -7489,8 +7519,9 @@
       }
     },
     {
-      "id": "powershell-cms-trailing",
+      "id": "cms-010-powershell-cms-trailing",
       "input": "bad-powershell-cms-trailing.ps1",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -7519,8 +7550,9 @@
       }
     },
     {
-      "id": "powershell-malformed-cms",
+      "id": "cms-010-powershell-malformed-cms",
       "input": "bad-powershell-malformed-cms.ps1",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -8899,8 +8931,9 @@
       }
     },
     {
-      "id": "rdp-cms-signature",
+      "id": "cms-001-rdp-cms-signature",
       "input": "bad-rdp-cms-signature.rdp",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -9650,8 +9683,9 @@
       }
     },
     {
-      "id": "rdp-cms-trailing",
+      "id": "cms-010-rdp-cms-trailing",
       "input": "bad-rdp-cms-trailing.rdp",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -9680,8 +9714,9 @@
       }
     },
     {
-      "id": "rdp-malformed-cms",
+      "id": "cms-010-rdp-malformed-cms",
       "input": "bad-rdp-malformed-cms.rdp",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -10650,8 +10685,9 @@
       }
     },
     {
-      "id": "psxml-nested",
+      "id": "cms-013-psxml-nested",
       "input": "good-psxml-nested.ps1xml",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -11298,8 +11334,9 @@
       }
     },
     {
-      "id": "psxml-cms-trailing",
+      "id": "cms-010-psxml-cms-trailing",
       "input": "bad-psxml-cms-trailing.ps1xml",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -11328,8 +11365,9 @@
       }
     },
     {
-      "id": "psxml-cms-signature",
+      "id": "cms-001-psxml-cms-signature",
       "input": "bad-psxml-cms-signature.ps1xml",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -12115,8 +12153,9 @@
       }
     },
     {
-      "id": "appx-nested",
+      "id": "cms-013-appx-nested",
       "input": "good-appx-nested.msix",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -13132,8 +13171,9 @@
       }
     },
     {
-      "id": "appx-cms-trailing",
+      "id": "cms-010-appx-cms-trailing",
       "input": "bad-appx-cms-trailing.msix",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -13162,8 +13202,9 @@
       }
     },
     {
-      "id": "appx-cms-signature",
+      "id": "cms-001-appx-cms-signature",
       "input": "bad-appx-cms-signature.msix",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -14248,8 +14289,9 @@
       }
     },
     {
-      "id": "appxbundle-child-signature",
+      "id": "cms-001-appxbundle-child-signature",
       "input": "bad-appxbundle-child-signature.msixbundle",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15012,8 +15054,9 @@
       }
     },
     {
-      "id": "wsh-bad-bad-nested-js",
+      "id": "cms-013-wsh-bad-bad-nested-js",
       "input": "bad-wsh-bad-nested.js",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15042,8 +15085,9 @@
       }
     },
     {
-      "id": "wsh-bad-bad-nested-vbs",
+      "id": "cms-013-wsh-bad-bad-nested-vbs",
       "input": "bad-wsh-bad-nested.vbs",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15072,8 +15116,9 @@
       }
     },
     {
-      "id": "wsh-bad-bad-nested-wsf",
+      "id": "cms-013-wsh-bad-bad-nested-wsf",
       "input": "bad-wsh-bad-nested.wsf",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15282,8 +15327,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-signature-js",
+      "id": "cms-001-wsh-bad-cms-signature-js",
       "input": "bad-wsh-cms-signature.js",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15312,8 +15358,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-signature-vbs",
+      "id": "cms-001-wsh-bad-cms-signature-vbs",
       "input": "bad-wsh-cms-signature.vbs",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15342,8 +15389,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-signature-wsf",
+      "id": "cms-001-wsh-bad-cms-signature-wsf",
       "input": "bad-wsh-cms-signature.wsf",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15372,8 +15420,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-trailing-js",
+      "id": "cms-010-wsh-bad-cms-trailing-js",
       "input": "bad-wsh-cms-trailing.js",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15402,8 +15451,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-trailing-vbs",
+      "id": "cms-010-wsh-bad-cms-trailing-vbs",
       "input": "bad-wsh-cms-trailing.vbs",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -15432,8 +15482,9 @@
       }
     },
     {
-      "id": "wsh-bad-cms-trailing-wsf",
+      "id": "cms-010-wsh-bad-cms-trailing-wsf",
       "input": "bad-wsh-cms-trailing.wsf",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -16120,8 +16171,9 @@
       }
     },
     {
-      "id": "wsh-bad-malformed-cms-js",
+      "id": "cms-010-wsh-bad-malformed-cms-js",
       "input": "bad-wsh-malformed-cms.js",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -16150,8 +16202,9 @@
       }
     },
     {
-      "id": "wsh-bad-malformed-cms-vbs",
+      "id": "cms-010-wsh-bad-malformed-cms-vbs",
       "input": "bad-wsh-malformed-cms.vbs",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -16180,8 +16233,9 @@
       }
     },
     {
-      "id": "wsh-bad-malformed-cms-wsf",
+      "id": "cms-010-wsh-bad-malformed-cms-wsf",
       "input": "bad-wsh-malformed-cms.wsf",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17733,8 +17787,9 @@
       }
     },
     {
-      "id": "wsh-good-nested-js",
+      "id": "cms-013-wsh-good-nested-js",
       "input": "good-wsh-nested.js",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17775,8 +17830,9 @@
       }
     },
     {
-      "id": "wsh-good-nested-vbs",
+      "id": "cms-013-wsh-good-nested-vbs",
       "input": "good-wsh-nested.vbs",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -17817,8 +17873,9 @@
       }
     },
     {
-      "id": "wsh-good-nested-wsf",
+      "id": "cms-013-wsh-good-nested-wsf",
       "input": "good-wsh-nested.wsf",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -19812,8 +19869,9 @@
       }
     },
     {
-      "id": "navx-good-navx-nested",
+      "id": "cms-013-navx-good-navx-nested",
       "input": "good-navx-nested.navx",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20524,8 +20582,9 @@
       }
     },
     {
-      "id": "navx-cms-trailing",
+      "id": "cms-010-navx-cms-trailing",
       "input": "bad-navx-cms-trailing.navx",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20554,8 +20613,9 @@
       }
     },
     {
-      "id": "navx-malformed-cms",
+      "id": "cms-010-navx-malformed-cms",
       "input": "bad-navx-malformed-cms.navx",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20584,8 +20644,9 @@
       }
     },
     {
-      "id": "navx-cms-signature",
+      "id": "cms-001-navx-cms-signature",
       "input": "bad-navx-cms-signature.navx",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20682,8 +20743,9 @@
       }
     },
     {
-      "id": "navx-bad-nested",
+      "id": "cms-013-navx-bad-nested",
       "input": "bad-navx-bad-nested.navx",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--no-system-roots",
@@ -20981,8 +21043,9 @@
       }
     },
     {
-      "id": "msp-nested",
+      "id": "cms-013-msp-nested",
       "input": "msp-good-nested.msp",
+      "decision": "CMS-013",
       "command": [
         "verify",
         "--integrity-only",
@@ -21155,8 +21218,9 @@
       }
     },
     {
-      "id": "msp-cms-tampered",
+      "id": "cms-001-msp-cms-tampered",
       "input": "msp-bad-cms.msp",
+      "decision": "CMS-001",
       "command": [
         "verify",
         "--integrity-only",
@@ -21326,8 +21390,9 @@
       }
     },
     {
-      "id": "good-pe-certificate-choice",
+      "id": "cms-012-good-pe-certificate-choice",
       "input": "good-pe-certificate-choice.exe",
+      "decision": "CMS-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -21365,8 +21430,9 @@
       }
     },
     {
-      "id": "good-rfc3161-certificate-choice",
+      "id": "cms-012-good-rfc3161-certificate-choice",
       "input": "good-rfc3161-certificate-choice.exe",
+      "decision": "CMS-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -21413,8 +21479,9 @@
       }
     },
     {
-      "id": "bad-rfc3161-certificate-choice-der",
+      "id": "cms-012-bad-rfc3161-certificate-choice-der",
       "input": "bad-rfc3161-certificate-choice-der.exe",
+      "decision": "CMS-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -21445,8 +21512,9 @@
       }
     },
     {
-      "id": "bad-rfc3161-certificate-choice-tag",
+      "id": "cms-012-bad-rfc3161-certificate-choice-tag",
       "input": "bad-rfc3161-certificate-choice-tag.exe",
+      "decision": "CMS-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -21510,8 +21578,9 @@
       }
     },
     {
-      "id": "bad-rfc3161-certificate-choice-no-signer",
+      "id": "cms-012-bad-rfc3161-certificate-choice-no-signer",
       "input": "bad-rfc3161-certificate-choice-no-signer.exe",
+      "decision": "CMS-012",
       "command": [
         "verify",
         "--no-system-roots",
@@ -22575,8 +22644,9 @@
       }
     },
     {
-      "id": "good-long-attribute-oid",
+      "id": "cms-011-good-long-attribute-oid",
       "input": "good-long-attribute-oid.exe",
+      "decision": "CMS-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -22607,8 +22677,9 @@
       }
     },
     {
-      "id": "bad-long-attribute-oid",
+      "id": "cms-011-bad-long-attribute-oid",
       "input": "bad-long-attribute-oid.exe",
+      "decision": "CMS-011",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24398,8 +24469,9 @@
       }
     },
     {
-      "id": "bad-sec04-ecdsa-parameters",
-      "input": "bad-sec04-ecdsa-parameters.exe",
+      "id": "cms-002-bad-ecdsa-parameters",
+      "input": "bad-cms-ecdsa-parameters.exe",
+      "decision": "CMS-002",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24427,8 +24499,9 @@
       }
     },
     {
-      "id": "bad-sec04-signeddata-version",
-      "input": "bad-sec04-signeddata-version.exe",
+      "id": "cms-010-bad-signeddata-version",
+      "input": "bad-cms-signeddata-version.exe",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24456,8 +24529,9 @@
       }
     },
     {
-      "id": "bad-sec04-signer-version",
-      "input": "bad-sec04-signer-version.exe",
+      "id": "cms-010-bad-signer-version",
+      "input": "bad-cms-signer-version.exe",
+      "decision": "CMS-010",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24485,8 +24559,9 @@
       }
     },
     {
-      "id": "bad-sec04-value-order",
-      "input": "bad-sec04-value-order.exe",
+      "id": "cms-008-bad-value-order",
+      "input": "bad-cms-value-order.exe",
+      "decision": "CMS-008",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24514,8 +24589,9 @@
       }
     },
     {
-      "id": "good-sec04-cms",
-      "input": "good-sec04-cms.exe",
+      "id": "cms-014-good-structure",
+      "input": "good-cms-structure.exe",
+      "decision": "CMS-014",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24539,8 +24615,9 @@
       }
     },
     {
-      "id": "bad-sec05-key-first",
-      "input": "bad-sec05-key-first.exe",
+      "id": "cms-004-bad-signer-key-first",
+      "input": "bad-cms-signer-key-first.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24571,8 +24648,9 @@
       }
     },
     {
-      "id": "bad-sec05-key-last",
-      "input": "bad-sec05-key-last.exe",
+      "id": "cms-004-bad-signer-key-last",
+      "input": "bad-cms-signer-key-last.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24603,8 +24681,9 @@
       }
     },
     {
-      "id": "bad-sec05-missing",
-      "input": "bad-sec05-missing.exe",
+      "id": "cms-003-bad-signer-missing",
+      "input": "bad-cms-signer-missing.exe",
+      "decision": "CMS-003",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24632,8 +24711,9 @@
       }
     },
     {
-      "id": "bad-sec05-policy-first",
-      "input": "bad-sec05-policy-first.exe",
+      "id": "cms-004-bad-signer-policy-first",
+      "input": "bad-cms-signer-policy-first.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24664,8 +24744,9 @@
       }
     },
     {
-      "id": "bad-sec05-policy-last",
-      "input": "bad-sec05-policy-last.exe",
+      "id": "cms-004-bad-signer-policy-last",
+      "input": "bad-cms-signer-policy-last.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24696,8 +24777,9 @@
       }
     },
     {
-      "id": "good-sec05-duplicate",
-      "input": "good-sec05-duplicate.exe",
+      "id": "cms-004-good-signer-duplicate",
+      "input": "good-cms-signer-duplicate.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24721,8 +24803,9 @@
       }
     },
     {
-      "id": "good-sec05-reordered",
-      "input": "good-sec05-reordered.exe",
+      "id": "cms-004-good-signer-reordered",
+      "input": "good-cms-signer-reordered.exe",
+      "decision": "CMS-004",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28618,9 +28701,9 @@
       }
     },
     {
-      "id": "tsa-004-duplicate-rfc",
+      "id": "cms-009-duplicate-rfc",
       "input": "tsa-duplicate-rfc.exe",
-      "decision": "TSA-004",
+      "decision": "CMS-009",
       "command": [
         "verify",
         "--no-system-roots",
@@ -28648,9 +28731,9 @@
       }
     },
     {
-      "id": "tsa-004-duplicate-counter",
+      "id": "cms-009-duplicate-counter",
       "input": "tsa-duplicate-counter.exe",
-      "decision": "TSA-004",
+      "decision": "CMS-009",
       "command": [
         "verify",
         "--no-system-roots",

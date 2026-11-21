@@ -22,11 +22,10 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-09: Define lifetime-signing and time-boundary rules ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).** Done; [record](docs/tasks/done.md#sec-09-define-lifetime-signing-and-time-boundary-rules-pr-43httpsgithubcomgoatwu1993rssigpull43).
 - [x] **SEC-10: Audit CRL applicability and competing evidence.** Done; detail in [sec-10-crl-applicability.md](docs/tasks/sec-10-crl-applicability.md).
 - [ ] **SEC-11: Report CRL evidence actually used.** Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [sec-11.md](docs/tasks/sec-11.md).
-- [ ] **SEC-12: Audit multi-signature and bundle failure semantics.** Pin current
-  all-required-signatures rule, primary/nested ordering, first-failure
-  precedence, and bundle/child identity and signer binding. Test a valid first
-  signature followed by a bad one and the reverse. Later parsing failures must
-  not mask earlier cryptographic failures during refactoring.
+- [ ] **SEC-12: Add the signature policy and pin multi-signature semantics.**
+  Decided: `--signatures all|any`, default `all`; pin ordering, first-failure
+  precedence and bundle/child binding. After SEC-25. Detail in
+  [sec-12.md](docs/tasks/sec-12.md).
 - [ ] **SEC-13: Complete cryptographic algorithm invariant coverage.** Inventory
   existing SHA-384/512 and P-384 cases before adding missing key/digest/signature
   combinations. Cover malformed RSA/ECDSA encodings, weak and excessive key
@@ -110,6 +109,10 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
 - [ ] **SEC-23: Follow-ups left open by the PR #60 review.** The review of PR #60 was concluded with these items not changed in that PR. Detail in [sec-23.md](docs/tasks/sec-23.md).
+- [ ] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Decided:
+  repeated timestamp attributes pass the CMS layer and are rejected by
+  TSA-004; repeated opaque attributes are accepted. Detail in
+  [sec-25.md](docs/tasks/sec-25.md).
 
 ## P1 — Clean parse/verify interfaces
 
@@ -173,10 +176,7 @@ TDD workflow and checks in AGENTS.md.
 - [x] **TEST-12: Index time decisions as `TIME-NNN`.** Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
 - [x] **TEST-13: Index certificate-path decisions as `PATH-NNN`.** Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
 - [x] **TEST-14: Index timestamp decisions as `TSA-NNN`.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
-- [ ] **TEST-15: Number the `CMS-` index.** Fill [docs/cms.md](docs/cms.md)
-  from its candidate rules and claimed cases. Move TSA-004's
-  duplicated-attribute-OID clause and its two `invalid_signature` cases
-  (`tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) here.
+- [x] **TEST-15: Index CMS decisions as `CMS-NNN`.** Done ([PR #72](https://github.com/goatwu1993/rssig/pull/72)); [CMS decisions](docs/cms.md).
 - [ ] **TEST-16: Number the `TRUST-` index.** Fill [docs/trust.md](docs/trust.md);
   rename the `sec07-*` cases it claims (the others belong to TEST-17 and TEST-28).
 - [ ] **TEST-17: Number the `LIMIT-` index.** Fill [docs/limit.md](docs/limit.md);

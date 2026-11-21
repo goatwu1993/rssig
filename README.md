@@ -7,11 +7,13 @@ use pure Rust. The OS supplies root certificates only. OpenSSL is not required.
 This project is **vibe coded** with AI assistance and developed through local
 fixtures, a portable JSON specification, and native Rust tests. It is inspired by
 [jsign](https://github.com/ebourg/jsign) and
-[relic](https://github.com/sassoftware/relic), whose source code serves as a
-reference for PE/MSI Authenticode hashing, signatures, and verification behavior.
-[osslsigncode](https://github.com/mtrojnar/osslsigncode) and
+[relic](https://github.com/sassoftware/relic), whose source code, with
+[osslsigncode](https://github.com/mtrojnar/osslsigncode)'s, serves as the
+reference for how each Windows format is parsed, hashed and signed. OpenSSL and
+Bouncy Castle source serve as the reference for CMS, CRL and certificate
+behavior.
 [rcodesign](https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign)
-also inform the project's design discussions. The library boundary follows
+also informs the project's design discussions. The library boundary follows
 [authenticode-rs](https://github.com/google/authenticode-rs): borrowed PE/CAB/NAVX containers, CMS
 inspection, and digest input are usable without host integrations. These projects are not runtime
 dependencies, and this attribution does not imply their endorsement or verified
