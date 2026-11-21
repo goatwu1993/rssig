@@ -41,6 +41,13 @@ Licensed under the Apache License, Version 2.0
     from it, were produced with rdpsign.py at revision
     89cd08646ea5a91988820e319b3c5eef030b0fcf.
 
+IETF RFCs (https://www.rfc-editor.org)
+Copyright (c) IETF Trust and the persons identified as the document authors
+
+  - docs/rfc/ holds unmodified copies of RFCs that decision entries quote,
+    reproduced under the IETF Trust's Legal Provisions (BCP 78). They are not
+    covered by this project's Apache-2.0 licence.
+
 None of these projects ships a NOTICE file at the revisions listed, so no
 upstream notice text is reproduced here. Per-fixture provenance and licence
 information is recorded in tests/fixtures/manifest.json and under docs/.

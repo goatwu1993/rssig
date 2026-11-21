@@ -6,7 +6,8 @@ identification, the signer's signature, content and attribute binding,
 CertificateChoices and nested signatures. The entry format is defined in
 [Decision indexes](decisions.md); the profile and its limits are explained in
 [CMS structure and signature binding](cms-security.md), and the history is in
-SEC-04 (PR #37) and SEC-05 (PR #38) ([done](tasks/done.md)).
+SEC-04 (PR #37) and SEC-05 (PR #38) ([done](tasks/done.md)). An unmodified copy
+of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 
 ## Boundaries
 
