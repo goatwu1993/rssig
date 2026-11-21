@@ -36,6 +36,11 @@ PE images: image hash, page hashes, checksum, certificate table.
   (updated 2026-09-10): "The Attribute Certificate Table (Image Only)",
   "Other Contents of the File" and "Appendix A: Calculating Authenticode PE
   Image Hash".
+- Microsoft Security Bulletin
+  [MS12-024](https://learn.microsoft.com/en-us/security-updates/securitybulletins/2012/ms12-024)
+  (WinVerifyTrust strict PE verification) and Security Advisory
+  [2915720](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2014/2915720)
+  (the opt-in `EnableCertPaddingCheck`).
 - Windows-format references, as AGENTS.md describes: osslsigncode 2.16
   (04c9aa7e) `pe.c`, jsign 7.6 (cf5d2ce)
   `jsign-core/src/main/java/net/jsign/pe/PEFile.java` and `DataDirectory.java`,
@@ -178,17 +183,31 @@ image digest nor the signature.
   - Microsoft Authenticode PE, step 14, computes the extra data as the file
     size less the certificate table and the bytes already hashed, which
     assumes the table ends the file.
+  - Microsoft Security Bulletin
+    [MS12-024](https://learn.microsoft.com/en-us/security-updates/securitybulletins/2012/ms12-024)
+    (KB2653956), FAQ "I have applied this update and now my software's
+    digital signature is invalid": "PE files will also be considered
+    \"unsigned\" if additional content is appended to the file after the
+    signature has been applied." Windows rejects such a file too, reporting
+    it unsigned where rssig reports `invalid_pe`.
+  - Microsoft
+    [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only):
+    the table is "composed of a set of contiguous, quadword-aligned attribute
+    certificate entries. Zero padding is inserted between the original end of
+    the file and the beginning of the attribute certificate table to achieve
+    this alignment", and the table size "includes the padding": the start and
+    size are multiples of 8.
   - Microsoft
     [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file)
     differs: "attribute certificate and debug information must be placed at
     the very end of an image file, with the attribute certificate table
     immediately preceding the debug section", which allows debug data after
-    the table. The table is "composed of a set of contiguous, quadword-aligned
-    attribute certificate entries", with zero padding before it.
-- **Note:** Microsoft's two documents and the references differ on data after
-  the table. The owner decided, with the full PE Format text, to reject it:
-  bytes after the table are covered by neither the image digest nor the
-  signature, so rejecting fails closed.
+    the table; MS12-024 later made appended content unsigned.
+- **Note:** The PE Format page and jsign allow data after the table;
+  MS12-024, the Authenticode PE hash, relic and osslsigncode do not. The owner
+  decided, with the full PE Format text, to reject it: bytes after the table
+  are covered by neither the image digest nor the signature, so rejecting
+  fails closed.
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
@@ -216,9 +235,17 @@ one DER object followed only by zero bytes; entries are padded with zeros to
     field is corrupted"; bCertificate is padded with zeros to a quadword.
     Entries "can contain any certificate type", and revision 0x0100 is
     "supported only for purposes of verifying legacy Authenticode signatures".
-- **Note:** rssig is stricter than Microsoft: it rejects a revision 1.0 entry
-  and an entry of another type instead of skipping it. FORMAT-07 in `TODO.md`
-  decides that.
+  - Microsoft Security Advisory
+    [2915720](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2014/2915720):
+    with the opt-in `EnableCertPaddingCheck`, Windows "will no longer allow
+    extraneous information in the WIN_CERTIFICATE structure, and Windows will
+    no longer recognize non-compliant binaries as signed". It is not the
+    default: Microsoft "no longer plans to enforce the stricter verification
+    behavior as a default requirement" (MS13-098, revised July 29, 2014).
+- **Note:** rssig is stricter than Windows' default. It always applies the
+  `EnableCertPaddingCheck` rule, rejecting nonzero bytes after the DER object,
+  and it rejects a revision 1.0 entry and an entry of another type instead of
+  skipping it. FORMAT-07 in `TODO.md` decides those.
 
 ### PE-005: Only bounded PE32 and PE32+ headers with contiguous sections are supported
 

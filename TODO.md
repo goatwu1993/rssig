@@ -291,9 +291,10 @@ TDD workflow and checks in AGENTS.md.
   nested bundles explicit; deployment selection and Windows Store acceptance
   are not established by package integrity.
 - [ ] **FORMAT-07: Decide skipped WIN_CERTIFICATE entries.** PE-004 rejects a
-  revision 1.0 entry and an entry of another type; Microsoft's PE Format page
-  allows other types and supports revision 1.0 for legacy verification. Decide
-  skip, verify or reject with fixtures, and settle PE-004's status.
+  revision 1.0 entry, an entry of another type and extra bytes in an entry;
+  Microsoft's PE Format page allows other types and legacy revision 1.0, and
+  Windows rejects extra bytes only with `EnableCertPaddingCheck`. Decide skip,
+  verify or reject with fixtures, and settle PE-004's status.
 
 ## P3 — Additional capabilities requiring separate design
 
