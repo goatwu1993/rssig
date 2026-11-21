@@ -181,7 +181,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **TEST-18: Number the format indexes, one PR per format.** `PE-`, `MSI-`,
   `CAB-`, `NAVX-`, `PS-`, `WSH-`, `RDP-` and `APPX-`, from their
   `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
-  `CMS-` where its rule is shared.
+  `CMS-` where its rule is shared. `PE-` done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)).
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
   `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
 - [ ] **TEST-20: Rename task-named library cases.** The `lib04-*` to `lib09-*`
@@ -263,6 +263,11 @@ TDD workflow and checks in AGENTS.md.
   page sizes, and page hashes. Document deliberately rejected gaps/overlaps and
   certificate placement. Evaluate unsigned-PE inspection separately, with an
   explicit API/CLI contract and unchanged unsigned rejection in verification.
+  Add a fixture and case for each PE rule no case pins yet: an unsupported
+  optional-header magic, NumberOfRvaAndSizes below 5, a bad SizeOfHeaders, a
+  section gap or overlap (PE-005), an unaligned certificate table or one
+  overlapping the headers (PE-003), and headers larger than a page with page
+  hashes (PE-002).
 - [ ] **FORMAT-02: Audit MSI/MSP CFB and metadata variants.** Extend independent
   v3/v4, stream-name/order, FAT/miniFAT, metadata, and legacy/extended-signature
   coverage. Pin duplicate/aliased signature-stream handling and file-time details.
@@ -290,6 +295,11 @@ TDD workflow and checks in AGENTS.md.
   with producer evidence and aggregate budgets. Keep unsupported external/stub/
   nested bundles explicit; deployment selection and Windows Store acceptance
   are not established by package integrity.
+- [ ] **FORMAT-07: Decide skipped WIN_CERTIFICATE entries.** PE-004 rejects a
+  revision 1.0 entry, an entry of another type and extra bytes in an entry;
+  Microsoft's PE Format page allows other types and legacy revision 1.0, and
+  Windows rejects extra bytes only with `EnableCertPaddingCheck`. Decide skip,
+  verify or reject with fixtures, and settle PE-004's status.
 
 ## P3 — Additional capabilities requiring separate design
 

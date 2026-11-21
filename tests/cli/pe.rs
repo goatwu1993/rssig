@@ -402,7 +402,7 @@ fn bad_page_hashes() {
         1,
         "page_hash_mismatch",
         "Page hash mismatch",
-        None,
+        Some("page_hashes"),
         Some("page hash mismatch"),
     );
 }
@@ -441,7 +441,7 @@ fn unsigned() {
         1,
         "unsigned",
         "Missing embedded signature",
-        None,
+        Some("pe"),
         Some("no embedded signature"),
     );
 }
@@ -454,7 +454,7 @@ fn not_pe() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("missing MZ"),
     );
 }
@@ -467,7 +467,7 @@ fn truncated() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("truncated optional header"),
     );
 }
@@ -480,7 +480,7 @@ fn trailing_data() {
         1,
         "invalid_pe",
         "Invalid PE image",
-        None,
+        Some("pe"),
         Some("certificate table must end at EOF"),
     );
 }

@@ -5,10 +5,10 @@
       "id": "pe-image",
       "claim": "PE image hashing and excluded checksum",
       "cases": [
-        "pe32",
-        "pe64",
-        "checksum-excluded",
-        "tampered-image"
+        "pe-006-pe32",
+        "pe-006-pe64",
+        "pe-001-checksum-excluded",
+        "pe-001-tampered-image"
       ]
     },
     {
@@ -104,7 +104,7 @@
       "id": "sha2",
       "claim": "SHA-256/384/512 acceptance",
       "cases": [
-        "pe64",
+        "pe-006-pe64",
         "cab-sha384",
         "cab-sha512"
       ]
@@ -122,7 +122,7 @@
       "claim": "RSA/ECDSA and digest/key binding",
       "cases": [
         "rdp-rsa",
-        "pe64",
+        "pe-006-pe64",
         "bad-signature-digest-algorithm",
         "cms-002-bad-signature-key-algorithm",
         "cms-001-bad-signer-public-key"
@@ -132,7 +132,7 @@
       "id": "cms-binding",
       "claim": "CMS content digest/type and digest-set membership",
       "cases": [
-        "pe64",
+        "pe-006-pe64",
         "cms-005-bad-cms-content-digest",
         "cms-006-bad-cms-content-type",
         "cms-007-bad-cms-digest-set"
@@ -179,8 +179,8 @@
       "id": "page-hashes",
       "claim": "PE page hash binding",
       "cases": [
-        "page-hashes",
-        "bad-page-hashes"
+        "pe-002-page-hashes",
+        "pe-002-bad-page-hashes"
       ]
     },
     {
@@ -583,9 +583,9 @@
   "errors": {
     "invalid_pe": {
       "cases": [
-        "not-pe",
-        "truncated",
-        "trailing-data"
+        "pe-005-not-pe",
+        "pe-005-truncated",
+        "pe-003-trailing-data"
       ],
       "gap": ""
     },
@@ -720,7 +720,7 @@
     },
     "unsigned": {
       "cases": [
-        "unsigned",
+        "pe-007-unsigned",
         "msi-unsigned",
         "cab-unsigned"
       ],
@@ -728,7 +728,7 @@
     },
     "invalid_certificate_table": {
       "cases": [
-        "certificate-payload"
+        "pe-004-certificate-payload"
       ],
       "gap": ""
     },
@@ -766,15 +766,15 @@
     },
     "image_digest_mismatch": {
       "cases": [
-        "tampered-image",
+        "pe-001-tampered-image",
         "cli-mixed-results",
-        "bad-pe-gap-overlay-digest"
+        "pe-001-gap-overlay-digest"
       ],
       "gap": ""
     },
     "page_hash_mismatch": {
       "cases": [
-        "bad-page-hashes"
+        "pe-002-bad-page-hashes"
       ],
       "gap": ""
     },
