@@ -19,6 +19,37 @@ Observed). The all-required rule is rssig's own:
   "success if at least one valid signature is found"). jsign 7.6 (cf5d2ce)
   lists them (`SignatureUtils.java:91-112`) and has no released verifier.
 
+## Windows behavior, from Microsoft's documentation
+
+Read from the MicrosoftDocs sources on GitHub (`win32` at bc82a65f,
+`sdk-api` at 656e9656); nothing was run on Windows, and no Windows policy
+equivalence is claimed.
+
+- SignTool `verify` has three modes
+  (`desktop-src/SecCrypto/signtool.md`, "Verify command options"): `/all`
+  "Verifies all signatures in a file with multiple signatures"; `/ds Index`
+  "Verifies the signature at a certain position"; and `/ms` "Uses multiple
+  verification semantics. This behavior is the default of a WinVerifyTrust
+  call."
+- `WINTRUST_SIGNATURE_SETTINGS`
+  (`sdk-api-src/content/wintrust/ns-wintrust-wintrust_signature_settings.md`):
+  `WSS_VERIFY_SPECIFIC` with `dwIndex` verifies one chosen signature;
+  `cSecondarySigs` counts the secondary signatures; `dwVerifiedSigIndex` is
+  "The index used for verification. This member is set on return from
+  Wintrust"; `pCryptoPolicy` is "the policy that a signature must pass to be
+  considered valid."
+
+So Windows does not require every signature by default: verifying all is the
+opt-in `/all`, and a `WinVerifyTrust` call reports the single signature index
+it used. The documentation does not define "multiple verification
+semantics"; that it means "the first signature that passes" is an inference
+from `dwVerifiedSigIndex` and `pCryptoPolicy`, not a quoted statement.
+
+How the policy relates: `all` corresponds to SignTool `/all`; `any` is the
+closest to the documented `WinVerifyTrust` default; a verify-one-index mode
+(`/ds`) is not adopted. rssig's default stays `all`, which is stricter than
+the Windows default, because rssig fails closed unless the caller opts out.
+
 ## Decision
 
 Decided by the owner, who delegated the call in PR #72. Implementation is
