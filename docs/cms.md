@@ -63,7 +63,7 @@ The SignerInfo signature must verify, under the declared algorithm, with the
 public key of the selected signer certificate over the exact signed bytes
 (the signed attributes with only their implicit tag replaced by SET). A
 corrupted signature, or a signer certificate carrying a different key, is
-`invalid_signature` at `cms`, in every format: PE, MSI and MSP, CAB, NAVX,
+`invalid_signature` at `cms` (CMS-008 pins that the signed bytes are never re-encoded), in every format: PE, MSI and MSP, CAB, NAVX,
 PowerShell and PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle
 members.
 
@@ -347,7 +347,7 @@ opaque DER in the publisher CMS and in an RFC 3161 token and never become a
 signer certificate, a chain candidate or a trust anchor. A malformed choice or
 an unknown choice tag fails, and an attribute certificate cannot replace a
 missing signer certificate; inside a timestamp token these are
-`invalid_timestamp` at `timestamp`.
+`invalid_timestamp` at `timestamp`. A failing TSA signature on such a token is TSA-002.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
