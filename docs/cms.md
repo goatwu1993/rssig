@@ -278,6 +278,15 @@ minimally encoded OBJECT IDENTIFIER: a subidentifier starting with 0x80 is
 - **Pins:** acceptance
 - **Sources:**
   - X.690 section 8.19.2: a subidentifier is encoded in the fewest octets.
+  - References agree on the encoding: OpenSSL `crypto/asn1/a_object.c:254-292`
+    (`ossl_c2i_ASN1_OBJECT`) rejects a leading 0x80 subidentifier octet with
+    `ASN1_R_INVALID_OBJECT_ENCODING`, and Bouncy Castle
+    `asn1/ASN1RelativeOID.java:364-383` (`isValidContents`, used by
+    `asn1/ASN1ObjectIdentifier.java:364-368`) throws "invalid OID contents"
+    unless the `org.bouncycastle.asn1.allow_wrong_oid_enc` override is set.
+    Both keep an unknown attribute's value as opaque ASN.1. Bouncy Castle
+    caps OID contents at 4096 bytes (`ASN1ObjectIdentifier.java:34`); OpenSSL
+    and rssig have no OID-specific cap beyond their DER bounds.
   - [cms-security.md](cms-security.md), rows "Signed attribute sets" and
     "DER framing"; LIB-02 in [done](tasks/done.md).
 
