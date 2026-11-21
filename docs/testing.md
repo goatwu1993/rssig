@@ -352,8 +352,8 @@ pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for
 (`Decided` or `Observed`), who decided it, whether it pins `acceptance` or
 `diagnostics`, and its sources; a case without `decision` counts as observed.
 `tests/spec.rs` reads every `### PREFIX-NNN: title` entry in `docs/*.md`,
-checks its fields, and checks that each case's `decision` names an entry. See AGENTS.md,
-"Pinned expectations".
+checks its fields, and checks that each case's `decision` names an entry. See
+AGENTS.md, "Pinned expectations".
 
 Every test build enables the internal `revocation-crosscheck` feature through
 a self dev-dependency in `Cargo.toml`. After rssig accepts a path's

@@ -166,7 +166,7 @@ with this table; an ID not listed kept its number.
 | PR #74 | CMS-015, CMS-016 | CMS-014, CMS-015 |
 
 In PR #74 every case was renamed with its entry, including the cases of a
-merged entry (for example `crl-038-…` is now `crl-036-…`).
+merged entry (for example `crl-041-…` is now `crl-036-…`).
 
 ## Task documents
 
