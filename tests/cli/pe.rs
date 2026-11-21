@@ -402,7 +402,7 @@ fn bad_page_hashes() {
         1,
         "page_hash_mismatch",
         "Page hash mismatch",
-        None,
+        Some("page_hashes"),
         Some("page hash mismatch"),
     );
 }
@@ -441,7 +441,7 @@ fn unsigned() {
         1,
         "unsigned",
         "Missing embedded signature",
-        None,
+        Some("pe"),
         Some("no embedded signature"),
     );
 }

@@ -27,16 +27,19 @@ PE images: image hash, page hashes, checksum, certificate table.
 
 - [boundaries.md](boundaries.md)
 - Microsoft, *Windows Authenticode Portable Executable Signature Format*,
-  version 1.0, March 21, 2008 ([Authenticode PE](https://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184a/Authenticode_PE.docx)): "Extracting and
-  Verifying PKCS #7" and "Calculating the PE Image Hash". Its licence forbids
-  reproduction, so no copy is committed.
-- Microsoft, [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format) (updated 2026-09-10):
-  "The Attribute Certificate Table (Image Only)", "Other Contents of the
-  File" and "Appendix A: Calculating Authenticode PE Image Hash".
+  version 1.0, March 21, 2008
+  ([Authenticode PE](https://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184a/Authenticode_PE.docx)):
+  "Extracting and Verifying PKCS #7" and "Calculating the PE Image Hash". Its
+  licence forbids reproduction, so no copy is committed.
+- Microsoft,
+  [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format)
+  (updated 2026-09-10): "The Attribute Certificate Table (Image Only)",
+  "Other Contents of the File" and "Appendix A: Calculating Authenticode PE
+  Image Hash".
 - Windows-format references, as AGENTS.md describes: osslsigncode 2.16
   (04c9aa7e) `pe.c`, jsign 7.6 (cf5d2ce)
-  `jsign-core/src/main/java/net/jsign/pe/PEFile.java`, relic 02c54d58
-  `lib/authenticode/pedigest.go` and `peverify.go`.
+  `jsign-core/src/main/java/net/jsign/pe/PEFile.java` and `DataDirectory.java`,
+  relic 02c54d58 `lib/authenticode/pedigest.go` and `peverify.go`.
 
 ## Order
 
@@ -55,8 +58,8 @@ Observed ones. A new entry takes the next free number.
 | ID | Decision | Status | Pins |
 |---|---|---|---|
 | [PE-001](#pe-001-the-image-digest-covers-every-byte-but-the-checksum-the-certificate-table-entry-and-the-certificate-table) | The image digest covers every byte but the checksum, the certificate-table entry and the certificate table | Decided | acceptance |
-| [PE-002](#pe-002-signed-page-hashes-must-match-every-page) | Signed page hashes must match every page | Decided | acceptance |
-| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Decided | acceptance |
+| [PE-002](#pe-002-signed-page-hashes-must-match-every-page) | Signed page hashes must match every page | Observed | acceptance |
+| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Observed | acceptance |
 | [PE-004](#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding) | Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding | Observed | acceptance |
 | [PE-005](#pe-005-only-bounded-pe32-and-pe32-headers-with-contiguous-sections-are-supported) | Only bounded PE32 and PE32+ headers with contiguous sections are supported | Observed | acceptance |
 | [PE-006](#pe-006-signed-pe32-and-pe32-images-verify) | Signed PE32 and PE32+ images verify | Decided | acceptance |
@@ -96,7 +99,8 @@ digests in `details`. A changed CheckSum alone still verifies.
   `validates_page_hashes_and_image_integrity` in `src/tests.rs`;
   `borrowed_pe_chunks_preserve_the_authenticode_digest` in
   `tests/parse_core.rs`.
-- **Note:** Microsoft's [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#process-for-generating-the-authenticode-pe-image-hash)
+- **Note:** Microsoft's
+  [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#process-for-generating-the-authenticode-pe-image-hash)
   Appendix A says that the area past the last section "is not hashed". That
   contradicts step 14 of the Authenticode PE document and all three
   references, which hash data between the last section and the certificate
@@ -106,31 +110,40 @@ digests in `details`. A changed CheckSum alone still verifies.
 
 When the signed SpcPeImageData carries page hashes, rssig recomputes them and
 they must match exactly: the first entry hashes the headers without the two
-excluded fields, zero-padded to a page less their 12 bytes; each section is
-hashed page by page from its file offset, the last page zero-padded; a final
-entry gives the end offset with a zero digest. The page size is 8192 for
-Itanium and Alpha machines and 4096 otherwise. A mismatch is
-`page_hash_mismatch` at `page_hashes`. An image without page hashes is checked
-by PE-001 alone.
+excluded fields, zero-padded to a page less their 12 bytes; each section, in
+file-offset order, is hashed page by page from its file offset, the last page
+zero-padded; a final entry gives the end offset with a zero digest. The page
+size is 8192 for Itanium and Alpha machines and 4096 otherwise. A mismatch is
+`page_hash_mismatch` at `page_hashes`. Headers larger than one page cannot be
+page-hashed and are rejected; no case pins that error yet. An image without
+page hashes is checked by PE-001 alone.
 
-- **Status:** Decided
-- **Decided by:** references agree (osslsigncode and relic; jsign does not
-  verify page hashes), PR #76
+- **Status:** Observed
+- **Decided by:** —
 - **Pins:** acceptance
 - **Sources:**
-  - osslsigncode `pe.c:1005-1308` (`pe_page_hash_calc`) and `pe.c:1318`
-    (`pe_verify_page_hash`).
   - relic `pedigest.go:121-193` (`setupDigester`, `addPageHash`: the header
     page short by the removed bytes, the trailing null digest) and
-    `pedigest.go:236-242` (page size by machine); `peverify.go:137-139`
+    `pedigest.go:236-242` (page size by machine); `peverify.go:139-141`
     rejects a page-hash mismatch.
+  - osslsigncode `pe.c:1005-1308` (`pe_page_hash_calc`) and `pe.c:1318`
+    (`pe_verify_page_hash`) build the same entries but take the page size from
+    the optional header's SectionAlignment (`pe.c:1052-1056`, rejecting 0)
+    and walk the sections in table order (`pe.c:1196`). It would reject the
+    committed page-hash fixtures, whose SectionAlignment is 0.
+  - jsign does not verify page hashes.
   - Microsoft documents no page-hash layout: the Authenticode PE document
     says the structure in serializedData "is outside the scope of this
-    paper". The [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file) page gives the
-    page size: "4 K for Intel x86 and for MIPS, and 8 K for Itanium".
+    paper". The
+    [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file)
+    page gives the architecture page sizes ("4 K for Intel x86 and for MIPS,
+    and 8 K for Itanium") for SectionAlignment, not for page hashes; the
+    Alpha value follows relic.
 - **Unit tests:** `validates_page_hashes_and_image_integrity` in
   `src/tests.rs`.
-- **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule.
+- **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule. The
+  references differ on the page size, so this entry stays Observed until the
+  owner decides.
 
 ### PE-003: The certificate table ends the file, after the headers, on an 8-byte boundary
 
@@ -140,23 +153,30 @@ at the end of the file. A byte after the table, or a range outside the file,
 is `invalid_pe` at `pe`: bytes after the table would be covered by neither the
 image digest nor the signature.
 
-- **Status:** Decided
-- **Decided by:** owner, PR #76
+- **Status:** Observed
+- **Decided by:** —
 - **Pins:** acceptance
 - **Sources:**
   - relic `pedigest.go:330-348` (`readTrailer`) rejects "trailing garbage
     after existing certificate".
-  - osslsigncode `pe.c:575-588` ignores a signature that does not end the
-    file or overlaps the headers, so the image verifies as unsigned.
-  - jsign `PEFile.java:424-425` hashes bytes after the table instead.
-  - Microsoft [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file): "attribute
-    certificate and debug information must be placed at the very end of an
-    image file"; [the attribute certificate table](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only)
-    is "composed of a set of contiguous, quadword-aligned attribute
-    certificate entries", with zero padding before it. Step 14 of the
-    Authenticode PE hash also assumes the table ends the file.
-  - Microsoft and two of the three references support the rule; jsign
-    differs. The owner decided for the rule.
+  - osslsigncode `pe.c:575-589` ignores a signature that does not end the
+    file, or that overlaps the PE header up to the end of the Certificate
+    Table field, so the image verifies as unsigned.
+  - jsign `PEFile.java:424-425` hashes bytes after the table, but rejects a
+    table that extends past the end of the file (`DataDirectory.java:57-69`,
+    called at `PEFile.java:419`).
+  - Microsoft Authenticode PE, step 14, computes the extra data as the file
+    size less the certificate table and the bytes already hashed, which
+    assumes the table ends the file.
+  - Microsoft
+    [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#other-contents-of-the-file)
+    differs: "attribute certificate and debug information must be placed at
+    the very end of an image file, with the attribute certificate table
+    immediately preceding the debug section", which allows debug data after
+    the table. The table is "composed of a set of contiguous, quadword-aligned
+    attribute certificate entries", with zero padding before it.
+- **Note:** Microsoft's two documents and the references differ on data after
+  the table, so this entry stays Observed until the owner decides.
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
@@ -172,17 +192,21 @@ one DER object followed only by zero bytes; entries are padded with zeros to
 - **Sources:**
   - osslsigncode `pe.c:609-631` (`pe_pkcs7_get_file`) uses the first
     revision 2.0 PKCS#7 entry and skips others.
-  - relic `peverify.go:86-103` checks each entry's length and alignment but
-    not its revision or type.
-  - Microsoft [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only):
+  - jsign `PEFile.java:360-373` (`getCertificateTable`) reads only the first
+    entry of a non-EFI file.
+  - relic `peverify.go:86-107` checks each entry's length and alignment and
+    parses every entry as PKCS#7, failing on any other; it checks neither the
+    revision and type nor the padding bytes.
+  - Microsoft
+    [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only):
     entries are walked by dwLength rounded up to 8 until the sum equals the
     table size, otherwise "either the attribute certificate table or the Size
     field is corrupted"; bCertificate is padded with zeros to a quadword.
     Entries "can contain any certificate type", and revision 0x0100 is
     "supported only for purposes of verifying legacy Authenticode signatures".
-  - The references differ in what they skip. rssig is stricter than
-    Microsoft: it rejects a revision 1.0 entry and an entry of another type
-    instead of skipping it.
+- **Note:** rssig is stricter than Microsoft: it rejects a revision 1.0 entry
+  and an entry of another type instead of skipping it. FORMAT-07 in `TODO.md`
+  decides that.
 
 ### PE-005: Only bounded PE32 and PE32+ headers with contiguous sections are supported
 
@@ -200,16 +224,20 @@ it.
 - **Decided by:** —
 - **Pins:** acceptance
 - **Sources:**
-  - relic `pedigest.go:48-109` (`DigestPE`) and `pedigest.go:294-328` (`readSections`)
-    accept the same contiguous layout and reject a section that does not
-    begin where the previous one ended.
-  - osslsigncode `pe.c:523-600` (`pe_ctx_get`) checks the magic,
-    SizeOfHeaders and NumberOfRvaAndSizes.
-  - [boundaries.md](boundaries.md): arbitrary PE section layouts are not
-    implemented.
+  - relic `pedigest.go:48-109` (`DigestPE`) and `pedigest.go:294-328`
+    (`readSections`) accept a similar contiguous layout and reject a section
+    that does not begin where the previous one ended. It differs: it lowers
+    SizeOfHeaders to a first section that starts inside the headers
+    (`pedigest.go:314-317`), rounds every section but the last up to
+    FileAlignment (`pedigest.go:318-321`) and walks sections in table order.
+  - osslsigncode `pe.c:523-600` (`pe_ctx_get`) checks the `e_lfanew` bound
+    (`pe.c:537-545`), the PE signature (`pe.c:546-549`), the magic
+    (`pe.c:554-562`) and NumberOfRvaAndSizes (`pe.c:567-571`).
   - Microsoft Authenticode PE, step 10, sorts the sections by
     PointerToRawData; it does not say how a gap or an overlap between them is
     hashed, so rssig rejects both rather than guess.
+  - [boundaries.md](boundaries.md): arbitrary PE section layouts are not
+    implemented.
 
 ## Tier 2: availability
 
@@ -232,13 +260,15 @@ time and revocation rules of the other indexes.
 ### PE-007: An empty certificate-table entry means unsigned
 
 An image whose certificate-table entry has a zero offset or a zero size is
-`unsigned` (stage `pe`), not `invalid_pe`, once its headers parse.
+`unsigned` at `pe`, not `invalid_pe`, once its headers parse.
 
 - **Status:** Decided
-- **Decided by:** references agree (osslsigncode, jsign and relic), PR #76
+- **Decided by:** references agree (osslsigncode and jsign; relic checks the
+  size only), PR #76
 - **Pins:** diagnostics
 - **Sources:**
   - osslsigncode `pe.c:575-581`: an entry with either field zero is no
     signature.
-  - jsign `PEFile.java:418` (`certificateTable.exists()`) and relic
-    `pedigest.go:331` (`certSize == 0`).
+  - jsign `DataDirectory.java:47-49` (`exists()`: offset and size both
+    nonzero), used by `getCertificateTable` (`PEFile.java:364`).
+  - relic `peverify.go:49-50` returns `NotSignedError` when the size is 0.

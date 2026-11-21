@@ -383,6 +383,7 @@
             {
               "error": {
                 "code": "page_hash_mismatch",
+                "stage": "page_hashes",
                 "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#page_hash_mismatch",
                 "title": "Page hash mismatch"
               }
@@ -487,6 +488,7 @@
             {
               "error": {
                 "code": "unsigned",
+                "stage": "pe",
                 "type": "https://github.com/goatwu1993/rssig/blob/main/docs/problems.md#unsigned",
                 "title": "Missing embedded signature"
               }
