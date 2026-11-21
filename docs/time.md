@@ -98,7 +98,8 @@ check as for a lifetime signer (TIME-002).
   SEC-14
 - **Pins:** acceptance
 - **Sources:**
-  - RFC 3161 section 4 (a timestamp proves the datum existed at that time).
+  - RFC 3161 sections 1 and 2: a time-stamp token proves that a datum existed
+    at a particular time.
   - [validation time](validation-time.md) table, "Signer chain, timestamped".
   - Written argument: the notBefore check is the same consistency check as
     TIME-002.
