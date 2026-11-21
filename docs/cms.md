@@ -273,8 +273,9 @@ multiplicity rule (TSA-004) is reached.
 - **Note:** the owner considers the countersignature part of this rule wrong
   (RFC 5652 section 11.4 allows repeated countersignature attributes), and
   the references support the single-instance rule only for contentType,
-  messageDigest and signingTime. [SEC-25](tasks/sec-25.md) is to narrow the
-  rule; until then both cases stay pinned as `invalid_signature` at `cms`.
+  messageDigest and signingTime. [SEC-25](tasks/sec-25.md) records the
+  decision to narrow the rule; until it is implemented both cases stay
+  pinned as `invalid_signature` at `cms`.
 
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
@@ -361,7 +362,8 @@ signature), even when the primary one verifies.
     verification ignores.
 - **Note:** only "checked with the same rules" is meant to stay fixed.
   Whether every signature must verify has no RFC, OpenSSL or Bouncy Castle
-  answer; [SEC-12](tasks/sec-12.md) proposes making it a policy.
+  answer; [SEC-12](tasks/sec-12.md) records the decision to make it a
+  policy (default all, opt-in any).
 
 ## Tier 2: availability
 
