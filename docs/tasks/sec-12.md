@@ -84,6 +84,11 @@ code-signing certificate.
 
 ## Work
 
+- Revisit [CMS-009](../cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo)'s
+  rejection of a repeated nested-signature attribute together with the policy.
+  It is a written choice: osslsigncode accepts every instance while jsign reads
+  only the first, so `any` mode may want to accept them.
+
 - Fixtures and cases under both policies: a good primary with a bad nested
   signature, the reverse, both bad, and a dual-signed file with a SHA-1
   primary and a SHA-256 nested signature.
