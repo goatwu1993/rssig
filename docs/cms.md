@@ -190,9 +190,10 @@ Countersignatures have no enclosing set to check.
 - **Decided by:** written choice, PR #37 (SEC-04)
 - **Pins:** acceptance
 - **Sources:**
-  - RFC 5652 section 5.1: digestAlgorithms lists the digest algorithms of all
-    signers, and implementations MAY fail to validate signatures that use a
-    digest algorithm not included in the set. Rejecting is the permitted
+  - RFC 5652 sections 5.1 and 5.3: digestAlgorithms lists the digest
+    algorithms of all signers; the signer's algorithm SHOULD be among them,
+    and "Implementations MAY fail to validate signatures that use a digest
+    algorithm that is not included in this set." Rejecting is the permitted
     choice rssig takes.
   - OpenSSL followed, implicitly: it digests the content only with the
     algorithms in digestAlgorithms (`crypto/cms/cms_sd.c:1395-1424`,
