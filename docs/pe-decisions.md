@@ -58,8 +58,8 @@ Observed ones. A new entry takes the next free number.
 | ID | Decision | Status | Pins |
 |---|---|---|---|
 | [PE-001](#pe-001-the-image-digest-covers-every-byte-but-the-checksum-the-certificate-table-entry-and-the-certificate-table) | The image digest covers every byte but the checksum, the certificate-table entry and the certificate table | Decided | acceptance |
-| [PE-002](#pe-002-signed-page-hashes-must-match-every-page) | Signed page hashes must match every page | Observed | acceptance |
-| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Observed | acceptance |
+| [PE-002](#pe-002-signed-page-hashes-must-match-every-page) | Signed page hashes must match every page | Decided | acceptance |
+| [PE-003](#pe-003-the-certificate-table-ends-the-file-after-the-headers-on-an-8-byte-boundary) | The certificate table ends the file, after the headers, on an 8-byte boundary | Decided | acceptance |
 | [PE-004](#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding) | Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding | Observed | acceptance |
 | [PE-005](#pe-005-only-bounded-pe32-and-pe32-headers-with-contiguous-sections-are-supported) | Only bounded PE32 and PE32+ headers with contiguous sections are supported | Observed | acceptance |
 | [PE-006](#pe-006-signed-pe32-and-pe32-images-verify) | Signed PE32 and PE32+ images verify | Decided | acceptance |
@@ -118,8 +118,8 @@ size is 8192 for Itanium and Alpha machines and 4096 otherwise. A mismatch is
 page-hashed and are rejected; no case pins that error yet. An image without
 page hashes is checked by PE-001 alone.
 
-- **Status:** Observed
-- **Decided by:** —
+- **Status:** Decided
+- **Decided by:** owner, PR #76
 - **Pins:** acceptance
 - **Sources:**
   - relic `pedigest.go:121-193` (`setupDigester`, `addPageHash`: the header
@@ -131,7 +131,16 @@ page hashes is checked by PE-001 alone.
     the optional header's SectionAlignment (`pe.c:1052-1056`, rejecting 0)
     and walk the sections in table order (`pe.c:1196`). It would reject the
     committed page-hash fixtures, whose SectionAlignment is 0.
-  - jsign does not verify page hashes.
+  - jsign does not verify page hashes; it only declares the ASN.1
+    `SpcSerializedObject` that carries them.
+  - signify (Python, v0.9.3, 60fa494) `signify/authenticode/signed_file/pe.py`
+    `page_size`: 8192 for Itanium, 4096 otherwise. Its commit 25e7046 (v0.9.2,
+    issue #58) replaced a SectionAlignment page size, osslsigncode's method,
+    because it reported page-hash errors on a real signed binary, now a test
+    sample.
+  - AuthHashCalc (69ffce7) `Source/hash.cpp` `CalculateFirstPageHash`
+    computes the WDAC header page hash with the Windows memory page size
+    (`GetSystemInfo`, `Source/main.cpp:697`), not a header field.
   - Microsoft documents no page-hash layout: the Authenticode PE document
     says the structure in serializedData "is outside the scope of this
     paper". The
@@ -142,8 +151,9 @@ page hashes is checked by PE-001 alone.
 - **Unit tests:** `validates_page_hashes_and_image_integrity` in
   `src/tests.rs`.
 - **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule. The
-  references differ on the page size, so this entry stays Observed until the
-  owner decides.
+  owner decided the machine-type page size: relic, signify and AuthHashCalc
+  agree and osslsigncode differs. signify maps only Itanium to 8192; the Alpha
+  machines follow relic.
 
 ### PE-003: The certificate table ends the file, after the headers, on an 8-byte boundary
 
@@ -153,8 +163,8 @@ at the end of the file. A byte after the table, or a range outside the file,
 is `invalid_pe` at `pe`: bytes after the table would be covered by neither the
 image digest nor the signature.
 
-- **Status:** Observed
-- **Decided by:** —
+- **Status:** Decided
+- **Decided by:** owner, PR #76
 - **Pins:** acceptance
 - **Sources:**
   - relic `pedigest.go:330-348` (`readTrailer`) rejects "trailing garbage
@@ -176,7 +186,9 @@ image digest nor the signature.
     the table. The table is "composed of a set of contiguous, quadword-aligned
     attribute certificate entries", with zero padding before it.
 - **Note:** Microsoft's two documents and the references differ on data after
-  the table, so this entry stays Observed until the owner decides.
+  the table. The owner decided, with the full PE Format text, to reject it:
+  bytes after the table are covered by neither the image digest nor the
+  signature, so rejecting fails closed.
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
