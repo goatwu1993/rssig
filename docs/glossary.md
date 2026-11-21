@@ -30,7 +30,7 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **Pins** | Whether an entry pins **acceptance** (verifies or rejects) or **diagnostics** (which code, stage, detail or request). |
 | **candidate rule** | An unnumbered rule in an index's "Candidate rules" section, waiting to become an entry. |
 | **claim** | The assignment of a case without a decision to one index and candidate rule, in `tests/decision-claims.json`. |
-| **reindex** | An owner-approved change that moves, merges or renumbers entries and renames their cases, recorded in [reindex history](decisions.md#reindex-history). |
+| **reindex** | An owner-approved change that moves, merges or renumbers entries and renames their cases; its PR description lists the old-to-new mapping ([IDs](decisions.md#ids)). |
 
 ## Specification and tests
 

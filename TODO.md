@@ -190,7 +190,7 @@ TDD workflow and checks in AGENTS.md.
 - [ ] **TEST-21: Attach the claimed `TIME-` cases.** The cases claimed under
   `TIME` `attach` (the pre-SEC-09 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
-- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
+- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in that PR.
 - [x] **TEST-23: Scaffold the remaining decision indexes.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); claims in `tests/decision-claims.json`.
 - [ ] **TEST-24: Number the `ALG-` index.** Fill [docs/alg.md](docs/alg.md):
   unsupported algorithms and the SHA-1 opt-in in every format.
@@ -203,7 +203,7 @@ TDD workflow and checks in AGENTS.md.
   audit cases, every format's revocation and untrusted-root case), and add a
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
-- [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in the [reindex history](docs/decisions.md#reindex-history).
+- [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [ ] **TEST-31: Settle the shared format-skeleton rules.** Decide where the
   candidate rules repeated by the format skeletons (`hash`, `structure`,
   `unsigned`, `support`) live before TEST-18 and its siblings number them.
