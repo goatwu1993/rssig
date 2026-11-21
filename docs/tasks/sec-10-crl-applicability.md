@@ -250,8 +250,8 @@ Change these only with a new decision and paired fixtures.
 ## Known limitations tracked elsewhere
 
 The review of PR #60 is concluded; everything it left open is a task in
-`TODO.md` (SEC-23 was split into SEC-26 to SEC-38 and others), with SEC-11,
-SEC-17, SEC-18 and SEC-22 for the larger items.
+`TODO.md` (SEC-26 to SEC-38, TEST-33 to TEST-35, LIB-11 and PRODUCT-07),
+with SEC-11, SEC-17, SEC-18 and SEC-22 for the larger items.
 
 - **SEC-11:** excluded CRLs are still reported as supplied.
 - **SEC-15:** applicability and the scope rule consider every embedded

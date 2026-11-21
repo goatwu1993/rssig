@@ -20,7 +20,7 @@ a certificate whose name has a multi-valued RDN out of DER order reaches a
 source with an invalid signature and a sorted issuer key, and a portable
 `crl_certificate_responses` implementation hashing the original bytes
 disagrees. Add a fixture with such a name before changing it.
-From SEC-23: the three gap keys (`certificates_without_crl`,
+Also open: the three gap keys (`certificates_without_crl`,
 `certificates_with_expired_crl`, `certificates_with_replaceable_crl`) are
 partly string literals in `src/trust.rs`, `src/retrieval.rs` and
 `src/rdp.rs`, and `choose_usage_failure` sizes its merge from the RDP-only

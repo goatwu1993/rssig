@@ -108,7 +108,6 @@ TDD workflow and checks in AGENTS.md.
 - [x] **SEC-21: Bind listed-serial revocation to the verified path.** Done; [record](docs/tasks/done.md#sec-21-bind-listed-serial-revocation-to-the-verified-path).
 - [ ] **SEC-22: Pass uncovered certificates to retrieval as typed data.** From the PR #60 review. Detail in [sec-22.md](docs/tasks/sec-22.md).
 - [x] **SEC-24: Make rssig the only revocation authority.** Done; detail in [sec-24-single-revocation-authority.md](docs/tasks/sec-24-single-revocation-authority.md).
-- [x] **SEC-23: Follow-ups left open by the PR #60 review.** Split into one task per item: SEC-26 to SEC-38, TEST-33 to TEST-35, LIB-11 and PRODUCT-07, with additions to SEC-17, SEC-18 and SEC-22.
 - [x] **SEC-25: Narrow CMS-009 to the attributes RFC 5652 limits.** Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
 - [ ] **SEC-26: Bound CRL retrieval across a batch.** The CLI's fetch
   limits are per file (up to 16 requests, 32 MiB and 30 s each), so a batch

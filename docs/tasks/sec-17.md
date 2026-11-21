@@ -46,7 +46,7 @@ whose issuer, authority key and role (CA or end entity) were already asked
 about, so a certificate that an earlier scoped or partial answer did not
 cover can stay `revocation_unknown` without a request of its own; re-ask
 when the earlier answer added no CRL covering it, with a paired fixture.
-From SEC-23: a CRL without nextUpdate is decoded, re-encoded and parsed by
+Also open: a CRL without nextUpdate is decoded, re-encoded and parsed by
 webpki a second time on every verification pass (each retrieval round
 included) to judge it apart from nextUpdate, and that work is not charged
 to the decode budget. Cache the verdict per CRL or charge it, with the
