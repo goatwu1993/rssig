@@ -61,7 +61,7 @@ The usual error codes are a hint, not the rule.
 
 A rule that touches two questions goes where its decision is made: the
 precedence between a lifetime-signing failure and a revocation is set by the
-lifetime-signing rules, so it is a `TIME-` entry (TIME-012); whether a root
+lifetime-signing rules, so it is a `TIME-` entry (TIME-011); whether a root
 or an intermediate may sign CRLs without cRLSign is a CRL-issuer rule, so it
 is a `CRL-` entry (CRL-015), separate from the general anchor rule PATH-011. A rule
 that is the same in every format stays in its subject index, and the format
@@ -83,8 +83,6 @@ of the rule, and these fields as list items:
     approval, recorded in the PR and in "Decided by".
   - `Observed`: current behavior, pinned so that a change is visible; may
     change when a better result is argued.
-  - `Retired`: no longer in force; one line says why.
-  - `Superseded by PREFIX-NNN`: replaced by the named entry.
 - **Decided by:** who or what settled it, with the PR where it applies:
   `owner, PR #N` (the owner decided or delegated the call),
   `references agree` (OpenSSL and Bouncy Castle, and BoringSSL where named),
@@ -121,8 +119,7 @@ jq -r '.cases[] | select(.decision == "CRL-001") | .id' tests/cases.json
 ```
 
 `tests/spec.rs` reads every entry in `docs/*.md`, checks its fields and that
-IDs are unique, and checks that every case's `decision` names an entry that
-is `Decided` or `Observed`.
+IDs are unique, and checks that every case's `decision` names an entry.
 
 ## IDs
 
@@ -133,26 +130,11 @@ earlier text. An ID is not renumbered except in a reindex the repository
 owner approves: a PR whose title and description say so, which moves
 misplaced entries to the right index, renumbers every affected index to keep
 its order, updates every case ID, decision and reference in the same change,
-and adds its old-to-new mapping below. Outside a reindex, a dropped entry keeps
-its ID with Status `Retired` or `Superseded by`.
-
-## Reindex history
-
-Older PRs, reviews and commit messages cite IDs as they were then. Map them
-with this table; an ID not listed kept its number.
-
-| Reindex | Old ID (on `main` before) | New ID |
-|---|---|---|
-| PR #70 | CRL-021 | merged into CRL-020 |
-| PR #70 | CRL-022 to CRL-031 | CRL-021 to CRL-030 (each one lower) |
-| PR #70 | CRL-032 | TIME-012 |
-| PR #70 | CRL-033 to CRL-043 | CRL-031 to CRL-041 (each two lower) |
-| PR #70 | CRL-044 | merged into CRL-041 |
-| PR #70 | CRL-045 to CRL-048 | CRL-042 to CRL-045 (each three lower) |
-| PR #70 | TIME-010 | merged into PATH-011 |
-| PR #70 | TIME-011, TIME-012 | TIME-010, TIME-011 |
-| PR #72 | TSA-004, duplicated attribute OID clause (cases `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`) | CMS-009 (cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter`); TSA-004 keeps its number |
-| PR #73 | CMS-009 cases `cms-009-duplicate-rfc`, `cms-009-duplicate-counter` | back to TSA-004 as `tsa-004-duplicate-rfc`, `tsa-004-duplicate-counter`, now `invalid_timestamp` at `timestamp` (SEC-25 narrowed CMS-009) |
+and lists its old-to-new mapping in the PR description. There are no
+tombstones: a rule that is dropped or merged leaves its index in a reindex, its
+cases move to the entry that now states their rule, and the repository keeps
+no record of retired IDs. Older PRs, reviews and commit messages cite IDs as
+they were then; the PR that changed them, and git history, map them.
 
 ## Task documents
 

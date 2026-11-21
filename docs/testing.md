@@ -341,7 +341,7 @@ a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
 (`crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
-`crl-038-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
+`crl-034-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
 asserted by the named test
 `crl_fetch_by_certificate_answer_leaves_no_point_failures`.
@@ -352,9 +352,8 @@ pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for
 (`Decided` or `Observed`), who decided it, whether it pins `acceptance` or
 `diagnostics`, and its sources; a case without `decision` counts as observed.
 `tests/spec.rs` reads every `### PREFIX-NNN: title` entry in `docs/*.md`,
-checks its fields, and checks that each case's `decision` names an entry that
-is `Decided` or `Observed` (not `Retired` or `Superseded by`). See AGENTS.md,
-"Pinned expectations".
+checks its fields, and checks that each case's `decision` names an entry. See
+AGENTS.md, "Pinned expectations".
 
 Every test build enables the internal `revocation-crosscheck` feature through
 a self dev-dependency in `Cargo.toml`. After rssig accepts a path's

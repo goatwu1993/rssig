@@ -32,6 +32,8 @@ Observed ones. A new entry takes the next free number.
    the signer's key to the signed content, or accept a structure outside the
    supported profile.
 2. **Availability:** a broken rule would reject a well-formed signature.
+   No entry is in this tier at present; legacy version 1 support is part of
+   CMS-010.
 3. **Result diagnostics:** the error code, stage or details a consumer
    matches; both outcomes reject.
 
@@ -52,21 +54,20 @@ Observed ones. A new entry takes the next free number.
 | [CMS-011](#cms-011-unknown-attributes-stay-opaque-and-their-oids-must-be-minimally-encoded) | Unknown attributes stay opaque, and their OIDs must be minimally encoded | Decided | acceptance |
 | [CMS-012](#cms-012-non-x509-certificatechoices-stay-opaque-and-cannot-supply-a-signer) | Non-X.509 CertificateChoices stay opaque and cannot supply a signer | Decided | acceptance |
 | [CMS-013](#cms-013-a-nested-signature-is-verified-like-the-primary-one) | A nested signature is verified like the primary one | Observed | acceptance |
-| [CMS-014](#cms-014-legacy-version-1-signeddata-and-signerinfo-verify) | Legacy version 1 SignedData and SignerInfo verify | Decided | acceptance |
-| [CMS-015](#cms-015-an-ambiguous-signer-reports-the-number-of-matching-certificates) | An ambiguous signer reports the number of matching certificates | Decided | diagnostics |
-| [CMS-016](#cms-016-envelope-defects-are-malformed_cms-signerinfo-defects-invalid_signature) | Envelope defects are malformed_cms, SignerInfo defects invalid_signature | Observed | diagnostics |
+| [CMS-014](#cms-014-an-ambiguous-signer-reports-the-number-of-matching-certificates) | An ambiguous signer reports the number of matching certificates | Decided | diagnostics |
+| [CMS-015](#cms-015-envelope-defects-are-malformed_cms-signerinfo-defects-invalid_signature) | Envelope defects are malformed_cms, SignerInfo defects invalid_signature | Observed | diagnostics |
 
 ## Tier 1: fail-open
 
 ### CMS-001: The signer's signature must verify with the signer certificate's key
 
 The SignerInfo signature must verify, under the declared algorithm, with the
-public key of the selected signer certificate over the exact signed bytes
-(the signed attributes with only their implicit tag replaced by SET). A
-corrupted signature, or a signer certificate carrying a different key, is
-`invalid_signature` at `cms`, in every format: PE, MSI and MSP, CAB, NAVX,
-PowerShell and PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle
-members.
+public key of the selected signer certificate over the exact signed bytes (the
+signed attributes with only their implicit tag replaced by SET). A corrupted
+signature, or a signer certificate carrying a different key, is
+`invalid_signature` at `cms` (CMS-008 pins that the signed bytes are never
+re-encoded), in every format: PE, MSI and MSP, CAB, NAVX, PowerShell and
+PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle members.
 
 - **Status:** Decided
 - **Decided by:** written argument, PR #37 (SEC-04)
@@ -129,7 +130,7 @@ and serial, verification fails with `ambiguous_signer_certificate` at `cms`
 before the signature or any path is checked, in either order and even when
 the candidates share the public key or one of them is trusted. Byte-identical
 duplicates are one candidate, and certificate order never changes the result
-or the selected signer. Embedded duplicates do not supply trust.
+or the selected signer. (Embedded duplicates do not supply trust: PATH-001.)
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #38 (SEC-05)
@@ -294,20 +295,29 @@ as a second timestamp (`invalid_timestamp` at `timestamp`).
 ### CMS-010: SignedData and SignerInfo must be well-formed with supported versions
 
 SignedData and SignerInfo must use bounded, definite, minimal DER lengths,
-consume their input completely, use the supported tags and canonical
-INTEGER encodings, and carry a supported version: SignedData version 1, or 3,
-4 or 5 as the envelope indicates (version 1 for detached RDP), and
-SignerInfo version 1. A SignedData needs at least one and at most 64
-SignerInfos. Anything else fails closed in every format: `malformed_cms` at
-`cms` for the envelope (truncated or trailing data, an unsupported SignedData
-version, an empty or oversized signer set), and `invalid_signature` at `cms`
-for a SignerInfo field such as its version (CMS-016).
+consume their input completely, use the supported tags and canonical INTEGER
+encodings, and carry a supported version: SignedData version 1, or 3, 4 or 5
+as the envelope indicates (version 1 for detached RDP), and SignerInfo
+version 1. A SignedData needs at least one and at most 64 SignerInfos.
+Anything else fails closed in every format: `malformed_cms` at `cms` for the
+envelope (truncated or trailing data, an unsupported SignedData version, an
+empty or oversized signer set), and `invalid_signature` at `cms` for a
+SignerInfo field such as its version (CMS-015). Legacy version 1 is
+deliberately supported: a well-formed SignedData with version 1, a version 1
+SignerInfo and correctly ordered unknown signed attributes verifies. rssig
+does not enforce RFC 5652's version-selection algorithm on a version 1
+envelope, which would require version 3 for non-data content such as
+Authenticode's SpcIndirectDataContent.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.1 and 5.3 (versions) and X.690 section 10 (DER).
+  - RFC 5652 section 5.1 (version selection) and RFC 2315 (PKCS#7 version 1):
+    legacy version 1 is retained for the Authenticode and historical timestamp
+    corpus; this is a compatibility profile
+    ([cms-security.md](cms-security.md)).
   - [cms-security.md](cms-security.md), rows "SignedData version",
     "SignerInfo version and identity" and "DER framing".
   - OpenSSL `crypto/cms/cms_smime.c:391-394` (`CMS_R_NO_SIGNERS`) rejects
@@ -342,12 +352,13 @@ minimally encoded OBJECT IDENTIFIER: a subidentifier starting with 0x80 is
 
 ### CMS-012: Non-X.509 CertificateChoices stay opaque and cannot supply a signer
 
-RFC 5652 CertificateChoices other than an X.509 certificate are kept as
-opaque DER in the publisher CMS and in an RFC 3161 token and never become a
-signer certificate, a chain candidate or a trust anchor. A malformed choice or
-an unknown choice tag fails, and an attribute certificate cannot replace a
+RFC 5652 CertificateChoices other than an X.509 certificate are kept as opaque
+DER in the publisher CMS and in an RFC 3161 token and never become a signer
+certificate, a chain candidate or a trust anchor. A malformed choice or an
+unknown choice tag fails, and an attribute certificate cannot replace a
 missing signer certificate; inside a timestamp token these are
-`invalid_timestamp` at `timestamp`.
+`invalid_timestamp` at `timestamp`. A failing TSA signature on such a token is
+TSA-002.
 
 - **Status:** Decided
 - **Decided by:** written choice, PR #37 (SEC-04)
@@ -386,26 +397,9 @@ signature), even when the primary one verifies.
   answer; [SEC-12](tasks/sec-12.md) records the decision to make it a
   policy (default all, opt-in any).
 
-## Tier 2: availability
-
-### CMS-014: Legacy version 1 SignedData and SignerInfo verify
-
-A well-formed SignedData with legacy version 1, a version 1 SignerInfo and
-correctly ordered unknown signed attributes verifies; rssig does not enforce
-RFC 5652's version-selection algorithm on it.
-
-- **Status:** Decided
-- **Decided by:** written choice, PR #37 (SEC-04)
-- **Pins:** acceptance
-- **Sources:**
-  - [cms-security.md](cms-security.md): legacy version 1 is retained for
-    the Authenticode and historical timestamp corpus; this is a
-    compatibility profile.
-  - RFC 5652 section 5.1 (version selection) and RFC 2315 (PKCS#7 version 1).
-
 ## Tier 3: result diagnostics
 
-### CMS-015: An ambiguous signer reports the number of matching certificates
+### CMS-014: An ambiguous signer reports the number of matching certificates
 
 The CMS-004 rejection is `ambiguous_signer_certificate` at `cms`, with
 `details.matching_certificates` counting every matching entry, exact
@@ -419,7 +413,7 @@ duplicates included.
 - **Unit tests:** `cms_signer_selection_is_independent_of_certificate_order`
   in `tests/cli/signer_selection.rs`.
 
-### CMS-016: Envelope defects are malformed_cms, SignerInfo defects invalid_signature
+### CMS-015: Envelope defects are malformed_cms, SignerInfo defects invalid_signature
 
 A defect in the SignedData envelope is `malformed_cms` at `cms`; a defect in
 a SignerInfo field or its attributes (version, attribute order, a repeated

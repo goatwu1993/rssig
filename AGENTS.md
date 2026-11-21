@@ -138,9 +138,9 @@ A case pins what the verifier does, not proof that it is right.
    contradict or sit in the wrong index, record it as a task and fix it in a
    reindex PR: merge or move the entry, renumber and reorder the affected
    indexes, and rename its cases and fixtures, in one owner-approved PR that
-   says so and records the mapping in
-   [reindex history](docs/decisions.md#reindex-history). Doing it in the PR
-   that found it also needs the owner's approval.
+   says so and lists the old-to-new mapping in its description; the
+   repository keeps no tombstones or mapping tables. Doing it in the PR that
+   found it also needs the owner's approval.
 
 ## Native Rust tests and coverage
 

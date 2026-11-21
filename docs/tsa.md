@@ -53,7 +53,7 @@ the image or content hashes, in every format.
 ### TSA-002: The TSA's signature must verify
 
 A token or countersignature whose TSA signature does not verify is
-`invalid_timestamp` at `timestamp`.
+`invalid_timestamp` at `timestamp`. The signer's own signature is CMS-001.
 
 - **Status:** Decided
 - **Decided by:** written argument, PR #17 (the first TSA-signature case);

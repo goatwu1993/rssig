@@ -25,12 +25,12 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **decision** (entry) | A numbered statement of one rule, or of what one policy does, with its reason, `PREFIX-NNN` ([format](decisions.md#entry-format)). |
 | **decision index** | The file holding one prefix's entries, such as [crl.md](crl.md); listed in [decision indexes](decisions.md). |
 | **skeleton index** | An index with candidate rules but no numbered entries yet. |
-| **Status** | `Decided` (argued right; changes only with the owner's approval), `Observed` (current behavior, kept visible), `Retired` or `Superseded by`. |
+| **Status** | `Decided` (argued right; changes only with the owner's approval), or `Observed` (current behavior, kept visible). |
 | **Decided by** | Who or what settled a Decided entry: the owner, the references, or a written argument. |
 | **Pins** | Whether an entry pins **acceptance** (verifies or rejects) or **diagnostics** (which code, stage, detail or request). |
 | **candidate rule** | An unnumbered rule in an index's "Candidate rules" section, waiting to become an entry. |
 | **claim** | The assignment of a case without a decision to one index and candidate rule, in `tests/decision-claims.json`. |
-| **reindex** | An owner-approved change that moves, merges or renumbers entries and renames their cases, recorded in [reindex history](decisions.md#reindex-history). |
+| **reindex** | An owner-approved change that moves, merges or renumbers entries and renames their cases; its PR description lists the old-to-new mapping ([IDs](decisions.md#ids)). |
 
 ## Specification and tests
 

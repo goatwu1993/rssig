@@ -44,7 +44,7 @@ TDD workflow and checks in AGENTS.md.
     path. Store-wide CRL freshness errors are still reported first, by the TSA
     check. A rejected issuer issued after signing ranks as a webpki validity
     error, so it can hide a revoked or wrongly signed issuer on another
-    candidate path (pinned by `time-012-lifetime-rollover-revoked-issuer`); the
+    candidate path (pinned by `time-011-lifetime-rollover-revoked-issuer`); the
     signature is still rejected. Equal-rank failures report the first
     encountered.
   - CRL/revocation: revocation is evaluated only at the validation time, and a
@@ -183,14 +183,14 @@ TDD workflow and checks in AGENTS.md.
   `docs/<format>-decisions.md` skeletons. Move an `embedded-signature` case to
   `CMS-` where its rule is shared.
 - [ ] **TEST-19: Link CRL retrieval rules to their entries.**
-  `docs/crl-retrieval.md` restates rules now in `CRL-028` to `CRL-045`.
+  `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
 - [ ] **TEST-20: Rename task-named library cases.** The `lib04-*` to `lib09-*`
   cases are claimed by the format, `INSPECT-` and `POLICY-` indexes; rename
   them by subject when those are numbered.
 - [ ] **TEST-21: Attach the claimed `TIME-` cases.** The cases claimed under
   `TIME` `attach` (the pre-SEC-09 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
-- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in [decisions](docs/decisions.md#reindex-history).
+- [x] **TEST-22: Reindex misplaced decisions.** Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in that PR.
 - [x] **TEST-23: Scaffold the remaining decision indexes.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); claims in `tests/decision-claims.json`.
 - [ ] **TEST-24: Number the `ALG-` index.** Fill [docs/alg.md](docs/alg.md):
   unsupported algorithms and the SHA-1 opt-in in every format.
@@ -203,12 +203,10 @@ TDD workflow and checks in AGENTS.md.
   audit cases, every format's revocation and untrusted-root case), and add a
   PATH entry for `certificate-signature`.
 - [x] **TEST-29: Use one meaning per term.** Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with TEST-23 at the owner's request); [glossary](docs/glossary.md).
-- [ ] **TEST-30: Remove duplicate and overlapping decisions.** An audit of the
-  94 numbered entries found five likely duplicates (CRL-002/021/039, CRL-020/021,
-  CRL-040/041, CRL-003/012, TIME-002/004), several instances of a general rule,
-  two entries that need a stated exception (CRL-029 and TIME-012, CRL-002 and
-  CRL-004), and two entries without a rule statement. Owner-approved reindex PR.
-  Detail in [test-30.md](docs/tasks/test-30.md).
+- [x] **TEST-30: Remove duplicate and overlapping decisions.** Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
+- [ ] **TEST-31: Settle the shared format-skeleton rules.** Decide where the
+  candidate rules repeated by the format skeletons (`hash`, `structure`,
+  `unsigned`, `support`) live before TEST-18 and its siblings number them.
 
 ## P1 — CLI, reporting, and distribution
 
