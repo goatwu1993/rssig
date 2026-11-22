@@ -7470,7 +7470,8 @@
       },
       "cases": [
         "crl-007-self-issued-rollover-without-revocation-verifies",
-        "crl-008-self-issued-rollover-with-both-crls-is-rejected"
+        "crl-008-self-issued-rollover-with-both-crls-is-rejected",
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
       ]
     },
     {
@@ -8220,7 +8221,8 @@
         "crl-036-fetch-unusable-scope-supplied-crl-stands-without-answer",
         "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
-        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
       ]
     },
     {
@@ -8345,7 +8347,8 @@
         "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "crl-036-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
-        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
       ]
     },
     {
@@ -8431,6 +8434,22 @@
       },
       "cases": [
         "crl-008-self-issued-rollover-with-both-crls-is-rejected"
+      ]
+    },
+    {
+      "file": "path-rollover-printable.crl",
+      "sha256": "ab48780071da02b7273f36717d83e02c946e1d8d669d2d95e5f511a53042ea76",
+      "bytes": 180,
+      "description": "SEC-16: path-rollover.crl with its issuer's commonName as a PrintableString (the certificate uses UTF8String), still without an authorityKeyIdentifier. Its bytes differ from path-root.crl's issuer, but the two issuers on the rollover path are one name, so CRL-008 still rejects the path. Deterministic public test keys.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
       ]
     },
     {
@@ -9850,7 +9869,9 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-040-forged-crl-naming-another-key-is-set-aside",
-        "crl-040-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+        "crl-040-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+        "crl-042-issuer-without-ski-cannot-disprove-another-keys-crl",
+        "crl-042-issuer-with-malformed-ski-cannot-disprove-another-keys-crl"
       ]
     },
     {
@@ -9862,6 +9883,107 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-040-forged-crl-naming-a-same-key-roots-identifier-is-forged"
+      ]
+    },
+    {
+      "file": "crl-root-issuer-printable.crl",
+      "sha256": "6bbfa5b869d731ea1aed05c3358bfb6254911d62d3abc53e67de11738ee61f97",
+      "bytes": 185,
+      "description": "SEC-16: Fresh, valid CRL signed by the test root whose issuer is the root's name with the commonName as a PrintableString (the root uses UTF8String): the same name under RFC 5280 section 7.1. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-printable-string-issuer-matches-a-utf8-subject"
+      ]
+    },
+    {
+      "file": "crl-root-issuer-case-space.crl",
+      "sha256": "93b14b1befebf2b30e583d298f5c9a2e94cf65ab1ccd4214228819740b8c45ff",
+      "bytes": 191,
+      "description": "SEC-16: Fresh, valid CRL signed by the test root whose issuer is the root's name in upper case with extra white space, equal under RFC 5280 section 7.1. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-issuer-case-and-spacing-match"
+      ]
+    },
+    {
+      "file": "crl-root-forged-issuer-case.crl",
+      "sha256": "6f1a74e68ed83e70c1830fd16e2725b85edd718962aeb12a921b1b15980d6bfe",
+      "bytes": 184,
+      "description": "SEC-16: Fresh CRL whose issuer is the test root's name in upper case, signed by another key, with no authorityKeyIdentifier: a CRL of another CA whose name equals the root's only under RFC 5280 comparison. Set aside, not forged, so it neither forges a result nor stops retrieval. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-forged-crl-matching-only-by-comparison-is-set-aside"
+      ]
+    },
+    {
+      "file": "crl-root-forged-issuer-case-naming-root-key.crl",
+      "sha256": "98d3983abeba3f6d4aebd0c2a22876ff973d7cece3082ff4cafc7c2a0f3926ac",
+      "bytes": 218,
+      "description": "SEC-16: Fresh CRL whose issuer is the test root's name in upper case, signed by another key, whose authorityKeyIdentifier names the root's own key: it claims the root, so it is forged, not set aside, whatever its spelling. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-forged-crl-naming-the-issuers-key-stays-forged",
+        "crl-041-forged-crl-naming-a-key-an-issuer-cannot-disprove-stays-forged"
+      ]
+    },
+    {
+      "file": "crl-root-forged-aki-other-serial.crl",
+      "sha256": "b4444f1a7ac1cb0012c99ab460f9cf00507a648a9453685e3ceb247bc2b01d2c",
+      "bytes": 231,
+      "description": "SEC-16: Fresh CRL under the test root's name signed by another key, naming the root's issuer and serial 2 (the root's serial is 1) in its authorityKeyIdentifier. Another certificate's CRL, set aside. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-043-forged-crl-naming-another-serial-is-set-aside"
+      ]
+    },
+    {
+      "file": "crl-root-signed-aki-other-serial.crl",
+      "sha256": "fb2cbc88e7aa3ec4ccc39d8ca2720e99044239ce42caa76e7e5e06bfb1480201",
+      "bytes": 231,
+      "description": "SEC-16: Fresh CRL signed by the test root whose authorityKeyIdentifier names serial 2 (the root's serial is 1): the signature authenticates it. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-044-signed-crl-naming-another-serial-verifies"
+      ]
+    },
+    {
+      "file": "crl-root-forged-aki-other-issuer.crl",
+      "sha256": "98a0e0e1deb4cb451e50cedee1995989692cad5e07c85909c149bc2386a87253",
+      "bytes": 235,
+      "description": "SEC-16: Fresh CRL under the test root's name signed by another key, naming another issuer and the root's serial in its authorityKeyIdentifier. Another certificate's CRL, set aside. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-043-forged-crl-naming-another-issuer-is-set-aside"
+      ]
+    },
+    {
+      "file": "crl-root-no-ski.der",
+      "sha256": "af444b0bf644f11d1ac27f1707dd37e911fde5191bbaafbbe03c1cf0ba1ccdcb",
+      "bytes": 330,
+      "description": "SEC-16: The test root re-issued with the same key and name and no subjectKeyIdentifier: the same trust anchor to webpki, but one whose key cannot be named. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-042-issuer-without-ski-cannot-disprove-another-keys-crl",
+        "crl-041-forged-crl-naming-a-key-an-issuer-cannot-disprove-stays-forged"
+      ]
+    },
+    {
+      "file": "crl-root-malformed-ski.der",
+      "sha256": "408ec7d3ab7c388b648c9b963373f4ff51144a0c923907dc0981d456b8c5c87d",
+      "bytes": 340,
+      "description": "SEC-16: The test root re-issued with the same key and name and a subjectKeyIdentifier whose value is an empty SEQUENCE, not an OCTET STRING: the same trust anchor to webpki, read as having no identifier. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-042-issuer-with-malformed-ski-cannot-disprove-another-keys-crl"
       ]
     },
     {

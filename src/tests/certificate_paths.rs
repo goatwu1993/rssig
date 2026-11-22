@@ -314,6 +314,52 @@ fn write_crl_at(
     revoked: Option<u32>,
     window: (u64, u64),
 ) {
+    write_crl_named(
+        dir,
+        issuer,
+        issuer_key,
+        label,
+        key_identified,
+        revoked,
+        window,
+        issuer.tbs_certificate.subject.clone(),
+    );
+}
+
+/// `name` with every UTF8String value re-encoded as a PrintableString: the
+/// same name under RFC 5280 section 7.1, different bytes.
+fn printable_name(name: &Name) -> Name {
+    use ::der::{Any, Tag, Tagged};
+    let mut name = name.clone();
+    for rdn in name.0.iter_mut() {
+        let attributes: Vec<_> = rdn
+            .0
+            .iter()
+            .map(|attribute| {
+                let mut attribute = attribute.clone();
+                if attribute.value.tag() == Tag::Utf8String {
+                    attribute.value =
+                        Any::new(Tag::PrintableString, attribute.value.value()).unwrap();
+                }
+                attribute
+            })
+            .collect();
+        rdn.0 = attributes.try_into().unwrap();
+    }
+    name
+}
+
+#[allow(clippy::too_many_arguments)]
+fn write_crl_named(
+    dir: &std::path::Path,
+    issuer: &Certificate,
+    issuer_key: &SigningKey,
+    label: &str,
+    key_identified: bool,
+    revoked: Option<u32>,
+    window: (u64, u64),
+    issuer_name: Name,
+) {
     use x509_cert::{
         Version,
         crl::{CertificateList, TbsCertList},
@@ -343,7 +389,7 @@ fn write_crl_at(
     let tbs = TbsCertList {
         version: Version::V2,
         signature: algorithm.clone(),
-        issuer: issuer.tbs_certificate.subject.clone(),
+        issuer: issuer_name,
         this_update: tm(window.0),
         next_update: Some(tm(window.1)),
         revoked_certificates: revoked.map(|serial| {
@@ -767,6 +813,19 @@ pub(super) fn write(dir: &std::path::Path) {
         core::slice::from_ref(&rollover),
     );
     write_crl(dir, &rollover, &rollover_key, "rollover");
+    // SEC-16: the same CRL with its issuer as a PrintableString. Its bytes
+    // differ from the root CRL's issuer, but the two issuers on the path are
+    // still one name, so CRL-008 still rejects the path.
+    write_crl_named(
+        dir,
+        &rollover,
+        &rollover_key,
+        "rollover-printable",
+        false,
+        None,
+        (NOW - 100, NOW + 1000),
+        printable_name(&rollover.tbs_certificate.subject),
+    );
     // The same two CRLs, each naming its issuer's key: the case in which
     // OpenSSL, BoringSSL and Bouncy Castle all tell the two issuers apart.
     // SEC-10: the root's CRL, expired: on a cross-certified file the root

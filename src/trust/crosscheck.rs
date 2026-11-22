@@ -34,6 +34,20 @@ pub(super) fn confirm(
     crls: &[LoadedCrl],
     rejects: bool,
 ) {
+    // webpki matches a CRL to a certificate by exact raw issuer bytes. rssig
+    // also matches one by RFC 5280 name comparison (CRL-041), which webpki
+    // cannot judge: it finds no CRL for that certificate. Whether that
+    // happened is read from the same raw bytes webpki compares, for the
+    // path's certificates in the order their CRLs were chosen. On such a path
+    // webpki is asked to allow an unknown status, so every certificate whose
+    // CRL it can find is still checked (serial, signature, scope, expiry).
+    let issuers =
+        core::iter::once(leaf.issuer()).chain(path.intermediate_certificates().map(|c| c.issuer()));
+    let lenient = chosen.iter().zip(issuers).any(|(choice, issuer)| {
+        crls[choice.index].webpki.as_ref().map_or(true, |crl| {
+            webpki::CertRevocationList::from(crl.clone()).issuer() != issuer
+        })
+    });
     // webpki picks a CRL by issuer name alone. On a self-issued key rollover
     // whose CRLs each name their issuer's key (two issuers of one name with
     // different keys), rssig gives each certificate its own key's CRL; webpki
@@ -41,8 +55,8 @@ pub(super) fn confirm(
     // data, not from `rejects`, so a wrong rssig verdict cannot hide itself.
     // The pairs come from the helper rssig's own rule uses, so they cannot
     // drift.
-    let key_rollover = same_name_different_keys(chosen, crls).next().is_some()
-        && same_name_different_keys(chosen, crls)
+    let key_rollover = same_name_different_keys(chosen).next().is_some()
+        && same_name_different_keys(chosen)
             .all(|(first, second)| first.names_issuer && second.names_issuer);
     let mut indices: Vec<usize> = if key_rollover {
         chosen.iter().take(1).map(|c| c.index).collect()
@@ -72,7 +86,11 @@ pub(super) fn confirm(
         } else {
             webpki::RevocationCheckDepth::Chain
         })
-        .with_status_policy(webpki::UnknownStatusPolicy::Deny)
+        .with_status_policy(if lenient {
+            webpki::UnknownStatusPolicy::Allow
+        } else {
+            webpki::UnknownStatusPolicy::Deny
+        })
         .with_expiration_policy(webpki::ExpirationPolicy::Enforce)
         .build();
     let intermediates: Vec<CertificateDer<'static>> = path
@@ -89,6 +107,12 @@ pub(super) fn confirm(
         Some(options),
         None,
     );
+    // When lenient, webpki accepting a path rssig rejects proves nothing: the
+    // rejection may be for the certificate webpki found no CRL for. Every
+    // other outcome is still compared.
+    if lenient && rejects && confirmed.is_ok() {
+        return;
+    }
     assert!(
         confirmed.is_err() == rejects,
         "SEC-24 revocation cross-check: rssig {} the accepted path, webpki returned {:?}",
