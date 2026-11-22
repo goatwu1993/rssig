@@ -22,42 +22,71 @@ use x509_cert::{
     name::{Name, RelativeDistinguishedName},
 };
 
-/// Whether two DER-encoded names are the same name under RFC 5280 section
-/// 7.1. Names that do not decode match only when their bytes are equal.
-pub(crate) fn names_match(a: &[u8], b: &[u8]) -> bool {
-    if a == b {
-        return true;
-    }
-    let (Ok(a), Ok(b)) = (Name::from_der(a), Name::from_der(b)) else {
-        return false;
-    };
-    a.0.len() == b.0.len() && a.0.iter().zip(&b.0).all(|(x, y)| rdn_match(x, y))
+/// A DER-encoded name and, when it decodes, its prepared form: each RDN in
+/// order as the sorted keys of its attributes. Two names match when their
+/// bytes are equal or their prepared forms are; a name that does not decode
+/// matches only its own bytes. A value prepares its name only when it is
+/// first compared with different bytes, and keeps the result, so its later
+/// comparisons are equality checks. Separate values of one name prepare it
+/// separately: a CRL's issuer when the prefilter reads it and again when the
+/// CRL is loaded, and a certificate's issuer on each candidate path (CRL-T033).
+#[derive(Clone, Debug)]
+pub(crate) struct ComparableName {
+    der: Vec<u8>,
+    prepared: core::cell::OnceCell<Option<Vec<Vec<Key>>>>,
 }
 
-/// Two RDNs match when their attributes are equal as multisets. Each
-/// attribute is reduced once to a key (its type and its prepared value, or its
-/// exact encoding when it has none) and the sorted keys are compared, so the
-/// work grows with n log n in the attribute count, not with its square.
-fn rdn_match(a: &RelativeDistinguishedName, b: &RelativeDistinguishedName) -> bool {
-    if a.0.len() != b.0.len() {
-        return false;
+/// An attribute's type and its prepared value or exact encoding.
+type Key = (Vec<u8>, Vec<u8>);
+
+impl ComparableName {
+    pub(crate) fn new(der: Vec<u8>) -> Self {
+        Self {
+            der,
+            prepared: core::cell::OnceCell::new(),
+        }
     }
-    let (Some(mut a), Some(mut b)) = (keys(a), keys(b)) else {
-        return false;
-    };
-    a.sort_unstable();
-    b.sort_unstable();
-    a == b
+
+    fn prepared(&self) -> Option<&Vec<Vec<Key>>> {
+        self.prepared
+            .get_or_init(|| {
+                Name::from_der(&self.der).ok().and_then(|name| {
+                    name.0
+                        .iter()
+                        .map(|rdn| {
+                            let mut keys = keys(rdn)?;
+                            keys.sort_unstable();
+                            Some(keys)
+                        })
+                        .collect()
+                })
+            })
+            .as_ref()
+    }
+
+    /// The name as DER, exactly as given.
+    pub(crate) fn der(&self) -> &[u8] {
+        &self.der
+    }
+
+    /// Whether the two are the same name under RFC 5280 section 7.1: an RDN's
+    /// attributes compare as a multiset (sorted keys), RDNs in order.
+    pub(crate) fn matches(&self, other: &Self) -> bool {
+        self.der == other.der
+            || self
+                .prepared()
+                .is_some_and(|prepared| Some(prepared) == other.prepared())
+    }
 }
 
-fn keys(rdn: &RelativeDistinguishedName) -> Option<Vec<(Vec<u8>, Vec<u8>)>> {
+fn keys(rdn: &RelativeDistinguishedName) -> Option<Vec<Key>> {
     rdn.0.iter().map(key).collect()
 }
 
 /// An attribute's type and value in a form that is equal exactly when the
 /// attributes match: a prepared value is marked 0, an exact encoding 1, so the
 /// two cannot collide.
-fn key(attribute: &AttributeTypeAndValue) -> Option<(Vec<u8>, Vec<u8>)> {
+fn key(attribute: &AttributeTypeAndValue) -> Option<Key> {
     let value = match prepared(&attribute.value) {
         Some(text) => [&[0][..], text.as_bytes()].concat(),
         None => [&[1][..], &attribute.value.to_der().ok()?].concat(),
@@ -113,8 +142,46 @@ fn printable(byte: u8) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::names_match;
+    use super::ComparableName;
     use alloc::{string::String, vec, vec::Vec};
+
+    #[test]
+    fn a_prepared_name_compares_alike_every_time() {
+        let root = ComparableName::new(name(&[&[(CN, UTF8, "rssig test root")]]));
+        let printable = ComparableName::new(name(&[&[(CN, PRINTABLE, "RSSIG Test Root")]]));
+        let other = ComparableName::new(name(&[&[(CN, UTF8, "another root")]]));
+        let garbage = ComparableName::new(vec![0x30, 0x00, 0x00]);
+        // Equal bytes need no preparation.
+        assert!(root.matches(&root.clone()));
+        assert!(root.prepared.get().is_none());
+        // A first comparison with different bytes prepares both, once.
+        assert!(root.matches(&printable));
+        assert!(root.prepared.get().is_some_and(Option::is_some));
+        assert!(printable.prepared.get().is_some_and(Option::is_some));
+        // A name that does not decode keeps that result.
+        assert!(!garbage.matches(&root));
+        assert_eq!(garbage.prepared.get(), Some(&None));
+        // The same value, compared repeatedly and in either order, after a
+        // mismatch and after a name that does not decode.
+        for _ in 0..2 {
+            assert!(root.matches(&printable));
+            assert!(printable.matches(&root));
+            assert!(!root.matches(&other));
+            assert!(!root.matches(&garbage));
+            assert!(!garbage.matches(&root));
+            assert!(garbage.matches(&garbage.clone()));
+        }
+        // A clone keeps the prepared form and still compares alike.
+        let copy = root.clone();
+        assert!(copy.matches(&printable));
+        assert!(!copy.matches(&other));
+        // Two names that do not decode never match unless their bytes do.
+        assert!(!garbage.matches(&ComparableName::new(vec![0x30, 0x00, 0x01])));
+    }
+
+    fn names_match(a: &[u8], b: &[u8]) -> bool {
+        ComparableName::new(a.to_vec()).matches(&ComparableName::new(b.to_vec()))
+    }
 
     fn tlv(tag: u8, body: &[u8]) -> Vec<u8> {
         assert!(body.len() < 128);

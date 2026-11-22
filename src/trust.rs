@@ -25,7 +25,7 @@ use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
 #[cfg(feature = "crl-fetch")]
 pub(crate) use loading::crl_issuers;
-pub(crate) use names::names_match;
+use names::ComparableName;
 use rustls_pki_types::{CertificateDer, UnixTime};
 use x509_cert::{
     Certificate,
@@ -134,19 +134,22 @@ impl TrustStore {
         // With no applicable CRL at all, the path is still built: an
         // untrusted chain fails as such, and a trusted one reports every
         // certificate on it as without a CRL.
+        // Each configured root is decoded once, for the CRL prefilter and the
+        // anchor certificates both.
+        let roots = if revocation {
+            self.decoded_roots()?
+        } else {
+            Vec::new()
+        };
         let crls = if revocation {
-            self.applicable_crls(certificates)?
+            self.applicable_crls(&roots, certificates)?
         } else {
             Vec::new()
         };
         let evaluator = PathEvaluator {
             signer: leaf,
             anchors: &anchors,
-            anchor_certificates: if revocation {
-                self.anchor_certificates()
-            } else {
-                Vec::new()
-            },
+            anchor_certificates: roots,
             crls: &crls,
             now,
             revocation,
@@ -247,25 +250,31 @@ impl TrustStore {
     /// re-encoded, as the chain's names are (der sorts a SET OF while
     /// decoding, so raw and re-encoded bytes can differ). One whose issuer
     /// cannot be read that way is decoded and judged.
-    fn applicable_crls(&self, certificates: &[Certificate]) -> Result<Vec<LoadedCrl>> {
+    ///
+    /// Within the prefilter each name is prepared at most once; a CRL that
+    /// passes it has its issuer prepared again when it is loaded (CRL-T033).
+    fn applicable_crls(
+        &self,
+        roots: &[Certificate],
+        certificates: &[Certificate],
+    ) -> Result<Vec<LoadedCrl>> {
         let mut issuer_names = Vec::new();
-        for root in &self.roots {
-            let root = Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?;
-            issuer_names.push(
+        for root in roots {
+            issuer_names.push(ComparableName::new(
                 root.tbs_certificate
                     .subject
                     .to_der()
                     .map_err(crate::compat_error)?,
-            );
+            ));
         }
         for certificate in certificates {
-            issuer_names.push(
+            issuer_names.push(ComparableName::new(
                 certificate
                     .tbs_certificate
                     .subject
                     .to_der()
                     .map_err(crate::compat_error)?,
-            );
+            ));
         }
         self.crls
             .iter()
@@ -274,11 +283,13 @@ impl TrustStore {
             .collect()
     }
 
-    /// The configured root behind each anchor, parsed once.
-    fn anchor_certificates(&self) -> Vec<Option<Certificate>> {
+    /// Every configured root, decoded once per verification. Loading has
+    /// already decoded each one (`validate` in `loading.rs`), so this fails
+    /// only if that check and this decoding disagree.
+    fn decoded_roots(&self) -> Result<Vec<Certificate>> {
         self.roots
             .iter()
-            .map(|root| Certificate::from_der(root.as_ref()).ok())
+            .map(|root| Certificate::from_der(root.as_ref()).map_err(crate::compat_error))
             .collect()
     }
 
@@ -523,7 +534,7 @@ struct PathEvaluator<'a, 'b> {
     signer: &'a Certificate,
     anchors: &'a [rustls_pki_types::TrustAnchor<'a>],
     /// The configured root behind each anchor; empty without revocation.
-    anchor_certificates: Vec<Option<Certificate>>,
+    anchor_certificates: Vec<Certificate>,
     crls: &'a [LoadedCrl],
     now: u64,
     revocation: bool,
@@ -598,7 +609,7 @@ impl PathEvaluator<'_, '_> {
             .iter()
             .enumerate()
             .filter(|(_, root)| same_anchor(root, anchor))
-            .filter_map(|(index, _)| self.anchor_certificates.get(index)?.as_ref());
+            .filter_map(|(index, _)| self.anchor_certificates.get(index));
         let first = anchors.next().ok_or(webpki::Error::UnknownIssuer)?;
         let mut anchor_key = IssuerKey::of(first, true).map_err(|_| webpki::Error::BadDer)?;
         for same_key in anchors {
@@ -687,27 +698,29 @@ impl PathEvaluator<'_, '_> {
 
     /// Whether `crl` is signed by `issuer`, cached by (CRL, issuer key).
     fn crl_signature(&self, index: usize, crl: &LoadedCrl, issuer: &IssuerKey) -> SignatureCheck {
-        *self
-            .state
-            .borrow_mut()
-            .signatures
-            .entry((index, issuer.spki.clone()))
-            .or_insert_with(|| {
-                // Over budget: no verification, and the exhausted counter
-                // ends the run after path building.
-                self.budget.crypto.charge(1).map_err(|_| ())?;
-                // An identifier the adapter rejects is unsupported, whatever
-                // its OID.
-                if !crl.algorithm_accepted {
-                    return Ok(None);
-                }
-                Ok(signed_by(
-                    &issuer.spki,
-                    &crl.algorithm,
-                    &crl.signed,
-                    &crl.signature,
-                ))
-            })
+        let mut state = self.state.borrow_mut();
+        let checks = state.signatures.entry(index).or_default();
+        if let Some(check) = checks.get(issuer.spki.as_slice()) {
+            return *check;
+        }
+        let check = (|| {
+            // Over budget: no verification, and the exhausted counter ends
+            // the run after path building.
+            self.budget.crypto.charge(1).map_err(|_| ())?;
+            // An identifier the adapter rejects is unsupported, whatever its
+            // OID.
+            if !crl.algorithm_accepted {
+                return Ok(None);
+            }
+            Ok(signed_by(
+                &issuer.spki,
+                &crl.algorithm,
+                &crl.signed,
+                &crl.signature,
+            ))
+        })();
+        checks.insert(issuer.spki.clone(), check);
+        check
     }
 }
 
@@ -790,7 +803,10 @@ fn path_error(
 /// CRL signature results by (CRL index, issuer SPKI): `Ok(None)` when the
 /// algorithm is unsupported, `Err` when the work budget is spent.
 type SignatureCheck = core::result::Result<Option<bool>, ()>;
-type SignatureCache = alloc::collections::BTreeMap<(usize, Vec<u8>), SignatureCheck>;
+/// Keyed by CRL index, then issuer SPKI, so a hit borrows the SPKI and copies
+/// nothing.
+type SignatureCache =
+    alloc::collections::BTreeMap<usize, alloc::collections::BTreeMap<Vec<u8>, SignatureCheck>>;
 
 /// A supplied or retrieved CRL, decoded once per verification.
 struct LoadedCrl {
@@ -803,7 +819,8 @@ struct LoadedCrl {
     /// algorithm adapter accepts.
     algorithm_accepted: bool,
     signature: ::der::asn1::BitString,
-    issuer: Vec<u8>,
+    /// The issuer, prepared once for RFC 5280 comparison (CRL-041).
+    issuer: ComparableName,
     /// The authorityKeyIdentifier keyIdentifier; `Err` when malformed.
     authority_key: core::result::Result<Option<Vec<u8>>, ()>,
     /// The authorityKeyIdentifier's authorityCertIssuer (its directoryNames)
@@ -859,7 +876,7 @@ impl LoadedCrl {
             .map(|tbs| tbs.full.to_vec())
             .context("CRL lacks tbsCertList")?;
         let tbs = crl.tbs_cert_list;
-        let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
+        let issuer = ComparableName::new(tbs.issuer.to_der().map_err(crate::compat_error)?);
         let aki = tbs
             .crl_extensions
             .iter()
@@ -878,7 +895,9 @@ impl LoadedCrl {
                     .iter()
                     .flatten()
                     .filter_map(|name| match name {
-                        GeneralName::DirectoryName(name) => name.to_der().ok(),
+                        GeneralName::DirectoryName(name) => {
+                            name.to_der().ok().map(ComparableName::new)
+                        }
                         _ => None,
                     })
                     .collect(),
@@ -936,25 +955,26 @@ impl LoadedCrl {
 /// The certificate an authorityKeyIdentifier names: the directoryNames of its
 /// issuer (any may be the one) and its serial, each when present.
 struct AuthorityCert {
-    issuers: Vec<Vec<u8>>,
+    issuers: Vec<ComparableName>,
     serial: Option<Vec<u8>>,
 }
 
 /// A certificate of an issuer: its issuer name and serial number.
 #[derive(Clone)]
 struct CertificateName {
-    issuer: Vec<u8>,
+    issuer: ComparableName,
     serial: Vec<u8>,
 }
 
 impl CertificateName {
     fn of(cert: &Certificate) -> Result<Self> {
         Ok(Self {
-            issuer: cert
-                .tbs_certificate
-                .issuer
-                .to_der()
-                .map_err(crate::compat_error)?,
+            issuer: ComparableName::new(
+                cert.tbs_certificate
+                    .issuer
+                    .to_der()
+                    .map_err(crate::compat_error)?,
+            ),
             serial: cert.tbs_certificate.serial_number.as_bytes().to_vec(),
         })
     }
@@ -1010,11 +1030,12 @@ impl IssuerKey {
 /// top-level fields without decoding it in full, and compared re-encoded as
 /// the chain's names are. One whose issuer cannot be read is kept, to be
 /// decoded and judged.
-fn crl_may_apply(bytes: &[u8], issuer_names: &[Vec<u8>]) -> bool {
+fn crl_may_apply(bytes: &[u8], issuer_names: &[ComparableName]) -> bool {
     crate::der::tbs_issuer(bytes, 0x02, 1)
         .and_then(|raw| x509_cert::name::Name::from_der(raw).ok())
         .and_then(|name| name.to_der().ok())
-        .is_none_or(|issuer| issuer_names.iter().any(|name| names_match(name, &issuer)))
+        .map(ComparableName::new)
+        .is_none_or(|issuer| issuer_names.iter().any(|name| name.matches(&issuer)))
 }
 
 /// A path-check failure other than revocation, judged without side effects.
@@ -1150,7 +1171,9 @@ fn evaluate_crls(
     // evidence of anything and rejects the path.
     let der = cert.to_der().ok()?;
     let sha256 = crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der));
-    let issuer_name = cert.tbs_certificate.issuer.to_der().ok()?;
+    // Prepared at most once per certificate per candidate path, when a CRL's
+    // issuer differs in bytes (CRL-T033).
+    let issuer_name = ComparableName::new(cert.tbs_certificate.issuer.to_der().ok()?);
     let serial = cert.tbs_certificate.serial_number.as_bytes();
     let lists_points = has_extension(cert, "2.5.29.31");
     let points_unreadable = cert
@@ -1181,7 +1204,7 @@ fn evaluate_crls(
         }
     };
     for (index, crl) in crls.iter().enumerate() {
-        if !names_match(&crl.issuer, &issuer_name) {
+        if !crl.issuer.matches(&issuer_name) {
             continue;
         }
         // Only the CRL's index is kept per candidate path: its full report
@@ -1198,7 +1221,7 @@ fn evaluate_crls(
         // unless its signature proves otherwise: set aside, so it neither
         // forges a result nor stops retrieval (CRL-018). One that claims this
         // issuer's key or certificate is judged like an exactly named CRL.
-        let loose = crl.issuer != issuer_name
+        let loose = crl.issuer.der() != issuer_name.der()
             && !claims_issuer(named_key, crl.authority_cert.as_ref(), issuer);
         match verify_signature(index, crl) {
             Ok(Some(true)) => {}
@@ -1543,7 +1566,7 @@ fn names_issuer_certificate(named: &AuthorityCert, issuer: &IssuerKey) -> Option
             && named
                 .issuers
                 .iter()
-                .any(|name| names_match(name, &certificate.issuer))
+                .any(|name| name.matches(&certificate.issuer))
     }))
 }
 
@@ -2632,8 +2655,11 @@ mod revocation_reporting {
             .to_der()
             .unwrap();
         assert_eq!(reencoded, sorted);
-        assert!(crl_may_apply(&crl, &[sorted]));
-        assert!(!crl_may_apply(&crl, &[b"other".to_vec()]));
+        assert!(crl_may_apply(&crl, &[ComparableName::new(sorted)]));
+        assert!(!crl_may_apply(
+            &crl,
+            &[ComparableName::new(b"other".to_vec())]
+        ));
     }
 
     #[test]
@@ -3186,7 +3212,8 @@ mod revocation_reporting {
     fn a_failed_crl_naming_another_certificate_by_issuer_and_serial_is_set_aside() {
         use core::str::FromStr;
         use x509_cert::name::Name;
-        let name = |text: &str| Name::from_str(text).unwrap().to_der().unwrap();
+        let name =
+            |text: &str| ComparableName::new(Name::from_str(text).unwrap().to_der().unwrap());
         let issuer = IssuerKey {
             spki: Vec::new(),
             key_id: Some(vec![1]),
@@ -3198,7 +3225,7 @@ mod revocation_reporting {
             undisprovable: false,
             crl_sign: true,
         };
-        let names = |issuer: Option<Vec<u8>>, serial: Option<Vec<u8>>| AuthorityCert {
+        let names = |issuer: Option<ComparableName>, serial: Option<Vec<u8>>| AuthorityCert {
             issuers: issuer.into_iter().collect(),
             serial,
         };

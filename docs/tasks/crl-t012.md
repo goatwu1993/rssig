@@ -19,10 +19,12 @@ feature.
 ## Consistency of CRL-041 elsewhere
 
 - Retrieval keys the issuers it has asked about (`asked_issuers`, through
-  `issuer_key` in `src/retrieval.rs`) by exact issuer bytes, while a fetched
-  CRL counts for an issuer by `names_match`. Two certificates whose issuers
-  differ only in case, spacing or string type are asked about separately,
-  spending fetch limits (CRL-039) twice. Key them by the prepared name.
+  `issuer_key` in `src/retrieval.rs`) by exact issuer bytes, and a fetched
+  CRL counts as an issuer's answer only by exact bytes too (CRL-041's note),
+  while verification matches it by RFC 5280 comparison. Two certificates
+  whose issuers differ only in case, spacing or string type are asked about
+  separately, spending fetch limits (CRL-039) twice. Key them by the
+  prepared name.
 - CRL-008's rule for issuers of one name with different keys compares the
   path issuers' names by exact bytes, so two issuers on one path whose names
   differ only in case are two issuers to it, as to webpki; OpenSSL compares

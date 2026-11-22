@@ -251,13 +251,13 @@ Change these only with a new decision and paired fixtures.
 
 The review of PR #60 is concluded; everything it left open is a task in
 `TODO.md` (CRL-T014 to CRL-T024, TEST-T009 to TEST-T010, LIB-T011 and CRL-T029),
-with CRL-T002, CRL-T005, CRL-T006 and CRL-T010 for the larger items.
+with CRL-T002, CRL-T006, CRL-T010 and CRL-T033 for the larger items.
 
 - **CRL-T002:** excluded CRLs are still reported as supplied.
 - **CRL-T003:** applicability and the scope rule consider every embedded
   candidate.
 - **CRL-T004:** AKI/SKI and name-encoding edges.
-- **CRL-T005:** unbudgeted and repeated work.
+- **CRL-T033:** unbudgeted and repeated work (what CRL-T005 left).
 - **CRL-T006:** an unusable applicable CRL rejects even when another covers the
   issuer.
 - **CRL-T007:** reason coverage and error details.
