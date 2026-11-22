@@ -144,10 +144,10 @@ file-offset order, is hashed page by page from its file offset, the last page
 zero-padded; a final entry gives the end offset with a zero digest. The page
 size is 8192 for Itanium and Alpha machines and 4096 otherwise; the committed
 fixtures cover only 4096 (machine 0x8664), and no case yet pins 8192
-(PE-T00003). A mismatch is `page_hash_mismatch` at `page_hashes`. Headers larger
+(PE-T003). A mismatch is `page_hash_mismatch` at `page_hashes`. Headers larger
 than one page cannot be page-hashed and are rejected, currently with the
 untagged fallback `invalid_certificate` at `certificate`; no case pins that
-error yet, and PE-T00003 tags it before adding one. An image without page hashes
+error yet, and PE-T003 tags it before adding one. An image without page hashes
 is checked by PE-001 alone.
 
 - **Status:** Decided
@@ -278,7 +278,7 @@ image digest nor the signature.
   relic requires the table after the last section, which PE-005 also requires
   whenever the image has sections. The committed cases pin data after the table
   and a range past the end of the file; no case yet pins an unaligned table or
-  one overlapping the headers (PE-T00003).
+  one overlapping the headers (PE-T003).
 
 ### PE-004: Every WIN_CERTIFICATE is a revision 2.0 PKCS#7 entry holding one DER object and zero padding
 
@@ -289,7 +289,7 @@ bytes after its DER object. A breach of any of these is
 `invalid_certificate_table` at `certificate_table`. In verification, a payload
 that does not start with a DER object is a CMS envelope defect, `malformed_cms`
 at `cms` (CMS-015), not this rule; `parse` and `Pe::signatures()` report it as
-`invalid_certificate_table`, which PE-T00004 may align. More than 64 entries
+`invalid_certificate_table`, which PE-T004 may align. More than 64 entries
 exceed the entry budget, which is `resource_limit_exceeded` (`LIMIT-`), not this
 rule.
 
@@ -329,13 +329,13 @@ rule.
   osslsigncode and jsign skip and the PE Format page allows. This departs from
   what Microsoft documents on purpose: rssig verifies only revision 2.0 PKCS#7
   signatures, and an entry it cannot verify, or bytes it cannot attribute to the
-  signature, would otherwise ride along unchecked, so it fails closed. PE-T00004
+  signature, would otherwise ride along unchecked, so it fails closed. PE-T004
   in `TODO.md` decides whether to keep that. The committed case pins only the
   nonzero bytes after the DER object, the part relic and Windows with
   `EnableCertPaddingCheck` also reject; it does not pin the revision 1.0 and
-  other-type rejection PE-T00004 may reverse. No case yet pins the entry
+  other-type rejection PE-T004 may reverse. No case yet pins the entry
   framing (a length below 8 or past the table, a truncated entry, nonzero
-  padding between entries); PE-T00003 adds it.
+  padding between entries); PE-T003 adds it.
 
 ### PE-005: Only bounded PE32 and PE32+ headers with contiguous sections are supported
 
@@ -383,12 +383,12 @@ it.
   [PE Format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#section-table-section-headers)
   page says PointerToRawData and SizeOfRawData "must be a multiple of
   FileAlignment" for executable images. The image digest covers every byte
-  either way, so an unaligned section admits no unsigned bytes; PE-T00003
+  either way, so an unaligned section admits no unsigned bytes; PE-T003
   decides whether to enforce it. The committed cases pin a missing `MZ`, a
   truncated optional header and an out-of-range `e_lfanew`. No case yet pins a
   truncated COFF header, an unsupported magic, NumberOfRvaAndSizes below 5, a
   bad SizeOfHeaders, a section gap or overlap, or a section running into the
-  certificate table; PE-T00003 in `TODO.md` adds that layout evidence.
+  certificate table; PE-T003 in `TODO.md` adds that layout evidence.
 
 ## Tier 2: availability
 
@@ -413,7 +413,7 @@ time and revocation rules of the other indexes.
 - **Note:** Microsoft defines both image types but does not say that signed ones
   verify, so the references decide. Both committed images are synthetic and use
   machine 0x8664 (AMD64); `good-pe32.exe` pairs the PE32 magic with it. No case
-  yet verifies a PE32 image for i386 (0x14C) (PE-T00003).
+  yet verifies a PE32 image for i386 (0x14C) (PE-T003).
 
 ## Tier 3: result diagnostics
 
@@ -438,4 +438,4 @@ checked.
   before the bounds of PE-003, as osslsigncode and jsign do; relic reads the
   table at offset 0 and fails to parse it instead. Both reject, the references
   differ on the diagnostic, and no case pins it, so that part is not decided
-  here (PE-T00003). The committed case pins an entry with both fields zero.
+  here (PE-T003). The committed case pins an entry with both fields zero.

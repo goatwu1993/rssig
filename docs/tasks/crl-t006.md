@@ -1,6 +1,6 @@
-# CRL-T00006 fix: Decide unsupported-but-applicable CRL handling
+# CRL-T006 fix: Decide unsupported-but-applicable CRL handling
 
-Task detail for **CRL-T00006** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T006** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Partly
@@ -8,7 +8,7 @@ decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a
 stale, delta, indirect, unsupported or out-of-scope CRL is set aside when
 another CRL of the issuer is usable and authoritative (full-plus-delta and
 old-beside-current deployments verify). Still open: real delta support, and
-reporting which CRLs were set aside (CRL-T00002).
+reporting which CRLs were set aside (CRL-T002).
 Open from the PR #60 review: a listing counts as a revocation once the CRL
 verifies under the path issuer's key, before delta, indirect or other
 unsupported features are checked, and entry extensions are ignored. A delta
@@ -25,7 +25,7 @@ current delta or indirect CRL's entries, and the listing in a current CRL
 with a malformed authorityKeyIdentifier
 (`crl-005-malformed-aki-crl-revocation-beside-good-crl-revokes`): OpenSSL,
 both Bouncy Castle paths, BoringSSL and relic were compared and do not
-agree (`docs/tasks/crl-t00001.md`, "Case reasons"); the owner
+agree (`docs/tasks/crl-t001.md`, "Case reasons"); the owner
 decided to keep counting it, so only delta and indirect entries are open. Original notes follow.
 Deliberately
 kept fail-closed in PR #46. An applicable CRL that webpki cannot use (delta,

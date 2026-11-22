@@ -1,4 +1,4 @@
-//! CRL-T00001 maintenance builders: CRLs whose freshness or structure is faulty,
+//! CRL-T001 maintenance builders: CRLs whose freshness or structure is faulty,
 //! issued either by the test root or by an unrelated issuer.
 use super::*;
 use x509_cert::{
@@ -231,7 +231,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
-        // CRL-T00004: a fresh, valid root CRL whose issuer is the root's name with
+        // CRL-T004: a fresh, valid root CRL whose issuer is the root's name with
         // the commonName as a PrintableString, not the UTF8String the root
         // uses: the same name under RFC 5280 section 7.1.
         (
@@ -246,7 +246,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // CRL-T00004: the same with another case and extra white space, which
+        // CRL-T004: the same with another case and extra white space, which
         // RFC 5280 section 7.1 also compares equal.
         (
             "crl-root-issuer-case-space.crl",
@@ -260,7 +260,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // CRL-T00004: a fresh CRL under the root's name in another case, signed by
+        // CRL-T004: a fresh CRL under the root's name in another case, signed by
         // another key and naming no key: a CRL of another CA whose name is
         // equal only under RFC 5280 comparison, set aside rather than forged.
         (
@@ -275,7 +275,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // CRL-T00004: the same, but naming the root's own key: it claims this
+        // CRL-T004: the same, but naming the root's own key: it claims this
         // issuer, so it is forged, not set aside, whatever its spelling.
         (
             "crl-root-forged-issuer-case-naming-root-key.crl",
@@ -289,7 +289,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // CRL-T00004: a fresh CRL signed by another key whose authorityKeyIdentifier
+        // CRL-T004: a fresh CRL signed by another key whose authorityKeyIdentifier
         // names the root's issuer and a serial the root does not have.
         (
             "crl-root-forged-aki-other-serial.crl",
@@ -301,7 +301,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(aki_issuer_serial_for("CN=rssig test root", 2)),
             ),
         ),
-        // CRL-T00004: signed by the root, with the same wrong serial: the signature
+        // CRL-T004: signed by the root, with the same wrong serial: the signature
         // authenticates it.
         (
             "crl-root-signed-aki-other-serial.crl",
@@ -313,7 +313,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(aki_issuer_serial_for("CN=rssig test root", 2)),
             ),
         ),
-        // CRL-T00004: signed by another key, naming another issuer and the root's
+        // CRL-T004: signed by another key, naming another issuer and the root's
         // serial.
         (
             "crl-root-forged-aki-other-issuer.crl",

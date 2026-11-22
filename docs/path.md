@@ -4,7 +4,7 @@ Numbered decisions behind rssig's certificate-path rules. The entry format is
 defined in [Decision indexes](decisions.md); the explanation of the profile,
 webpki's role and its limits is in
 [certificate paths](certificate-paths.md), and the history in
-PATH-T00001 ([done](tasks/done.md), PR #40). Path rules for CRL issuers are CRL
+PATH-T001 ([done](tasks/done.md), PR #40). Path rules for CRL issuers are CRL
 entries ([CRL decisions](crl.md)); time rules are [time decisions](time.md).
 
 ## Order
@@ -72,7 +72,7 @@ cA=false is `certificate_chain_invalid`); a CA certificate cannot act as the
 signing leaf; a leaf may omit BasicConstraints.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001); enforced by webpki
+- **Decided by:** written argument, PR #40 (PATH-T001); enforced by webpki
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 sections 4.2.1.9 and 6.1.4 (k).
@@ -83,7 +83,7 @@ pathLenConstraint 0 allows an issuing CA directly above the leaf; an upper CA
 with one subordinate CA needs at least 1.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001); enforced by webpki
+- **Decided by:** written argument, PR #40 (PATH-T001); enforced by webpki
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 sections 4.2.1.9 and 6.1.4 (l), (m).
@@ -95,7 +95,7 @@ an excluded subtree, is `certificate_chain_invalid`. A configured anchor's
 name constraints are applied too. A publisher CN is not a DNS identity.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001); enforced by webpki
+- **Decided by:** written argument, PR #40 (PATH-T001); enforced by webpki
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.2.1.10.
@@ -108,7 +108,7 @@ An unfamiliar extension is ignored when noncritical, preserving the
 certificate DER, and rejected when critical on the leaf or an intermediate.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001); enforced by webpki
+- **Decided by:** written argument, PR #40 (PATH-T001); enforced by webpki
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.2: a certificate with an unrecognized critical
@@ -125,7 +125,7 @@ or Remote Desktop signing; see [RDP](rdp.md)), which a future `RDP-` entry
 will state; TSA certificates follow TSA-003.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #40 (PATH-T00001)
+- **Decided by:** written choice, PR #40 (PATH-T001)
 - **Pins:** acceptance
 - **Sources:**
   - webpki `KeyUsage::required_if_present` propagates the leaf's required
@@ -141,7 +141,7 @@ unrestricted. rssig checks both itself, because webpki's TLS-oriented checks
 do not.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001)
+- **Decided by:** written argument, PR #40 (PATH-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.2.1.3.
@@ -154,7 +154,7 @@ An otherwise valid CA missing keyCertSign does not prevent selection of an
 acceptable alternative with the same subject and key, in either order.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001)
+- **Decided by:** written argument, PR #40 (PATH-T001)
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: a valid embedded issuer must not be lost because
@@ -169,7 +169,7 @@ trusted path in either order. The first acceptable path is reported; no
 shortest, newest or strongest preference is promised.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T00001)
+- **Decided by:** written argument, PR #40 (PATH-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 6.1 (any path to a chosen trust anchor is acceptable).
@@ -183,8 +183,8 @@ signing time, so a lifetime path through a root re-issued after the signing
 time is accepted.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #40 (PATH-T00001), and kept as a decision for
-  lifetime signing in the PR #43 review (TIME-T00002). CRL-015 applies the same
+- **Decided by:** written choice, PR #40 (PATH-T001), and kept as a decision for
+  lifetime signing in the PR #43 review (TIME-T002). CRL-015 applies the same
   rule to CRL signing
 - **Pins:** acceptance
 - **Sources:**

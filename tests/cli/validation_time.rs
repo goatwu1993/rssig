@@ -1,4 +1,4 @@
-//! TIME-T00001 lifetime-signing and certificate/validation-time boundary cases.
+//! TIME-T001 lifetime-signing and certificate/validation-time boundary cases.
 
 use super::support::*;
 use serde_json::{Value, json};

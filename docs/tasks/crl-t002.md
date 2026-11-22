@@ -1,6 +1,6 @@
-# CRL-T00002 feat: Report CRL evidence actually used
+# CRL-T002 feat: Report CRL evidence actually used
 
-Task detail for **CRL-T00002** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T002** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Distinguish supplied artifacts

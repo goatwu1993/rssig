@@ -142,7 +142,7 @@ impl<'a> Budget<'a> {
     pub(crate) fn container(&self, bytes: &[u8]) -> Result<()> {
         self.containers.charge(1)?;
         // Reserve whole-text decoding and adapter copies before parsing. Host reads
-        // and caller-owned input memory are a separate boundary (LIMIT-T00003).
+        // and caller-owned input memory are a separate boundary (LIMIT-T003).
         for _ in 0..4 {
             self.decoded_bytes.charge(bytes.len())?;
         }

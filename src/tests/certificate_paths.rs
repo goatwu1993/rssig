@@ -1,9 +1,9 @@
-//! PATH-T00001 maintenance builders: public deterministic keys, inert signed PE files.
+//! PATH-T001 maintenance builders: public deterministic keys, inert signed PE files.
 use super::*;
 use ::der::asn1::{ObjectIdentifier, OctetString};
 use x509_cert::ext::{Extension, pkix::BasicConstraints};
 
-/// CRL-T00001 distribution-point fixtures. First the single-point signer: the point
+/// CRL-T001 distribution-point fixtures. First the single-point signer: the point
 /// it lists, another point, and the issuer CRL partitions as (label, scope,
 /// revokes the leaf). `point_forms`, `scope_forms` and `root_scope_forms` below
 /// hold the other signer and CRL forms.
@@ -20,7 +20,7 @@ const MULTI_POINTS: [&str; 3] = [
 ];
 /// The point the `crl-ca-crl-dp` intermediate lists.
 const ISSUER_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
-/// The PATH-T00001 issuer certificate's serial, revoked by
+/// The PATH-T001 issuer certificate's serial, revoked by
 /// `crl-path-root-revoked-issuer.crl`.
 const ISSUER_SERIAL: u32 = 110;
 const PARTITIONS: [(&str, &str, bool); 5] = [
@@ -59,7 +59,7 @@ fn relative_name() -> Vec<u8> {
     tlv(0xa0, &tlv(0xa1, &cn))
 }
 
-/// A directoryName GeneralName: the PATH-T00001 issuer's DN followed by `CN=sec10`.
+/// A directoryName GeneralName: the PATH-T001 issuer's DN followed by `CN=sec10`.
 fn expanded_relative_name() -> Vec<u8> {
     let issuer = name("issuer").to_der().unwrap();
     let cn = seq(&[tlv(6, &[0x55, 4, 3]), tlv(0x0c, b"sec10")]);
@@ -68,7 +68,7 @@ fn expanded_relative_name() -> Vec<u8> {
     tlv(0xa4, &tlv(0x30, &rdns))
 }
 
-/// CRL-T00001 signers with other cRLDistributionPoints forms, as (label, serial,
+/// CRL-T001 signers with other cRLDistributionPoints forms, as (label, serial,
 /// extension value). Each is `crl-leaf-crl-dp-{label}.exe`.
 fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
     let dns = tlv(0x82, b"crl.invalid");
@@ -117,7 +117,7 @@ fn point_forms() -> Vec<(&'static str, u32, Vec<u8>)> {
     ]
 }
 
-/// CRL-T00001 issuer CRLs with other issuingDistributionPoint forms, as (label,
+/// CRL-T001 issuer CRLs with other issuingDistributionPoint forms, as (label,
 /// extension value). Each is `crl-issuer-idp-{label}.crl` and revokes nothing.
 fn scope_forms() -> Vec<(&'static str, Vec<u8>)> {
     let listed = full_name(&[uri(LISTED_POINT)]);
@@ -144,7 +144,7 @@ fn scope_forms() -> Vec<(&'static str, Vec<u8>)> {
     ]
 }
 
-/// CRL-T00001 PATH-T00001 root CRLs naming `ISSUER_POINT` with a role scope, as (label,
+/// CRL-T001 PATH-T001 root CRLs naming `ISSUER_POINT` with a role scope, as (label,
 /// extension value). Each is `crl-path-root-idp-{label}.crl`.
 fn root_scope_forms() -> Vec<(&'static str, Vec<u8>)> {
     let point = full_name(&[uri(ISSUER_POINT)]);
@@ -409,7 +409,7 @@ fn write_crl_named(
     };
     std::fs::write(dir.join(format!("path-{label}.crl")), crl.to_der().unwrap()).unwrap();
 }
-/// Write a fresh CRL-T00001 CRL from `issuer` with this critical
+/// Write a fresh CRL-T001 CRL from `issuer` with this critical
 /// issuingDistributionPoint value, if any, revoking `revoked`, if any.
 fn write_scoped_crl(
     dir: &std::path::Path,
@@ -547,7 +547,7 @@ pub(super) fn write(dir: &std::path::Path) {
             &[changed],
         );
     }
-    // CRL-T00001: the issuer signs certificates and the CRL with the same key; only
+    // CRL-T001: the issuer signs certificates and the CRL with the same key; only
     // its KeyUsage decides whether that CRL may be used.
     let mut usages = Vec::new();
     for (label, bits) in [("ca-no-crl-sign", [2u8, 0x04]), ("ca-crl-sign", [1, 0x06])] {
@@ -564,7 +564,7 @@ pub(super) fn write(dir: &std::path::Path) {
     }
     // The candidate without cRLSign comes first; path building must fall back.
     write_pe(dir, "crl-ca-crl-sign-fallback", &leaf, &usages);
-    // CRL-T00001: the same root key and name as a configured anchor whose KeyUsage
+    // CRL-T001: the same root key and name as a configured anchor whose KeyUsage
     // lacks cRLSign; anchors are keys, so path-root.crl is still usable.
     let mut anchor = root.clone();
     extension(&mut anchor, "2.5.29.15", true, Some(tlv(3, &[2, 0x04])));
@@ -574,7 +574,7 @@ pub(super) fn write(dir: &std::path::Path) {
         anchor.to_der().unwrap(),
     )
     .unwrap();
-    // CRL-T00001: a leaf with its own serial that lists one CRL distribution point,
+    // CRL-T001: a leaf with its own serial that lists one CRL distribution point,
     // and issuer CRLs partitioned by issuingDistributionPoint.
     let mut scoped = certificate(
         "publisher",
@@ -596,7 +596,7 @@ pub(super) fn write(dir: &std::path::Path) {
             revoked.then_some(&scoped),
         );
     }
-    // CRL-T00001: an expired partition for another point. It cannot decide the
+    // CRL-T001: an expired partition for another point. It cannot decide the
     // signer, so its age must not either.
     let other_scope = Extension {
         extn_id: "2.5.29.28".parse().unwrap(),
@@ -616,7 +616,7 @@ pub(super) fn write(dir: &std::path::Path) {
         ),
     )
     .unwrap();
-    // CRL-T00001: other distribution-point forms on the signer and on issuer CRLs.
+    // CRL-T001: other distribution-point forms on the signer and on issuer CRLs.
     for (label, serial, points) in point_forms() {
         let mut signer = certificate("publisher", serial, &leaf_key, "issuer", &ca_key, false);
         extension(&mut signer, "2.5.29.31", false, Some(points));
@@ -632,7 +632,7 @@ pub(super) fn write(dir: &std::path::Path) {
         let file = format!("crl-issuer-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&ca, &ca_key), Some(scope), None);
     }
-    // CRL-T00001: an intermediate that lists a distribution point, and PATH-T00001 root
+    // CRL-T001: an intermediate that lists a distribution point, and PATH-T001 root
     // CRLs naming it with a CA-only or user-only scope.
     let mut pointed = ca.clone();
     extension(
@@ -643,7 +643,7 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     sign(&mut pointed, &root_key);
     write_pe(dir, "crl-ca-crl-dp", &leaf, core::slice::from_ref(&pointed));
-    // CRL-T00001: both selected certificates list a distribution point, the signer
+    // CRL-T001: both selected certificates list a distribution point, the signer
     // LISTED_POINT and its issuer ISSUER_POINT.
     write_pe(
         dir,
@@ -655,7 +655,7 @@ pub(super) fn write(dir: &std::path::Path) {
         let file = format!("crl-path-root-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
     }
-    // CRL-T00001: a full root CRL that revokes the intermediate issuer.
+    // CRL-T001: a full root CRL that revokes the intermediate issuer.
     write_scoped_crl(
         dir,
         "crl-path-root-revoked-issuer.crl",
@@ -663,7 +663,7 @@ pub(super) fn write(dir: &std::path::Path) {
         None,
         Some(&ca),
     );
-    // CRL-T00001: a full other-root CRL that revokes the cross certificate (the
+    // CRL-T001: a full other-root CRL that revokes the cross certificate (the
     // issuer re-signed by the other root, same serial), so that one candidate
     // path is revoked while the other only lacks a root CRL.
     write_scoped_crl(
@@ -783,7 +783,7 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross.clone(), other.clone(), ca.clone()],
     );
-    // CRL-T00001: a cross certificate whose KeyUsage lacks keyCertSign (cRLSign
+    // CRL-T001: a cross certificate whose KeyUsage lacks keyCertSign (cRLSign
     // only), first, so that its path fails the path checks whatever its CRLs say.
     let mut cross_no_cert_sign = cross.clone();
     extension(
@@ -799,7 +799,7 @@ pub(super) fn write(dir: &std::path::Path) {
         &leaf,
         &[cross_no_cert_sign, other.clone(), ca.clone()],
     );
-    // CRL-T00004: a self-issued key rollover. The root's name is carried by a
+    // CRL-T004: a self-issued key rollover. The root's name is carried by a
     // second key, certified by the root; the signer is issued under that
     // name by the second key. Two certificates on the path therefore have
     // issuers of the same name and different keys, each with its own CRL.
@@ -813,7 +813,7 @@ pub(super) fn write(dir: &std::path::Path) {
         core::slice::from_ref(&rollover),
     );
     write_crl(dir, &rollover, &rollover_key, "rollover");
-    // CRL-T00004: the same CRL with its issuer as a PrintableString. Its bytes
+    // CRL-T004: the same CRL with its issuer as a PrintableString. Its bytes
     // differ from the root CRL's issuer, but the two issuers on the path are
     // still one name, so CRL-008 still rejects the path.
     write_crl_named(
@@ -828,7 +828,7 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     // The same two CRLs, each naming its issuer's key: the case in which
     // OpenSSL, BoringSSL and Bouncy Castle all tell the two issuers apart.
-    // CRL-T00001: the root's CRL, expired: on a cross-certified file the root
+    // CRL-T001: the root's CRL, expired: on a cross-certified file the root
     // path's only CRL then needs a refresh while the other path is revoked.
     write_crl_at(
         dir,
@@ -862,7 +862,7 @@ pub(super) fn write(dir: &std::path::Path) {
         true,
         Some(140),
     );
-    // CRL-T00001: an expired cross certificate, first, so that webpki's highest
+    // CRL-T001: an expired cross certificate, first, so that webpki's highest
     // ranked error (expiry) comes from a path other than the one that only
     // lacks a root CRL.
     let mut cross_expired = cross.clone();
@@ -977,7 +977,7 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
     let mut count = 0;
     for artifact in manifest["artifacts"].as_array().unwrap() {
         let filename = artifact["file"].as_str().unwrap();
-        // CRL-T00001 variants built here on the PATH-T00001 chain.
+        // CRL-T001 variants built here on the PATH-T001 chain.
         let crl_variants = [
             "crl-ca-no-crl-sign.exe",
             "crl-ca-crl-sign.exe",
@@ -1302,7 +1302,7 @@ fn crl_distribution_point_forms_decode_as_intended() {
         scope("crl-path-root-idp-user.crl"),
         (uris(&[ISSUER_POINT]), true, false)
     );
-    // The intermediate lists the point; its signer is the plain PATH-T00001 leaf.
+    // The intermediate lists the point; its signer is the plain PATH-T001 leaf.
     let root = committed_certificate("path-root.der");
     let pointed = embedded("crl-ca-crl-dp.exe", &root);
     let listed = CrlDistributionPoints::from_der(&extension_value(&pointed, "2.5.29.31")).unwrap();

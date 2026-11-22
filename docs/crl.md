@@ -3,8 +3,8 @@
 Numbered decisions behind rssig's CRL and revocation behavior. The entry
 format, Status values and how cases name an entry are defined in
 [Decision indexes](decisions.md). The history and review discussion is in
-[CRL-T00001](tasks/crl-t00001.md) and
-[CRL-T00011](tasks/crl-t00011.md).
+[CRL-T001](tasks/crl-t001.md) and
+[CRL-T011](tasks/crl-t011.md).
 
 ## Order
 
@@ -151,7 +151,7 @@ An issuingDistributionPoint with only onlyContainsUserCerts or onlyContainsCACer
 A self-issued rollover path (two issuers of one name, different keys) verifies without revocation. With CRLs whose authorityKeyIdentifier names their key, each certificate gets its own key's CRL in either order, and a revoked rollover certificate is rejected.
 
 - **Status:** Decided
-- **Decided by:** references agree (OpenSSL, BoringSSL, Bouncy Castle; OpenSSL 3.0.13 run as a maintenance step), CRL-T00004
+- **Decided by:** references agree (OpenSSL, BoringSSL, Bouncy Castle; OpenSSL 3.0.13 run as a maintenance step), CRL-T004
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 6.1: self-issued certificates (same subject and issuer name, different keys) are valid on a path and support key rollover.
@@ -593,7 +593,7 @@ A CRL is a candidate for a certificate when its issuer name matches the certific
   - RFC 5280 section 7.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): "Conforming implementations MUST use the LDAP StringPrep profile (including insignificant space handling), as specified in [RFC4518], as the basis for comparison of distinguished name attributes encoded in either PrintableString or UTF8String."
   - OpenSSL 3.3 (7f736187) `crypto/x509/x509_cmp.c:253-285` (`X509_NAME_cmp` compares the canonical encoding) and `crypto/x509/x_name.c:300-308` (UTF-8, lower case, white space collapsed); BoringSSL (289645a4) `crypto/x509/x509_cmp.cc:117-143` and `x_name.cc:45-100`; Bouncy Castle (bb81bfa7) `X500Name.java:265-290` (`equals`, then the style's `areEqual`). All three match names canonically, but OpenSSL (`x_name.c:414-460`) and BoringSSL lower-case and collapse spaces only for ASCII and copy any other byte as it is, while RFC 5280 and Bouncy Castle fold Unicode text. rssig follows the RFC, so a name that differs only in the case of a non-ASCII letter (`Zoë` and `ZOË`) matches in rssig and Bouncy Castle but not in OpenSSL or BoringSSL.
 - **Unit tests:** `names_match_as_rfc_5280_compares_them` in `src/trust/names.rs`.
-- **Note:** Before this entry rssig compared exact DER, so such a CRL was ignored and the certificate was `revocation_unknown`; webpki still requires a certificate's issuer to equal its issuer's subject byte for byte when it builds the path. CRL-008's rule for issuers of one name with different keys compares the names of the issuers on the path as webpki built it (exact bytes), not the CRLs' issuer fields, so a CRL cannot escape that rule by spelling its issuer differently (`crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected`); two issuers whose names differ only in case are two to it, as to webpki, where OpenSSL would treat them as one. Retrieval also uses exact bytes: the issuers it has asked about (CRL-033) are keyed by them, and a fetched CRL counts as an issuer's answer only when its issuer is the certificate's issuer byte for byte, since one equal only under this comparison may be another CA's, which verification sets aside. CRL-T00012 tracks both. A CRL whose issuer equals the certificate's only under this comparison, whose authorityKeyIdentifier does not claim the issuer (by its key identifier or by its certificate's issuer and serial), and that fails under the issuer's key or cannot be verified, is another CA's and is set aside, as one naming another key is, not forged or unsupported; one that claims the issuer, including by a key identifier the issuer cannot disprove (CRL-042), is judged like an exactly named CRL (`crl-041-forged-crl-naming-the-issuers-key-stays-forged`). A set-aside one neither names a forged CRL in the result nor stops retrieval (CRL-018), as before this entry, when it was ignored (`crl-041-forged-crl-matching-only-by-comparison-is-set-aside`).
+- **Note:** Before this entry rssig compared exact DER, so such a CRL was ignored and the certificate was `revocation_unknown`; webpki still requires a certificate's issuer to equal its issuer's subject byte for byte when it builds the path. CRL-008's rule for issuers of one name with different keys compares the names of the issuers on the path as webpki built it (exact bytes), not the CRLs' issuer fields, so a CRL cannot escape that rule by spelling its issuer differently (`crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected`); two issuers whose names differ only in case are two to it, as to webpki, where OpenSSL would treat them as one. Retrieval also uses exact bytes: the issuers it has asked about (CRL-033) are keyed by them, and a fetched CRL counts as an issuer's answer only when its issuer is the certificate's issuer byte for byte, since one equal only under this comparison may be another CA's, which verification sets aside. CRL-T012 tracks both. A CRL whose issuer equals the certificate's only under this comparison, whose authorityKeyIdentifier does not claim the issuer (by its key identifier or by its certificate's issuer and serial), and that fails under the issuer's key or cannot be verified, is another CA's and is set aside, as one naming another key is, not forged or unsupported; one that claims the issuer, including by a key identifier the issuer cannot disprove (CRL-042), is judged like an exactly named CRL (`crl-041-forged-crl-naming-the-issuers-key-stays-forged`). A set-aside one neither names a forged CRL in the result nor stops retrieval (CRL-018), as before this entry, when it was ignored (`crl-041-forged-crl-matching-only-by-comparison-is-set-aside`).
 
 ### CRL-042: An issuer without a usable key identifier cannot disprove another key's CRL
 
@@ -638,4 +638,4 @@ A CRL whose signature verifies under the path's issuer key is authenticated by t
 
 Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
 
-- `attach`: cases that pin an existing CRL entry but do not name it yet: the remaining CRL-T00001 audit cases and every format's revocation, CRL-freshness and forged-CRL cases.
+- `attach`: cases that pin an existing CRL entry but do not name it yet: the remaining CRL-T001 audit cases and every format's revocation, CRL-freshness and forged-CRL cases.

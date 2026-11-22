@@ -1,6 +1,6 @@
-# CRL-T00005 fix: Budget and consolidate CRL applicability work
+# CRL-T005 fix: Budget and consolidate CRL applicability work
 
-Task detail for **CRL-T00005** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T005** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Deliberately
@@ -28,7 +28,7 @@ Repeated work found in the PR #60 review (results unchanged, bounded by
 existing limits):
 - `LoadedCrl::load` copies each applicable CRL's bytes and tbsCertList and
   builds an owned webpki CRL on every verification and retrieval round,
-  only to read its unsupported-feature errors (CRL-T00011). Borrow from the
+  only to read its unsupported-feature errors (CRL-T011). Borrow from the
   store instead, and detect those features without webpki.
 - The CRL signature cache key clones the issuer SPKI on every lookup, even
   on a hit; key it by CRL and issuer index.
@@ -47,7 +47,7 @@ about, so a certificate that an earlier scoped or partial answer did not
 cover can stay `revocation_unknown` without a request of its own; re-ask
 when the earlier answer added no CRL covering it, with a paired fixture.
 
-From CRL-T00004 (CRL-041): `names_match` in `src/trust/names.rs` decodes and
+From CRL-T004 (CRL-041): `names_match` in `src/trust/names.rs` decodes and
 prepares both names for every pair of CRL and certificate issuer names that
 are not byte equal, in `evaluate_crls` and `crl_may_apply`. An RDN is compared by sorting its
 prepared attributes, so one pair costs n log n in the name's size, but the

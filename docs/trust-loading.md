@@ -1,4 +1,4 @@
-# Root and CRL loading (TRUST-T00001)
+# Root and CRL loading (TRUST-T001)
 
 Every explicit load is atomic. `TrustStore::add_roots` and
 `add_crl` validate the entire input before adding anything. A failure
@@ -96,7 +96,7 @@ and apply evidence and fails closed. A loaded forged-CRL fixture fails with
 `invalid_crl_signature` at `revocation`. Disabling revocation remains explicit
 and reports `not_checked`. Successful reports retain `CrlReport.role = "supplied"`,
 not an individually verified label. Selection/applicability rules and reporting
-the CRLs actually used remain CRL-T00001/CRL-T00002. No verification JSON schema changes
+the CRLs actually used remain CRL-T001/CRL-T002. No verification JSON schema changes
 are introduced by these loading rules.
 
 ## Compatibility and evidence
@@ -130,7 +130,7 @@ Validation passed: `cargo test --locked`, `cargo fmt --check`,
 `thumbv7em-none-eabi` with native crypto features disabled. Explicit fixture
 regeneration reproduced all recorded SHA-256 digests, including existing
 artifacts. The portable specification now contains 796 cases, including 18
-TRUST-T00001 cases. No dependency changes were required.
+TRUST-T001 cases. No dependency changes were required.
 
 PR review found that fetched PEM bundles could bypass the retrieval layer's
 64-CRL limit, which had assumed one CRL per response. A fixture-first regression
@@ -138,6 +138,6 @@ confirmed success with 65 distinct, correctly signed CRLs before the fix.
 Retrieval now checks the combined retained count after each load and before
 final verification. Two additional deterministic bundles and three portable
 cases cover 64 accepted, 65 rejected, and 64 fetched plus one supplied rejected.
-The specification now has 799 cases (21 for TRUST-T00001).
+The specification now has 799 cases (21 for TRUST-T001).
 The follow-up passes the full locked suite, formatting, all-target Clippy,
 and the `crl-fetch` feature suite without default features on macOS.

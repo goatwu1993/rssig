@@ -1,4 +1,4 @@
-//! TRUST-T00001 explicit maintenance only: PEM wrapping and narrow loading mutations.
+//! TRUST-T001 explicit maintenance only: PEM wrapping and narrow loading mutations.
 use std::path::Path;
 
 pub(super) fn write(dir: &Path) {

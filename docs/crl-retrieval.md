@@ -1,4 +1,4 @@
-# Opt-in CRL discovery and retrieval (CRL-T00030)
+# Opt-in CRL discovery and retrieval (CRL-T030)
 
 The CLI can discover CRLs after authenticating the input's signatures and
 configured-root paths:
@@ -91,7 +91,7 @@ rule is restated for retrieval.
    OpenSSL still consults its store
    (`crl-020-malformed-aki-local-refreshed-by-provider`,
    `crl-020-malformed-aki-beside-expired-local-refreshed-by-provider`). The reasons are in
-   [CRL-T00001](tasks/crl-t00001.md) ("Case reasons (refresh of an
+   [CRL-T001](tasks/crl-t001.md) ("Case reasons (refresh of an
    unusable supplied CRL)"). A path that passes every check but lacks CRLs is reported
    ahead of another path's error that webpki ranks higher, such as an
    expired cross certificate
@@ -142,7 +142,7 @@ Two kinds of error, and nothing in between:
   verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
   passed to it (64 distinct URIs per verification, `crl_source_urls`; one offered again after an answer by certificate left it unused counts once), CRL bodies and
   failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
-  combined bytes, and the LIMIT-T00002 work budget.
+  combined bytes, and the LIMIT-T002 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
   first 16 (one `crl_urls` entry; the first 16 still go to the source), as
@@ -210,7 +210,7 @@ verifies once when the supplied CRLs settle it. A run that reaches a request
 also verifies once without revocation before the first request (the
 whole-input integrity and trust check), and once more per retrieval round: 2
 plus the number of rounds in all. All passes share
-LIMIT-T00002 work allowances, so retrieval mode consumes additional
+LIMIT-T002 work allowances, so retrieval mode consumes additional
 signature/path/report units and can reach a limit earlier than offline mode.
 It does not exhaustively fetch evidence for alternative paths if the final path
 search would prefer a different path. Missing embedded intermediates still fail;

@@ -1,4 +1,4 @@
-//! TSA-T00001 deterministic fixtures. Only explicit maintenance writes files.
+//! TSA-T001 deterministic fixtures. Only explicit maintenance writes files.
 use super::*;
 
 pub(super) const FAULTS: &[&str] = &[

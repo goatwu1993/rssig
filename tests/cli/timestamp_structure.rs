@@ -1,4 +1,4 @@
-//! TSA-T00001 committed timestamp structure, binding and TSA certificate cases.
+//! TSA-T001 committed timestamp structure, binding and TSA certificate cases.
 
 use super::support::*;
 

@@ -13,7 +13,7 @@ Loading roots and CRLs from files and the system store: accepted encodings, dupl
 
 ## Sources
 
-- [trust-loading.md](trust-loading.md) (TRUST-T00001)
+- [trust-loading.md](trust-loading.md) (TRUST-T001)
 
 ## Order
 

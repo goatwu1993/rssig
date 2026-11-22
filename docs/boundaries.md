@@ -32,18 +32,18 @@ CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. A CRL's issuer matches a
 certificate's by RFC 5280 name comparison limited to string type, lower case
 and white space ([CRL-041](crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison));
-Unicode normalization and other string types are not applied (CRL-T00012). Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
+Unicode normalization and other string types are not applied (CRL-T012). Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 A PE certificate table may hold only revision 2.0 PKCS#7 WIN_CERTIFICATE
 entries; for now a legacy revision 1.0 entry or another certificate type is
 rejected, although Microsoft's PE Format page allows any type and legacy
-revision 1.0, pending PE-T00004.
+revision 1.0, pending PE-T004.
 Nonzero data after the signature inside an entry is rejected, as Windows does
 only with the opt-in `EnableCertPaddingCheck`
 ([PE-004](pe-decisions.md#pe-004-every-win_certificate-is-a-revision-20-pkcs7-entry-holding-one-der-object-and-zero-padding),
-PE-T00004).
+PE-T004).
 Revocation of a timestamped signer is handled conservatively: an entry on a
 current CRL rejects it even if its revocation date is after the signing time.
 Signers with the lifetime-signing EKU are validated at the validation time, not

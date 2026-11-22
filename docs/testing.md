@@ -361,13 +361,13 @@ revocation status, it re-runs webpki's own revocation check with the CRLs
 rssig chose and panics on disagreement, so every fixture case with CRLs also
 checks that rssig and webpki agree. Product builds never enable it, and it is
 also compiled out without `debug_assertions`, so release test runs skip it; see
-[CRL-T00011](tasks/crl-t00011.md).
+[CRL-T011](tasks/crl-t011.md).
 
 Five retrieval behaviors have unit tests only, because no committed input can
 reach them through the CLI:
 
 - An error with `details.reason` `ambiguous_issuer_keys` is final for retrieval. Since
-  CRL-T00011 it is produced only by the accepted-path rule for same-name issuers
+  CRL-T011 it is produced only by the accepted-path rule for same-name issuers
   with different keys whose CRLs do not name those keys
   (`crl-008-self-issued-rollover-with-both-crls-is-rejected`). Its code is
   `certificate_chain_invalid`, which retrieval never treats as missing CRLs,

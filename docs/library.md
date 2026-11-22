@@ -471,7 +471,7 @@ options, and JSON types retain their existing signatures and semantics.
 
 The parser supports 32-bit and 64-bit targets and is compile-checked on a target
 without `std`. Shared cryptographic verification is available without `std` via
-`verify-core` (see LIB-T00009 below). MSI/MSP and AppX structural parsing still
+`verify-core` (see LIB-T009 below). MSI/MSP and AppX structural parsing still
 requires `std` through explicit optional adapters. The `parse` CLI still selects
 PE, CMS, CAB, or NAVX; the other container parsers are library APIs.
 
@@ -531,7 +531,7 @@ CLI integrity-only flags continue to conflict with roots, CRLs, and revocation
 flags. The existing `--no-revocation --crl` combination still loads supplied
 artifacts but does not claim that their revocation evidence was checked.
 
-## Ownership, reuse, and API stability (LIB-T00008)
+## Ownership, reuse, and API stability (LIB-T008)
 
 Input bytes must remain alive and immutable for the lifetime of a parser view.
 No parser or verifier retains a reference after its returned view/report is
@@ -613,7 +613,7 @@ parser error is a summary of its kind (`unsigned PE`, `malformed CMS`); `{:#}`
 adds the causes once, and `source()` walks them. Parser
 errors are not JSON verification errors; the verifier maps them at its existing
 stage boundaries into `domain::VerificationError` with stable code, stage,
-details and causes. No JSON schema fields or verification claims change in LIB-T00008.
+details and causes. No JSON schema fields or verification claims change in LIB-T008.
 
 Trust loading is `add_roots`, `add_crl`, and (with `system-roots`)
 `from_system`. They return `TrustLoadError`, whose
@@ -625,7 +625,7 @@ I/O is added to explicit loaders. Successfully loading a CRL never authenticates
 it. Successful DER roots and CRLs are owned by the store; caller buffers can be
 dropped. Existing valid entries survive a subsequent invalid DER load.
 
-All loaders use the [TRUST-T00001 atomic loading rules](trust-loading.md).
+All loaders use the [TRUST-T001 atomic loading rules](trust-loading.md).
 Every explicit DER/PEM load is atomic, rejects empty/malformed input and
 unsupported anchor conversion, preserves exact DER, and deduplicates identical
 artifacts. Root and CRL PEM bundles are supported. Native enumeration errors,
@@ -671,7 +671,7 @@ an error-free empty native store); its summary already states the whole failure.
 Previously every `TrustLoadError` returned `Some`, so code that unwraps `source()`
 must handle `None`. System-root enumeration lists every native error in one cause
 and reports no further `source()`.
-TRUST-T00001 deliberately tightens silent exclusion/partial-load behavior; correct a
+TRUST-T001 deliberately tightens silent exclusion/partial-load behavior; correct a
 rejected input or explicitly configure a controlled store. No dependency or
 native crypto provider is added.
 #### CRL sources (`--fetch-crls`, `crl-fetch` feature)
@@ -747,7 +747,7 @@ allocation counts beyond the documented measurement, enum numeric values, or
 human-readable error strings.
 
 
-## Shared verification without std (LIB-T00009)
+## Shared verification without std (LIB-T009)
 
 Use `rssig = { version = "0.1", default-features = false, features = ["verify-core"] }`
 for shared verification with `core + alloc`. Existing `verify` users retain every
@@ -811,7 +811,7 @@ An embedding application must provide an allocator and panic/runtime integration
 resource use and execution on a constrained device have not been measured.
 MSI/AppX verification and native roots are not claimed to work without `std`.
 
-## Shared interfaces and packaging (LIB-T00010)
+## Shared interfaces and packaging (LIB-T010)
 
 The [architecture reassessment](library-architecture.md) retains the single
 feature-separated package and existing facade after reviewing all current format

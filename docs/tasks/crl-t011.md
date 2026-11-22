@@ -1,7 +1,7 @@
-# CRL-T00011 refactor: Make rssig the only revocation authority
+# CRL-T011 refactor: Make rssig the only revocation authority
 
-Task detail for **CRL-T00011** in [TODO.md](../../TODO.md), which keeps the ID,
-title and checkbox. CRL-T00001, CRL-T00004, CRL-T00005 and CRL-T00006 are items in that file.
+Task detail for **CRL-T011** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox. CRL-T001, CRL-T004, CRL-T005 and CRL-T006 are items in that file.
 
 **Status:** complete. No case in `tests/cases.json` changed.
 
@@ -23,7 +23,7 @@ It has no key matching, delta CRLs or indirect CRLs. So the second call could
 only reject what step 1 accepted. Keeping the two in step needed a special case
 for self-issued key rollover (confirming the signer only, at `EndEntity`
 depth). It also meant any CRL feature webpki lacks could never be accepted,
-whatever step 1 decided (CRL-T00006).
+whatever step 1 decided (CRL-T006).
 
 ## Change
 
@@ -39,7 +39,7 @@ whatever step 1 decided (CRL-T00006).
   owner's approval, see "Left open").
 - `LoadedCrl.webpki` (webpki's CRL parse) is kept, but only to report
   unsupported CRL features as `invalid_crl`. Removing that parse, and with it
-  the extra CRL decoding, stays in CRL-T00005.
+  the extra CRL decoding, stays in CRL-T005.
 - The removed webpki check is kept as a **test-only cross-check**
   (`src/trust/crosscheck.rs`, feature `revocation-crosscheck`). See below.
 
@@ -62,7 +62,7 @@ its own key's CRL and accept, as rssig still does
 | Check | Result |
 | --- | --- |
 | Full `cargo test --locked` before the change | Passed |
-| Cross-check run: second webpki call kept, rssig rule added, panic on any disagreement, full suite | Passed, 0 disagreements. About 1,210 accepted-path confirmations (three log lines were interleaved with test output and not counted): at least 1,205 accepted by both, and 3 rejected by both (the CRL-T00004 case once in the spec and in both `--crl` orders in the named test). Not committed. |
+| Cross-check run: second webpki call kept, rssig rule added, panic on any disagreement, full suite | Passed, 0 disagreements. About 1,210 accepted-path confirmations (three log lines were interleaved with test output and not counted): at least 1,205 accepted by both, and 3 rejected by both (the CRL-T004 case once in the spec and in both `--crl` orders in the named test). Not committed. |
 | Rule disabled (`if false && …`) | `a_self_issued_rollover_path_needs_key_identified_crls` and the spec case fail: the file verifies (exit 0). The rule is what rejects it. |
 | Full `cargo test --locked` after the change | Passed with the same test counts as before |
 | `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings` | Passed |
@@ -99,7 +99,7 @@ every test build:
   test runs therefore skip the cross-check.
 - It asserts that every chosen CRL is one webpki can parse, which holds
   today because rssig sets such CRLs aside. Supporting CRL features webpki
-  lacks (CRL-T00006) must make it skip those paths on purpose.
+  lacks (CRL-T006) must make it skip those paths on purpose.
 - The `revocation-crosscheck` feature enables no other feature. A
   self dev-dependency (`rssig = { path = ".", default-features = false,
   features = ["revocation-crosscheck"] }`) turns it on for unit and
@@ -125,11 +125,11 @@ if the self dev-dependency is removed.
 What it can catch is limited. webpki only sees the CRLs rssig chose, so it
 checks serial lookup, the CRL signature under the algorithm adapter, and the
 scope and expiry of those CRLs. It cannot catch rssig choosing the wrong CRL
-or ignoring one that applies; the CRL-T00001 and CRL-T00004 cases and their OpenSSL
+or ignoring one that applies; the CRL-T001 and CRL-T004 cases and their OpenSSL
 and Bouncy Castle comparisons remain the only check on selection. Any later
 change to revocation follows AGENTS.md "Pinned expectations", item 6.
 
-Evidence that it runs: with the new rule disabled, the named CRL-T00004 test
+Evidence that it runs: with the new rule disabled, the named CRL-T004 test
 fails on the cross-check panic ("rssig accepts the accepted path, webpki
 returned Some(InvalidSignatureForPublicKey)"), while the product binary, run
 on the same input, exits 0 without a panic.
@@ -156,7 +156,7 @@ on the same input, exits 0 without a panic.
   the former check would have gone on to accept it. It fails closed and no
   committed fixture has such a path; compare the key bits, with a paired
   fixture, if a case needs it.
-- CRL-T00005: drop `LoadedCrl.webpki`, detecting unsupported features without
+- CRL-T005: drop `LoadedCrl.webpki`, detecting unsupported features without
   webpki, so each CRL is decoded once.
-- CRL-T00006: with no webpki veto, supporting delta CRLs or skipping known
+- CRL-T006: with no webpki veto, supporting delta CRLs or skipping known
   unsupported CRLs is now rssig's own decision.

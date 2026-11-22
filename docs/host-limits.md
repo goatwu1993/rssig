@@ -1,4 +1,4 @@
-# CLI host limits (LIMIT-T00003)
+# CLI host limits (LIMIT-T003)
 
 `verify` and `parse` bound host reads before handing bytes to format parsers.
 The verification core keeps its separate [aggregate work budgets](verification-budgets.md).

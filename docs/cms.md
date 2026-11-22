@@ -6,7 +6,7 @@ identification, the signer's signature, content and attribute binding,
 CertificateChoices and nested signatures. The entry format is defined in
 [Decision indexes](decisions.md); the profile and its limits are explained in
 [CMS structure and signature binding](cms-security.md), and the history is in
-CMS-T00001 (PR #37) and CMS-T00002 (PR #38) ([done](tasks/done.md)). An unmodified copy
+CMS-T001 (PR #37) and CMS-T002 (PR #38) ([done](tasks/done.md)). An unmodified copy
 of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 
 ## Boundaries
@@ -19,7 +19,7 @@ of RFC 5652 is in [rfc/rfc5652.txt](rfc/rfc5652.txt).
 - Nesting depth limits are `LIMIT-`.
 - A format's own embedding of the CMS blob is that format's index.
 - Whether every signature of a file must verify, and which failure is
-  reported first, is the open task POLICY-T00001; CMS-013 pins only that a nested
+  reported first, is the open task POLICY-T001; CMS-013 pins only that a nested
   signature is checked like the primary one.
 
 ## Order
@@ -70,7 +70,7 @@ re-encoded), in every format: PE, MSI and MSP, CAB, NAVX, PowerShell and
 PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle members.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #37 (CMS-T00001)
+- **Decided by:** written argument, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.4 and 5.6: the signature is computed over the DER
@@ -94,7 +94,7 @@ parameters. A mathematically valid signature under a mismatched or wrongly
 parameterized identifier is `invalid_signature` at `cms`.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5758 section 3.2: the ECDSA with SHA-2 identifiers MUST omit the
@@ -112,7 +112,7 @@ verification. The same rule applies to RFC 3161 tokens, PKCS#9
 countersignatures and RDP signatures.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001) and PR #38 (CMS-T00002)
+- **Decided by:** written choice, PR #37 (CMS-T001) and PR #38 (CMS-T002)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 5.3: `sid` identifies the signer's certificate.
@@ -133,10 +133,10 @@ duplicates are one candidate, and certificate order never changes the result
 or the selected signer. (Embedded duplicates do not supply trust: PATH-001.)
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #38 (CMS-T00002)
+- **Decided by:** written choice, PR #38 (CMS-T002)
 - **Pins:** acceptance
 - **Sources:**
-  - [cms-security.md](cms-security.md#signer-certificate-selection-cms-t00002).
+  - [cms-security.md](cms-security.md#signer-certificate-selection-cms-t002).
   - References differ from rssig: OpenSSL `crypto/cms/cms_sd.c:890-935`
     (`CMS_set1_signers_certs`) takes the first matching certificate, and
     Bouncy Castle hands the caller every match
@@ -158,7 +158,7 @@ computed digest of the encapsulated content; otherwise the result is
 parent signature is TSA-001.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #37 (CMS-T00001)
+- **Decided by:** written argument, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.4 and 11.2.
@@ -173,7 +173,7 @@ The signed contentType attribute must equal the encapsulated content type
 (`invalid_signature` at `cms`); a countersignature must omit it.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #37 (CMS-T00001)
+- **Decided by:** written argument, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.3 and 11.1: contentType must be present in signed
@@ -191,7 +191,7 @@ appear in SignedData.digestAlgorithms (`invalid_signature` at `cms`).
 Countersignatures have no enclosing set to check.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.1 and 5.3: digestAlgorithms lists the digest
@@ -225,7 +225,7 @@ Signed attributes and each attribute's value SET must be in DER
 so a correctly signed but non-canonical set is `invalid_signature` at `cms`.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 5.3: SignedAttributes MUST be DER encoded; X.690
@@ -245,9 +245,9 @@ attributes, which RFC 5652 section 11.4 allows and which TSA-004 then rejects
 as a second timestamp (`invalid_timestamp` at `timestamp`).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #72 (moved from TSA-004) and PR #73 (CMS-T00003,
+- **Decided by:** owner, PR #72 (moved from TSA-004) and PR #73 (CMS-T003,
   narrowed to the attributes the references limit); first a written choice
-  in PR #37 (CMS-T00001) and PR #42 (TSA-T00001)
+  in PR #37 (CMS-T001) and PR #42 (TSA-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 11.1, 11.2 and 11.3: each of the three attributes "MUST
@@ -310,7 +310,7 @@ envelope, which would require version 3 for non-data content such as
 Authenticode's SpcIndirectDataContent.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 sections 5.1 and 5.3 (versions) and X.690 section 10 (DER).
@@ -334,7 +334,7 @@ minimally encoded OBJECT IDENTIFIER: a subidentifier starting with 0x80 is
 `invalid_signature` at `cms`, signed or unsigned.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #24 (LIB-T00002) and PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #24 (LIB-T002) and PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - X.690 section 8.19.2: a subidentifier is encoded in the fewest octets.
@@ -348,7 +348,7 @@ minimally encoded OBJECT IDENTIFIER: a subidentifier starting with 0x80 is
     caps OID contents at 4096 bytes (`ASN1ObjectIdentifier.java:34`); OpenSSL
     and rssig have no OID-specific cap beyond their DER bounds.
   - [cms-security.md](cms-security.md), rows "Signed attribute sets" and
-    "DER framing"; LIB-T00002 in [done](tasks/done.md).
+    "DER framing"; LIB-T002 in [done](tasks/done.md).
 
 ### CMS-012: Non-X.509 CertificateChoices stay opaque and cannot supply a signer
 
@@ -361,7 +361,7 @@ missing signer certificate; inside a timestamp token these are
 TSA-002.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #37 (CMS-T00001)
+- **Decided by:** written choice, PR #37 (CMS-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5652 section 10.2.2 (CertificateChoices).
@@ -394,7 +394,7 @@ signature), even when the primary one verifies.
     lists them. rssig requiring all of them is its own, stricter rule.
 - **Note:** only "checked with the same rules" is meant to stay fixed.
   Whether every signature must verify has no RFC, OpenSSL or Bouncy Castle
-  answer; [POLICY-T00001](tasks/policy-t00001.md) records the decision to make it a
+  answer; [POLICY-T001](tasks/policy-t001.md) records the decision to make it a
   policy (default all, opt-in any).
 
 ## Tier 3: result diagnostics
@@ -406,10 +406,10 @@ The CMS-004 rejection is `ambiguous_signer_certificate` at `cms`, with
 duplicates included.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #38 (CMS-T00002)
+- **Decided by:** written choice, PR #38 (CMS-T002)
 - **Pins:** diagnostics
 - **Sources:**
-  - [cms-security.md](cms-security.md#signer-certificate-selection-cms-t00002).
+  - [cms-security.md](cms-security.md#signer-certificate-selection-cms-t002).
 - **Unit tests:** `cms_signer_selection_is_independent_of_certificate_order`
   in `tests/cli/signer_selection.rs`.
 

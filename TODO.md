@@ -11,11 +11,11 @@ TDD workflow and checks in AGENTS.md.
 
 ### Task IDs
 
-An ID is `<SCOPE>-T<NNNNN>`, such as `CRL-T00012`: the scope, a `T` that
+An ID is `<SCOPE>-T<NNN>`, such as `CRL-T012`: the scope, a `T` that
 keeps a search for a decision entry (`CRL-012`) from matching a task, and a
-five-digit number counted per scope from `00001`. A number is never reused;
+three-digit number counted per scope from `001`. A number is never reused;
 a finished task stays here as one line. Its document, when it has one, is
-`docs/tasks/<scope>-t<nnnnn>.md` in lowercase. The scope is one of a closed
+`docs/tasks/<scope>-t<nnn>.md` in lowercase. The scope is one of a closed
 list:
 
 - every decision prefix in [docs/decisions.md](docs/decisions.md) (`CRL`,
@@ -38,28 +38,28 @@ they pin or what they check, never after a task.
 
 ## P0 — Verification correctness and bounded work
 
-- [x] **LIMIT-T00001** fix: Audit arithmetic and structural bounds across every parser. Done; [record](docs/tasks/done.md#limit-t00001-fix-audit-arithmetic-and-structural-bounds-across-every-parser).
-- [x] **LIMIT-T00002** fix: Enforce aggregate verification budgets. Done; [record](docs/tasks/done.md#limit-t00002-fix-enforce-aggregate-verification-budgets).
-- [x] **LIMIT-T00003** fix: Bound host input and report memory. Done; [record](docs/tasks/done.md#limit-t00003-fix-bound-host-input-and-report-memory).
-- [x] **CMS-T00001** fix: Audit CMS structure and signature binding. Done; [record](docs/tasks/done.md#cms-t00001-fix-audit-cms-structure-and-signature-binding).
-- [x] **CMS-T00002** fix: Define ambiguous signer-certificate handling. Done; [record](docs/tasks/done.md#cms-t00002-fix-define-ambiguous-signer-certificate-handling).
-- [x] **PATH-T00001** fix: Expand certificate-path rule coverage. Done; [record](docs/tasks/done.md#path-t00001-fix-expand-certificate-path-rule-coverage).
-- [x] **TRUST-T00001** fix: Make root/CRL loading diagnostics explicit. Done; [record](docs/tasks/done.md#trust-t00001-fix-make-rootcrl-loading-diagnostics-explicit).
-- [x] **TSA-T00001** fix: Complete timestamp structure and multiplicity tests. Done; [record](docs/tasks/done.md#tsa-t00001-fix-complete-timestamp-structure-and-multiplicity-tests).
-- [x] **TIME-T00001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t00001-fix-define-lifetime-signing-and-time-boundary-rules).
-- [x] **CRL-T00001** fix: Audit CRL applicability and competing evidence. Done; detail in [crl-t00001.md](docs/tasks/crl-t00001.md).
-- [ ] **CRL-T00002** feat: Report CRL evidence actually used. Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [crl-t00002.md](docs/tasks/crl-t00002.md).
-- [ ] **POLICY-T00001** feat: Add the signature policy and pin multi-signature semantics.
+- [x] **LIMIT-T001** fix: Audit arithmetic and structural bounds across every parser. Done; [record](docs/tasks/done.md#limit-t001-fix-audit-arithmetic-and-structural-bounds-across-every-parser).
+- [x] **LIMIT-T002** fix: Enforce aggregate verification budgets. Done; [record](docs/tasks/done.md#limit-t002-fix-enforce-aggregate-verification-budgets).
+- [x] **LIMIT-T003** fix: Bound host input and report memory. Done; [record](docs/tasks/done.md#limit-t003-fix-bound-host-input-and-report-memory).
+- [x] **CMS-T001** fix: Audit CMS structure and signature binding. Done; [record](docs/tasks/done.md#cms-t001-fix-audit-cms-structure-and-signature-binding).
+- [x] **CMS-T002** fix: Define ambiguous signer-certificate handling. Done; [record](docs/tasks/done.md#cms-t002-fix-define-ambiguous-signer-certificate-handling).
+- [x] **PATH-T001** fix: Expand certificate-path rule coverage. Done; [record](docs/tasks/done.md#path-t001-fix-expand-certificate-path-rule-coverage).
+- [x] **TRUST-T001** fix: Make root/CRL loading diagnostics explicit. Done; [record](docs/tasks/done.md#trust-t001-fix-make-rootcrl-loading-diagnostics-explicit).
+- [x] **TSA-T001** fix: Complete timestamp structure and multiplicity tests. Done; [record](docs/tasks/done.md#tsa-t001-fix-complete-timestamp-structure-and-multiplicity-tests).
+- [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
+- [x] **CRL-T001** fix: Audit CRL applicability and competing evidence. Done; detail in [crl-t001.md](docs/tasks/crl-t001.md).
+- [ ] **CRL-T002** feat: Report CRL evidence actually used. Distinguish supplied artifacts from CRLs authenticated and used for each selected chain. Detail in [crl-t002.md](docs/tasks/crl-t002.md).
+- [ ] **POLICY-T001** feat: Add the signature policy and pin multi-signature semantics.
   Decided: `--signatures all|any`, default `all`; pin ordering, first-failure
   precedence and bundle/child binding. Detail in
-  [policy-t00001.md](docs/tasks/policy-t00001.md).
-- [ ] **ALG-T00001** test: Complete cryptographic algorithm invariant coverage. Inventory
+  [policy-t001.md](docs/tasks/policy-t001.md).
+- [ ] **ALG-T001** test: Complete cryptographic algorithm invariant coverage. Inventory
   existing SHA-384/512 and P-384 cases before adding missing key/digest/signature
   combinations. Cover malformed RSA/ECDSA encodings, weak and excessive key
   sizes, incompatible OIDs/parameters, and certificate/CRL algorithm mismatches.
   Keep SHA-1 content opt-in separate from unsupported SHA-1 chains; weak RSA must
   remain rejected even with `--allow-sha1`.
-- [ ] **TIME-T00002** fix: Lifetime-signing review decisions and deferred follow-ups.
+- [ ] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups.
   Recorded from PR #43 reviews; none permits an invalid signature to verify.
   Kept as decisions (change only with a new decision and paired fixtures):
   - Trust anchors: configured anchors remain keys. Their validity is not checked
@@ -88,12 +88,12 @@ they pin or what they check, never after a task.
     timestamp-before-notBefore rejection) is a consistency check. Removing the
     unsigned timestamp leaves an untimestamped signature validated at the
     validation time only.
-  - KeyUsage precedence (pre-existing, PATH-T00001): the keyCertSign rejection flag
+  - KeyUsage precedence (pre-existing, PATH-T001): the keyCertSign rejection flag
     is shared across candidate paths, so once any candidate lacked keyCertSign a
     final unknown-issuer failure from another path is reported as
     invalid_key_usage. Fails closed; a per-path reason needs separate work.
   - Schema: `TrustReport.lifetime_signing` defaults to `false` when reading
-    reports written before TIME-T00001, so an older report cannot distinguish "not
+    reports written before TIME-T001, so an older report cannot distinguish "not
     lifetime-signed" from "not evaluated". `validation_time` shows which time
     was used; `Option<bool>` would be a schema change.
   - Error details: on "not valid at the signing time", `validation_time` is the
@@ -101,7 +101,7 @@ they pin or what they check, never after a task.
     the instant that failed, unlike other validity errors where
     `validation_time` is the failing instant. CRL presence/freshness errors for
     a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
-    evidence is CRL-T00001 and CRL-T00002. Both are schema decisions.
+    evidence is CRL-T001 and CRL-T002. Both are schema decisions.
   Open follow-ups:
   - Untested fallback: when the certificate report for a late lifetime
     certificate cannot be built, the error carries a free-text
@@ -123,60 +123,60 @@ they pin or what they check, never after a task.
     accepted leaf EKU. Stop after an EKU-independent failure without changing
     first-policy-error reporting, and pin the budget effect.
   - Test maintenance: share RFC 3161/PKCS#9 token builders across
-    `src/tests.rs`, TSA-T00001, TIME-T00001 and RDP fixture modules without changing committed
-    bytes; keep per-task regeneration commands (as TSA-T00001 does) consistent with
+    `src/tests.rs`, TSA-T001, TIME-T001 and RDP fixture modules without changing committed
+    bytes; keep per-task regeneration commands (as TSA-T001 does) consistent with
     `regenerate_cli_fixtures`.
-- [x] **CRL-T00003** fix: Select CRLs against the selected chain, not every candidate. Done; [record](docs/tasks/done.md#crl-t00003-fix-select-crls-against-the-selected-chain-not-every-candidate).
-- [x] **CRL-T00004** fix: Tighten AKI/SKI matching edge cases. Done ([PR #79](https://github.com/goatwu1993/rssig/pull/79)); [CRL-041](docs/crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison) to [CRL-044](docs/crl.md#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial).
-- [ ] **CRL-T00005** fix: Budget and consolidate CRL applicability work. Deliberately skipped in PRs #44 and #45. Detail in [crl-t00005.md](docs/tasks/crl-t00005.md).
-- [ ] **CRL-T00006** fix: Decide unsupported-but-applicable CRL handling (owner decision). Partly decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a stale, delta, indirect, unsupported or out-of-scope CRL is set aside when another CRL of the issuer is usable and authoritative (full-plus-delta and old-beside-current deployments verify). Detail in [crl-t00006.md](docs/tasks/crl-t00006.md).
-- [ ] **CRL-T00007** test: Finish CRL rejection reason coverage. Deliberately skipped in PR #46. Detail in [crl-t00007.md](docs/tasks/crl-t00007.md).
-- [x] **CRL-T00008** fix: Revisit revocation_unknown precedence over path errors. Done; [record](docs/tasks/done.md#crl-t00008-fix-revisit-revocation_unknown-precedence-over-path-errors).
-- [x] **CRL-T00009** fix: Bind listed-serial revocation to the verified path. Done; [record](docs/tasks/done.md#crl-t00009-fix-bind-listed-serial-revocation-to-the-verified-path).
-- [ ] **CRL-T00010** refactor: Pass uncovered certificates to retrieval as typed data. From the PR #60 review. Detail in [crl-t00010.md](docs/tasks/crl-t00010.md).
-- [x] **CRL-T00011** refactor: Make rssig the only revocation authority. Done; detail in [crl-t00011.md](docs/tasks/crl-t00011.md).
-- [x] **CMS-T00003** fix: Narrow CMS-009 to the attributes RFC 5652 limits. Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
-- [ ] **CRL-T00012** fix: Complete the RFC 4518 name preparation for CRL issuer matching.
+- [x] **CRL-T003** fix: Select CRLs against the selected chain, not every candidate. Done; [record](docs/tasks/done.md#crl-t003-fix-select-crls-against-the-selected-chain-not-every-candidate).
+- [x] **CRL-T004** fix: Tighten AKI/SKI matching edge cases. Done ([PR #79](https://github.com/goatwu1993/rssig/pull/79)); [CRL-041](docs/crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison) to [CRL-044](docs/crl.md#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial).
+- [ ] **CRL-T005** fix: Budget and consolidate CRL applicability work. Deliberately skipped in PRs #44 and #45. Detail in [crl-t005.md](docs/tasks/crl-t005.md).
+- [ ] **CRL-T006** fix: Decide unsupported-but-applicable CRL handling (owner decision). Partly decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a stale, delta, indirect, unsupported or out-of-scope CRL is set aside when another CRL of the issuer is usable and authoritative (full-plus-delta and old-beside-current deployments verify). Detail in [crl-t006.md](docs/tasks/crl-t006.md).
+- [ ] **CRL-T007** test: Finish CRL rejection reason coverage. Deliberately skipped in PR #46. Detail in [crl-t007.md](docs/tasks/crl-t007.md).
+- [x] **CRL-T008** fix: Revisit revocation_unknown precedence over path errors. Done; [record](docs/tasks/done.md#crl-t008-fix-revisit-revocation_unknown-precedence-over-path-errors).
+- [x] **CRL-T009** fix: Bind listed-serial revocation to the verified path. Done; [record](docs/tasks/done.md#crl-t009-fix-bind-listed-serial-revocation-to-the-verified-path).
+- [ ] **CRL-T010** refactor: Pass uncovered certificates to retrieval as typed data. From the PR #60 review. Detail in [crl-t010.md](docs/tasks/crl-t010.md).
+- [x] **CRL-T011** refactor: Make rssig the only revocation authority. Done; detail in [crl-t011.md](docs/tasks/crl-t011.md).
+- [x] **CMS-T003** fix: Narrow CMS-009 to the attributes RFC 5652 limits. Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
+- [ ] **CRL-T012** fix: Complete the RFC 4518 name preparation for CRL issuer matching.
   CRL-041 matches fewer names than RFC 5280 section 7.1. Detail in
-  [crl-t00012.md](docs/tasks/crl-t00012.md).
-- [ ] **PATH-T00002** fix: Decide whether a malformed extension in a CA certificate fails the path.
+  [crl-t012.md](docs/tasks/crl-t012.md).
+- [ ] **PATH-T002** fix: Decide whether a malformed extension in a CA certificate fails the path.
   OpenSSL and BoringSSL do; rssig reads it as absent (CRL-042). Detail in
-  [path-t00002.md](docs/tasks/path-t00002.md).
-- [ ] **CRL-T00013** feat: Identify a CRL's issuer by issuer and serial outside verification.
+  [path-t002.md](docs/tasks/path-t002.md).
+- [ ] **CRL-T013** feat: Identify a CRL's issuer by issuer and serial outside verification.
   Retrieval and CRL-008 read only key identifiers. Detail in
-  [crl-t00013.md](docs/tasks/crl-t00013.md).
-- [ ] **CRL-T00014** feat: Bound CRL retrieval across a batch. The CLI's fetch
+  [crl-t013.md](docs/tasks/crl-t013.md).
+- [ ] **CRL-T014** feat: Bound CRL retrieval across a batch. The CLI's fetch
   limits are per file (up to 16 requests, 32 MiB and 30 s each), so a batch
   is bounded only by its file count. Consider an optional batch-wide cap.
-- [ ] **CRL-T00015** fix: Reopen the built-in CRL source after a DNS timeout. A DNS
+- [ ] **CRL-T015** fix: Reopen the built-in CRL source after a DNS timeout. A DNS
   timeout closes `HttpCrlSource` for the rest of the run, even when only a
   short remaining deadline caused it. Reopening once the stale resolver
   finished was reverted in PR #60 (timing-dependent results, and the source
   stopped being `Sync`); find a deterministic, `Sync`-safe way.
-- [ ] **LIMIT-T00004** fix: Finish with the gathered evidence when an engine limit is reached.
+- [ ] **LIMIT-T004** fix: Finish with the gathered evidence when an engine limit is reached.
   `retrieval_trust_bytes` and the other engine limits end the whole
   verification with `resource_limit_exceeded`, rather than recording the
   remaining points and finishing with the evidence gathered.
-- [ ] **CRL-T00016** fix: Classify over-allowance CRL bodies consistently. With
+- [ ] **CRL-T016** fix: Classify over-allowance CRL bodies consistently. With
   `fetch_each`, a request's first over-allowance body is the engine's
   `resource_limit_exceeded` and later ones the source's `crl_fetch_failed`;
   the allowance counts accepted bodies only.
-- [ ] **CRL-T00017** fix: Record the points of a URL-less retrieval failure. A
+- [ ] **CRL-T017** fix: Record the points of a URL-less retrieval failure. A
   URL-less failure beside an answer by certificate is recorded without the
   points it concerned.
-- [ ] **CRL-T00018** fix: Refuse more private-use DNS suffixes before resolving. The
+- [ ] **CRL-T018** fix: Refuse more private-use DNS suffixes before resolving. The
   built-in URL check lists reserved labels (`src/retrieval/http.rs`); other
   private-use suffixes (`.lan`, `.corp`, `.localdomain`) rely on the
   DNS-answer address check.
-- [ ] **RDP-T00001** fix: Keep the outer error's causes on the RDP revocation fallback.
+- [ ] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback.
   When a revocation is another error type's source, the merged error loses
   the outer error's cause messages.
-- [ ] **CRL-T00019** fix: Decide case-insensitive distribution-point matching (owner decision). URIs
+- [ ] **CRL-T019** fix: Decide case-insensitive distribution-point matching (owner decision). URIs
   compare byte for byte (webpki's rule), so a scheme or host differing only
   in case does not match; RFC 5280 section 7.4 compares them without regard
   to case. A match can let a CRL decide that is now set aside or replaceable,
   so it may turn a rejection into acceptance: owner's decision.
-- [ ] **CRL-T00020** fix: Decide which certificates `unknown_status` names (owner decision). When no
+- [ ] **CRL-T020** fix: Decide which certificates `unknown_status` names (owner decision). When no
   completable path has a gap, it falls back to every path and names
   certificates on stuck paths too (forged or no-cRLSign CRL), so
   `--fetch-crls` asks about them in vain. Pinned on purpose by
@@ -184,163 +184,163 @@ they pin or what they check, never after a task.
   covers the expired and replaceable lists too. Owner's decision. Whatever
   is decided, make the stuck-path exclusion part of `unknown_status` (today
   its callers, `completable_first` and `revocation_failure`, must do it).
-- [ ] **CRL-T00021** fix: Decide whether a newer CRL without nextUpdate clears a listing beside a usable CRL (owner decision).
+- [ ] **CRL-T021** fix: Decide whether a newer CRL without nextUpdate clears a listing beside a usable CRL (owner decision).
   It clears an older listing only when no CRL is usable; OpenSSL's newest
   best-scored CRL would give good status. Clearing would loosen an
-  acceptance pin: owner's decision. See [CRL-T00001](docs/tasks/crl-t00001.md), "Recorded, not changed".
-- [ ] **CRL-T00022** fix: Decide removeFromCRL beside a usable CRL (owner decision). An entry with
+  acceptance pin: owner's decision. See [CRL-T001](docs/tasks/crl-t001.md), "Recorded, not changed".
+- [ ] **CRL-T022** fix: Decide removeFromCRL beside a usable CRL (owner decision). An entry with
   reasonCode removeFromCRL releases the certificate in a CRL without
   nextUpdate standing alone (OpenSSL's `cert_crl`), but beside a usable CRL
   any authenticated listing revokes (PR #60 rule). Releasing it there would
   turn a revocation into acceptance: owner's decision.
-- [ ] **CRL-T00023** fix: Decide whether a CRL missing only nextUpdate is offered to a source (owner decision).
+- [ ] **CRL-T023** fix: Decide whether a CRL missing only nextUpdate is offered to a source (owner decision).
   It is not (ranked above replaceable), as OpenSSL, BoringSSL and Bouncy
   Castle would use it and not look again; so beside an expired CRL it keeps
   `--fetch-crls` from asking (`crl-035-no-next-update-local-asks-nothing`).
   Offering it would make retrieval fire where the references stay quiet:
   owner's decision.
-- [ ] **CRL-T00024** feat: Log listings that a newer CRL cleared. Only an accepted
+- [ ] **CRL-T024** feat: Log listings that a newer CRL cleared. Only an accepted
   path's ignored listings reach the logger.
 
 ## P1 — Clean parse/verify interfaces
 
-- [x] **PE-T00001** fix: Follow up on generic PE digest correctness. Done ([PR #21](https://github.com/goatwu1993/rssig/pull/21)); [record](docs/tasks/done.md#pe-t00001-fix-follow-up-on-generic-pe-digest-correctness).
+- [x] **PE-T001** fix: Follow up on generic PE digest correctness. Done ([PR #21](https://github.com/goatwu1993/rssig/pull/21)); [record](docs/tasks/done.md#pe-t001-fix-follow-up-on-generic-pe-digest-correctness).
 
-- [x] **LIB-T00001** feat: Expose CAB and NAVX parsing on `no_std + alloc`. Done ([PR #23](https://github.com/goatwu1993/rssig/pull/23)); [record](docs/tasks/done.md#lib-t00001-feat-expose-cab-and-navx-parsing-on-no_std--alloc).
-- [x] **LIB-T00002** feat: Expose structured CMS signer and attribute inspection. Done ([PR #24](https://github.com/goatwu1993/rssig/pull/24)); [record](docs/tasks/done.md#lib-t00002-feat-expose-structured-cms-signer-and-attribute-inspection).
-- [x] **LIB-T00003** feat: Add bounded nested-signature and timestamp inspection. Done; [record](docs/tasks/done.md#lib-t00003-feat-add-bounded-nested-signature-and-timestamp-inspection).
-- [x] **LIB-T00004** refactor: Extract script and RDP parsing boundaries. Done; [record](docs/tasks/done.md#lib-t00004-refactor-extract-script-and-rdp-parsing-boundaries).
-- [x] **LIB-T00005** refactor: Extract MSI/MSP and AppX structural state. Done; [record](docs/tasks/done.md#lib-t00005-refactor-extract-msimsp-and-appx-structural-state).
-- [x] **LIB-T00006** feat: Make format selection consistent for library callers. Done; [record](docs/tasks/done.md#lib-t00006-feat-make-format-selection-consistent-for-library-callers).
-- [x] **LIB-T00007** feat: Clarify verification policy construction. Done; [record](docs/tasks/done.md#lib-t00007-feat-clarify-verification-policy-construction).
-- [x] **LIB-T00008** refactor: Audit borrowing, errors, and public API stability. Done; [record](docs/tasks/done.md#lib-t00008-refactor-audit-borrowing-errors-and-public-api-stability).
-- [x] **LIB-T00009** feat: Evaluate a `no_std` shared verification core. Done; [record](docs/tasks/done.md#lib-t00009-feat-evaluate-a-no_std-shared-verification-core).
-- [x] **LIB-T00010** docs: Reassess shared interfaces and crate extraction after reuse. Done; [record](docs/tasks/done.md#lib-t00010-docs-reassess-shared-interfaces-and-crate-extraction-after-reuse).
-- [ ] **LIB-T00011** refactor: Remove the hidden public `cli::command()`. It is kept
+- [x] **LIB-T001** feat: Expose CAB and NAVX parsing on `no_std + alloc`. Done ([PR #23](https://github.com/goatwu1993/rssig/pull/23)); [record](docs/tasks/done.md#lib-t001-feat-expose-cab-and-navx-parsing-on-no_std--alloc).
+- [x] **LIB-T002** feat: Expose structured CMS signer and attribute inspection. Done ([PR #24](https://github.com/goatwu1993/rssig/pull/24)); [record](docs/tasks/done.md#lib-t002-feat-expose-structured-cms-signer-and-attribute-inspection).
+- [x] **LIB-T003** feat: Add bounded nested-signature and timestamp inspection. Done; [record](docs/tasks/done.md#lib-t003-feat-add-bounded-nested-signature-and-timestamp-inspection).
+- [x] **LIB-T004** refactor: Extract script and RDP parsing boundaries. Done; [record](docs/tasks/done.md#lib-t004-refactor-extract-script-and-rdp-parsing-boundaries).
+- [x] **LIB-T005** refactor: Extract MSI/MSP and AppX structural state. Done; [record](docs/tasks/done.md#lib-t005-refactor-extract-msimsp-and-appx-structural-state).
+- [x] **LIB-T006** feat: Make format selection consistent for library callers. Done; [record](docs/tasks/done.md#lib-t006-feat-make-format-selection-consistent-for-library-callers).
+- [x] **LIB-T007** feat: Clarify verification policy construction. Done; [record](docs/tasks/done.md#lib-t007-feat-clarify-verification-policy-construction).
+- [x] **LIB-T008** refactor: Audit borrowing, errors, and public API stability. Done; [record](docs/tasks/done.md#lib-t008-refactor-audit-borrowing-errors-and-public-api-stability).
+- [x] **LIB-T009** feat: Evaluate a `no_std` shared verification core. Done; [record](docs/tasks/done.md#lib-t009-feat-evaluate-a-no_std-shared-verification-core).
+- [x] **LIB-T010** docs: Reassess shared interfaces and crate extraction after reuse. Done; [record](docs/tasks/done.md#lib-t010-docs-reassess-shared-interfaces-and-crate-extraction-after-reuse).
+- [ ] **LIB-T011** refactor: Remove the hidden public `cli::command()`. It is kept
   public only for the spec runner (PR #59); give the runner another way in.
 
 ## P1 — Tests, portable specification, and engineering checks
 
-- [x] **TEST-T00001** test: Maintain a coverage inventory by invariant. Done; [record](docs/tasks/done.md#test-t00001-test-maintain-a-coverage-inventory-by-invariant).
-- [x] **BUILD-T00001** test: Add local parser and verifier fuzz targets. Done; [record](docs/tasks/done.md#build-t00001-test-add-local-parser-and-verifier-fuzz-targets).
-- [ ] **TEST-T00002** test: Extend invariant and mutation testing. Verify that excluded
+- [x] **TEST-T001** test: Maintain a coverage inventory by invariant. Done; [record](docs/tasks/done.md#test-t001-test-maintain-a-coverage-inventory-by-invariant).
+- [x] **BUILD-T001** test: Add local parser and verifier fuzz targets. Done; [record](docs/tasks/done.md#build-t001-test-add-local-parser-and-verifier-fuzz-targets).
+- [ ] **TEST-T002** test: Extend invariant and mutation testing. Verify that excluded
   checksum/signature fields and authenticated payload/metadata mutate as
   documented, and that digest, CMS, timestamp, and trust faults stay isolated.
   Use generated inputs for structural properties, never to regenerate expected
   fixture results during ordinary tests or hide target failures behind setup errors.
-- [ ] **BUILD-T00002** build: Exercise 32-bit behavior and independent consumers. Current
+- [ ] **BUILD-T002** build: Exercise 32-bit behavior and independent consumers. Current
   bare-metal checks compile the parser but do not execute it there. Add a
   practical 32-bit execution path for bounds regressions and tiny external
   consumer builds that avoid dev-dependency feature unification. Cover minimal,
   `std`, verifier-only, native-root, and CLI feature combinations and doctests.
-- [ ] **TEST-T00003** test: Validate the specification and schemas together. Check
+- [ ] **TEST-T003** test: Validate the specification and schemas together. Check
   `cases.json` against `cases.schema.json` in the Rust workflow, reconcile schema
   rules with the Serde loader, and detect invalid references or duplicate IDs.
   Audit whether public verification/inspection report schemas suffice for another
   implementation; add missing schema detail before extending output.
-- [x] **TEST-T00004** test: Strengthen fixture-manifest consistency checks. Done; [record](docs/tasks/done.md#test-t00004-test-strengthen-fixture-manifest-consistency-checks).
-- [ ] **TEST-T00005** test: Automate complete-output compatibility comparisons. Preserve
+- [x] **TEST-T004** test: Strengthen fixture-manifest consistency checks. Done; [record](docs/tasks/done.md#test-t004-test-strengthen-fixture-manifest-consistency-checks).
+- [ ] **TEST-T005** test: Automate complete-output compatibility comparisons. Preserve
   PR #18's in-process comparison approach for refactors: exit codes, complete
   JSON, stdout, and stderr. Normalize only unavoidable checkout paths, never
   security-relevant fields. Keep portable partial expectations and add exact
   snapshots/assertions where they protect schema, ordering, or diagnostic causes.
-- [ ] **BUILD-T00003** build: Automate dependency and native-code boundary checks. Inspect
+- [ ] **BUILD-T003** build: Automate dependency and native-code boundary checks. Inspect
   resolved normal dependencies/features on Linux/macOS and minimal builds.
   Reject OpenSSL, ring, aws-lc, native validation, and subprocess crypto; examine
   build scripts/linkage as well as package names. Allow native root enumeration
   explicitly. Add dependency advisory/license review without making offline
   fixture tests require network access.
-- [ ] **BUILD-T00004** build: Improve CI evidence and regression visibility. Keep existing
+- [ ] **BUILD-T004** build: Improve CI evidence and regression visibility. Keep existing
   Linux/macOS, lint, coverage, and no_std jobs. Surface missing fixture/schema
   checks and relevant uncovered production branches; distinguish the thin
   process adapter from in-process engine coverage. Evaluate a coverage regression
   policy after measuring the baseline, without redundant tests or exclusions
   that hide production code.
-- [ ] **TEST-T00006** test: Measure performance and allocation budgets. Benchmark parsing,
+- [ ] **TEST-T006** test: Measure performance and allocation budgets. Benchmark parsing,
   hashing, CMS verification, candidate-chain work, CRLs, and bundles separately
   on representative sizes and adversarial bounded inputs. Track peak memory and
   repeated metadata conversion. Consider streaming/caching or batch parallelism
   with measured benefit, immutable input, bounded work, and deterministic results.
-- [ ] **CRL-T00025** test: Consolidate CRL fixture builders and CRL-T00001 fixture provenance. Recorded from PR #44 to #53 reviews; none affects verifier behavior. Detail in [crl-t00025.md](docs/tasks/crl-t00025.md).
+- [ ] **CRL-T025** test: Consolidate CRL fixture builders and CRL-T001 fixture provenance. Recorded from PR #44 to #53 reviews; none affects verifier behavior. Detail in [crl-t025.md](docs/tasks/crl-t025.md).
 
-- [x] **TIME-T00003** refactor: Index time decisions as `TIME-NNN`. Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
-- [x] **PATH-T00003** refactor: Index certificate-path decisions as `PATH-NNN`. Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
-- [x] **TSA-T00002** refactor: Index timestamp decisions as `TSA-NNN`. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
-- [x] **CMS-T00004** refactor: Index CMS decisions as `CMS-NNN`. Done ([PR #72](https://github.com/goatwu1993/rssig/pull/72)); [CMS decisions](docs/cms.md).
-- [ ] **TRUST-T00002** refactor: Number the `TRUST-` index. Fill [docs/trust.md](docs/trust.md);
+- [x] **TIME-T003** refactor: Index time decisions as `TIME-NNN`. Done ([PR #68](https://github.com/goatwu1993/rssig/pull/68)); [time decisions](docs/time.md).
+- [x] **PATH-T003** refactor: Index certificate-path decisions as `PATH-NNN`. Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
+- [x] **TSA-T002** refactor: Index timestamp decisions as `TSA-NNN`. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
+- [x] **CMS-T004** refactor: Index CMS decisions as `CMS-NNN`. Done ([PR #72](https://github.com/goatwu1993/rssig/pull/72)); [CMS decisions](docs/cms.md).
+- [ ] **TRUST-T002** refactor: Number the `TRUST-` index. Fill [docs/trust.md](docs/trust.md);
   number the `trust-*` cases it claims (the other cases from the same
-  task belong to LIMIT-T00005, CRL-T00027 and PATH-T00004).
-- [ ] **LIMIT-T00005** refactor: Number the `LIMIT-` index. Fill [docs/limit.md](docs/limit.md);
+  task belong to LIMIT-T005, CRL-T027 and PATH-T004).
+- [ ] **LIMIT-T005** refactor: Number the `LIMIT-` index. Fill [docs/limit.md](docs/limit.md);
   number the `limit-*` cases.
-- [ ] **MSI-T00001** refactor: Number the `MSI-` index. Fill
+- [ ] **MSI-T001** refactor: Number the `MSI-` index. Fill
   [docs/msi-decisions.md](docs/msi-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **CAB-T00001** refactor: Number the `CAB-` index. Fill
+- [ ] **CAB-T001** refactor: Number the `CAB-` index. Fill
   [docs/cab-decisions.md](docs/cab-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **NAVX-T00001** refactor: Number the `NAVX-` index. Fill
+- [ ] **NAVX-T001** refactor: Number the `NAVX-` index. Fill
   [docs/navx-decisions.md](docs/navx-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **PS-T00001** refactor: Number the `PS-` index. Fill
+- [ ] **PS-T001** refactor: Number the `PS-` index. Fill
   [docs/ps-decisions.md](docs/ps-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **WSH-T00001** refactor: Number the `WSH-` index. Fill
+- [ ] **WSH-T001** refactor: Number the `WSH-` index. Fill
   [docs/wsh-decisions.md](docs/wsh-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **RDP-T00002** refactor: Number the `RDP-` index. Fill
+- [ ] **RDP-T002** refactor: Number the `RDP-` index. Fill
   [docs/rdp-decisions.md](docs/rdp-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **APPX-T00001** refactor: Number the `APPX-` index. Fill
+- [ ] **APPX-T001** refactor: Number the `APPX-` index. Fill
   [docs/appx-decisions.md](docs/appx-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **CRL-T00026** docs: Link CRL retrieval rules to their entries.
+- [ ] **CRL-T026** docs: Link CRL retrieval rules to their entries.
   `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
-- [x] **TEST-T00007** refactor: Rename task-named library cases. Done
+- [x] **TEST-T007** refactor: Rename task-named library cases. Done
   ([PR #81](https://github.com/goatwu1993/rssig/pull/81)), which renamed every
   task-named case, fixture and test by subject.
-- [ ] **TIME-T00004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
-  `TIME` `attach` (the pre-TIME-T00001 time cases and every format's
+- [ ] **TIME-T004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
+  `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
-- [x] **DOC-T00001** refactor: Reindex misplaced decisions. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in that PR.
-- [x] **DOC-T00002** feat: Scaffold the remaining decision indexes. Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); claims in `tests/decision-claims.json`.
-- [ ] **ALG-T00002** refactor: Number the `ALG-` index. Fill [docs/alg.md](docs/alg.md):
+- [x] **DOC-T001** refactor: Reindex misplaced decisions. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); mapping in that PR.
+- [x] **DOC-T002** feat: Scaffold the remaining decision indexes. Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71)); claims in `tests/decision-claims.json`.
+- [ ] **ALG-T002** refactor: Number the `ALG-` index. Fill [docs/alg.md](docs/alg.md):
   unsupported algorithms and the SHA-1 opt-in in every format.
-- [ ] **POLICY-T00002** refactor: Number the `POLICY-` index. Fill [docs/policy.md](docs/policy.md):
+- [ ] **POLICY-T002** refactor: Number the `POLICY-` index. Fill [docs/policy.md](docs/policy.md):
   every format's integrity-only case and the library policy cases.
-- [ ] **CLI-T00001** refactor: Number the `CLI-` index. Fill [docs/cli.md](docs/cli.md).
-- [ ] **INSPECT-T00001** refactor: Number the `INSPECT-` index. Fill [docs/inspect.md](docs/inspect.md).
-- [ ] **CRL-T00027** refactor: Attach the claimed `CRL-` cases. Name existing
-  entries for the cases claimed under `attach` (remaining CRL-T00001 audit
+- [ ] **CLI-T001** refactor: Number the `CLI-` index. Fill [docs/cli.md](docs/cli.md).
+- [ ] **INSPECT-T001** refactor: Number the `INSPECT-` index. Fill [docs/inspect.md](docs/inspect.md).
+- [ ] **CRL-T027** refactor: Attach the claimed `CRL-` cases. Name existing
+  entries for the cases claimed under `attach` (remaining CRL-T001 audit
   cases, every format's revocation case).
-- [ ] **PATH-T00004** refactor: Attach the claimed `PATH-` cases. Name existing
+- [ ] **PATH-T004** refactor: Attach the claimed `PATH-` cases. Name existing
   entries for the cases claimed under `attach` (every format's untrusted-root
   case), and add a PATH entry for `certificate-signature`.
-- [ ] **TSA-T00003** refactor: Attach the claimed `TSA-` cases. Name existing
+- [ ] **TSA-T003** refactor: Attach the claimed `TSA-` cases. Name existing
   entries for the cases claimed under `attach`.
-- [x] **DOC-T00003** feat: Use one meaning per term. Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with DOC-T00002 at the owner's request); [glossary](docs/glossary.md).
-- [x] **DOC-T00004** refactor: Remove duplicate and overlapping decisions. Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
-- [x] **DOC-T00005** refactor: Settle the shared format-skeleton rules. Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
-- [x] **PE-T00002** refactor: Number the `PE-` index. Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
-- [ ] **TEST-T00008** test: Let a spec case assert that a field is absent. The
+- [x] **DOC-T003** feat: Use one meaning per term. Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with DOC-T002 at the owner's request); [glossary](docs/glossary.md).
+- [x] **DOC-T004** refactor: Remove duplicate and overlapping decisions. Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
+- [x] **DOC-T005** refactor: Settle the shared format-skeleton rules. Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
+- [x] **PE-T002** refactor: Number the `PE-` index. Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
+- [ ] **TEST-T008** test: Let a spec case assert that a field is absent. The
   `tests/cases.json` matcher checks a subset, so the set-aside cases of
   CRL-040, CRL-041 and CRL-043 cannot tell set aside from forged
   (`unusable_crl` absent);
   only their Rust tests pin it. Add an absence assertion to the schema.
-- [ ] **TEST-T00009** test: Express retrieval edge cases in the case format. The
+- [ ] **TEST-T009** test: Express retrieval edge cases in the case format. The
   injected CRL source maps URLs or certificates to bodies and error kinds, so
   it cannot express URL-less failures, whole-request errors, several entries
   per request, a point shared by certificates of two issuers, or the built-in
   source's deadline and byte cap. They are unit-tested only
-  (`docs/testing.md`); extend the format (with TEST-T00003) before pinning them.
-- [ ] **CRL-T00028** test: Commit fixtures for CRLs without nextUpdate. When such a
+  (`docs/testing.md`); extend the format (with TEST-T003) before pinning them.
+- [ ] **CRL-T028** test: Commit fixtures for CRLs without nextUpdate. When such a
   CRL revokes, clears an older listing or is set aside is pinned by unit
   tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,
   removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
   have no fixture or spec case.
-- [ ] **TEST-T00010** test: Guard the manifest-sources scratch directory.
+- [ ] **TEST-T010** test: Guard the manifest-sources scratch directory.
   `tests/manifest.rs` `fixtures_are_never_indexed_as_sources` creates its
   directory without the drop guard its sibling test uses.
-- [ ] **TEST-T00014** test: Remove the duplicated parser-boundary cases. Five
+- [ ] **TEST-T014** test: Remove the duplicated parser-boundary cases. Five
   cases repeat another case's input, command and expectation exactly:
   `powershell-independent-jsign-parser`, `powershell-independent-tampered-parser`,
   `rdp-independent-nfedera-parser`, `psxml-independent-ascii-parser` and
@@ -349,26 +349,26 @@ they pin or what they check, never after a task.
 
 ## P1 — CLI, reporting, and distribution
 
-- [ ] **CLI-T00002** fix: Make remaining failure classifications precise. Audit
+- [ ] **CLI-T002** fix: Make remaining failure classifications precise. Audit
   generic anyhow conversions for unsupported structures, invalid certificates,
   root/CRL loading, timestamps, and exhausted limits. Preserve stable code/stage,
   structured context, and causes. Test conversion from every parser error kind
   and avoid requiring consumers to match prose.
-- [ ] **CLI-T00003** fix: Audit file/stream edge cases. Cover non-UTF-8 paths, path
+- [ ] **CLI-T003** fix: Audit file/stream edge cases. Cover non-UTF-8 paths, path
   serialization failures, directories/unreadable inputs, repeated files, mixed
   batches, and writer/flush failures through in-process CLI entry points. Prevent
   panic paths while preserving one JSON document where output is writable;
   argument/configuration errors remain plain stderr with exit 2.
-- [ ] **DOC-T00006** docs: Document result and schema evolution. Define compatibility
+- [ ] **DOC-T006** docs: Document result and schema evolution. Define compatibility
   rules for new fields, enum variants, optional values, raw DER, and schema
   versions. Make parse-only, integrity-only, trusted, revocation-disabled, and
   package-hashed-but-not-independently-verified catalog states unambiguous.
   Keep supplied artifacts distinct from selected evidence.
-- [ ] **CRL-T00029** fix: Serialize absent retrieval URLs one way.
+- [ ] **CRL-T029** fix: Serialize absent retrieval URLs one way.
   `CrlRetrievalArtifact.url` and `final_url` are omitted when absent while
-  `CrlRetrievalFailure.url` serializes as `null`; pick one under DOC-T00006's
+  `CrlRetrievalFailure.url` serializes as `null`; pick one under DOC-T006's
   rules.
-- [ ] **DOC-T00007** docs: Keep public API and decision documentation current. Add
+- [ ] **DOC-T007** docs: Keep public API and decision documentation current. Add
   compiling examples for parse-only and explicit trusted verification, feature
   combinations, and error handling. Update stale source paths in the comparison
   document; keep format limits, CLI help, README tables, architecture, and tests
@@ -378,13 +378,13 @@ they pin or what they check, never after a task.
   and to cite. Move it to its own document with one rule per line and its
   pinning cases, and link it from the README and from `AGENTS.md`'s current
   boundaries, which describe CRL handling only in general terms.
-- [ ] **BUILD-T00005** build: Define compiler, target, and release support. Choose and
+- [ ] **BUILD-T005** build: Define compiler, target, and release support. Choose and
   test an MSRV; distinguish compiled targets/features from runtime-tested ones.
   Check packaged-crate contents and consumer builds, and document semver/API
   migration before publishing. Prepare reproducible Linux/macOS artifacts and
   checksums when distribution is requested; fixture signing keys and read-only
   reference clones must not enter release artifacts.
-- [ ] **DOC-T00008** docs: Document security review and reporting boundaries. Provide
+- [ ] **DOC-T008** docs: Document security review and reporting boundaries. Provide
   vulnerability-reporting and supported-version policies, and identify areas
   needing independent review before stronger security claims. Keep existing
   AI-assisted-development and Windows-policy limitations visible; passing tests
@@ -392,81 +392,81 @@ they pin or what they check, never after a task.
 
 ## P2 — Interoperability and existing-format coverage
 
-- [ ] **TEST-T00011** test: Expand independently produced fixtures. Build on existing
+- [ ] **TEST-T011** test: Expand independently produced fixtures. Build on existing
   Jsign MSI/MSP/CAB/NAVX/script/AppX, upstream SignTool, and independent RDP
   artifacts. Prioritize independent PE, nested CMS, timestamps, and trusted
   chain/CRL combinations, including Relic where useful. Record producer/version,
   license, provenance, digest, and narrow bad counterparts. Separate integrity-only
   evidence from trusted verification and keep normal tests offline.
-- [ ] **TEST-T00012** test: Record reproducible cross-tool differences. Pin tools,
+- [ ] **TEST-T012** test: Record reproducible cross-tool differences. Pin tools,
   roots, time, algorithms, revocation/network settings, and each verifier's actual
   checks. Resolve disagreements against format evidence and explicit rssig decisions,
   then commit portable expectations. A competitor's success exit is not necessarily
   a trusted verdict; competitors remain maintenance tools.
-- [ ] **PE-T00003** test: Extend PE layout evidence before broadening support. Cover
+- [ ] **PE-T003** test: Extend PE layout evidence before broadening support. Cover
   PE layouts, page sizes and certificate placement, and add a case for each PE
-  rule no case pins yet. Detail in [pe-t00003.md](docs/tasks/pe-t00003.md).
-- [ ] **MSI-T00002** test: Audit MSI/MSP CFB and metadata variants. Extend independent
+  rule no case pins yet. Detail in [pe-t003.md](docs/tasks/pe-t003.md).
+- [ ] **MSI-T002** test: Audit MSI/MSP CFB and metadata variants. Extend independent
   v3/v4, stream-name/order, FAT/miniFAT, metadata, and legacy/extended-signature
   coverage. Pin duplicate/aliased signature-stream handling and file-time details.
   New layouts need bounded traversal and hash evidence; MSP applicability,
   installation semantics, and patch authorization remain outside verification.
-- [ ] **CAB-T00002** test: Expand CAB envelope interoperability. Add independent
+- [ ] **CAB-T002** test: Expand CAB envelope interoperability. Add independent
   reserve/padding/hash-range cases. Consider CAB layouts with unambiguous
   hashing rules and producer evidence; multipart handling needs a separate
   design.
-- [ ] **NAVX-T00002** test: Expand NAVX envelope interoperability. Add independent
+- [ ] **NAVX-T002** test: Expand NAVX envelope interoperability. Add independent
   envelope/back-pointer cases. NAVX payloads remain opaque, and signature
   success does not imply extension validity or installability.
-- [ ] **PS-T00002** test: Expand PowerShell signature encoding evidence. Cover
+- [ ] **PS-T002** test: Expand PowerShell signature encoding evidence. Cover
   BOM/newline, terminator, comment delimiter, Unicode, and duplicate-block
   behavior across PowerShell and PowerShell XML. Pin unsupported legacy
   encodings before adding decoders. No script execution, XMLDSig substitution,
   DTD/entity fetching, or script execution-policy claims.
-- [ ] **WSH-T00002** test: Expand WSH signature encoding evidence. Cover
+- [ ] **WSH-T002** test: Expand WSH signature encoding evidence. Cover
   BOM/newline, terminator, comment delimiter, Unicode, and duplicate-block
   behavior across WSH scripts. Pin unsupported legacy encodings and
   encoded-script behavior before adding decoders. No script execution,
   DTD/entity fetching, or script execution-policy claims.
-- [ ] **RDP-T00003** test: Extend RDP scope mappings only with evidence. Maintain
+- [ ] **RDP-T003** test: Extend RDP scope mappings only with evidence. Maintain
   display-name/key/type mappings and canonicalization tests. Unknown signed scope
   entries continue to fail; unscoped properties remain explicitly unsigned.
   More settings/encodings or nested signatures need isolated fixtures and a
   documented rules; never open fixtures in an RDP client.
-- [ ] **APPX-T00002** test: Audit AppX edge cases and rule gaps. Extend
+- [ ] **APPX-T002** test: Audit AppX edge cases and rule gaps. Extend
   ZIP64/descriptors, compression/block boundaries, filename collisions, namespace
   parsing, publisher DN comparison, and bundle child identity/signature cases.
   Evaluate Unicode names and additional manifest/bundle profiles individually
   with producer evidence and aggregate budgets. Keep unsupported external/stub/
   nested bundles explicit; deployment selection and Windows Store acceptance
   are not established by package integrity.
-- [ ] **PE-T00004** fix: Decide skipped WIN_CERTIFICATE entries. PE-004 rejects
+- [ ] **PE-T004** fix: Decide skipped WIN_CERTIFICATE entries. PE-004 rejects
   entries Microsoft's documents allow and osslsigncode and jsign skip. Detail
-  in [pe-t00004.md](docs/tasks/pe-t00004.md).
+  in [pe-t004.md](docs/tasks/pe-t004.md).
 
 ## P3 — Additional capabilities requiring separate design
 
-- [x] **CRL-T00030** feat: Add bounded opt-in CRL retrieval. Done; [record](docs/tasks/done.md#crl-t00030-feat-add-bounded-opt-in-crl-retrieval).
-- [ ] **PATH-T00005** feat: Add bounded AIA issuer retrieval. Extend the retrieval
+- [x] **CRL-T030** feat: Add bounded opt-in CRL retrieval. Done; [record](docs/tasks/done.md#crl-t030-feat-add-bounded-opt-in-crl-retrieval).
+- [ ] **PATH-T005** feat: Add bounded AIA issuer retrieval. Extend the retrieval
   boundary to missing intermediate certificates, always as untrusted candidates,
   never new trust anchors. Define pre-trust destination discovery, loop/work
   limits and provenance. HTTPS transport and persistent caching also remain
   separate follow-ups requiring a decision and dependency review.
-- [ ] **CRL-T00031** feat: Add OCSP with explicit evidence rules. Require responder
+- [ ] **CRL-T031** feat: Add OCSP with explicit evidence rules. Require responder
   authorization, signature/freshness checks, issuer/serial binding, and tested
   unknown/revoked/error behavior. Define interaction with CRLs, caches, offline
   operation, and timestamped verification. Network failure must not silently
   become good revocation status.
-- [ ] **ALG-T00003** feat: Add RSA-PSS where interoperability justifies it. Specify
+- [ ] **ALG-T003** feat: Add RSA-PSS where interoperability justifies it. Specify
   digest/MGF/salt/trailer parameters and rules for CMS, certificates, CRLs, and
   timestamps independently. Add good/bad parameter and key fixtures and audit
   RustCrypto/webpki support; never reinterpret PSS as v1.5.
-- [ ] **CAT-T00001** feat: Add catalog signature and membership verification. Verify
+- [ ] **CAT-T001** feat: Add catalog signature and membership verification. Verify
   trusted catalog signatures and target membership separately. Design standalone
   catalogs first, then explicitly wire AppX CodeIntegrity catalogs into reports
   if supported. Until then retain `signature_verified: false` for package-hashed
   embedded catalogs.
-- [ ] **P7S-T00001** feat: Design generic detached signature verification. Specify
+- [ ] **P7S-T001** feat: Design generic detached signature verification. Specify
   how a sidecar binds to supplied content, format/SIP selection, CMS profile,
   algorithms, trust, timestamps, and revocation. Reuse the engine while keeping
   RDP canonicalization separate. Parsing a `.p7s` alone must never be presented
@@ -474,7 +474,7 @@ they pin or what they check, never after a task.
 
 ## Deferred and outside the current verification scope
 
-- [ ] **TEST-T00013** test: Add a Windows oracle integration. Deferred at the
+- [ ] **TEST-T013** test: Add a Windows oracle integration. Deferred at the
   user's request. Do not add a Windows/SignTool/WinVerifyTrust runner as part of these
   tasks. If explicitly resumed, pin tool/OS versions, roots, time, revocation/
   network configuration, and behavior differences; replay captured expectations

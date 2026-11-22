@@ -1,4 +1,4 @@
-# Shared interfaces and crate boundaries (LIB-T00010)
+# Shared interfaces and crate boundaries (LIB-T010)
 
 Decision: retain one `rssig` package and its existing public facade. Keep the
 feature-separated parser, verification core, host format adapters and CLI as
@@ -6,7 +6,7 @@ modules. Do not introduce a public all-format container trait or split crates
 at this stage. Crate extraction is not required for `no_std` verification.
 
 This reassessment follows reuse by PE, CAB, NAVX, scripts, RDP, MSI/MSP and AppX
-through LIB-T00001–09. It is based on the repository's implementations and committed
+through LIB-T001 to LIB-T009. It is based on the repository's implementations and committed
 consumer tests, not independent downstream adoption or Windows policy testing.
 See [library usage and migration](library.md) for the supported API contracts.
 
@@ -87,7 +87,7 @@ it is not an alloc-only core feature.
 No caller migration is required by this decision. Existing `rssig::parse`,
 `rssig::verify`, `rssig::domain`, root-level re-exports, feature names, CLI argv,
 and JSON contracts remain intact. Concrete parsed verification ownership remains
-as documented in [LIB-T00008](library.md#ownership-reuse-and-api-stability-lib-t00008).
+as documented in [LIB-T008](library.md#ownership-reuse-and-api-stability-lib-t008).
 There are no new fixtures or failing behavior tests for this documentation-only
 reassessment because it changes no parsing, hashing, verification or report behavior.
 
@@ -104,7 +104,7 @@ the existing feature matrix and bare-metal checks, inspect resolved normal
 production dependency graphs, and check packaged external consumers. Preserve
 RustCrypto-only verification, configured-root trust, explicit integrity-only and
 revocation policy, and current failure ordering. External consumer packaging and
-32-bit execution remain BUILD-T00002 work; this reassessment does not claim those
+32-bit execution remain BUILD-T002 work; this reassessment does not claim those
 checks have been implemented.
 
 Validation for this decision on macOS: `cargo test --locked`,

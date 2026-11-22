@@ -1,4 +1,4 @@
-//! TRUST-T00001 loading failures are configuration errors, not verification verdicts.
+//! TRUST-T001 loading failures are configuration errors, not verification verdicts.
 use super::support::*;
 use der::Decode;
 
