@@ -700,7 +700,7 @@ fn specification_stderr_once_requires_text_stderr_and_counts_repeats() {
     let case = suite
         .cases
         .iter_mut()
-        .find(|c| c.id == "sec07-empty-roots")
+        .find(|c| c.id == "trust-empty-roots")
         .unwrap();
     let fixtures = parent.join(&suite.fixtures);
     let prefix = Path::new(&suite.fixtures);

@@ -1,4 +1,4 @@
-# Coverage by invariant (TEST-01)
+# Coverage by invariant (TEST-T00001)
 
 The maintained evidence index is [`tests/coverage-inventory.json`](../tests/coverage-inventory.json).
 Its invariant groups link representative declarative case IDs to specific
@@ -27,14 +27,14 @@ invariant remains a human responsibility.
 | WSH | `wsh-sip`; JS/JSE/VBS/VBE/WSF plus independent jsign mutations | Encoded scripts are opaque; signatures are not script execution checks. |
 | RDP | `rdp-scope`; nfedera/rdpsign artifact, changed signed/unsigned settings | No Microsoft rdpsign.exe producer evidence. |
 | MSIX/AppX packages/bundles | `appx-package`, `appx-bundle`; CLI AppX suites cover block maps, Publisher binding and children | CodeIntegrity catalogs are hashed, not independently signature-verified. No deployment-policy claim. |
-| Digests and keys | `sha2`, `sha1-policy`, `key-algorithms`; `src/crypto.rs` and signing fixtures | SHA-384/512 content tests do not establish P-384 signature coverage. Inventory needs a systematic RSA-size/P-256/P-384 and digest/key mismatch matrix (SEC-13). |
-| CMS/signers | `cms-binding`, `cms-structure`, `signer-selection`; SEC-04/05 native signature-math and shared-path tests | See `cms-security.md` for version/opaque-value exceptions. |
-| Trust paths | `trust-root`, `trust-checks`, `trust-validity`, `trust-path-constraints`, `trust-path-selection`, `trust-anchor-profile`; SEC-06 named CLI and signature-math tests | Paired constraints, selected chains, cross-signing, wrong-key issuers and cycles are pinned. SEC-09 pins lifetime signing and leaf/intermediate/validation-time boundaries; see [validation time](validation-time.md). See [certificate paths](certificate-paths.md) for webpki profile, anchor treatment and remaining name-form/rollover limits. |
-| Timestamps | `timestamp`; `src/verify/timestamp.rs` parsing tests | SEC-08 pins structure, multiplicity, parent binding and TSA checks; see [timestamp profile](timestamp-profile.md). Independent producer diversity remains INTEROP work. |
-| Revocation | `revocation`; local signed good/revoked/stale/forged CRLs; SEC-10 applicability, competing-CRL, cRLSign and distribution-point cases (`tests/cli/crl_applicability.rs`) | Issuer/AKI applicability, competing CRLs, intermediate cRLSign, revoked intermediates and distribution-point matching (scope flags, several names or points, non-URI and issuer-relative names, reasons and cRLIssuer points) are pinned; see the CRL row of [validation time](validation-time.md). `--fetch-crls` fetches only when verification with the supplied CRLs is `revocation_unknown` (`crl-fetch-*`); per-chain CRLs actually used remain SEC-11. No OCSP, delta or indirect CRL support. |
+| Digests and keys | `sha2`, `sha1-policy`, `key-algorithms`; `src/crypto.rs` and signing fixtures | SHA-384/512 content tests do not establish P-384 signature coverage. Inventory needs a systematic RSA-size/P-256/P-384 and digest/key mismatch matrix (ALG-T00001). |
+| CMS/signers | `cms-binding`, `cms-structure`, `signer-selection`; CMS-T00001 and CMS-T00002 native signature-math and shared-path tests | See `cms-security.md` for version/opaque-value exceptions. |
+| Trust paths | `trust-root`, `trust-checks`, `trust-validity`, `trust-path-constraints`, `trust-path-selection`, `trust-anchor-profile`; PATH-T00001 named CLI and signature-math tests | Paired constraints, selected chains, cross-signing, wrong-key issuers and cycles are pinned. TIME-T00001 pins lifetime signing and leaf/intermediate/validation-time boundaries; see [validation time](validation-time.md). See [certificate paths](certificate-paths.md) for webpki profile, anchor treatment and remaining name-form/rollover limits. |
+| Timestamps | `timestamp`; `src/verify/timestamp.rs` parsing tests | TSA-T00001 pins structure, multiplicity, parent binding and TSA checks; see [timestamp profile](timestamp-profile.md). Independent producer diversity remains INTEROP work. |
+| Revocation | `revocation`; local signed good/revoked/stale/forged CRLs; CRL-T00001 applicability, competing-CRL, cRLSign and distribution-point cases (`tests/cli/crl_applicability.rs`) | Issuer/AKI applicability, competing CRLs, intermediate cRLSign, revoked intermediates and distribution-point matching (scope flags, several names or points, non-URI and issuer-relative names, reasons and cRLIssuer points) are pinned; see the CRL row of [validation time](validation-time.md). `--fetch-crls` fetches only when verification with the supplied CRLs is `revocation_unknown` (`crl-fetch-*`); per-chain CRLs actually used remain CRL-T00002. No OCSP, delta or indirect CRL support. |
 | Reduced-policy modes | `policy-modes`; `tests/cli/policy.rs` | Success in integrity-only mode cannot be counted as trusted-chain evidence. |
 | Retrieval | `retrieval`; `src/retrieval/http.rs` bounded response tests | Injected responses establish validation behavior, not public network interoperability. AIA/HTTPS remain unsupported. |
-| Resource limits | `work-budgets`, `host-budgets`; native budget callback tests | Byte/work limits and typed failure snapshots are different from fuzz coverage (TEST-02). |
+| Resource limits | `work-budgets`, `host-budgets`; native budget callback tests | Byte/work limits and typed failure snapshots are different from fuzz coverage (BUILD-T00001). |
 | Inspection/API/CLI streams | `tests/parse*.rs`, `tests/library_stability.rs`, `tests/cli_interface.rs`, spec `parse-*` cases | Parsing establishes no trust. Writer failures are native I/O contracts, not verification JSON failures. |
 
 ## Stable error inventory
@@ -69,7 +69,7 @@ producer. No Windows oracle is run. Independent PE, Relic-produced pairs, and
 broader timestamp/chain/CRL producer combinations remain gaps; consult the
 INTEROP backlog before adding redistributable artifacts.
 
-## CRL request evidence (TEST-01)
+## CRL request evidence (TEST-T00001)
 
 The existing CRL cases proved output validation but their portable expectations
 could not assert provider invocation. `expect.crl_requests` now specifies exact

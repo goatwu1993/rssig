@@ -514,7 +514,7 @@ mod tests {
         .unwrap()
     }
     #[test]
-    fn sec02_rdp_eku_retry_propagates_later_budget_exhaustion() {
+    fn rdp_eku_retry_propagates_later_budget_exhaustion() {
         let bytes = fixture("good-rdp-multiple-ekus.rdp");
         let store = crate::TrustStore::default();
         let options = VerifyOptions::trusted_with_revocation(

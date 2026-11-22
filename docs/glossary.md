@@ -48,7 +48,7 @@ X.509 `certificatePolicies`, and other tools' policies.
 
 | Term | Meaning |
 |---|---|
-| **task** | An item in `TODO.md` with an ID such as `SEC-10` or `TEST-23` (two digits; decision IDs have three). One task is the scope of one PR. |
+| **task** | An item in `TODO.md` with an ID `<SCOPE>-T<NNNNN>` such as `CRL-T00012` ([task IDs](../TODO.md#task-ids)); the `T` keeps it apart from a decision entry such as `CRL-012`. One task is the scope of one PR. |
 | **task document** | Detail for a task under `docs/tasks/`. |
 
 ## Time and trust

@@ -7,7 +7,7 @@ instant ranks against other failures. Whether a timestamp token can be trusted
 at all is a [timestamp token decision](tsa.md); see [which
 index](decisions.md#which-index). The entry format is defined in [Decision
 indexes](decisions.md); the rules are explained in [validation
-time](validation-time.md), and the review history is in SEC-09 and SEC-14
+time](validation-time.md), and the review history is in TIME-T00001 and TIME-T00002
 ([done](tasks/done.md), [TODO.md](../TODO.md)).
 
 TIME-003 and TIME-004 check a timestamp's time, but against certificate
@@ -56,7 +56,7 @@ applies in the shared trust path: primary and nested signatures, every
 format, and RDP signers.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43 (SEC-09)
+- **Decided by:** written choice, PR #43 (TIME-T00001)
 - **Pins:** acceptance
 - **Sources:**
   - The purpose of the lifetime-signing EKU: a signature it marks does not
@@ -74,7 +74,7 @@ signing time (the inclusive boundary of TIME-006). The result is
 the signing time").
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43 (SEC-09); the boundary pairs were
+- **Decided by:** written choice, PR #43 (TIME-T00001); the boundary pairs were
   added in review after a `>=` mutation passed the suite
 - **Pins:** acceptance
 - **Sources:**
@@ -94,8 +94,8 @@ check as for a lifetime signer (TIME-002).
 
 - **Status:** Decided
 - **Decided by:** written argument (Authenticode timestamp semantics); the
-  notBefore check is a written choice, PR #43 (SEC-09), kept as a decision in
-  SEC-14
+  notBefore check is a written choice, PR #43 (TIME-T00001), kept as a decision in
+  TIME-T00002
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 sections 1 and 2: a time-stamp token proves that a datum existed
@@ -126,13 +126,13 @@ it and notAfter at or after it. So `notAfter` itself is valid and
 kept; no floating point is used.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43 (SEC-09)
+- **Decided by:** written choice, PR #43 (TIME-T00001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.1.2.5 (validity is inclusive of notBefore and
     notAfter), applied to RFC 3161 `genTime` fractions.
 - **Note:** the check runs after path selection, so it does not consider an
-  alternative issuer with a later notAfter (open in SEC-14).
+  alternative issuer with a later notAfter (open in TIME-T00002).
 
 ### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
 
@@ -154,7 +154,7 @@ and a revoked leaf is rejected even when another path would verify. Historical
 (signing-time) revocation status is not modeled.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43; kept as a decision in SEC-14
+- **Decided by:** written choice, PR #43; kept as a decision in TIME-T00002
 - **Pins:** acceptance
 - **Sources:**
   - AGENTS.md, "Fail closed" for unknown revocation status; CRL-001.
@@ -198,7 +198,7 @@ The signing-time check runs after webpki's own checks of a candidate path, so
 a revocation on that path is reported instead. Both outcomes reject.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as a decision in SEC-14
+- **Decided by:** written choice, kept as a decision in TIME-T00002
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument in [validation time](validation-time.md#lifetime-signing).
@@ -210,7 +210,7 @@ path outranks a revocation on another; both reject.
 
 - **Status:** Decided
 - **Decided by:** written choice (the references disagree and neither has
-  lifetime signing); kept as a decision in SEC-14
+  lifetime signing); kept as a decision in TIME-T00002
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL builds one chain and checks revocation before validity.
@@ -224,7 +224,7 @@ so an expired or not-yet-valid CRL is reported first, with or without the
 lifetime EKU. Both outcomes reject.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as a decision in SEC-14
+- **Decided by:** written choice, kept as a decision in TIME-T00002
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument in [validation time](validation-time.md#lifetime-signing).
@@ -239,7 +239,7 @@ generic chain error is reported. Successful reports set
 `TrustReport.lifetime_signing` and `validation_time`.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as a decision in SEC-14
+- **Decided by:** written choice, kept as a decision in TIME-T00002
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: a change in webpki's search order must not name the
@@ -253,5 +253,5 @@ Unnumbered. `tests/decision-claims.json` assigns these cases here until they
 name an entry.
 
 - `attach`: cases that pin an existing TIME entry but do not name it yet: the
-  pre-SEC-09 time cases (TEST-21) and every format's expired-with-timestamp
+  pre-TIME-T00001 time cases (TIME-T00004) and every format's expired-with-timestamp
   and validity cases.

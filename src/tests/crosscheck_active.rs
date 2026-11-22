@@ -1,4 +1,4 @@
-//! The test-only revocation cross-check (SEC-24) must be compiled into debug
+//! The test-only revocation cross-check (CRL-T00011) must be compiled into debug
 //! test builds: a silently missing oracle would leave revocation without a
 //! backstop. Release test runs compile it out by design.
 

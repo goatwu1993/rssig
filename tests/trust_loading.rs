@@ -11,30 +11,30 @@ fn verify(store: &TrustStore) -> Result<serde_json::Value, rssig::domain::Verifi
 }
 
 #[test]
-fn sec07_failed_root_bundle_cannot_partially_establish_trust() {
+fn failed_root_bundle_cannot_partially_establish_trust() {
     for (bytes, code, index) in [
         (
-            include_bytes!("fixtures/sec07-roots-unsupported.pem").as_slice(),
+            include_bytes!("fixtures/root-bundle-unsupported.pem").as_slice(),
             Code::UnsupportedAnchor,
             2,
         ),
         (
-            include_bytes!("fixtures/sec07-roots-invalid.pem").as_slice(),
+            include_bytes!("fixtures/root-bundle-invalid.pem").as_slice(),
             Code::InvalidEncoding,
             2,
         ),
         (
-            include_bytes!("fixtures/sec07-roots-invalid-first.pem").as_slice(),
+            include_bytes!("fixtures/root-bundle-invalid-first.pem").as_slice(),
             Code::InvalidEncoding,
             1,
         ),
         (
-            include_bytes!("fixtures/sec07-roots-trailing.pem").as_slice(),
+            include_bytes!("fixtures/root-bundle-trailing.pem").as_slice(),
             Code::InvalidEncoding,
             2,
         ),
         (
-            include_bytes!("fixtures/sec07-roots-truncated.pem").as_slice(),
+            include_bytes!("fixtures/root-bundle-truncated.pem").as_slice(),
             Code::InvalidEncoding,
             2,
         ),
@@ -58,18 +58,18 @@ fn sec07_failed_root_bundle_cannot_partially_establish_trust() {
 }
 
 #[test]
-fn sec07_failed_crl_bundle_cannot_partially_supply_revocation() {
+fn failed_crl_bundle_cannot_partially_supply_revocation() {
     for (bytes, index) in [
         (
-            include_bytes!("fixtures/sec07-crls-invalid.pem").as_slice(),
+            include_bytes!("fixtures/crl-bundle-invalid.pem").as_slice(),
             2,
         ),
         (
-            include_bytes!("fixtures/sec07-crls-invalid-first.pem").as_slice(),
+            include_bytes!("fixtures/crl-bundle-invalid-first.pem").as_slice(),
             1,
         ),
         (
-            include_bytes!("fixtures/sec07-crls-trailing.pem").as_slice(),
+            include_bytes!("fixtures/crl-bundle-trailing.pem").as_slice(),
             2,
         ),
     ] {
@@ -91,7 +91,7 @@ fn sec07_failed_crl_bundle_cannot_partially_supply_revocation() {
 }
 
 #[test]
-fn sec07_repeated_der_and_pem_loads_preserve_reports_and_original_bytes() {
+fn repeated_der_and_pem_loads_preserve_reports_and_original_bytes() {
     let mut store = TrustStore::default();
     store.add_roots(ROOT).unwrap();
     store.add_crl(CRL).unwrap();
@@ -100,10 +100,10 @@ fn sec07_repeated_der_and_pem_loads_preserve_reports_and_original_bytes() {
         store.add_roots(ROOT).unwrap();
         store.add_crl(CRL).unwrap();
         store
-            .add_roots(include_bytes!("fixtures/sec07-roots-duplicate.pem"))
+            .add_roots(include_bytes!("fixtures/root-bundle-duplicate.pem"))
             .unwrap();
         store
-            .add_crl(include_bytes!("fixtures/sec07-crls-duplicate.pem"))
+            .add_crl(include_bytes!("fixtures/crl-bundle-duplicate.pem"))
             .unwrap();
     }
     assert_eq!(verify(&store).unwrap(), before);
@@ -115,7 +115,7 @@ fn sec07_repeated_der_and_pem_loads_preserve_reports_and_original_bytes() {
 }
 
 #[test]
-fn sec07_empty_or_whitespace_input_is_explicitly_rejected() {
+fn empty_or_whitespace_input_is_explicitly_rejected() {
     let mut store = TrustStore::default();
     for bytes in [b"".as_slice(), b" \r\n\t"] {
         for error in [
@@ -129,11 +129,11 @@ fn sec07_empty_or_whitespace_input_is_explicitly_rejected() {
 }
 
 #[test]
-fn sec07_loaded_forged_crl_is_not_authenticated_even_with_revocation_disabled() {
+fn loaded_forged_crl_is_not_authenticated_even_with_revocation_disabled() {
     let mut store = TrustStore::default();
     store.add_roots(ROOT).unwrap();
     store
-        .add_crl(include_bytes!("fixtures/sec07-crls-forged.pem"))
+        .add_crl(include_bytes!("fixtures/crl-bundle-forged.pem"))
         .unwrap();
     assert_eq!(
         verify(&store).unwrap_err().code,

@@ -1,4 +1,4 @@
-# Timestamp structure and multiplicity (SEC-08)
+# Timestamp structure and multiplicity (TSA-T00001)
 
 The shared Authenticode/RDP verifier accepts one timestamp per signer: either
 RFC 3161 (Microsoft or CMS timestamp attribute OID) or a PKCS#9 countersignature.
@@ -76,4 +76,4 @@ also pins the GeneralizedTime requirement.
 
 Maintenance: `cargo test --locked regenerate_tsa_fixtures -- --ignored`.
 Ordinary tests consume committed bytes. These synthetic fixtures extend security
-invariant coverage; independent timestamp producer diversity remains INTEROP-01.
+invariant coverage; independent timestamp producer diversity remains TEST-T00011.

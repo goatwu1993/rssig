@@ -1,4 +1,4 @@
-# SEC-12: Decide multi-signature and bundle failure semantics
+# POLICY-T00001 feat: Add the signature policy and pin multi-signature semantics
 
 Today every nested signature must verify
 ([CMS-013](../cms.md#cms-013-a-nested-signature-is-verified-like-the-primary-one),

@@ -2,7 +2,7 @@
 use super::support::*;
 
 #[test]
-fn lib05_preserves_extended_metadata_publisher_and_bundle_identity_failures() {
+fn preserves_extended_metadata_publisher_and_bundle_identity_failures() {
     let good = run_fixture("msi-good-pe64.msi", INTEGRITY);
     expect_success(&good);
     let signature = &good.json["results"][0]["signatures"][0];

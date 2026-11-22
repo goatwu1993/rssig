@@ -1,8 +1,8 @@
-# Parser bounds audit (SEC-01)
+# Parser bounds audit (LIMIT-T00001)
 
 This audit covers local structural arithmetic and allocation bounds on 32-bit and
-64-bit targets. It does not establish exhaustive input safety. Aggregate verification work is covered by [SEC-02 budgets](verification-budgets.md).
-CLI file reads and retained reports use [SEC-03 host limits](host-limits.md).
+64-bit targets. It does not establish exhaustive input safety. Aggregate verification work is covered by [LIMIT-T00002 budgets](verification-budgets.md).
+CLI file reads and retained reports use [LIMIT-T00003 host limits](host-limits.md).
 Fuzz targets for these parsers are described in [fuzzing](fuzzing.md).
 
 | Boundary | Bounds and evidence |
@@ -13,7 +13,7 @@ Fuzz targets for these parsers are described in [fuzzing](fuzzing.md).
 | NAVX | Checked header-plus-payload size, minimum wrapper length, exact back-pointer and marker validation. Existing truncation/maximum-size tests retained. |
 | MSI/MSP | Strict CFB dependency reader, sector alignment, bounded storage depth/entry counts, stream length bounded by input, checked aggregate stream lengths before reading. Mutation coverage includes CFB v3/v4 and MSP. Dependency internals are not independently proven by this audit. |
 | ZIP/AppX | Checked slices and u64-to-usize conversions; central-directory equality and count bounds precede allocation. Per-entry/total byte caps bound decompression buffers; exact stream consumption and CRC checked. Existing overlap/ZIP64/truncation tests retained. |
-| PowerShell/XML | Strict text decoding, even UTF-16 byte counts, ordered marker ranges, bounded signature text before base64 allocation. Whole-file decoding is proportional to caller input; host input caps remain SEC-03. |
+| PowerShell/XML | Strict text decoding, even UTF-16 byte counts, ordered marker ranges, bounded signature text before base64 allocation. Whole-file decoding is proportional to caller input; host input caps remain LIMIT-T00003. |
 | WSH | Input/signature limits, checked marker ordering and UTF-16 position conversion; XML node budget and DTD prohibition. Existing encoding, truncation, and resource-limit cases retained. |
 | RDP | Input/property budgets precede signature decoding; wrapper length compared by subtraction after a minimum-header check. Existing scope/encoding and maximum-count cases retained. |
 | AppX XML | Footprint byte and XML node limits; bounded block sizes and checked accumulation. Existing namespace, identity, block-map, and bundle cases retained. |
@@ -32,4 +32,4 @@ this tests structural rejection rather than claiming a cryptographic failure.
 
 Validation runs on the host plus the bare-metal parser compile target. Compilation
 on a 32-bit target does not execute the mutation corpus there; 32-bit runtime
-coverage remains TEST-04. Linux runtime validation is delegated to CI.
+coverage remains BUILD-T00002. Linux runtime validation is delegated to CI.

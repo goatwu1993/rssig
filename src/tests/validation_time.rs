@@ -1,4 +1,4 @@
-//! SEC-09 deterministic lifetime-signing and time-boundary fixtures.
+//! TIME-T00001 deterministic lifetime-signing and time-boundary fixtures.
 use super::*;
 use ::der::asn1::ObjectIdentifier;
 
@@ -55,7 +55,7 @@ impl Issuers {
     }
 }
 
-/// What carries the SEC-09 signer.
+/// What carries the TIME-T00001 signer.
 #[derive(Clone, Copy, PartialEq)]
 enum Container {
     /// The only signature of a PE.
@@ -267,7 +267,7 @@ fn leaf_key() -> SigningKey {
     SigningKey::from_bytes((&[62u8; 32]).into()).unwrap()
 }
 
-/// The SEC-09 signer identity and its embedded intermediates.
+/// The TIME-T00001 signer identity and its embedded intermediates.
 fn signer(spec: &Spec) -> (Identity, Vec<Certificate>) {
     let root = identity();
     let root_name = root.root.tbs_certificate.subject.clone();
@@ -452,7 +452,7 @@ fn artifact(spec: &Spec) -> Vec<u8> {
     attach(base, &signature, true)
 }
 
-/// CRLs for the rolled-over SEC-09 intermediate (and one root CRL), so
+/// CRLs for the rolled-over TIME-T00001 intermediate (and one root CRL), so
 /// lifetime cases can run with revocation checked.
 fn crls() -> Vec<(&'static str, Vec<u8>)> {
     use x509_cert::{
@@ -574,7 +574,7 @@ fn math(si: der::Node<'_>, cert: &Certificate, direct: Option<&[u8]>) {
     .unwrap();
 }
 
-/// Check the SEC-09 signer, its embedded certificates and its timestamp
+/// Check the TIME-T00001 signer, its embedded certificates and its timestamp
 /// against the specification. Embedded order is leaf, root, intermediates,
 /// then the TSA.
 fn check_signer(spec: &Spec, certs: &[Certificate], si: der::Node<'_>, direct: Option<&[u8]>) {
@@ -707,7 +707,7 @@ fn time_committed_fixtures_preserve_image_signatures_and_times() {
             check_signer(&spec, &sd.certs, sd.signers[0], None);
             continue;
         }
-        // The primary signer is the ordinary publisher; the SEC-09 signer is
+        // The primary signer is the ordinary publisher; the TIME-T00001 signer is
         // its single nested signature over the same image digest.
         math(sd.signers[0], &identity().cert, None);
         let outer = sd.signers[0].children().unwrap();

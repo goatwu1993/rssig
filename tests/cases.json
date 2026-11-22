@@ -23125,7 +23125,7 @@
       }
     },
     {
-      "id": "lib04-powershell-independent-jsign",
+      "id": "powershell-independent-jsign-parser",
       "input": "powershell-independent-jsign.ps1",
       "command": [
         "verify",
@@ -23164,7 +23164,7 @@
       }
     },
     {
-      "id": "lib04-powershell-independent-tampered",
+      "id": "powershell-independent-tampered-parser",
       "input": "bad-powershell-independent-digest.ps1",
       "command": [
         "verify",
@@ -23190,7 +23190,7 @@
       }
     },
     {
-      "id": "lib04-wsh-wsh-independent-jsign-vbs",
+      "id": "wsh-independent-jsign-vbs-parser",
       "input": "wsh-independent-jsign.vbs",
       "command": [
         "verify",
@@ -23221,7 +23221,7 @@
       }
     },
     {
-      "id": "lib04-rdp-independent-nfedera",
+      "id": "rdp-independent-nfedera-parser",
       "input": "rdp-independent-nfedera.rdp",
       "command": [
         "verify",
@@ -23259,7 +23259,7 @@
       }
     },
     {
-      "id": "lib04-bad-rdp-independent-setting",
+      "id": "rdp-bad-independent-setting-parser",
       "input": "bad-rdp-independent-setting.rdp",
       "command": [
         "verify",
@@ -23284,7 +23284,7 @@
       }
     },
     {
-      "id": "lib04-psxml-independent-ascii",
+      "id": "psxml-independent-ascii-parser",
       "input": "psxml-independent-jsign-ascii.ps1xml",
       "command": [
         "verify",
@@ -23322,7 +23322,7 @@
       }
     },
     {
-      "id": "lib05-msi-extended",
+      "id": "msi-extended-parser",
       "input": "msi-good-pe64.msi",
       "command": [
         "verify",
@@ -23399,7 +23399,7 @@
       }
     },
     {
-      "id": "lib05-msi-empty-extended",
+      "id": "msi-empty-extended-parser",
       "input": "msi-bad-empty-extended.msi",
       "command": [
         "verify",
@@ -23432,7 +23432,7 @@
       }
     },
     {
-      "id": "lib05-appx-publisher",
+      "id": "appx-publisher-parser",
       "input": "bad-appx-publisher.msix",
       "command": [
         "verify",
@@ -23462,7 +23462,7 @@
       }
     },
     {
-      "id": "lib05-bundle-identity",
+      "id": "appxbundle-identity-parser",
       "input": "bad-appxbundle-name.msixbundle",
       "command": [
         "verify",
@@ -23492,7 +23492,7 @@
       }
     },
     {
-      "id": "lib06-parse-cab",
+      "id": "inspect-parse-cab",
       "input": "good.cab",
       "command": [
         "parse",
@@ -23514,7 +23514,7 @@
       }
     },
     {
-      "id": "lib06-parse-navx",
+      "id": "inspect-parse-navx",
       "input": "good.navx",
       "command": [
         "parse",
@@ -23536,7 +23536,7 @@
       }
     },
     {
-      "id": "lib07-policy-trusted",
+      "id": "policy-trusted",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -23568,7 +23568,7 @@
       }
     },
     {
-      "id": "lib07-policy-no-revocation",
+      "id": "policy-no-revocation",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -23599,7 +23599,7 @@
       }
     },
     {
-      "id": "lib07-policy-integrity",
+      "id": "policy-integrity",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -23627,7 +23627,7 @@
       }
     },
     {
-      "id": "lib08-repeated-verification",
+      "id": "policy-repeated-verification",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23672,7 +23672,7 @@
       ]
     },
     {
-      "id": "lib09-core-trusted-pe",
+      "id": "policy-core-trusted-pe",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -23739,8 +23739,8 @@
       }
     },
     {
-      "id": "sec02-wide-64",
-      "input": "sec02-wide-64.exe",
+      "id": "limit-wide-64",
+      "input": "limit-wide-64.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23764,8 +23764,8 @@
       }
     },
     {
-      "id": "sec02-wide-65",
-      "input": "sec02-wide-65.exe",
+      "id": "limit-wide-65",
+      "input": "limit-wide-65.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23799,8 +23799,8 @@
       }
     },
     {
-      "id": "sec02-entries-65",
-      "input": "sec02-entries-65.exe",
+      "id": "limit-entries-65",
+      "input": "limit-entries-65.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23834,8 +23834,8 @@
       }
     },
     {
-      "id": "sec02-depth-8",
-      "input": "sec02-depth-8.exe",
+      "id": "limit-depth-8",
+      "input": "limit-depth-8.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -23859,8 +23859,8 @@
       }
     },
     {
-      "id": "sec02-depth-9-malformed",
-      "input": "sec02-depth-9-malformed.exe",
+      "id": "limit-depth-9-malformed",
+      "input": "limit-depth-9-malformed.exe",
       "command": [
         "verify",
         "--no-system-roots",
@@ -24078,7 +24078,7 @@
       }
     },
     {
-      "id": "sec03-input",
+      "id": "limit-input",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -24109,7 +24109,7 @@
       }
     },
     {
-      "id": "sec03-report",
+      "id": "limit-report",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -24140,7 +24140,7 @@
       }
     },
     {
-      "id": "sec03-batch-input",
+      "id": "limit-batch-input",
       "inputs": [
         "good-pe64.exe",
         "good-pe64.exe"
@@ -24179,7 +24179,7 @@
       }
     },
     {
-      "id": "sec03-parse-input",
+      "id": "limit-parse-input",
       "input": "good-pe64.exe",
       "command": [
         "parse",
@@ -24209,7 +24209,7 @@
       }
     },
     {
-      "id": "sec03-batch-count",
+      "id": "limit-batch-count",
       "inputs": [
         "good-pe64.exe",
         "good-pe64.exe",
@@ -27665,7 +27665,7 @@
       }
     },
     {
-      "id": "sec07-root-unsupported-roots",
+      "id": "trust-root-unsupported-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27675,7 +27675,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-root-unsupported.der"
+        "fixtures/root-unsupported.der"
       ],
       "expect": {
         "exit_code": 2,
@@ -27689,7 +27689,7 @@
       }
     },
     {
-      "id": "sec07-roots-unsupported-roots",
+      "id": "trust-roots-unsupported-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27699,7 +27699,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-roots-unsupported.pem"
+        "fixtures/root-bundle-unsupported.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27713,7 +27713,7 @@
       }
     },
     {
-      "id": "sec07-roots-invalid-roots",
+      "id": "trust-roots-invalid-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27723,7 +27723,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-roots-invalid.pem"
+        "fixtures/root-bundle-invalid.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27737,7 +27737,7 @@
       }
     },
     {
-      "id": "sec07-roots-invalid-first-roots",
+      "id": "trust-roots-invalid-first-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27747,7 +27747,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-roots-invalid-first.pem"
+        "fixtures/root-bundle-invalid-first.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27761,7 +27761,7 @@
       }
     },
     {
-      "id": "sec07-roots-trailing-roots",
+      "id": "trust-roots-trailing-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27771,7 +27771,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-roots-trailing.pem"
+        "fixtures/root-bundle-trailing.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27785,7 +27785,7 @@
       }
     },
     {
-      "id": "sec07-roots-truncated-roots",
+      "id": "trust-roots-truncated-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27795,7 +27795,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-roots-truncated.pem"
+        "fixtures/root-bundle-truncated.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27809,7 +27809,7 @@
       }
     },
     {
-      "id": "sec07-crls-invalid-crl",
+      "id": "trust-crls-invalid-crl",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27819,7 +27819,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-crls-invalid.pem"
+        "fixtures/crl-bundle-invalid.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27833,7 +27833,7 @@
       }
     },
     {
-      "id": "sec07-crls-invalid-first-crl",
+      "id": "trust-crls-invalid-first-crl",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27843,7 +27843,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-crls-invalid-first.pem"
+        "fixtures/crl-bundle-invalid-first.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27857,7 +27857,7 @@
       }
     },
     {
-      "id": "sec07-crls-trailing-crl",
+      "id": "trust-crls-trailing-crl",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27867,7 +27867,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-crls-trailing.pem"
+        "fixtures/crl-bundle-trailing.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27881,7 +27881,7 @@
       }
     },
     {
-      "id": "sec07-empty-roots",
+      "id": "trust-empty-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27891,7 +27891,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-empty.pem"
+        "fixtures/trust-empty.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27905,7 +27905,7 @@
       }
     },
     {
-      "id": "sec07-empty-crl",
+      "id": "trust-empty-crl",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27915,7 +27915,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-empty.pem"
+        "fixtures/trust-empty.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27929,7 +27929,7 @@
       }
     },
     {
-      "id": "sec07-crls-good-roots",
+      "id": "trust-crls-good-roots",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27939,7 +27939,7 @@
         "--crl",
         "fixtures/good.crl",
         "--roots",
-        "fixtures/sec07-crls-good.pem"
+        "fixtures/crl-bundle-good.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27953,7 +27953,7 @@
       }
     },
     {
-      "id": "sec07-roots-good-crl",
+      "id": "trust-roots-good-crl",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27963,7 +27963,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-roots-good.pem"
+        "fixtures/root-bundle-good.pem"
       ],
       "expect": {
         "exit_code": 2,
@@ -27977,7 +27977,7 @@
       }
     },
     {
-      "id": "sec07-good",
+      "id": "trust-good",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -27985,9 +27985,9 @@
         "--time",
         "1800000000",
         "--roots",
-        "fixtures/sec07-roots-good.pem",
+        "fixtures/root-bundle-good.pem",
         "--crl",
-        "fixtures/sec07-crls-good.pem"
+        "fixtures/crl-bundle-good.pem"
       ],
       "expect": {
         "exit_code": 0,
@@ -28018,7 +28018,7 @@
       }
     },
     {
-      "id": "sec07-duplicates",
+      "id": "trust-duplicates",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -28026,9 +28026,9 @@
         "--time",
         "1800000000",
         "--roots",
-        "fixtures/sec07-roots-duplicate.pem",
+        "fixtures/root-bundle-duplicate.pem",
         "--crl",
-        "fixtures/sec07-crls-duplicate.pem"
+        "fixtures/crl-bundle-duplicate.pem"
       ],
       "expect": {
         "exit_code": 0,
@@ -28059,7 +28059,7 @@
       }
     },
     {
-      "id": "sec07-whitespace",
+      "id": "trust-whitespace",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -28067,7 +28067,7 @@
         "--time",
         "1800000000",
         "--roots",
-        "fixtures/sec07-roots-whitespace.pem",
+        "fixtures/root-bundle-whitespace.pem",
         "--crl",
         "fixtures/good.crl"
       ],
@@ -28100,7 +28100,7 @@
       }
     },
     {
-      "id": "sec07-forged-crl",
+      "id": "crl-bundle-forged",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -28110,7 +28110,7 @@
         "--roots",
         "fixtures/root.der",
         "--crl",
-        "fixtures/sec07-crls-forged.pem"
+        "fixtures/crl-bundle-forged.pem"
       ],
       "expect": {
         "exit_code": 1,
@@ -28129,7 +28129,7 @@
       }
     },
     {
-      "id": "sec07-empty-store",
+      "id": "path-empty-store",
       "input": "good-pe64.exe",
       "command": [
         "verify",
@@ -28156,10 +28156,10 @@
       }
     },
     {
-      "id": "sec07-fetch-64-crls",
+      "id": "limit-fetch-64-crls",
       "input": "good-crl-discovery.exe",
       "crl_responses": {
-        "http://crl.example.invalid/test.crl": "sec07-fetch-64-crls.pem"
+        "http://crl.example.invalid/test.crl": "limit-fetch-64-crls.pem"
       },
       "command": [
         "verify",
@@ -28390,10 +28390,10 @@
       }
     },
     {
-      "id": "sec07-fetch-65-crls",
+      "id": "limit-fetch-65-crls",
       "input": "good-crl-discovery.exe",
       "crl_responses": {
-        "http://crl.example.invalid/test.crl": "sec07-fetch-65-crls.pem"
+        "http://crl.example.invalid/test.crl": "limit-fetch-65-crls.pem"
       },
       "command": [
         "verify",
@@ -28430,10 +28430,10 @@
       }
     },
     {
-      "id": "sec07-fetch-supplied-plus-bundle",
+      "id": "limit-fetch-supplied-plus-bundle",
       "input": "good-crl-discovery.exe",
       "crl_responses": {
-        "http://crl.example.invalid/test.crl": "sec07-fetch-64-crls.pem"
+        "http://crl.example.invalid/test.crl": "limit-fetch-64-crls.pem"
       },
       "command": [
         "verify",

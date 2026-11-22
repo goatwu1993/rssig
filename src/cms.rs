@@ -691,7 +691,7 @@ mod borrowing_tests {
     use super::*;
 
     #[test]
-    fn lib08_certificate_candidates_move_decoded_storage() {
+    fn certificate_candidates_move_decoded_storage() {
         let pe =
             crate::parse::Pe::parse(include_bytes!("../tests/fixtures/good-pe64.exe")).unwrap();
         let mut rest = pe.signatures().unwrap()[0];
@@ -715,7 +715,7 @@ mod borrowing_tests {
     }
 
     #[test]
-    fn lib08_signer_borrows_selected_certificate() {
+    fn signer_borrows_selected_certificate() {
         let bytes = include_bytes!("../tests/fixtures/good-pe64.exe");
         let pe = crate::parse::Pe::parse(bytes).unwrap();
         let signatures = pe.signatures().unwrap();

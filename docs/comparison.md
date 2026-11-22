@@ -317,7 +317,7 @@ Jsign or Relic. Important limits remain:
   extension coverage. A TLS-oriented path library requires explicit Authenticode
   decisions; current code adds leaf and intermediate KeyUsage checks.
 - Timestamp multiplicity, lifetime signing and time encodings are pinned
-  (SEC-08/09); historical revocation needs clearer rules. Current CRLs conservatively reject a
+  (TSA-T00001 and TIME-T00001); historical revocation needs clearer rules. Current CRLs conservatively reject a
   revoked signer even when the recorded revocation date follows signing.
 - No automatic AIA/CRL fetching, OCSP, RSA-PSS, standalone catalog verification,
   or generic detached Authenticode input. Some PE layouts, script encodings,

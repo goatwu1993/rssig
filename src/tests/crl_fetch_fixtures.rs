@@ -19,7 +19,7 @@ pub(super) fn write(dir: &std::path::Path) {
             .unwrap(),
         );
         if number >= 64 {
-            std::fs::write(dir.join(format!("sec07-fetch-{number}-crls.pem")), &bundle).unwrap();
+            std::fs::write(dir.join(format!("limit-fetch-{number}-crls.pem")), &bundle).unwrap();
         }
     }
     for (name, url) in [

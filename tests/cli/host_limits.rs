@@ -1,6 +1,6 @@
 use super::support::*;
 #[test]
-fn sec03_input_and_report_limits_return_ordered_json_failures() {
+fn input_and_report_limits_return_ordered_json_failures() {
     for (flag, resource) in [
         ("--max-input-bytes", "input_bytes"),
         ("--max-report-bytes", "report_bytes"),
@@ -28,7 +28,7 @@ fn sec03_input_and_report_limits_return_ordered_json_failures() {
 }
 
 #[test]
-fn sec03_batch_limits_keep_every_result_in_order() {
+fn batch_limits_keep_every_result_in_order() {
     let fixture = format!(
         "{}/tests/fixtures/good-pe64.exe",
         env!("CARGO_MANIFEST_DIR")
@@ -61,7 +61,7 @@ fn sec03_batch_limits_keep_every_result_in_order() {
 }
 
 #[test]
-fn sec03_invalid_limits_are_plain_configuration_errors() {
+fn invalid_limits_are_plain_configuration_errors() {
     let path = format!(
         "{}/tests/fixtures/good-pe64.exe",
         env!("CARGO_MANIFEST_DIR")
@@ -91,7 +91,7 @@ fn sec03_invalid_limits_are_plain_configuration_errors() {
 }
 
 #[test]
-fn sec03_total_report_limit_preserves_prior_success() {
+fn total_report_limit_preserves_prior_success() {
     let path = format!(
         "{}/tests/fixtures/good-pe64.exe",
         env!("CARGO_MANIFEST_DIR")
@@ -128,8 +128,8 @@ fn sec03_total_report_limit_preserves_prior_success() {
 }
 
 #[test]
-fn sec03_sparse_oversized_root_is_a_configuration_failure() {
-    let path = std::env::temp_dir().join(format!("rssig-sec03-root-{}", std::process::id()));
+fn sparse_oversized_root_is_a_configuration_failure() {
+    let path = std::env::temp_dir().join(format!("rssig-host-limit-root-{}", std::process::id()));
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -168,7 +168,7 @@ fn sec03_sparse_oversized_root_is_a_configuration_failure() {
 }
 
 #[test]
-fn sec03_batch_count_is_checked_before_reads() {
+fn batch_count_is_checked_before_reads() {
     let mut args = vec!["rssig", "verify", "--integrity-only"];
     args.extend(std::iter::repeat_n("does-not-exist", 129));
     let mut stdout = Vec::new();

@@ -1,9 +1,9 @@
-//! SEC-10 CRL applicability: unusable CRLs outside the chain are excluded. A CRL
+//! CRL-T00001 CRL applicability: unusable CRLs outside the chain are excluded. A CRL
 //! from a chain issuer that is stale or structurally invalid fails closed when it
 //! is the only one for the certificate, and is set aside when another CRL of
 //! that issuer is usable (the best CRL decides, as in OpenSSL and Bouncy Castle).
-//! The cRLSign tests use the SEC-06 chain, whose issuer variants differ only in
-//! KeyUsage. The distribution-point tests use SEC-06 signers and one intermediate
+//! The cRLSign tests use the PATH-T00001 chain, whose issuer variants differ only in
+//! KeyUsage. The distribution-point tests use PATH-T00001 signers and one intermediate
 //! that list CRL distribution points in several forms, issuer and root CRLs
 //! scoped by issuingDistributionPoint, and a root CRL revoking the intermediate.
 
@@ -337,7 +337,7 @@ fn crl_revocation_in_any_applicable_crl_wins_regardless_of_order() {
     }
 }
 
-/// Verify a SEC-06 chain input with the root CRL and these issuer CRLs, in order.
+/// Verify a PATH-T00001 chain input with the root CRL and these issuer CRLs, in order.
 fn run_path_crls(input: &str, crls: &[&str]) -> Output {
     run_path_with("path-root.der", input, crls)
 }
@@ -350,7 +350,7 @@ fn run_path_with(root: &str, input: &str, crls: &[&str]) -> Output {
     run_path_exact(root, input, &crls)
 }
 
-/// Verify a SEC-06 chain input with exactly these CRLs, in order.
+/// Verify a PATH-T00001 chain input with exactly these CRLs, in order.
 fn run_path_exact(root: &str, input: &str, crls: &[&str]) -> Output {
     let mut args = vec![
         "verify".to_string(),
@@ -449,7 +449,7 @@ fn crl_full_crl_covers_a_certificate_that_lists_a_distribution_point() {
 
 #[test]
 fn crl_partition_crl_is_rejected_for_a_signer_listing_no_distribution_point() {
-    // The same matching-partition CRL, but the base SEC-06 leaf lists no point.
+    // The same matching-partition CRL, but the base PATH-T00001 leaf lists no point.
     let output = run_path_crls("good-path-basic.exe", &["crl-issuer-idp-match.crl"]);
     revocation_failure(&output, "invalid_crl", "Invalid CRL");
     assert_eq!(
@@ -786,14 +786,14 @@ fn crl_a_listing_in_an_authenticated_crl_counts_even_with_a_malformed_aki() {
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }
 
-/// SEC-16: a self-issued key rollover. The chain verifies without
+/// CRL-T00004: a self-issued key rollover. The chain verifies without
 /// revocation. With CRLs that carry no authorityKeyIdentifier nothing tells
 /// the two same-name issuers' CRLs apart: OpenSSL and BoringSSL reject (CRL
 /// signature failure), Bouncy Castle accepts, and rssig rejects (fails
 /// closed) in either `--crl` order. With CRLs that each name their issuer's
 /// key all three accept, and so does rssig.
 #[test]
-fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
+fn a_self_issued_rollover_path_needs_key_identified_crls() {
     let run = |extra: &[&str]| {
         let mut args = vec![
             "verify",
@@ -844,7 +844,7 @@ fn sec16_a_self_issued_rollover_path_needs_key_identified_crls() {
     revocation_failure(&output, "certificate_revoked", "Certificate revoked");
 }
 
-/// SEC-10: two configured roots with one key and name may carry different
+/// CRL-T00001: two configured roots with one key and name may carry different
 /// subjectKeyIdentifiers. A CRL signed by another key that names one of them
 /// is forged for that anchor, whichever root is listed first; naming an
 /// identifier no configured root carries, it is another issuer's CRL and is
@@ -888,7 +888,7 @@ fn crl_a_same_key_roots_identifier_makes_a_crl_forged_not_set_aside() {
     }
 }
 
-/// SEC-23: a root CRL without nextUpdate that lists the signer revokes alone,
+/// PR #64: a root CRL without nextUpdate that lists the signer revokes alone,
 /// as in OpenSSL, BoringSSL and Bouncy Castle, unless a newer complete CRL of
 /// the root leaves the signer out; an older one does not clear it. Run on
 /// `good-pe64.exe`, which has no timestamp, so the signer is checked first.
@@ -933,7 +933,7 @@ fn crl_a_crl_without_next_update_revokes_unless_a_newer_crl_clears_it() {
     assert_eq!(error["details"]["reason"], "missing_next_update");
 }
 
-/// SEC-16, CRL-041: a CRL whose issuer is the root's name in another string
+/// CRL-T00004, CRL-041: a CRL whose issuer is the root's name in another string
 /// type, case or spacing is matched by RFC 5280 section 7.1 and authenticated
 /// by its signature, so the root's status is good.
 #[test]
@@ -962,7 +962,7 @@ fn crl_an_issuer_name_matches_by_rfc_5280_comparison() {
     }
 }
 
-/// SEC-16, CRL-042: an issuer certificate with no subjectKeyIdentifier, or one
+/// CRL-T00004, CRL-042: an issuer certificate with no subjectKeyIdentifier, or one
 /// that does not parse, cannot disprove a CRL's key, so a CRL signed by
 /// another key that names one is forged, where a root with an identifier sets
 /// it aside.
@@ -995,7 +995,7 @@ fn crl_an_issuer_without_a_usable_key_identifier_cannot_disprove_another_keys_cr
     }
 }
 
-/// SEC-16, CRL-043 and CRL-044: a CRL signed by another key whose authorityKeyIdentifier
+/// CRL-T00004, CRL-043 and CRL-044: a CRL signed by another key whose authorityKeyIdentifier
 /// names another serial or issuer than the root's is another certificate's CRL
 /// and is set aside, not forged; one the root signed verifies whatever its
 /// authorityKeyIdentifier names.
@@ -1019,7 +1019,7 @@ fn crl_naming_another_certificate_by_issuer_and_serial_is_set_aside_when_it_fail
     );
 }
 
-/// SEC-16, CRL-041: a CRL whose issuer equals the root's name only under RFC
+/// CRL-T00004, CRL-041: a CRL whose issuer equals the root's name only under RFC
 /// 5280 comparison (another case) and that fails under the root's key is
 /// another CA's and is set aside, not forged, so it cannot block retrieval
 /// (CRL-018) or name a forged CRL in the result.
@@ -1058,7 +1058,7 @@ fn crl_a_failed_crl_matching_only_by_name_comparison_is_set_aside() {
     );
 }
 
-/// SEC-16, CRL-008: a rollover CRL that spells its issuer as a PrintableString
+/// CRL-T00004, CRL-008: a rollover CRL that spells its issuer as a PrintableString
 /// cannot escape the rule for issuers of one name with different keys whose
 /// CRLs name no key, in either order of the CRLs.
 #[test]

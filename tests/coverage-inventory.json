@@ -438,9 +438,9 @@
       "id": "policy-modes",
       "claim": "Explicit reduced-policy JSON",
       "cases": [
-        "lib07-policy-trusted",
-        "lib07-policy-no-revocation",
-        "lib07-policy-integrity"
+        "policy-trusted",
+        "policy-no-revocation",
+        "policy-integrity"
       ]
     },
     {
@@ -511,22 +511,22 @@
       "id": "work-budgets",
       "claim": "Shared verification work and nesting limits",
       "cases": [
-        "sec02-wide-64",
-        "sec02-wide-65",
-        "sec02-entries-65",
-        "sec02-depth-8",
-        "sec02-depth-9-malformed"
+        "limit-wide-64",
+        "limit-wide-65",
+        "limit-entries-65",
+        "limit-depth-8",
+        "limit-depth-9-malformed"
       ]
     },
     {
       "id": "host-budgets",
       "claim": "Input/batch/report limits",
       "cases": [
-        "sec03-input",
-        "sec03-report",
-        "sec03-batch-input",
-        "sec03-parse-input",
-        "sec03-batch-count"
+        "limit-input",
+        "limit-report",
+        "limit-batch-input",
+        "limit-parse-input",
+        "limit-batch-count"
       ]
     },
     {
@@ -742,9 +742,9 @@
     },
     "resource_limit_exceeded": {
       "cases": [
-        "sec02-wide-65",
-        "sec02-entries-65",
-        "sec03-input"
+        "limit-wide-65",
+        "limit-entries-65",
+        "limit-input"
       ],
       "gap": ""
     },
@@ -1089,11 +1089,11 @@
     "navx-independent-digest",
     "msp-independent-jsign",
     "msp-independent-jsign-tampered",
-    "lib04-powershell-independent-jsign",
-    "lib04-powershell-independent-tampered",
-    "lib04-wsh-wsh-independent-jsign-vbs",
-    "lib04-rdp-independent-nfedera",
-    "lib04-bad-rdp-independent-setting",
-    "lib04-psxml-independent-ascii"
+    "powershell-independent-jsign-parser",
+    "powershell-independent-tampered-parser",
+    "wsh-independent-jsign-vbs-parser",
+    "rdp-independent-nfedera-parser",
+    "rdp-bad-independent-setting-parser",
+    "psxml-independent-ascii-parser"
   ]
 }

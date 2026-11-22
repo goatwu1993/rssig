@@ -25,7 +25,7 @@ cli = ["verify", "crl-fetch", "dep:clap", "dep:libc"]
 system-roots = ["verify", "dep:rustls-native-certs"]
 # Testing only, never for a product build: after rssig's revocation decision,
 # re-run webpki's own revocation check on the accepted path and panic if the
-# two disagree (SEC-24). Enabled for every test target by the self
+# two disagree (CRL-T00011). Enabled for every test target by the self
 # dev-dependency below. It enables no other feature, so reduced-feature test
 # runs keep their feature set; it has an effect only with `verify-core`.
 revocation-crosscheck = []
@@ -91,7 +91,7 @@ x509-cert = { version = "0.2", default-features = false }
 rustls-native-certs = { version = "0.8", optional = true }
 rustls-pki-types = { version = "1", optional = true, default-features = false, features = ["alloc"] }
 # Pinned exactly: CRL authority and path behavior are documented as observed at
-# this version (docs/tasks/sec-10-crl-applicability.md). Upgrade deliberately.
+# this version (docs/tasks/crl-t00001.md). Upgrade deliberately.
 webpki = { package = "rustls-webpki", version = "=0.103.16", optional = true, default-features = false, features = ["alloc"] }
 rsa = { version = "0.9", optional = true, default-features = false, features = ["sha2", "u64_digit"] }
 sha1 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }

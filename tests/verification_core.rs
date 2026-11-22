@@ -1,7 +1,7 @@
 #![cfg(feature = "verify-core")]
 use rssig::{TrustStore, VerifyOptions};
 #[test]
-fn lib09_core_checks_trust_revocation_and_integrity() {
+fn core_checks_trust_revocation_and_integrity() {
     let mut trust = TrustStore::default();
     trust
         .add_roots(include_bytes!("fixtures/root.der"))
@@ -21,7 +21,7 @@ fn lib09_core_checks_trust_revocation_and_integrity() {
 }
 
 #[test]
-fn lib09_core_formats_and_timestamps_use_configured_trust() {
+fn core_formats_and_timestamps_use_configured_trust() {
     let mut trust = TrustStore::default();
     trust
         .add_roots(include_bytes!("fixtures/root.der"))
@@ -96,7 +96,7 @@ fn lib09_core_formats_and_timestamps_use_configured_trust() {
 
 #[cfg(not(feature = "appx"))]
 #[test]
-fn lib09_disabled_package_adapter_fails_closed() {
+fn disabled_package_adapter_fails_closed() {
     let error = rssig::verify(
         include_bytes!("fixtures/good.msix"),
         &VerifyOptions::integrity_only(1800000000),

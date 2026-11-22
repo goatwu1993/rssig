@@ -232,7 +232,7 @@ fn usable_supplied_crls_and_offline_mode_do_not_call_the_provider() {
 }
 
 #[test]
-fn sec07_fetched_bundles_enforce_retained_crl_limit() {
+fn fetched_bundles_enforce_retained_crl_limit() {
     struct Source {
         bytes: Vec<u8>,
         calls: usize,
@@ -251,7 +251,7 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     for (count, supplied) in [(64, false), (65, false), (64, true)] {
         let mut source = Source {
-            bytes: std::fs::read(base.join(format!("sec07-fetch-{count}-crls.pem"))).unwrap(),
+            bytes: std::fs::read(base.join(format!("limit-fetch-{count}-crls.pem"))).unwrap(),
             calls: 0,
         };
         let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -311,7 +311,7 @@ fn sec07_fetched_bundles_enforce_retained_crl_limit() {
     }
 }
 
-/// SEC-10: a supplied CRL suppresses retrieval only when it would be
+/// CRL-T00001: a supplied CRL suppresses retrieval only when it would be
 /// authoritative for the certificate, not merely because it has the issuer's
 /// name. Each row is (input, supplied CRLs, fetched response, requested URLs,
 /// expected error code).
@@ -434,7 +434,7 @@ fn crl_fetch_coverage_uses_the_verification_authority_rule() {
     }
 }
 
-/// SEC-10: retrieval follows the verifier's result. Each row is (input, root,
+/// CRL-T00001: retrieval follows the verifier's result. Each row is (input, root,
 /// supplied CRLs, responses by URL, requested URLs in order, expected error
 /// code and `details.reason`). A URL without a response fails the request.
 #[test]
@@ -486,7 +486,7 @@ fn crl_fetch_follows_the_verification_result() {
         // certificate completes it: crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate.
         ("good-path-basic.exe", "path-root.der", &["path-root.crl", "crl-issuer-idp-match-ca.crl"], &[], &[], Some(("invalid_crl", "distribution_point_scope"))),
         // A supplied CRL whose scope cannot be used is one a source's CRL can replace
-        // (SEC-23): the listed point is requested, and without an answer the error stands.
+        // (PR #64): the listed point is requested, and without an answer the error stands.
         ("crl-leaf-crl-dp.exe", "path-root.der", &["path-root.crl", "crl-issuer-idp-relative.crl"], &[(LEAF_POINT, "crl-issuer-idp-match.crl")], &[LEAF_POINT], None),
         ("crl-leaf-crl-dp.exe", "path-root.der", &["path-root.crl", "crl-issuer-idp-relative.crl"], &[], &[LEAF_POINT], Some(("invalid_crl", "issuing_distribution_point"))),
         // Both selected certificates list a point. The verifier reports only the
@@ -586,7 +586,7 @@ fn crl_fetch_follows_the_verification_result() {
     }
 }
 
-/// SEC-10: only the certificate the verifier reports as lacking a CRL is asked
+/// CRL-T00001: only the certificate the verifier reports as lacking a CRL is asked
 /// about. The signer is covered by a supplied CRL and is never asked; the
 /// issuer's point fails, so the status stays unknown with that failure.
 #[test]
@@ -646,7 +646,7 @@ fn crl_fetch_asks_only_the_certificate_without_a_crl() {
     );
 }
 
-/// SEC-10: a response that is not a CRL, and a failed request, are no evidence;
+/// CRL-T00001: a response that is not a CRL, and a failed request, are no evidence;
 /// another listed point of the same certificate still supplies its CRL.
 #[test]
 fn crl_fetch_bad_response_is_no_evidence_beside_another_point() {
@@ -726,7 +726,7 @@ fn crl_fetch_bad_response_is_no_evidence_beside_another_point() {
     );
 }
 
-/// SEC-10: one candidate path is revoked by a supplied CRL and the other only
+/// CRL-T00001: one candidate path is revoked by a supplied CRL and the other only
 /// lacks its root's CRL. Retrieval asks about exactly that path's issuer, by
 /// certificate and issuer name (it lists no point), and the path verifies.
 #[test]
@@ -805,7 +805,7 @@ fn crl_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
     );
 }
 
-/// SEC-10: one path is revoked and the other's only root CRL has expired.
+/// CRL-T00001: one path is revoked and the other's only root CRL has expired.
 /// The revocation names the certificate whose CRL a source could refresh;
 /// offline that is the result, and a source answering with a fresh CRL
 /// completes the other path, as Bouncy Castle would.
@@ -869,7 +869,7 @@ fn crl_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
     assert_eq!(source.1, 1);
 }
 
-/// SEC-10: one path is revoked and the other only lacks its root's CRL. The
+/// CRL-T00001: one path is revoked and the other only lacks its root's CRL. The
 /// source aborts before that path could be completed: the revocation keeps
 /// its code, and the result marks that retrieval was cut short.
 #[test]
@@ -927,7 +927,7 @@ fn crl_fetch_abort_beside_a_revoked_path_is_reported() {
     );
 }
 
-/// SEC-10: the only path's intermediate lacks keyCertSign, and its root CRL
+/// CRL-T00001: the only path's intermediate lacks keyCertSign, and its root CRL
 /// is unusable or revokes it. That is definite evidence, so with retrieval
 /// it keeps its code, as without it, and no source is asked. (Only an
 /// unknown status naming nothing is replaced by the path failure with
@@ -969,7 +969,7 @@ fn crl_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
     }
 }
 
-/// SEC-10: the only path's intermediate lacks keyCertSign and its root CRL.
+/// CRL-T00001: the only path's intermediate lacks keyCertSign and its root CRL.
 /// No CRL could make that path verify, so nothing is named for retrieval:
 /// the source is never asked, and with retrieval the path failure itself is
 /// reported.
@@ -1033,7 +1033,7 @@ fn crl_fetch_never_asks_about_a_path_failing_key_usage() {
     assert_eq!(error["stage"], "certificate_chain");
 }
 
-/// SEC-10: the source answers the issuer's request with its CRL and then
+/// CRL-T00001: the source answers the issuer's request with its CRL and then
 /// aborts; the signer was asked first and its point failed. What is still
 /// missing (the signer's CRL) was asked about before the abort, so the result
 /// is the verifier's own unknown status, not an abort.
@@ -1088,7 +1088,7 @@ fn crl_fetch_abort_that_cut_nothing_short_is_not_reported() {
     assert_eq!(missing[0]["subject"]["display"], "CN=SEC-06 publisher");
 }
 
-/// SEC-10: a signer listing only an https point. An injected source is asked
+/// CRL-T00001: a signer listing only an https point. An injected source is asked
 /// about it whatever the scheme; the built-in HTTP source refuses it before
 /// any network work, so the status stays unknown with that denial.
 #[test]
@@ -1146,7 +1146,7 @@ fn crl_fetch_https_point_is_the_source_decision() {
     assert_eq!(failure["source_error"], "denied");
 }
 
-/// SEC-10: an expired cross certificate's path and the issuer's path, which
+/// CRL-T00001: an expired cross certificate's path and the issuer's path, which
 /// only lacks its root's CRL. Offline the gap is named ahead of the expiry;
 /// with a source answering for that certificate, the issuer's path verifies.
 #[test]
@@ -1281,7 +1281,7 @@ fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
     );
 }
 
-/// SEC-10: a source keyed by certificate answers the signer with its issuer's
+/// CRL-T00001: a source keyed by certificate answers the signer with its issuer's
 /// CRL, naming no URL, and never uses the signer's listed point. The point is
 /// not a failure: nothing is reported in `crl_retrieval.failures`.
 #[test]
@@ -1362,7 +1362,7 @@ fn fetch_asks_nothing_before_the_whole_input_is_authenticated() {
     assert_eq!(report["results"][0]["error"]["code"], "invalid_signature");
 }
 
-/// SEC-23: a supplied CRL that a source's CRL could replace is refreshed, as
+/// PR #64: a supplied CRL that a source's CRL could replace is refreshed, as
 /// OpenSSL and BoringSSL look the issuer's CRLs up again when the supplied
 /// one scores below a valid CRL (times, scope, critical extensions) and
 /// Bouncy Castle fetches after a CRL failure. A forged one is reported as it
@@ -1459,7 +1459,7 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
     }
 }
 
-/// SEC-23: the unusable-CRL list beside other evidence. On the `path`
+/// PR #64: the unusable-CRL list beside other evidence. On the `path`
 /// chain whose root CRL is not yet valid, an unknown status names the signer
 /// without a CRL and the issuer whose CRL a source could replace; a source
 /// answering both points completes the path.

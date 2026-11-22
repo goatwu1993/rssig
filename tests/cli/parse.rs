@@ -415,7 +415,7 @@ fn recursive_parse_fails_closed_at_the_default_depth_limit() {
 }
 
 #[test]
-fn lib06_inspects_cab_and_navx_without_authentication() {
+fn inspects_cab_and_navx_without_authentication() {
     for (name, format) in [("good.cab", "cab"), ("good.navx", "navx")] {
         let (exit, json) = invoke(&[name], &["--format", format]);
         assert_eq!(exit, 0);

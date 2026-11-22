@@ -12,8 +12,8 @@ Aggregate verification budgets, nesting depth, host input and report size, batch
 
 ## Sources
 
-- [verification-budgets.md](verification-budgets.md) (SEC-02)
-- [host-limits.md](host-limits.md) (SEC-03)
+- [verification-budgets.md](verification-budgets.md) (LIMIT-T00002)
+- [host-limits.md](host-limits.md) (LIMIT-T00003)
 
 ## Order
 

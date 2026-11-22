@@ -1,8 +1,8 @@
-# Certificate paths (SEC-06)
+# Certificate paths (PATH-T00001)
 
 rssig uses the locked `rustls-webpki` 0.103.16 path builder with its RustCrypto
 signature adapter. The operating system supplies roots only. This profile is
-shared by Authenticode, timestamp and RDP verification; the SEC-06 fixtures
+shared by Authenticode, timestamp and RDP verification; the PATH-T00001 fixtures
 exercise it through signed PE files with code-signing certificates. It is not
 Windows trust-policy equivalence or a complete RFC 5280 policy implementation.
 The numbered decisions behind this page, with their status and sources, are
@@ -10,14 +10,14 @@ The numbered decisions behind this page, with their status and sources, are
 
 ## Existing coverage and added evidence
 
-Before SEC-06, `path-007-bad-signer-eku`, `path-008-bad-signer-key-usage`, `tsa-003-wrong-tsa-eku`,
+Before PATH-T00001, `path-007-bad-signer-eku`, `path-008-bad-signer-key-usage`, `tsa-003-wrong-tsa-eku`,
 `path-007-intermediate-without-eku` and `path-008-ca-key-usage` covered wrong leaf EKU/KeyUsage,
 TSA EKU, unrestricted intermediate EKU and missing intermediate keyCertSign.
 `intermediate-current-crls`, certificate validity and certificate-signature cases
 provided basic trusted-chain evidence. They did not isolate the path rules
 below or select among competing issuers/anchors.
 
-The 38 SEC-06 cases in [`tests/cases.json`](../tests/cases.json) have individually
+The 38 PATH-T00001 cases in [`tests/cases.json`](../tests/cases.json) have individually
 named tests in [`tests/cli/certificate_paths.rs`](../tests/cli/certificate_paths.rs). Every
 invocation pins time to `1800000000`, disables system roots, supplies explicit
 roots and local, correctly signed CRLs, and leaves revocation checking enabled.
@@ -70,7 +70,7 @@ interoperability evidence.
   the leaf and keyCertSign on the selected intermediate path, because webpki's
   TLS-oriented checks do not supply those CMS requirements. Timestamp EKU also
   has rssig's critical/exclusive timeStamping checks; further TSA combinations
-  remain SEC-08.
+  remain TSA-T00001.
 - webpki checks non-anchor validity, certificate signatures, BasicConstraints,
   path length and applicable name constraints, and rejects unknown critical
   extensions. Its profile is not a general certificate-policy tree processor:
@@ -105,7 +105,7 @@ interoperability evidence.
 - Revocation remains required across the selected non-anchor chain, with local
   evidence in these tests. Supplied CRLs are not individually labeled verified
   merely because loaded. CRL applicability/selection and reporting which CRLs
-  were used remain SEC-10/11. AIA fetching remains unimplemented; future fetched
+  were used remain CRL-T00001 and CRL-T00002. AIA fetching remains unimplemented; future fetched
   intermediates must enter as untrusted candidates under the same rules.
 
 ## Regression and validation
@@ -120,6 +120,6 @@ existing expected failures are unchanged.
 Validation on macOS: the full `cargo test --locked` suite (778 portable cases),
 `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`,
 verify-core feature tests, CLI tests without native roots, and verify-core
-Clippy for `thumbv7em-none-eabi`. Explicit SEC-06 regeneration reproduces the
+Clippy for `thumbv7em-none-eabi`. Explicit PATH-T00001 regeneration reproduces the
 committed artifact hashes. Dependencies are unchanged. Linux execution remains
 in CI; no Windows oracle was run.

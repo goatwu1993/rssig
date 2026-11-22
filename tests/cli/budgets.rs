@@ -2,13 +2,13 @@ use super::support::*;
 use serde_json::json;
 
 #[test]
-fn sec02_wide_valid_signers_stop_before_report_65() {
-    let good = run_fixture("sec02-wide-64.exe", TRUSTED);
+fn wide_valid_signers_stop_before_report_65() {
+    let good = run_fixture("limit-wide-64.exe", TRUSTED);
     expect_success(&good);
     assert_eq!(good.success().signatures.len(), 64);
     for (file, resource) in [
-        ("sec02-wide-65.exe", "reports"),
-        ("sec02-entries-65.exe", "certificate_entries"),
+        ("limit-wide-65.exe", "reports"),
+        ("limit-entries-65.exe", "certificate_entries"),
     ] {
         let output = run_fixture(file, TRUSTED);
         assert_eq!(output.exit_code, 1);
@@ -27,12 +27,12 @@ fn sec02_wide_valid_signers_stop_before_report_65() {
 }
 
 #[test]
-fn sec02_rejects_deep_malformed_child_before_decoding() {
-    let good = run_fixture("sec02-depth-8.exe", TRUSTED);
+fn rejects_deep_malformed_child_before_decoding() {
+    let good = run_fixture("limit-depth-8.exe", TRUSTED);
     expect_success(&good);
     assert_eq!(good.success().signatures.len(), 9);
     assert_eq!(good.success().signatures[8].nested_depth, 8);
-    let bad = run_fixture("sec02-depth-9-malformed.exe", TRUSTED);
+    let bad = run_fixture("limit-depth-9-malformed.exe", TRUSTED);
     assert_eq!(bad.exit_code, 1);
     let result = &bad.json["results"][0];
     assert_eq!(result["ok"], false);

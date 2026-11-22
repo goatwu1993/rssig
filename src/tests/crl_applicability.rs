@@ -1,4 +1,4 @@
-//! SEC-10 maintenance builders: CRLs whose freshness or structure is faulty,
+//! CRL-T00001 maintenance builders: CRLs whose freshness or structure is faulty,
 //! issued either by the test root or by an unrelated issuer.
 use super::*;
 use x509_cert::{
@@ -231,7 +231,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
-        // SEC-16: a fresh, valid root CRL whose issuer is the root's name with
+        // CRL-T00004: a fresh, valid root CRL whose issuer is the root's name with
         // the commonName as a PrintableString, not the UTF8String the root
         // uses: the same name under RFC 5280 section 7.1.
         (
@@ -246,7 +246,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // SEC-16: the same with another case and extra white space, which
+        // CRL-T00004: the same with another case and extra white space, which
         // RFC 5280 section 7.1 also compares equal.
         (
             "crl-root-issuer-case-space.crl",
@@ -260,7 +260,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // SEC-16: a fresh CRL under the root's name in another case, signed by
+        // CRL-T00004: a fresh CRL under the root's name in another case, signed by
         // another key and naming no key: a CRL of another CA whose name is
         // equal only under RFC 5280 comparison, set aside rather than forged.
         (
@@ -275,7 +275,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // SEC-16: the same, but naming the root's own key: it claims this
+        // CRL-T00004: the same, but naming the root's own key: it claims this
         // issuer, so it is forged, not set aside, whatever its spelling.
         (
             "crl-root-forged-issuer-case-naming-root-key.crl",
@@ -289,7 +289,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 None,
             ),
         ),
-        // SEC-16: a fresh CRL signed by another key whose authorityKeyIdentifier
+        // CRL-T00004: a fresh CRL signed by another key whose authorityKeyIdentifier
         // names the root's issuer and a serial the root does not have.
         (
             "crl-root-forged-aki-other-serial.crl",
@@ -301,7 +301,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(aki_issuer_serial_for("CN=rssig test root", 2)),
             ),
         ),
-        // SEC-16: signed by the root, with the same wrong serial: the signature
+        // CRL-T00004: signed by the root, with the same wrong serial: the signature
         // authenticates it.
         (
             "crl-root-signed-aki-other-serial.crl",
@@ -313,7 +313,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 Some(aki_issuer_serial_for("CN=rssig test root", 2)),
             ),
         ),
-        // SEC-16: signed by another key, naming another issuer and the root's
+        // CRL-T00004: signed by another key, naming another issuer and the root's
         // serial.
         (
             "crl-root-forged-aki-other-issuer.crl",
@@ -501,7 +501,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
                 &idp_named_point("http://crl.invalid/root.crl"),
             ),
         ),
-        // SEC-23: the same named point on a CRL without nextUpdate. The scope
+        // PR #64: the same named point on a CRL without nextUpdate. The scope
         // defect decides, as with nextUpdate: a source's CRL can replace it.
         (
             "crl-root-idp-named-point-no-next-update.crl",
@@ -538,7 +538,7 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "crl-root-no-next-update.crl",
             crl(root, root_key, NOW - 100, None),
         ),
-        // SEC-23: the same, newer than crl-root-no-next-update-revoked.crl:
+        // PR #64: the same, newer than crl-root-no-next-update-revoked.crl:
         // a current, complete CRL that leaves the signer out, so that older
         // listing may be a released hold and does not revoke.
         (

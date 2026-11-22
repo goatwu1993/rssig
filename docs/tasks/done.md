@@ -3,7 +3,7 @@
 Full records of finished `TODO.md` items, moved here verbatim when
 `TODO.md` was trimmed to one line per finished item.
 
-## SEC-01: Audit arithmetic and structural bounds across every parser.
+## LIMIT-T00001 fix: Audit arithmetic and structural bounds across every parser
 
 Cover PE/CFB/CAB/NAVX/ZIP offsets, DER lengths, script encodings, RDP framing,
 and XML counts. Exercise truncations, zero/maximum counts, overlapping ranges,
@@ -14,7 +14,7 @@ unchecked allocations. Completed the structural audit and fixes with
 CAB extreme-offset tests, and cross-format header mutation coverage. Aggregate
 budgets, host reads, fuzzing, and 32-bit execution remain separate tasks.
 
-## SEC-02: Enforce aggregate verification budgets.
+## LIMIT-T00002 fix: Enforce aggregate verification budgets
 
 Added one consumable
 per-file budget across certificate-table entries, every signer, nested CMS,
@@ -32,9 +32,9 @@ exhaustion retains the first failed charge’s exact usage and requested amount.
 Full locked tests, fmt, Clippy, parser-only and verify-core/verify/cli feature
 tests, structural-adapter Clippy and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
-Host reads and CLI batch/report buffering are covered by SEC-03.
+Host reads and CLI batch/report buffering are covered by LIMIT-T00003.
 
-## SEC-03: Bound host input and report memory.
+## LIMIT-T00003 fix: Bound host input and report memory
 
 Added bounded streaming
 reads for CLI inputs and root/CRL files, per-file and batch byte/report limits,
@@ -48,9 +48,9 @@ nonregular inputs, exact EOF, batch exhaustion and oversized failure evidence.
 Full locked tests, fmt, Clippy, CLI-without-system-roots tests and bare-metal
 verify-core Clippy pass on macOS. Dependency review found only a direct optional
 CLI edge to the already-locked libc version for O_NONBLOCK; no native crypto.
-Linux runtime validation remains in CI. Automatic CRL/AIA fetching is FEATURE-01.
+Linux runtime validation remains in CI. Automatic CRL/AIA fetching is CRL-T00030.
 
-## SEC-04: Audit CMS structure and signature binding.
+## CMS-T00001 fix: Audit CMS structure and signature binding
 
 Checked
 SignedData/SignerInfo versions, supported signer identifiers, canonical
@@ -62,7 +62,7 @@ Added version, signed-value ordering and ECDSA-parameter rejection, paired
 fixtures and signature-math assertions. `docs/cms-security.md` records the
 audit and explicit legacy/opaque-encoding compatibility boundaries.
 
-## SEC-05: Define ambiguous signer-certificate handling.
+## CMS-T00002 fix: Define ambiguous signer-certificate handling
 
 Cover duplicate
 certificates, identical issuer/serial identifiers with different keys, missing
@@ -74,7 +74,7 @@ selection. Paired/reordered fixtures cover different keys, same-key identity
 conflicts and missing signers. Shared-path tests cover RFC3161, countersigners
 and direct RDP signatures. Rules: `docs/cms-security.md`.
 
-## SEC-06: Expand certificate-path rule coverage.
+## PATH-T00001 fix: Expand certificate-path rule coverage
 
 Added 38 portable
 cases and named in-process CLI tests for BasicConstraints, path length,
@@ -90,7 +90,7 @@ locked tests, fmt, Clippy, verify-core and CLI-without-system-roots tests, and
 bare-metal verify-core Clippy pass on macOS. Dependencies are unchanged; Linux
 execution remains in CI. No Windows policy equivalence is claimed.
 
-## SEC-07: Make root/CRL loading diagnostics explicit.
+## TRUST-T00001 fix: Make root/CRL loading diagnostics explicit
 
 Atomic DER/PEM
 loading rejects malformed input, unsupported anchors and partial native-root
@@ -103,9 +103,9 @@ supplied artifacts without individual authentication claims. See
 [loading rules, migration and validation evidence](../../docs/trust-loading.md).
 Full locked tests (799 cases), formatting, Clippy and documented feature/target
 checks pass on macOS. Dependencies are unchanged; Linux runtime validation
-remains in CI. CRL selection/evidence remain SEC-10/SEC-11.
+remains in CI. CRL selection/evidence remain CRL-T00001/CRL-T00002.
 
-## SEC-08: Complete timestamp structure and multiplicity tests.
+## TSA-T00001 fix: Complete timestamp structure and multiplicity tests
 
 Shared
 TSTInfo parsing now validates mandatory fields, canonical optional ordering and
@@ -119,7 +119,9 @@ malformed correctly signed tokens. Multiple timestamps remain unsupported;
 existing CMS duplicate-attribute failure precedence is preserved. See
 [profile, limits and evidence](../../docs/timestamp-profile.md).
 
-## SEC-09: Define lifetime-signing and time-boundary rules ([PR #43](https://github.com/goatwu1993/rssig/pull/43)).
+## TIME-T00001 fix: Define lifetime-signing and time-boundary rules
+
+[PR #43](https://github.com/goatwu1993/rssig/pull/43).
 
 A leaf with the
 lifetime-signing EKU is validated at the validation time instead of its
@@ -142,9 +144,9 @@ are pinned. Signer, TSA, anchor and CRL time rules:
 [validation time](../../docs/validation-time.md). Full locked tests, fmt, Clippy,
 verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
-Review items decided against or deferred are recorded in SEC-14.
+Review items decided against or deferred are recorded in TIME-T00002.
 
-## SEC-15: Select CRLs against the selected chain, not every candidate.
+## CRL-T00003 fix: Select CRLs against the selected chain, not every candidate
 
 Done in PR #60: CRLs are evaluated per certificate on each candidate path,
 authenticated under the issuer key that path uses, and the scope rule applies
@@ -163,7 +165,7 @@ on the selected path. It tests only for the extension's presence and treats
 an undecodable issuingDistributionPoint as naming a point. No fixture has an
 off-path candidate.
 
-## SEC-20: Revisit revocation_unknown precedence over path errors.
+## CRL-T00008 fix: Revisit revocation_unknown precedence over path errors
 
 Done in PR #60: with no applicable CRL the path is still built, so an
 untrusted chain is `untrusted_root` and, with `--fetch-crls`, nothing is
@@ -172,9 +174,9 @@ notes follow.
 Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
 is returned before path building, so it hides untrusted_root and other chain
 errors. This extends the existing empty-CRL-set precedence. Revisit together
-with SEC-14's error-precedence notes if consumers need the chain error first.
+with TIME-T00002's error-precedence notes if consumers need the chain error first.
 
-## SEC-21: Bind listed-serial revocation to the verified path.
+## CRL-T00009 fix: Bind listed-serial revocation to the verified path
 
 Done in PR #60: a listing counts only in a CRL that verifies under the path
 issuer's key, from an issuer with cRLSign (anchors exempt); an unmappable
@@ -183,7 +185,7 @@ a listing in an authenticated CRL counts even if its authorityKeyIdentifier
 is malformed. Later in PR #60 the listing rule was narrowed to follow
 OpenSSL and Bouncy Castle: it counts only from a current CRL that covers
 the certificate and is at least as new as the deciding CRL (see
-`docs/tasks/sec-10-crl-applicability.md`, "Case reasons"). Original notes follow. From PR
+`docs/tasks/crl-t00001.md`, "Case reasons"). Original notes follow. From PR
 #48 and #49 reviews. The "revoked in any applicable CRL" check in the path
 callback matches a listing by issuer name and serial only. It accepts a CRL
 whose signature verified under any name-matching candidate key, or whose
@@ -193,7 +195,7 @@ the old key's CRL can therefore reject a signer issued under the new key; a
 valid signature fails closed as `certificate_revoked` on evidence webpki
 would not accept from an authoritative CRL. Count a listing only when the
 CRL verifies under the issuer key the path uses and that issuer may sign
-CRLs (anchors exempt, per SEC-06), and decide whether an applicable CRL with
+CRLs (anchors exempt, per PATH-T00001), and decide whether an applicable CRL with
 an unmappable signature algorithm is `invalid_crl`. With that binding, on
 webpki's unknown status re-run path building without webpki revocation and
 apply the same check to every path certificate, so a signer or intermediate
@@ -203,7 +205,9 @@ reverted it). Identify the listing CRL in `details` instead of reusing
 webpki's `CertRevoked` message. Paired fixtures: same-name rollover issuers,
 an issuer without cRLSign, an unmappable algorithm.
 
-## PE generic digest correctness follow-up (PR #21)
+## PE-T00001 fix: Follow up on generic PE digest correctness
+
+PR #21.
 
 Validate header,
 section, and EOF certificate-table ranges before updating the digest sink.
@@ -215,7 +219,9 @@ named CLI tests, and external-view bounds/unchanged-sink regressions in
 `thumbv7em-none-eabi` no-default-features check pass on macOS; Linux runs in CI.
 Arbitrary PE layouts remain unsupported.
 
-## LIB-01: Expose CAB and NAVX parsing on `no_std + alloc` ([PR #23](https://github.com/goatwu1993/rssig/pull/23)).
+## LIB-T00001 feat: Expose CAB and NAVX parsing on `no_std + alloc`
+
+[PR #23](https://github.com/goatwu1993/rssig/pull/23).
 
 Added `parse::Cab` and `parse::Navx` with typed structural errors, borrowed
 signature bytes, and borrowed digest chunks. `verify_parsed_cab` and
@@ -230,7 +236,9 @@ feature tests, and `thumbv7em-none-eabi` no-default Clippy passed on macOS.
 Parser dependency graph has no verifier, CLI, or native-root dependencies;
 dependency versions are unchanged. Linux runtime validation runs in CI.
 
-## LIB-02: Expose structured CMS signer and attribute inspection ([PR #24](https://github.com/goatwu1993/rssig/pull/24)).
+## LIB-T00002 feat: Expose structured CMS signer and attribute inspection
+
+[PR #24](https://github.com/goatwu1993/rssig/pull/24).
 
 Added borrowed `SignerInfo`, `SignerIdentifier`, `Attribute`, `Attributes`, and
 `Content` views, standalone algorithm parsing, and `SignedData::content()`.
@@ -245,9 +253,9 @@ Full locked tests, fmt, Clippy, no-default/std/verify/cli feature tests, and
 parser-only dependencies exclude verifier/CLI/native roots. Linux runs in CI.
 Self-review added long/short unknown attribute OID preservation independent of
 the fixed-size OID adapter, plus a malformed-encoding counterpart.
-Nested signatures/timestamps remain opaque for LIB-03; CLI schema is unchanged.
+Nested signatures/timestamps remain opaque for LIB-T00003; CLI schema is unchanged.
 
-## LIB-03: Add bounded nested-signature and timestamp inspection.
+## LIB-T00003 feat: Add bounded nested-signature and timestamp inspection
 
 Added
 `SignedData::inspect` with borrowed nested CMS, RFC 3161 TSTInfo and PKCS#9
@@ -264,7 +272,7 @@ Full locked tests, fmt,
 Clippy, no-default/std/verify/cli feature tests and bare-metal no-default Clippy
 pass on macOS. Dependencies are unchanged; Linux validation remains in CI.
 
-## LIB-04: Extract script and RDP parsing boundaries.
+## LIB-T00004 refactor: Extract script and RDP parsing boundaries
 
 Added public
 `parse::Powershell`, `Wsh`/`WshKind`, `Rdp`, `TextEncoding`, and parser-only RDP
@@ -284,7 +292,7 @@ and no-default bare-metal Clippy with XML pass on macOS. Dependency versions
 are unchanged; parser graphs have no verifier/CLI/native-root or native-crypto
 dependencies. Linux runtime validation remains in CI.
 
-## LIB-05: Extract MSI/MSP and AppX structural state.
+## LIB-T00005 refactor: Extract MSI/MSP and AppX structural state
 
 Added public
 `parse::Msi`, `Appx`, ZIP part/component input and lazy block-map views behind
@@ -306,7 +314,7 @@ adapter normal graphs contain no verifier/CLI/native-root or native-crypto
 dependencies. Linux runtime validation remains in CI. See
 [library boundaries](../../docs/library.md#msimsp-and-appx-structural-adapters).
 
-## LIB-06: Make format selection consistent for library callers.
+## LIB-T00006 feat: Make format selection consistent for library callers
 
 Exposed
 `format::Format`, filename-only `format::detect`, `verify_with_hint`, and
@@ -322,7 +330,7 @@ cases), fmt, default Clippy, verifier-only selector tests, and bare-metal
 parser Clippy pass on macOS. Linux execution remains in CI. Dependencies are
 unchanged. See docs/library.md.
 
-## LIB-07: Clarify verification policy construction.
+## LIB-T00007 feat: Clarify verification policy construction
 
 Added explicit
 `VerifyOptions::trusted`, `trusted_with_revocation`, and `integrity_only`
@@ -338,7 +346,7 @@ cases), formatting, all-target Clippy, verifier-only policy tests and bare-metal
 parser Clippy pass on macOS. Dependencies are unchanged; Linux execution remains
 in CI. See docs/library.md.
 
-## LIB-08: Audit borrowing, errors, and public API stability.
+## LIB-T00008 refactor: Audit borrowing, errors, and public API stability
 
 Documented
 ownership, consuming/reusable parsed entry points, repeated verification after
@@ -357,9 +365,9 @@ specification reports compare exactly equal (705 cases now). Full locked
 tests, fmt, all-target Clippy, minimal/xml/std/msi/appx/verify/cli tests and
 bare-metal minimal/XML Clippy pass on macOS. Dependencies are unchanged;
 normal default/parser graphs retain the pure-Rust crypto boundary. Linux
-runtime validation remains for CI. See [library notes](../../docs/library.md#ownership-reuse-and-api-stability-lib-08).
+runtime validation remains for CI. See [library notes](../../docs/library.md#ownership-reuse-and-api-stability-lib-t00008).
 
-## LIB-09: Evaluate a `no_std` shared verification core.
+## LIB-T00009 feat: Evaluate a `no_std` shared verification core
 
 Added additive
 `verify-core` with alloc-only RustCrypto/webpki, CMS/trust/CRLs, timestamps,
@@ -371,9 +379,9 @@ Bare-metal Clippy and host core tests exercise more than parser-only support;
 full locked tests (706 spec cases), fmt and all-target Clippy pass on macOS.
 Linux execution remains in CI; no device execution or Windows policy
 equivalence is claimed. See
-[inventory and limits](../../docs/library.md#shared-verification-without-std-lib-09).
+[inventory and limits](../../docs/library.md#shared-verification-without-std-lib-t00009).
 
-## LIB-10: Reassess shared interfaces and crate extraction after reuse.
+## LIB-T00010 docs: Reassess shared interfaces and crate extraction after reuse
 
 Reviewed PE/CAB/NAVX, CMS, scripts, RDP and host adapter consumers. Retained
 concrete parser APIs, RustCrypto sinks, private container dispatch and the
@@ -383,7 +391,7 @@ reconsideration triggers and future source-compatible migration requirements.
 No runtime or public API changes. See the
 [architecture decision](../../docs/library-architecture.md).
 
-## TEST-01: Maintain a coverage inventory by invariant.
+## TEST-T00001 test: Maintain a coverage inventory by invariant
 
 Map supported
 formats, algorithms, policy modes, trust/timestamp paths, and stable errors to
@@ -395,7 +403,7 @@ Added `tests/coverage-inventory.json`, validated case/error references and
 Closed CRL provider-call coverage gaps with exact portable request traces
 and offline/supplied-good/supplied-stale cases using existing fixtures.
 
-## TEST-02: Add local parser and verifier fuzz targets.
+## BUILD-T00001 test: Add local parser and verifier fuzz targets
 
 Start with DER,
 PE/CMS, CAB/NAVX, script blocks, and archive/XML framing; seed with committed
@@ -412,7 +420,7 @@ crate. Initial runs found no failures, so no regression fixtures were added.
 [Targets, limits, maintenance and recorded runs](../../docs/fuzzing.md).
 CRL retrieval is not fuzzed; a differential oracle remains separate work.
 
-## TEST-06: Strengthen fixture-manifest consistency checks.
+## TEST-T00004 test: Strengthen fixture-manifest consistency checks
 
 Beyond current
 SHA-256 verification, validate byte counts, unique/safe paths, provenance/license
@@ -422,7 +430,7 @@ explicit and requires review of changed binary artifacts.
 Done in `tests/manifest.rs`; rules, exceptions, and what is not enforced are in
 [manifest consistency](../../docs/testing.md#manifest-consistency).
 
-## FEATURE-01: Add bounded opt-in CRL retrieval.
+## CRL-T00030 feat: Add bounded opt-in CRL retrieval
 
 Added certificate CRL
 discovery, an injected `CrlSource`, and CLI `--fetch-crls` with bounded HTTP
