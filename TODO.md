@@ -295,9 +295,9 @@ they pin or what they check, never after a task.
   `embedded-signature` case to `CMS-` where its rule is shared.
 - [ ] **CRL-T00026** docs: Link CRL retrieval rules to their entries.
   `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
-- [x] **TEST-T00007** refactor: Rename task-named library cases. Done in the
-  task reindex PR, which renamed every task-named case, fixture and test by
-  subject.
+- [x] **TEST-T00007** refactor: Rename task-named library cases. Done
+  ([PR #81](https://github.com/goatwu1993/rssig/pull/81)), which renamed every
+  task-named case, fixture and test by subject.
 - [ ] **TIME-T00004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
   `TIME` `attach` (the pre-TIME-T00001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
