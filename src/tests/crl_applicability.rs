@@ -71,11 +71,40 @@ pub(super) fn crl_full(
     extra: Vec<x509_cert::ext::Extension>,
     revoked: Option<Vec<x509_cert::crl::RevokedCert>>,
 ) -> Vec<u8> {
+    crl_full_named(
+        Name::from_str(issuer).unwrap(),
+        key,
+        this_update,
+        next_update,
+        aki,
+        extra,
+        revoked,
+    )
+}
+
+/// A name with one commonName whose value has the given string tag
+/// (0x0c UTF8String, 0x13 PrintableString): the same text can be encoded
+/// either way.
+fn common_name(tag: u8, text: &str) -> Name {
+    use ::der::Decode;
+    let attribute = seq(&[tlv(6, &[0x55, 4, 3]), tlv(tag, text.as_bytes())]);
+    Name::from_der(&seq(&[tlv(0x31, &attribute)])).unwrap()
+}
+
+pub(super) fn crl_full_named(
+    issuer: Name,
+    key: &SigningKey,
+    this_update: u64,
+    next_update: Option<u64>,
+    aki: Option<Vec<u8>>,
+    extra: Vec<x509_cert::ext::Extension>,
+    revoked: Option<Vec<x509_cert::crl::RevokedCert>>,
+) -> Vec<u8> {
     let algorithm = identity().root.signature_algorithm.clone();
     let tbs = TbsCertList {
         version: Version::V2,
         signature: algorithm.clone(),
-        issuer: Name::from_str(issuer).unwrap(),
+        issuer,
         this_update: tm(this_update),
         next_update: next_update.map(tm),
         revoked_certificates: revoked,
@@ -124,11 +153,13 @@ pub(super) fn idp_named_point(uri: &str) -> Vec<u8> {
 /// AuthorityKeyIdentifier [1] authorityCertIssuer (directoryName) and
 /// [2] authorityCertSerialNumber, without [0] keyIdentifier.
 fn aki_issuer_serial() -> Vec<u8> {
-    let name = Name::from_str("CN=rssig test root")
-        .unwrap()
-        .to_der()
-        .unwrap();
-    seq(&[tlv(0xa1, &tlv(0xa4, &name)), tlv(0x82, &[1])])
+    aki_issuer_serial_for("CN=rssig test root", 1)
+}
+
+/// The same for the named issuer and serial.
+fn aki_issuer_serial_for(issuer: &str, serial: u8) -> Vec<u8> {
+    let name = Name::from_str(issuer).unwrap().to_der().unwrap();
+    seq(&[tlv(0xa1, &tlv(0xa4, &name)), tlv(0x82, &[serial])])
 }
 
 /// The test root re-issued with the same key and name but another
@@ -146,6 +177,30 @@ fn root_with_other_ski() -> Certificate {
         .find(|e| e.extn_id.to_string() == "2.5.29.14")
         .unwrap();
     extension.extn_value = OctetString::new(tlv(4, &[0xbb; 20])).unwrap();
+    let signature: p256::ecdsa::Signature =
+        id.root_key.sign(&cert.tbs_certificate.to_der().unwrap());
+    cert.signature = ::der::asn1::BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    cert
+}
+
+/// The test root re-issued with the same key and name and no
+/// subjectKeyIdentifier, or with one that does not parse: to webpki the same
+/// trust anchor, but its key cannot be named.
+fn root_with_ski(extension_value: Option<Vec<u8>>) -> Certificate {
+    use ::der::asn1::OctetString;
+    let id = identity();
+    let mut cert = id.root.clone();
+    let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
+    match extension_value {
+        None => extensions.retain(|e| e.extn_id.to_string() != "2.5.29.14"),
+        Some(value) => {
+            extensions
+                .iter_mut()
+                .find(|e| e.extn_id.to_string() == "2.5.29.14")
+                .unwrap()
+                .extn_value = OctetString::new(value).unwrap();
+        }
+    }
     let signature: p256::ecdsa::Signature =
         id.root_key.sign(&cert.tbs_certificate.to_der().unwrap());
     cert.signature = ::der::asn1::BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
@@ -176,6 +231,100 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
     let root_key = &identity().root_key;
     let root_ski = ski(&identity().root);
     vec![
+        // SEC-16: a fresh, valid root CRL whose issuer is the root's name with
+        // the commonName as a PrintableString, not the UTF8String the root
+        // uses: the same name under RFC 5280 section 7.1.
+        (
+            "crl-root-issuer-printable.crl",
+            crl_full_named(
+                common_name(0x13, "rssig test root"),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // SEC-16: the same with another case and extra white space, which
+        // RFC 5280 section 7.1 also compares equal.
+        (
+            "crl-root-issuer-case-space.crl",
+            crl_full_named(
+                common_name(0x0c, "  RSSIG   Test  Root "),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // SEC-16: a fresh CRL under the root's name in another case, signed by
+        // another key and naming no key: a CRL of another CA whose name is
+        // equal only under RFC 5280 comparison, set aside rather than forged.
+        (
+            "crl-root-forged-issuer-case.crl",
+            crl_full_named(
+                common_name(0x0c, "RSSIG TEST ROOT"),
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // SEC-16: the same, but naming the root's own key: it claims this
+        // issuer, so it is forged, not set aside, whatever its spelling.
+        (
+            "crl-root-forged-issuer-case-naming-root-key.crl",
+            crl_full_named(
+                common_name(0x0c, "RSSIG TEST ROOT"),
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_value(&root_ski)),
+                vec![],
+                None,
+            ),
+        ),
+        // SEC-16: a fresh CRL signed by another key whose authorityKeyIdentifier
+        // names the root's issuer and a serial the root does not have.
+        (
+            "crl-root-forged-aki-other-serial.crl",
+            crl_with_aki(
+                root,
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_issuer_serial_for("CN=rssig test root", 2)),
+            ),
+        ),
+        // SEC-16: signed by the root, with the same wrong serial: the signature
+        // authenticates it.
+        (
+            "crl-root-signed-aki-other-serial.crl",
+            crl_with_aki(
+                root,
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_issuer_serial_for("CN=rssig test root", 2)),
+            ),
+        ),
+        // SEC-16: signed by another key, naming another issuer and the root's
+        // serial.
+        (
+            "crl-root-forged-aki-other-issuer.crl",
+            crl_with_aki(
+                root,
+                &other_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                Some(aki_issuer_serial_for("CN=unrelated test root", 1)),
+            ),
+        ),
         // The root's name, a fresh period, signed by another key, naming the
         // subjectKeyIdentifier of `crl-root-other-ski.der`: forged when that
         // root is configured (it is the same anchor), another issuer's CRL
@@ -479,6 +628,17 @@ fn regenerate_crl_fixtures() {
     std::fs::write(
         dir.join("crl-root-other-ski.der"),
         root_with_other_ski().to_der().unwrap(),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("crl-root-no-ski.der"),
+        root_with_ski(None).to_der().unwrap(),
+    )
+    .unwrap();
+    // An empty SEQUENCE where the OCTET STRING key identifier belongs.
+    std::fs::write(
+        dir.join("crl-root-malformed-ski.der"),
+        root_with_ski(Some(vec![0x30, 0x00])).to_der().unwrap(),
     )
     .unwrap();
 }

@@ -8,6 +8,7 @@ use alloc::{
 mod crosscheck;
 mod error;
 mod loading;
+mod names;
 use crate::crypto::{ALGORITHMS, BudgetedAlgorithm};
 use crate::domain::{
     CertificateReport, CrlReport, ErrorCode, OidReport, RevocationReport, RevocationStatus, Stage,
@@ -24,11 +25,12 @@ use error::webpki_error;
 pub use error::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind};
 #[cfg(feature = "crl-fetch")]
 pub(crate) use loading::crl_issuers;
+pub(crate) use names::names_match;
 use rustls_pki_types::{CertificateDer, UnixTime};
 use x509_cert::{
     Certificate,
     crl::CertificateList,
-    ext::pkix::{AuthorityKeyIdentifier, SubjectKeyIdentifier},
+    ext::pkix::{AuthorityKeyIdentifier, SubjectKeyIdentifier, name::GeneralName},
 };
 
 pub(crate) const CODE_SIGNING: &[u8] = &[43, 6, 1, 5, 5, 7, 3, 3];
@@ -187,7 +189,7 @@ impl TrustStore {
         // path are rejected here when their CRLs cannot be told apart by key,
         // as OpenSSL and BoringSSL do (see `ambiguous_issuer_keys`).
         if revocation {
-            let rejects = ambiguous_issuer_keys(&state.chosen, &crls);
+            let rejects = ambiguous_issuer_keys(&state.chosen);
             // Test builds only: webpki's own revocation check must agree.
             #[cfg(all(feature = "revocation-crosscheck", debug_assertions))]
             crosscheck::confirm(
@@ -601,6 +603,9 @@ impl PathEvaluator<'_, '_> {
         let mut anchor_key = IssuerKey::of(first, true).map_err(|_| webpki::Error::BadDer)?;
         for same_key in anchors {
             let identity = issuer_identity(same_key).map_err(|_| webpki::Error::BadDer)?;
+            anchor_key
+                .certificates
+                .push(CertificateName::of(same_key).map_err(|_| webpki::Error::BadDer)?);
             match identity.key_id {
                 Some(id) => anchor_key.other_key_ids.push(id),
                 // One that names no key cannot disprove a match.
@@ -657,6 +662,11 @@ impl PathEvaluator<'_, '_> {
                         index: *index,
                         names_issuer,
                         issuer_spki: issuer.spki.clone(),
+                        issuer_name: cert
+                            .tbs_certificate
+                            .issuer
+                            .to_der()
+                            .map_err(|_| webpki::Error::BadDer)?,
                     });
                 }
                 Outcome::Revoked(_) => rejected = Some(webpki::Error::CertRevoked),
@@ -796,6 +806,9 @@ struct LoadedCrl {
     issuer: Vec<u8>,
     /// The authorityKeyIdentifier keyIdentifier; `Err` when malformed.
     authority_key: core::result::Result<Option<Vec<u8>>, ()>,
+    /// The authorityKeyIdentifier's authorityCertIssuer (its directoryNames)
+    /// and authorityCertSerialNumber, when well formed.
+    authority_cert: Option<AuthorityCert>,
     revoked: Vec<Vec<u8>>,
     /// webpki's own parse. It is not used to check revocation; its errors
     /// name the CRL features rssig does not support (delta, indirect,
@@ -847,16 +860,33 @@ impl LoadedCrl {
             .context("CRL lacks tbsCertList")?;
         let tbs = crl.tbs_cert_list;
         let issuer = tbs.issuer.to_der().map_err(crate::compat_error)?;
-        let authority_key = match tbs
+        let aki = tbs
             .crl_extensions
             .iter()
             .flatten()
             .find(|e| e.extn_id == AuthorityKeyIdentifier::OID)
-        {
+            .map(|e| AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes()));
+        let authority_key = match &aki {
             None => Ok(None),
-            Some(e) => AuthorityKeyIdentifier::from_der(e.extn_value.as_bytes())
-                .map(|aki| aki.key_identifier.map(|k| k.as_bytes().to_vec()))
-                .map_err(|_| ()),
+            Some(Ok(aki)) => Ok(aki.key_identifier.as_ref().map(|k| k.as_bytes().to_vec())),
+            Some(Err(_)) => Err(()),
+        };
+        let authority_cert = match aki {
+            Some(Ok(aki)) => Some(AuthorityCert {
+                issuers: aki
+                    .authority_cert_issuer
+                    .iter()
+                    .flatten()
+                    .filter_map(|name| match name {
+                        GeneralName::DirectoryName(name) => name.to_der().ok(),
+                        _ => None,
+                    })
+                    .collect(),
+                serial: aki
+                    .authority_cert_serial_number
+                    .map(|serial| serial.as_bytes().to_vec()),
+            }),
+            _ => None,
         };
         let revoked = tbs
             .revoked_certificates
@@ -895,9 +925,37 @@ impl LoadedCrl {
             signature: crl.signature,
             issuer,
             authority_key,
+            authority_cert,
             revoked,
             webpki,
             tbs,
+        })
+    }
+}
+
+/// The certificate an authorityKeyIdentifier names: the directoryNames of its
+/// issuer (any may be the one) and its serial, each when present.
+struct AuthorityCert {
+    issuers: Vec<Vec<u8>>,
+    serial: Option<Vec<u8>>,
+}
+
+/// A certificate of an issuer: its issuer name and serial number.
+#[derive(Clone)]
+struct CertificateName {
+    issuer: Vec<u8>,
+    serial: Vec<u8>,
+}
+
+impl CertificateName {
+    fn of(cert: &Certificate) -> Result<Self> {
+        Ok(Self {
+            issuer: cert
+                .tbs_certificate
+                .issuer
+                .to_der()
+                .map_err(crate::compat_error)?,
+            serial: cert.tbs_certificate.serial_number.as_bytes().to_vec(),
         })
     }
 }
@@ -908,6 +966,10 @@ impl LoadedCrl {
 struct IssuerKey {
     spki: Vec<u8>,
     key_id: Option<Vec<u8>>,
+    /// The issuer's certificate, and any configured root that is this same
+    /// anchor: the certificates an authorityKeyIdentifier may name by issuer
+    /// and serial.
+    certificates: Vec<CertificateName>,
     /// Identifiers of other configured roots that are this same anchor.
     other_key_ids: Vec<Vec<u8>>,
     /// Another configured root that is this same anchor names no key, so a
@@ -931,6 +993,7 @@ impl IssuerKey {
         Ok(Self {
             spki: identity.spki,
             key_id: identity.key_id,
+            certificates: vec![CertificateName::of(cert)?],
             other_key_ids: Vec::new(),
             undisprovable: false,
             crl_sign,
@@ -951,7 +1014,7 @@ fn crl_may_apply(bytes: &[u8], issuer_names: &[Vec<u8>]) -> bool {
     crate::der::tbs_issuer(bytes, 0x02, 1)
         .and_then(|raw| x509_cert::name::Name::from_der(raw).ok())
         .and_then(|name| name.to_der().ok())
-        .is_none_or(|issuer| issuer_names.contains(&issuer))
+        .is_none_or(|issuer| issuer_names.iter().any(|name| names_match(name, &issuer)))
 }
 
 /// A path-check failure other than revocation, judged without side effects.
@@ -998,6 +1061,8 @@ struct ChosenCrl {
     names_issuer: bool,
     /// That issuer's subjectPublicKeyInfo.
     issuer_spki: Vec<u8>,
+    /// The certificate's issuer name, as webpki matched it to that issuer.
+    issuer_name: Vec<u8>,
 }
 
 /// Whether the accepted path has two issuers of one name with different
@@ -1013,17 +1078,16 @@ struct ChosenCrl {
 /// `crl-008-self-issued-rollover-with-both-crls-is-rejected`. When each CRL
 /// names its issuer's key, all three give each certificate its own key's CRL
 /// and accept (`crl-007-self-issued-rollover-with-key-identified-crls-verifies`).
-fn ambiguous_issuer_keys(chosen: &[ChosenCrl], crls: &[LoadedCrl]) -> bool {
-    same_name_different_keys(chosen, crls)
+fn ambiguous_issuer_keys(chosen: &[ChosenCrl]) -> bool {
+    same_name_different_keys(chosen)
         .any(|(first, second)| !(first.names_issuer && second.names_issuer))
 }
 
 /// Pairs of CRLs chosen for a path whose issuers have one name and different
 /// keys, in path order.
-fn same_name_different_keys<'a>(
-    chosen: &'a [ChosenCrl],
-    crls: &'a [LoadedCrl],
-) -> impl Iterator<Item = (&'a ChosenCrl, &'a ChosenCrl)> {
+fn same_name_different_keys(
+    chosen: &[ChosenCrl],
+) -> impl Iterator<Item = (&ChosenCrl, &ChosenCrl)> {
     chosen
         .iter()
         .enumerate()
@@ -1034,7 +1098,11 @@ fn same_name_different_keys<'a>(
                     // One CRL cannot verify under two keys; skipped as the
                     // former rule did.
                     first.index != second.index
-                        && crls[first.index].issuer == crls[second.index].issuer
+                        // The issuers' names on the path, compared as webpki
+                        // built it (exact bytes), not the CRLs' issuer fields,
+                        // which CRL-041 lets differ in encoding: a CRL cannot
+                        // escape this rule by spelling its issuer differently.
+                        && first.issuer_name == second.issuer_name
                         && first.issuer_spki != second.issuer_spki
                 })
                 .map(move |second| (first, second))
@@ -1113,7 +1181,7 @@ fn evaluate_crls(
         }
     };
     for (index, crl) in crls.iter().enumerate() {
-        if crl.issuer != issuer_name {
+        if !names_match(&crl.issuer, &issuer_name) {
             continue;
         }
         // Only the CRL's index is kept per candidate path: its full report
@@ -1124,11 +1192,30 @@ fn evaluate_crls(
         // A CRL that names another key and is not signed by this one is not
         // this issuer's: it is set aside without a failure.
         let named_key = crl.authority_key.as_ref().ok().and_then(Option::as_ref);
+        // A CRL whose issuer equals the certificate's only under CRL-041
+        // (another case, spacing or string type), and whose
+        // authorityKeyIdentifier does not claim this issuer, is another CA's
+        // unless its signature proves otherwise: set aside, so it neither
+        // forges a result nor stops retrieval (CRL-018). One that claims this
+        // issuer's key or certificate is judged like an exactly named CRL.
+        let loose = crl.issuer != issuer_name
+            && !claims_issuer(named_key, crl.authority_cert.as_ref(), issuer);
         match verify_signature(index, crl) {
             Ok(Some(true)) => {}
-            Ok(Some(false)) if names_another_key(named_key, issuer) => {
+            Ok(Some(false))
+                if loose
+                    || names_another_key(named_key, issuer)
+                    || names_another_certificate(
+                        named_key,
+                        crl.authority_cert.as_ref(),
+                        issuer,
+                    ) =>
+            {
                 continue;
             }
+            // Nor is a loosely named CRL that cannot be verified this
+            // issuer's unsupported CRL.
+            Ok(None) if loose => continue,
             Ok(Some(false)) => {
                 fail(FORGED, &|| {
                     with_crl(webpki_revocation_error(
@@ -1408,6 +1495,56 @@ fn evaluate_crls(
         der,
         outcome,
     })
+}
+
+/// A CRL that fails under this issuer's key and whose authorityKeyIdentifier
+/// names no key identifier but another certificate, by issuer and serial, is
+/// that certificate's CRL, and set aside likewise (CRL-043). The serial and
+/// the issuer name must both match one certificate of the issuer, the name as
+/// CRL-041 compares names; with several directoryNames, any one may match.
+/// RFC 5280 requires the two fields together, so an extension with only one
+/// names no certificate and is not judged, nor is one whose issuer holds no
+/// directoryName: no other GeneralName form can be compared with a
+/// certificate's issuer, so such a CRL stays forged. An
+/// extension that does name a key identifier is judged by that alone.
+fn names_another_certificate(
+    crl_key: Option<&Vec<u8>>,
+    named: Option<&AuthorityCert>,
+    issuer: &IssuerKey,
+) -> bool {
+    crl_key.is_none()
+        && named.and_then(|named| names_issuer_certificate(named, issuer)) == Some(false)
+}
+
+/// Whether an authorityKeyIdentifier claims this issuer: it names a key
+/// identifier the issuer cannot disprove (one of its own, or any when it has
+/// none, as CRL-042 holds), or one of its certificates by issuer and serial.
+fn claims_issuer(
+    crl_key: Option<&Vec<u8>>,
+    named: Option<&AuthorityCert>,
+    issuer: &IssuerKey,
+) -> bool {
+    match crl_key {
+        Some(key) => !names_another_key(Some(key), issuer),
+        None => named.and_then(|named| names_issuer_certificate(named, issuer)) == Some(true),
+    }
+}
+
+/// Whether an authorityKeyIdentifier's issuer and serial name one of this
+/// issuer's certificates; `None` when it does not carry both, which RFC 5280
+/// requires together, or holds no directoryName to compare.
+fn names_issuer_certificate(named: &AuthorityCert, issuer: &IssuerKey) -> Option<bool> {
+    let serial = named
+        .serial
+        .as_ref()
+        .filter(|_| !named.issuers.is_empty())?;
+    Some(issuer.certificates.iter().any(|certificate| {
+        *serial == certificate.serial
+            && named
+                .issuers
+                .iter()
+                .any(|name| names_match(name, &certificate.issuer))
+    }))
 }
 
 /// A CRL that fails under this issuer's key is set aside as another key's
@@ -2551,6 +2688,7 @@ mod revocation_reporting {
         let issuer = IssuerKey {
             spki: Vec::new(),
             key_id: None,
+            certificates: Vec::new(),
             other_key_ids: Vec::new(),
             undisprovable: false,
             crl_sign,
@@ -2590,6 +2728,34 @@ mod revocation_reporting {
             out
         };
         der(0x30, &der(0xa0, &der(0xa0, &der(0x86, uri.as_bytes()))))
+    }
+
+    /// A CRL whose issuer equals the certificate's only under CRL-041 and
+    /// whose signature algorithm cannot be verified is set aside, not this
+    /// issuer's unsupported CRL; an exactly named one is reported unusable.
+    #[test]
+    fn a_loosely_named_crl_that_cannot_be_verified_is_set_aside() {
+        let cert = signer(include_bytes!("../tests/fixtures/good-pe64.exe"));
+        let issuer = IssuerKey {
+            spki: Vec::new(),
+            key_id: None,
+            certificates: Vec::new(),
+            other_key_ids: Vec::new(),
+            undisprovable: false,
+            crl_sign: true,
+        };
+        let outcome = |bytes: &[u8]| {
+            let crls = [LoadedCrl::load(bytes).unwrap()];
+            evaluate_crls(&cert, true, &issuer, &crls, AT, &mut |_, _| Ok(None))
+                .unwrap()
+                .outcome
+        };
+        let loose = outcome(include_bytes!(
+            "../tests/fixtures/crl-root-issuer-case-space.crl"
+        ));
+        assert!(matches!(loose, Outcome::Missing(None)));
+        let exact = outcome(include_bytes!("../tests/fixtures/good.crl"));
+        assert_eq!(unusable(&exact).0, UNUSABLE);
     }
 
     /// A CRL without nextUpdate that lists the certificate revokes alone
@@ -2975,6 +3141,7 @@ mod revocation_reporting {
         let issuer = |key_id: Option<Vec<u8>>, others: Vec<Vec<u8>>| IssuerKey {
             spki: Vec::new(),
             key_id,
+            certificates: Vec::new(),
             other_key_ids: others,
             undisprovable: false,
             crl_sign: true,
@@ -3013,5 +3180,65 @@ mod revocation_reporting {
         bare_later.undisprovable = true;
         assert!(!names_another_key(Some(&vec![9]), &bare_later));
         assert!(bare_later.names(&[1, 2]));
+    }
+
+    #[test]
+    fn a_failed_crl_naming_another_certificate_by_issuer_and_serial_is_set_aside() {
+        use core::str::FromStr;
+        use x509_cert::name::Name;
+        let name = |text: &str| Name::from_str(text).unwrap().to_der().unwrap();
+        let issuer = IssuerKey {
+            spki: Vec::new(),
+            key_id: Some(vec![1]),
+            certificates: vec![CertificateName {
+                issuer: name("CN=Root"),
+                serial: vec![1],
+            }],
+            other_key_ids: Vec::new(),
+            undisprovable: false,
+            crl_sign: true,
+        };
+        let names = |issuer: Option<Vec<u8>>, serial: Option<Vec<u8>>| AuthorityCert {
+            issuers: issuer.into_iter().collect(),
+            serial,
+        };
+        let another = |named: &AuthorityCert, key: Option<&Vec<u8>>| {
+            names_another_certificate(key, Some(named), &issuer)
+        };
+        // The certificate itself, the name compared as in CRL-041: not another's.
+        assert!(!another(&names(Some(name("CN=Root")), Some(vec![1])), None));
+        assert!(!another(&names(Some(name("CN=root")), Some(vec![1])), None));
+        // Another serial or another issuer name is.
+        assert!(another(&names(Some(name("CN=Root")), Some(vec![2])), None));
+        assert!(another(&names(Some(name("CN=Other")), Some(vec![1])), None));
+        // With several issuer names, any one may be the issuer's.
+        let several = AuthorityCert {
+            issuers: vec![name("CN=Other"), name("CN=Root")],
+            serial: Some(vec![1]),
+        };
+        assert!(!another(&several, None));
+        // Only one of the two fields, which RFC 5280 forbids, names nothing.
+        assert!(!another(&names(None, Some(vec![2])), None));
+        assert!(!another(&names(Some(name("CN=Other")), None), None));
+        // Nothing named, or a key identifier named, is judged elsewhere.
+        assert!(!another(&names(None, None), None));
+        assert!(!another(&names(None, Some(vec![2])), Some(&vec![9])));
+        assert!(!names_another_certificate(None, None, &issuer));
+        // A configured root that is the same anchor may be the one named.
+        let mut same_anchor = issuer.clone();
+        same_anchor.certificates.push(CertificateName {
+            issuer: name("CN=Root"),
+            serial: vec![2],
+        });
+        assert!(!names_another_certificate(
+            None,
+            Some(&names(Some(name("CN=Root")), Some(vec![2]))),
+            &same_anchor
+        ));
+        assert!(names_another_certificate(
+            None,
+            Some(&names(Some(name("CN=Root")), Some(vec![3]))),
+            &same_anchor
+        ));
     }
 }

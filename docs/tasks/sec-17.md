@@ -46,6 +46,15 @@ whose issuer, authority key and role (CA or end entity) were already asked
 about, so a certificate that an earlier scoped or partial answer did not
 cover can stay `revocation_unknown` without a request of its own; re-ask
 when the earlier answer added no CRL covering it, with a paired fixture.
+
+From SEC-16 (CRL-041): `names_match` in `src/trust/names.rs` decodes and
+prepares both names for every pair of CRL and certificate issuer names that
+are not byte equal, in `evaluate_crls` and `crl_may_apply`. An RDN is compared by sorting its
+prepared attributes, so one pair costs n log n in the name's size, but the
+work is repeated per pair and per candidate path and is not charged to the
+budget; decode and prepare each name once per CRL and per path certificate,
+or charge it.
+
 Also open: a CRL without nextUpdate is decoded, re-encoded and parsed by
 webpki a second time on every verification pass (each retrieval round
 included) to judge it apart from nextUpdate, and that work is not charged
