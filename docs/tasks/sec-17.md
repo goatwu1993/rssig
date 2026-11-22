@@ -54,3 +54,9 @@ prepared attributes, so one pair costs n log n in the name's size, but the
 work is repeated per pair and per candidate path and is not charged to the
 budget; decode and prepare each name once per CRL and per path certificate,
 or charge it.
+
+Also open: a CRL without nextUpdate is decoded, re-encoded and parsed by
+webpki a second time on every verification pass (each retrieval round
+included) to judge it apart from nextUpdate, and that work is not charged
+to the decode budget. Cache the verdict per CRL or charge it, with the
+other extra CRL decoding above.

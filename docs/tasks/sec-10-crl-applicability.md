@@ -249,9 +249,9 @@ Change these only with a new decision and paired fixtures.
 
 ## Known limitations tracked elsewhere
 
-The review of PR #60 is concluded; everything it left open is listed under
-SEC-23 in `TODO.md`, with SEC-11, SEC-17, SEC-18 and SEC-22 for the larger
-items.
+The review of PR #60 is concluded; everything it left open is a task in
+`TODO.md` (SEC-30 to SEC-42, TEST-34 to TEST-36, LIB-11 and PRODUCT-07),
+with SEC-11, SEC-17, SEC-18 and SEC-22 for the larger items.
 
 - **SEC-11:** excluded CRLs are still reported as supplied.
 - **SEC-15:** applicability and the scope rule consider every embedded
@@ -892,7 +892,7 @@ path is not one a source could complete.
   `crl-036-not-yet-valid-local-asks-provider`: the point is requested, and
   without an answer the original error stands, naming the certificate.
   `crl-035-no-next-update-local-asks-nothing`: `invalid_crl`
-  (`missing_next_update`) asks nothing, pending the other SEC-23 question.
+  (`missing_next_update`) asks nothing, pending SEC-41.
 
 - **Decided, acceptance:** a CRL scoped to a distribution point, for a
   certificate that lists none, is replaceable: the certificate is still asked
@@ -1062,7 +1062,7 @@ Recorded, not changed:
 - Beside a usable CRL, a newer complete CRL without nextUpdate that leaves
   the certificate out does not clear an older listing, though it does when
   no CRL is usable. Clearing it there would turn a revocation into
-  acceptance, which needs the owner's decision (tracked in SEC-23).
+  acceptance, which needs the owner's decision (SEC-39).
 
 Kept, stricter than the references: the same CRL without a listing is not
 evidence of good status. It stays `invalid_crl` (`missing_next_update`), as

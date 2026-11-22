@@ -43,3 +43,10 @@ from a chain issuer rejects as `crl_expired` even when a fresh CRL from the
 same issuer is supplied (`crl-012-root-expired-crl-still-rejected`), so an
 operator who keeps old CRLs beside current ones is rejected. Decide these
 together with the delta case.
+Open (owner's decision): a CRL whose signature algorithm the engine
+cannot verify is reported (`unsupported_signature_algorithm`, not
+replaceable) even when its authorityKeyIdentifier names another key,
+whereas a CRL that fails verification in that case is set aside silently
+(`names_another_key`). A stray such CRL with the issuer's name makes the
+path one no source can complete. Setting it aside would let another CRL
+decide, which can turn a rejection into acceptance.
