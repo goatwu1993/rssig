@@ -39,7 +39,7 @@ whatever step 1 decided (CRL-T006).
   owner's approval, see "Left open").
 - `LoadedCrl.webpki` (webpki's CRL parse) is kept, but only to report
   unsupported CRL features as `invalid_crl`. Removing that parse, and with it
-  the extra CRL decoding, stays in CRL-T005.
+  the extra CRL decoding, stays in CRL-T033.
 - The removed webpki check is kept as a **test-only cross-check**
   (`src/trust/crosscheck.rs`, feature `revocation-crosscheck`). See below.
 
@@ -156,7 +156,7 @@ on the same input, exits 0 without a panic.
   the former check would have gone on to accept it. It fails closed and no
   committed fixture has such a path; compare the key bits, with a paired
   fixture, if a case needs it.
-- CRL-T005: drop `LoadedCrl.webpki`, detecting unsupported features without
+- CRL-T033: drop `LoadedCrl.webpki`, detecting unsupported features without
   webpki, so each CRL is decoded once.
 - CRL-T006: with no webpki veto, supporting delta CRLs or skipping known
   unsupported CRLs is now rssig's own decision.

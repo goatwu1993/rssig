@@ -128,7 +128,7 @@ they pin or what they check, never after a task.
     `regenerate_cli_fixtures`.
 - [x] **CRL-T003** fix: Select CRLs against the selected chain, not every candidate. Done; [record](docs/tasks/done.md#crl-t003-fix-select-crls-against-the-selected-chain-not-every-candidate).
 - [x] **CRL-T004** fix: Tighten AKI/SKI matching edge cases. Done ([PR #79](https://github.com/goatwu1993/rssig/pull/79)); [CRL-041](docs/crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison) to [CRL-044](docs/crl.md#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial).
-- [ ] **CRL-T005** fix: Budget and consolidate CRL applicability work. Deliberately skipped in PRs #44 and #45. Detail in [crl-t005.md](docs/tasks/crl-t005.md).
+- [x] **CRL-T005** refactor: Remove repeated CRL name and root work. Done ([PR #80](https://github.com/goatwu1993/rssig/pull/80)); the budgeting and caching it also listed are CRL-T033, and the retrieval re-ask is CRL-T032.
 - [ ] **CRL-T006** fix: Decide unsupported-but-applicable CRL handling (owner decision). Partly decided in PR #60: the best CRL decides, as in OpenSSL and Bouncy Castle, so a stale, delta, indirect, unsupported or out-of-scope CRL is set aside when another CRL of the issuer is usable and authoritative (full-plus-delta and old-beside-current deployments verify). Detail in [crl-t006.md](docs/tasks/crl-t006.md).
 - [ ] **CRL-T007** test: Finish CRL rejection reason coverage. Deliberately skipped in PR #46. Detail in [crl-t007.md](docs/tasks/crl-t007.md).
 - [x] **CRL-T008** fix: Revisit revocation_unknown precedence over path errors. Done; [record](docs/tasks/done.md#crl-t008-fix-revisit-revocation_unknown-precedence-over-path-errors).
@@ -201,6 +201,13 @@ they pin or what they check, never after a task.
   owner's decision.
 - [ ] **CRL-T024** feat: Log listings that a newer CRL cleared. Only an accepted
   path's ignored listings reach the logger.
+- [ ] **CRL-T032** fix: Re-ask retrieval about a certificate an earlier answer did not cover.
+  A certificate whose points, issuer, key and role were already asked about
+  stays `revocation_unknown` even when that answer added no CRL covering it;
+  re-ask then, with a paired fixture. From CRL-T005.
+- [ ] **CRL-T033** refactor: Cache trust inputs and charge the remaining CRL work.
+  Results unchanged except where noted. Detail in
+  [crl-t033.md](docs/tasks/crl-t033.md).
 
 ## P1 — Clean parse/verify interfaces
 
