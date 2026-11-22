@@ -6,7 +6,7 @@ contain, bind and be signed by. Which instant certificates are then checked at
 is a [validation-time decision](time.md); see
 [which index](decisions.md#which-index). The entry format is defined in
 [Decision indexes](decisions.md); the profile and its limits are explained in
-[timestamp profile](timestamp-profile.md), and the history is in SEC-08
+[timestamp profile](timestamp-profile.md), and the history is in TSA-T001
 ([done](tasks/done.md), PR #42).
 
 ## Order
@@ -42,7 +42,7 @@ PKCS#9 countersignature's message digest must match them
 the image or content hashes, in every format.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #42 (SEC-08)
+- **Decided by:** written argument, PR #42 (TSA-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 2.4.2 (messageImprint) and the Authenticode convention
@@ -71,7 +71,7 @@ applies to RFC 3161 tokens and countersignatures alike; integrity-only mode
 omits it explicitly.
 
 - **Status:** Decided
-- **Decided by:** written argument (RFC 3161), PR #42 (SEC-08)
+- **Decided by:** written argument (RFC 3161), PR #42 (TSA-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 2.3: the TSA's certificate must contain exactly one
@@ -92,9 +92,9 @@ a second one is never masked by the first one's own failure (an invalid EKU,
 for example).
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #42 (SEC-08): failing closed instead of
+- **Decided by:** written choice, PR #42 (TSA-T001): failing closed instead of
   choosing a timestamp; repeated attributes of one timestamp OID, owner
-  (delegated), PR #73 (SEC-25)
+  (delegated), PR #73 (CMS-T003)
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: with more than one candidate time, any selection rule
@@ -110,7 +110,7 @@ millis and micros from 1 through 999 in order, and ordering omitted or DER
 TRUE. Anything else is `invalid_timestamp` at `timestamp`.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #42 (SEC-08); before it, such tokens
+- **Decided by:** written argument, PR #42 (TSA-T001); before it, such tokens
   were accepted
 - **Pins:** acceptance
 - **Sources:**
@@ -124,7 +124,7 @@ The optional `tsa` field and `extensions`, even noncritical ones, are
 their framed DER without authenticating or interpreting it.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #42 (SEC-08)
+- **Decided by:** written choice, PR #42 (TSA-T001)
 - **Pins:** acceptance
 - **Sources:**
   - Written argument: identity matching and extension rules are not
@@ -140,7 +140,7 @@ every optional field the profile allows. Unknown policy OIDs are accepted as
 identifiers; no policy allowlist is applied.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #42 (SEC-08)
+- **Decided by:** written argument, PR #42 (TSA-T001)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 3161 section 2.4.2; TSA policy documents are out of scope (see

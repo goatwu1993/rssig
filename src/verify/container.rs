@@ -110,7 +110,7 @@ mod borrowing_tests {
     use super::*;
 
     #[test]
-    fn lib08_signature_copy_measurements() {
+    fn signature_copy_measurements() {
         let pe = Pe::parse(include_bytes!("../../tests/fixtures/good-pe64.exe")).unwrap();
         let cab = Cab::parse(include_bytes!("../../tests/fixtures/good.cab")).unwrap();
         let navx = Navx::parse(include_bytes!("../../tests/fixtures/good.navx")).unwrap();

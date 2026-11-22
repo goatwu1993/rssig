@@ -255,7 +255,7 @@ embedded certificates and either supplied CRLs or explicit `--fetch-crls`;
 AIA downloads and OCSP are not implemented. Signers with the lifetime-signing EKU
 are validated at the validation time rather than their timestamp; configured root
 validity and historical revocation are not evaluated at the signing time. See
-[validation time](docs/validation-time.md) and SEC-14 in the [roadmap](TODO.md) for the
+[validation time](docs/validation-time.md) and TIME-T002 in the [roadmap](TODO.md) for the
 recorded decisions and deferred follow-ups. System root sets can differ from Windows publisher roots,
 and the native root loader follows its platform's trust settings. Use explicit
 roots for controlled publisher policies. [Root/CRL loading](docs/trust-loading.md)

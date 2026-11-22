@@ -47,8 +47,10 @@ type and capitalize the first word after the colon and space.
 ## Task tracking
 
 Tasks live in `TODO.md`, one short entry each: ID, title, checkbox and at most
-a few lines. Detail longer than that goes in `docs/tasks/<id>.md`, linked from
-the entry. A finished item becomes one line with its PR; its evidence lives in
+a few lines. An ID is `<SCOPE>-T<NNN>` (`CRL-T012`), from the closed scope
+list and rules in [TODO.md](TODO.md#task-ids); the title is the PR title.
+Detail longer than that goes in `docs/tasks/<id>.md` (`docs/tasks/crl-t012.md`),
+linked from the entry. A finished item becomes one line with its PR; its evidence lives in
 the PR and git history. A task is the scope of one PR: work found along the
 way becomes a new task, not a larger branch. Do not create or reference
 GitHub issues to track tasks or sub-items.

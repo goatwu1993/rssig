@@ -82,7 +82,7 @@ fn prepared(value: &::der::Any) -> Option<String> {
     // RFC 4518 section 2.2 maps U+0009 to U+000D, U+0085 and every other
     // Separator (Zs, Zl, Zp) code point to a space, which is exactly what
     // `char::is_whitespace` accepts. Its map-to-nothing characters are not
-    // dropped, so such a value matches fewer names than the RFC (SEC-26).
+    // dropped, so such a value matches fewer names than the RFC (CRL-T012).
     let mut out = String::new();
     let mut gap = false;
     for c in text.chars() {

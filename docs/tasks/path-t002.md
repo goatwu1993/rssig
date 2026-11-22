@@ -1,6 +1,6 @@
-# SEC-27: Decide whether a malformed extension in a CA certificate fails the path.
+# PATH-T002 fix: Decide whether a malformed extension in a CA certificate fails the path
 
-Task detail for **SEC-27** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **PATH-T002** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 OpenSSL (`v3_purp.c:550-552`) and BoringSSL (`v3_purp.cc:371-375`) mark a

@@ -1,6 +1,6 @@
-# SEC-22: Pass uncovered certificates to retrieval as typed data.
+# CRL-T010 refactor: Pass uncovered certificates to retrieval as typed data
 
-Task detail for **SEC-22** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T010** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 From the PR #60 review. `--fetch-crls` learns which certificates lack a

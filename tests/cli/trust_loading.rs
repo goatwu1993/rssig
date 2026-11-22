@@ -1,4 +1,4 @@
-//! SEC-07 loading failures are configuration errors, not verification verdicts.
+//! TRUST-T001 loading failures are configuration errors, not verification verdicts.
 use super::support::*;
 use der::Decode;
 
@@ -35,8 +35,8 @@ fn rejected(file: &str, flag: &str, fragment: &str) {
 }
 
 #[test]
-fn sec07_unsupported_anchor_is_not_silently_excluded() {
-    let bytes = include_bytes!("../fixtures/sec07-root-unsupported.der");
+fn unsupported_anchor_is_not_silently_excluded() {
+    let bytes = include_bytes!("../fixtures/root-unsupported.der");
     // Isolate anchor conversion, not malformed X.509 input.
     x509_cert::Certificate::from_der(bytes).unwrap();
     assert!(
@@ -44,48 +44,48 @@ fn sec07_unsupported_anchor_is_not_silently_excluded() {
             .is_err()
     );
     rejected(
-        "sec07-root-unsupported.der",
+        "root-unsupported.der",
         "--roots",
         "unsupported trust anchor",
     );
-    rejected("sec07-roots-unsupported.pem", "--roots", "entry 2");
+    rejected("root-bundle-unsupported.pem", "--roots", "entry 2");
 }
 
 #[test]
-fn sec07_mixed_and_trailing_root_input_is_rejected() {
+fn mixed_and_trailing_root_input_is_rejected() {
     for (file, entry) in [
-        ("sec07-roots-invalid.pem", "entry 2"),
-        ("sec07-roots-invalid-first.pem", "entry 1"),
-        ("sec07-roots-trailing.pem", "entry 2"),
-        ("sec07-roots-truncated.pem", "entry 2"),
+        ("root-bundle-invalid.pem", "entry 2"),
+        ("root-bundle-invalid-first.pem", "entry 1"),
+        ("root-bundle-trailing.pem", "entry 2"),
+        ("root-bundle-truncated.pem", "entry 2"),
     ] {
         rejected(file, "--roots", entry);
     }
 }
 
 #[test]
-fn sec07_mixed_and_trailing_crl_input_is_rejected() {
+fn mixed_and_trailing_crl_input_is_rejected() {
     for (file, entry) in [
-        ("sec07-crls-invalid.pem", "entry 2"),
-        ("sec07-crls-invalid-first.pem", "entry 1"),
-        ("sec07-crls-trailing.pem", "entry 2"),
+        ("crl-bundle-invalid.pem", "entry 2"),
+        ("crl-bundle-invalid-first.pem", "entry 1"),
+        ("crl-bundle-trailing.pem", "entry 2"),
     ] {
         rejected(file, "--crl", entry);
     }
 }
 
 #[test]
-fn sec07_empty_and_wrong_label_inputs_are_rejected() {
+fn empty_and_wrong_label_inputs_are_rejected() {
     for flag in ["--roots", "--crl"] {
-        rejected("sec07-empty.pem", flag, "empty trust input");
+        rejected("trust-empty.pem", flag, "empty trust input");
     }
     rejected(
-        "sec07-crls-good.pem",
+        "crl-bundle-good.pem",
         "--roots",
         "expected CERTIFICATE PEM label",
     );
     rejected(
-        "sec07-roots-good.pem",
+        "root-bundle-good.pem",
         "--crl",
         "expected X509 CRL PEM label",
     );
@@ -108,19 +108,19 @@ fn loaded(root: &str, crl: &str) -> Output {
 }
 
 #[test]
-fn sec07_valid_pem_and_duplicates_preserve_exact_reports() {
+fn valid_pem_and_duplicates_preserve_exact_reports() {
     let baseline = loaded("fixtures/root.der", "fixtures/good.crl");
     expect_success(&baseline);
     for (root, crl) in [
         (
-            "fixtures/sec07-roots-good.pem",
-            "fixtures/sec07-crls-good.pem",
+            "fixtures/root-bundle-good.pem",
+            "fixtures/crl-bundle-good.pem",
         ),
         (
-            "fixtures/sec07-roots-duplicate.pem",
-            "fixtures/sec07-crls-duplicate.pem",
+            "fixtures/root-bundle-duplicate.pem",
+            "fixtures/crl-bundle-duplicate.pem",
         ),
-        ("fixtures/sec07-roots-whitespace.pem", "fixtures/good.crl"),
+        ("fixtures/root-bundle-whitespace.pem", "fixtures/good.crl"),
     ] {
         let out = loaded(root, crl);
         expect_success(&out);
@@ -146,8 +146,8 @@ fn sec07_valid_pem_and_duplicates_preserve_exact_reports() {
 }
 
 #[test]
-fn sec07_crl_loading_does_not_authenticate_it() {
-    let out = loaded("fixtures/root.der", "fixtures/sec07-crls-forged.pem");
+fn crl_loading_does_not_authenticate_it() {
+    let out = loaded("fixtures/root.der", "fixtures/crl-bundle-forged.pem");
     assert_eq!(out.exit_code, 1);
     assert_eq!(
         out.json["results"][0]["error"]["code"],
@@ -157,7 +157,7 @@ fn sec07_crl_loading_does_not_authenticate_it() {
 }
 
 #[test]
-fn sec07_empty_store_remains_untrusted() {
+fn empty_store_remains_untrusted() {
     let out = run_fixture(
         "good-pe64.exe",
         &[

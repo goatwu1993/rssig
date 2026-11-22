@@ -1,4 +1,4 @@
-//! SEC-06: exact selected chains and typed path-check failures, with offline CRLs.
+//! PATH-T001: exact selected chains and typed path-check failures, with offline CRLs.
 use super::support::*;
 use rssig::domain::{ErrorCode, Stage};
 use sha2::{Digest, Sha256};

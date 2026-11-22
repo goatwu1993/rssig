@@ -142,7 +142,7 @@ impl<'a> Budget<'a> {
     pub(crate) fn container(&self, bytes: &[u8]) -> Result<()> {
         self.containers.charge(1)?;
         // Reserve whole-text decoding and adapter copies before parsing. Host reads
-        // and caller-owned input memory are a separate boundary (SEC-03).
+        // and caller-owned input memory are a separate boundary (LIMIT-T003).
         for _ in 0..4 {
             self.decoded_bytes.charge(bytes.len())?;
         }
@@ -220,7 +220,7 @@ mod tests {
     use alloc::string::ToString;
 
     #[test]
-    fn sec02_callback_preserves_first_failed_charge_details() {
+    fn callback_preserves_first_failed_charge_details() {
         use rustls_pki_types::SignatureVerificationAlgorithm;
         let budget = Budget {
             hash_bytes: Counter::new("hash_bytes", 1500),
@@ -249,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_counters_reject_overflow_and_preserve_consumed_units() {
+    fn counters_reject_overflow_and_preserve_consumed_units() {
         let counter = Counter::new("test", 2);
         counter.charge(2).unwrap();
         let error = counter.charge(usize::MAX).unwrap_err();
@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_each_allowance_is_checked_before_work() {
+    fn each_allowance_is_checked_before_work() {
         let pe = include_bytes!("../../tests/fixtures/good-pe64.exe");
         for resource in [
             "decoded_bytes",
@@ -303,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_nested_and_timestamp_objects_share_allowances() {
+    fn nested_and_timestamp_objects_share_allowances() {
         let nested = include_bytes!("../../tests/fixtures/good-nested.exe");
         let budget = Budget {
             cms_objects: Counter::new("cms_objects", 1),
@@ -334,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_depth_is_checked_before_decoding_malformed_child() {
+    fn depth_is_checked_before_decoding_malformed_child() {
         let budget = Budget::default();
         budget.depth(8).unwrap();
         let error = budget.depth(9).unwrap_err();
@@ -343,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_path_search_reservation_is_shared() {
+    fn path_search_reservation_is_shared() {
         let mut store = crate::TrustStore::default();
         store
             .add_roots(include_bytes!("../../tests/fixtures/root.der"))
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn sec02_chain_crypto_exhaustion_keeps_typed_error() {
+    fn chain_crypto_exhaustion_keeps_typed_error() {
         let mut store = crate::TrustStore::default();
         store
             .add_roots(include_bytes!("../../tests/fixtures/root.der"))
@@ -399,7 +399,7 @@ mod tests {
 
     #[cfg(feature = "appx")]
     #[test]
-    fn sec02_bundle_children_do_not_get_fresh_budgets() {
+    fn bundle_children_do_not_get_fresh_budgets() {
         let budget = Budget {
             containers: Counter::new("containers", 1),
             ..Budget::default()
@@ -423,8 +423,8 @@ mod tests {
     }
 
     #[test]
-    fn sec02_bounded_table_collection_stops_before_allocating_more_entries() {
-        let bytes = include_bytes!("../../tests/fixtures/sec02-entries-65.exe");
+    fn bounded_table_collection_stops_before_allocating_more_entries() {
+        let bytes = include_bytes!("../../tests/fixtures/limit-entries-65.exe");
         let pe = crate::parse::Pe::parse(bytes).unwrap();
         let budget = Budget::default();
         assert!(

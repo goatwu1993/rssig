@@ -61,7 +61,7 @@ pub trait CrlSource {
 pub struct CrlRequest<'a> {
     /// The certificate, DER as rssig re-encodes it after decoding. That is
     /// the original encoding for DER-conformant input; a name whose SET OF is
-    /// out of DER order is sorted (SEC-22).
+    /// out of DER order is sorted (CRL-T010).
     pub certificate: &'a [u8],
     /// Its issuer Name, DER, read from `certificate`: the key a store of CRLs
     /// by issuer looks up.
@@ -403,7 +403,7 @@ fn listed_points(
 /// `crl_fetch_aborted` and the other results keep their code with
 /// `details.retrieval_aborted`. Whether a CRL applies is
 /// decided only by verification. See `docs/crl-retrieval.md`. The passes share
-/// one SEC-02 work budget. The input store is never modified.
+/// one LIMIT-T002 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
     bytes: &[u8],
     filename: Option<&str>,
@@ -692,7 +692,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // The issuer name is the key for a source that stores CRLs by
         // issuer; a certificate without a readable one is not asked about,
         // and each of its listed points is recorded with that reason. The
-        // certificate here is itself a re-encoding (SEC-22), so its issuer
+        // certificate here is itself a re-encoding (CRL-T010), so its issuer
         // bytes are sorted like the chain's names. No committed input
         // reaches the failure branch: a decoded name re-encodes
         // (docs/testing.md).

@@ -162,7 +162,7 @@ pub(super) fn read_trust(path: &Path, remaining: &mut usize) -> anyhow::Result<V
 mod tests {
     use super::*;
     #[test]
-    fn sec03_stream_limits_handle_growth_short_reads_and_exact_eof() {
+    fn stream_limits_handle_growth_short_reads_and_exact_eof() {
         let (bytes, exceeded) = read_stream(io::repeat(7), 17).unwrap();
         assert_eq!(bytes, vec![7; 17]);
         assert!(exceeded);
@@ -187,7 +187,7 @@ mod tests {
         assert_eq!(growing.read, 18);
     }
     #[test]
-    fn sec03_report_count_rejects_without_allocating_encoded_output() {
+    fn report_count_rejects_without_allocating_encoded_output() {
         let error = report_size(&"x".repeat(1000), 20).unwrap_err();
         assert!(error.0 <= 20);
         assert!(error.1 > 20 - error.0);
@@ -195,7 +195,7 @@ mod tests {
     }
     #[cfg(unix)]
     #[test]
-    fn sec03_nonregular_inputs_are_rejected_before_reading() {
+    fn nonregular_inputs_are_rejected_before_reading() {
         for path in [
             Path::new("/dev/zero"),
             Path::new(env!("CARGO_MANIFEST_DIR")),
@@ -205,7 +205,7 @@ mod tests {
         }
     }
     #[test]
-    fn sec03_trust_reads_share_the_allowance() {
+    fn trust_reads_share_the_allowance() {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/root.der");
         let mut remaining = std::fs::metadata(&path).unwrap().len() as usize;
         assert!(!read_trust(&path, &mut remaining).unwrap().is_empty());

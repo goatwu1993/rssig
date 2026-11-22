@@ -1,4 +1,4 @@
-# Aggregate verification budgets (SEC-02)
+# Aggregate verification budgets (LIMIT-T002)
 
 Every public verification call creates one consumable budget. All PE certificate
 entries, CMS signers, nested signatures, RFC 3161 tokens, PKCS#9 countersigners,
@@ -82,6 +82,6 @@ its original typed resource details. Ordinary EKU failures still retain the firs
 path error. Existing failure expectations remain unchanged.
 
 CLI file/root/CRL reads, batch/report buffering, and nonregular/changing inputs
-are covered by [SEC-03 host limits](host-limits.md). Library callers own their
+are covered by [LIMIT-T003 host limits](host-limits.md). Library callers own their
 input and returned report memory. This is not a wall-clock deadline,
 fuzzing audit, Windows policy equivalence, or independent interoperability proof.

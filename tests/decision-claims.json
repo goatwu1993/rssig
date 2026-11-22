@@ -52,7 +52,7 @@
         "appx-publisher",
         "appxbundle-different-signer",
         "appxbundle-publisher",
-        "lib05-appx-publisher"
+        "appx-publisher-parser"
       ],
       "sip": [
         "appxbundle-sip"
@@ -95,7 +95,7 @@
         "appxbundle-stub",
         "appxbundle-unknown",
         "appxbundle-version",
-        "lib05-bundle-identity"
+        "appxbundle-identity-parser"
       ],
       "support": [
         "appx-appx-extension",
@@ -279,7 +279,7 @@
         "rdp-expired-crl",
         "rdp-revoked",
         "revoked",
-        "sec07-forged-crl",
+        "crl-bundle-forged",
         "wsh-revoked"
       ]
     },
@@ -299,8 +299,8 @@
         "parse-recursive-rfc3161"
       ],
       "views": [
-        "lib06-parse-cab",
-        "lib06-parse-navx",
+        "inspect-parse-cab",
+        "inspect-parse-navx",
         "parse-cms",
         "parse-explicit-pe",
         "parse-invalid-signature",
@@ -316,23 +316,23 @@
         "msi-bad-nested-depth",
         "parse-recursive-depth8",
         "parse-recursive-depth9",
-        "sec02-depth-8",
-        "sec02-depth-9-malformed",
-        "sec02-entries-65",
-        "sec02-wide-64",
-        "sec02-wide-65"
+        "limit-depth-8",
+        "limit-depth-9-malformed",
+        "limit-entries-65",
+        "limit-wide-64",
+        "limit-wide-65"
       ],
       "crl-count": [
-        "sec07-fetch-64-crls",
-        "sec07-fetch-65-crls",
-        "sec07-fetch-supplied-plus-bundle"
+        "limit-fetch-64-crls",
+        "limit-fetch-65-crls",
+        "limit-fetch-supplied-plus-bundle"
       ],
       "host-input": [
-        "sec03-batch-count",
-        "sec03-batch-input",
-        "sec03-input",
-        "sec03-parse-input",
-        "sec03-report"
+        "limit-batch-count",
+        "limit-batch-input",
+        "limit-input",
+        "limit-parse-input",
+        "limit-report"
       ]
     },
     "MSI": {
@@ -340,8 +340,8 @@
         "msi-bad-empty-signature"
       ],
       "extended": [
-        "lib05-msi-empty-extended",
-        "lib05-msi-extended",
+        "msi-empty-extended-parser",
+        "msi-extended-parser",
         "msi-bad-empty-extended",
         "msi-bad-extended-digest",
         "msi-bad-extended-size",
@@ -444,7 +444,7 @@
         "psxml-untrusted",
         "rdp-key-usage",
         "rdp-untrusted",
-        "sec07-empty-store",
+        "path-empty-store",
         "unknown-root",
         "wsh-untrusted"
       ],
@@ -462,9 +462,9 @@
         "appxbundle-integrity",
         "cab-integrity",
         "integrity-only",
-        "lib07-policy-integrity",
-        "lib07-policy-no-revocation",
-        "lib07-policy-trusted",
+        "policy-integrity",
+        "policy-no-revocation",
+        "policy-trusted",
         "msi-integrity-only",
         "navx-integrity",
         "powershell-integrity",
@@ -477,13 +477,13 @@
         "wsh-no-revocation"
       ],
       "repeatable": [
-        "lib08-repeated-verification",
-        "lib09-core-trusted-pe"
+        "policy-repeated-verification",
+        "policy-core-trusted-pe"
       ]
     },
     "PS": {
       "hash": [
-        "lib04-powershell-independent-tampered",
+        "powershell-independent-tampered-parser",
         "powershell-digest",
         "powershell-independent-tampered",
         "powershell-line-endings",
@@ -528,8 +528,8 @@
         "psxml-trailing"
       ],
       "support": [
-        "lib04-powershell-independent-jsign",
-        "lib04-psxml-independent-ascii",
+        "powershell-independent-jsign-parser",
+        "psxml-independent-ascii-parser",
         "powershell-binary-precedence",
         "powershell-data",
         "powershell-empty",
@@ -577,7 +577,7 @@
       ],
       "hash": [
         "bad-rdp-independent-setting",
-        "lib04-bad-rdp-independent-setting",
+        "rdp-bad-independent-setting-parser",
         "rdp-attributes-setting",
         "rdp-scope-order",
         "rdp-setting"
@@ -607,7 +607,7 @@
       ],
       "support": [
         "good-rdp-independent-unsigned-change",
-        "lib04-rdp-independent-nfedera",
+        "rdp-independent-nfedera-parser",
         "rdp-attributes",
         "rdp-independent-nfedera",
         "rdp-lf",
@@ -667,28 +667,28 @@
     },
     "TRUST": {
       "accepted-input": [
-        "sec07-duplicates",
-        "sec07-good",
-        "sec07-whitespace"
+        "trust-duplicates",
+        "trust-good",
+        "trust-whitespace"
       ],
       "loading": [
         "cli-malformed-crl",
         "cli-malformed-root",
         "cli-missing-crl",
         "cli-missing-root",
-        "sec07-crls-good-roots",
-        "sec07-crls-invalid-crl",
-        "sec07-crls-invalid-first-crl",
-        "sec07-crls-trailing-crl",
-        "sec07-empty-crl",
-        "sec07-empty-roots",
-        "sec07-root-unsupported-roots",
-        "sec07-roots-good-crl",
-        "sec07-roots-invalid-first-roots",
-        "sec07-roots-invalid-roots",
-        "sec07-roots-trailing-roots",
-        "sec07-roots-truncated-roots",
-        "sec07-roots-unsupported-roots"
+        "trust-crls-good-roots",
+        "trust-crls-invalid-crl",
+        "trust-crls-invalid-first-crl",
+        "trust-crls-trailing-crl",
+        "trust-empty-crl",
+        "trust-empty-roots",
+        "trust-root-unsupported-roots",
+        "trust-roots-good-crl",
+        "trust-roots-invalid-first-roots",
+        "trust-roots-invalid-roots",
+        "trust-roots-trailing-roots",
+        "trust-roots-truncated-roots",
+        "trust-roots-unsupported-roots"
       ]
     },
     "TSA": {
@@ -801,7 +801,7 @@
         "wsh-bad-xml-wsf"
       ],
       "support": [
-        "lib04-wsh-wsh-independent-jsign-vbs",
+        "wsh-independent-jsign-vbs-parser",
         "wsh-good-bomless-unicode-wsf",
         "wsh-good-js",
         "wsh-good-jse",

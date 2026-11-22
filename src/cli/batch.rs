@@ -112,7 +112,7 @@ pub(super) fn execute<T, S: Serialize>(
 mod tests {
     use super::*;
     #[test]
-    fn sec03_failure_evidence_is_bounded_too() {
+    fn failure_evidence_is_bounded_too() {
         let limits = super::super::limits::Limits {
             max_input_bytes: 4096,
             max_total_input_bytes: 4096,

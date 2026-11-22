@@ -1,4 +1,4 @@
-//! SEC-07 explicit maintenance only: PEM wrapping and narrow loading mutations.
+//! TRUST-T001 explicit maintenance only: PEM wrapping and narrow loading mutations.
 use std::path::Path;
 
 pub(super) fn write(dir: &Path) {
@@ -21,53 +21,53 @@ pub(super) fn write(dir: &Path) {
     let bad_root = pem("CERTIFICATE", &[0x30, 0]);
     let bad_crl = pem("X509 CRL", &[0x30, 0]);
     let write = |name, bytes| std::fs::write(dir.join(name), bytes).unwrap();
-    write("sec07-root-unsupported.der", unsupported.clone());
-    write("sec07-roots-good.pem", root_pem.clone());
+    write("root-unsupported.der", unsupported.clone());
+    write("root-bundle-good.pem", root_pem.clone());
     write(
-        "sec07-roots-duplicate.pem",
+        "root-bundle-duplicate.pem",
         [root_pem.as_slice(), &root_pem].concat(),
     );
     write(
-        "sec07-roots-unsupported.pem",
+        "root-bundle-unsupported.pem",
         [root_pem.as_slice(), &pem("CERTIFICATE", &unsupported)].concat(),
     );
     write(
-        "sec07-roots-invalid.pem",
+        "root-bundle-invalid.pem",
         [root_pem.as_slice(), &bad_root].concat(),
     );
     write(
-        "sec07-roots-invalid-first.pem",
+        "root-bundle-invalid-first.pem",
         [bad_root.as_slice(), &root_pem].concat(),
     );
     write(
-        "sec07-roots-trailing.pem",
+        "root-bundle-trailing.pem",
         [root_pem.as_slice(), b"!"].concat(),
     );
     write(
-        "sec07-roots-truncated.pem",
+        "root-bundle-truncated.pem",
         [root_pem.as_slice(), &root_pem[..root_pem.len() - 28]].concat(),
     );
     write(
-        "sec07-roots-whitespace.pem",
+        "root-bundle-whitespace.pem",
         [b" \t\r\n".as_slice(), &root_pem, b" \t\r\n"].concat(),
     );
-    write("sec07-crls-good.pem", crl_pem.clone());
+    write("crl-bundle-good.pem", crl_pem.clone());
     write(
-        "sec07-crls-duplicate.pem",
+        "crl-bundle-duplicate.pem",
         [crl_pem.as_slice(), &crl_pem].concat(),
     );
     write(
-        "sec07-crls-invalid.pem",
+        "crl-bundle-invalid.pem",
         [crl_pem.as_slice(), &bad_crl].concat(),
     );
     write(
-        "sec07-crls-invalid-first.pem",
+        "crl-bundle-invalid-first.pem",
         [bad_crl.as_slice(), &crl_pem].concat(),
     );
     write(
-        "sec07-crls-trailing.pem",
+        "crl-bundle-trailing.pem",
         [crl_pem.as_slice(), b"!"].concat(),
     );
-    write("sec07-crls-forged.pem", pem("X509 CRL", &forged));
-    write("sec07-empty.pem", Vec::new());
+    write("crl-bundle-forged.pem", pem("X509 CRL", &forged));
+    write("trust-empty.pem", Vec::new());
 }

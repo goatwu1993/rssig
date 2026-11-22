@@ -1,9 +1,9 @@
-//! Test-only revocation cross-check (SEC-24), compiled only with the
+//! Test-only revocation cross-check (CRL-T011), compiled only with the
 //! `revocation-crosscheck` feature, which only the test targets enable.
 //!
 //! rssig decides revocation alone. This module re-runs webpki's own
 //! revocation check on the accepted path with the CRLs rssig chose, the check
-//! rssig ran in production before SEC-24, and panics if the two disagree. It
+//! rssig ran in production before CRL-T011, and panics if the two disagree. It
 //! guards the parts webpki can judge independently: serial lookup, the CRL
 //! signature under the adapter, scope and expiry of the chosen CRLs. It
 //! cannot judge which CRL rssig chose.
@@ -73,10 +73,10 @@ pub(super) fn confirm(
     // rssig never chooses a CRL that webpki cannot parse (it reports it as
     // `invalid_crl` and sets it aside), and every accepted path has a chosen
     // CRL per certificate, so neither can happen. If rssig starts to accept
-    // CRL features webpki lacks (SEC-18), skip those paths here on purpose.
+    // CRL features webpki lacks (CRL-T006), skip those paths here on purpose.
     assert!(
         !indices.is_empty() && picked.len() == indices.len(),
-        "SEC-24 revocation cross-check: a chosen CRL is missing or webpki cannot parse it"
+        "CRL-T011 revocation cross-check: a chosen CRL is missing or webpki cannot parse it"
     );
     let picked_refs: Vec<_> = picked.iter().collect();
     let options = webpki::RevocationOptionsBuilder::new(&picked_refs)
@@ -115,7 +115,7 @@ pub(super) fn confirm(
     }
     assert!(
         confirmed.is_err() == rejects,
-        "SEC-24 revocation cross-check: rssig {} the accepted path, webpki returned {:?}",
+        "CRL-T011 revocation cross-check: rssig {} the accepted path, webpki returned {:?}",
         if rejects { "rejects" } else { "accepts" },
         confirmed.err(),
     );

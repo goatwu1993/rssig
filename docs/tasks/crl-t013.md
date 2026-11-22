@@ -1,6 +1,6 @@
-# SEC-29: Identify a CRL's issuer by issuer and serial outside verification.
+# CRL-T013 feat: Identify a CRL's issuer by issuer and serial outside verification
 
-Task detail for **SEC-29** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T013** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Verification now reads an authorityKeyIdentifier's authorityCertIssuer and
@@ -13,7 +13,7 @@ Two other places still read only the key identifier:
   when verification then sets it aside because its authorityKeyIdentifier
   names another key (CRL-040) or another certificate (CRL-043). Retrieval
   then asks no further point, and the certificate stays `revocation_unknown`
-  where another point might have served a usable CRL. Before SEC-16 the
+  where another point might have served a usable CRL. Before CRL-T004 the
   CRL-043 case was forged, which CRL-018 does not refresh either, so the
   outcome is unchanged; the CRL-040 case predates it. Count a body as an
   answer only when it does not name another key or certificate.

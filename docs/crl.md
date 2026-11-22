@@ -3,8 +3,8 @@
 Numbered decisions behind rssig's CRL and revocation behavior. The entry
 format, Status values and how cases name an entry are defined in
 [Decision indexes](decisions.md). The history and review discussion is in
-[SEC-10](tasks/sec-10-crl-applicability.md) and
-[SEC-24](tasks/sec-24-single-revocation-authority.md).
+[CRL-T001](tasks/crl-t001.md) and
+[CRL-T011](tasks/crl-t011.md).
 
 ## Order
 
@@ -151,7 +151,7 @@ An issuingDistributionPoint with only onlyContainsUserCerts or onlyContainsCACer
 A self-issued rollover path (two issuers of one name, different keys) verifies without revocation. With CRLs whose authorityKeyIdentifier names their key, each certificate gets its own key's CRL in either order, and a revoked rollover certificate is rejected.
 
 - **Status:** Decided
-- **Decided by:** references agree (OpenSSL, BoringSSL, Bouncy Castle; OpenSSL 3.0.13 run as a maintenance step), SEC-16
+- **Decided by:** references agree (OpenSSL, BoringSSL, Bouncy Castle; OpenSSL 3.0.13 run as a maintenance step), CRL-T004
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 6.1: self-issued certificates (same subject and issuer name, different keys) are valid on a path and support key rollover.
@@ -290,7 +290,7 @@ A candidate path that passes every check, with its CRLs, is accepted whatever an
 A supplied CRL with a bad signature is `invalid_crl_signature` and nothing is requested, even if the source holds a good CRL. Likewise an issuer without cRLSign (CRL-015) is not asked about: a fetched CRL has the same issuer.
 
 - **Status:** Decided
-- **Decided by:** owner, PR #64 (SEC-23): BoringSSL decides (OpenSSL and BoringSSL report without a second lookup; Bouncy Castle fetches)
+- **Decided by:** owner, PR #64: BoringSSL decides (OpenSSL and BoringSSL report without a second lookup; Bouncy Castle fetches)
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
@@ -313,7 +313,7 @@ With a source, an expired supplied CRL is refreshed from the certificate's point
 A not-yet-valid CRL, an unusable issuingDistributionPoint, an unknown critical extension, a delta, indirect or reasons-partitioned CRL, or a malformed CRL is replaceable: a source is asked, and a fetched CRL that passes the same checks decides. A malformed CRL does not stop the search for another, alone or beside an expired one. A CRL without nextUpdate that has another defect is no different: its other defects decide exactly as they would with nextUpdate present, so a replaceable defect is replaced by a source's CRL (to the references a missing nextUpdate is no defect).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #64 (SEC-23): follow OpenSSL and Bouncy Castle where they agree, BoringSSL where they differ; replaces the Observed rule that only an expired CRL is refreshed; for a malformed CRL the three references agree
+- **Decided by:** owner, PR #64: follow OpenSSL and Bouncy Castle where they agree, BoringSSL where they differ; replaces the Observed rule that only an expired CRL is refreshed; for a malformed CRL the three references agree
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1564-1590 (get_crl_delta) consults lookup_crls when the best supplied CRL scores below CRL_SCORE_VALID (:33-42: no unhandled critical extension, time and scope; get_crl_score :1283-1340); the signature is not scored and its failure is reported at :1664 without another lookup.
@@ -330,7 +330,7 @@ A not-yet-valid CRL, an unusable issuingDistributionPoint, an unknown critical e
 The certificate is asked about by certificate and issuer, and a full CRL from the source decides. A source that answers only by URL has nothing to fetch, so `invalid_crl` stands (CRL-009).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #64 (SEC-23)
+- **Decided by:** owner, PR #64
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL 3.3 crypto/x509/x_crl.c:358-361 sets IDP_ONLYCA; OpenSSL crypto/x509/x509_vfy.c:2154-2157 (crl_crldp_check) returns 0 for an end entity, and :2295 (check_crl) fails with X509_V_ERR_DIFFERENT_CRL_SCOPE.
@@ -420,7 +420,7 @@ A revocation is definite evidence and is reported over another path's failure; o
 Alone, such a listing is `certificate_revoked` if webpki would admit the CRL apart from the missing nextUpdate (judged on a byte-identical re-encoding with a stand-in nextUpdate). A newer current, complete, direct CRL that leaves the certificate out clears the listing; an older one does not. A removeFromCRL entry releases the listing. Both outcomes reject; only the code is pinned. On a timestamped file the timestamp authority's chain is checked first, so the same CRL alone is `invalid_crl` there.
 
 - **Status:** Decided
-- **Decided by:** owner, PR #64 (SEC-23): references checked at the owner's request; BoringSSL breaks the tie on clearing; OpenSSL and Bouncy Castle agree on removeFromCRL
+- **Decided by:** owner, PR #64: references checked at the owner's request; BoringSSL breaks the tie on clearing; OpenSSL and Bouncy Castle agree on removeFromCRL
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:1555-1587 (ossl_x509_check_crl_time): a CRL without nextUpdate is never expired, so a current CRL whose entries are read.
@@ -519,7 +519,7 @@ Only a body that loads as a CRL of the certificate's issuer counts. When that an
 A CRL whose only defect is a missing nextUpdate is not asked about: it is `invalid_crl` (`missing_next_update`, CRL-002) and no request follows. With another defect, that defect is reported and the CRL is replaceable (CRL-020).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #64 (SEC-23)
+- **Decided by:** owner, PR #64
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL 3.3 crypto/x509/x509_vfy.c:1112 (check_crl_time) and BoringSSL crypto/x509/x509_vfy.cc:414 (check_crl_time) check nextUpdate only when present, so a CRL without it is time-valid, scores valid and no store lookup follows.
@@ -531,7 +531,7 @@ A CRL whose only defect is a missing nextUpdate is not asked about: it is `inval
 Without an answer from the source, the CRL's own error stands. An expired CRL stays `crl_expired`. For a replaceable CRL (CRL-020, including a malformed one) the error stands and the certificate is named in `certificates_with_replaceable_crl`. Either error is marked `retrieval_aborted` when the source aborted.
 
 - **Status:** Decided
-- **Decided by:** owner (delegated the call), PR #60 for an expired CRL; owner, PR #64 (SEC-23) for a replaceable one
+- **Decided by:** owner (delegated the call), PR #60 for an expired CRL; owner, PR #64 for a replaceable one
 - **Pins:** diagnostics
 - **Sources:**
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.
@@ -593,7 +593,7 @@ A CRL is a candidate for a certificate when its issuer name matches the certific
   - RFC 5280 section 7.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): "Conforming implementations MUST use the LDAP StringPrep profile (including insignificant space handling), as specified in [RFC4518], as the basis for comparison of distinguished name attributes encoded in either PrintableString or UTF8String."
   - OpenSSL 3.3 (7f736187) `crypto/x509/x509_cmp.c:253-285` (`X509_NAME_cmp` compares the canonical encoding) and `crypto/x509/x_name.c:300-308` (UTF-8, lower case, white space collapsed); BoringSSL (289645a4) `crypto/x509/x509_cmp.cc:117-143` and `x_name.cc:45-100`; Bouncy Castle (bb81bfa7) `X500Name.java:265-290` (`equals`, then the style's `areEqual`). All three match names canonically, but OpenSSL (`x_name.c:414-460`) and BoringSSL lower-case and collapse spaces only for ASCII and copy any other byte as it is, while RFC 5280 and Bouncy Castle fold Unicode text. rssig follows the RFC, so a name that differs only in the case of a non-ASCII letter (`Zoë` and `ZOË`) matches in rssig and Bouncy Castle but not in OpenSSL or BoringSSL.
 - **Unit tests:** `names_match_as_rfc_5280_compares_them` in `src/trust/names.rs`.
-- **Note:** Before this entry rssig compared exact DER, so such a CRL was ignored and the certificate was `revocation_unknown`; webpki still requires a certificate's issuer to equal its issuer's subject byte for byte when it builds the path. CRL-008's rule for issuers of one name with different keys compares the names of the issuers on the path as webpki built it (exact bytes), not the CRLs' issuer fields, so a CRL cannot escape that rule by spelling its issuer differently (`crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected`); two issuers whose names differ only in case are two to it, as to webpki, where OpenSSL would treat them as one. Retrieval also uses exact bytes: the issuers it has asked about (CRL-033) are keyed by them, and a fetched CRL counts as an issuer's answer only when its issuer is the certificate's issuer byte for byte, since one equal only under this comparison may be another CA's, which verification sets aside. SEC-26 tracks both. A CRL whose issuer equals the certificate's only under this comparison, whose authorityKeyIdentifier does not claim the issuer (by its key identifier or by its certificate's issuer and serial), and that fails under the issuer's key or cannot be verified, is another CA's and is set aside, as one naming another key is, not forged or unsupported; one that claims the issuer, including by a key identifier the issuer cannot disprove (CRL-042), is judged like an exactly named CRL (`crl-041-forged-crl-naming-the-issuers-key-stays-forged`). A set-aside one neither names a forged CRL in the result nor stops retrieval (CRL-018), as before this entry, when it was ignored (`crl-041-forged-crl-matching-only-by-comparison-is-set-aside`).
+- **Note:** Before this entry rssig compared exact DER, so such a CRL was ignored and the certificate was `revocation_unknown`; webpki still requires a certificate's issuer to equal its issuer's subject byte for byte when it builds the path. CRL-008's rule for issuers of one name with different keys compares the names of the issuers on the path as webpki built it (exact bytes), not the CRLs' issuer fields, so a CRL cannot escape that rule by spelling its issuer differently (`crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected`); two issuers whose names differ only in case are two to it, as to webpki, where OpenSSL would treat them as one. Retrieval also uses exact bytes: the issuers it has asked about (CRL-033) are keyed by them, and a fetched CRL counts as an issuer's answer only when its issuer is the certificate's issuer byte for byte, since one equal only under this comparison may be another CA's, which verification sets aside. CRL-T012 tracks both. A CRL whose issuer equals the certificate's only under this comparison, whose authorityKeyIdentifier does not claim the issuer (by its key identifier or by its certificate's issuer and serial), and that fails under the issuer's key or cannot be verified, is another CA's and is set aside, as one naming another key is, not forged or unsupported; one that claims the issuer, including by a key identifier the issuer cannot disprove (CRL-042), is judged like an exactly named CRL (`crl-041-forged-crl-naming-the-issuers-key-stays-forged`). A set-aside one neither names a forged CRL in the result nor stops retrieval (CRL-018), as before this entry, when it was ignored (`crl-041-forged-crl-matching-only-by-comparison-is-set-aside`).
 
 ### CRL-042: An issuer without a usable key identifier cannot disprove another key's CRL
 
@@ -638,4 +638,4 @@ A CRL whose signature verifies under the path's issuer key is authenticated by t
 
 Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
 
-- `attach`: cases that pin an existing CRL entry but do not name it yet: the remaining SEC-10 audit cases and every format's revocation, CRL-freshness and forged-CRL cases.
+- `attach`: cases that pin an existing CRL entry but do not name it yet: the remaining CRL-T001 audit cases and every format's revocation, CRL-freshness and forged-CRL cases.

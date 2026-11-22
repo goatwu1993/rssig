@@ -217,19 +217,19 @@ mod tests {
     const CRL: &[u8] = include_bytes!("../../tests/fixtures/good.crl");
 
     #[test]
-    fn sec07_exact_duplicates_are_idempotent_but_distinct_anchors_remain() {
+    fn exact_duplicates_are_idempotent_but_distinct_anchors_remain() {
         let mut store = TrustStore::default();
         for _ in 0..2 {
             store.add_roots(ROOT).unwrap();
             store
                 .add_roots(include_bytes!(
-                    "../../tests/fixtures/sec07-roots-duplicate.pem"
+                    "../../tests/fixtures/root-bundle-duplicate.pem"
                 ))
                 .unwrap();
             store.add_crl(CRL).unwrap();
             store
                 .add_crl(include_bytes!(
-                    "../../tests/fixtures/sec07-crls-duplicate.pem"
+                    "../../tests/fixtures/crl-bundle-duplicate.pem"
                 ))
                 .unwrap();
         }
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn sec07_pem_bounds_and_der_trailing_data_are_rejected_without_mutation() {
+    fn pem_bounds_and_der_trailing_data_are_rejected_without_mutation() {
         let mut store = TrustStore::default();
         store.add_roots(ROOT).unwrap();
         store.add_crl(CRL).unwrap();
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "system-roots")]
-    fn sec07_native_partial_and_total_failures_retain_diagnostics() {
+    fn native_partial_and_total_failures_retain_diagnostics() {
         for certs in [&[ROOT][..], &[][..]] {
             let error = TrustStore::from_native(native(certs, 2)).err().unwrap();
             assert_eq!(error.kind(), Kind::SystemRoots);
@@ -330,14 +330,14 @@ mod tests {
 
     #[test]
     #[cfg(feature = "system-roots")]
-    fn sec07_native_empty_unsupported_malformed_and_duplicate_results() {
+    fn native_empty_unsupported_malformed_and_duplicate_results() {
         let empty = TrustStore::from_native(native(&[], 0)).err().unwrap();
         assert_eq!(empty.kind(), Kind::SystemRoots);
         assert_eq!(empty.code(), Code::EmptyInput);
         assert_eq!(empty.entry_index(), None);
         for (bad, code) in [
             (
-                include_bytes!("../../tests/fixtures/sec07-root-unsupported.der").as_slice(),
+                include_bytes!("../../tests/fixtures/root-unsupported.der").as_slice(),
                 Code::UnsupportedAnchor,
             ),
             (b"\x30\x00".as_slice(), Code::InvalidEncoding),

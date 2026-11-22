@@ -2,7 +2,7 @@
 use super::support::*;
 
 #[test]
-fn lib04_powershell_independent_jsign() {
+fn powershell_independent_jsign_parser() {
     let output = run_fixture(
         "powershell-independent-jsign.ps1",
         &["verify", "--integrity-only", "--time", "1800000000"],
@@ -16,7 +16,7 @@ fn lib04_powershell_independent_jsign() {
 }
 
 #[test]
-fn lib04_powershell_independent_tampered() {
+fn powershell_independent_tampered_parser() {
     let output = run_fixture(
         "bad-powershell-independent-digest.ps1",
         &["verify", "--integrity-only", "--time", "1800000000"],
@@ -30,7 +30,7 @@ fn lib04_powershell_independent_tampered() {
 }
 
 #[test]
-fn lib04_wsh_wsh_independent_jsign_vbs() {
+fn wsh_independent_jsign_vbs_parser() {
     let output = run_fixture(
         "wsh-independent-jsign.vbs",
         &["verify", "--integrity-only", "--time", "1800000000"],
@@ -41,7 +41,7 @@ fn lib04_wsh_wsh_independent_jsign_vbs() {
 }
 
 #[test]
-fn lib04_rdp_independent_nfedera() {
+fn rdp_independent_nfedera_parser() {
     let output = run_fixture(
         "rdp-independent-nfedera.rdp",
         &["verify", "--integrity-only", "--time", "1800000000"],
@@ -52,7 +52,7 @@ fn lib04_rdp_independent_nfedera() {
 }
 
 #[test]
-fn lib04_bad_rdp_independent_setting() {
+fn rdp_bad_independent_setting_parser() {
     let output = run_fixture(
         "bad-rdp-independent-setting.rdp",
         &["verify", "--integrity-only", "--time", "1800000000"],
@@ -66,7 +66,7 @@ fn lib04_bad_rdp_independent_setting() {
 }
 
 #[test]
-fn lib04_psxml_independent_ascii() {
+fn psxml_independent_ascii_parser() {
     let output = run_fixture(
         "psxml-independent-jsign-ascii.ps1xml",
         &["verify", "--integrity-only", "--time", "1800000000"],

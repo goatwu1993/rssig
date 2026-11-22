@@ -1,8 +1,8 @@
-# SEC-10: Audit CRL applicability and competing evidence
+# CRL-T001 fix: Audit CRL applicability and competing evidence
 
-Task detail for **SEC-10** in [TODO.md](../../TODO.md), which keeps the ID,
-title and checkbox. Other IDs below (SEC-11, SEC-15 to SEC-21, TEST-11,
-PRODUCT-04, INTEROP-01, DEFER-01) are items in that file.
+Task detail for **CRL-T001** in [TODO.md](../../TODO.md), which keeps the ID,
+title and checkbox. Other IDs below (CRL-T002, CRL-T003 to CRL-T009, CRL-T025,
+DOC-T007, TEST-T011, TEST-T013) are items in that file.
 
 The decisions this task made are indexed in [CRL decisions](../crl.md).
 
@@ -38,7 +38,7 @@ One box per item in the scope above.
   `crl-012-root-aki-crl-still-rejected`,
   `crl-012-root-signed-other-aki-crl-still-rejected`,
   `crl-012-root-crl-malformed-aki`, `crl-unrelated-malformed-aki-crl-excluded`,
-  `crl-012-root-aki-issuer-serial-crl-name-matched`. Limits: SEC-16.
+  `crl-012-root-aki-issuer-serial-crl-name-matched`. Limits: CRL-T004.
 - [x] **cRLSign usage.** An intermediate issuer without cRLSign cannot issue a
   usable CRL (`invalid_key_usage` at `revocation`), and path building falls back
   to a candidate that has it. A configured root is exempt by decision.
@@ -48,7 +48,7 @@ One box per item in the scope above.
   `crl-revoked-issuer`, `crl-revoked-issuer-after-good-root-crl`,
   `crl-revoked-issuer-before-good-root-crl`,
   `crl-revoked-issuer-issuer-crl-first`. Limit: the error details describe the
-  signer (SEC-19).
+  signer (CRL-T007).
 - [x] **Incomplete issuer coverage.** A chain certificate with no applicable CRL
   is `revocation_unknown`. `time-007-lifetime-rollover-revocation-unknown`,
   `crl-only-unrelated-crl-is-unknown`.
@@ -71,7 +71,7 @@ One box per item in the scope above.
 - [x] **Delta and indirect CRLs.** `invalid_crl` (`delta_crl`, `indirect_crl`),
   reported before freshness. `crl-012-root-delta-crl-unsupported`,
   `crl-012-root-indirect-crl-unsupported`,
-  `crl-012-root-delta-expired-crl-reports-feature`. Limit: SEC-18.
+  `crl-012-root-delta-expired-crl-reports-feature`. Limit: CRL-T006.
 - [x] **Competing or unrelated supplied CRLs.** Unrelated CRLs are excluded
   whatever their fault; among CRLs that cover the certificate a revocation in
   any one wins in either order. `crl-unrelated-expired-crl-excluded`,
@@ -81,18 +81,18 @@ One box per item in the scope above.
   another point does not cover the certificate, so its entries are not read
   (`crl-013-dp-other-partition-revocation-is-ignored`,
   `crl-013-dp-other-partition-revocation-is-ignored-first`; see "Case
-  reasons"). Limit: SEC-21.
+  reasons"). Limit: CRL-T009.
 - [x] **Unusable extra CRL: reject or exclude.** Specified: excluded when it
   does not apply to the chain, otherwise the request fails closed.
   `crl-012-root-expired-crl-still-rejected` against the
-  `crl-unrelated-*-excluded` cases. Limit: SEC-18.
+  `crl-unrelated-*-excluded` cases. Limit: CRL-T006.
 - [x] **Unknown status is never good.** Path validation denies unknown status,
   and a request whose supplied CRLs all fail to apply is `revocation_unknown`.
   `crl-only-unrelated-crl-is-unknown`, `crl-030-dp-other-idp-unknown`,
   `crl-dp-other-idp-revoked-unknown`.
 - [x] **Unsupported-feature errors.** Every applicable CRL that cannot be used is
   `invalid_crl` with a `details.reason` listed in [problems](../problems.md).
-  Limit: reasons without a fixture are SEC-19.
+  Limit: reasons without a fixture are CRL-T007.
 - [x] **Freshness boundaries.** A CRL is usable from its thisUpdate (inclusive)
   until one second before its nextUpdate: a validation time one second before
   thisUpdate is `crl_not_yet_valid`, and one equal to nextUpdate is
@@ -137,10 +137,10 @@ One box per item in the scope above.
 - The best CRL decides, checked per certificate on each path (PR #60):
   revocation is evaluated by rssig for every certificate on a candidate path,
   as OpenSSL and Bouncy Castle do, and webpki confirmed the accepted path with
-  only the chosen CRLs (removed in SEC-24, see
-  [SEC-24](sec-24-single-revocation-authority.md); rssig's own evaluation is
+  only the chosen CRLs (removed in CRL-T011, see
+  [CRL-T011](crl-t011.md); rssig's own evaluation is
   now the only revocation check). An unusable CRL is set aside when another CRL of the
-  issuer is usable; the former `sec10-root-*` cases (now `crl-012-root-*`) now pin each failure with
+  issuer is usable; the former `root-*` cases (now `crl-012-root-*`) now pin each failure with
   the bad CRL alone and success beside `good.crl`. Changing those earlier
   failure expectations for the bad CRL beside `good.crl` was approved by the
   repository owner as a one-time exception to the AGENTS.md rule; each
@@ -177,7 +177,7 @@ One box per item in the scope above.
     one chain, preferring currently valid issuers, and checks revocation
     before validity on it; Bouncy Castle tries every path and reports the
     last failure, checking validity before revocation per certificate. The
-    SEC-14 precedence is kept.
+    TIME-T002 precedence is kept.
 
 Change these only with a new decision and paired fixtures.
 
@@ -198,12 +198,12 @@ Change these only with a new decision and paired fixtures.
   other applicable CRL of the issuer's name also rejects, whatever the `--crl`
   order ([PR #48](https://github.com/goatwu1993/rssig/pull/48)). A listing by a
   non-authoritative CRL alone is `revocation_unknown` ([PR
-  #49](https://github.com/goatwu1993/rssig/pull/49), until SEC-21).
+  #49](https://github.com/goatwu1993/rssig/pull/49), until CRL-T009).
 - With `--fetch-crls`, retrieval happens only when verification with the
   supplied CRLs is `revocation_unknown`; any other result is returned
   unchanged. This replaces the restated authority rule of PR #55.
 - When no supplied CRL applies, `revocation_unknown` is returned before path
-  building ([PR #44](https://github.com/goatwu1993/rssig/pull/44); SEC-20).
+  building ([PR #44](https://github.com/goatwu1993/rssig/pull/44); CRL-T008).
 
 ## Evidence limits
 
@@ -212,9 +212,9 @@ Change these only with a new decision and paired fixtures.
   checked; rerun the `crl-*` cases when changing the pin.
 - Not pinned: a certificate mixing a skipped point (reasons or cRLIssuer) with a
   plain URI point.
-- Every SEC-10 CRL is synthetic and signed with ECDSA P-256/SHA-256. There is no
+- Every CRL-T001 CRL is synthetic and signed with ECDSA P-256/SHA-256. There is no
   RSA-signed CRL and no CRL from an independent producer carrying an AKI or
-  issuingDistributionPoint (INTEROP-01).
+  issuingDistributionPoint (TEST-T011).
 - The intended failing run was not observed for `crl-012-root-crl-malformed-aki`
   (fix written before the fixture) or
   `crl-012-root-delta-expired-crl-reports-feature` (case added after the reorder).
@@ -227,7 +227,7 @@ Change these only with a new decision and paired fixtures.
 - The three cases added with the retrieval redesign
   (`crl-033-fetch-excluded-name-match-fetches-listed-point`,
   `crl-009-fetch-no-listed-point-role-excluded-scope-rejected`,
-  `sec10-fetch-unusable-supplied-crl-not-fetched`, since replaced by
+  `fetch-unusable-supplied-crl-not-fetched`, since replaced by
   `crl-020-fetch-unusable-scope-supplied-crl-refreshed` with the opposite
   result) failed before it, for the intended reason each.
 - `--fetch-crls` requests points in two steps (certificates whose issuer no
@@ -245,26 +245,26 @@ Change these only with a new decision and paired fixtures.
   (`crl-033-fetch-mixed-point-requests-plain-uri`, on
   `crl-leaf-crl-dp-mixed.exe`, which failed first).
 - Validated on macOS locally and on Linux in CI. No Windows comparison
-  (DEFER-01).
+  (TEST-T013).
 
 ## Known limitations tracked elsewhere
 
 The review of PR #60 is concluded; everything it left open is a task in
-`TODO.md` (SEC-30 to SEC-42, TEST-34 to TEST-36, LIB-11 and PRODUCT-07),
-with SEC-11, SEC-17, SEC-18 and SEC-22 for the larger items.
+`TODO.md` (CRL-T014 to CRL-T024, TEST-T009 to TEST-T010, LIB-T011 and CRL-T029),
+with CRL-T002, CRL-T005, CRL-T006 and CRL-T010 for the larger items.
 
-- **SEC-11:** excluded CRLs are still reported as supplied.
-- **SEC-15:** applicability and the scope rule consider every embedded
+- **CRL-T002:** excluded CRLs are still reported as supplied.
+- **CRL-T003:** applicability and the scope rule consider every embedded
   candidate.
-- **SEC-16:** AKI/SKI and name-encoding edges.
-- **SEC-17:** unbudgeted and repeated work.
-- **SEC-18:** an unusable applicable CRL rejects even when another covers the
+- **CRL-T004:** AKI/SKI and name-encoding edges.
+- **CRL-T005:** unbudgeted and repeated work.
+- **CRL-T006:** an unusable applicable CRL rejects even when another covers the
   issuer.
-- **SEC-19:** reason coverage and error details.
-- **SEC-20:** error precedence.
-- **SEC-21:** listed serials are not bound to the path's issuer key.
-- **TEST-11:** fixture builders and provenance.
-- **PRODUCT-04:** CRL rules document.
+- **CRL-T007:** reason coverage and error details.
+- **CRL-T008:** error precedence.
+- **CRL-T009:** listed serials are not bound to the path's issuer key.
+- **CRL-T025:** fixture builders and provenance.
+- **DOC-T007:** CRL rules document.
 
 ## Case reasons (PR #60)
 
@@ -317,7 +317,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   and `cert_crl` never reads its entries (`crypto/x509/x509_vfy.c`); Bouncy
   Castle's processCRLB2 rejects it before processCRLJ reads entries
   (`RFC3280CertPathUtilities.checkCRL`). On `main` such a listing revoked
-  (`sec10-crl-dp-other-partition-revoked` and `-first`, expecting
+  (`crl-dp-other-partition-revoked` and `-first`, expecting
   `certificate_revoked`); they are now
   `crl-013-dp-other-partition-revocation-is-ignored` and `-first` and
   verify. Comparing thisUpdate across partitions would have made the result
@@ -511,7 +511,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 - **A supplied CRL unusable for another reason was not refreshed.**
   Superseded: compared case by case and decided in "Case reasons (refresh of
   an unusable supplied CRL)" below; the Observed case
-  `sec10-fetch-unusable-supplied-crl-not-fetched` became
+  `fetch-unusable-supplied-crl-not-fetched` became
   `crl-020-fetch-unusable-scope-supplied-crl-refreshed`.
 - **A source answering by certificate leaves no per-point failures.**
   Decided, diagnostics (owner delegated the call): OpenSSL's `lookup_crls`
@@ -558,7 +558,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   (`crl-011-fetch-invalid-nested-signature-requests-nothing`).
 - **A self-issued key rollover path needs CRLs that name their key.**
   Decided, acceptance, by cross-checking OpenSSL, BoringSSL and Bouncy Castle
-  (SEC-16). `good-path-self-issued-rollover.exe` has two certificates whose
+  (CRL-T004). `good-path-self-issued-rollover.exe` has two certificates whose
   issuers share one name and have different keys. It verifies without
   revocation (`crl-007-self-issued-rollover-without-revocation-verifies`;
   RFC 5280 section 6.1 allows self-issued certificates for key rollover, and
@@ -582,10 +582,10 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     That evaluation still rejects a revoked rollover certificate:
     `crl-007-self-issued-rollover-revoked-by-key-identified-crl-is-rejected`
     (`path-root-akid-revoked-rollover.crl`, RFC 5280 section 6.3.3).
-    Since SEC-24, webpki no longer confirms in production: rssig's per-key
+    Since CRL-T011, webpki no longer confirms in production: rssig's per-key
     evaluation decides alone, and webpki's signer-only confirmation described
     here runs only in the test-only cross-check
-    ([SEC-24](sec-24-single-revocation-authority.md)).
+    ([CRL-T011](crl-t011.md)).
   - *CRLs without an authorityKeyIdentifier* (`path-root.crl`,
     `path-rollover.crl`): the libraries differ. OpenSSL keeps one best CRL
     per name and has no fallback after its signature fails
@@ -596,10 +596,10 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     (`RFC3280CertPathUtilities.java:1716-1721`) and accepts. The owner
     chose the tiebreaker (PR #60): the third reference, BoringSSL, rejects,
     so rssig rejects, failing closed, at
-    webpki's confirmation (since SEC-24, at rssig's own accepted-path rule
+    webpki's confirmation (since CRL-T011, at rssig's own accepted-path rule
     `ambiguous_issuer_keys`, which gives the same result)
     (`crl-008-self-issued-rollover-with-both-crls-is-rejected`:
-    `certificate_chain_invalid`, reason `ambiguous_issuer_keys`; until SEC-24 follow-up in PR #64 the
+    `certificate_chain_invalid`, reason `ambiguous_issuer_keys`; until CRL-T011 follow-up in PR #64 the
     reason was `confirmation`), in either order.
     An earlier note here said OpenSSL would accept this case; the run shows
     it does not.
@@ -749,7 +749,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   ("Case reasons (refresh of an unusable supplied CRL)").
 - **Declined after review (already decided):** confirming intermediates on a
   key-rollover path with webpki (it cannot confirm two same-name issuers;
-  rssig's per-key evaluation decides, SEC-16 above; moot since SEC-24 removed
+  rssig's per-key evaluation decides, CRL-T004 above; moot since CRL-T011 removed
   the production confirmation); a batch-wide fetch
   bound (the owner's per-verification choice); one JSON shape for absent
   URLs on artifacts and failures (the artifact change is in the migration
@@ -826,14 +826,14 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 ## Case reasons (refresh of an unusable supplied CRL)
 
 Cases from `main` changed by this refresh, checked mechanically against
-`origin/main`: only `sec10-fetch-unusable-supplied-crl-not-fetched` (Observed,
+`origin/main`: only `fetch-unusable-supplied-crl-not-fetched` (Observed,
 diagnostics), which is replaced by
 `crl-020-fetch-unusable-scope-supplied-crl-refreshed`; its reject became a
 verification, with the owner's approval given in the PR #64 discussion. No
 Decided case from `main` changed its command or expectation, and
 `crl-009-fetch-no-listed-point-role-excluded-scope-rejected` is untouched.
 
-Decided by the repository owner after PR #60 (SEC-23), under the standing
+Decided by the repository owner after PR #60, under the standing
 rule: follow OpenSSL and Bouncy Castle where they agree, and BoringSSL where
 they differ. It replaces the Observed rule that only an expired supplied CRL
 is refreshed.
@@ -879,7 +879,7 @@ path is not one a source could complete.
 
 - **Decided, acceptance:**
   `crl-020-fetch-unusable-scope-supplied-crl-refreshed` (was
-  `sec10-fetch-unusable-supplied-crl-not-fetched`, Observed, which rejected
+  `fetch-unusable-supplied-crl-not-fetched`, Observed, which rejected
   with `invalid_crl` and asked nothing; changed with the owner's approval),
   `crl-020-not-yet-valid-local-refreshed-by-provider`,
   `crl-020-unknown-critical-extension-local-refreshed-by-provider`. Each verifies
@@ -892,7 +892,7 @@ path is not one a source could complete.
   `crl-036-not-yet-valid-local-asks-provider`: the point is requested, and
   without an answer the original error stands, naming the certificate.
   `crl-035-no-next-update-local-asks-nothing`: `invalid_crl`
-  (`missing_next_update`) asks nothing, pending SEC-41.
+  (`missing_next_update`) asks nothing, pending CRL-T023.
 
 - **Decided, acceptance:** a CRL scoped to a distribution point, for a
   certificate that lists none, is replaceable: the certificate is still asked
@@ -951,7 +951,7 @@ certificate and issuer, so it is replaceable.
 
 ## Case reasons (a CRL without nextUpdate that lists the certificate)
 
-Decided by the repository owner after PR #60 (SEC-23): the owner asked for
+Decided by the repository owner after PR #60: the owner asked for
 the references to be checked and the call made on them. They agree:
 
 - OpenSSL `crypto/x509/x509_vfy.c:1112` (`ossl_x509_check_crl_time`) and
@@ -985,7 +985,7 @@ deltas, every entry, the signature AlgorithmIdentifier match). The
 signature was already authenticated over the original bytes. A first
 version copied those rules by hand and kept missing some; review found
 them one by one. In addition, as OpenSSL's `cert_crl` and Bouncy Castle (unlike webpki and BoringSSL), an
-entry with reasonCode removeFromCRL does not revoke (any revoking entry for the serial counts). Only a CRL that re-encodes to exactly its original bytes is judged this way; any other is not admitted, which fails closed, and is reported as malformed (`unsupported_or_malformed`, replaceable), as it would be with nextUpdate. References to OpenSSL line numbers in these SEC-23 cases are to the 3.3 branch. It does not revoke
+entry with reasonCode removeFromCRL does not revoke (any revoking entry for the serial counts). Only a CRL that re-encodes to exactly its original bytes is judged this way; any other is not admitted, which fails closed, and is reported as malformed (`unsupported_or_malformed`, replaceable), as it would be with nextUpdate. References to OpenSSL line numbers in these PR #64 cases are to the 3.3 branch. It does not revoke
 either when a newer authenticated full CRL of the issuer
 covering the certificate leaves it out, as a listing beside a newer CRL
 does not count; and not from an issuer without cRLSign. The missing
@@ -1062,7 +1062,7 @@ Recorded, not changed:
 - Beside a usable CRL, a newer complete CRL without nextUpdate that leaves
   the certificate out does not clear an older listing, though it does when
   no CRL is usable. Clearing it there would turn a revocation into
-  acceptance, which needs the owner's decision (SEC-39).
+  acceptance, which needs the owner's decision (CRL-T021).
 
 Kept, stricter than the references: the same CRL without a listing is not
 evidence of good status. It stays `invalid_crl` (`missing_next_update`), as

@@ -1,6 +1,6 @@
-# SEC-26: Complete the RFC 4518 name preparation for CRL issuer matching.
+# CRL-T012 fix: Complete the RFC 4518 name preparation for CRL issuer matching
 
-Task detail for **SEC-26** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T012** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 [CRL-041](../crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison)

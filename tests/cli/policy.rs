@@ -1,6 +1,6 @@
 use super::support::*;
 #[test]
-fn lib07_policy_modes_are_explicit_in_serialized_results() {
+fn policy_modes_are_explicit_in_serialized_results() {
     for (args, trusted, revocation) in [
         (TRUSTED, true, true),
         (TRUSTED_NO_REVOCATION, true, false),
@@ -15,7 +15,7 @@ fn lib07_policy_modes_are_explicit_in_serialized_results() {
     }
 }
 #[test]
-fn lib08_repeated_verification_has_identical_serialized_evidence() {
+fn repeated_verification_has_identical_serialized_evidence() {
     let first = run_fixture("good-pe64.exe", TRUSTED);
     let second = run_fixture("good-pe64.exe", TRUSTED);
     expect_success(&first);
@@ -31,7 +31,7 @@ fn lib08_repeated_verification_has_identical_serialized_evidence() {
     );
 }
 #[test]
-fn lib09_core_policy_matches_cli_serialized_result() {
+fn core_policy_matches_cli_serialized_result() {
     let output = run_fixture("good-pe64.exe", TRUSTED);
     expect_success(&output);
     assert_eq!(

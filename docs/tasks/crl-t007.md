@@ -1,11 +1,11 @@
-# SEC-19: Finish CRL rejection reason coverage.
+# CRL-T007 test: Finish CRL rejection reason coverage
 
-Task detail for **SEC-19** in [TODO.md](../../TODO.md), which keeps the ID,
+Task detail for **CRL-T007** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Deliberately skipped
 in PR #46. Only `issuing_distribution_point` and the feature reasons used by
-SEC-10 cases are pinned; `crl_version`, `malformed_extensions`,
+CRL-T001 cases are pinned; `crl_version`, `malformed_extensions`,
 `revocation_reasons_partitioning`, `revocation_reason`, `invalid_crl_number`
 and `unsupported_or_malformed` have no fixture, and other webpki
 rejections fall into the open-ended
