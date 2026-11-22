@@ -9897,6 +9897,50 @@
       ]
     },
     {
+      "file": "crl-root-issuer-bmp.crl",
+      "sha256": "e64558b4e46c9bd365daadba33403c16ddcc0ecaa6772b169c99b9a05c6fa07e",
+      "bytes": 199,
+      "description": "CRL-041: Fresh CRL signed by the test root whose issuer is the root's name with the commonName as a BMPString (UTF-16BE; the root uses UTF8String): the same name under RFC 5280 section 7.1 and RFC 4518 section 2.1. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-bmp-string-issuer-matches-a-utf8-subject"
+      ]
+    },
+    {
+      "file": "crl-root-issuer-teletex.crl",
+      "sha256": "7d7ccb710556e742c7a4914f437ffaf469e5941daa2b3691f7936328780b4c49",
+      "bytes": 182,
+      "description": "CRL-041: Fresh CRL signed by the test root whose issuer is the root's name with the commonName as a TeletexString in another case, read as Latin-1 as OpenSSL and Bouncy Castle read it. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-teletex-string-issuer-matches-a-utf8-subject"
+      ]
+    },
+    {
+      "file": "crl-root-issuer-visible.crl",
+      "sha256": "32fa3d0328bf8e5c38655a6f1bc7d3820750288d91ffc832b3f3994b226eceda",
+      "bytes": 185,
+      "description": "CRL-041: Fresh CRL signed by the test root whose issuer is the root's name with the commonName as a VisibleString in another case with a doubled space, read as ASCII text as OpenSSL and Bouncy Castle read it. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-visible-string-issuer-matches-a-utf8-subject"
+      ]
+    },
+    {
+      "file": "crl-root-issuer-bmp-other-text.crl",
+      "sha256": "402eaf36237fab6071567ef0795049f0e8db4497cf17317f970faba40821d081",
+      "bytes": 199,
+      "description": "CRL-041: Fresh CRL signed by the test root whose issuer is the root's name with the commonName as a BMPString with one letter changed: not the root's name, so no CRL applies. Deterministic public test keys.",
+      "generator": "src/tests/crl_applicability.rs::regenerate_crl_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-041-bmp-string-issuer-with-other-text-matches-nothing"
+      ]
+    },
+    {
       "file": "crl-root-issuer-case-space.crl",
       "sha256": "93b14b1befebf2b30e583d298f5c9a2e94cf65ab1ccd4214228819740b8c45ff",
       "bytes": 191,

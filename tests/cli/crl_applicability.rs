@@ -941,6 +941,9 @@ fn crl_an_issuer_name_matches_by_rfc_5280_comparison() {
     for crl in [
         "fixtures/crl-root-issuer-printable.crl",
         "fixtures/crl-root-issuer-case-space.crl",
+        "fixtures/crl-root-issuer-bmp.crl",
+        "fixtures/crl-root-issuer-teletex.crl",
+        "fixtures/crl-root-issuer-visible.crl",
     ] {
         let output = run_fixture(
             "good-countersignature.exe",
@@ -960,6 +963,16 @@ fn crl_an_issuer_name_matches_by_rfc_5280_comparison() {
         assert_eq!(revocation["status"], "good", "{crl}");
         assert_eq!(revocation["method"], "crl", "{crl}");
     }
+}
+
+/// CRL-041: a BMPString issuer is compared by its text, so one letter
+/// different is another name and no CRL applies.
+#[test]
+fn crl_a_bmp_string_issuer_with_other_text_does_not_match() {
+    let output = run_alone("crl-root-issuer-bmp-other-text.crl");
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    assert_eq!(error["stage"], "revocation");
 }
 
 /// CRL-T004, CRL-042: an issuer certificate with no subjectKeyIdentifier, or one

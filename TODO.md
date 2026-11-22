@@ -136,9 +136,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T010** refactor: Pass uncovered certificates to retrieval as typed data. From the PR #60 review. Detail in [crl-t010.md](docs/tasks/crl-t010.md).
 - [x] **CRL-T011** refactor: Make rssig the only revocation authority. Done; detail in [crl-t011.md](docs/tasks/crl-t011.md).
 - [x] **CMS-T003** fix: Narrow CMS-009 to the attributes RFC 5652 limits. Done ([PR #73](https://github.com/goatwu1993/rssig/pull/73)); [CMS-009](docs/cms.md#cms-009-single-instance-attributes-occur-at-most-once-in-a-signerinfo).
-- [ ] **CRL-T012** fix: Complete the RFC 4518 name preparation for CRL issuer matching.
-  CRL-041 matches fewer names than RFC 5280 section 7.1. Detail in
-  [crl-t012.md](docs/tasks/crl-t012.md).
+- [x] **CRL-T012** fix: Compare more string types in CRL issuer names. Done ([PR #82](https://github.com/goatwu1993/rssig/pull/82)); [CRL-041](docs/crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison).
 - [ ] **PATH-T002** fix: Decide whether a malformed extension in a CA certificate fails the path.
   OpenSSL and BoringSSL do; rssig reads it as absent (CRL-042). Detail in
   [path-t002.md](docs/tasks/path-t002.md).
@@ -208,6 +206,17 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T033** refactor: Cache trust inputs and charge the remaining CRL work.
   Results unchanged except where noted. Detail in
   [crl-t033.md](docs/tasks/crl-t033.md).
+- [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
+  `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
+  whose name carries one does not decode (RFC 5280 section 7.1: optional).
+  Check how it is reported and whether to read it.
+- [ ] **CRL-T034** fix: Key retrieval's asked issuers by the compared name.
+  Issuers that differ only in case, spacing or string type are asked about
+  twice, and a fetched CRL counts as an answer only by exact bytes. Detail in
+  [crl-t034.md](docs/tasks/crl-t034.md).
+- [ ] **CRL-T035** fix: Decide whether CRL-008 compares issuer names canonically (owner decision).
+  It compares the path's issuers by exact bytes, as webpki does; OpenSSL
+  compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
 
 ## P1 — Clean parse/verify interfaces
 

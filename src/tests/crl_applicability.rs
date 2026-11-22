@@ -86,9 +86,21 @@ pub(super) fn crl_full(
 /// (0x0c UTF8String, 0x13 PrintableString): the same text can be encoded
 /// either way.
 fn common_name(tag: u8, text: &str) -> Name {
+    common_name_bytes(tag, text.as_bytes())
+}
+
+/// The same with the value's bytes as they are encoded, for a string type
+/// whose bytes are not the text's UTF-8 (0x14 TeletexString as Latin-1,
+/// 0x1e BMPString as UTF-16BE).
+fn common_name_bytes(tag: u8, value: &[u8]) -> Name {
     use ::der::Decode;
-    let attribute = seq(&[tlv(6, &[0x55, 4, 3]), tlv(tag, text.as_bytes())]);
+    let attribute = seq(&[tlv(6, &[0x55, 4, 3]), tlv(tag, value)]);
     Name::from_der(&seq(&[tlv(0x31, &attribute)])).unwrap()
+}
+
+/// UTF-16BE, the encoding of a BMPString.
+fn bmp(text: &str) -> Vec<u8> {
+    text.encode_utf16().flat_map(u16::to_be_bytes).collect()
 }
 
 pub(super) fn crl_full_named(
@@ -238,6 +250,61 @@ pub(super) fn crls() -> Vec<(&'static str, Vec<u8>)> {
             "crl-root-issuer-printable.crl",
             crl_full_named(
                 common_name(0x13, "rssig test root"),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // CRL-041: the root's name with the commonName as a BMPString and as a
+        // TeletexString (Latin-1), the other DirectoryString types: the same
+        // name, read as OpenSSL and Bouncy Castle read them.
+        (
+            "crl-root-issuer-bmp.crl",
+            crl_full_named(
+                common_name_bytes(0x1e, &bmp("rssig test root")),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        (
+            "crl-root-issuer-teletex.crl",
+            crl_full_named(
+                common_name_bytes(0x14, b"RSSIG Test Root"),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // CRL-041: the same with a VisibleString, which both references read
+        // as ASCII text.
+        (
+            "crl-root-issuer-visible.crl",
+            crl_full_named(
+                common_name_bytes(0x1a, b"rssig  Test Root"),
+                root_key,
+                NOW - 100,
+                Some(NOW + 1000),
+                None,
+                vec![],
+                None,
+            ),
+        ),
+        // CRL-041: the same BMPString spelling with one letter changed, signed
+        // by the root: not the root's name, so no CRL applies.
+        (
+            "crl-root-issuer-bmp-other-text.crl",
+            crl_full_named(
+                common_name_bytes(0x1e, &bmp("rssig test roof")),
                 root_key,
                 NOW - 100,
                 Some(NOW + 1000),

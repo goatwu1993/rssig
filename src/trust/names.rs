@@ -8,13 +8,16 @@
 //! parts of it that decide equality in practice: lower-casing (each
 //! character's Unicode lowercase mapping, not the full RFC 3454 case folding,
 //! so `ß` and `ss` differ) and insignificant space handling. It applies no
-//! Unicode normalization or prohibited-character check, so it matches fewer
-//! names than the RFC; a
+//! Unicode normalization, map-to-nothing or prohibited-character step, so it
+//! matches fewer names than the RFC; a
 //! name it does not match is an unknown CRL issuer, never a trusted one, and
-//! the CRL is authenticated by its signature either way. IA5String values
-//! (domainComponent, emailAddress) compare the same way, as RFC 5280 section
-//! 7.3 and PKCS #9 match them case-insensitively; any other string type, and
-//! a PrintableString outside its character set, compares by exact bytes.
+//! the CRL is authenticated by its signature either way. The string types
+//! that OpenSSL and Bouncy Castle both read as text, and this stack can
+//! decode, compare as text: PrintableString and UTF8String, BMPString
+//! (UTF-16BE), TeletexString (as Latin-1) and VisibleString, with IA5String
+//! (domainComponent, emailAddress), which RFC 5280 section 7.3 and PKCS #9
+//! match case-insensitively. Any other string type, a malformed value, and a
+//! PrintableString outside its character set compare by exact bytes.
 use ::der::{Decode, Encode, Tag, Tagged};
 use alloc::{string::String, vec::Vec};
 use x509_cert::{
@@ -94,24 +97,47 @@ fn key(attribute: &AttributeTypeAndValue) -> Option<Key> {
     Some((attribute.oid.as_bytes().to_vec(), value))
 }
 
-/// A PrintableString, UTF8String or IA5String value after lower-casing and
+/// The text of a DirectoryString or IA5String value after lower-casing and
 /// insignificant space handling; `None` for any other type or bytes that are
-/// not valid text.
+/// not valid text, which compare by exact bytes.
 fn prepared(value: &::der::Any) -> Option<String> {
-    let text = match value.tag() {
-        Tag::Utf8String => core::str::from_utf8(value.value()).ok()?,
-        // A PrintableString outside its character set is malformed and
-        // compares by exact bytes.
+    let text: String = match value.tag() {
+        Tag::Utf8String => core::str::from_utf8(value.value()).ok()?.into(),
+        // A PrintableString outside its character set is malformed.
         Tag::PrintableString if value.value().iter().all(|b| printable(*b)) => {
-            core::str::from_utf8(value.value()).ok()?
+            core::str::from_utf8(value.value()).ok()?.into()
         }
-        Tag::Ia5String if value.value().is_ascii() => core::str::from_utf8(value.value()).ok()?,
+        Tag::Ia5String if value.value().is_ascii() => {
+            core::str::from_utf8(value.value()).ok()?.into()
+        }
+        // A VisibleString is printable ASCII (X.680 section 41.4); both
+        // references read it as text.
+        Tag::VisibleString if value.value().iter().all(|b| (0x20..0x7f).contains(b)) => {
+            core::str::from_utf8(value.value()).ok()?.into()
+        }
+        // RFC 4518 section 2.1: a BMPString is Unicode, UCS-2 in UTF-16BE
+        // units. An odd length or a surrogate unit, which is no character of
+        // UCS-2, is malformed.
+        Tag::BmpString => {
+            let bytes = value.value();
+            if !bytes.len().is_multiple_of(2) {
+                return None;
+            }
+            let (units, _) = bytes.as_chunks::<2>();
+            units
+                .iter()
+                .map(|unit| char::from_u32(u32::from(u16::from_be_bytes(*unit))))
+                .collect::<Option<String>>()?
+        }
+        // RFC 4518 section 2.1 leaves the TeletexString mapping "a local
+        // matter"; OpenSSL and Bouncy Castle read each byte as Latin-1.
+        Tag::TeletexString => value.value().iter().map(|b| char::from(*b)).collect(),
         _ => return None,
     };
     // RFC 4518 section 2.2 maps U+0009 to U+000D, U+0085 and every other
     // Separator (Zs, Zl, Zp) code point to a space, which is exactly what
     // `char::is_whitespace` accepts. Its map-to-nothing characters are not
-    // dropped, so such a value matches fewer names than the RFC (CRL-T012).
+    // dropped, so such a value matches fewer names than the RFC (CRL-041).
     let mut out = String::new();
     let mut gap = false;
     for c in text.chars() {
@@ -205,6 +231,14 @@ mod tests {
         tlv(0x30, &rdns.concat())
     }
 
+    /// A name of one attribute whose value is the given bytes.
+    fn name_bytes(oid: &[u8], tag: u8, value: &[u8]) -> Vec<u8> {
+        tlv(
+            0x30,
+            &tlv(0x31, &tlv(0x30, &[tlv(6, oid), tlv(tag, value)].concat())),
+        )
+    }
+
     /// One RDN of many attributes, with long-form lengths.
     fn big_name(attributes: &[(&[u8], u8, &str)]) -> Vec<u8> {
         fn long(tag: u8, body: &[u8]) -> Vec<u8> {
@@ -227,6 +261,10 @@ mod tests {
     const UTF8: u8 = 0x0c;
     const PRINTABLE: u8 = 0x13;
     const TELETEX: u8 = 0x14;
+    const VIDEOTEX: u8 = 0x15;
+    const BMP: u8 = 0x1e;
+    const VISIBLE: u8 = 0x1a;
+    const NUMERIC: u8 = 0x12;
     const IA5: u8 = 0x16;
     const DC: &[u8] = &[0x09, 0x92, 0x26, 0x89, 0x93, 0xf2, 0x2c, 0x64, 0x01, 0x19];
 
@@ -288,11 +326,73 @@ mod tests {
             &name(&[&[(CN, PRINTABLE, "a@b")]]),
             &name(&[&[(CN, UTF8, "a@b")]])
         ));
-        // Another string type compares by exact bytes.
-        let teletex = name(&[&[(CN, TELETEX, "Root")]]);
-        assert!(names_match(&teletex, &teletex.clone()));
-        assert!(!names_match(&teletex, &name(&[&[(CN, UTF8, "root")]])));
-        assert!(!names_match(&teletex, &name(&[&[(CN, TELETEX, "root")]])));
+        // A VisibleString is ASCII text; a byte outside 0x20-0x7e is malformed.
+        let visible = |bytes: &[u8]| name_bytes(CN, VISIBLE, bytes);
+        assert!(names_match(
+            &visible(b"Root"),
+            &name(&[&[(CN, UTF8, "root")]])
+        ));
+        assert!(!names_match(
+            &visible(b"Ro\x07t"),
+            &name(&[&[(CN, UTF8, "ro\x07t")]])
+        ));
+        // A string type that is not text to both references compares by exact
+        // bytes: a NumericString (OpenSSL copies it as it is) and others.
+        let numeric = name_bytes(CN, NUMERIC, b"12 34");
+        assert!(names_match(&numeric, &numeric.clone()));
+        assert!(!names_match(&numeric, &name(&[&[(CN, UTF8, "12 34")]])));
+        let videotex = name(&[&[(CN, VIDEOTEX, "Root")]]);
+        assert!(names_match(&videotex, &videotex.clone()));
+        assert!(!names_match(&videotex, &name(&[&[(CN, UTF8, "root")]])));
+        assert!(!names_match(&videotex, &name(&[&[(CN, VIDEOTEX, "root")]])));
+        // A TeletexString is read as Latin-1, as OpenSSL and Bouncy Castle
+        // read it: the same text, case and spacing as a UTF8String.
+        let teletex = |bytes: &[u8]| name_bytes(CN, TELETEX, bytes);
+        assert!(names_match(
+            &teletex(b"Root"),
+            &name(&[&[(CN, UTF8, "root")]])
+        ));
+        assert!(names_match(
+            &teletex(b"Zo\xeb  CA"),
+            &name(&[&[(CN, UTF8, "ZOË ca")]])
+        ));
+        // U+00A0 (byte 0xa0) is a space, and a different letter is another name.
+        assert!(names_match(
+            &teletex(b"a\xa0b"),
+            &name(&[&[(CN, UTF8, "a b")]])
+        ));
+        assert!(!names_match(
+            &teletex(b"Zo\xeb"),
+            &name(&[&[(CN, UTF8, "zoe")]])
+        ));
+        // A BMPString is UTF-16BE.
+        let bmp = |text: &str| {
+            let units: Vec<u8> = text.encode_utf16().flat_map(u16::to_be_bytes).collect();
+            name_bytes(CN, BMP, &units)
+        };
+        assert!(names_match(&bmp("Root"), &name(&[&[(CN, UTF8, "root")]])));
+        assert!(names_match(&bmp("ZOË"), &name(&[&[(CN, UTF8, "zoë")]])));
+        assert!(!names_match(&bmp("Roof"), &name(&[&[(CN, UTF8, "root")]])));
+        // Read literally: UTF-8 bytes in a TeletexString are Latin-1 text, and a
+        // surrogate pair in a BMPString is two malformed units, so neither
+        // matches the UTF8String it was meant to spell.
+        assert!(!names_match(
+            &teletex(b"\xc3\xa9"),
+            &name(&[&[(CN, UTF8, "é")]])
+        ));
+        assert!(!names_match(
+            &name_bytes(CN, BMP, &[0xd8, 0x3d, 0xde, 0x00]),
+            &name(&[&[(CN, UTF8, "\u{1f600}")]])
+        ));
+        // A BMPString of an odd length, or with a surrogate code unit (which
+        // is no character of UCS-2), is malformed and compares by exact bytes.
+        assert!(!names_match(
+            &name_bytes(CN, BMP, &[0, b'a', 0]),
+            &name(&[&[(CN, UTF8, "a")]])
+        ));
+        let lone = name_bytes(CN, BMP, &[0xd8, 0x00]);
+        assert!(names_match(&lone, &lone.clone()));
+        assert!(!names_match(&lone, &name_bytes(CN, BMP, &[0xd8, 0x01])));
         // A large multi-valued RDN in reverse order still matches, prepared once
         // per attribute.
         let values: Vec<String> = (0..200).map(|i| alloc::format!("v{i}")).collect();

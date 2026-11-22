@@ -30,9 +30,18 @@ signature-verified; JSON must report this explicitly.
 
 CRLs are supplied as local PEM/DER files, checked for signature, authority,
 freshness, and revocation across the chain. A CRL's issuer matches a
-certificate's by RFC 5280 name comparison limited to string type, lower case
-and white space ([CRL-041](crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison));
-Unicode normalization and other string types are not applied (CRL-T012). Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
+certificate's by RFC 5280 name comparison limited to string type (UTF8String,
+PrintableString, BMPString, TeletexString read as Latin-1, VisibleString,
+IA5String), lower case and white space
+([CRL-041](crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison)).
+A TeletexString is read as Latin-1, which is not always what T.61 means. Any
+other string type (NumericString, say) compares by exact bytes, and Unicode
+normalization and the other RFC 4518 steps are not applied on purpose, so rssig
+matches fewer names than RFC 5280 section 7.1 requires: a CRL whose issuer
+differs from the certificate's only that way is not matched, and the status is
+`revocation_unknown`. A name with a UniversalString does not decode (PATH-T006).
+
+Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
