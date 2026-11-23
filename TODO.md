@@ -337,11 +337,7 @@ they pin or what they check, never after a task.
 - [x] **DOC-T004** refactor: Remove duplicate and overlapping decisions. Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **DOC-T005** refactor: Settle the shared format-skeleton rules. Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
 - [x] **PE-T002** refactor: Number the `PE-` index. Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
-- [ ] **TEST-T008** test: Let a spec case assert that a field is absent. The
-  `tests/cases.json` matcher checks a subset, so the set-aside cases of
-  CRL-040, CRL-041 and CRL-043 cannot tell set aside from forged
-  (`unusable_crl` absent);
-  only their Rust tests pin it. Add an absence assertion to the schema.
+- [x] **TEST-T008** test: Let a spec case assert that a field is absent. Done ([PR #83](https://github.com/goatwu1993/rssig/pull/83)); `expect.json_absent` in [docs/testing.md](docs/testing.md).
 - [ ] **TEST-T009** test: Express retrieval edge cases in the case format. The
   injected CRL source maps URLs or certificates to bodies and error kinds, so
   it cannot express URL-less failures, whole-request errors, several entries

@@ -58,6 +58,16 @@
               "json": {
                 "description": "Partial expected serialized domain document. Aggregate verification failures use resource_limit_exceeded at cms with resource, limit, used and requested details; legacy nesting exhaustion retains malformed_cms. Host input/report exhaustion uses the same code at input stage; see docs/host-limits.md. See docs/verification-budgets.md."
               },
+              "json_absent": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^(/([^/~]|~[01])+)+$"
+                },
+                "description": "JSON Pointers (RFC 6901) to members that must be absent from the output document. A pointer names a member of an object (never an array element) with non-empty tokens and only the escapes ~0 and ~1. The runner also rejects, before running, a pointer that repeats, that json expects, or whose parent json shows is not an object; the schema cannot express those rules, so an implementation must enforce them itself. The pointer's parent must exist and be an object, so a mistyped pointer fails instead of passing. A pointer must not name a member that json expects. Requires json; json only checks a subset and cannot say that a field is missing."
+              },
               "contains": {
                 "type": "object",
                 "additionalProperties": {
@@ -103,6 +113,9 @@
             "dependentRequired": {
               "stderr_once": [
                 "stderr_contains"
+              ],
+              "json_absent": [
+                "json"
               ]
             },
             "oneOf": [
