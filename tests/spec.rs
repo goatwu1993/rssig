@@ -166,6 +166,7 @@ impl Suite {
             if !expect.stderr_once.is_empty() && expect.stderr_contains.is_empty() {
                 return Err(format!("stderr_once requires stderr_contains: {}", case.id));
             }
+            validate_json_absent(&case.id, expect)?;
             if case.id.is_empty() || !ids.insert(&case.id) || case.command.is_empty() {
                 return Err(format!("empty/duplicate case id or command: {}", case.id));
             }
@@ -235,6 +236,73 @@ fn compare(expected: &Value, actual: &Value, pointer: &str, failures: &mut Vec<S
         }
         _ if expected == actual => {}
         _ => failures.push(format!("{pointer}: expected {expected}, got {actual}")),
+    }
+}
+
+/// The rules for `expect.json_absent` that hold before a case runs. A mistyped
+/// ancestor that `json` does not mention is caught by `check_absent` instead.
+fn validate_json_absent(id: &str, expect: &spec_suite::Expectation) -> Result<(), String> {
+    if expect.json_absent.is_empty() {
+        return Ok(());
+    }
+    let Some(json) = &expect.json else {
+        return Err(format!("json_absent requires json: {id}"));
+    };
+    let mut seen = BTreeSet::new();
+    for pointer in &expect.json_absent {
+        if !seen.insert(pointer) {
+            return Err(format!("json_absent repeats a pointer: {id}"));
+        }
+        // Every token names something (no empty member name), and only the
+        // escapes ~0 and ~1 occur.
+        let valid = pointer.strip_prefix('/').is_some_and(|rest| {
+            rest.split('/').all(|token| {
+                !token.is_empty()
+                    && token
+                        .split('~')
+                        .skip(1)
+                        .all(|after| after.starts_with(['0', '1']))
+            })
+        });
+        if !valid {
+            return Err(format!(
+                "json_absent holds a JSON Pointer to a member: {id}"
+            ));
+        }
+        if json.pointer(pointer).is_some() {
+            return Err(format!("json_absent contradicts json: {id}"));
+        }
+        // `json` already shows that the parent cannot be an object, so the
+        // case could never pass.
+        let parent = pointer.rsplit_once('/').map_or("", |(parent, _)| parent);
+        if json
+            .pointer(parent)
+            .is_some_and(|parent| !parent.is_object())
+        {
+            return Err(format!("json_absent parent is not an object in json: {id}"));
+        }
+    }
+    Ok(())
+}
+
+/// Every pointer in `pointers` must name a member that is absent from an
+/// object that exists in `actual`.
+fn check_absent(pointers: &[String], actual: &Value, failures: &mut Vec<String>) {
+    for pointer in pointers {
+        let (parent, member) = pointer.rsplit_once('/').unwrap_or(("", pointer));
+        // RFC 6901 section 4: decode ~1 before ~0.
+        let member = member.replace("~1", "/").replace("~0", "~");
+        match actual.pointer(parent) {
+            Some(Value::Object(object)) => {
+                if let Some(found) = object.get(&member) {
+                    failures.push(format!("{pointer}: expected absent, found {found}"));
+                }
+            }
+            // A missing parent would make a typo in the pointer pass.
+            _ => failures.push(format!(
+                "{pointer}: the parent is not an object, so absence proves nothing"
+            )),
+        }
     }
 }
 
@@ -345,7 +413,10 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     }
     if let Some(expected) = &case.expect.json {
         match &output {
-            Ok(output) => compare(expected, output, "", &mut failures),
+            Ok(output) => {
+                compare(expected, output, "", &mut failures);
+                check_absent(&case.expect.json_absent, output, &mut failures);
+            }
             Err(error) => {
                 failures.push(format!("stdout must be exactly one JSON document: {error}"))
             }
@@ -591,6 +662,161 @@ fn specification_comparison_requires_exact_scalars_and_arrays() {
         &mut failures,
     );
     assert!(failures.is_empty());
+}
+
+#[test]
+fn specification_absence_names_a_missing_member_of_an_existing_object() {
+    let actual = serde_json::json!({
+        "error": {"code": "x", "details": {"a/b": 1, "none": null}}
+    });
+    let check = |pointers: &[&str]| {
+        let pointers: Vec<String> = pointers.iter().map(|p| (*p).to_owned()).collect();
+        let mut failures = Vec::new();
+        check_absent(&pointers, &actual, &mut failures);
+        failures
+    };
+    // A member that is not there passes.
+    assert!(check(&["/error/details/unusable_crl"]).is_empty());
+    // A member that is there fails, whatever its value, null included.
+    assert_eq!(
+        check(&["/error/code"]),
+        ["/error/code: expected absent, found \"x\""]
+    );
+    assert_eq!(
+        check(&["/error/details/none"]),
+        ["/error/details/none: expected absent, found null"]
+    );
+    // Pointer escapes name the member as compare() does.
+    assert_eq!(
+        check(&["/error/details/a~1b"]),
+        ["/error/details/a~1b: expected absent, found 1"]
+    );
+    // ~01 is the member named ~1, not /.
+    let escaped = serde_json::json!({"d": {"~1": 1, "/": 2}});
+    let mut failures = Vec::new();
+    check_absent(&["/d/~01".to_owned()], &escaped, &mut failures);
+    assert_eq!(failures, ["/d/~01: expected absent, found 1"]);
+    // A parent that is missing, or not an object, proves nothing: a typo in
+    // the pointer must not pass.
+    assert_eq!(
+        check(&["/error/detail/unusable_crl"]),
+        ["/error/detail/unusable_crl: the parent is not an object, so absence proves nothing"]
+    );
+    assert_eq!(
+        check(&["/error/code/x"]),
+        ["/error/code/x: the parent is not an object, so absence proves nothing"]
+    );
+    // Every pointer is checked.
+    assert_eq!(
+        check(&["/error/code", "/error/details/none", "/error/x"]).len(),
+        2
+    );
+}
+
+/// A forged CRL is reported with `unusable_crl`, so asserting that member
+/// absent fails for it and passes for a set-aside CRL: the end-to-end check
+/// that `json_absent` can tell the two apart.
+#[test]
+fn specification_absence_tells_a_forged_crl_from_a_set_aside_one() {
+    let parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let mut suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
+    let fixtures = parent.join(&suite.fixtures);
+    let prefix = Path::new(&suite.fixtures);
+    let absent = vec!["/results/0/error/details/unusable_crl".to_owned()];
+    let (set_aside, forged_id) = (
+        "crl-040-forged-crl-naming-another-key-is-set-aside",
+        "crl-040-forged-crl-naming-a-same-key-roots-identifier-is-forged",
+    );
+    let committed = suite
+        .cases
+        .iter()
+        .find(|c| c.id == set_aside)
+        .unwrap()
+        .expect
+        .json_absent
+        .clone();
+    assert_eq!(committed, absent);
+    let mut run = |id: &str, absent: &[String]| {
+        let case = suite.cases.iter_mut().find(|c| c.id == id).unwrap();
+        case.expect.json_absent = absent.to_vec();
+        execute(case, &parent, &fixtures, prefix).failures
+    };
+    // The set-aside case carries the assertion as committed and passes in
+    // `cli_conforms_to_committed_json_specification`. The forged case passes
+    // without it, so its failure with it comes from the assertion alone.
+    assert!(run(forged_id, &[]).is_empty());
+    let forged = run(forged_id, &absent);
+    assert!(
+        forged.iter().any(|f| f.contains("expected absent, found")),
+        "{forged:?}"
+    );
+}
+
+#[test]
+fn specification_json_absent_needs_json_and_contradicts_none_of_it() {
+    let validate = |expect: Value| {
+        let case = serde_json::json!({"id":"one","command":["--help"],"expect":expect});
+        serde_json::from_value::<Suite>(
+            serde_json::json!({"schema_version":1,"fixtures":"fixtures","cases":[case]}),
+        )
+        .unwrap()
+        .validate()
+    };
+    assert!(
+        validate(serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a/b"]})).is_ok()
+    );
+    for (expect, message) in [
+        (
+            serde_json::json!({"exit_code":0,"stderr_contains":["x"],"json_absent":["/a/b"]}),
+            "json_absent requires json: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{"b":1}},"json_absent":["/a/b"]}),
+            "json_absent contradicts json: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["a/b"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":[""]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a/b","/a/b"]}),
+            "json_absent repeats a pointer: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":1},"json_absent":["/a/b"]}),
+            "json_absent parent is not an object in json: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":[]},"json_absent":["/a/0"]}),
+            "json_absent parent is not an object in json: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a/"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a//b"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["//"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a/b~2"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+        (
+            serde_json::json!({"exit_code":0,"json":{"a":{}},"json_absent":["/a/b~"]}),
+            "json_absent holds a JSON Pointer to a member: one",
+        ),
+    ] {
+        assert_eq!(validate(expect).unwrap_err(), message);
+    }
 }
 
 #[test]

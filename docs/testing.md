@@ -256,6 +256,18 @@ Suite version 1 uses:
   text fragments. Exactly one of `json`, `stdout_contains`, or `stderr_contains`
   selects the output mode. Text cases reject JSON output; JSON cases require
   exactly one JSON document. Stderr must be empty unless explicitly expected.
+- `expect.json_absent`: optional with `json` (a JSON-mode case); a nonempty
+  array of RFC 6901 JSON Pointers to members that must **not** be in the
+  output, since `json` checks a subset and cannot say that a field is missing
+  (a forged CRL is reported with `unusable_crl`, a set-aside one without it).
+  - Each pointer names a member of an object, never an array element; it has no
+    empty token and uses only the escapes `~0` and `~1`; none repeats.
+  - The pointer's parent must exist in the output and be an object, so a
+    mistyped pointer fails instead of passing. A member whose value is `null`
+    is present.
+  - A pointer may not name a member that `json` expects, nor a member of
+    something `json` shows is not an object. This validation is best effort: a
+    mistyped ancestor that `json` does not mention fails when the case runs.
 - `expect.stderr_once`: optional with `stderr_contains`; nonempty array of plain
   text fragments that must each occur exactly once in stderr, so a diagnostic
   states each cause once.

@@ -31767,7 +31767,10 @@
               }
             }
           ]
-        }
+        },
+        "json_absent": [
+          "/results/0/error/details/unusable_crl"
+        ]
       }
     },
     {
@@ -37918,7 +37921,10 @@
               }
             }
           ]
-        }
+        },
+        "json_absent": [
+          "/results/0/error/details/unusable_crl"
+        ]
       }
     },
     {
@@ -37948,7 +37954,10 @@
               }
             }
           ]
-        }
+        },
+        "json_absent": [
+          "/results/0/error/details/unusable_crl"
+        ]
       }
     },
     {
@@ -38048,7 +38057,10 @@
               }
             }
           ]
-        }
+        },
+        "json_absent": [
+          "/results/0/error/details/unusable_crl"
+        ]
       }
     },
     {

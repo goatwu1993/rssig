@@ -48,6 +48,9 @@ pub struct Expectation {
     pub crl_requests: Option<Vec<String>>,
     pub exit_code: u8,
     pub json: Option<Value>,
+    /// JSON Pointers (RFC 6901) that must not be a member of the output.
+    #[serde(default)]
+    pub json_absent: Vec<String>,
     pub stdout: Option<String>,
     pub stderr: Option<String>,
     #[serde(default)]
@@ -148,6 +151,7 @@ impl Case {
                     crl_requests: _,
                     exit_code: _,
                     json: _,
+                    json_absent: _,
                     stdout: _,
                     stderr: _,
                     stdout_contains: _,
