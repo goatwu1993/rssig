@@ -336,6 +336,7 @@ they pin or what they check, never after a task.
 - [x] **DOC-T003** feat: Use one meaning per term. Done ([PR #71](https://github.com/goatwu1993/rssig/pull/71), together with DOC-T002 at the owner's request); [glossary](docs/glossary.md).
 - [x] **DOC-T004** refactor: Remove duplicate and overlapping decisions. Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **DOC-T005** refactor: Settle the shared format-skeleton rules. Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
+- [x] **DOC-T009** docs: Require a guard for review findings judged invalid. Done ([PR #85](https://github.com/goatwu1993/rssig/pull/85)); [Review findings](AGENTS.md#review-findings).
 - [x] **PE-T002** refactor: Number the `PE-` index. Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
 - [x] **TEST-T008** test: Let a spec case assert that a field is absent. Done ([PR #83](https://github.com/goatwu1993/rssig/pull/83)); `expect.json_absent` in [docs/testing.md](docs/testing.md).
 - [ ] **TEST-T009** test: Express retrieval edge cases in the case format. The

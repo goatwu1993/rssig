@@ -151,6 +151,24 @@ A case pins what the verifier does, not proof that it is right.
    repository keeps no tombstones or mapping tables. Doing it in the PR that
    found it also needs the owner's approval.
 
+## Review findings
+
+A finding is valid, or wrong on the facts (it reviewed the wrong diff, or
+misread the code). An argument that it "cannot happen" is not a third kind: it
+holds today and says nothing about the change that makes it happen.
+
+1. **Guard what makes a finding invalid.** A finding judged invalid because the
+   case cannot happen, is already covered or is unreachable names the test that
+   fails when that stops being true. With no such test the finding is valid and
+   unguarded: add the test in the same change, or track it as a task in
+   `TODO.md`.
+2. **A test defends the case as well as the code.** A case, fixture or
+   validator rule that rests on an assumption (a point the request lists, a
+   size cap, a field combination that is rejected) has a test that fails when
+   the assumption stops holding, so a stale case fails loudly instead of
+   passing for another reason.
+3. A finding that is wrong on the facts needs no test; say what it misread.
+
 ## Native Rust tests and coverage
 
 `cargo test --locked` is the single entry point for every test. Tests call
