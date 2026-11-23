@@ -591,7 +591,16 @@ pub struct CrlRetrievalReport {
     /// they were asked for, in request order. Within a request: points
     /// refused before asking, then the source's own failures in response
     /// order, then bodies rejected on load, then points it did not answer
-    /// (after an abort, the points not tried, as `crl_fetch_aborted`). Last,
+    /// (after an abort, the points not tried, as `crl_fetch_aborted`). The
+    /// first failure naming no URL, while a listed point is still unanswered,
+    /// is the exception: it may answer those points, so it waits for the
+    /// bodies and comes after those rejected on load, recorded for each point
+    /// left or, when it answers none, as it is, before the points still
+    /// unanswered (CRL-049). A whole-request error naming a listed point is
+    /// recorded for every other point, in listed order, then for that one;
+    /// naming no listed point (a URL outside the request counts as none),
+    /// for every point in listed order, or once, without a URL, when the
+    /// request lists none. Last,
     /// for a failed retrieval, the points a source answering by certificate
     /// left unused for a certificate still without a usable CRL, in the
     /// order those certificates were asked about.

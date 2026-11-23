@@ -1328,6 +1328,283 @@ fn crl_fetch_by_certificate_answer_leaves_no_point_failures() {
     assert!(retrieval.get("failures").is_none(), "{retrieval}");
 }
 
+/// The arguments of one verification of the signer that lists one point, with
+/// retrieval on and no CRL supplied.
+fn discovery_args() -> Vec<String> {
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let path = |name: &str| base.join(name).to_str().unwrap().to_owned();
+    vec![
+        "rssig".to_owned(),
+        "verify".to_owned(),
+        "--no-system-roots".to_owned(),
+        "--roots".to_owned(),
+        path("root.der"),
+        "--time".to_owned(),
+        "1800000000".to_owned(),
+        "--fetch-crls".to_owned(),
+        path("good-crl-discovery.exe"),
+    ]
+}
+
+/// The lower-case hex SHA-256 of `bytes`, as the report and the spec cases
+/// name certificates.
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    sha2::Sha256::digest(bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+const DISCOVERY_POINT: &str = "http://crl.example.invalid/test.crl";
+const DISCOVERY_SIGNER: &str = "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19";
+/// Said when a source is never asked about the signer, which means the hash
+/// above no longer is `good-crl-discovery.exe`'s signer (the fixture changed).
+const STALE_SIGNER: &str = "the signer was never asked about: DISCOVERY_SIGNER is stale, \
+     check it against good-crl-discovery.exe and the keys in tests/cases.json";
+
+/// CRL-026 (and CRL-047 for the two abort rows): what a source answering by
+/// certificate can fail with, as the report serializes it, and that a failure
+/// naming no URL, or the whole request, is recorded for the listed point. The
+/// spec cases pin the code, the cause and the point of all eight rows; this
+/// also pins the stage, the problem type and the title.
+#[test]
+fn crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point() {
+    use rssig::domain::CrlSourceErrorKind::{self, Abort, Denied, Failed, Unknown};
+    use rssig::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError};
+    // Fails for the signer only, as the spec cases do: the chain's other
+    // certificates are asked about too, and get nothing. The last field
+    // records that the signer was asked.
+    struct Fails(CrlSourceErrorKind, bool, bool);
+    impl CrlSource for Fails {
+        fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            if sha256_hex(request.certificate) != DISCOVERY_SIGNER {
+                return Ok(CrlResponse::new());
+            }
+            self.2 = true;
+            let error = CrlSourceError::new(self.0, "injected");
+            if self.1 {
+                Err(error)
+            } else {
+                Ok(CrlResponse::new().with_failure(error))
+            }
+        }
+    }
+    for (kind, whole_request, code, result_code, cause) in [
+        (
+            Denied,
+            false,
+            "crl_fetch_denied",
+            "revocation_unknown",
+            "denied",
+        ),
+        (
+            Failed,
+            false,
+            "crl_fetch_failed",
+            "revocation_unknown",
+            "failed",
+        ),
+        (
+            Unknown,
+            false,
+            "crl_fetch_failed",
+            "revocation_unknown",
+            "unknown",
+        ),
+        (
+            Abort,
+            false,
+            "crl_fetch_aborted",
+            "crl_fetch_aborted",
+            "abort",
+        ),
+        (
+            Denied,
+            true,
+            "crl_fetch_denied",
+            "revocation_unknown",
+            "denied",
+        ),
+        (
+            Failed,
+            true,
+            "crl_fetch_failed",
+            "revocation_unknown",
+            "failed",
+        ),
+        (
+            Unknown,
+            true,
+            "crl_fetch_failed",
+            "revocation_unknown",
+            "unknown",
+        ),
+        (
+            Abort,
+            true,
+            "crl_fetch_aborted",
+            "crl_fetch_aborted",
+            "abort",
+        ),
+    ] {
+        let label = format!("{cause}, whole request: {whole_request}");
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let mut source = Fails(kind, whole_request, false);
+        let status =
+            rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source)
+                .unwrap();
+        assert!(source.2, "{label}: {STALE_SIGNER}");
+        assert_eq!(status, 1, "{label}");
+        let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let error = &report["results"][0]["error"];
+        assert_eq!(error["code"], result_code, "{label}");
+        assert_eq!(error["stage"], "revocation", "{label}");
+        let failures = error["details"]["crl_retrieval"]["failures"]
+            .as_array()
+            .unwrap();
+        // The source's own failure is recorded for the signer's one listed
+        // point; the signer is named rather than taken from the first entry.
+        let failure = failures
+            .iter()
+            .find(|f| f["source_error"] == cause && f["certificate_sha256"] == DISCOVERY_SIGNER)
+            .unwrap_or_else(|| {
+                panic!("{label}: no failure with source_error {cause} for the signer: {failures:?}")
+            });
+        assert_eq!(failure["code"], code, "{label}");
+        assert_eq!(failure["stage"], "revocation", "{label}");
+        assert_eq!(failure["certificate_sha256"], DISCOVERY_SIGNER, "{label}");
+        assert_eq!(failure["url"], DISCOVERY_POINT, "{label}");
+        assert!(
+            failure["type"]
+                .as_str()
+                .unwrap()
+                .ends_with(&format!("#{code}")),
+            "{label}: {failure}"
+        );
+        assert!(!failure["title"].as_str().unwrap().is_empty(), "{label}");
+    }
+}
+
+/// CRL-048: a body that is not a CRL is never evidence; CRL-034: it is no
+/// answer. The spec cases pin the result, the artifact and the two failures'
+/// codes in order; this pins the same from a source written in Rust: the
+/// undecodable body, then the listed point it left unanswered.
+#[test]
+fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered() {
+    // Answers the signer only, as the spec case does: the chain's other
+    // certificates are asked about too, and get nothing.
+    struct NotACrl(Vec<u8>, bool);
+    impl rssig::retrieval::CrlSource for NotACrl {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            let signer = sha256_hex(request.certificate);
+            let response = rssig::retrieval::CrlResponse::new();
+            self.1 |= signer == DISCOVERY_SIGNER;
+            Ok(if signer == DISCOVERY_SIGNER {
+                response.with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone()))
+            } else {
+                response
+            })
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let mut source = NotACrl(std::fs::read(base.join("root.der")).unwrap(), false);
+    let status =
+        rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source).unwrap();
+    assert!(source.1, "{STALE_SIGNER}");
+    assert_eq!(status, 1);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    let retrieval = &error["details"]["crl_retrieval"];
+    // The body was taken (it is an artifact) but is no CRL.
+    assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 1);
+    // In the order `CrlRetrievalReport::failures` documents: the body
+    // rejected on load, then the point it left unanswered.
+    let codes: Vec<_> = retrieval["failures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f["code"].as_str().unwrap())
+        .collect();
+    assert_eq!(codes, ["invalid_crl", "crl_fetch_failed"]);
+    let unanswered = retrieval["failures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["code"] == "crl_fetch_failed")
+        .unwrap();
+    assert_eq!(unanswered["url"], DISCOVERY_POINT);
+}
+
+/// CRL-045 and CRL-046: a body over the per-CRL cap is rejected as
+/// `resource_limit_exceeded` with the cap it hit, and leaves the listed point
+/// unanswered, in CRL-049's order. The spec cases pin the same; this pins it
+/// from a source written in Rust, with the cap read from `MAX_CRL_BYTES`.
+#[test]
+fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered() {
+    struct Oversized(bool);
+    impl rssig::retrieval::CrlSource for Oversized {
+        fn crls(
+            &mut self,
+            request: &rssig::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            let signer = sha256_hex(request.certificate);
+            let response = rssig::retrieval::CrlResponse::new();
+            self.0 |= signer == DISCOVERY_SIGNER;
+            Ok(if signer == DISCOVERY_SIGNER {
+                response.with_crl(rssig::retrieval::SourcedCrl::new(vec![
+                    0;
+                    rssig::retrieval::MAX_CRL_BYTES
+                        + 1
+                ]))
+            } else {
+                response
+            })
+        }
+    }
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let mut source = Oversized(false);
+    let status =
+        rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source).unwrap();
+    assert!(source.0, "{STALE_SIGNER}");
+    assert_eq!(status, 1);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    let retrieval = &error["details"]["crl_retrieval"];
+    assert!(retrieval["artifacts"].as_array().unwrap().is_empty());
+    let failures = retrieval["failures"].as_array().unwrap();
+    // Exactly these two, in the order `CrlRetrievalReport::failures`
+    // documents: the body rejected on load, then the point it left.
+    let codes: Vec<_> = failures
+        .iter()
+        .map(|f| f["code"].as_str().unwrap())
+        .collect();
+    assert_eq!(codes, ["resource_limit_exceeded", "crl_fetch_failed"]);
+    let cap = failures
+        .iter()
+        .find(|f| f["code"] == "resource_limit_exceeded")
+        .unwrap_or_else(|| panic!("{failures:?}"));
+    assert_eq!(cap["details"]["resource"], "crl_response_bytes");
+    assert_eq!(cap["details"]["limit"], rssig::retrieval::MAX_CRL_BYTES);
+    // The per-body cap counts no earlier body (CRL-046).
+    assert_eq!(cap["details"]["used"], 0);
+    assert_eq!(
+        cap["details"]["requested"],
+        rssig::retrieval::MAX_CRL_BYTES + 1
+    );
+    let unanswered = failures
+        .iter()
+        .find(|f| f["code"] == "crl_fetch_failed")
+        .unwrap_or_else(|| panic!("{failures:?}"));
+    assert_eq!(unanswered["url"], DISCOVERY_POINT);
+}
+
 /// The outer signer is trusted and only lacks a CRL, but the nested signature
 /// is invalid. The whole input passes integrity and trust checks before any
 /// source is asked: no request, and the integrity failure is the result.
@@ -1547,4 +1824,49 @@ fn crl_unknown_status_names_a_missing_and_a_replaceable_crl() {
             "http://crl.invalid/sec10-issuer.crl"
         ]
     );
+}
+
+/// CRL-047 (also the case
+/// `crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked`): a
+/// definite result keeps its code after an abort, and is marked
+/// `retrieval_aborted` (CRL-036) only when the abort cut retrieval short for
+/// a certificate the result names; a revocation names none.
+#[test]
+fn crl_fetch_an_abort_beside_a_revoking_crl_leaves_the_result_unmarked() {
+    use rssig::domain::CrlSourceErrorKind;
+    use rssig::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError, SourcedCrl};
+    // The signer gets a CRL revoking it and an abort in the same response.
+    struct RevokesAndAborts(Vec<u8>, bool);
+    impl CrlSource for RevokesAndAborts {
+        fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            if sha256_hex(request.certificate) != DISCOVERY_SIGNER {
+                return Ok(CrlResponse::new());
+            }
+            self.1 = true;
+            Ok(CrlResponse::new()
+                .with_crl(SourcedCrl::new(self.0.clone()))
+                .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "stop")))
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let mut source = RevokesAndAborts(std::fs::read(base.join("revoked.crl")).unwrap(), false);
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let status =
+        rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source).unwrap();
+    assert!(source.1, "{STALE_SIGNER}");
+    assert_eq!(status, 1);
+    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &report["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_revoked", "{error}");
+    assert!(
+        error["details"].get("retrieval_aborted").is_none(),
+        "{error}"
+    );
+    // The abort was recorded: the source did abort.
+    let aborted = error["details"]["crl_retrieval"]["failures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|f| f["source_error"] == "abort");
+    assert!(aborted, "{error}");
 }

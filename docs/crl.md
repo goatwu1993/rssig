@@ -72,6 +72,11 @@ holds for the entries numbered when it was set.
 | [CRL-042](#crl-042-an-issuer-without-a-usable-key-identifier-cannot-disprove-another-keys-crl) | An issuer without a usable key identifier cannot disprove another key's CRL | Issuer keys | Decided | diagnostics |
 | [CRL-043](#crl-043-a-crl-naming-another-certificate-by-issuer-and-serial-is-set-aside-when-its-signature-fails) | A CRL naming another certificate by issuer and serial is set aside when its signature fails | Issuer keys | Decided | diagnostics |
 | [CRL-044](#crl-044-a-crl-that-verifies-is-used-whatever-its-authoritykeyidentifier-names-by-issuer-and-serial) | A CRL that verifies is used whatever its authorityKeyIdentifier names by issuer and serial | Issuer keys | Decided | acceptance |
+| [CRL-045](#crl-045-a-retrieved-crl-over-the-size-cap-is-never-evidence) | A retrieved CRL over the size cap is never evidence | Retrieval | Observed | acceptance |
+| [CRL-046](#crl-046-a-retrieved-crl-over-the-size-cap-is-reported-with-the-cap-it-hit) | A retrieved CRL over the size cap is reported with the cap it hit | Retrieval | Observed | diagnostics |
+| [CRL-047](#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted) | An aborted source stops retrieval and is reported as `crl_fetch_aborted` | Retrieval | Decided | diagnostics |
+| [CRL-048](#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it) | A CRL from a source is evidence only when verification authenticates it | Retrieval | Decided | acceptance |
+| [CRL-049](#crl-049-retrieval-failures-are-reported-in-a-fixed-order) | Retrieval failures are reported in a fixed order | Retrieval | Observed | diagnostics |
 
 ## Tier 1: fail-open and privacy
 
@@ -390,10 +395,10 @@ Diagnostics pins on the error code, stage or details a consumer matches; both ou
 
 ### CRL-026: Missing evidence is `revocation_unknown`; a source has four outcome kinds
 
-However a CRL could not be obtained, the code is `revocation_unknown`, with the cause (denied, failed, abort, unknown) in `crl_retrieval.failures`. When no supplied CRL applies at all, CRL-001 returns it before path building.
+However a CRL could not be obtained, the code is `revocation_unknown`, with the cause (denied, failed, abort, unknown) in `crl_retrieval.failures`, unless an aborted source left a certificate without a CRL unasked or cut its request short (CRL-047). When no supplied CRL applies at all, CRL-001 returns it before path building.
 
 - **Status:** Decided
-- **Decided by:** owner, PR #60 design (the single code matches the references; the four kinds have no equivalent)
+- **Decided by:** owner, PR #60 design (the single code matches the references; the four kinds have no equivalent); owner, PR #84 (approved): an abort is excepted, as CRL-047 decides
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl): however a CRL could not be obtained, the result is the single X509_V_ERR_UNABLE_TO_GET_CRL.
@@ -503,10 +508,10 @@ Which requests are made; the verification result is the same either way.
 
 ### CRL-034: A source answering by certificate leaves no per-point failures
 
-Only a body that loads as a CRL of the certificate's issuer counts. When that answer settles the status, no per-point failure is recorded; when it does not, the listed points the source left unused are recorded as not used, so no listed point disappears from the report.
+Only a body that loads as a CRL of the certificate's issuer counts as an answer by certificate; whether it is evidence is CRL-048's. When that answer settles the status, no per-point failure is recorded; when it does not, the listed points the source left unused are recorded as not used, so no listed point disappears from the report.
 
 - **Status:** Decided
-- **Decided by:** owner (delegated the call), PR #60; written argument for unused points
+- **Decided by:** owner (delegated the call), PR #60; written argument for unused points; owner, PR #84 (approved): whether an answer is evidence moved to CRL-048
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls): CRLs are looked up by issuer name, with no per-distribution-point outcome.
@@ -528,10 +533,10 @@ A CRL whose only defect is a missing nextUpdate is not asked about: it is `inval
 
 ### CRL-036: Without an answer, an expired or replaceable CRL's error stands
 
-Without an answer from the source, the CRL's own error stands. An expired CRL stays `crl_expired`. For a replaceable CRL (CRL-020, including a malformed one) the error stands and the certificate is named in `certificates_with_replaceable_crl`. Either error is marked `retrieval_aborted` when the source aborted.
+Without an answer from the source, the CRL's own error stands. An expired CRL stays `crl_expired`. For a replaceable CRL (CRL-020, including a malformed one) the error stands and the certificate is named in `certificates_with_replaceable_crl`. Either error is marked `retrieval_aborted` after an abort, under the condition CRL-047 decides.
 
 - **Status:** Decided
-- **Decided by:** owner (delegated the call), PR #60 for an expired CRL; owner, PR #64 for a replaceable one
+- **Decided by:** owner (delegated the call), PR #60 for an expired CRL; owner, PR #64 for a replaceable one; owner, PR #84 (approved): the mark's condition is CRL-047's
 - **Pins:** diagnostics
 - **Sources:**
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/PKIXCRLUtil.java:42-49 drops CRLs past nextUpdate; CertPathValidatorUtilities.java:571-630 and pkix X509RevocationChecker.java:477-492 then fetch from the certificate's distribution points when fetching is enabled.
@@ -636,6 +641,68 @@ A CRL whose signature verifies under the path's issuer key is authenticated by t
   - RFC 5280 sections 4.2.1.1 and 5.2.1 ([rfc/rfc5280.txt](rfc/rfc5280.txt)): the extension identifies the public key that signed the CRL, by key identifier or by the issuer name and serial of a certificate for it; one key can be certified more than once, so another certificate named is not another key.
   - OpenSSL 3.3 (7f736187) `v3_purp.c:1009-1032` and `x509_vfy.c:1322-1326`, BoringSSL (289645a4) `v3_purp.cc:464-482` and `x509_vfy.cc:653-656`: excluded on a mismatch; Bouncy Castle (bb81bfa7) `RFC3280CertPathUtilities.java:382-386` reads only the key identifier and uses it.
 - **Note:** The owner chose the signature as the authority over OpenSSL and BoringSSL's exclusion.
+
+### CRL-045: A retrieved CRL over the size cap is never evidence
+
+A body a source returns that is over 8 MiB, or that takes the response past the request's allowance, is not decoded or loaded. It is no answer for the certificate, so the result rests on the other evidence (CRL-026 when there is none). It does not count against the bodies after it, so a good body that follows in the same response still answers. How it is reported is CRL-046.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** acceptance
+- **Sources:**
+  - OpenSSL 3.3 (7f736187) caps a downloaded CRL at 32 MiB: `include/openssl/http.h:39` (`OSSL_HTTP_DEFAULT_MAX_CRL_LEN`), applied at `crypto/x509/x_all.c:102`, and a longer response fails at `crypto/http/http_client.c:507-512` (`HTTP_R_MAX_RESP_LEN_EXCEEDED`), so no CRL is obtained.
+  - Bouncy Castle (bb81bfa7) `CrlCache.java:185-192` sets connect and read timeouts and parses the whole stream (`generateCRLs`), with no size limit.
+  - The references differ. rssig's number, observed and not yet decided: a fetched CRL may be as large as a supplied one, 8 MiB ([host-limits.md](host-limits.md), "Each root/CRL source file"), and the 32 MiB a verification may take in all is [crl-retrieval.md](crl-retrieval.md)'s limits table. Either way an over-cap body is never evidence, which fails closed.
+- **Unit tests:** `an_oversized_body_does_not_count_against_the_bodies_after_it` and `fetch_each_tries_the_next_point_after_an_over_allowance_body` in `src/retrieval.rs`.
+- **Note:** A source fetching by URL (`fetch_each`) is held to both caps by its unit test, since a case cannot give the built-in source a real response.
+
+### CRL-046: A retrieved CRL over the size cap is reported with the cap it hit
+
+A body skipped under CRL-045 is reported in `crl_retrieval.failures` as `resource_limit_exceeded`, with `resource` `crl_response_bytes`, the cap it hit (`limit`), its own size (`requested`) and `used`: 0 for the 8 MiB a body may have, and the bytes the response had already taken for the request's allowance. When the body names no URL (offered by certificate or issuer), the listed point it was meant to answer is recorded as `crl_fetch_failed`, the source having returned nothing usable for it (CRL-026), unless the bodies the response had accepted in all, before or after it, spent the request's whole allowance, when the point is recorded as not tried for that reason (`resource_limit_exceeded`, `points_left_when_the_byte_allowance_is_spent_are_not_tried` in `src/retrieval.rs`). The rest of the response can change that, by the entries that decide it: a failure naming no URL answers the point (CRL-026), an abort leaves it not tried (CRL-047), and another body answering by certificate leaves it unused (CRL-034); the over-cap body itself, never loaded, is no answer by certificate. A body naming its point answers that point, so no second failure is recorded for it (`an_oversized_body_naming_its_point_is_its_only_failure` in `src/retrieval.rs`). The built-in URL source passes on only the first over-cap body of a request; it reports each later one itself as a `failed` source error with the same `resource`, `limit` and `requested`, which the report records as `crl_fetch_failed` (`fetch_each_tries_the_next_point_after_an_over_allowance_body` in `src/retrieval.rs`).
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** diagnostics
+- **Sources:**
+  - [crl-retrieval.md](crl-retrieval.md): the limits table, and no listed point disappears from the report (CRL-034's written argument).
+- **Unit tests:** `an_over_allowance_body_reports_the_cap_it_hit` in `src/retrieval.rs`; the named test `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`.
+
+### CRL-047: An aborted source stops retrieval and is reported as `crl_fetch_aborted`
+
+A source that reports `abort` (its budget spent, a deadline passed, or cancelled), as a failure or for the whole request, is asked nothing more in this verification. In the request it cut short, a point the abort itself answers carries it (`source_error` `abort`). An abort naming no URL marks every other point left as not tried (`points_not_tried_after_an_abort_stay_in_the_report`, `points_left_after_an_abort_among_url_less_failures_are_not_tried`); one naming a point leaves the others to the response's other failures (`an_abort_naming_one_point_does_not_relabel_the_others`), and only those still unanswered are not tried; a certificate after it is never asked, so its points are not recorded (`abort_stops_every_further_request`). When that left a certificate still without a CRL unasked, or cut its request short, the result is `crl_fetch_aborted` instead of `revocation_unknown`, with the verifier's message kept in the `revocation_unknown` detail and the same `crl_retrieval.failures`. An abort after every such certificate was asked, none of them in the request it cut short, leaves CRL-026's `revocation_unknown`. A definite result keeps its code (CRL-029), and is marked `retrieval_aborted` (CRL-036) only when the abort cut retrieval short in the same way for a certificate the result names.
+
+- **Status:** Decided
+- **Decided by:** owner (delegated the call), PR #84
+- **Pins:** diagnostics
+- **Sources:**
+  - OpenSSL crypto/x509/x509_vfy.c:1489 and :1527 (check_cert_crl) and Bouncy Castle CertPathValidatorUtilities.java:1340 report a single error however a CRL could not be obtained (CRL-026); neither has a source that can give up, so this departs from both.
+  - Written argument: an aborted source left evidence unasked, so a caller may retry, where `revocation_unknown` says the evidence was sought and is missing. Both reject, so the difference is diagnostics only. [crl-retrieval.md](crl-retrieval.md) describes the result.
+- **Unit tests:** `the_first_of_two_aborts_without_a_url_answers_the_points`, `the_result_tells_an_aborted_source_from_missing_evidence`, `abort_stops_every_further_request` and `points_not_tried_after_an_abort_stay_in_the_report` in `src/retrieval.rs`; the abort rows of the named test `crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point` in `tests/cli/crl_fetch.rs`; the named test `crl_fetch_an_abort_beside_a_revoking_crl_leaves_the_result_unmarked` in `tests/cli/crl_fetch.rs`.
+
+### CRL-048: A CRL from a source is evidence only when verification authenticates it
+
+A source is never trusted: where a CRL came from adds nothing to it. Whatever a source returns, by URL or by certificate, is judged exactly as a supplied CRL is, by the entries that decide a supplied CRL (CRL-001 and CRL-003 among them), and earns no standing from being returned. This entry pins only that point; the rules it defers to keep their own entries.
+
+- **Status:** Decided
+- **Decided by:** owner (delegated the call), PR #84; references agree
+- **Pins:** acceptance
+- **Sources:**
+  - OpenSSL `crypto/x509/x509_vfy.c` `check_crl` verifies every CRL that `get_crl` or `lookup_crls` returned before `cert_crl` reads its entries; Bouncy Castle `RFC3280CertPathUtilities` processCRLG verifies every CRL its stores returned before processCRLJ. Neither trusts where a CRL came from.
+  - [crl-retrieval.md](crl-retrieval.md): "A source never returns a trust verdict."
+- **Unit tests:** the named test `crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`. A source's CRLs join the supplied ones before verification, so no branch trusts them apart and no unit test isolates one.
+- **Note:** This entry overlaps CRL-001 and CRL-003 by design, as the owner decided in PR #84: it pins that a source adds no standing, and they keep deciding what a CRL must satisfy.
+- **Note:** Whether a returned body counts as the source's answer by certificate (CRL-034) only decides what is asked and reported next. Removing that rule changes no verification result (checked by changing the engine: every case and named test still passed, and only CRL-034's unit test `only_a_real_crl_without_a_url_answers_by_certificate` failed), because the entries this one defers to decide acceptance.
+
+### CRL-049: Retrieval failures are reported in a fixed order
+
+`crl_retrieval.failures` lists the points that yielded no evidence grouped by the certificate they were asked for, in request order. Within a request: points refused before asking, the source's own failures in response order, bodies rejected on load, then the points it did not answer (after an abort, the points not tried). The first failure naming no URL is held while a listed point is still unanswered, since it may answer those points: it comes after the bodies rejected on load, recorded for each point left or, when it answers none, as it is. A whole-request error naming a listed point is recorded for every other point, in listed order, then for that one; naming no listed point (a URL outside the request counts as none), for every point in listed order, or once, without a URL, when the request lists none. Last, for a failed retrieval, come the points a source answering by certificate left unused, in the order those certificates were asked about.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** diagnostics
+- **Sources:**
+  - Written argument: the references report one error and keep no list of failed points, so they have no order to follow. The report follows what happened, so a reader can replay retrieval from it without sorting: a certificate's points in the order it was asked about; within a request, what was refused before asking, then what the source said in the order it said it, then what loading its bodies showed, then what was left. A failure naming no URL is the one exception because its meaning is not known when it arrives: whether it answers the points left depends on the bodies, so it is placed where that is known. A whole-request error names one point at most; the others come first, in listed order, so the point it names is last and its own entry ends the request. The same order is documented on `CrlRetrievalReport::failures` (`src/domain.rs`).
+- **Unit tests:** `a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`, `a_whole_request_error_records_the_point_it_names_last`, `the_first_failure_without_a_url_comes_after_the_bodies_rejected_on_load` and `a_failure_without_a_url_is_recorded_as_it_is_when_every_point_was_named` in `src/retrieval.rs`; the named tests `crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered` and `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`.
 
 ## Candidate rules
 

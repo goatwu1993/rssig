@@ -489,8 +489,8 @@
         "crl-026-fetch-source-denied-is-no-evidence",
         "crl-026-fetch-source-failed-is-no-evidence",
         "crl-026-fetch-source-unknown-is-no-evidence",
-        "crl-026-fetch-source-abort-is-reported",
-        "crl-026-fetch-source-abort-stops-requests",
+        "crl-047-fetch-source-abort-is-reported",
+        "crl-047-fetch-source-abort-stops-requests",
         "crl-023-fetch-source-is-asked-for-any-scheme",
         "crl-037-fetch-builtin-source-denies-https",
         "crl-030-fetch-expired-partition-for-another-point-still-fetches",
@@ -966,8 +966,8 @@
     },
     "crl_fetch_aborted": {
       "cases": [
-        "crl-026-fetch-source-abort-is-reported",
-        "crl-026-fetch-source-abort-stops-requests"
+        "crl-047-fetch-source-abort-is-reported",
+        "crl-047-fetch-source-abort-stops-requests"
       ],
       "gap": ""
     },

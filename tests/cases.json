@@ -34597,6 +34597,1182 @@
       }
     },
     {
+      "id": "crl-026-url-less-denial-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "denied"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-whole-request-failure-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "error": {
+            "kind": "failed"
+          }
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_failed",
+                        "source_error": "failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-url-less-failed-failure-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "failed"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_failed",
+                        "source_error": "failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-whole-request-denial-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "error": {
+            "kind": "denied"
+          }
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-whole-request-unknown-failure-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "error": {
+            "kind": "unknown"
+          }
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_failed",
+                        "source_error": "unknown"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-047-whole-request-abort-is-reported",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-047",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "error": {
+            "kind": "abort"
+          }
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_aborted",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-047",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "revoked.crl"
+            }
+          ],
+          "failures": [
+            {
+              "kind": "abort"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        },
+        "json_absent": [
+          "/results/0/error/details/retrieval_aborted"
+        ]
+      }
+    },
+    {
+      "id": "crl-047-url-less-abort-is-reported",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-047",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "abort"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_aborted",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-047-url-less-abort-beside-another-failure-marks-the-point-not-tried",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-047",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "denied"
+            },
+            {
+              "kind": "abort"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "json_absent": [
+          "/results/0/error/details/crl_retrieval/failures/2/source_error"
+        ],
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "crl_fetch_aborted",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": null,
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_aborted",
+                        "source_error": "abort"
+                      },
+                      {
+                        "url": null,
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_aborted",
+                        "url": "http://crl.example.invalid/test.crl"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-034-an-answer-with-several-bodies-settles-the-status",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-034",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "expired.crl"
+            },
+            {
+              "file": "good.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                    "sha256": "d393ea1236ca507f909f316b8f7e5929d0c438ba30f1c010f48d0549b7556162"
+                  },
+                  {
+                    "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                    "sha256": "8f8808824ea23e422ee22b86737d4626847d7d56226fa5990307fe079500e796"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "json_absent": [
+          "/results/0/crl_retrieval/failures"
+        ]
+      }
+    },
+    {
+      "id": "crl-048-a-body-that-is-not-a-crl-is-never-evidence",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-048",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "root.der"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-049",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "root.der"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-048-a-crl-of-another-issuer-is-never-evidence",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-048",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "path-issuer.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-a-failure-naming-the-point-is-recorded-for-it",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "denied",
+              "url": "http://crl.example.invalid/test.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-026-url-less-unknown-failure-answers-the-listed-point",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "unknown"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "url": "http://crl.example.invalid/test.crl",
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "code": "crl_fetch_failed",
+                        "source_error": "unknown"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-045-body-over-the-size-cap-is-no-answer",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-045",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "good.crl",
+              "pad_to": 8388609
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": []
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-049",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "good.crl",
+              "pad_to": 8388609
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "resource_limit_exceeded"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-046-an-over-cap-body-reports-the-cap-it-hit",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-046",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "good.crl",
+              "pad_to": 8388609
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "resource_limit_exceeded",
+                        "details": {
+                          "resource": "crl_response_bytes",
+                          "limit": 8388608,
+                          "requested": 8388609,
+                          "used": 0
+                        }
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-045-oversized-body-does-not-count-against-the-next",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-045",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "good.crl",
+              "pad_to": 16777216
+            },
+            {
+              "file": "good.crl",
+              "pad_to": 16777216
+            },
+            {
+              "file": "good.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "sha256": "8f8808824ea23e422ee22b86737d4626847d7d56226fa5990307fe079500e796"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-045-over-allowance-body-does-not-count-against-the-next",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-045",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "root.der",
+              "pad_to": 7340032
+            },
+            {
+              "file": "root.der",
+              "pad_to": 7340032
+            },
+            {
+              "file": "root.der",
+              "pad_to": 7340032
+            },
+            {
+              "file": "root.der",
+              "pad_to": 7340032
+            },
+            {
+              "file": "root.der",
+              "pad_to": 7340032
+            },
+            {
+              "file": "good.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "crl_requests": [],
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good"
+                    }
+                  }
+                }
+              ],
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "bytes": 7340032
+                  },
+                  {
+                    "bytes": 7340032
+                  },
+                  {
+                    "bytes": 7340032
+                  },
+                  {
+                    "bytes": 7340032
+                  },
+                  {
+                    "bytes": 183,
+                    "sha256": "8f8808824ea23e422ee22b86737d4626847d7d56226fa5990307fe079500e796"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-048-a-crl-signed-by-another-key-is-never-evidence",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-048",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": "crl-root-forged-issuer-case-naming-root-key.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_crl_signature",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-048-an-authentic-crl-from-a-source-revokes",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-048",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": "revoked.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "crl-034-fetch-by-certificate-unusable-answer-records-unused-points",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-034",
@@ -36302,9 +37478,9 @@
       }
     },
     {
-      "id": "crl-026-fetch-source-abort-is-reported",
+      "id": "crl-047-fetch-source-abort-is-reported",
       "input": "good-crl-discovery.exe",
-      "decision": "CRL-026",
+      "decision": "CRL-047",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.example.invalid/test.crl": "abort"
@@ -36350,9 +37526,9 @@
       }
     },
     {
-      "id": "crl-026-fetch-source-abort-stops-requests",
+      "id": "crl-047-fetch-source-abort-stops-requests",
       "input": "crl-chain-crl-dp.exe",
-      "decision": "CRL-026",
+      "decision": "CRL-047",
       "crl_responses": {},
       "crl_errors": {
         "http://crl.invalid/sec10-a.crl": "abort"

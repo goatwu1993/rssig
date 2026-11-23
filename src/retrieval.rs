@@ -398,10 +398,10 @@ fn listed_points(
 /// revocation naming another path's gap, or the failure of a CRL a source
 /// could replace: `crl_expired`, `crl_not_yet_valid`, `invalid_crl`), ask
 /// the source about exactly those certificates, and verify again. A good
-/// result or any other failure is final. When the source aborts before the
-/// named certificates were asked about, an unknown status becomes
-/// `crl_fetch_aborted` and the other results keep their code with
-/// `details.retrieval_aborted`. Whether a CRL applies is
+/// result or any other failure is final. When the source aborts before one of
+/// the named certificates was asked about, or while one was being asked about
+/// (CRL-047), an unknown status becomes `crl_fetch_aborted` and the
+/// other results keep their code with `details.retrieval_aborted`. Whether a CRL applies is
 /// decided only by verification. See `docs/crl-retrieval.md`. The passes share
 /// one LIMIT-T002 work budget. The input store is never modified.
 pub fn verify_with_crl_source(
@@ -1760,6 +1760,183 @@ mod tests {
         );
     }
     #[test]
+    fn a_failure_without_a_url_is_recorded_as_it_is_when_every_point_was_named() {
+        // With no point left unanswered, a failure naming no URL answers
+        // none: it is recorded once, as it is.
+        // Not held, it keeps its place in response order, before a body
+        // rejected on load (CRL-049).
+        struct NamesThenDenies;
+        impl CrlSource for NamesThenDenies {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                            .with_url(request.distribution_points[0].clone()),
+                    )
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "policy"))
+                    .with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/root.der").to_vec(),
+                    )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 1),
+            &mut NamesThenDenies,
+        )
+        .unwrap();
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.is_some(), f.code))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                (true, ErrorCode::CrlFetchFailed),
+                (false, ErrorCode::CrlFetchDenied),
+                (false, ErrorCode::InvalidCrl)
+            ]
+        );
+    }
+    #[test]
+    fn the_first_failure_without_a_url_comes_after_the_bodies_rejected_on_load() {
+        // `CrlRetrievalReport::failures`: the held failure answers the point
+        // after the body that is no CRL is recorded, though it came first.
+        struct DeniesThenNotACrl;
+        impl CrlSource for DeniesThenNotACrl {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Denied, "policy"))
+                    .with_crl(SourcedCrl::new(
+                        include_bytes!("../tests/fixtures/root.der").to_vec(),
+                    )))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 1),
+            &mut DeniesThenNotACrl,
+        )
+        .unwrap();
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.is_some(), f.code))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                (false, ErrorCode::InvalidCrl),
+                (true, ErrorCode::CrlFetchDenied)
+            ]
+        );
+    }
+    #[test]
+    fn the_first_of_two_aborts_without_a_url_answers_the_points() {
+        // Another URL-less abort stops the first answering the points only
+        // when the first is no abort itself.
+        struct AbortsTwice;
+        impl CrlSource for AbortsTwice {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "first"))
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "second")))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 2),
+            &mut AbortsTwice,
+        )
+        .unwrap();
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.is_some(), f.code, f.source_error))
+            .collect();
+        let abort = (ErrorCode::CrlFetchAborted, Some(CrlSourceErrorKind::Abort));
+        assert_eq!(
+            entries,
+            [
+                (false, abort.0, abort.1),
+                (true, abort.0, abort.1),
+                (true, abort.0, abort.1)
+            ]
+        );
+    }
+    #[test]
+    fn a_whole_request_error_records_the_point_it_names_last() {
+        // CRL-049: the points it does not name, in listed order, then the
+        // one it names, even when that one is listed first.
+        struct FailsNamingFirst;
+        impl CrlSource for FailsNamingFirst {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                    .with_url(request.distribution_points[0].clone()))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("a", 3),
+            &mut FailsNamingFirst,
+        )
+        .unwrap();
+        let urls: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| f.url.as_deref().unwrap())
+            .collect();
+        assert_eq!(
+            urls,
+            [
+                "http://crl.example.invalid/a-1.crl",
+                "http://crl.example.invalid/a-2.crl",
+                "http://crl.example.invalid/a-0.crl"
+            ]
+        );
+        // A request with no points records the error once, as it is. (One
+        // naming a URL outside the request is recorded for each point in
+        // listed order: `a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`.)
+        // A URL outside the request is dropped first, so the entry has none.
+        struct Fails;
+        impl CrlSource for Fails {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                    .with_url("http://crl.example.invalid/foreign.crl"))
+            }
+        }
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "b", &signer_with_uris(&[]), &mut Fails).unwrap();
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.clone(), f.code))
+            .collect();
+        assert_eq!(entries, [(None, ErrorCode::CrlFetchFailed)]);
+    }
+    #[test]
     fn every_failure_without_a_url_counts_and_an_abort_among_them_stops() {
         struct FailsThenAborts;
         impl CrlSource for FailsThenAborts {
@@ -2657,6 +2834,38 @@ mod tests {
             .filter_map(|f| f.details.get("resource"))
             .collect();
         assert_eq!(resources, ["crl_response_bytes"]);
+    }
+    #[test]
+    fn an_oversized_body_naming_its_point_is_its_only_failure() {
+        // CRL-046: a body naming the point answers it, so the point is not
+        // also recorded as one the source left unanswered. Two rules keep
+        // this: the body answers the point, and a point is recorded once.
+        struct Named;
+        impl CrlSource for Named {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(
+                    SourcedCrl::new(vec![0; MAX_CRL_BYTES + 1])
+                        .with_url(request.distribution_points[0].clone()),
+                ))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        assert!(!ask(&mut state, "a", &signer_with_points("a", 1), &mut Named).unwrap());
+        let seen: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.code, f.details.get("resource").cloned()))
+            .collect();
+        assert_eq!(
+            seen,
+            [(
+                ErrorCode::ResourceLimitExceeded,
+                Some("crl_response_bytes".into())
+            )]
+        );
     }
     #[test]
     fn no_listed_point_disappears_from_the_report() {

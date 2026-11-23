@@ -19,6 +19,94 @@ pub struct Suite {
     pub cases: Vec<Case>,
 }
 
+/// How the injected source answers a request for one certificate.
+#[derive(Clone, Deserialize)]
+#[serde(try_from = "Value")]
+pub enum CertificateAnswer {
+    /// This response file alone, as a CRL without a URL.
+    Fixture(String),
+    Scripted(ScriptedAnswer),
+}
+
+/// An answer written out: the response the source returns, or the error it
+/// fails the whole request with. None of the certificate's listed URLs is
+/// requested.
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScriptedAnswer {
+    /// Bodies in the response, in order, each from a response file.
+    pub crls: Option<Vec<ScriptedCrl>>,
+    /// Failures in the response, in order.
+    pub failures: Option<Vec<ScriptedFailure>>,
+    /// The source fails the whole request with this error instead of
+    /// returning a response. Excludes `crls` and `failures`.
+    pub error: Option<ScriptedFailure>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScriptedCrl {
+    pub file: String,
+    /// Zero-pad the body to this many bytes, to give a source a body over a
+    /// size cap without a large fixture. The engine, not the runner, judges
+    /// the size. At least the file's own size.
+    pub pad_to: Option<usize>,
+    /// The URL the body is said to come from; none for a body offered by
+    /// certificate or issuer.
+    pub url: Option<String>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScriptedFailure {
+    pub kind: rssig::domain::CrlSourceErrorKind,
+    /// The URL the failure names; none for one about the whole request.
+    pub url: Option<String>,
+}
+
+fn has_null(value: &Value) -> bool {
+    match value {
+        Value::Null => true,
+        Value::Array(items) => items.iter().any(has_null),
+        Value::Object(fields) => fields.values().any(has_null),
+        _ => false,
+    }
+}
+
+impl TryFrom<Value> for CertificateAnswer {
+    type Error = String;
+
+    /// Read through a value so that a mistyped field is named, which an
+    /// untagged enum would report as "did not match any variant".
+    fn try_from(value: Value) -> Result<Self, String> {
+        match value {
+            Value::String(name) => Ok(Self::Fixture(name)),
+            // A mistyped field is named first, null or not. Then: the schema
+            // has no null anywhere in a scripted answer, and serde reads one
+            // as an absent field, so leave a field out instead.
+            Value::Object(_) => {
+                let script = serde_json::from_value(value.clone())
+                    .map_err(|error| format!("scripted answer: {error}"))?;
+                if has_null(&value) {
+                    return Err("scripted answer: null is no value; leave the field out".into());
+                }
+                Ok(Self::Scripted(script))
+            }
+            _ => Err("an answer is a fixture file name or a scripted object".into()),
+        }
+    }
+}
+
+impl CertificateAnswer {
+    /// The response files this answer reads.
+    pub fn files(&self) -> Vec<&String> {
+        match self {
+            Self::Fixture(name) => vec![name],
+            Self::Scripted(answer) => answer.crls.iter().flatten().map(|crl| &crl.file).collect(),
+        }
+    }
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
@@ -29,10 +117,10 @@ pub struct Case {
     /// instead of a response. Reads no file.
     pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
     /// The injected source also answers a request for the certificate with
-    /// this SHA-256 (lowercase hex of its DER) with this response file, as a
+    /// this SHA-256 (lowercase hex of its DER): with one response file as a
     /// CRL without a URL, the way a source keyed by certificate or issuer
-    /// does. Requires `crl_responses`.
-    pub crl_certificate_responses: Option<BTreeMap<String, String>>,
+    /// does, or with a scripted answer. Requires `crl_responses`.
+    pub crl_certificate_responses: Option<BTreeMap<String, CertificateAnswer>>,
     /// The decision entry this case pins, such as `CRL-001`, defined in a
     /// decision index under `docs/` (AGENTS.md, "Pinned expectations"). Not
     /// used to run the case.
@@ -174,8 +262,13 @@ impl Case {
             .chain(
                 crl_responses
                     .iter()
-                    .chain(crl_certificate_responses.iter())
                     .flat_map(BTreeMap::values)
+                    .chain(
+                        crl_certificate_responses
+                            .iter()
+                            .flat_map(BTreeMap::values)
+                            .flat_map(CertificateAnswer::files),
+                    )
                     .map(|name| named(name, CaseFile::ResponseBody)),
             )
             .collect();

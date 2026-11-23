@@ -217,6 +217,18 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T035** fix: Decide whether CRL-008 compares issuer names canonically (owner decision).
   It compares the path's issuers by exact bytes, as webpki does; OpenSSL
   compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
+- [ ] **CRL-T036** test: Express a point shared by certificates of two issuers
+  in the case format. It needs a signed input with two issuers listing one
+  point, and a way to script an answer for the second certificate, whose
+  request does not carry a point already asked about (the runner rejects a
+  scripted `url` outside the request). From TEST-T009.
+- [ ] **CRL-T037** test: Pin a spent byte allowance in a case. A scripted
+  answer can now spend a request's allowance, which CRL-046 decides (the points
+  left are not tried), but no case pins it. From TEST-T009.
+- [ ] **CRL-T038** test: Express an answer naming a point by its normalized URL.
+  The engine matches a source's URL to a listed point by normalized form, but
+  the case runner accepts only the exact spelling, so that path is unit-tested
+  only. From TEST-T009.
 
 ## P1 — Clean parse/verify interfaces
 
@@ -288,6 +300,10 @@ they pin or what they check, never after a task.
   task belong to LIMIT-T005, CRL-T027 and PATH-T004).
 - [ ] **LIMIT-T005** refactor: Number the `LIMIT-` index. Fill [docs/limit.md](docs/limit.md);
   number the `limit-*` cases.
+- [ ] **LIMIT-T006** test: Pin the CRL response-entry limit in a case. A
+  scripted answer can now carry more than 64 bodies and failures
+  (`crl_response_entries`), which only a unit test pins; claim the case under a
+  candidate rule until LIMIT-T005 numbers the index. From TEST-T009.
 - [ ] **MSI-T001** refactor: Number the `MSI-` index. Fill
   [docs/msi-decisions.md](docs/msi-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
@@ -339,12 +355,7 @@ they pin or what they check, never after a task.
 - [x] **DOC-T009** docs: Require a guard for review findings judged invalid. Done ([PR #85](https://github.com/goatwu1993/rssig/pull/85)); [Review findings](AGENTS.md#review-findings).
 - [x] **PE-T002** refactor: Number the `PE-` index. Done ([PR #76](https://github.com/goatwu1993/rssig/pull/76)); [PE decisions](docs/pe-decisions.md).
 - [x] **TEST-T008** test: Let a spec case assert that a field is absent. Done ([PR #83](https://github.com/goatwu1993/rssig/pull/83)); `expect.json_absent` in [docs/testing.md](docs/testing.md).
-- [ ] **TEST-T009** test: Express retrieval edge cases in the case format. The
-  injected CRL source maps URLs or certificates to bodies and error kinds, so
-  it cannot express URL-less failures, whole-request errors, several entries
-  per request, a point shared by certificates of two issuers, or the built-in
-  source's deadline and byte cap. They are unit-tested only
-  (`docs/testing.md`); extend the format (with TEST-T003) before pinning them.
+- [x] **TEST-T009** test: Express retrieval edge cases in the case format and reindex the abort cases. Done ([PR #84](https://github.com/goatwu1993/rssig/pull/84), with the CRL-047 reindex at the owner's request); [scripted answers](docs/testing.md).
 - [ ] **CRL-T028** test: Commit fixtures for CRLs without nextUpdate. When such a
   CRL revokes, clears an older listing or is set aside is pinned by unit
   tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,

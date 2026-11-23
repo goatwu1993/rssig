@@ -93,7 +93,8 @@
         "crl-012-root-expired-crl-still-rejected",
         "crl-012-root-expired-crl-still-rejected-beside-good-crl",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-036-malformed-aki-beside-expired-local-asks-provider"
+        "crl-036-malformed-aki-beside-expired-local-asks-provider",
+        "crl-034-an-answer-with-several-bodies-settles-the-status"
       ]
     },
     {
@@ -289,7 +290,13 @@
         "crl-035-no-next-update-local-asks-nothing",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+        "crl-034-an-answer-with-several-bodies-settles-the-status",
+        "crl-045-body-over-the-size-cap-is-no-answer",
+        "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+        "crl-046-an-over-cap-body-reports-the-cap-it-hit",
+        "crl-045-oversized-body-does-not-count-against-the-next",
+        "crl-045-over-allowance-body-does-not-count-against-the-next"
       ]
     },
     {
@@ -311,7 +318,9 @@
       "cases": [
         "crl-fetch-injected-revoked",
         "crl-competing-crls-good-first-revoked",
-        "crl-competing-crls-revoked-first-revoked"
+        "crl-competing-crls-revoked-first-revoked",
+        "crl-048-an-authentic-crl-from-a-source-revokes",
+        "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked"
       ]
     },
     {
@@ -328,7 +337,7 @@
         "crl-026-fetch-source-denied-is-no-evidence",
         "crl-026-fetch-source-failed-is-no-evidence",
         "crl-026-fetch-source-unknown-is-no-evidence",
-        "crl-026-fetch-source-abort-is-reported",
+        "crl-047-fetch-source-abort-is-reported",
         "crl-012-root-crl-no-next-update-beside-good-crl",
         "crl-012-root-expired-crl-still-rejected-beside-good-crl",
         "crl-012-root-aki-crl-still-rejected-beside-good-crl",
@@ -365,7 +374,13 @@
         "crl-028-no-next-update-crl-revocation-cleared-by-newer-crl",
         "crl-028-no-next-update-crl-revocation-beside-older-clearing-crl-revokes",
         "crl-035-no-next-update-point-scope-crl-is-replaceable",
-        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate"
+        "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
+        "crl-048-a-body-that-is-not-a-crl-is-never-evidence",
+        "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+        "crl-045-over-allowance-body-does-not-count-against-the-next",
+        "crl-048-a-crl-signed-by-another-key-is-never-evidence",
+        "crl-048-an-authentic-crl-from-a-source-revokes",
+        "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked"
       ]
     },
     {
@@ -6860,7 +6875,7 @@
         "crl-026-fetch-source-denied-is-no-evidence",
         "crl-026-fetch-source-failed-is-no-evidence",
         "crl-026-fetch-source-unknown-is-no-evidence",
-        "crl-026-fetch-source-abort-is-reported",
+        "crl-047-fetch-source-abort-is-reported",
         "crl-011-fetch-untrusted-chain-requests-nothing",
         "crl-019-stale-local-refreshed-by-provider",
         "crl-036-stale-local-source-abort-is-marked",
@@ -6873,7 +6888,29 @@
         "crl-036-unknown-critical-extension-local-source-abort-is-marked",
         "crl-020-malformed-aki-local-refreshed-by-provider",
         "crl-020-malformed-aki-beside-expired-local-refreshed-by-provider",
-        "crl-036-malformed-aki-beside-expired-local-asks-provider"
+        "crl-036-malformed-aki-beside-expired-local-asks-provider",
+        "crl-026-url-less-denial-answers-the-listed-point",
+        "crl-026-whole-request-failure-answers-the-listed-point",
+        "crl-026-url-less-failed-failure-answers-the-listed-point",
+        "crl-026-whole-request-denial-answers-the-listed-point",
+        "crl-026-whole-request-unknown-failure-answers-the-listed-point",
+        "crl-047-whole-request-abort-is-reported",
+        "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked",
+        "crl-047-url-less-abort-is-reported",
+        "crl-047-url-less-abort-beside-another-failure-marks-the-point-not-tried",
+        "crl-034-an-answer-with-several-bodies-settles-the-status",
+        "crl-048-a-body-that-is-not-a-crl-is-never-evidence",
+        "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+        "crl-048-a-crl-of-another-issuer-is-never-evidence",
+        "crl-026-a-failure-naming-the-point-is-recorded-for-it",
+        "crl-026-url-less-unknown-failure-answers-the-listed-point",
+        "crl-045-body-over-the-size-cap-is-no-answer",
+        "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+        "crl-046-an-over-cap-body-reports-the-cap-it-hit",
+        "crl-045-oversized-body-does-not-count-against-the-next",
+        "crl-045-over-allowance-body-does-not-count-against-the-next",
+        "crl-048-a-crl-signed-by-another-key-is-never-evidence",
+        "crl-048-an-authentic-crl-from-a-source-revokes"
       ]
     },
     {
@@ -7836,7 +7873,8 @@
         "crl-017-cross-revoked-path-beside-covered-path-verifies",
         "crl-031-cross-revoked-path-beside-path-with-not-yet-valid-crl-names-it",
         "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
-        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate"
+        "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate",
+        "crl-048-a-crl-of-another-issuer-is-never-evidence"
       ]
     },
     {
@@ -8332,7 +8370,7 @@
         "crl-033-fetch-mixed-point-requests-plain-uri",
         "crl-033-fetch-asks-only-the-uncovered-certificate",
         "crl-033-fetch-bad-response-is-no-evidence-beside-another-point",
-        "crl-026-fetch-source-abort-stops-requests",
+        "crl-047-fetch-source-abort-stops-requests",
         "crl-014-leaf-crl-dp-https-full-crl",
         "crl-023-fetch-source-is-asked-for-any-scheme",
         "crl-037-fetch-builtin-source-denies-https",
@@ -9971,7 +10009,8 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-041-forged-crl-naming-the-issuers-key-stays-forged",
-        "crl-041-forged-crl-naming-a-key-an-issuer-cannot-disprove-stays-forged"
+        "crl-041-forged-crl-naming-a-key-an-issuer-cannot-disprove-stays-forged",
+        "crl-048-a-crl-signed-by-another-key-is-never-evidence"
       ]
     },
     {
@@ -10469,7 +10508,7 @@
         "crl-033-fetch-asks-each-certificate-without-crl",
         "crl-033-fetch-covered-signer-is-not-asked",
         "crl-033-fetch-asks-only-the-uncovered-certificate",
-        "crl-026-fetch-source-abort-stops-requests",
+        "crl-047-fetch-source-abort-stops-requests",
         "crl-036-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
       ]

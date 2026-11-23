@@ -346,17 +346,159 @@ Retrieval cases can provide `crl_responses` (URL to fixture filename),
 An empty request array asserts no calls. The request expectation requires an
 injected response map and never triggers real network requests itself.
 `crl_certificate_responses` (lowercase SHA-256 of a certificate's DER, as
-rssig re-encodes it, which equals the original for every committed fixture, to a
-fixture filename; requires `crl_responses`) makes the injected source
-answer a request for that certificate with that CRL alone, without a URL, as
+rssig re-encodes it, which equals the original for every committed fixture, to
+an injected answer; requires `crl_responses`) makes the injected source
+respond to a request for that certificate with that alone, as
 a source keyed by certificate or issuer does; none of that certificate's
 listed URLs is requested. Such answers are not listed in
 `expect.crl_requests`, which holds URLs only
 (`crl-017-fetch-completes-the-path-without-a-crl-beside-a-revoked-path`,
 `crl-034-fetch-by-certificate-answer-requests-no-listed-point`). Expectations
 match listed fields only, so the absence of `crl_retrieval.failures` is
-asserted by the named test
-`crl_fetch_by_certificate_answer_leaves_no_point_failures`.
+asserted with `expect.json_absent`
+(`crl-034-an-answer-with-several-bodies-settles-the-status`) and by the named
+test `crl_fetch_by_certificate_answer_leaves_no_point_failures`.
+
+An injected answer is either that fixture filename or a scripted object, for what a
+source can return and a URL-to-file map cannot say:
+- `crls`: the bodies of the response, in order, each `{"file", "url"?, "pad_to"?}`;
+  a body without a `url` is offered by certificate or issuer (whether it counts as
+  an answer by certificate is CRL-034's). `pad_to` zero-pads
+  the body to that many bytes (at least the file's size, at most 16777216, and the
+  `pad_to` values of a case add up to at most 67108864), so that a source can
+  return a body over a size cap without a large fixture. A `pad_to` of the
+  file's own size pads nothing, so that body is held to the caps as an
+  unpadded one is; the case total still counts every `pad_to` value, so it
+  is the stricter bound.
+- `failures`: the failures of the response, in order, each `{"kind", "url"?}`
+  with `kind` one of `denied`, `failed`, `abort` and `unknown`. When some
+  listed point is left that no body or failure named, the first one without a
+  `url` answers those points, unless a body answered by certificate while
+  retrieval had not aborted (an abort anywhere in this response cancels this,
+  one naming a URL included:
+  `an_abort_naming_one_point_does_not_relabel_the_others`) and it is no abort,
+  or another failure without a `url` is an abort and this one is not
+  (`the_first_of_two_aborts_without_a_url_answers_the_points`). Otherwise, with no point
+  left (`a_failure_without_a_url_is_recorded_as_it_is_when_every_point_was_named`),
+  and for every later one without a `url`, it is recorded as it is, for no
+  point (`src/retrieval.rs`, around the `whole_request` handling, and its unit
+  tests). Nothing is asked after an abort, so no earlier response can hold one
+  (`abort_stops_every_further_request`).
+- `error`: one `{"kind", "url"?}`, the source failing the whole request
+  instead of returning a response. It excludes `crls` and `failures`, and an
+  answer holds at least one of the three.
+
+The runner does not check a padded scripted body against the request's byte
+allowance: a source that returns more than it may is a case (`pad_to`), and the
+engine judges the size. Any other answer over the allowance, plain or a
+scripted body without `pad_to`, fails the case instead, so an oversized body is
+always given on purpose. A scripted body is judged by what the bodies before it
+left of the allowance, counted as the engine counts it: a body within the caps
+spends it, one over them does not.
+
+The cases pin the code and the cause of each failure, not that a failure naming
+no URL is recorded once per listed point; the unit test
+`a_failure_without_a_url_in_a_response_answers_every_point` in
+`src/retrieval.rs` pins that.
+
+A scripted `url` must be one of the points this request carries, spelled exactly
+as listed. The runner fails a case whose URL is not one of them, and its message
+prints the listed points. A point already asked about for another certificate is
+not carried again, so a case about a shared point (CRL-T036) needs another way
+to say it. It is stricter than the engine, which matches normalized URLs; a case for a
+normalized spelling is CRL-T038. A
+URL that went stale or was mistyped therefore cannot turn a case about the point
+into one about a URL outside the request; the engine's handling of one outside it
+is unit-tested
+(`a_failure_naming_a_url_outside_the_request_does_not_change_its_outcome`).
+
+The runner also fails a case whose `pad_to` would cut its file, and a case with an
+injected answer, plain or scripted, that nobody requested (a stale certificate
+hash, or an engine that stopped asking; a case does not carry one for a
+certificate it never asks about). A response keyed by URL (`crl_responses`) may go
+unrequested: a
+case maps one to show that nothing is asked
+(`crl-018-forged-local-asks-nothing`, `crl-035-no-next-update-local-asks-nothing`),
+and `expect.crl_requests` is what fails it if the engine starts asking. The schema
+cannot express these run-time rules; an implementation enforces them itself.
+A scripted answer with any problem is never sent: the runner names every
+problem of the answer first, then the source aborts, so the engine never runs a
+response other than the one the case scripts
+(`specification_an_answer_with_a_problem_is_never_sent`).
+They hold for every case with an injected answer, plain or scripted, including
+older ones such as the `crl-034-fetch-by-certificate-` cases.
+
+The cases with a scripted answer, and those of CRL-045, CRL-048 and CRL-049, are
+listed below.
+Some cases run the same input under different entries, since a case names one:
+`crl-048-a-body-that-is-not-a-crl-is-never-evidence` and
+`crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`, and
+`crl-045-body-over-the-size-cap-is-no-answer`,
+`crl-046-an-over-cap-body-reports-the-cap-it-hit` and
+`crl-049-an-over-cap-body-is-reported-before-the-point-it-left`; beside the
+shared result code, each pins its own entry's part:
+- `crl-026-url-less-denial-answers-the-listed-point`
+- `crl-026-whole-request-failure-answers-the-listed-point`
+- `crl-047-url-less-abort-is-reported`
+- `crl-047-url-less-abort-beside-another-failure-marks-the-point-not-tried`
+- `crl-026-url-less-unknown-failure-answers-the-listed-point`
+- `crl-026-url-less-failed-failure-answers-the-listed-point`,
+  `crl-026-whole-request-denial-answers-the-listed-point` and
+  `crl-026-whole-request-unknown-failure-answers-the-listed-point`
+- `crl-047-whole-request-abort-is-reported` and
+  `crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked` (a
+  definite result after an abort keeps its code, unmarked)
+- `crl-026-a-failure-naming-the-point-is-recorded-for-it`
+- `crl-034-an-answer-with-several-bodies-settles-the-status`
+- `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left` and
+  `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` (CRL-049: a
+  body rejected on load comes before the point it left)
+- `crl-048-a-body-that-is-not-a-crl-is-never-evidence`
+- `crl-048-a-crl-of-another-issuer-is-never-evidence`
+- `crl-048-a-crl-signed-by-another-key-is-never-evidence` and
+  `crl-048-an-authentic-crl-from-a-source-revokes` (CRL-048: a source is never
+  trusted; its CRL is authenticated like a supplied one)
+- `crl-045-body-over-the-size-cap-is-no-answer` (a body over
+  the 8 MiB cap is no answer, so the result is `revocation_unknown` with no
+  artifact; `crl-049-an-over-cap-body-is-reported-before-the-point-it-left`
+  pins its failures in CRL-049's order)
+- `crl-046-an-over-cap-body-reports-the-cap-it-hit` (CRL-046: the cap it hit,
+  `limit`, `requested` and `used`, then the point it left)
+- `crl-045-oversized-body-does-not-count-against-the-next` (two rejected 16 MiB
+  bodies would reach the allowance if they counted)
+- `crl-045-over-allowance-body-does-not-count-against-the-next` (bodies under
+  8 MiB that together pass the 32 MiB allowance; they pad a certificate, never a
+  CRL, so only the last body can answer whatever the CRL decoder accepts, and the
+  artifacts show the fifth was not taken)
+
+The `crl-045-` cases pin CRL-045. The two `does-not-count-against-the-next`
+cases each fail if a rejected body counted against the bodies after it, which
+was checked by changing the engine; the single-body case pins only that an
+over-cap body is no answer. Their sizes are chosen against the engine's caps,
+and `specification_the_crl_045_cases_rest_on_the_engines_caps` fails if a cap
+moves so that a case would pass without testing what it says.
+
+Named tests in `tests/cli/crl_fetch.rs` check what the cases leave out:
+- `crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point`: the
+  stage, problem type and title of each source failure, beside what the cases
+  pin.
+- `crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered`:
+  both failures, the body first, from a source written in Rust.
+- `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered`:
+  the same failures as `crl-046-an-over-cap-body-reports-the-cap-it-hit`,
+  from a source written in Rust, with the cap read from
+  `rssig::retrieval::MAX_CRL_BYTES` rather than written out.
+
+The failures of those two bodies come in CRL-049's order (a body rejected on
+load before a point left unanswered), so the
+cases `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`
+and `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` pin them.
+
+Not expressible in a case: a point shared by certificates of two issuers needs
+an input with two issuers (CRL-T036), and the built-in source's deadline and
+byte cap need real HTTP, which a case never makes. The built-in source's are
+unit-tested without a network in `src/retrieval/http.rs`, which stays their
+place.
 
 A case may carry a `decision` (not used to run it): the ID of the entry it
 pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for
@@ -375,8 +517,8 @@ checks that rssig and webpki agree. Product builds never enable it, and it is
 also compiled out without `debug_assertions`, so release test runs skip it; see
 [CRL-T011](tasks/crl-t011.md).
 
-Five retrieval behaviors have unit tests only, because no committed input can
-reach them through the CLI:
+These retrieval behaviors have unit tests only: no committed input can reach
+them through the CLI, or, where noted, no case pins them yet:
 
 - An error with `details.reason` `ambiguous_issuer_keys` is final for retrieval. Since
   CRL-T011 it is produced only by the accepted-path rule for same-name issuers
@@ -391,15 +533,13 @@ reach them through the CLI:
   Every certificate reaching retrieval has already been decoded from DER, and
   a decoded name always re-encodes, so no fixture reaches this branch.
 - At most 64 CRL bodies and failures in one source response
-  (`crl_response_entries`). The spec's injected source answers one body per
-  listed URL, and a certificate lists at most 16, so a case cannot exceed the
-  limit; `retrieval::tests::a_response_with_too_many_entries_ends_the_run`
-  covers it.
-- Points recorded as not tried once a request's byte allowance is spent. The
-  allowance is up to 32 MiB and fixtures are a few hundred bytes, so no case
-  spends it;
+  (`crl_response_entries`), and points recorded as not tried once a request's
+  byte allowance is spent. A scripted answer can now reach both, and neither
+  has a case: the first is an engine budget (LIMIT-T006), the second CRL-046's
+  (CRL-T037);
+  `retrieval::tests::a_response_with_too_many_entries_ends_the_run` and
   `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`
-  covers it.
+  cover them.
 - The built-in HTTP source's kinds (a last request keeping its own failure,
   aborts when spent). Tests never use the network, so these are unit tests
   in `src/retrieval/http.rs`.

@@ -724,7 +724,8 @@ forward it. A DNS timeout closes the built-in source for good, whatever a
 later verification does.
 
 Results: missing evidence is `revocation_unknown` (with each problem in
-`crl_retrieval.failures`) or `crl_fetch_aborted` when the source aborted;
+`crl_retrieval.failures`) or `crl_fetch_aborted` when an aborted source left a
+certificate without a CRL unasked or cut its request short (CRL-047);
 `crl_fetch_denied` and `crl_fetch_failed` are no longer results.
 
 Report types (`rssig::domain`), Rust and JSON:
