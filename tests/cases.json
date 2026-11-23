@@ -37684,6 +37684,144 @@
       }
     },
     {
+      "id": "crl-041-bmp-string-issuer-matches-a-utf8-subject",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-bmp.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-teletex-string-issuer-matches-a-utf8-subject",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-teletex.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-visible-string-issuer-matches-a-utf8-subject",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-visible.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-041-bmp-string-issuer-with-other-text-matches-nothing",
+      "input": "good-countersignature.exe",
+      "decision": "CRL-041",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/crl-root-issuer-bmp-other-text.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "crl-042-issuer-without-ski-cannot-disprove-another-keys-crl",
       "input": "good-countersignature.exe",
       "decision": "CRL-042",
