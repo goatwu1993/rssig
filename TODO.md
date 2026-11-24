@@ -361,9 +361,7 @@ they pin or what they check, never after a task.
   tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,
   removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
   have no fixture or spec case.
-- [ ] **TEST-T010** test: Guard the manifest-sources scratch directory.
-  `tests/manifest.rs` `fixtures_are_never_indexed_as_sources` creates its
-  directory without the drop guard its sibling test uses.
+- [x] **TEST-T010** test: Guard the manifest-sources scratch directory. Done; `fixtures_are_never_indexed_as_sources` now uses the same drop guard as its sibling test.
 - [ ] **TEST-T014** test: Remove the duplicated parser-boundary cases. Five
   cases repeat another case's input, command and expectation exactly:
   `powershell-independent-jsign-parser`, `powershell-independent-tampered-parser`,
