@@ -532,9 +532,12 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         }
     }
 
-    /// One failure entry per certificate and URL. A failure without a URL is
-    /// reached once per certificate (certificates are deduplicated), so each
-    /// is listed.
+    /// One failure entry per certificate and URL, except a source's first
+    /// abort, which is also listed where its URL already has an entry. A
+    /// failure without a URL is reached once per certificate (certificates
+    /// are deduplicated), so each is listed. The report keeps at most
+    /// `MAX_FAILURES_PER_CERTIFICATE` entries of each kind (about points, or
+    /// about none) per certificate, and one entry per kind counts the rest.
     fn record(
         &mut self,
         certificate: &str,
@@ -589,9 +592,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return;
         }
         let marker = error(
-            ErrorCode::CrlFetchDenied,
+            ErrorCode::ResourceLimitExceeded,
             "further CRL retrieval failures for this certificate are not listed",
         )
+        .detail("resource", "crl_failure_entries")
+        .detail("limit", MAX_FAILURES_PER_CERTIFICATE)
         .detail("omitted", more)
         .detail("about", if about_points { "points" } else { "no point" });
         self.omitted_at.insert(bucket, self.report.failures.len());
@@ -2110,7 +2115,8 @@ mod tests {
             .iter()
             .filter_map(|f| f.details.get("resource").and_then(|r| r.as_str()))
             .collect();
-        assert_eq!(resources, ["crl_url_bytes"]);
+        // The 17 points past the report bound are counted in one entry.
+        assert_eq!(resources, ["crl_url_bytes", "crl_failure_entries"]);
         // The strict public discovery still reports the limit as an error.
         assert!(crl_distribution_points(&signer_with_uris(&uris)).is_err());
     }

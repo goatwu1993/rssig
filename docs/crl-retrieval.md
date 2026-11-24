@@ -159,7 +159,8 @@ Two kinds of error, and nothing in between:
   fail a chain over one certificate's points, every other listed URI goes to
   the source, however many, and the report keeps 16 entries about points and 16
   about none per certificate (a source's first abort is always kept), counting
-  the rest in one `details.omitted` entry each; it is not discovered (reasons,
+  the rest in one `resource_limit_exceeded` entry each (`crl_failure_entries`,
+  `details.omitted`); it is not discovered (reasons,
   cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
   the URI has control characters, whitespace or credentials, or is not an
