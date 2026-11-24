@@ -152,12 +152,13 @@ page links to them instead of restating them.
 Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: CRL bodies and
-  failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
+  failures in one response (64, `MAX_RESPONSE_ENTRIES`, beside one per point offered), retained CRLs,
   combined bytes, and the LIMIT-T002 work budget.
 - **Every other error about one listed point is no evidence from that point**:
   a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
-  first 16 (one `crl_urls` entry; the first 16 still go to the source), as
-  OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
+  first 16 (every listed URI goes to the source; the report keeps 16 failure
+  entries per certificate and counts the rest in one `details.omitted` entry),
+  as OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
   it is not discovered (reasons, cRLIssuer, a relative or non-URI name; at
   most 16 such entries are kept per certificate, and one more counts the
   rest in `details.omitted`), the

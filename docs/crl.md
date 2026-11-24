@@ -375,7 +375,7 @@ The verification core passes every listed URI to an injected source after hygien
 An over-long URI is skipped; every other listed URI is offered to the source, however many, and the source decides how many it tries. The report keeps at most 16 failure entries per certificate and counts the rest in one entry (`details.omitted`). The engine's own per-verification limits end the run; a source's request and URL totals are the source's (CRL-039).
 
 - **Status:** Decided
-- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle has such a limit; both skip a failing point); the offered-point cap was removed by CRL-T040, awaiting owner approval in the PR
+- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle has such a limit; both skip a failing point); the offered-point cap was removed by CRL-T040 (PR #92), owner approval to be recorded there
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL and Bouncy Castle have no per-certificate point limit and skip a point that fails.
@@ -573,7 +573,7 @@ The engine renews a source's allowances for each verification (`CrlSource::begin
 
 The engine keeps no total of requests to a source, and none of the distinct URIs it passes on: how often a source may be asked, and for how many URLs, in one verification is the source's decision, as the fetch limits are the application's in OpenSSL and the fetch helper's in Bouncy Castle. The built-in `HttpCrlSource` caps its requests at 64 per verification (`MAX_SOURCE_REQUESTS`, one per certificate) and its distinct URLs at 64 (`MAX_SOURCE_URLS`), and reports the call or URL past either as an `Abort` carrying `details.resource` (`crl_requests` or `crl_source_urls`) with `limit`, `used` and `requested`; a custom source owns its own counts. The code is the kind's, `crl_fetch_aborted`, not `resource_limit_exceeded`: a source error takes its code from its kind. A cap now ends retrieval as CRL-047 describes (`revocation_unknown` or `crl_fetch_aborted`, never an acceptance), where the engine's `resource_limit_exceeded` once ended the run with no verdict.
 
-The engine still enforces what bounds its own work and what no source can be trusted to bound, because the points and CRLs are the input's, not the source's: each body (8 MiB) and the combined CRL bytes (32 MiB), CRL bodies and failures in one response (64), the CRLs retained, at most 16 URIs per certificate (CRL-024), and the LIMIT-T002 work budget. Requests to a source are bounded only indirectly: each certificate is asked about at most once, and the budget bounds the certificates (256 decoded, 4,096 report slots). The engine sets no time limit, so a source that fetches over a network must set its own.
+The engine still enforces what bounds its own work and what no source can be trusted to bound, because the points and CRLs are the input's, not the source's: each body (8 MiB) and the combined CRL bytes (32 MiB), CRL bodies and failures in one response (64 beside one per point offered), the CRLs retained, and the LIMIT-T002 work budget. Requests to a source are bounded only indirectly: each certificate is asked about at most once, and the budget bounds the certificates (256 decoded, 4,096 report slots). The engine sets no time limit, so a source that fetches over a network must set its own.
 
 - **Status:** Decided
 - **Decided by:** references agree (neither OpenSSL nor Bouncy Castle lets one validation exhaust the next); owner, the pull request of CRL-T039 (the engine stops counting source requests)

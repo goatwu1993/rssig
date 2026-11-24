@@ -351,8 +351,10 @@ they pin or what they check, never after a task.
   removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
   have no fixture or spec case.
 - [x] **CRL-T039** refactor: Move the request-count limit from the CRL retrieval engine to the `CrlSource` implementations. Done ([PR #91](https://github.com/goatwu1993/rssig/pull/91)); [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification), [CRL retrieval](docs/crl-retrieval.md).
-- [x] **CRL-T040** refactor: Offer every listed point to the source and cap only the report. Done; [CRL-024](docs/crl.md#crl-024-one-certificates-distribution-points-never-end-the-run). Follow-up: a source answering over 64 entries in one response still ends the run (`crl_response_entries`).
+- [x] **CRL-T040** refactor: Offer every listed point to the source and cap only the report. Done ([PR #92](https://github.com/goatwu1993/rssig/pull/92)); [CRL-024](docs/crl.md#crl-024-one-certificates-distribution-points-never-end-the-run).
 - [ ] **CRL-T041** refactor: Move the per-issuer request dedup out of the engine. Ask a source for every selected certificate and leave reuse to the source, as OpenSSL does; stop `HttpCrlSource` charging a call with no points. Needs the owner's approval (CRL-033 is Decided). Detail in [crl-t041.md](docs/tasks/crl-t041.md).
+- [ ] **CRL-T042** test: Add a `tests/cases.json` case and CLI test for a certificate listing more than 16 distribution points (CRL-024): all reach the source, and the report keeps 16 entries plus one `details.omitted` entry. Needs a fixture with a many-point certificate.
+- [ ] **CRL-T043** refactor: Measure the report and the engine's per-point state for a certificate listing many URIs, then choose the per-certificate failure cap (16 today, chosen to match the diagnostics cap) and store only a small outcome in `Retrieval::asked`, not a full error per point.
 
 ### TIME
 
