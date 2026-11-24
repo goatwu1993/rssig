@@ -1,0 +1,119 @@
+# The closed list of scopes. One scope names where a change is decided:
+#
+#   - the task ID prefix in TODO.md: the key uppercased, `crl` -> `CRL-T012`;
+#   - the Conventional Commit scope of a PR title and its merge commit:
+#     the key as written, `feat(crl): CRL-T012 compare more string types`.
+#
+# Rules for choosing and using a scope are in AGENTS.md ("Pull request
+# titles") and TODO.md ("Task IDs"). A new scope is added here, with the
+# owner's approval, in the same PR as the first task that uses it; a
+# decision index needs its own row in docs/decisions.md as well.
+#
+# kind:
+#   decision  a decision index under docs/ (docs/decisions.md, "Which index")
+#   format    a file format; `index` is null until it has a decision index
+#   project   work on the repository itself, with no decision index
+#
+# `index` is the file that holds the scope's decision entries, or null.
+
+scopes:
+  crl:
+    kind: decision
+    index: docs/crl.md
+    description: CRL selection, scope, issuer keys, candidate paths and CRL retrieval
+  time:
+    kind: decision
+    index: docs/time.md
+    description: "Validation time: at which instant certificates are checked"
+  path:
+    kind: decision
+    index: docs/path.md
+    description: "Certificate-path rules: anchors, issuer identity, constraints, EKU and KeyUsage, path building"
+  tsa:
+    kind: decision
+    index: docs/tsa.md
+    description: Timestamp tokens, whether an RFC 3161 token or countersignature can be trusted at all
+  cms:
+    kind: decision
+    index: docs/cms.md
+    description: CMS SignedData structure, signer identification and signature, nested signatures
+  alg:
+    kind: decision
+    index: docs/alg.md
+    description: Algorithm acceptance, SHA-1 opt-in
+  trust:
+    kind: decision
+    index: docs/trust.md
+    description: Loading roots and CRLs
+  limit:
+    kind: decision
+    index: docs/limit.md
+    description: Verification budgets, nesting depth, host input limits
+  policy:
+    kind: decision
+    index: docs/policy.md
+    description: "Verification modes: trusted, integrity-only, no revocation"
+  cli:
+    kind: decision
+    index: docs/cli.md
+    description: Command-line arguments, help, exit codes, read errors
+  inspect:
+    kind: decision
+    index: docs/inspect.md
+    description: What `parse` reports
+  pe:
+    kind: format
+    index: docs/pe-decisions.md
+    description: PE parsing and hashing
+  msi:
+    kind: format
+    index: docs/msi-decisions.md
+    description: MSI and MSP parsing and hashing
+  cab:
+    kind: format
+    index: docs/cab-decisions.md
+    description: CAB parsing and hashing
+  navx:
+    kind: format
+    index: docs/navx-decisions.md
+    description: NAVX parsing and hashing
+  ps:
+    kind: format
+    index: docs/ps-decisions.md
+    description: PowerShell and PowerShell XML scripts
+  wsh:
+    kind: format
+    index: docs/wsh-decisions.md
+    description: Windows Script Host scripts
+  rdp:
+    kind: format
+    index: docs/rdp-decisions.md
+    description: RDP signed settings
+  appx:
+    kind: format
+    index: docs/appx-decisions.md
+    description: MSIX/AppX packages and bundles
+  cat:
+    kind: format
+    index: null
+    description: Catalog files; no decision index yet
+  p7s:
+    kind: format
+    index: null
+    description: Detached signatures; no decision index yet
+  test:
+    kind: project
+    index: null
+    description: Test harness, spec runner, fixture tooling
+  lib:
+    kind: project
+    index: null
+    description: Public library API and crate structure
+  doc:
+    kind: project
+    index: null
+    description: Documentation that is not a decision index
+  build:
+    kind: project
+    index: null
+    description: CI, dependencies, fuzzing setup, packaging, distribution
