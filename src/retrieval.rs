@@ -323,7 +323,7 @@ fn listed_points(
     let mut diagnostics = 0usize;
     let mut omitted = 0usize;
     let mut note = |listed: &mut Vec<_>, e: VerificationError| {
-        if diagnostics < MAX_REQUESTS {
+        if diagnostics < MAX_FAILURES_PER_CERTIFICATE {
             diagnostics += 1;
             listed.push(Err(e));
         } else {
@@ -590,7 +590,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             ErrorCode::CrlFetchDenied,
             "further CRL retrieval failures for this certificate are not listed",
         )
-        .detail("omitted", more);
+        .detail("omitted", more)
+        .detail("about", if url.is_some() { "points" } else { "no point" });
         self.omitted_at.insert(bucket, self.report.failures.len());
         self.push_failure(certificate, None, &marker, None);
     }
@@ -824,8 +825,17 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         };
         // Every body and failure becomes a report entry: the engine bounds
         // how many one response may carry.
-        // A source may answer each point it was offered (the input's, so as
-        // many as the certificate lists), and no more than the bound beside.
+        // Bodies are loaded, so their count is fixed; a source may answer each
+        // point it was offered (the input's, so as many as the certificate
+        // lists) with a failure, and no more than the bound beside.
+        if response.crls.len() > MAX_RESPONSE_ENTRIES {
+            return Err(limit(
+                "crl_response_entries",
+                MAX_RESPONSE_ENTRIES,
+                0,
+                response.crls.len(),
+            ));
+        }
         let allowed = MAX_RESPONSE_ENTRIES.saturating_add(points.len());
         let entries = response.crls.len().saturating_add(response.failures.len());
         if entries > allowed {
@@ -2793,9 +2803,9 @@ mod tests {
             .unwrap()
             .extn_value = ::der::asn1::OctetString::new(tlv(0x30, &point)).unwrap();
         let listed = listed_points(&cert, false).unwrap();
-        assert_eq!(listed.len(), MAX_REQUESTS + 1);
+        assert_eq!(listed.len(), MAX_FAILURES_PER_CERTIFICATE + 1);
         let last = listed.last().unwrap().as_ref().unwrap_err();
-        assert_eq!(last.details["omitted"], 200 - MAX_REQUESTS);
+        assert_eq!(last.details["omitted"], 200 - MAX_FAILURES_PER_CERTIFICATE);
         // The strict public discovery still fails at the first such name.
         assert!(crl_distribution_points(&cert).is_err());
     }
@@ -3186,11 +3196,12 @@ mod tests {
             }
         }
         let store = store();
-        for (bodies, failures) in [
-            // One point is offered, so one entry beside the bound is allowed.
-            (MAX_RESPONSE_ENTRIES + 2, 0),
-            (0, MAX_RESPONSE_ENTRIES + 2),
-            (MAX_RESPONSE_ENTRIES + 1, 1),
+        for (bodies, failures, bound) in [
+            // Bodies are bound at 64; bodies and failures together at 64
+            // plus the one point this request offered.
+            (MAX_RESPONSE_ENTRIES + 1, 0, MAX_RESPONSE_ENTRIES),
+            (0, MAX_RESPONSE_ENTRIES + 2, MAX_RESPONSE_ENTRIES + 1),
+            (MAX_RESPONSE_ENTRIES, 2, MAX_RESPONSE_ENTRIES + 1),
         ] {
             let budget = Budget::default();
             let mut state = Retrieval::new(&store, &budget);
@@ -3203,8 +3214,7 @@ mod tests {
             .unwrap_err();
             assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
             assert_eq!(e.details["resource"], "crl_response_entries");
-            // The bound is 64 plus the one point this request offered.
-            assert_eq!(e.details["limit"], MAX_RESPONSE_ENTRIES + 1);
+            assert_eq!(e.details["limit"], bound);
             assert!(state.report.artifacts.is_empty());
         }
         // At the limit, every entry is taken.
@@ -3214,10 +3224,10 @@ mod tests {
             &mut state,
             "a",
             &signer_with_points("a", 1),
-            &mut Floods(MAX_RESPONSE_ENTRIES + 1, 0),
+            &mut Floods(MAX_RESPONSE_ENTRIES, 1),
         )
         .unwrap();
-        assert_eq!(state.report.artifacts.len(), MAX_RESPONSE_ENTRIES + 1);
+        assert_eq!(state.report.artifacts.len(), MAX_RESPONSE_ENTRIES);
     }
     #[test]
     fn a_confirmation_disagreement_is_final_for_retrieval() {

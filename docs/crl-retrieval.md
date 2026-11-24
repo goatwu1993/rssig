@@ -331,7 +331,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
 | Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included); both are the built-in source's own, not the engine's |
-| Response entries | At most 64 CRL bodies and failures together in one source response, plus one for each point the request offered (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
+| Response entries | At most 64 CRL bodies, and bodies and failures together at most 64 plus one for each point the request offered, in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
