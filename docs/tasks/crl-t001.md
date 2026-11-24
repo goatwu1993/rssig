@@ -629,11 +629,10 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
 - **Smaller review fixes (PR #60), unit-tested.** Decided by written
   argument, diagnostics unless noted; no reference library has an equivalent
   (they have no source interface or per-verification URI limit):
-  - The `crl_source_urls` limit counts each distinct normalized URI once, so
-    a source that answers by certificate or issuer, and so leaves points
-    unused that later certificates list again, cannot exhaust it; five
-    certificates listing the same 16 points use 16, not 80
-    (`a_source_answering_by_certificate_never_exhausts_the_uri_limit`).
+  - A source that answers by certificate or issuer leaves points unused that
+    later certificates list again; they are offered again, and the engine
+    keeps no total of them (CRL-039,
+    `a_source_answering_by_certificate_never_exhausts_the_uri_limit`).
   - A whole-request source error naming a URL that is none of the request's
     points is recorded without that URL, so a certificate is never attributed
     a distribution point it did not list
@@ -676,9 +675,9 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     is reported, where the first usage's `invalid_eku` was before.
   - A delta CRL answered by certificate is not a full CRL, so it does not ask
     for another verification pass (`a_new_full_crl_by_certificate_asks_for_verification_first`).
-  - Re-offered points are bounded by `crl_requests` (64 source requests per
-    verification), not by `crl_source_urls`
-    (`re_offered_points_are_bounded_by_the_request_limit`).
+  - Re-offered points are not bounded by `crl_source_urls`; the number of
+    requests is the source's (CRL-039,
+    `re_offered_points_are_not_stopped_by_the_engine_on_request_count`).
   - `check_public_http_url` has a fuzz target, `check_url`.
   - The reserved-name check trims one trailing dot before testing for a
     single-label name too, so `http://intranet./x.crl` is denied like

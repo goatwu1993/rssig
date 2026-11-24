@@ -372,7 +372,7 @@ The verification core passes every listed URI to an injected source after hygien
 
 ### CRL-024: One certificate's distribution points never end the run
 
-An over-long URI is skipped, and URIs past the first 16 are recorded as one `crl_urls` failure. Per-verification limits stay engine limits.
+An over-long URI is skipped, and URIs past the first 16 are recorded as one `crl_urls` failure. The engine's own per-verification limits end the run; a source's request and URL totals are the source's (CRL-039).
 
 - **Status:** Decided
 - **Decided by:** references agree (neither OpenSSL nor Bouncy Castle has such a limit; both skip a failing point)
@@ -571,13 +571,18 @@ It is recorded as `crl_fetch_denied` with its own message and no `url`.
 
 The engine renews a source's allowances for each verification (`CrlSource::begin_verification`). A DNS timeout still closes the built-in source for the invocation, keeping at most one unfinished resolver thread.
 
+The engine keeps no total of requests to a source, and none of the distinct URIs it passes on: how often a source may be asked, and for how many URLs, in one verification is the source's decision, as the fetch limits are the application's in OpenSSL and the fetch helper's in Bouncy Castle. The built-in `HttpCrlSource` caps its requests at 64 per verification (`MAX_SOURCE_REQUESTS`, one per certificate) and its distinct URLs at 64 (`MAX_SOURCE_URLS`), and reports the call or URL past either as an `Abort` carrying `details.resource` (`crl_requests` or `crl_source_urls`) with `limit`, `used` and `requested`; a custom source owns its own counts. The code is the kind's, `crl_fetch_aborted`, not `resource_limit_exceeded`: a source error takes its code from its kind. A cap now ends retrieval as CRL-047 describes (`revocation_unknown` or `crl_fetch_aborted`, never an acceptance), where the engine's `resource_limit_exceeded` once ended the run with no verdict.
+
+The engine still enforces what bounds its own work and what no source can be trusted to bound, because the points and CRLs are the input's, not the source's: each body (8 MiB) and the combined CRL bytes (32 MiB), CRL bodies and failures in one response (64), the CRLs retained, at most 16 URIs per certificate (CRL-024), and the LIMIT-T002 work budget. Requests to a source are bounded only indirectly: each certificate is asked about at most once, and the budget bounds the certificates (256 decoded, 4,096 report slots). The engine sets no time limit, so a source that fetches over a network must set its own.
+
 - **Status:** Decided
-- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle lets one validation exhaust the next)
+- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle lets one validation exhaust the next); owner, the pull request of CRL-T039 (the engine stops counting source requests)
 - **Pins:** diagnostics
 - **Sources:**
-  - OpenSSL `apps/lib/apps.c:2866-2867`, `apps/verify.c:220-232`: per-fetch limits, nothing accumulated.
-  - Bouncy Castle `CrlCache.java:41-46`: per-connection timeouts, process-wide cache.
-- **Unit test:** `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good`.
+  - OpenSSL `apps/lib/apps.c:2866-2867`, `apps/verify.c:220-232`: per-fetch limits, nothing accumulated. `crypto/x509/x509_vfy.c:2228`: the verifier only calls `lookup_crls`; limits live in the application callback.
+  - Bouncy Castle `CrlCache.java:41-46`: per-connection timeouts, process-wide cache; its limits are in the fetch helper, not the path validator.
+- **Unit tests:** `a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good` and `the_built_in_source_aborts_after_its_request_cap_until_a_new_verification` in `src/retrieval/http.rs`; `a_source_with_no_cap_is_not_stopped_by_the_engine_on_request_count` and `re_offered_points_are_not_stopped_by_the_engine_on_request_count` in `src/retrieval.rs`; `the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification` in `src/retrieval/http.rs`.
+- **Note:** Before CRL-T039 the engine stopped the run at 64 requests (`crl_requests`) or 64 distinct URIs (`crl_source_urls`) with `resource_limit_exceeded` for any source. No case pinned that result.
 
 ### CRL-040: A CRL naming a same-key root's identifier is forged, not set aside
 

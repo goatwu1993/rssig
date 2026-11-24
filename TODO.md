@@ -350,6 +350,9 @@ they pin or what they check, never after a task.
   tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,
   removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
   have no fixture or spec case.
+- [x] **CRL-T039** refactor: Move the request-count limit from the CRL retrieval engine to the `CrlSource` implementations. Done ([PR #91](https://github.com/goatwu1993/rssig/pull/91)); [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification), [CRL retrieval](docs/crl-retrieval.md).
+- [ ] **CRL-T040** refactor: Offer every listed point to the source and cap only the report. Replace CRL-024's 16-points-per-certificate cap on what is offered with a cap on the failure entries the report records. Needs the owner's approval (CRL-024 is Decided). Detail in [crl-t040.md](docs/tasks/crl-t040.md).
+- [ ] **CRL-T041** refactor: Move the per-issuer request dedup out of the engine. Ask a source for every selected certificate and leave reuse to the source, as OpenSSL does; stop `HttpCrlSource` charging a call with no points. Needs the owner's approval (CRL-033 is Decided). Detail in [crl-t041.md](docs/tasks/crl-t041.md).
 
 ### TIME
 

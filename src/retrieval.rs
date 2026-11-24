@@ -7,7 +7,7 @@ use crate::{
     verify::{VerifyOptions, budget::Budget, verify_inner_budget},
 };
 use ::der::Decode;
-pub use http::{HttpCrlSource, check_public_http_url};
+pub use http::{HttpCrlSource, MAX_SOURCE_REQUESTS, MAX_SOURCE_URLS, check_public_http_url};
 use std::collections::{BTreeMap, BTreeSet};
 use x509_cert::{
     Certificate,
@@ -20,8 +20,6 @@ use x509_cert::{
 pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
-/// Requests to a [`CrlSource`] per verification, one per certificate.
-pub const MAX_SOURCE_REQUESTS: usize = 64;
 /// CRL bodies and failures one [`CrlResponse`] may carry together.
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
@@ -34,8 +32,10 @@ pub const MAX_RESPONSE_ENTRIES: usize = 64;
 /// cache, a local directory keyed by issuer), is the source's decision;
 /// [`HttpCrlSource`] is the built-in one, and [`fetch_each`] adapts any
 /// per-URL fetch. A source must bound its own I/O and allocation by
-/// [`CrlRequest::max_bytes`] and finish in finite time; the engine still
-/// checks every size.
+/// [`CrlRequest::max_bytes`], its own number of requests per verification
+/// (the engine keeps no total, CRL-039; see [`MAX_SOURCE_REQUESTS`] for the
+/// built-in source's) and finish in finite time; the engine still checks
+/// every size.
 ///
 /// A source reports what produced no CRL with a [`CrlSourceError`] of one of
 /// four kinds ([`CrlSourceErrorKind`]): per URL inside a [`CrlResponse`], or
@@ -440,9 +440,6 @@ struct Retrieval<'s, 'b, 'l> {
     /// URIs already passed to the source in this verification (by
     /// normalized key), with the failure reported for each, if any.
     asked: BTreeMap<String, Option<(VerificationError, Option<CrlSourceErrorKind>)>>,
-    /// Requests made to the source, one per certificate; bounded by
-    /// `MAX_SOURCE_REQUESTS`.
-    requests: usize,
     /// What was already asked about in this verification, by issuer name
     /// (DER), authority key identifier and whether the certificate is a CA:
     /// an issuer's CRLs can differ by key and be split between CA and
@@ -456,13 +453,6 @@ struct Retrieval<'s, 'b, 'l> {
     aborted: bool,
     /// The certificate whose request the source aborted.
     aborted_for: Option<String>,
-    /// How many distinct normalized URIs were passed to sources in this
-    /// verification; one passed again after an answer by certificate left it
-    /// unused counts once. Bounded by `MAX_SOURCE_REQUESTS`.
-    urls_passed: usize,
-    /// The normalized URIs already counted in `urls_passed`: one offered
-    /// again after an answer by certificate left it unused costs nothing.
-    urls_counted: BTreeSet<String>,
     /// The normalized points the current request carries: only their
     /// recorded outcome may change while it is answered.
     in_flight: BTreeSet<String>,
@@ -485,13 +475,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             report: CrlRetrievalReport::default(),
             downloaded: 0,
             asked: BTreeMap::new(),
-            requests: 0,
             asked_issuers: BTreeSet::new(),
             reverify: false,
             aborted: false,
             aborted_for: None,
-            urls_passed: 0,
-            urls_counted: BTreeSet::new(),
             in_flight: BTreeSet::new(),
             unused_points: Vec::new(),
             budget,
@@ -633,8 +620,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             }
         };
         let mut points = Vec::new();
-        // URIs first counted by this request: given back if it is not made.
-        let mut newly_counted = Vec::new();
         for listed in listed {
             let raw = match listed {
                 Ok(raw) => raw,
@@ -665,22 +650,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
                 Some(None) => {}
                 None => {
-                    // The engine bounds the URIs it passes to sources in one
-                    // verification, whatever each source does with them.
+                    // The engine keeps no total of the URIs it passes on:
+                    // that is the source's (CRL-039).
                     let key = url_key(&raw);
-                    if !self.urls_counted.contains(&key) {
-                        if self.urls_passed >= MAX_SOURCE_REQUESTS {
-                            return Err(limit(
-                                "crl_source_urls",
-                                MAX_SOURCE_REQUESTS,
-                                self.urls_passed,
-                                1,
-                            ));
-                        }
-                        self.urls_passed += 1;
-                        self.urls_counted.insert(key.clone());
-                        newly_counted.push(key.clone());
-                    }
                     // Listed twice by this certificate: offered once.
                     if !points.iter().any(|point: &String| url_key(point) == key) {
                         points.push(raw);
@@ -717,11 +689,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                     for point in &points {
                         self.record(sha256, Some(point), &e, None);
                     }
-                    // No source was given them: they cost no URI allowance.
-                    for key in &newly_counted {
-                        self.urls_counted.remove(key);
-                    }
-                    self.urls_passed -= newly_counted.len();
                     return Ok(false);
                 }
             },
@@ -729,7 +696,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // CRLs are per issuer key and role: a certificate with no new point,
         // whose issuer, authority key and role (CA or end entity) were
         // already asked about, needs no request of its own (its points'
-        // outcomes were recorded above) and does not spend the cap.
+        // outcomes were recorded above).
         // The authorityKeyIdentifier extension's raw bytes (none: empty), so
         // that one that cannot be read, or names its issuer by name and
         // serial, is told apart from other keys of the same name and still
@@ -739,9 +706,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         if points.is_empty() && !new_issuer {
             return Ok(false);
         }
-        if self.requests >= MAX_SOURCE_REQUESTS {
-            return Err(limit("crl_requests", MAX_SOURCE_REQUESTS, self.requests, 1));
-        }
+        // The engine keeps no total of requests: that is the source's to
+        // bound (CRL-039). Each certificate is asked about at most once.
         // The retained-CRL limit is enforced as CRLs are loaded, so a request
         // that adds nothing new does not hit it.
         let used = self.base.retrieval_bytes() + self.downloaded;
@@ -755,7 +721,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             self.asked.insert(url_key(point), None);
         }
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
-        self.requests += 1;
         self.budget.log.info(
             Stage::Revocation,
             format_args!(
@@ -872,9 +837,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             // verification decides, before anything else is asked.
             self.reverify = loaded.full_added;
             // No source used these points: a later certificate listing one
-            // still offers it. A distinct URI counts once toward
-            // `crl_source_urls`; every offer costs a source request, which
-            // `crl_requests` bounds (64 per verification).
+            // still offers it. The offers are requests, and the URIs
+            // distinct ones, which the source bounds.
             for point in &unanswered {
                 self.asked.remove(&url_key(point));
             }
@@ -1585,14 +1549,14 @@ mod tests {
         }
     }
     #[test]
-    fn the_source_is_asked_once_per_certificate_up_to_the_cap() {
+    fn a_source_with_no_cap_is_not_stopped_by_the_engine_on_request_or_url_count() {
         use CrlSourceErrorKind::*;
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
-        // Every certificate lists the same URL, under its own issuer name:
-        // one URI, many requests.
+        // One URI, many issuers: many requests, one distinct URI. The engine
+        // keeps no total of requests (CRL-039); only the source may.
         let shared = |i: usize| {
             use core::str::FromStr;
             let mut cert = signer_with_points("shared", 1);
@@ -1600,35 +1564,25 @@ mod tests {
                 x509_cert::name::Name::from_str(&format!("CN=issuer {i}")).unwrap();
             cert
         };
-        for i in 0..MAX_SOURCE_REQUESTS {
+        let requests = 192;
+        for i in 0..requests {
             assert!(!ask(&mut state, &format!("c{i}"), &shared(i), &mut source).unwrap());
         }
-        let error = ask(
-            &mut state,
-            "last",
-            &shared(MAX_SOURCE_REQUESTS),
-            &mut source,
-        )
-        .unwrap_err();
-        assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(error.details["resource"], "crl_requests");
-        assert_eq!(source.calls, MAX_SOURCE_REQUESTS);
-        // Distinct URIs passed to sources are capped too.
+        assert_eq!(source.calls, requests);
+        // Nor does it cap the distinct URIs it passes on: that is the
+        // source's too. 12 certificates of 16 points each are 192 URIs.
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
-        let error = (0..)
-            .map(|i| {
-                ask(
-                    &mut state,
-                    &format!("u{i}"),
-                    &signer_with_points(&format!("u{i}"), 16),
-                    &mut source,
-                )
-            })
-            .find_map(Result::err)
+        for i in 0..12 {
+            ask(
+                &mut state,
+                &format!("u{i}"),
+                &signer_with_points(&format!("u{i}"), 16),
+                &mut source,
+            )
             .unwrap();
-        assert_eq!(error.details["resource"], "crl_source_urls");
-        assert_eq!(source.urls.len(), MAX_SOURCE_REQUESTS);
+        }
+        assert_eq!(source.urls.len(), 192);
     }
     #[test]
     fn a_request_with_nothing_new_for_an_asked_issuer_is_not_made() {
@@ -1638,8 +1592,8 @@ mod tests {
         let mut state = Retrieval::new(&store, &budget);
         let mut source = Kinds::new(vec![Failed]);
         // Many certificates of one issuer listing one URL: CRLs are per
-        // issuer, so one request answers all, and none spends the cap.
-        for i in 0..=MAX_SOURCE_REQUESTS {
+        // issuer, so one request answers all.
+        for i in 0..=64 {
             assert!(
                 !ask(
                     &mut state,
@@ -1652,7 +1606,7 @@ mod tests {
         }
         assert_eq!(source.calls, 1);
         // Each certificate still reports the shared point's failure.
-        for i in 0..=MAX_SOURCE_REQUESTS {
+        for i in 0..=64 {
             let certificate = format!("c{i}");
             assert!(
                 state
@@ -2205,8 +2159,34 @@ mod tests {
         ask(&mut state, "a", &a, &mut source).unwrap();
         ask(&mut state, "b", &b, &mut source).unwrap();
         assert_eq!(source.0, [2, 2]);
-        // A URI offered again costs nothing more: each distinct one counts once.
-        assert_eq!(state.urls_passed, 2);
+    }
+    #[test]
+    fn a_source_is_asked_about_each_certificate_at_most_once_in_a_verification() {
+        // The engine keeps no total of requests (CRL-039); what bounds them
+        // is that each certificate is asked about once, however many rounds
+        // verification runs.
+        struct Source(Vec<Vec<u8>>);
+        impl CrlSource for Source {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0.push(request.certificate.to_vec());
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let trust = store();
+        let options = VerifyOptions::trusted(&trust, 1_800_000_000);
+        let mut source = Source(Vec::new());
+        let _ = crate::verify::Verifier::new(&options).verify_with_crl_source(
+            include_bytes!("../tests/fixtures/good-crl-discovery.exe"),
+            Some("a.exe"),
+            &mut source,
+        );
+        let mut distinct = source.0.clone();
+        distinct.sort();
+        distinct.dedup();
+        assert!(!source.0.is_empty());
+        assert_eq!(source.0.len(), distinct.len());
     }
     #[test]
     fn a_source_is_told_when_a_verification_begins() {
@@ -2394,10 +2374,32 @@ mod tests {
         assert!(state.report.failures.is_empty());
     }
     #[test]
-    fn re_offered_points_are_bounded_by_the_request_limit() {
-        struct Source;
+    fn a_source_that_aborts_a_whole_request_over_its_own_cap_stops_retrieval() {
+        // What the built-in source reports past its request cap (CRL-039):
+        // the engine records it as an abort, with the source's details.
+        struct Spent;
+        impl CrlSource for Spent {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Abort, "spent")
+                    .detail("resource", "crl_requests"))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("spent", 1);
+        assert!(!ask(&mut state, "c", &cert, &mut Spent).unwrap());
+        assert!(state.aborted);
+        let failure = &state.report.failures[0];
+        assert_eq!(failure.code, ErrorCode::CrlFetchAborted);
+        assert_eq!(failure.details["resource"], "crl_requests");
+    }
+    #[test]
+    fn re_offered_points_are_not_stopped_by_the_engine_on_request_count() {
+        struct Source(usize);
         impl CrlSource for Source {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0 += 1;
                 Ok(CrlResponse::new().with_crl(SourcedCrl::new(
                     include_bytes!("../tests/fixtures/good.crl").to_vec(),
                 )))
@@ -2406,18 +2408,16 @@ mod tests {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
+        let mut source = Source(0);
         let cert = signer_with_points("shared", 2);
-        for index in 0..MAX_SOURCE_REQUESTS {
-            ask(&mut state, &format!("c{index}"), &cert, &mut Source).unwrap();
+        let offers = 128;
+        for index in 0..offers {
+            ask(&mut state, &format!("c{index}"), &cert, &mut source).unwrap();
         }
-        // The points were offered every time but cost no URI allowance; the
-        // source requests are what stop the run.
-        assert_eq!(state.urls_passed, 2);
-        let e = ask(&mut state, "last", &cert, &mut Source).unwrap_err();
-        assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(e.details["resource"], "crl_requests");
-        // The limit leaves the points as they were: not marked as offered,
-        // so a certificate that left them unused still reports them.
+        // The points were offered every time and cost no URI allowance; how
+        // often a source may be asked is the source's to decide (CRL-039).
+        assert_eq!(source.0, offers);
+        // They stay open for a certificate that left them unused.
         assert!(
             !state
                 .asked
@@ -2428,7 +2428,7 @@ mod tests {
     fn a_source_answering_by_certificate_never_exhausts_the_uri_limit() {
         // Five certificates, each listing the same 16 points, all answered
         // by the issuer's CRL without a URL: the points are offered every
-        // time but are 16 distinct URIs, far below the 64 limit.
+        // time; each stays open for a later certificate.
         struct Source;
         impl CrlSource for Source {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2444,7 +2444,6 @@ mod tests {
         for index in 0..5 {
             ask(&mut state, &format!("c{index}"), &cert, &mut Source).unwrap();
         }
-        assert_eq!(state.urls_passed, 16);
     }
     #[test]
     fn a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate() {
@@ -2731,9 +2730,8 @@ mod tests {
             source.issuers,
             [cert.tbs_certificate.issuer.to_der().unwrap()]
         );
-        // A refusal costs the engine one request for the certificate, not
-        // one per URI.
-        assert_eq!(state.requests, 1);
+        // One request for the certificate, not one per URI.
+        assert_eq!(source.calls, 1);
     }
     #[test]
     fn a_uri_that_is_not_an_absolute_url_is_withheld_with_its_own_reason() {

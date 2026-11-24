@@ -124,17 +124,16 @@ page links to them instead of restating them.
    body that loads as a CRL of the certificate's issuer counts as such an
    answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
    unused points stay open: a later certificate listing one still offers it.
-   A re-offered URI counts once toward the 64 URIs passed per verification
-   (`crl_source_urls`); each offer still costs a source request. When
+   Each offer is a request to the source, which counts its own requests and
+   distinct URIs (CRL-039). When
    the answer adds a full CRL (no issuingDistributionPoint), verification
    runs again before anything else is asked: its name and syntax do not
    establish authority or freshness, so only verification can tell which of
    the issuer's certificates it covers. A body whose URL is withheld from
    the report is not an answer by certificate.
    CRLs are per issuer, so a certificate with no point left to pass on,
-   whose issuer was already asked about, is not asked again and does not
-   spend the request cap. A list that is present but empty (a certificate
-   the verifier could not name) asks nothing.
+   whose issuer was already asked about, is not asked again. A list that is present but empty (a certificate the
+   verifier could not name) asks nothing.
 3. Verify again with what was added, and repeat steps 2 and 3 while a round
    adds a CRL and another certificate is still reported without one.
 4. If evidence is still missing, the result is the verifier's own:
@@ -152,9 +151,7 @@ page links to them instead of restating them.
 
 Two kinds of error, and nothing in between:
 
-- **The engine's own limits end the run**: requests to the source (64 per
-  verification, `MAX_SOURCE_REQUESTS`, one per certificate), distinct URIs
-  passed to it (64 distinct URIs per verification, `crl_source_urls`; one offered again after an answer by certificate left it unused counts once), CRL bodies and
+- **The engine's own limits end the run**: CRL bodies and
   failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
   combined bytes, and the LIMIT-T002 work budget.
 - **Every other error about one listed point is no evidence from that point**:
@@ -265,8 +262,10 @@ The parser and `verify-core` remain usable without network dependencies or std.
   come from the certificates of the file being verified and can name
   `file:` URLs or internal addresses: `retrieval::check_public_http_url`
   applies the built-in source's URL policy. A custom source therefore owns its own destination
-  safety. Implementations must bound their own I/O, allocation and latency;
-  the engine independently checks every size.
+  safety. Implementations must bound their own I/O, allocation, latency and
+  number of requests per verification (the engine keeps no total of requests,
+  CRL-039; `HttpCrlSource` stops at 64, and a source reports its own spent
+  allowance as `abort`); the engine independently checks every size.
 - `fetch_each(&request, |url, max_bytes| ...)` builds a response for a source
   that works URL by URL: it asks for each listed URI in order, with the bytes
   still allowed, and stops at the first `abort`. `HttpCrlSource` uses it.
@@ -280,6 +279,42 @@ The parser and `verify-core` remain usable without network dependencies or std.
   store is not modified.
 - `cli::run_with_crl_source(argv, stdout, stderr, source)` injects a source into the
   in-process CLI. The provider is called only with `--fetch-crls`.
+
+## Where the engine ends and the application begins
+
+rssig follows OpenSSL's boundary. Its verifier only asks for CRLs by certificate
+(`get_crl`, `lookup_crls`, `x509_vfy.c:2228`) and judges what comes back; the
+application, which in OpenSSL is a callback (`apps/lib/apps.c:2866-2867`,
+`apps/verify.c:220-232`) and in Bouncy Castle the fetch helper (`CrlCache.java`),
+decides what to fetch, from where and how much. Here the engine is the library's
+verification and retrieval code, and the application is the `CrlSource` it is
+given: `HttpCrlSource` in the CLI, or one the library user writes
+([CRL-023](crl.md#crl-023-the-source-decides-transport-the-core-screens-hygiene-only),
+[CRL-039](crl.md#crl-039-fetch-limits-bound-one-verification)).
+
+| Decision | Owner |
+| --- | --- |
+| Which certificates lack a CRL, what to ask about, in what order, and asking each certificate once (CRL-033) | Engine |
+| Whether a returned CRL is evidence: authentication, scope, freshness, issuer matching (CRL-048) | Engine |
+| Failing closed: no evidence is `revocation_unknown`, never an acceptance | Engine |
+| What a source's `Abort` means: ask nothing further, report `crl_fetch_aborted` (CRL-047) | Engine |
+| The report: every listed point accounted for, in a fixed order (CRL-049) | Engine |
+| Hygiene screening of listed URIs before a source sees them (CRL-038) | Engine |
+| Sizes of what a source returns: 8 MiB a body, 32 MiB combined, 64 entries a response, retained CRLs (CRL-045) | Engine; a source is not trusted to bound them |
+| Which URLs to try, which schemes, destinations, redirects, DNS, TLS, proxies, caches (CRL-023, CRL-037) | Source |
+| How many requests and distinct URLs per verification, time, bytes on the wire (CRL-039) | Source |
+| Renewing those allowances for each file or call: `begin_verification` | Source, called by the engine |
+| Which flags build which source, `--fetch-crls`, one source for a batch of files | Application (the CLI) |
+
+A rule belongs in the engine when it judges evidence or protects what the
+engine itself records and returns, and in the source when it is fetch policy: a
+limit on how much to fetch, how often or for how long. A source reports a limit
+it reaches as `abort` with `details.resource`, and the engine reacts to the
+kind, never to the number. A new retrieval limit therefore goes in
+`HttpCrlSource` and in the rustdoc a custom source reads, not in `Retrieval`.
+The remaining engine rules that OpenSSL has no equivalent for are tracked as
+CRL-T040 (the 16 points a certificate offers) and CRL-T041 (the per-issuer
+request skip).
 
 ## Built-in HTTP policy
 
@@ -296,7 +331,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject single-label names; names ending in the labels `localhost`, `local`, `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion` or `alt` (whole labels); nonpublic/reserved literal addresses; and an entire DNS answer containing nonpublic addresses. A denied host is reported as not public |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source per verification (one per certificate), and 16 HTTP hops per verification for the built-in HTTP source (redirects included) |
+| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included); both are the built-in source's own, not the engine's |
 | Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |

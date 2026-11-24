@@ -100,6 +100,12 @@ GitHub issues to track tasks or sub-items.
   API. Public signatures, fields, and trait bounds name rssig's own error types
   (`parse::Error`, `TrustLoadError`, `domain::VerificationError`) or `std`/`core`
   ones; convert at the public boundary.
+- Fetch policy belongs to the `CrlSource`, not the engine: the engine judges
+  evidence and bounds what it records and accepts back, and a source owns what
+  to fetch, how often and how much (OpenSSL's boundary; see
+  [docs/crl-retrieval.md](docs/crl-retrieval.md#where-the-engine-ends-and-the-application-begins)
+  and CRL-039). Put a new request, URL, time or transport limit in
+  `HttpCrlSource`, never in `Retrieval`.
 - Trust anchors must come from the configured root store. Embedded certificates
   are untrusted chain candidates. A mathematically valid signature alone is not
   a trusted signature.
