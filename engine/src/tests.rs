@@ -55,6 +55,22 @@ fn seq(parts: &[Vec<u8>]) -> Vec<u8> {
 fn oid(value: &[u8]) -> Vec<u8> {
     tlv(6, value)
 }
+/// `[0] distributionPoint` holding a fullName with these GeneralNames.
+fn dp_full_name(names: &[Vec<u8>]) -> Vec<u8> {
+    tlv(0xa0, &tlv(0xa0, &names.concat()))
+}
+/// A uniformResourceIdentifier GeneralName.
+fn uri_general_name(value: &str) -> Vec<u8> {
+    tlv(0x86, value.as_bytes())
+}
+/// A distributionPoint holding one URI: the single-point encoding every CRL
+/// builder shares (a cRLDistributionPoints entry, or an IDP's body).
+fn single_uri_point(value: &str) -> Vec<u8> {
+    dp_full_name(&[uri_general_name(value)])
+}
+/// The subjectKeyIdentifier extension OID, 2.5.29.14.
+const SKI_OID: ::der::asn1::ObjectIdentifier =
+    ::der::asn1::ObjectIdentifier::new_unwrap("2.5.29.14");
 fn sha256_alg() -> Vec<u8> {
     seq(&[oid(&[96, 134, 72, 1, 101, 3, 4, 2, 1]), vec![5, 0]])
 }

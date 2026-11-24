@@ -43,15 +43,7 @@ fn one_point(value: &str) -> Vec<u8> {
     seq(&[seq(&[full_name(&[uri(value)])])])
 }
 
-/// A uniformResourceIdentifier GeneralName.
-fn uri(value: &str) -> Vec<u8> {
-    tlv(0x86, value.as_bytes())
-}
-
-/// `[0] distributionPoint` holding a fullName with these GeneralNames.
-fn full_name(names: &[Vec<u8>]) -> Vec<u8> {
-    tlv(0xa0, &tlv(0xa0, &names.concat()))
-}
+use super::{dp_full_name as full_name, uri_general_name as uri};
 
 /// `[0] distributionPoint` holding nameRelativeToCRLIssuer `CN=sec10`.
 fn relative_name() -> Vec<u8> {
@@ -376,7 +368,7 @@ fn write_crl_named(
             .extensions
             .iter()
             .flatten()
-            .find(|e| e.extn_id.to_string() == "2.5.29.14")
+            .find(|e| e.extn_id == SKI_OID)
             .expect("issuer subjectKeyIdentifier");
         // SKI is OCTET STRING { id }; AKI is SEQUENCE { [0] id }.
         let id = &ski.extn_value.as_bytes()[2..];
