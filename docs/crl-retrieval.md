@@ -338,7 +338,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
 
-With every listed point offered (CRL-024), one certificate listing 64 or more URIs can spend the built-in source's whole 64-URL allowance (`crl_source_urls`), so later certificates are then asked about nothing and the result is `crl_fetch_aborted`. A per-request point limit in `HttpCrlSource` is not implemented.
+With every listed point offered (CRL-024), one certificate listing more than 16 URIs that each cost an HTTP request spends the built-in source's 16 HTTP requests per verification (`crl_http_requests`), so the 17th is an `Abort`, later certificates are asked about nothing and the result is `crl_fetch_aborted`; 64 or more URIs spend the 64-URL allowance (`crl_source_urls`) the same way. A per-request point limit in `HttpCrlSource` is not implemented.
 
 PEM responses can contain multiple CRLs. After each response is loaded, the
 combined retained count is checked after exact-DER deduplication and before

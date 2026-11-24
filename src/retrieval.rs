@@ -564,7 +564,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // Entries about a point and entries about none (unusable names,
         // screening, whole-request failures) are bounded apart, so one kind
         // cannot hide the other.
-        let bucket = (certificate.to_owned(), url.is_some());
+        // A source's failure is a point's, even one for the whole request.
+        let about_points = url.is_some() || source_error.is_some();
+        let bucket = (certificate.to_owned(), about_points);
         let kept = self.kept.entry(bucket.clone()).or_default();
         if *kept < MAX_FAILURES_PER_CERTIFICATE || first_abort {
             if *kept < MAX_FAILURES_PER_CERTIFICATE {
@@ -591,7 +593,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             "further CRL retrieval failures for this certificate are not listed",
         )
         .detail("omitted", more)
-        .detail("about", if url.is_some() { "points" } else { "no point" });
+        .detail("about", if about_points { "points" } else { "no point" });
         self.omitted_at.insert(bucket, self.report.failures.len());
         self.push_failure(certificate, None, &marker, None);
     }
@@ -2163,6 +2165,20 @@ mod tests {
         }
         let many = error(ErrorCode::CrlFetchDenied, "names").detail("omitted", 200);
         state.record("a", None, &many, None);
+        // A source's failure for the whole request is not hidden by them.
+        let failed = Some(CrlSourceErrorKind::Failed);
+        state.record("c", None, &many, None);
+        for _ in 0..MAX_FAILURES_PER_CERTIFICATE {
+            state.record("c", None, &e, None);
+        }
+        state.record("c", None, &e, failed);
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.certificate_sha256 == "c" && f.source_error == failed)
+        );
         // Two points past the bound, one recorded twice; a source's detail is
         // not a count, and a huge one cannot overflow.
         let lying = error(ErrorCode::CrlFetchFailed, "x").detail("omitted", u64::MAX);
@@ -2174,6 +2190,7 @@ mod tests {
             .report
             .failures
             .iter()
+            .filter(|f| f.certificate_sha256 == "a")
             .filter_map(|f| f.details.get("omitted").and_then(|n| n.as_u64()))
             .collect();
         assert_eq!(counts, [200, 2]);
