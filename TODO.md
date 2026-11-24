@@ -17,24 +17,20 @@ An ID is `<SCOPE>-T<NNN>`, such as `CRL-T012`: the scope, a `T` that
 keeps a search for a decision entry (`CRL-012`) from matching a task, and a
 three-digit number counted per scope from `001`. A number is never reused;
 a finished task stays here as one line. Its document, when it has one, is
-`docs/tasks/<scope>-t<nnn>.md` in lowercase. The scope is one of a closed
-list:
-
-- every decision prefix in [docs/decisions.md](docs/decisions.md) (`CRL`,
-  `TIME`, `PATH`, `TSA`, `CMS`, `ALG`, `TRUST`, `LIMIT`, `POLICY`, `CLI`,
-  `INSPECT`, `PE`, `MSI`, `CAB`, `NAVX`, `PS`, `WSH`, `RDP`, `APPX`);
-- `CAT` (catalog files) and `P7S` (detached signatures), formats with no
-  decision index yet;
-- `TEST` (test harness, spec runner, fixture tooling), `LIB` (public library
-  API and crate structure), `DOC` and `BUILD` (CI, dependencies, fuzzing
-  setup, packaging, distribution).
+`docs/tasks/<scope>-t<nnn>.md` in lowercase. The scope is one of the closed
+list in [scopes.yml](scopes.yml): every decision prefix in
+[docs/decisions.md](docs/decisions.md), the formats with no decision index
+yet (`CAT`, `P7S`), and `TEST`, `LIB`, `DOC` and `BUILD` for work on the
+repository itself. The same scope, lowercase, is the scope of the PR title.
 
 A task takes the scope where its change is decided, by the
 [Which index](docs/decisions.md#which-index) rule; a task about tests for
 one subject belongs to that subject. A task for a format with no scope yet
-waits for the owner to add one. The title is the PR title, in Conventional
-Commit form (`feat`, `fix`, `refactor`, `test`, `docs` or `build`); an open
-task that waits on the owner's decision adds "(owner decision)" after it.
+waits for the owner to add one to `scopes.yml`. An entry starts with its type
+(`feat`, `fix`, `refactor`, `test`, `docs` or `build`) and its title; with the
+scope and ID they make the PR title, `type(scope): ID title`
+(AGENTS.md, "Pull request titles"). An open task that waits on the owner's
+decision adds "(owner decision)" after the title.
 Fixtures, case IDs and test functions are named after the decision entry
 they pin or what they check, never after a task.
 
@@ -444,6 +440,11 @@ they pin or what they check, never after a task.
 - [x] **DOC-T004** refactor: Remove duplicate and overlapping decisions. Done ([PR #74](https://github.com/goatwu1993/rssig/pull/74)); mapping in that PR.
 - [x] **DOC-T005** refactor: Settle the shared format-skeleton rules. Done ([PR #75](https://github.com/goatwu1993/rssig/pull/75)); [format indexes](docs/decisions.md#format-indexes).
 - [x] **DOC-T009** docs: Require a guard for review findings judged invalid. Done ([PR #85](https://github.com/goatwu1993/rssig/pull/85)); [Review findings](AGENTS.md#review-findings).
+- [ ] **DOC-T010** test: Check `scopes.yml` against its users. Every scope has a
+  decision-index row when its kind is `decision` or `format` with an index, every
+  `TODO.md` task ID and `### <SCOPE>` heading names a listed scope, and the file
+  list in `docs/decisions.md` matches. Adding a YAML parser is a dependency
+  decision (fuzz `Cargo.lock` must stay in step).
 
 ### ALG
 

@@ -40,18 +40,45 @@ changes only for a stated reason.
 
 ## Pull request titles
 
-PR titles must use Conventional Commit format: `feat: Add xxx`,
-`fix: Correct xxx`, or `refactor: Simplify xxx`. Choose the appropriate lowercase
-type and capitalize the first word after the colon and space.
+A PR title is `<type>(<scope>): <TASK-ID> <description>`, for example
+`feat(crl): CRL-T001 implement xxx` or
+`fix(cms): CMS-T003 narrow single-instance attributes to RFC 5652`.
+
+- **type**: `feat`, `fix`, `refactor`, `test`, `docs` or `build`, the type of
+  the task's entry in `TODO.md`.
+- **scope**: lowercase, from the closed list in [scopes.yml](scopes.yml),
+  chosen by the task's scope (an ID `CRL-T001` has scope `crl`). Always fill
+  it, except for a generic or infrastructure PR that belongs to no task and
+  no subject: a change to `AGENTS.md`, `TODO.md`, `scopes.yml`, or repository
+  housekeeping that an agent makes on its own, such as
+  `docs: group TODO tasks by scope`. Those carry neither scope nor task ID.
+- **task ID**: first in the description, the exact `<SCOPE>-T<NNN>` from
+  `TODO.md`. One PR is one task, so there is one ID. A PR with a scope but
+  no task is a sign the work needs a task first.
+- **description**: lowercase imperative, precise about what the PR changes,
+  not the task's title copied or a label such as "fixes" or "updates".
+
+When a PR is merged, the merge commit message is written, not generated:
+squash merge, never a merge commit, and never GitHub's default list of
+commits or the unedited PR template.
+
+- The subject is the PR title as above, with the PR number GitHub appends.
+- The body states what changed and why in a few precise sentences: the
+  behavior before and after, the decision entries or cases added or changed
+  (`CRL-045`, case IDs), and any pinned expectation that moved with the
+  owner's approval. Name follow-up tasks by ID.
+- Say what the PR did, not how the work went: no review chatter, no "address
+  feedback", no list of intermediate commits.
 
 ## Task tracking
 
 Tasks live in `TODO.md`, one short entry each: ID, title, checkbox and at most
 a few lines. An ID is `<SCOPE>-T<NNN>` (`CRL-T012`), from the closed scope
-list and rules in [TODO.md](TODO.md#task-ids); the title is the PR title.
+list in [scopes.yml](scopes.yml) and the rules in [TODO.md](TODO.md#task-ids);
+the entry's type and title make the PR title.
 Detail longer than that goes in `docs/tasks/<id>.md` (`docs/tasks/crl-t012.md`),
-linked from the entry. A finished item becomes one line with its PR; its evidence lives in
-the PR and git history. A task is the scope of one PR: work found along the
+linked from the entry. A finished item becomes one line with its PR; its
+evidence lives in the PR and git history. A task is the scope of one PR: work found along the
 way becomes a new task, not a larger branch. Do not create or reference
 GitHub issues to track tasks or sub-items.
 
