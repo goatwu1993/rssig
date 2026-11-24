@@ -14,6 +14,20 @@ remain offline. Local `--crl` files can be combined with retrieval. Retrieval
 never decides whether a CRL applies; verification does. No CRL applicability
 rule is restated for retrieval.
 
+This page describes the flow. Each rule it applies is decided, with its
+sources and cases, in [crl.md](crl.md): the entries are the rules, and this
+page links to them instead of restating them.
+
+| Part of the flow | Entries |
+|---|---|
+| Nothing is asked for an input that cannot verify | [CRL-011](crl.md#crl-011-nothing-is-fetched-for-an-input-that-cannot-verify) |
+| Missing evidence, and the four source outcomes | [CRL-026](crl.md#crl-026-missing-evidence-is-revocation_unknown-a-source-has-four-outcome-kinds), [CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted) |
+| Which error a rejected chain or path reports | [CRL-027](crl.md#crl-027-which-error-a-rejected-chain-reports), [CRL-029](crl.md#crl-029-a-definite-result-keeps-its-code-with---fetch-crls), [CRL-031](crl.md#crl-031-a-revocation-names-another-paths-refreshable-certificates), [CRL-032](crl.md#crl-032-a-path-a-source-could-complete-is-reported-over-a-stuck-path) |
+| Which CRLs are refreshed or asked about | [CRL-018](crl.md#crl-018-a-crl-with-a-bad-signature-is-not-refreshed), [CRL-019](crl.md#crl-019-an-expired-supplied-crl-is-refreshed), [CRL-020](crl.md#crl-020-a-supplied-crl-the-references-would-look-past-is-refreshed), [CRL-035](crl.md#crl-035-a-missing-nextupdate-blocks-retrieval-only-as-a-crls-sole-defect), [CRL-036](crl.md#crl-036-without-an-answer-an-expired-or-replaceable-crls-error-stands) |
+| What a source is asked, and what its answer means | [CRL-030](crl.md#crl-030-a-partition-for-another-point-is-no-evidence), [CRL-033](crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-034](crl.md#crl-034-a-source-answering-by-certificate-leaves-no-per-point-failures), [CRL-048](crl.md#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it) |
+| The built-in source and its limits | [CRL-037](crl.md#crl-037-the-built-in-source-refuses-what-it-does-not-fetch), [CRL-038](crl.md#crl-038-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source), [CRL-039](crl.md#crl-039-fetch-limits-bound-one-verification), [CRL-045](crl.md#crl-045-a-retrieved-crl-over-the-size-cap-is-never-evidence), [CRL-046](crl.md#crl-046-a-retrieved-crl-over-the-size-cap-is-reported-with-the-cap-it-hit) |
+| Order of `crl_retrieval.failures` | [CRL-049](crl.md#crl-049-retrieval-failures-are-reported-in-a-fixed-order) |
+
 1. Verify with revocation required, against the supplied CRLs. The path is
    always built first, so integrity and trust failures end the run before
    any request (`crl-011-fetch-untrusted-chain-requests-nothing`). That
@@ -192,7 +206,7 @@ another verification.
 When evidence stays missing the result is the verifier's own
 `revocation_unknown` (with `details.unusable_crl` naming the most specific CRL
 that exists but could not be used, if any), as without `--fetch-crls`, unless an aborted source left a certificate
-without a CRL unasked or cut its request short (CRL-047):
+without a CRL unasked or cut its request short ([CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted)):
 then it is `crl_fetch_aborted` (with the verifier's message in
 `details.revocation_unknown`), so that "the source gave up" is distinct from
 "no CRL was available". A good result is still returned if the CRLs gathered
@@ -298,7 +312,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for the rest of the run), the source reports `abort`: no further request is made, and the result is `crl_fetch_aborted` when that left a certificate unasked or cut its request short (CRL-047); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for the rest of the run), the source reports `abort`: no further request is made, and the result is `crl_fetch_aborted` when that left a certificate unasked or cut its request short ([CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted)); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The built-in source's HTTP limits bound one verification, not a batch or a
 reused instance: the engine calls `CrlSource::begin_verification` first, so in
@@ -340,7 +354,7 @@ supplied, while existing CRL reports describe normalized DER.
 Points that yielded no evidence are listed in `crl_retrieval.failures` (omitted
 when empty), on success and in failure `details.crl_retrieval`; a successful
 result can therefore show that some requests failed or were denied without
-that evidence being needed. Missing evidence is `revocation_unknown`, unless an aborted source left a certificate without a CRL unasked or cut its request short, which is `crl_fetch_aborted` (CRL-047).
+that evidence being needed. Missing evidence is `revocation_unknown`, unless an aborted source left a certificate without a CRL unasked or cut its request short, which is `crl_fetch_aborted` ([CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted)).
 The engine's own limits use `resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
 failure `details.crl_retrieval`.
 Malformed, stale, forged or revoked evidence retains existing verifier error
