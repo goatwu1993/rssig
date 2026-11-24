@@ -24,6 +24,8 @@ pub const MAX_REQUESTS: usize = 16;
 /// a point and for those about none each; further ones are
 /// counted in one entry (`details.omitted`), CRL-024. A bound on the report,
 /// not on what is offered to a source.
+/// Points the log line for one request names; it always gives the count.
+const LOGGED_POINTS: usize = 16;
 const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
 /// CRL bodies and failures one [`CrlResponse`] may carry together, besides one
 /// for each point the request offered.
@@ -540,10 +542,15 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         e: &VerificationError,
         source_error: Option<CrlSourceErrorKind>,
     ) {
+        // A source's first abort is always kept, even where its point already
+        // has an entry: it is what ended retrieval.
+        let first_abort = source_error == Some(CrlSourceErrorKind::Abort)
+            && !self.abort_kept.contains(certificate);
         // One entry per certificate and URL: a repeat of a point, listed or
         // withheld by the bound below, is not counted twice.
         if let Some(url) = url
             && !self.recorded.insert((certificate.to_owned(), url_key(url)))
+            && !first_abort
         {
             return;
         }
@@ -556,14 +563,15 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         .unwrap_or(1);
         // Entries about a point and entries about none (unusable names,
         // screening, whole-request failures) are bounded apart, so one kind
-        // cannot hide the other. A source's abort is always kept, once.
+        // cannot hide the other.
         let bucket = (certificate.to_owned(), url.is_some());
         let kept = self.kept.entry(bucket.clone()).or_default();
-        let first_abort = source_error == Some(CrlSourceErrorKind::Abort)
-            && self.abort_kept.insert(certificate.to_owned());
         if *kept < MAX_FAILURES_PER_CERTIFICATE || first_abort {
             if *kept < MAX_FAILURES_PER_CERTIFICATE {
                 *kept += 1;
+            }
+            if first_abort {
+                self.abort_kept.insert(certificate.to_owned());
             }
             self.push_failure(certificate, url, e, source_error);
             return;
@@ -783,7 +791,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             format_args!(
                 "asking the CRL source for certificate {sha256}, {} listed points, first {:?}",
                 points.len(),
-                &points[..points.len().min(MAX_FAILURES_PER_CERTIFICATE)]
+                &points[..points.len().min(LOGGED_POINTS)]
             ),
         );
         let response = match source.crls(&request) {
@@ -2170,6 +2178,18 @@ mod tests {
             .filter(|f| f.source_error == Some(abort))
             .count();
         assert_eq!(aborts, 1);
+        // An abort for a point that already has an entry is still listed.
+        let mut state = Retrieval::new(&store, &budget);
+        let u = "http://h.invalid/u";
+        state.record("b", Some(u), &e, Some(CrlSourceErrorKind::Failed));
+        state.record("b", Some(u), &e, Some(abort));
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .any(|f| f.source_error == Some(abort))
+        );
     }
     #[test]
     fn points_left_when_the_byte_allowance_is_spent_are_not_tried() {

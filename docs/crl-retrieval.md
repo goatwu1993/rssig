@@ -331,12 +331,15 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
 | Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included); both are the built-in source's own, not the engine's |
+
 | Response entries | At most 64 CRL bodies and failures together in one source response, plus one for each point the request offered (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
+
+With every listed point offered (CRL-024), one certificate listing 64 or more URIs can spend the built-in source's whole 64-URL allowance (`crl_source_urls`), so later certificates are then asked about nothing and the result is `crl_fetch_aborted`. A per-request point limit in `HttpCrlSource` is not implemented.
 
 PEM responses can contain multiple CRLs. After each response is loaded, the
 combined retained count is checked after exact-DER deduplication and before
