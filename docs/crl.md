@@ -77,6 +77,8 @@ holds for the entries numbered when it was set.
 | [CRL-047](#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted) | An aborted source stops retrieval and is reported as `crl_fetch_aborted` | Retrieval | Decided | diagnostics |
 | [CRL-048](#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it) | A CRL from a source is evidence only when verification authenticates it | Retrieval | Decided | acceptance |
 | [CRL-049](#crl-049-retrieval-failures-are-reported-in-a-fixed-order) | Retrieval failures are reported in a fixed order | Retrieval | Observed | diagnostics |
+| [CRL-050](#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent) | A certificate of an issuer not yet asked about is asked, whether or not its points are spent | Retrieval | Observed | acceptance |
+| [CRL-051](#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it) | A point a source used is not offered again, and its failure is recorded for each certificate listing it | Retrieval | Observed | diagnostics |
 
 ## Tier 1: fail-open and privacy
 
@@ -708,6 +710,32 @@ A source is never trusted: where a CRL came from adds nothing to it. Whatever a 
 - **Sources:**
   - Written argument: the references report one error and keep no list of failed points, so they have no order to follow. The report follows what happened, so a reader can replay retrieval from it without sorting: a certificate's points in the order it was asked about; within a request, what was refused before asking, then what the source said in the order it said it, then what loading its bodies showed, then what was left. A failure naming no URL is the one exception because its meaning is not known when it arrives: whether it answers the points left depends on the bodies, so it is placed where that is known. A whole-request error names one point at most; the others come first, in listed order, so the point it names is last and its own entry ends the request. The same order is documented on `CrlRetrievalReport::failures` (`engine/src/domain.rs`).
 - **Unit tests:** `a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`, `a_whole_request_error_records_the_point_it_names_last`, `the_first_failure_without_a_url_comes_after_the_bodies_rejected_on_load` and `a_failure_without_a_url_is_recorded_as_it_is_when_every_point_was_named` in `engine/src/retrieval.rs`; the named tests `crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered` and `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`.
+
+### CRL-050: A certificate of an issuer not yet asked about is asked, whether or not its points are spent
+
+Within CRL-033's rule (a certificate that lacks a CRL is asked about), a certificate whose issuer (its name, authority key and CA or end-entity role) was not asked about earlier in the verification is asked even when every point it lists was offered for another certificate: CRLs are per issuer, so another issuer's answer is not its own, and fetching can still complete the path. This adds only the issuer test to CRL-033's choice of certificates. It also owns what a point means across certificates: a point a source answering by certificate left unused (CRL-034) is not spent and stays open, so a later certificate listing it carries it again, while that a spent point is not offered again is CRL-051's.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** acceptance
+- **Sources:**
+  - OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228), called from :1444-1537 (check_cert_crl): CRLs are looked up for each certificate being checked, by its issuer name.
+  - Bouncy Castle (bb81bfa7) pkix/src/main/java/org/bouncycastle/pkix/jcajce/X509RevocationChecker.java:486-487 and :596-669 (downloadCRLs): each certificate's own listed points are read and their CRLs selected by that certificate's issuer, so a point two certificates list is consulted for each.
+  - Written argument: a point is spent only when the source used it. An answer by certificate names no URL, so nothing was learned about the point, and a certificate of another issuer listing it still needs it. Not asking would leave that certificate `revocation_unknown` although its CRL is available.
+- **Unit tests:** `a_source_is_asked_about_each_certificate_at_most_once_in_a_verification`, `points_unused_by_an_answer_by_certificate_are_offered_again` and `a_point_requested_later_is_reported_with_its_outcome` in `src/retrieval.rs`.
+
+### CRL-051: A point a source used is not offered again, and its failure is recorded for each certificate listing it
+
+A listed point (compared after normalization) that a source used, by returning a body or a failure for it, is not offered again in the verification. A later certificate listing it does not carry it, and when it failed, its failure is recorded again under that certificate, so each certificate's report accounts for every point it lists. A point the source left unused (CRL-034) is not spent and is offered again (CRL-050). Whether that certificate is asked at all is CRL-050's; where its failures sit in the report is CRL-049's.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** diagnostics
+- **Sources:**
+  - Bouncy Castle (bb81bfa7) pkix/src/main/java/org/bouncycastle/pkix/jcajce/CrlCache.java:43-44, :53-61 and :110: the CRLs fetched from a point are cached by URI and served to a later certificate listing it, without fetching again. A fetch that fails throws before :110 and is not cached, so Bouncy Castle tries the point again for the next certificate; rssig does not.
+  - OpenSSL crypto/x509/x509_lu.c:978-990 (X509_STORE_CTX_get1_crls): CRLs are looked up by issuer name with no per-point outcome, so OpenSSL has nothing to compare with the per-point report; this entry is a departure from Bouncy Castle's retry and otherwise rests on the written argument.
+  - Written argument: each offer costs the source a request, which only the source bounds (CRL-039), and a point that just failed is offered again only to fail the same way within one verification; the outcome is the point's, whichever certificate listed it, so it is recorded for each. Not retrying can only turn a good result into `revocation_unknown` (fail closed), never the reverse; a source that failed transiently for the first issuer is not asked again for the second.
+- **Unit tests:** `a_request_with_nothing_new_for_an_asked_issuer_is_not_made` (the source is asked once, so a retry would fail it) and `a_point_answered_under_an_unhygienic_spelling_stays_in_later_reports` in `src/retrieval.rs`.
 
 ## Candidate rules
 

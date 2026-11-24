@@ -10515,6 +10515,20 @@
       ]
     },
     {
+      "file": "crl-chain-shared-crl-dp.exe",
+      "sha256": "fcb4a3647f3d2963ec145969d922ee933b745b10c155a7f95233823cda09fb15",
+      "bytes": 2304,
+      "description": "CRL-050 and CRL-051: Inert PE signed by the crl-leaf-crl-dp signer (serial 121, cRLDistributionPoints names http://crl.invalid/sec10-a.crl); its issuer candidate is the PATH-T001 issuer variant (serial 110) whose cRLDistributionPoints names the same http://crl.invalid/sec10-a.crl, so two certificates of two issuers (the PATH-T001 issuer and root) list one point. Never execute. The signer's certificate SHA-256 (as rssig re-encodes it) is 53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1 and its issuer certificate's is a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975, the two hashes the cases name. Deterministic public test keys.",
+      "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
+        "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
+        "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+        "crl-051-a-denied-point-is-recorded-for-each-certificate"
+      ]
+    },
+    {
       "file": "crl-issuer-idp-match-user.crl",
       "sha256": "993f0d528b7f965f097f756eab8a84756386d9a1f406140a7adc9236b73ea446",
       "bytes": 235,

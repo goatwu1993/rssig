@@ -51,6 +51,14 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **named test** | A Rust test under `tests/cli/` that checks one fixture in-process. |
 | **pinned result** | A case's expected result; every one needs a decision ([AGENTS.md](../AGENTS.md#pinned-expectations)). |
 
+## Retrieval
+
+| Term | Meaning | Not to be confused with |
+|---|---|---|
+| **point** | One URL a certificate lists in its `cRLDistributionPoints` extension, where its CRL may be fetched; offered to a `CrlSource` in a request ([crl-retrieval.md](crl-retrieval.md)). | A CRL's issuingDistributionPoint scope, which names the point a CRL covers (CRL-030). |
+| **spent point** | A point a source used in a verification, by returning a body or a failure for it. It is not offered again, and a failure is recorded under each certificate that lists it ([CRL-051](crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)). | A source's spent budget, which is bytes or requests (CRL-039). |
+| **unused point** | A point a source answering by certificate left alone, naming no URL for it. It stays open, so a later certificate listing it carries it again ([CRL-050](crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent)). | A point no certificate lists. |
+
 ## Work
 
 | Term | Meaning |

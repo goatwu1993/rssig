@@ -651,6 +651,22 @@ pub(super) fn write(dir: &std::path::Path) {
         &scoped,
         core::slice::from_ref(&pointed),
     );
+    // CRL-050 and CRL-051: the signer and its issuer, two certificates of two
+    // issuers, list one point, the signer's LISTED_POINT.
+    let mut shared = ca.clone();
+    extension(
+        &mut shared,
+        "2.5.29.31",
+        false,
+        Some(one_point(LISTED_POINT)),
+    );
+    sign(&mut shared, &root_key);
+    write_pe(
+        dir,
+        "crl-chain-shared-crl-dp",
+        &scoped,
+        core::slice::from_ref(&shared),
+    );
     for (label, scope) in root_scope_forms() {
         let file = format!("crl-path-root-idp-{label}.crl");
         write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
@@ -986,6 +1002,7 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             "crl-leaf-crl-dp.exe",
             "crl-ca-crl-dp.exe",
             "crl-chain-crl-dp.exe",
+            "crl-chain-shared-crl-dp.exe",
         ];
         let form = point_forms()
             .iter()
@@ -1027,7 +1044,7 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 42 + point_forms().len());
+    assert_eq!(count, 43 + point_forms().len());
 }
 
 fn committed(name: &str) -> Vec<u8> {
@@ -1123,6 +1140,196 @@ fn crl_partitioned_crls_are_signed_by_the_issuer_and_scoped() {
             if revoked { &[SCOPED_LEAF_SERIAL] } else { &[] },
         );
     }
+}
+
+#[test]
+fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
+    let root = committed_certificate("path-root.der");
+    let issuer = committed_certificate("path-issuer.der");
+    // CRL-050 and CRL-051 rest on two certificates of two issuers listing one
+    // point, and their cases name the certificates by hash: signer first, then
+    // its issuer.
+    let (signer, shared) = (
+        embedded("crl-chain-shared-crl-dp.exe", &issuer),
+        embedded("crl-chain-shared-crl-dp.exe", &root),
+    );
+    for cert in [&signer, &shared] {
+        assert_eq!(extension_value(cert, "2.5.29.31"), one_point(LISTED_POINT));
+    }
+    assert_eq!(
+        signer.tbs_certificate.serial_number,
+        SerialNumber::from(SCOPED_LEAF_SERIAL)
+    );
+    assert_eq!(
+        shared.tbs_certificate.serial_number,
+        SerialNumber::from(ISSUER_SERIAL)
+    );
+    let cases: serde_json::Value = serde_json::from_slice(&committed("../cases.json")).unwrap();
+    let hash = |cert: &Certificate| {
+        use ::der::Encode;
+        use sha2::Digest;
+        sha2::Sha256::digest(cert.to_der().unwrap())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
+    };
+    let (signer_hash, shared_hash) = (hash(&signer), hash(&shared));
+    fn collect(value: &serde_json::Value, out: &mut std::collections::BTreeSet<String>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, value) in map {
+                    if key == "certificate_sha256" {
+                        out.insert(value.as_str().unwrap().to_owned());
+                    } else if key == "crl_certificate_responses" {
+                        out.extend(value.as_object().unwrap().keys().cloned());
+                    } else {
+                        collect(value, out);
+                    }
+                }
+            }
+            serde_json::Value::Array(items) => {
+                items.iter().for_each(|item| collect(item, out));
+            }
+            _ => {}
+        }
+    }
+    let mut named = Vec::new();
+    for case in cases["cases"].as_array().unwrap() {
+        if case["input"] != "crl-chain-shared-crl-dp.exe" {
+            continue;
+        }
+        // Every certificate hash a case names (`certificate_sha256` values and
+        // `crl_certificate_responses` keys) is one of the two certificates',
+        // so a stale hash fails here rather than as a mismatch.
+        let mut hashes = std::collections::BTreeSet::new();
+        collect(case, &mut hashes);
+        for found in &hashes {
+            assert!(
+                *found == signer_hash || *found == shared_hash,
+                "{}: {found}",
+                case["id"]
+            );
+        }
+        assert!(!hashes.is_empty(), "{}", case["id"]);
+        named.push(case["id"].as_str().unwrap().to_owned());
+    }
+    // Which certificate each case answers by certificate: the first case the
+    // signer's (its point is then left unused), the second the issuer
+    // certificate's (the signer's point is answered by URL).
+    let keys = |id: &str| -> Vec<String> {
+        let case = cases["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|case| case["id"] == id)
+            .unwrap();
+        case["crl_certificate_responses"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
+    };
+    assert_eq!(
+        keys("crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer"),
+        core::slice::from_ref(&signer_hash)
+    );
+    assert_eq!(
+        keys("crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left"),
+        core::slice::from_ref(&shared_hash)
+    );
+    // The shared point is the one the cases script, and the crl-051 cases script
+    // no answer for it: they are about a point that fails.
+    for case in cases["cases"].as_array().unwrap() {
+        let id = case["id"].as_str().unwrap();
+        if case["input"] != "crl-chain-shared-crl-dp.exe" {
+            continue;
+        }
+        // The entry a case names is its id's: CRL-050 or CRL-051.
+        assert_eq!(
+            case["decision"].as_str().unwrap(),
+            id.splitn(3, '-')
+                .take(2)
+                .collect::<Vec<_>>()
+                .join("-")
+                .to_uppercase(),
+            "{id}"
+        );
+        let responses = case["crl_responses"].as_object().unwrap();
+        if id.starts_with("crl-051-") {
+            assert!(responses.is_empty(), "{id}");
+            assert!(case.get("crl_certificate_responses").is_none(), "{id}");
+        }
+        // The URL answers each case rests on: both crl-050 cases script the
+        // shared point, the crl-051 cases script none and differ in the error.
+        let errors = case.get("crl_errors").and_then(|e| e.as_object());
+        match id {
+            "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer"
+            | "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left" => {
+                assert_eq!(responses.len(), 1, "{id}");
+                assert!(errors.is_none(), "{id}");
+                // The pairing each case rests on: the first leaves the
+                // signer's point unused, so the root CRL comes from the URL
+                // and the issuer's CRL from the answer by certificate; the
+                // second is the reverse.
+                let (url_file, certificate_file) = if id.contains("unused") {
+                    ("path-root.crl", "path-issuer.crl")
+                } else {
+                    ("path-issuer.crl", "path-root.crl")
+                };
+                assert_eq!(responses[LISTED_POINT], url_file, "{id}");
+                let answers = case["crl_certificate_responses"].as_object().unwrap();
+                assert_eq!(answers.len(), 1, "{id}");
+                assert_eq!(answers.values().next().unwrap(), certificate_file, "{id}");
+            }
+            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate" => {
+                assert!(errors.is_none(), "{id}");
+            }
+            "crl-051-a-denied-point-is-recorded-for-each-certificate" => {
+                assert_eq!(errors.unwrap().len(), 1, "{id}");
+                assert_eq!(errors.unwrap()[LISTED_POINT], "denied", "{id}");
+            }
+            _ => panic!("{id} is not a known case of the shared-point fixture"),
+        }
+        for url in responses.keys().chain(
+            case.get("crl_errors")
+                .iter()
+                .flat_map(|e| e.as_object().unwrap().keys()),
+        ) {
+            assert_eq!(url, LISTED_POINT, "{id}");
+        }
+    }
+    // The manifest lists exactly these cases for the fixture.
+    let manifest: serde_json::Value = serde_json::from_slice(&committed("manifest.json")).unwrap();
+    let artifact = manifest["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["file"] == "crl-chain-shared-crl-dp.exe")
+        .unwrap();
+    let listed = artifact["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap().to_owned())
+        .collect::<Vec<_>>();
+    let described = artifact["description"].as_str().unwrap();
+    assert!(described.contains(&signer_hash) && described.contains(&shared_hash));
+    let (named, listed): (std::collections::BTreeSet<_>, std::collections::BTreeSet<_>) =
+        (named.into_iter().collect(), listed.into_iter().collect());
+    assert_eq!(named, listed);
+    assert_eq!(
+        named,
+        [
+            "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
+            "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
+            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+            "crl-051-a-denied-point-is-recorded-for-each-certificate",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
+    );
 }
 
 #[test]

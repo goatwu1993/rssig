@@ -222,11 +222,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T035** fix: Decide whether CRL-008 compares issuer names canonically (owner decision).
   It compares the path's issuers by exact bytes, as webpki does; OpenSSL
   compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
-- [ ] **CRL-T036** test: Express a point shared by certificates of two issuers
-  in the case format. It needs a signed input with two issuers listing one
-  point, and a way to script an answer for the second certificate, whose
-  request does not carry a point already asked about (the runner rejects a
-  scripted `url` outside the request). From TEST-T009.
+- [x] **CRL-T036** test: Express a point shared by certificates of two issuers in the case format. Done ([PR #86](https://github.com/goatwu1993/rssig/pull/86); [CRL-050](docs/crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent), [CRL-051](docs/crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)).
 - [ ] **CRL-T037** test: Pin a spent byte allowance in a case. A scripted
   answer can now spend a request's allowance, which CRL-046 decides (the points
   left are not tried), but no case pins it. From TEST-T009.
@@ -318,6 +314,12 @@ they pin or what they check, never after a task.
   `rdp-independent-nfedera-parser`, `psxml-independent-ascii-parser` and
   `appx-publisher-parser` (found in the task reindex). Drop them or make each
   pin what its named test checks.
+- [ ] **TEST-T015** test: Derive the fixture count from the checked list.
+  `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
+  (`src/tests/certificate_paths.rs`) compares a hand-edited
+  `N + point_forms().len()` with a hand-kept list of variant files, so a
+  fixture added to one list and not the other is skipped without a failure.
+  Found in the review of PR #86.
 
 ### BUILD
 
