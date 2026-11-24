@@ -165,8 +165,8 @@ One box per item in the scope above.
     `invalid_crl` (`unsupported_signature_algorithm`) or
     `invalid_crl_signature`, set aside when another CRL is usable.
   - **Decided, acceptance.** One certificate's distribution points never end
-    the run: an over-long URI is skipped and the URIs past the first 16 are
-    recorded as one `crl_urls` failure. OpenSSL's verifier has no such limit
+    the run: an over-long URI is skipped; every other URI is offered to the source
+    (CRL-T040). OpenSSL's verifier has no such limit
     (an unmatched point means no CRL); Bouncy Castle has none either and
     skips a point that fails. The per-verification limits stay engine limits.
     Unit test `a_certificate_over_the_url_limits_is_skipped_point_by_point`.

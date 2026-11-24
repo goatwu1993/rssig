@@ -155,13 +155,12 @@ Two kinds of error, and nothing in between:
   failures in one response (64, `MAX_RESPONSE_ENTRIES`, beside one per point offered), retained CRLs,
   combined bytes, and the LIMIT-T002 work budget.
 - **Every other error about one listed point is no evidence from that point**:
-  a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
-  first 16 (every listed URI goes to the source; the report keeps 16 failure
-  entries per certificate and counts the rest in one `details.omitted` entry),
-  as OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
-  it is not discovered (reasons, cRLIssuer, a relative or non-URI name; at
-  most 16 such entries are kept per certificate, and one more counts the
-  rest in `details.omitted`), the
+  a URI over 2,048 bytes (`crl_url_bytes`); as OpenSSL and Bouncy Castle never
+  fail a chain over one certificate's points, every other listed URI goes to
+  the source, however many, and the report keeps 16 entries about points and 16
+  about none per certificate (a source's first abort is always kept), counting
+  the rest in one `details.omitted` entry each; it is not discovered (reasons,
+  cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
   the URI has control characters, whitespace or credentials, or is not an
   absolute URL so that it cannot be screened (reported with its own message;
@@ -332,7 +331,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
 | Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included); both are the built-in source's own, not the engine's |
-| Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
+| Response entries | At most 64 CRL bodies and failures together in one source response, plus one for each point the request offered (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |

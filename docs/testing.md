@@ -532,7 +532,7 @@ them through the CLI, or, where noted, no case pins them yet:
   `invalid_certificate` for each listed point, and the source is not asked.
   Every certificate reaching retrieval has already been decoded from DER, and
   a decoded name always re-encodes, so no fixture reaches this branch.
-- At most 64 CRL bodies and failures in one source response
+- At most 64 CRL bodies and failures in one source response, plus one per point offered
   (`crl_response_entries`), and points recorded as not tried once a request's
   byte allowance is spent. A scripted answer can now reach both, and neither
   has a case: the first is an engine budget (LIMIT-T006), the second CRL-046's

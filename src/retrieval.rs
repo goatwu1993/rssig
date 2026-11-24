@@ -20,7 +20,8 @@ use x509_cert::{
 pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
-/// Failure entries the report keeps for one certificate; further ones are
+/// Failure entries the report keeps for one certificate, for the entries about
+/// a point and for those about none each; further ones are
 /// counted in one entry (`details.omitted`), CRL-024. A bound on the report,
 /// not on what is offered to a source.
 const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
@@ -378,7 +379,7 @@ fn listed_points(
             listed.push(Ok(uri.as_str().into()));
         }
     }
-    // Always reported, whatever the diagnostics bound.
+    // Counted here; the report bounds its own entries again.
     if omitted > 0 {
         listed.push(Err(error(
             ErrorCode::CrlFetchDenied,
@@ -461,9 +462,11 @@ struct Retrieval<'s, 'b, 'l> {
     recorded: BTreeSet<(String, String)>,
     /// Per certificate, the failure entries kept, up to
     /// `MAX_FAILURES_PER_CERTIFICATE`.
-    kept: BTreeMap<String, usize>,
-    /// Per certificate, where its entry counting the omitted ones is.
-    omitted_at: BTreeMap<String, usize>,
+    kept: BTreeMap<(String, bool), usize>,
+    /// Per certificate and kind, where its entry counting the omitted ones is.
+    omitted_at: BTreeMap<(String, bool), usize>,
+    /// Certificates whose source abort the report already lists past the bound.
+    abort_kept: BTreeSet<String>,
     budget: &'b Budget<'l>,
 }
 
@@ -488,6 +491,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             recorded: BTreeSet::new(),
             kept: BTreeMap::new(),
             omitted_at: BTreeMap::new(),
+            abort_kept: BTreeSet::new(),
             budget,
         }
     }
@@ -543,23 +547,35 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         {
             return;
         }
-        let more = e
-            .details
-            .get("omitted")
-            .and_then(|n| n.as_u64())
-            .unwrap_or(1);
-        let kept = self.kept.entry(certificate.to_owned()).or_default();
-        if *kept < MAX_FAILURES_PER_CERTIFICATE {
-            *kept += 1;
+        // Only the engine's own entry about unusable names carries a count
+        // (no source error, no URL); a source's details are never one.
+        let more = match (source_error, url) {
+            (None, None) => e.details.get("omitted").and_then(|n| n.as_u64()),
+            _ => None,
+        }
+        .unwrap_or(1);
+        // Entries about a point and entries about none (unusable names,
+        // screening, whole-request failures) are bounded apart, so one kind
+        // cannot hide the other. A source's abort is always kept, once.
+        let bucket = (certificate.to_owned(), url.is_some());
+        let kept = self.kept.entry(bucket.clone()).or_default();
+        let first_abort = source_error == Some(CrlSourceErrorKind::Abort)
+            && self.abort_kept.insert(certificate.to_owned());
+        if *kept < MAX_FAILURES_PER_CERTIFICATE || first_abort {
+            if *kept < MAX_FAILURES_PER_CERTIFICATE {
+                *kept += 1;
+            }
             self.push_failure(certificate, url, e, source_error);
             return;
         }
-        // Past the bound: one entry per certificate counts the rest.
-        if let Some(&at) = self.omitted_at.get(certificate) {
+        // Past the bound: one entry per bucket counts the rest.
+        if let Some(&at) = self.omitted_at.get(&bucket) {
             let last = &mut self.report.failures[at];
             let total = last.details.get("omitted").and_then(|n| n.as_u64());
-            last.details
-                .insert("omitted".into(), (total.unwrap_or(0) + more).into());
+            last.details.insert(
+                "omitted".into(),
+                total.unwrap_or(0).saturating_add(more).into(),
+            );
             return;
         }
         let marker = error(
@@ -567,8 +583,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             "further CRL retrieval failures for this certificate are not listed",
         )
         .detail("omitted", more);
-        self.omitted_at
-            .insert(certificate.to_owned(), self.report.failures.len());
+        self.omitted_at.insert(bucket, self.report.failures.len());
         self.push_failure(certificate, None, &marker, None);
     }
 
@@ -766,7 +781,9 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         self.budget.log.info(
             Stage::Revocation,
             format_args!(
-                "asking the CRL source for certificate {sha256}, listed points {points:?}"
+                "asking the CRL source for certificate {sha256}, {} listed points, first {:?}",
+                points.len(),
+                &points[..points.len().min(MAX_FAILURES_PER_CERTIFICATE)]
             ),
         );
         let response = match source.crls(&request) {
@@ -2113,7 +2130,7 @@ mod tests {
         );
     }
     #[test]
-    fn omitted_counts_are_carried_into_the_entry_at_the_bound_and_are_not_repeated() {
+    fn omitted_counts_carry_over_and_a_source_never_sets_one() {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
@@ -2121,19 +2138,38 @@ mod tests {
         for i in 0..MAX_FAILURES_PER_CERTIFICATE {
             state.record("a", Some(&format!("http://h.invalid/{i}")), &e, None);
         }
-        // The first one past the bound carries its own count.
+        // Entries about no point are bounded apart: this one is kept, and
+        // the engine's own count past that bound is carried.
+        for _ in 0..MAX_FAILURES_PER_CERTIFICATE {
+            state.record("a", None, &e, None);
+        }
         let many = error(ErrorCode::CrlFetchDenied, "names").detail("omitted", 200);
         state.record("a", None, &many, None);
-        // Two points past the bound, one of them recorded twice.
-        state.record("a", Some("http://h.invalid/x"), &e, None);
-        state.record("a", Some("http://h.invalid/x"), &e, None);
-        state.record("a", Some("http://h.invalid/y"), &e, None);
-        let last = state.report.failures.last().unwrap();
-        assert_eq!(
-            state.report.failures.len(),
-            MAX_FAILURES_PER_CERTIFICATE + 1
-        );
-        assert_eq!(last.details["omitted"], 202);
+        // Two points past the bound, one recorded twice; a source's detail is
+        // not a count, and a huge one cannot overflow.
+        let lying = error(ErrorCode::CrlFetchFailed, "x").detail("omitted", u64::MAX);
+        let kind = Some(CrlSourceErrorKind::Failed);
+        state.record("a", Some("http://h.invalid/x"), &lying, kind);
+        state.record("a", Some("http://h.invalid/x"), &lying, kind);
+        state.record("a", Some("http://h.invalid/y"), &lying, kind);
+        let counts: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .filter_map(|f| f.details.get("omitted").and_then(|n| n.as_u64()))
+            .collect();
+        assert_eq!(counts, [200, 2]);
+        // A source's abort past the bound stays listed, once.
+        let abort = CrlSourceErrorKind::Abort;
+        state.record("a", Some("http://h.invalid/z"), &e, Some(abort));
+        state.record("a", Some("http://h.invalid/w"), &e, Some(abort));
+        let aborts = state
+            .report
+            .failures
+            .iter()
+            .filter(|f| f.source_error == Some(abort))
+            .count();
+        assert_eq!(aborts, 1);
     }
     #[test]
     fn points_left_when_the_byte_allowance_is_spent_are_not_tried() {
