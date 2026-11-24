@@ -225,6 +225,25 @@ discovered: each such point yields no evidence and is listed in
 are still requested. Successfully retrieving an
 artifact never implies that its signature or revocation status is valid.
 
+## Where each rule is decided
+
+The rules below are numbered entries in [docs/crl.md](crl.md); this page
+explains the flow. Where the two differ, the entry decides.
+
+| Subject | Entries |
+| --- | --- |
+| Nothing is requested for an input that cannot verify (first verification, whole-input check) | [CRL-011](crl.md#crl-011-nothing-is-fetched-for-an-input-that-cannot-verify) |
+| What is asked, once per certificate, and when a certificate counts as covered | [CRL-033](crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-034](crl.md#crl-034-a-source-answering-by-certificate-leaves-no-per-point-failures) |
+| Which error a rejected path reports, and which other paths a source could complete | [CRL-027](crl.md#crl-027-which-error-a-rejected-chain-reports), [CRL-031](crl.md#crl-031-a-revocation-names-another-paths-refreshable-certificates), [CRL-032](crl.md#crl-032-a-path-a-source-could-complete-is-reported-over-a-stuck-path), [CRL-017](crl.md#crl-017-a-path-that-verifies-with-its-crls-is-accepted-whatever-another-path-does), [CRL-022](crl.md#crl-022-a-source-completes-another-path-beside-a-revoked-one) |
+| Which supplied CRLs are refreshed, and which are never offered to a source | [CRL-018](crl.md#crl-018-a-crl-with-a-bad-signature-is-not-refreshed), [CRL-019](crl.md#crl-019-an-expired-supplied-crl-is-refreshed), [CRL-020](crl.md#crl-020-a-supplied-crl-the-references-would-look-past-is-refreshed), [CRL-021](crl.md#crl-021-a-point-scoped-crl-for-a-certificate-that-lists-no-points-is-replaced-by-certificate), [CRL-035](crl.md#crl-035-a-missing-nextupdate-blocks-retrieval-only-as-a-crls-sole-defect), [CRL-036](crl.md#crl-036-without-an-answer-an-expired-or-replaceable-crls-error-stands) |
+| Missing evidence is `revocation_unknown`; the four source outcome kinds | [CRL-026](crl.md#crl-026-missing-evidence-is-revocation_unknown-a-source-has-four-outcome-kinds) |
+| A definite result keeps its code with `--fetch-crls` | [CRL-029](crl.md#crl-029-a-definite-result-keeps-its-code-with---fetch-crls) |
+| An abort ends retrieval and is reported as `crl_fetch_aborted` | [CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted) |
+| Hygiene screening, unusable points and what the source decides | [CRL-023](crl.md#crl-023-the-source-decides-transport-the-core-screens-hygiene-only), [CRL-024](crl.md#crl-024-one-certificates-distribution-points-never-end-the-run), [CRL-037](crl.md#crl-037-the-built-in-source-refuses-what-it-does-not-fetch), [CRL-038](crl.md#crl-038-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source) |
+| Fetch limits, and a body over the size cap | [CRL-039](crl.md#crl-039-fetch-limits-bound-one-verification), [CRL-045](crl.md#crl-045-a-retrieved-crl-over-the-size-cap-is-never-evidence), [CRL-046](crl.md#crl-046-a-retrieved-crl-over-the-size-cap-is-reported-with-the-cap-it-hit) |
+| A fetched CRL is evidence only after verification authenticates it | [CRL-048](crl.md#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it) |
+| Order of failures in `crl_retrieval.failures` | [CRL-049](crl.md#crl-049-retrieval-failures-are-reported-in-a-fixed-order) |
+
 ## Provider boundary
 
 Enable the optional `crl-fetch` feature for `rssig::retrieval`; `cli` includes it.
