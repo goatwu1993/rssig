@@ -325,8 +325,7 @@ they pin or what they check, never after a task.
 - [ ] **APPX-T001** refactor: Number the `APPX-` index. Fill
   [docs/appx-decisions.md](docs/appx-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
-- [ ] **CRL-T026** docs: Link CRL retrieval rules to their entries.
-  `docs/crl-retrieval.md` restates rules now in `CRL-026` to `CRL-040`.
+- [x] **CRL-T026** docs: Link CRL retrieval rules to their entries. Done ([PR #88](https://github.com/goatwu1993/rssig/pull/88)); [CRL retrieval](docs/crl-retrieval.md).
 - [x] **TEST-T007** refactor: Rename task-named library cases. Done
   ([PR #81](https://github.com/goatwu1993/rssig/pull/81)), which renamed every
   task-named case, fixture and test by subject.
