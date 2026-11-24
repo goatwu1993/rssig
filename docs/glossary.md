@@ -41,6 +41,8 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **spec** (specification) | `tests/cases.json`, its schema, the fixtures and `tests/fixtures/manifest.json`: what any implementation of the CLI must do. |
 | **case** | One entry in `tests/cases.json`: a command, its inputs and the expected result. |
 | **fixture** | A committed input file under `tests/fixtures/`, with provenance in the manifest. |
+| **injected answer** | What a case's injected CRL source returns for one certificate it is asked about (`crl_certificate_responses`): a fixture file name, or a scripted answer. Not an *answer by certificate* (CRL-034), which is a body that loads as a CRL of the certificate's issuer; an injected answer may hold none. |
+| **scripted answer** | An injected answer written out in a case: the response's bodies and failures, or the error the source fails the whole request with ([testing.md](testing.md)). |
 | **named test** | A Rust test under `tests/cli/` that checks one fixture in-process. |
 | **pinned result** | A case's expected result; every one needs a decision ([AGENTS.md](../AGENTS.md#pinned-expectations)). |
 

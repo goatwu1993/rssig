@@ -168,9 +168,16 @@
               "pattern": "^[0-9a-f]{64}$"
             },
             "additionalProperties": {
-              "$ref": "#/$defs/fixtureName"
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/fixtureName"
+                },
+                {
+                  "$ref": "#/$defs/scriptedAnswer"
+                }
+              ]
             },
-            "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to a DER/PEM response file, returned alone as a CRL without a URL, as a source keyed by certificate or issuer does; none of that certificate's listed URLs is requested. Requires crl_responses. Such answers are not listed in expect.crl_requests."
+            "description": "Offline injected CRL source: map the SHA-256 (lowercase hex of the DER) of a certificate the engine asks about to its answer: a DER/PEM response file, returned alone as a CRL without a URL, as a source keyed by certificate or issuer does, or a scripted answer. None of that certificate's listed URLs is requested. Requires crl_responses. Such answers are not listed in expect.crl_requests."
           },
           "decision": {
             "type": "string",
@@ -196,6 +203,93 @@
     }
   },
   "$defs": {
+    "scriptedAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "crls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file"
+            ],
+            "properties": {
+              "file": {
+                "$ref": "#/$defs/fixtureName"
+              },
+              "pad_to": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 16777216,
+                "description": "Zero-pad the body to this many bytes, at least the file's own size, to give the source a body over a size cap without a large fixture. The engine judges the size. The runner, not the schema, fails a case whose pad_to is below the file's size or whose pad_to values, every one counted, add up to more than 67108864."
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The URL the body is said to come from; omitted for a body offered by certificate or issuer (whether it counts as an answer by certificate is CRL-034's). The runner, not the schema, fails a case whose url is not one of the request's listed points."
+              }
+            }
+          },
+          "description": "Bodies in the response, in order, each a DER/PEM response file."
+        },
+        "failures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/scriptedFailure"
+          },
+          "description": "Failures in the response, in order. When some listed point is left that no body or failure named, the first one without a url answers those points, unless a body answered by certificate while retrieval had not aborted (an abort anywhere in this response counts) and it is no abort, or another failure without a url is an abort and this one is not; otherwise, with no point left, and for every later one without a url, it is recorded for no point."
+        },
+        "error": {
+          "$ref": "#/$defs/scriptedFailure",
+          "description": "The source fails the whole request with this error instead of returning a response. Excludes crls and failures."
+        }
+      },
+      "dependentSchemas": {
+        "error": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "crls"
+                ]
+              },
+              {
+                "required": [
+                  "failures"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "scriptedFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "denied",
+            "failed",
+            "abort",
+            "unknown"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The URL the failure names; omitted for one about the whole request. The runner, not the schema, fails a case whose url is not one of the request's listed points."
+        }
+      }
+    },
     "fixtureName": {
       "type": "string",
       "minLength": 1,

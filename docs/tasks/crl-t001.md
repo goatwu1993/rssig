@@ -250,7 +250,7 @@ Change these only with a new decision and paired fixtures.
 ## Known limitations tracked elsewhere
 
 The review of PR #60 is concluded; everything it left open is a task in
-`TODO.md` (CRL-T014 to CRL-T024, TEST-T009 to TEST-T010, LIB-T011 and CRL-T029),
+`TODO.md` (CRL-T014 to CRL-T024, TEST-T010, CRL-T036, CRL-T037, CRL-T038, LIMIT-T006, LIB-T011 and CRL-T029),
 with CRL-T002, CRL-T006, CRL-T010 and CRL-T033 for the larger items.
 
 - **CRL-T002:** excluded CRLs are still reported as supplied.
@@ -539,7 +539,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   `crl-026-fetch-source-denied-is-no-evidence`,
   `crl-026-fetch-source-failed-is-no-evidence`,
   `crl-026-fetch-source-unknown-is-no-evidence`,
-  `crl-026-fetch-source-abort-is-reported`, `crl-026-fetch-source-abort-stops-requests`.
+  `crl-047-fetch-source-abort-is-reported`, `crl-047-fetch-source-abort-stops-requests`.
 - **The source decides transport.** Decided (owner: the CLI's default HTTP
   source, library users provide their own), acceptance for the injected
   source, diagnostics for the built-in refusal:
@@ -733,8 +733,9 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   left are recorded as `crl_fetch_aborted`, not tried, even beside another
   URL-less failure; an abort naming one point does not relabel the others
   (`points_left_after_an_abort_among_url_less_failures_are_not_tried`).
-  The spec's injected source maps URLs to error kinds and cannot return
-  URL-less failures, so this is unit-tested only.
+  A case can now script URL-less failures (TEST-T009:
+  `crl-047-url-less-abort-is-reported` pins one abort alone, and
+  `crl-047-url-less-abort-beside-another-failure-marks-the-point-not-tried` one beside a URL-less denial).
 - **Deadline during I/O.** Each DNS, connect, read and write wait is cut
   to the time left, so an I/O failure once the deadline has passed is
   reported as the deadline (`abort`); a request that completed and failed

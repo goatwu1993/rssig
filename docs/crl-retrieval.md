@@ -191,7 +191,8 @@ another verification.
 
 When evidence stays missing the result is the verifier's own
 `revocation_unknown` (with `details.unusable_crl` naming the most specific CRL
-that exists but could not be used, if any), as without `--fetch-crls`, unless the source aborted:
+that exists but could not be used, if any), as without `--fetch-crls`, unless an aborted source left a certificate
+without a CRL unasked or cut its request short (CRL-047):
 then it is `crl_fetch_aborted` (with the verifier's message in
 `details.revocation_unknown`), so that "the source gave up" is distinct from
 "no CRL was available". A good result is still returned if the CRLs gathered
@@ -297,7 +298,7 @@ resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
 download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
-| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for the rest of the run), the source reports `abort`: the result is `crl_fetch_aborted` and no further request is made; each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+| Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for the rest of the run), the source reports `abort`: no further request is made, and the result is `crl_fetch_aborted` when that left a certificate unasked or cut its request short (CRL-047); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
 
 The built-in source's HTTP limits bound one verification, not a batch or a
 reused instance: the engine calls `CrlSource::begin_verification` first, so in
@@ -339,7 +340,7 @@ supplied, while existing CRL reports describe normalized DER.
 Points that yielded no evidence are listed in `crl_retrieval.failures` (omitted
 when empty), on success and in failure `details.crl_retrieval`; a successful
 result can therefore show that some requests failed or were denied without
-that evidence being needed. Missing evidence is always `revocation_unknown`.
+that evidence being needed. Missing evidence is `revocation_unknown`, unless an aborted source left a certificate without a CRL unasked or cut its request short, which is `crl_fetch_aborted` (CRL-047).
 The engine's own limits use `resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
 failure `details.crl_retrieval`.
 Malformed, stale, forged or revoked evidence retains existing verifier error
