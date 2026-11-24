@@ -1279,6 +1279,14 @@ fn source_index_reads_code_never_comments_or_strings() {
     assert_eq!(index.included, BTreeSet::from(["cli/pe.rs".to_owned()]));
 }
 
+/// Removes a scratch directory even if the test panics.
+struct Scratch(std::path::PathBuf);
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
 #[test]
 fn local_by_products_are_skipped_and_can_never_be_artifacts() {
     for name in [".DS_Store", "._good.exe", ".good.exe.swp", "good.exe~"] {
@@ -1290,13 +1298,6 @@ fn local_by_products_are_skipped_and_can_never_be_artifacts() {
         assert!(!local_by_product(name), "{name}");
     }
 
-    /// Removes the scratch directory even if the scan panics.
-    struct Scratch(std::path::PathBuf);
-    impl Drop for Scratch {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
     // Per process: test runs sharing a target directory must not collide.
     let scratch = Scratch(
         Path::new(env!("CARGO_TARGET_TMPDIR"))
@@ -1600,15 +1601,17 @@ fn fixtures_are_never_indexed_as_sources() {
             .keys()
             .all(|path| !path.starts_with(&format!("tests/{FIXTURES}/")))
     );
-    let root = Path::new(env!("CARGO_TARGET_TMPDIR"))
-        .join(format!("manifest-sources-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let scratch = Scratch(
+        Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join(format!("manifest-sources-{}", std::process::id())),
+    );
+    let root = &scratch.0;
+    let _ = std::fs::remove_dir_all(root);
     std::fs::create_dir_all(root.join("tests").join(FIXTURES)).unwrap();
     std::fs::write(root.join("tests/kept.rs"), "fn kept() {}").unwrap();
     std::fs::write(root.join("tests").join(FIXTURES).join("sample.rs"), "fn (").unwrap();
     let mut sources = BTreeMap::new();
-    read_sources(&root, "tests", &mut sources);
-    std::fs::remove_dir_all(&root).unwrap();
+    read_sources(root, "tests", &mut sources);
     assert_eq!(sources.keys().collect::<Vec<_>>(), ["tests/kept.rs"]);
 }
 
