@@ -440,3 +440,11 @@ defaults remain unchanged; report response provenance without claiming each
 artifact verified. Destination checks, redirects, deadlines, response sizes
 and aggregate limits are documented in `docs/crl-retrieval.md`. Tests use
 committed fixtures and injected responses, never external network services.
+
+## RDP-T001 fix: Keep the outer error's causes on the RDP revocation fallback
+
+When a revocation was another error type's source, the merged usage failure
+lost the outer error's cause messages. The fallback in
+`choose_usage_failure` (`src/rdp.rs`) now sets `causes` to the whole error
+chain, as `VerificationError::from_internal` does. Covered by the unit test
+`a_revocation_that_is_another_errors_source_keeps_the_outer_causes`.

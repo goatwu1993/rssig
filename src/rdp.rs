@@ -5,11 +5,12 @@ use crate::{
     domain::*,
     verify::{VerifyOptions, budget::Budget, timestamp::verify_timestamp},
 };
-use alloc::{format, vec::Vec};
 #[cfg(test)]
+use alloc::vec;
 use alloc::{
+    format,
     string::{String, ToString},
-    vec,
+    vec::Vec,
 };
 use anyhow::Result;
 #[cfg(test)]
@@ -305,14 +306,25 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
         return Some(revoked);
     }
     // Otherwise (the revocation is the source of another error type, not an
-    // anyhow context), it is reported at the top with the names, without the
-    // outer error's messages in its causes.
+    // anyhow context), it is reported at the top with the names. The outer
+    // error's messages stay in the chain as contexts around it, so
+    // `from_internal` reports them in its causes. Only the messages survive:
+    // nothing downcasts to the outer type, and the revocation has no sources.
+    let messages: Vec<String> = revoked.chain().map(ToString::to_string).collect();
+    let depth = revoked
+        .chain()
+        .position(|cause| cause.downcast_ref::<VerificationError>().is_some())?;
     let mut error = revoked
         .chain()
-        .find_map(|cause| cause.downcast_ref::<VerificationError>())?
+        .nth(depth)?
+        .downcast_ref::<VerificationError>()?
         .clone();
     add(&mut error, gaps);
-    Some(error.into())
+    let mut merged = anyhow::Error::new(error);
+    for message in messages[..depth].iter().rev() {
+        merged = merged.context(message.clone());
+    }
+    Some(merged)
 }
 
 /// How far CRLs from a source could complete a failed usage that is not a
@@ -470,6 +482,41 @@ mod tests {
         let chosen = choose_usage_failure(vec![other(), revoked(vec![])]).unwrap();
         assert_eq!(code(&chosen), ErrorCode::CertificateRevoked);
         assert!(choose_usage_failure(Vec::new()).is_none());
+    }
+    #[test]
+    fn a_revocation_that_is_another_errors_source_keeps_the_outer_causes() {
+        #[derive(Debug)]
+        struct Outer(VerificationError);
+        impl std::fmt::Display for Outer {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("outer failure")
+            }
+        }
+        impl std::error::Error for Outer {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                Some(&self.0)
+            }
+        }
+        let revoked = VerificationError::new(ErrorCode::CertificateRevoked, Stage::Revocation, "x");
+        let unknown = VerificationError::new(ErrorCode::RevocationUnknown, Stage::Revocation, "y")
+            .detail(
+                "certificates_without_crl",
+                vec![serde_json::json!({"sha256": "a"})],
+            );
+        let chosen = choose_usage_failure(vec![
+            anyhow::Error::new(Outer(revoked)).context("usage"),
+            anyhow::Error::from(unknown),
+        ])
+        .unwrap();
+        // As `at` reports it: `from_internal` rebuilds the causes from the chain.
+        let error = VerificationError::from_internal(
+            chosen,
+            ErrorCode::CertificateChainInvalid,
+            Stage::CertificateChain,
+        );
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert!(error.details.contains_key("certificates_without_crl"));
+        assert_eq!(error.causes, vec!["usage", "outer failure", "x"]);
     }
     #[test]
     fn only_a_named_missing_crl_ranks_a_usage_failure_as_completable() {

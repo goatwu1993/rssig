@@ -253,9 +253,11 @@ they pin or what they check, never after a task.
 
 ### RDP
 
-- [ ] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback.
-  When a revocation is another error type's source, the merged error loses
-  the outer error's cause messages.
+- [x] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback. Done in #89; [record](docs/tasks/done.md#rdp-t001-fix-keep-the-outer-errors-causes-on-the-rdp-revocation-fallback).
+- [ ] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. RDP-T001 is
+  guarded by a unit test through `from_internal`; no fixture yet reaches a
+  revocation that is another error type's source, so no spec case pins the
+  serialized `causes`.
 
 ## P1 — Clean parse/verify interfaces
 
