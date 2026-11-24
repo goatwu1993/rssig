@@ -20,6 +20,10 @@ use x509_cert::{
 pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_REQUESTS: usize = 16;
+/// Failure entries the report keeps for one certificate; further ones are
+/// counted in one entry (`details.omitted`), CRL-024. A bound on the report,
+/// not on what is offered to a source.
+const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
 /// CRL bodies and failures one [`CrlResponse`] may carry together.
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
@@ -295,8 +299,8 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
 /// and length limits are errors too, as [`crl_distribution_points`] has always
 /// reported them. Otherwise, as OpenSSL and Bouncy Castle never fail a chain
 /// over one certificate's points, an over-long URI is one skipped point and
-/// the URIs past the count limit are one recorded failure: the first ones
-/// still go to the source.
+/// every listed URI is returned, however many (CRL-024): the source decides
+/// how many it tries, and the report bounds its own entries.
 fn listed_points(
     cert: &Certificate,
     strict: bool,
@@ -323,8 +327,7 @@ fn listed_points(
         }
     };
     let mut urls = 0;
-    let mut over_limit = false;
-    'points: for point in points.0 {
+    for point in points.0 {
         if point.reasons.is_some() || point.crl_issuer.is_some() {
             let e = error(
                 ErrorCode::CrlFetchDenied,
@@ -359,13 +362,8 @@ fn listed_points(
                 note(&mut listed, e);
                 continue;
             };
-            if urls >= MAX_REQUESTS {
-                let e = limit("crl_urls", MAX_REQUESTS, urls, 1);
-                if strict {
-                    return Err(e);
-                }
-                over_limit = true;
-                break 'points;
+            if strict && urls >= MAX_REQUESTS {
+                return Err(limit("crl_urls", MAX_REQUESTS, urls, 1));
             }
             if uri.as_str().len() > 2048 {
                 let e = limit("crl_url_bytes", 2048, 0, uri.as_str().len());
@@ -380,9 +378,6 @@ fn listed_points(
         }
     }
     // Always reported, whatever the diagnostics bound.
-    if over_limit {
-        listed.push(Err(limit("crl_urls", MAX_REQUESTS, urls, 1)));
-    }
     if omitted > 0 {
         listed.push(Err(error(
             ErrorCode::CrlFetchDenied,
@@ -537,6 +532,46 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         {
             return;
         }
+        let mine = |f: &&CrlRetrievalFailure| f.certificate_sha256 == certificate;
+        let count = self.report.failures.iter().filter(mine).count();
+        if count > MAX_FAILURES_PER_CERTIFICATE {
+            // Past the bound: the last entry is the one that counts the rest.
+            let more = e
+                .details
+                .get("omitted")
+                .and_then(|n| n.as_u64())
+                .unwrap_or(1);
+            if let Some(last) = self.report.failures.iter_mut().rev().find(|f| mine(&&**f)) {
+                let total = last
+                    .details
+                    .get("omitted")
+                    .and_then(|n| n.as_u64())
+                    .unwrap_or(0);
+                last.details.insert("omitted".into(), (total + more).into());
+            }
+            return;
+        }
+        let marker;
+        let e = if count == MAX_FAILURES_PER_CERTIFICATE {
+            marker = error(
+                ErrorCode::CrlFetchDenied,
+                "further CRL retrieval failures for this certificate are not listed",
+            )
+            .detail("omitted", 1);
+            return self.push_failure(certificate, None, &marker, None);
+        } else {
+            e
+        };
+        self.push_failure(certificate, url, e, source_error);
+    }
+
+    fn push_failure(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: &VerificationError,
+        source_error: Option<CrlSourceErrorKind>,
+    ) {
         self.report.failures.push(CrlRetrievalFailure {
             problem: e.problem.clone(),
             certificate_sha256: certificate.into(),
@@ -2012,8 +2047,8 @@ mod tests {
     #[test]
     fn a_certificate_over_the_url_limits_is_skipped_point_by_point() {
         // As OpenSSL and Bouncy Castle: one certificate's points never end
-        // the run. An over-long URI is skipped and recorded; past 16, the
-        // rest are recorded as not passed, and the first 16 still go out.
+        // the run. An over-long URI is skipped and recorded; every other
+        // listed point reaches the source, however many (CRL-024).
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
@@ -2024,16 +2059,34 @@ mod tests {
             .collect();
         uris.insert(0, long);
         ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
-        assert_eq!(source.urls.len(), MAX_REQUESTS);
+        assert_eq!(source.urls.len(), 17);
+        assert!(source.urls.len() > MAX_REQUESTS);
         let resources: Vec<_> = state
             .report
             .failures
             .iter()
             .filter_map(|f| f.details.get("resource").and_then(|r| r.as_str()))
             .collect();
-        assert_eq!(resources, ["crl_url_bytes", "crl_urls"]);
+        assert_eq!(resources, ["crl_url_bytes"]);
         // The strict public discovery still reports the limit as an error.
         assert!(crl_distribution_points(&signer_with_uris(&uris)).is_err());
+    }
+    #[test]
+    fn the_report_bounds_failure_entries_per_certificate_not_the_points_offered() {
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let uris: Vec<String> = (0..60)
+            .map(|i| format!("http://crl.example.invalid/p-{i}.crl"))
+            .collect();
+        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
+        assert_eq!(source.urls.len(), 60);
+        let failures = &state.report.failures;
+        assert_eq!(failures.len(), MAX_FAILURES_PER_CERTIFICATE + 1);
+        let last = failures.last().unwrap();
+        assert_eq!(last.url, None);
+        assert_eq!(last.details["omitted"], 60 - MAX_FAILURES_PER_CERTIFICATE);
     }
     #[test]
     fn points_left_when_the_byte_allowance_is_spent_are_not_tried() {

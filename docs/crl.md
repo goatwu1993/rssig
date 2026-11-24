@@ -372,14 +372,14 @@ The verification core passes every listed URI to an injected source after hygien
 
 ### CRL-024: One certificate's distribution points never end the run
 
-An over-long URI is skipped, and URIs past the first 16 are recorded as one `crl_urls` failure. The engine's own per-verification limits end the run; a source's request and URL totals are the source's (CRL-039).
+An over-long URI is skipped; every other listed URI is offered to the source, however many, and the source decides how many it tries. The report keeps at most 16 failure entries per certificate and counts the rest in one entry (`details.omitted`). The engine's own per-verification limits end the run; a source's request and URL totals are the source's (CRL-039).
 
 - **Status:** Decided
-- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle has such a limit; both skip a failing point)
+- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle has such a limit; both skip a failing point); the offered-point cap was removed by CRL-T040, awaiting owner approval in the PR
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL and Bouncy Castle have no per-certificate point limit and skip a point that fails.
-- **Unit test:** `a_certificate_over_the_url_limits_is_skipped_point_by_point`.
+- **Unit tests:** `a_certificate_over_the_url_limits_is_skipped_point_by_point`, `the_report_bounds_failure_entries_per_certificate_not_the_points_offered`.
 
 ### CRL-025: A role-only partition alone is unsupported
 
