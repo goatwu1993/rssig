@@ -10,6 +10,9 @@ same change.
 |---|---|---|
 | **policy** | A behavior the caller **selects**: `VerifyOptions` and its `RevocationPolicy`, integrity-only mode, `--no-revocation`, the `--allow-sha1` opt-in, a `CrlSource`'s own URL policy. The `POLICY-` index records the verification modes; the SHA-1 opt-in is `ALG-` and a source's URL policy is `CRL-`. | Fixed behavior, which is a rule. |
 | **rule** | Fixed verifier behavior that no option turns off, stated in prose ("the best usable CRL decides"). A decision entry states one rule, or what one policy does. | A policy, which is selectable. |
+| **engine** | The library's verification and CRL retrieval code (`Retrieval` in `src/retrieval.rs` and the verifier): it judges evidence and bounds what it records and accepts back. It makes no fetch policy ([where the engine ends](crl-retrieval.md#where-the-engine-ends-and-the-application-begins)). | The CLI, or a `CrlSource`. |
+| **source** | A `CrlSource`: what the engine asks for CRLs. It decides what to fetch, from where, and how often and how much (requests, URLs, time, bytes on the wire); `HttpCrlSource` is the built-in one. | The engine, or the CLI that builds one. |
+| **fetch policy** | The source's decisions on what to fetch and how much: schemes, destinations, redirects, and the totals of requests, URLs, time and wire bytes (CRL-023, CRL-039). A new one goes in `HttpCrlSource`, not `Retrieval`. | A **policy**, which the caller selects; a source's URL policy is one kind of fetch policy. |
 | **check** | The code or verification step that enforces a rule ("path checks", "signature checks"). | |
 | **profile** | The supported subset of an external format or standard, for example the [timestamp profile](timestamp-profile.md) of RFC 3161. | |
 | **verification mode** | One of the selectable policies above: trusted, integrity-only or revocation disabled. | |

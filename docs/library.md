@@ -716,9 +716,11 @@ targets, as `HttpCrlSource` does.
 
 **Reusing a source.** The engine calls `CrlSource::begin_verification()` once
 at the start of each verification that may ask the source. `HttpCrlSource`
-uses it to start its allowances (16 requests, 32 MiB, 30 seconds from its first
-fetch) afresh, so one instance can serve many files; the CLI relies on this.
-A source of your own that keeps per-verification allowances should do the
+uses it to start its allowances (64 source requests, 64 distinct URLs, 16 HTTP requests, 32 MiB,
+30 seconds from its first fetch) afresh, so one instance can serve many files; the CLI relies on this.
+The engine counts no requests to a source (CRL-039), so a source of your own
+that wants a cap enforces it, and reports the call past it as `abort`. One that
+keeps per-verification allowances should do the
 same; the default does nothing, and a source that delegates to another must
 forward it. A DNS timeout closes the built-in source for good, whatever a
 later verification does.
