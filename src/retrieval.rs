@@ -7,7 +7,10 @@ use crate::{
     verify::{VerifyOptions, budget::Budget, verify_inner_budget},
 };
 use ::der::Decode;
-pub use http::{HttpCrlSource, MAX_SOURCE_REQUESTS, MAX_SOURCE_URLS, check_public_http_url};
+pub use http::{
+    HttpCrlSource, MAX_POINTS_PER_REQUEST, MAX_SOURCE_REQUESTS, MAX_SOURCE_URLS,
+    check_public_http_url,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use x509_cert::{
     Certificate,
