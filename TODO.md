@@ -355,6 +355,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T041** refactor: Move the per-issuer request dedup out of the engine. Ask a source for every selected certificate and leave reuse to the source, as OpenSSL does; stop `HttpCrlSource` charging a call with no points. Needs the owner's approval (CRL-033 is Decided). Detail in [crl-t041.md](docs/tasks/crl-t041.md).
 - [ ] **CRL-T042** test: Add a `tests/cases.json` case and CLI test for a certificate listing more than 16 distribution points (CRL-024): all reach the source, and the report keeps 16 entries plus one `details.omitted` entry. Needs a fixture with a many-point certificate.
 - [ ] **CRL-T043** refactor: Measure the report and the engine's per-point state for a certificate listing many URIs, then choose the per-certificate failure cap (16 today, chosen to match the diagnostics cap) and bound the engine's per-point state, which CRL-T040 no longer limits to 16 points: `Retrieval::asked` (a cloned error per point), `recorded`, `in_flight`, the request's points and its log; a certificate listing 200,000 URIs is the case to guard.
+- [ ] **CRL-T044** refactor: Give `HttpCrlSource` a per-request point limit. With every listed point offered (CRL-T040), one certificate listing 64 or more URIs spends the built-in source's whole `crl_source_urls` allowance and aborts the verification; before, the engine offered at most 16. Put the limit and its decision text in `HttpCrlSource` (CRL-039).
 
 ### TIME
 

@@ -24,9 +24,9 @@ pub const MAX_REQUESTS: usize = 16;
 /// a point and for those about none each; further ones are
 /// counted in one entry (`details.omitted`), CRL-024. A bound on the report,
 /// not on what is offered to a source.
+const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
 /// Points the log line for one request names; it always gives the count.
 const LOGGED_POINTS: usize = 16;
-const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
 /// CRL bodies and failures one [`CrlResponse`] may carry together, besides one
 /// for each point the request offered.
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
@@ -3203,6 +3203,8 @@ mod tests {
             .unwrap_err();
             assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
             assert_eq!(e.details["resource"], "crl_response_entries");
+            // The bound is 64 plus the one point this request offered.
+            assert_eq!(e.details["limit"], MAX_RESPONSE_ENTRIES + 1);
             assert!(state.report.artifacts.is_empty());
         }
         // At the limit, every entry is taken.
