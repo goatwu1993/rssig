@@ -259,6 +259,17 @@ pub fn fetch_each(
     response
 }
 
+/// A fixed-size key for a certificate and a point, so that remembering one
+/// costs eight bytes. A collision (the key is fixed, so an input can be
+/// built to have one) only makes the report omit one entry or count one
+/// withheld point too few; it never changes what is accepted.
+fn point_hash(certificate: &str, key: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    (certificate, key).hash(&mut hasher);
+    hasher.finish()
+}
+
 /// A dedup key for a URI: its parsed, normalized form when it parses.
 fn url_key(raw: &str) -> String {
     url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
@@ -296,7 +307,10 @@ pub(crate) fn limit(
 /// Decode direct, complete CRL distribution-point URIs. Relative names, reason
 /// partitions, and indirect CRL issuers are unsupported and fail closed.
 pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, VerificationError> {
-    listed_points(cert, true)?.into_iter().collect()
+    listed_points(cert, true)?
+        .into_iter()
+        .map(|point| point.map_err(|e| *e))
+        .collect()
 }
 
 /// Each listed name of `cert`'s cRLDistributionPoints: a URI, or
@@ -311,7 +325,7 @@ pub fn crl_distribution_points(cert: &Certificate) -> Result<Vec<String>, Verifi
 fn listed_points(
     cert: &Certificate,
     strict: bool,
-) -> Result<Vec<Result<String, VerificationError>>, VerificationError> {
+) -> Result<Vec<Result<String, Box<VerificationError>>>, VerificationError> {
     let value = cert
         .tbs_certificate
         .get::<CrlDistributionPoints>()
@@ -328,7 +342,7 @@ fn listed_points(
     let mut note = |listed: &mut Vec<_>, e: VerificationError| {
         if diagnostics < MAX_FAILURES_PER_CERTIFICATE {
             diagnostics += 1;
-            listed.push(Err(e));
+            listed.push(Err(Box::new(e)));
         } else {
             omitted += 1;
         }
@@ -386,11 +400,13 @@ fn listed_points(
     }
     // Counted here; the report bounds its own entries again.
     if omitted > 0 {
-        listed.push(Err(error(
-            ErrorCode::CrlFetchDenied,
-            "further unusable CRL distribution point names are not listed",
-        )
-        .detail("omitted", omitted)));
+        listed.push(Err(Box::new(
+            error(
+                ErrorCode::CrlFetchDenied,
+                "further unusable CRL distribution point names are not listed",
+            )
+            .detail("omitted", omitted),
+        )));
     }
     Ok(listed)
 }
@@ -441,7 +457,7 @@ struct Retrieval<'s, 'b, 'l> {
     downloaded: usize,
     /// URIs already passed to the source in this verification (by
     /// normalized key), with the failure reported for each, if any.
-    asked: BTreeMap<String, Option<(VerificationError, Option<CrlSourceErrorKind>)>>,
+    asked: BTreeMap<String, Option<AskedFailure>>,
     /// What was already asked about in this verification, by issuer name
     /// (DER), authority key identifier and whether the certificate is a CA:
     /// an issuer's CRLs can differ by key and be split between CA and
@@ -464,7 +480,7 @@ struct Retrieval<'s, 'b, 'l> {
     unused_points: Vec<(String, Vec<String>)>,
     /// Per certificate and normalized URL, what the report already has an
     /// entry for (listed or counted as omitted).
-    recorded: BTreeSet<(String, String)>,
+    recorded: BTreeSet<u64>,
     /// Per certificate, the failure entries kept, up to
     /// `MAX_FAILURES_PER_CERTIFICATE`.
     kept: BTreeMap<(String, bool), usize>,
@@ -473,6 +489,32 @@ struct Retrieval<'s, 'b, 'l> {
     /// Certificates whose source abort the report already lists past the bound.
     abort_kept: BTreeSet<String>,
     budget: &'b Budget<'l>,
+}
+
+/// What an earlier request for a point yielded when it yielded no evidence.
+#[derive(Clone)]
+enum AskedFailure {
+    /// The error as recorded.
+    Full(VerificationError, Option<CrlSourceErrorKind>),
+    /// Only its code and kind, for the points past the bound the report
+    /// lists: the engine's memory per point stays small however many a
+    /// certificate lists, and a later certificate listing the point is
+    /// told that it yielded nothing.
+    Compact(ErrorCode, Option<CrlSourceErrorKind>),
+}
+impl AskedFailure {
+    fn error(&self) -> (VerificationError, Option<CrlSourceErrorKind>) {
+        match self {
+            Self::Full(e, kind) => (e.clone(), *kind),
+            Self::Compact(code, kind) => (
+                error(
+                    *code,
+                    "an earlier request for this point yielded no evidence",
+                ),
+                *kind,
+            ),
+        }
+    }
 }
 
 fn crl_internal(e: anyhow::Error) -> VerificationError {
@@ -520,10 +562,20 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             Some(url) => e.detail("url", url),
             None => e,
         };
-        self.budget.log.info(
-            Stage::Revocation,
-            format_args!("CRL evidence missing: {:?}", e.message),
-        );
+        // Logged while the report would still list it: past the bound a
+        // certificate's entries are counted, not each logged.
+        let about_points = url.is_some() || kind.is_some();
+        let listed = self
+            .kept
+            .get(&(certificate.to_owned(), about_points))
+            .copied()
+            .unwrap_or(0);
+        if listed < MAX_FAILURES_PER_CERTIFICATE {
+            self.budget.log.info(
+                Stage::Revocation,
+                format_args!("CRL evidence missing: {:?}", e.message),
+            );
+        }
         self.record(certificate, url, &e, kind);
         // Only a point of the current request takes this outcome: a source
         // naming another URL does not change what that URL yielded.
@@ -531,7 +583,11 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             .filter(|key| self.in_flight.contains(key))
             .and_then(|key| self.asked.get_mut(&key))
         {
-            *entry = Some((e, kind));
+            *entry = Some(if listed < MAX_FAILURES_PER_CERTIFICATE {
+                AskedFailure::Full(e, kind)
+            } else {
+                AskedFailure::Compact(e.code, kind)
+            });
         }
     }
 
@@ -555,7 +611,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // One entry per certificate and URL: a repeat of a point, listed or
         // withheld by the bound below, is not counted twice.
         if let Some(url) = url
-            && !self.recorded.insert((certificate.to_owned(), url_key(url)))
+            && !self.recorded.insert(point_hash(certificate, &url_key(url)))
             && !first_abort
         {
             return;
@@ -654,7 +710,10 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             }
             for point in points {
                 match self.asked.get(&url_key(&point)).cloned() {
-                    Some(Some((e, kind))) => self.record(&certificate, Some(&point), &e, kind),
+                    Some(Some(failed)) => {
+                        let (e, kind) = failed.error();
+                        self.record(&certificate, Some(&point), &e, kind);
+                    }
                     Some(None) => {}
                     None => {
                         let e = error(
@@ -701,7 +760,7 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             let raw = match listed {
                 Ok(raw) => raw,
                 Err(e) => {
-                    self.skip(sha256, None, e, None);
+                    self.skip(sha256, None, *e, None);
                     continue;
                 }
             };
@@ -721,8 +780,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 continue;
             }
             match self.asked.get(&url_key(&raw)) {
-                Some(Some((e, kind))) => {
-                    let (e, kind) = (e.clone(), *kind);
+                Some(Some(failed)) => {
+                    let (e, kind) = failed.error();
                     self.record(sha256, Some(&raw), &e, kind);
                 }
                 Some(None) => {}
@@ -736,7 +795,8 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
                 }
             }
         }
-        self.in_flight = points.iter().map(|p| url_key(p)).collect();
+        // The keys of the points this request carries are the ones deduplicated above.
+        self.in_flight = offered;
         // The issuer name is the key for a source that stores CRLs by
         // issuer; a certificate without a readable one is not asked about,
         // and each of its listed points is recorded with that reason. The
@@ -1566,7 +1626,8 @@ mod tests {
             match body.len() {
                 n @ 0..128 => out.push(n as u8),
                 n @ 128..256 => out.extend([0x81, n as u8]),
-                n => out.extend([0x82, (n >> 8) as u8, n as u8]),
+                n @ 256..65536 => out.extend([0x82, (n >> 8) as u8, n as u8]),
+                n => out.extend([0x83, (n >> 16) as u8, (n >> 8) as u8, n as u8]),
             }
             out.extend_from_slice(body);
             out
@@ -2226,6 +2287,41 @@ mod tests {
                 .iter()
                 .any(|f| f.source_error == Some(abort))
         );
+    }
+    #[test]
+    fn past_the_report_bound_a_point_keeps_only_its_code_and_a_later_certificate_still_sees_it() {
+        // CRL-T043: the engine's memory per point stays small. The points the
+        // report lists keep their error; the others keep a code and a kind,
+        // and a later certificate listing one is still told it yielded nothing.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let uris: Vec<String> = (0..20)
+            .map(|i| format!("http://crl.example.invalid/c-{i}.crl"))
+            .collect();
+        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
+        let full = state
+            .asked
+            .values()
+            .filter(|f| matches!(f, Some(AskedFailure::Full(..))))
+            .count();
+        let compact = state
+            .asked
+            .values()
+            .filter(|f| matches!(f, Some(AskedFailure::Compact(..))))
+            .count();
+        assert_eq!((full, compact), (MAX_FAILURES_PER_CERTIFICATE, 4));
+        // The last point, past the bound for "a", is replayed for "b".
+        ask(&mut state, "b", &signer_with_uris(&uris[19..]), &mut source).unwrap();
+        let replayed = state
+            .report
+            .failures
+            .iter()
+            .find(|f| f.certificate_sha256 == "b" && f.url.is_some())
+            .expect("the failure is recorded for the second certificate");
+        assert_eq!(replayed.code, ErrorCode::CrlFetchFailed);
+        assert_eq!(replayed.source_error, Some(CrlSourceErrorKind::Failed));
     }
     #[test]
     fn points_left_when_the_byte_allowance_is_spent_are_not_tried() {
