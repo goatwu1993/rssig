@@ -444,7 +444,13 @@ impl CrlSource for HttpCrlSource {
             // went, and counts once.
             let is_left = match seen.get(&key) {
                 Some(is_left) => *is_left,
-                None if self.answered.contains_key(&key) => false,
+                None if self.answered.contains_key(&key)
+                    || self.too_big.get(&key).is_some_and(|(under, _)| {
+                        request.max_bytes.min(MAX_CRL_BYTES) <= *under
+                    }) =>
+                {
+                    false
+                }
                 None => {
                     fresh += 1;
                     fresh > MAX_POINTS_PER_REQUEST
@@ -1113,6 +1119,11 @@ mod tests {
         assert_eq!(again.details["limit"], 2);
         assert_eq!(again.details["requested"], 7);
         assert_eq!(source.requests, 0);
+        // A call with only such a point fetches nothing, so it is not counted.
+        let points = vec![url.to_string()];
+        let response = source.crls(&CrlRequest::new(&[], &[], &points, 2)).unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(source.source_requests, 0);
     }
     #[test]
     fn the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification() {

@@ -993,33 +993,18 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             format_args!("CRL source returned {len} bytes from {url:?}; not yet authenticated"),
         );
         // A body over its caps is not counted against the bodies after it.
-        // The exception is a replay of a body this verification already
-        // decoded (below): it adds nothing to what the store holds, so the
-        // room left for new bytes is not its to use.
-        let mut digest = None;
+        // The allowance bounds the response whatever it holds: a replay of a
+        // body already held counts like any other, so the rule is one for
+        // the engine and every source (a replay adds nothing to the store,
+        // but a source cannot tell the engine's room from its own).
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
-            let replay = !without_url && len <= MAX_CRL_BYTES && {
-                self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
-                let hashed = crate::crypto::Hash::Sha256.digest(&crl.bytes);
-                let known = self.decoded.contains_key(&hashed);
-                digest = Some(hashed);
-                known
-            };
-            if !replay {
-                self.skip(sha256, raw_url.as_deref(), e, None);
-                return Ok((None, false));
-            }
-        } else {
-            *total += len;
+            self.skip(sha256, raw_url.as_deref(), e, None);
+            return Ok((None, false));
         }
+        *total += len;
         // Every body is hashed for the report.
-        let digest = match digest {
-            Some(digest) => digest,
-            None => {
-                self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
-                crate::crypto::Hash::Sha256.digest(&crl.bytes)
-            }
-        };
+        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
+        let digest = crate::crypto::Hash::Sha256.digest(&crl.bytes);
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
             final_url,
@@ -2321,10 +2306,11 @@ mod tests {
         assert_eq!(budget.decoded_bytes.used() - before, 2 * one);
     }
     #[test]
-    fn a_replayed_body_is_not_refused_for_the_room_left_for_new_bytes() {
-        // The store already holds the CRL, so the next request's allowance
-        // (what is left of the cap) may be smaller than the replayed body:
-        // the replay adds nothing and is not a failure.
+    fn a_replayed_body_counts_against_the_requests_allowance() {
+        // The allowance is the room the response may have, replay or not (one
+        // rule for the engine and every source): near the cap, a replay of a
+        // CRL the store already holds is refused like a new one, and the
+        // report says so. This pins the rule: a partial exemption fails it.
         struct Cached;
         impl CrlSource for Cached {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2343,21 +2329,17 @@ mod tests {
         ask(&mut state, "a", &cert, &mut Cached).unwrap();
         state.max_total = state.store.encoded_len() + 1;
         ask(&mut state, "b", &cert, &mut Cached).unwrap();
-        assert_eq!(state.report.artifacts.len(), 2);
-        assert!(
-            state.report.failures.is_empty(),
-            "{:?}",
-            state.report.failures
-        );
-        // A new body over the room left is still refused.
-        let mut state = Retrieval::new(&store, &budget);
-        state.max_total = state.store.encoded_len() + 1;
-        ask(&mut state, "a", &cert, &mut Cached).unwrap();
+        assert_eq!(state.report.artifacts.len(), 1);
         assert_eq!(state.report.failures.len(), 1);
+        assert_eq!(state.report.failures[0].certificate_sha256, "b");
         assert_eq!(
             state.report.failures[0].details["resource"],
             "crl_response_bytes"
         );
+        // With room, the replay is accepted and reports its artifact.
+        state.max_total = MAX_TOTAL_BYTES;
+        ask(&mut state, "c", &cert, &mut Cached).unwrap();
+        assert_eq!(state.report.artifacts.len(), 2);
     }
     #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
