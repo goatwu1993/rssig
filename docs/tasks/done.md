@@ -199,12 +199,12 @@ Where each rule is pinned, in the order above:
 | Rule | Entry |
 |---|---|
 | Trust anchors | [PATH-011](../path.md#path-011-configured-anchors-are-keys); no case pins a root re-issued after the signing time (PATH-T008) |
-| Leaf notBefore before path building | none (TIME-T008) |
+| Leaf notBefore before path building | extend TIME-009 (TIME-T008) |
 | CRL freshness reported first | [TIME-012](../time.md#time-012-crl-freshness-is-reported-before-the-signing-time-check) |
 | Signing-time rejection ranks as a validity error | [TIME-009](../time.md#time-009-the-signing-time-rejection-ranks-as-a-validity-error) |
 | It hides a revoked issuer on another path | [TIME-011](../time.md#time-011-lifetime-signing-validity-outranks-revocation-on-another-path) |
-| It hides a wrongly signed issuer on another path | none (TIME-T008) |
-| Equal-rank failures report the first encountered | none (TIME-T008) |
+| It hides a wrongly signed issuer on another path | extend TIME-011 (TIME-T008) |
+| Equal-rank failures report the first encountered | none (PATH-T009) |
 | Revocation at the validation time only | [TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) |
 | Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) |
 | `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
@@ -219,10 +219,11 @@ The lifetime-signing rules set the schema and detail rows above, so by the
 
 Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
 `certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
-formats without one), TIME-T008 (the missing or incomplete `TIME-` entries), PATH-T007 (the
-keyCertSign flag, owner decision), PATH-T009 (its entry), PATH-T008 (a root re-issued after the
-signing time), LIMIT-T007 (the repeated RDP path search) and TEST-T016
-(shared timestamp token builders).
+formats without one), TIME-T008 (extending TIME-009, TIME-011 and TIME-013),
+PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root re-issued
+after the signing time), PATH-T009 (entries for the candidate-path reporting
+rules), LIMIT-T007 (the repeated RDP path search) and TEST-T016 (shared
+timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 

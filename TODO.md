@@ -330,10 +330,10 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
   The `*-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
   CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
-- [ ] **TIME-T008** docs: Add or extend `TIME-` entries for the TIME-T002 rules not yet pinned.
+- [ ] **TIME-T008** docs: Extend `TIME-` entries for the TIME-T002 rules not yet pinned.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
-  maps each to its entry: add the `TIME-` entries marked none and extend
-  TIME-013 where marked; the keyCertSign one is PATH-T009.
+  maps each to its entry: extend TIME-009, TIME-011 and TIME-013 where marked;
+  the candidate-path rules are PATH-T009.
 
 ### PATH
 
@@ -345,9 +345,10 @@ they pin or what they check, never after a task.
   [PATH-011](docs/path.md#path-011-configured-anchors-are-keys) accepts such a
   path, but its cases pin anchors at the validation time only; add a paired
   fixture.
-- [ ] **PATH-T009** docs: Add a decision entry for the shared keyCertSign rejection flag.
-  The rule kept in TIME-T002: once any candidate lacked keyCertSign, a final
-  unknown-issuer failure from another path is reported as `invalid_key_usage`.
+- [ ] **PATH-T009** docs: Add decision entries for how candidate-path failures are reported.
+  Rules kept in TIME-T002: equal-rank failures report the first encountered,
+  and once any candidate lacked keyCertSign, a final unknown-issuer failure
+  from another path is reported as `invalid_key_usage`.
 
 ### TSA
 
