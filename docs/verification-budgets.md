@@ -78,8 +78,9 @@ and absence of partial reports. Focused unit tests exercise overflow, each work
 counter, inherited timestamp/nested/RDP budgets, bundle sharing, and crypto/path
 exhaustion. An inert multi-EKU RDP fixture also covers a failed first EKU
 followed by budget exhaustion on a retry: exhaustion propagates immediately with
-its original typed resource details. Ordinary EKU failures still retain the first
-path error. Existing failure expectations remain unchanged.
+its original typed resource details. Ordinary EKU failures are ranked by
+`choose_usage_failure`: a revocation first, with the other usages' CRL gaps
+merged into it, then a failure a CRL could complete, then the first. Existing failure expectations remain unchanged.
 
 CLI file/root/CRL reads, batch/report buffering, and nonregular/changing inputs
 are covered by [LIMIT-T003 host limits](host-limits.md). Library callers own their

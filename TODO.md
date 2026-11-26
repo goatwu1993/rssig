@@ -71,7 +71,8 @@ they pin or what they check, never after a task.
 - [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path (owner decision).
   A keyCertSign flag shared across candidate paths reports a later
   unknown-issuer failure as `invalid_key_usage`. This changes a rule kept in
-  TIME-T002 (entry: PATH-T009), so it needs the owner's approval.
+  TIME-T002: PATH-T009 adds its entry first, and the change needs the owner's
+  approval.
 
 ### TRUST
 
@@ -331,7 +332,7 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 rules that have none.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
   maps each to its entry: add the `TIME-` entries marked none and extend
-  TIME-013 where marked; the keyCertSign one is PATH-T007.
+  TIME-013 where marked; the keyCertSign one is PATH-T009.
 
 ### PATH
 
