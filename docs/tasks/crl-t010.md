@@ -22,7 +22,7 @@ source with an invalid signature and a sorted issuer key, and a portable
 disagrees. Add a fixture with such a name before changing it.
 Also open: the three gap keys (`certificates_without_crl`,
 `certificates_with_expired_crl`, `certificates_with_replaceable_crl`) are
-partly string literals in `src/trust.rs`, `src/retrieval.rs` and
-`src/rdp.rs`, and `choose_usage_failure` sizes its merge from the RDP-only
+partly string literals in `engine/src/trust.rs`, `engine/src/retrieval.rs` and
+`engine/src/rdp.rs`, and `choose_usage_failure` sizes its merge from the RDP-only
 `KEYS`. Define them once with a shared list as part of the typed channel,
 so that a fourth key cannot be missed in one place.

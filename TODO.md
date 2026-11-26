@@ -138,7 +138,7 @@ they pin or what they check, never after a task.
     accepted leaf EKU. Stop after an EKU-independent failure without changing
     first-policy-error reporting, and pin the budget effect.
   - Test maintenance: share RFC 3161/PKCS#9 token builders across
-    `src/tests.rs`, TSA-T001, TIME-T001 and RDP fixture modules without changing committed
+    `engine/src/tests.rs`, TSA-T001, TIME-T001 and RDP fixture modules without changing committed
     bytes; keep per-task regeneration commands (as TSA-T001 does) consistent with
     `regenerate_cli_fixtures`.
 
@@ -175,7 +175,7 @@ they pin or what they check, never after a task.
   URL-less failure beside an answer by certificate is recorded without the
   points it concerned.
 - [ ] **CRL-T018** fix: Refuse more private-use DNS suffixes before resolving. The
-  built-in URL check lists reserved labels (`src/retrieval/http.rs`); other
+  built-in URL check lists reserved labels (`src/crl.rs`); other
   private-use suffixes (`.lan`, `.corp`, `.localdomain`) rely on the
   DNS-answer address check.
 - [ ] **CRL-T019** fix: Decide case-insensitive distribution-point matching (owner decision). URIs
@@ -222,11 +222,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T035** fix: Decide whether CRL-008 compares issuer names canonically (owner decision).
   It compares the path's issuers by exact bytes, as webpki does; OpenSSL
   compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
-- [ ] **CRL-T036** test: Express a point shared by certificates of two issuers
-  in the case format. It needs a signed input with two issuers listing one
-  point, and a way to script an answer for the second certificate, whose
-  request does not carry a point already asked about (the runner rejects a
-  scripted `url` outside the request). From TEST-T009.
+- [x] **CRL-T036** test: Express a point shared by certificates of two issuers in the case format. Done ([PR #86](https://github.com/goatwu1993/rssig/pull/86); [CRL-050](docs/crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent), [CRL-051](docs/crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)).
 - [ ] **CRL-T037** test: Pin a spent byte allowance in a case. A scripted
   answer can now spend a request's allowance, which CRL-046 decides (the points
   left are not tried), but no case pins it. From TEST-T009.
@@ -253,9 +249,11 @@ they pin or what they check, never after a task.
 
 ### RDP
 
-- [ ] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback.
-  When a revocation is another error type's source, the merged error loses
-  the outer error's cause messages.
+- [x] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback. Done in #89; [record](docs/tasks/done.md#rdp-t001-fix-keep-the-outer-errors-causes-on-the-rdp-revocation-fallback).
+- [ ] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. RDP-T001 is
+  guarded by a unit test through `from_internal`; no fixture yet reaches a
+  revocation that is another error type's source, so no spec case pins the
+  serialized `causes`.
 
 ## P1 — Clean parse/verify interfaces
 
@@ -316,6 +314,12 @@ they pin or what they check, never after a task.
   `rdp-independent-nfedera-parser`, `psxml-independent-ascii-parser` and
   `appx-publisher-parser` (found in the task reindex). Drop them or make each
   pin what its named test checks.
+- [ ] **TEST-T015** test: Derive the fixture count from the checked list.
+  `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
+  (`src/tests/certificate_paths.rs`) compares a hand-edited
+  `N + point_forms().len()` with a hand-kept list of variant files, so a
+  fixture added to one list and not the other is skipped without a failure.
+  Found in the review of PR #86.
 
 ### BUILD
 
@@ -347,7 +351,7 @@ they pin or what they check, never after a task.
   cases, every format's revocation case).
 - [ ] **CRL-T028** test: Commit fixtures for CRLs without nextUpdate. When such a
   CRL revokes, clears an older listing or is set aside is pinned by unit
-  tests on `evaluate_crls` (`src/trust.rs`); the cRLSign, delta,
+  tests on `evaluate_crls` (`engine/src/trust.rs`); the cRLSign, delta,
   removeFromCRL, not-yet-valid, malformed-AKI and unreadable-point variants
   have no fixture or spec case.
 - [x] **CRL-T039** refactor: Move the request-count limit from the CRL retrieval engine to the `CrlSource` implementations. Done ([PR #91](https://github.com/goatwu1993/rssig/pull/91)); [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification), [CRL retrieval](docs/crl-retrieval.md).
@@ -523,7 +527,8 @@ they pin or what they check, never after a task.
 
 - [ ] **BUILD-T005** build: Define compiler, target, and release support. Choose and
   test an MSRV; distinguish compiled targets/features from runtime-tested ones.
-  Check packaged-crate contents and consumer builds, and document semver/API
+  Check packaged-crate contents and consumer builds (`make package-check`
+  already builds each packaged crate), and document semver/API
   migration before publishing. Prepare reproducible Linux/macOS artifacts and
   checksums when distribution is requested; fixture signing keys and read-only
   reference clones must not enter release artifacts.

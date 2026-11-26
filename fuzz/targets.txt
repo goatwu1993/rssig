@@ -5,6 +5,7 @@
 parse_cms der crl
 parse_pe exe
 parse_cab_navx cab navx
+inspect exe der cab navx
 parse_msi msi msp
 parse_appx msix appx msixbundle appxbundle
 parse_text ps1 psm1 psd1 ps1xml vbs vbe js jse wsf rdp

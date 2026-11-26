@@ -1,6 +1,7 @@
 //! The parse command reports untrusted structure, independently of verification policy.
-use rssig::{
-    VerifyOptions, cli,
+use rssig::cli;
+use rssig_engine::{
+    VerifyOptions,
     domain::ErrorCode,
     parse::{Pe, SignedData},
 };
@@ -106,7 +107,9 @@ fn parse_pe_reports_metadata_without_verifying_tampered_images_or_signatures() {
             now: 1800000000,
         };
         assert_eq!(
-            rssig::verify_pe(&bytes, &options).err().map(|e| e.code),
+            rssig_engine::verify_pe(&bytes, &options)
+                .err()
+                .map(|e| e.code),
             error
         );
     }
@@ -131,7 +134,7 @@ fn parse_preserves_unknown_algorithms_and_opaque_certificate_choices() {
         now: 1800000000,
     };
     assert_eq!(
-        rssig::verify_pe(&bad, &options).unwrap_err().code,
+        rssig_engine::verify_pe(&bad, &options).unwrap_err().code,
         ErrorCode::UnsupportedAlgorithm
     );
     let (exit, json) = invoke(&["good-pe-certificate-choice.exe"], &[]);
@@ -243,10 +246,10 @@ fn parse_results_roundtrip_through_public_domain_types() {
         &["good-pe-certificate-choice.exe", "bad-truncated.exe"],
         &[],
     );
-    let report: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+    let report: rssig_engine::domain::CommandReport<rssig_engine::domain::ParseFileResult> =
         serde_json::from_value(json.clone()).unwrap();
     match &report.results[0] {
-        rssig::domain::ParseFileResult::Success(success) => {
+        rssig_engine::domain::ParseFileResult::Success(success) => {
             assert!(!success.parse.verification_performed);
             assert!(
                 success.parse.signatures[0].certificate_choices[2]
@@ -257,7 +260,7 @@ fn parse_results_roundtrip_through_public_domain_types() {
         _ => panic!("expected inspection metadata"),
     }
     match &report.results[1] {
-        rssig::domain::ParseFileResult::Failure(failure) => {
+        rssig_engine::domain::ParseFileResult::Failure(failure) => {
             assert_eq!(failure.error.code, ErrorCode::InvalidPe)
         }
         _ => panic!("expected typed parse error"),
@@ -337,15 +340,19 @@ fn parse_cms_decodes_signer_bodies_and_rejects_malformed_signature_tags() {
     assert_eq!(cms["content_type"], "1.2.3.7");
     assert_eq!(cms["signer_infos_der"].as_array().unwrap().len(), 2);
     assert_eq!(cms["inspection"]["signers"].as_array().unwrap().len(), 2);
-    let report: rssig::domain::ParsedCmsReport = serde_json::from_value(cms.clone()).unwrap();
+    let report: rssig_engine::domain::ParsedCmsReport =
+        serde_json::from_value(cms.clone()).unwrap();
     assert_eq!(report.inspection.signers.len(), 2);
     let mut missing_inspection = cms.clone();
     missing_inspection
         .as_object_mut()
         .unwrap()
         .remove("inspection");
-    assert!(serde_json::from_value::<rssig::domain::ParsedCmsReport>(missing_inspection).is_err());
-    let _: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+    assert!(
+        serde_json::from_value::<rssig_engine::domain::ParsedCmsReport>(missing_inspection)
+            .is_err()
+    );
+    let _: rssig_engine::domain::CommandReport<rssig_engine::domain::ParseFileResult> =
         serde_json::from_value(json).unwrap();
     let (exit, json) = invoke(
         &["parse-signer-bad-signature-tag.der"],
@@ -387,7 +394,7 @@ fn recursive_parse_reports_unverified_nested_signatures_and_timestamp_times() {
             assert!(child["parsed_time"]["unix_seconds"].is_u64());
             assert!(child.get("signing_time").is_none());
         }
-        let report: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+        let report: rssig_engine::domain::CommandReport<rssig_engine::domain::ParseFileResult> =
             serde_json::from_value(json.clone()).unwrap();
         assert_eq!(serde_json::to_value(report).unwrap(), json);
     }
@@ -427,7 +434,7 @@ fn inspects_cab_and_navx_without_authentication() {
                 .unwrap()
                 .is_empty()
         );
-        let report: rssig::domain::CommandReport<rssig::domain::ParseFileResult> =
+        let report: rssig_engine::domain::CommandReport<rssig_engine::domain::ParseFileResult> =
             serde_json::from_value(json.clone()).unwrap();
         assert_eq!(serde_json::to_value(report).unwrap(), json);
     }

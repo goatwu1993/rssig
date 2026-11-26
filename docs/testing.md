@@ -43,28 +43,41 @@ Run the complete native and specification suite with:
 cargo test --locked
 ```
 
-Feature-boundary checks run separately in CI:
+The workspace's `default-members` are both packages, so this runs the engine's
+(`engine/`, `rssig-engine`) and the application's (`./`, `rssig`) tests. For
+one of them, use `-p rssig` or `-p rssig-engine --features retrieval`: the
+engine's CRL retrieval module and its tests are behind the `retrieval`
+feature, which is not an engine default and is built in the workspace run only
+because the application enables it. Plain `-p rssig-engine` leaves them out.
+
+Feature-boundary checks run separately in CI, one package at a time so that
+the application's feature requests never unify into the engine's:
 
 ```sh
 rustup target add thumbv7em-none-eabi
-cargo clippy --locked --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
-cargo test --locked --no-default-features
-cargo test --locked --no-default-features --features xml
-cargo clippy --locked --lib --no-default-features --features xml --target thumbv7em-none-eabi -- -D warnings
-cargo test --locked --no-default-features --features std
-cargo test --locked --no-default-features --features msi
-cargo test --locked --no-default-features --features appx
-cargo clippy --all-targets --locked --no-default-features --features msi,appx -- -D warnings
-cargo test --locked --no-default-features --features verify
-cargo test --locked --no-default-features --features cli
+cargo clippy --locked -p rssig-engine --lib --no-default-features --target thumbv7em-none-eabi -- -D warnings
+cargo clippy --locked -p rssig-engine --lib --no-default-features --features xml --target thumbv7em-none-eabi -- -D warnings
+cargo clippy --locked -p rssig-engine --lib --no-default-features --features verify-core --target thumbv7em-none-eabi -- -D warnings
+cargo test --locked -p rssig-engine --no-default-features --features verify-core
+cargo test --locked -p rssig-engine --no-default-features
+cargo test --locked -p rssig-engine --no-default-features --features xml
+cargo test --locked -p rssig-engine --no-default-features --features std
+cargo test --locked -p rssig-engine --no-default-features --features msi
+cargo test --locked -p rssig-engine --no-default-features --features appx
+cargo clippy -p rssig-engine --all-targets --locked --no-default-features --features msi,appx -- -D warnings
+cargo test --locked -p rssig-engine --no-default-features --features verify
+cargo test --locked -p rssig-engine --no-default-features --features retrieval
+cargo test --locked -p rssig --no-default-features --features crl-fetch
+cargo test --locked -p rssig --no-default-features --features system-roots
+cargo test --locked -p rssig --no-default-features --features cli
 ```
 
 The bare-metal check compiles the library and its production dependencies on a
 target without `std`; it does not execute fixtures on that target. Host tests in
-`tests/parse_core.rs` exercise the same parser API, typed errors, borrowed signer
+`engine/tests/parse_core.rs` exercise the same parser API, typed errors, borrowed signer
 encodings, and known PE digests in parser-only builds. The maximum `e_lfanew`
 fixture pins rejection of malformed offsets without 32-bit arithmetic overflow.
-`tests/parse_text.rs` checks script/RDP canonical bytes, encoding/BOM behavior,
+`engine/tests/parse_text.rs` checks script/RDP canonical bytes, encoding/BOM behavior,
 WSH insertion positions, untrusted RDP coverage, truncations, and XML gating
 in both parser-only and XML-enabled builds. The default suite continues to run every CLI, domain, crypto, and spec test.
 
@@ -122,6 +135,14 @@ cargo test --locked --test cli_interface
 
 ## Test layout
 
+| Where | Package | What |
+| --- | --- | --- |
+| `tests/fixtures/`, `tests/cases.json`, `tests/fixtures/manifest.json` | shared | The portable specification and its fixtures, read by both packages; the engine reads the fixtures as `../tests/fixtures/`. |
+| `tests/cli.rs`, `tests/cli/`, `tests/cli_interface.rs`, `tests/spec.rs`, `tests/manifest.rs` | `rssig` | CLI behavior, the JSON specification runner and manifest consistency, through `rssig::cli`. |
+| `src/crl.rs`, `src/roots.rs` unit tests | `rssig` | The default HTTP CRL source and OS root adapter. |
+| `engine/tests/*.rs` | `rssig-engine` | The library API without the CLI: parsing, inspection, verification, policy, logging and trust loading. |
+| `engine/src/tests.rs`, `engine/src/tests/`, module unit tests | `rssig-engine` | Engine internals and the ignored fixture generators. |
+
 `rssig::cli::run` captures combined output;
 `run_with_writers` takes separate stdout/stderr sinks and is used by the
 process adapter and stream-contract tests. Neither exits the calling process.
@@ -144,6 +165,24 @@ fn rejects_modified_image() {
     assert_eq!(report["results"][0]["error"]["code"], "image_digest_mismatch");
 }
 ```
+
+## Packaged crates
+
+Tests run from the repository, not from a packaged crate. There is one fixture
+directory, `tests/fixtures/`; the application's tests read it as
+`tests/fixtures/...` and the engine's as `../tests/fixtures/...` (the layout
+of [authenticode-rs](https://github.com/google/authenticode-rs), whose tool
+reads its library's test data the same way and whose library package excludes
+it). Each package lists what it publishes (`include` in its `Cargo.toml`):
+its sources and licence files, without tests, the engine's `src/tests` tree,
+documentation or repository housekeeping.
+
+`make package-check` runs `cargo package --workspace --locked`, which builds
+each packaged crate's library and binary from its own files. CI runs it in the
+`package` job. It fails when library or binary source reads a file outside its
+package. It builds no tests or doc examples: the engine's doc examples read
+the shared fixtures too, so like the tests they run from the repository
+(`cargo test --locked` runs them).
 
 ## Coverage reports
 
@@ -185,8 +224,8 @@ LLVM tools. Explicit `LLVM_COV` and `LLVM_PROFDATA` overrides are preserved.
 Their LLVM major version must be compatible with `rustc -vV`. With rustup,
 matching tools come from the `llvm-tools-preview` component.
 
-Reports exclude integration-test files and fixture builders under `src/tests.rs`
-and `src/tests/`. Production source remains included, including the thin binary
+Reports exclude integration-test files and fixture builders under `engine/src/tests.rs`
+and `engine/src/tests/`. Production source remains included, including the thin binary
 adapter even though fixture and specification tests invoke the CLI library directly. A coverage
 percentage is an execution measure, not a claim that every possible invalid
 input or Windows policy has been tested.
@@ -195,6 +234,7 @@ input or Windows policy has been tested.
 
 GitHub Actions runs `make lint` in a dedicated Ubuntu lint job and
 `cargo test --locked` in separate verification jobs on Linux and macOS.
+A `package` job runs `make package-check` (see [Packaged crates](#packaged-crates)).
 A separate Linux coverage job runs `make coverage` and uploads
 the `coverage` artifact. Download and extract it,
 then open `html/index.html`; `cobertura.xml` is alongside the HTML directory.
@@ -289,7 +329,8 @@ regeneration is part of ordinary tests or coverage.
 `tests/manifest.rs` checks the manifest against the committed fixtures, the case
 specification, and the tests and generators it names. It runs in
 `cargo test --locked` and never regenerates or modifies a fixture. Rust sources
-under `src/` and `tests/` (never `tests/fixtures/`) are parsed with `syn`, so comments and string literals never count as code; a
+under each package's `src/` and `tests/` (`src/`, `tests/`, `engine/src/`,
+`engine/tests/`; never `tests/fixtures/`) are parsed with `syn`, so comments and string literals never count as code; a
 file `syn` cannot parse or that is not UTF-8 is recorded and reported by
 `committed_sources_index_without_errors` rather than silently ignored or
 panicking. One
@@ -304,7 +345,7 @@ Cargo's `CARGO_TARGET_TMPDIR`, named per process so concurrent runs cannot colli
 | Content | `bytes` equals the file length and `sha256` is the lowercase hexadecimal digest. |
 | Description | Nonblank. |
 | Provenance | The manifest-level default is complete. An artifact with a `provenance` object records a `license` and a `source`, `generator`, or `command`. An artifact produced outside the repository (a `signer`, `signer_jar_sha256`, `upstream_revision`, or URL `source`) states its own `license`, and so does anything derived, through any chain of `source` links, from such an artifact or one with a `provenance` object. A URL is any `scheme://` text, in both the manifest and case arguments. No recorded provenance or license value is blank. |
-| Generators | Each `generator` names a Rust source file under `src/` or `tests/` (or `build.rs`), optionally followed by `::function` naming a free function declared in it (`inner::function` inside an inline `mod inner`), then optionally whitespace and a note. Methods and anything inside a block (function bodies, closures, const initializers) cannot be named. |
+| Generators | Each `generator` names a Rust source file under a package's `src/` or `tests/` (or `build.rs`), by repository-relative path such as `engine/src/tests.rs`, optionally followed by `::function` naming a free function declared in it (`inner::function` inside an inline `mod inner`), then optionally whitespace and a note. Methods and anything inside a block (function bodies, closures, const initializers) cannot be named. |
 | Case links | Each ID in `cases` is defined in `tests/cases.json` (`UnknownCase`) and listed once (`DuplicateCase`). |
 | Case inputs | Every file a case reads is a listed artifact. `tests/common/spec_suite.rs` defines the case types and `Case::files_read`, shared with `tests/spec.rs`: `input`, `inputs`, CRL response bodies, `fixtures/...` arguments, `--roots`/`--crl` values in both forms, and plain arguments containing a path separator. It destructures every case and expectation field, so a new field does not compile until it is classified. As in Clap, a value starting with `-` directly after a path option is another flag (the option's value is missing), except a lone `-`. Arguments after `--` are positional files read relative to the CLI's working directory, so they always fail; in `--flag=value`, only the value is checked for a path or URL. CRL response bodies must be listed plain names, never intentionally absent ones, since the runner reads them whenever the CLI requests their URL. A path option without the `fixtures/` prefix (even a listed name), a path leaving the fixture directory, a trailing separator or `.` segment, or an exempt file such as `manifest.json` fails. A bare positional argument without a separator is not treated as a file: the existing ones only appear in argument-error cases the CLI rejects before reading anything. |
 | Path options | `PATH_OPTIONS` equals every long name, alias, and short form of the options whose value Clap parses as a `PathBuf`, read from the real parser through the hidden `rssig::cli::command()` (test `path_options_match_the_cli_definition` in `tests/spec.rs`). A new file-valued option, alias, or short form fails until the runner and this check know about it. |
@@ -381,7 +422,7 @@ source can return and a URL-to-file map cannot say:
   (`the_first_of_two_aborts_without_a_url_answers_the_points`). Otherwise, with no point
   left (`a_failure_without_a_url_is_recorded_as_it_is_when_every_point_was_named`),
   and for every later one without a `url`, it is recorded as it is, for no
-  point (`src/retrieval.rs`, around the `whole_request` handling, and its unit
+  point (`engine/src/retrieval.rs`, around the `whole_request` handling, and its unit
   tests). Nothing is asked after an abort, so no earlier response can hold one
   (`abort_stops_every_further_request`).
 - `error`: one `{"kind", "url"?}`, the source failing the whole request
@@ -399,14 +440,25 @@ spends it, one over them does not.
 The cases pin the code and the cause of each failure, not that a failure naming
 no URL is recorded once per listed point; the unit test
 `a_failure_without_a_url_in_a_response_answers_every_point` in
-`src/retrieval.rs` pins that.
+`engine/src/retrieval.rs` pins that.
 
 A scripted `url` must be one of the points this request carries, spelled exactly
 as listed. The runner fails a case whose URL is not one of them, and its message
-prints the listed points. A point already asked about for another certificate is
-not carried again, so a case about a shared point (CRL-T036) needs another way
-to say it. It is stricter than the engine, which matches normalized URLs; a case for a
-normalized spelling is CRL-T038. A
+prints the listed points. For a point shared by two certificates:
+- a point an earlier request spent (a body or a failure for it) is not carried
+  again, so a scripted `url` for it on a later certificate fails the case. The
+  earlier certificate takes the URL answer or fails, and the later one gets no
+  scripted URL: it is answered by certificate
+  (`crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left`) or
+  carries no point at all, so its report repeats the earlier outcome
+  (`crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate`);
+- a point the earlier answer left unused (an answer by certificate, CRL-034)
+  is carried again, so a scripted `url` for it passes
+  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`).
+
+All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
+engine, which matches normalized URLs; a case for a normalized spelling is
+CRL-T038. A
 URL that went stale or was mistyped therefore cannot turn a case about the point
 into one about a URL outside the request; the engine's handling of one outside it
 is unit-tested
@@ -471,6 +523,18 @@ shared result code, each pins its own entry's part:
   CRL, so only the last body can answer whatever the CRL decoder accepts, and the
   artifacts show the fifth was not taken)
 
+The cases on `crl-chain-shared-crl-dp.exe` (CRL-050 and CRL-051), which answer
+by certificate, fail a point or deny it:
+- `crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`
+  (the signer's answer by certificate leaves the point unused, so the issuer's
+  certificate carries it and the URL answers it)
+- `crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left` (the URL
+  answers the signer, and the issuer's certificate, carrying no point, is asked
+  and answered by certificate)
+- `crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate` and
+  `crl-051-a-denied-point-is-recorded-for-each-certificate` (the point fails or
+  is denied once, and each certificate's report records it)
+
 The `crl-045-` cases pin CRL-045. The two `does-not-count-against-the-next`
 cases each fail if a rejected body counted against the bodies after it, which
 was checked by changing the engine; the single-body case pins only that an
@@ -487,17 +551,19 @@ Named tests in `tests/cli/crl_fetch.rs` check what the cases leave out:
 - `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered`:
   the same failures as `crl-046-an-over-cap-body-reports-the-cap-it-hit`,
   from a source written in Rust, with the cap read from
-  `rssig::retrieval::MAX_CRL_BYTES` rather than written out.
+  `rssig_engine::retrieval::MAX_CRL_BYTES` rather than written out.
 
 The failures of those two bodies come in CRL-049's order (a body rejected on
 load before a point left unanswered), so the
 cases `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`
 and `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` pin them.
 
-Not expressible in a case: a point shared by certificates of two issuers needs
-an input with two issuers (CRL-T036), and the built-in source's deadline and
-byte cap need real HTTP, which a case never makes. The built-in source's are
-unit-tested without a network in `src/retrieval/http.rs`, which stays their
+A point shared by certificates of two issuers is expressible: the
+`crl-050-` and `crl-051-` cases run `crl-chain-shared-crl-dp.exe`, whose signer
+and issuer certificate list one point. The built-in source's deadline and
+byte cap are not expressible in a case, because they need real HTTP, which a
+case never makes. The built-in source's are
+unit-tested without a network in `src/crl.rs`, which stays their
 place.
 
 A case may carry a `decision` (not used to run it): the ID of the entry it
@@ -509,8 +575,11 @@ pins in a decision index under `docs/`, such as `"decision": "CRL-001"` for
 checks its fields, and checks that each case's `decision` names an entry. See
 AGENTS.md, "Pinned expectations".
 
-Every test build enables the internal `revocation-crosscheck` feature through
-a self dev-dependency in `Cargo.toml`. After rssig accepts a path's
+Every test build in the repository enables the engine's internal
+`revocation-crosscheck` feature: the engine's tests through its self
+dev-dependency in `engine/Cargo.toml`, the application's through its
+dev-dependency on `rssig-engine` in the root `Cargo.toml`. Each test crate
+includes a guard that fails the build without it. After rssig accepts a path's
 revocation status, it re-runs webpki's own revocation check with the CRLs
 rssig chose and panics on disagreement, so every fixture case with CRLs also
 checks that rssig and webpki agree. Product builds never enable it, and it is
@@ -542,4 +611,4 @@ them through the CLI, or, where noted, no case pins them yet:
   cover them.
 - The built-in HTTP source's kinds (a last request keeping its own failure,
   aborts when spent). Tests never use the network, so these are unit tests
-  in `src/retrieval/http.rs`.
+  in `src/crl.rs`.

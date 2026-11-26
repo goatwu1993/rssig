@@ -49,25 +49,35 @@ policy equivalence.
 
 ## Rust parsing and verification APIs
 
-`rssig::parse` exposes untrusted PE and CMS structures for inspection.
-`rssig::verify` performs integrity, timestamp, trust, and revocation checks;
-existing crate-root verification functions remain available.
+The repository is a Cargo workspace of two packages. `rssig-engine`
+(`engine/`) is the engine: pure parsing, inspection and verification logic over
+caller-supplied bytes, roots, CRLs, time and policy, with injected
+collaborators (a `CrlSource`, a `Logger`). `rssig` (the root) is the
+application: the CLI and its defaults, the HTTP CRL source
+(`rssig::crl::HttpCrlSource`) and OS root enumeration
+(`rssig::roots::system_roots()`). See [code responsibilities](docs/architecture.md).
+
+`rssig_engine::parse` exposes untrusted PE and CMS structures for inspection.
+`rssig_engine::verify` performs integrity, timestamp, trust, and revocation checks;
+crate-root verification functions are also available.
 
 Use the parser without the standard library or verification dependencies:
 
 ```toml
-rssig = { version = "0.1", default-features = false }
+rssig-engine = { version = "0.1", default-features = false }
 ```
 
-This build requires `core + alloc`. For the full verifier with caller-supplied
-roots and CRLs, add `features = ["verify"]`; it requires `std` but does not
-include Clap or native-root enumeration. Add `system-roots` to enable
-`TrustStore::from_system()`. Default features retain the complete CLI.
+This build requires `core + alloc`. The engine's default `verify` feature is the
+full verifier with caller-supplied roots and CRLs; it requires `std` but
+includes no Clap, network or native-root enumeration. For OS roots, depend on
+`rssig` with `default-features = false, features = ["system-roots"]` and call
+`rssig::roots::system_roots()`. The `rssig` package's default features build
+the complete CLI.
 
 ```rust
-use rssig::{VerificationBundle, VerificationError};
-use rssig::parse::{Pe, SignedData};
-use rssig::verify::{VerifyOptions, verify_parsed_pe};
+use rssig_engine::{VerificationBundle, VerificationError};
+use rssig_engine::parse::{Pe, SignedData};
+use rssig_engine::verify::{VerifyOptions, verify_parsed_pe};
 
 fn inspect_and_verify(
     bytes: &[u8],
@@ -96,7 +106,7 @@ borrows the image bytes in digest order for a caller-supplied hasher.
 `SignedData::signer_infos()` borrows the signer encodings without allocating
 on access. Parsing and hashing alone do not authenticate a signature.
 
-The library remains one crate; public parsers cover signed PE/CAB/NAVX, CMS, PowerShell/XML comments,
+Public parsers cover signed PE/CAB/NAVX, CMS, PowerShell/XML comments,
 WSH scripts, and scoped RDP settings. WSF requires the optional `xml` feature.
 MSI/MSP and AppX structural parsers use the optional `msi` and `appx` features,
 which require `std` without enabling verification. They expose canonical hash
@@ -212,7 +222,7 @@ Details data model: `type`, `title`, and `detail`, with existing error codes,
 stages, messages, structured details, and causes retained as extensions. CLI
 output omits HTTP `status`; process exit codes keep their existing meaning.
 See [the error contract and problem type registry](docs/problems.md). The public
-Serde types are in `src/domain.rs`. Example error object:
+Serde types are in `engine/src/domain.rs`. Example error object:
 
 ```json
 {

@@ -1,7 +1,5 @@
-use rssig::{
-    cli,
-    domain::{CommandReport, FileResult, VerificationBundle},
-};
+use rssig::cli;
+use rssig_engine::domain::{CommandReport, FileResult, VerificationBundle};
 use serde_json::Value;
 use std::{
     ffi::OsString,

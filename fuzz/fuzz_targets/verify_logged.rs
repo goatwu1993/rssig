@@ -7,8 +7,8 @@
 use core::fmt::{self, Write};
 use core::sync::atomic::{AtomicUsize, Ordering};
 use libfuzzer_sys::fuzz_target;
-use rssig::log::{Logger, Record};
-use rssig::verify::{Verifier, VerifyOptions, verify};
+use rssig_engine::log::{Logger, Record};
+use rssig_engine::verify::{Verifier, VerifyOptions, verify};
 
 /// Fixed validation time (2027-01-15T07:59:59Z), matching the pinned test clock.
 const NOW: u64 = 1_799_999_999;

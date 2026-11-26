@@ -877,22 +877,38 @@ name = "rssig"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
+ "httparse",
+ "libc",
+ "rssig-engine",
+ "rustls-native-certs",
+ "rustls-pki-types",
+ "rustls-webpki",
+ "serde",
+ "serde_json",
+ "sha2",
+ "syn 2.0.119",
+ "url",
+ "x509-cert",
+]
+
+[[package]]
+name = "rssig-engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
  "base64ct",
  "cfb",
- "clap",
  "crc32fast",
  "der",
  "digest",
  "flate2",
- "httparse",
- "libc",
  "p256",
  "p384",
  "rand",
  "roxmltree",
  "rsa",
- "rssig",
- "rustls-native-certs",
+ "rssig-engine",
  "rustls-pki-types",
  "rustls-webpki",
  "serde",
@@ -900,7 +916,6 @@ dependencies = [
  "sha1",
  "sha2",
  "signature",
- "syn 2.0.119",
  "url",
  "x509-cert",
 ]

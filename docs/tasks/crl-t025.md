@@ -4,7 +4,7 @@ Task detail for **CRL-T025** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Recorded from PR #44 to #53 reviews; none affects verifier behavior. Four
-test builders construct a `TbsCertList` by hand (`src/tests.rs::crl`,
+test builders construct a `TbsCertList` by hand (`engine/src/tests.rs::crl`,
 `validation_time.rs::crls`, `certificate_paths.rs::write_crl`,
 `crl_applicability.rs::crl_full`). `crl_full` takes seven positional
 arguments and stamps the signature algorithm from the main test identity

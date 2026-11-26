@@ -1,3 +1,5 @@
+#[path = "common/crosscheck.rs"]
+mod crosscheck;
 use rssig::cli;
 use serde_json::Value;
 

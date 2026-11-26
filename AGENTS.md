@@ -84,20 +84,30 @@ GitHub issues to track tasks or sub-items.
 
 ## Architecture and constraints
 
+- The workspace has two packages. `rssig-engine` (`engine/`) is the engine:
+  pure logic, policy options (`VerifyOptions`) and the interfaces of its
+  collaborators (`CrlSource`, `Logger`); it reads no files, clock, environment or network
+  and enumerates no OS roots. `rssig` (the root) is the application: the CLI
+  and the defaults it injects, namely `HttpCrlSource` (`src/crl.rs`), OS roots
+  (`src/roots.rs`), host limits and the default policy built from CLI flags.
+  The engine never depends on the application; put a default in the
+  application and give the engine an interface for it.
 - Use pure Rust for PE/MSI/CAB/NAVX/PowerShell/MSIX/AppX parsing/hashing, CMS/PKCS#7, signature verification,
   certificate path validation, timestamps, and revocation validation.
 - The OS may supply root certificates only. `rustls-native-certs` is the current
-  adapter. macOS framework calls are allowed for root enumeration, never for
+  adapter, in the application (`src/roots.rs`); the engine receives the roots
+  and enumeration errors through `TrustStore::from_system_roots`, rejects a
+  partial enumeration and validates each root. macOS framework calls are allowed for root enumeration, never for
   signature, chain, timestamp, or revocation verification.
 - Do not introduce OpenSSL (system or vendored), ring, aws-lc, WinVerifyTrust,
-  native certificate validation, or subprocess crypto tools into the engine.
+  native certificate validation, or subprocess crypto tools into either package.
 - RustCrypto implements the cryptographic primitives. webpki path validation
   uses our RustCrypto algorithm adapter with native crypto features disabled.
   rssig alone decides revocation, in the path callback; webpki builds paths
-  without revocation options. Review the resolved dependency graph when
-  changing dependencies.
-- `anyhow` is internal error plumbing only and must not leak into the public
-  API. Public signatures, fields, and trait bounds name rssig's own error types
+  without revocation options. Review the resolved dependency graph of both
+  packages when changing dependencies.
+- `anyhow` is internal error plumbing only and must not leak into either
+  package's public API. Public signatures, fields, and trait bounds name rssig's own error types
   (`parse::Error`, `TrustLoadError`, `domain::VerificationError`) or `std`/`core`
   ones; convert at the public boundary.
 - Fetch policy belongs to the `CrlSource`, not the engine: the engine judges
@@ -116,7 +126,7 @@ GitHub issues to track tasks or sub-items.
 - Verification emits exactly one JSON document on stdout, including per-file
   failures. Argument/configuration errors use plain text on stderr (exit 2);
   help/version use plain text on stdout (exit 0). Keep logs off stdout.
-- Public verification results are Serde domain types in `src/domain.rs`.
+- Public verification results are Serde domain types in `engine/src/domain.rs`.
   Successful bundles include parsed certificate names (CN and all RDNs), EKUs,
   key usage, validity, the selected trust chain, timestamp signer, and supplied
   CRL artifacts. Preserve DER encodings for unfamiliar values. A supplied CRL
@@ -133,7 +143,8 @@ GitHub issues to track tasks or sub-items.
 2. Add a case to `tests/cases.json` first; it and the fixtures/manifest are the
    language-independent specification. Add a named Rust test under `tests/cli/`
    for implementation-specific checks of the fixture, CLI argv, exit
-   code, and serialized domain result. Invoke the Clap-based `rssig::cli::run`
+   code, and serialized domain result; a library-API check that needs no CLI
+   goes under `engine/tests/`. Invoke the Clap-based `rssig::cli::run`
    directly with an argument array and captured writer; never spawn the binary.
    Pin `--time`, use `--no-system-roots` with explicit test roots, and provide
    local CRLs so tests are independent of wall time, network, OS roots, and paths.
@@ -204,9 +215,14 @@ holds today and says nothing about the change that makes it happen.
 
 ## Native Rust tests and coverage
 
-`cargo test --locked` is the single entry point for every test. Tests call
+`cargo test --locked` is the single entry point for every test; the
+workspace's default members run both packages. CLI tests call
 `rssig::cli::run` or `run_with_writers` in-process with an argument array and
-captured writers, never a child process, with absolute fixture paths.
+captured writers, never a child process, with absolute fixture paths; engine
+tests call the `rssig_engine` API directly. Fixtures, cases and the manifest
+under `tests/` are shared by both packages: there is one fixture directory,
+and the engine's tests read it as `../tests/fixtures`. Tests are not packaged;
+`make package-check` checks that each packaged crate builds.
 `tests/cases.json`, its schema, the fixtures and the manifest are the portable
 specification another language could implement the CLI from; do not add test
 commands to the product CLI. Prefer stable codes, stages and serialized

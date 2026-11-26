@@ -10,8 +10,10 @@ same change.
 |---|---|---|
 | **policy** | A behavior the caller **selects**: `VerifyOptions` and its `RevocationPolicy`, integrity-only mode, `--no-revocation`, the `--allow-sha1` opt-in, a `CrlSource`'s own URL policy. The `POLICY-` index records the verification modes; the SHA-1 opt-in is `ALG-` and a source's URL policy is `CRL-`. | Fixed behavior, which is a rule. |
 | **rule** | Fixed verifier behavior that no option turns off, stated in prose ("the best usable CRL decides"). A decision entry states one rule, or what one policy does. | A policy, which is selectable. |
-| **engine** | The library's verification and CRL retrieval code (`Retrieval` in `src/retrieval.rs` and the verifier): it judges evidence and bounds what it records and accepts back. It makes no fetch policy ([where the engine ends](crl-retrieval.md#where-the-engine-ends-and-the-application-begins)). | The CLI, or a `CrlSource`. |
-| **source** | A `CrlSource`: what the engine asks for CRLs. It decides what to fetch, from where, and how often and how much (requests, URLs, time, bytes on the wire); `HttpCrlSource` is the built-in one. | The engine, or the CLI that builds one. |
+| **engine** | The `rssig-engine` package (`engine/`): parsing, inspection, verification and CRL retrieval (`Retrieval` in `engine/src/retrieval.rs`). It judges evidence over what its caller supplies and bounds what it records and accepts back. It reads no files, clock or network, enumerates no OS roots, and makes no fetch policy ([where the engine ends](crl-retrieval.md#where-the-engine-ends-and-the-application-begins)). | The **application**, or a `CrlSource`. |
+| **application** | The `rssig` package (repository root): the CLI and the defaults the engine leaves to its caller, namely `HttpCrlSource` (`src/crl.rs`), OS roots (`src/roots.rs`), host limits and the default policy the CLI builds from its flags. | The engine. |
+| **collaborator** | Something the engine's caller injects for the engine to call, behind an interface the engine defines: a `CrlSource` for CRLs, a `Logger` for diagnostics. A collaborator supplies or observes; it never decides a verification result. The application's `HttpCrlSource` is its default CRL collaborator, and `rssig::cli::Host` carries the ones an embedder of the CLI injects. | A **policy**, which the caller selects as data (`VerifyOptions`). |
+| **source** | A `CrlSource`: what the engine asks for CRLs. It decides what to fetch, from where, and how often and how much (requests, URLs, time, bytes on the wire); the application's `HttpCrlSource` is the default one. | The engine, or the CLI that builds one. |
 | **fetch policy** | The source's decisions on what to fetch and how much: schemes, destinations, redirects, and the totals of requests, URLs, time and wire bytes (CRL-023, CRL-039). A new one goes in `HttpCrlSource`, not `Retrieval`. | A **policy**, which the caller selects; a source's URL policy is one kind of fetch policy. |
 | **check** | The code or verification step that enforces a rule ("path checks", "signature checks"). | |
 | **profile** | The supported subset of an external format or standard, for example the [timestamp profile](timestamp-profile.md) of RFC 3161. | |
@@ -48,6 +50,14 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **scripted answer** | An injected answer written out in a case: the response's bodies and failures, or the error the source fails the whole request with ([testing.md](testing.md)). |
 | **named test** | A Rust test under `tests/cli/` that checks one fixture in-process. |
 | **pinned result** | A case's expected result; every one needs a decision ([AGENTS.md](../AGENTS.md#pinned-expectations)). |
+
+## Retrieval
+
+| Term | Meaning | Not to be confused with |
+|---|---|---|
+| **point** | One URL a certificate lists in its `cRLDistributionPoints` extension, where its CRL may be fetched; offered to a `CrlSource` in a request ([crl-retrieval.md](crl-retrieval.md)). | A CRL's issuingDistributionPoint scope, which names the point a CRL covers (CRL-030). |
+| **spent point** | A point a source used in a verification, by returning a body or a failure for it. It is not offered again, and a failure is recorded under each certificate that lists it ([CRL-051](crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)). | A source's spent budget, which is bytes or requests (CRL-039). |
+| **unused point** | A point a source answering by certificate left alone, naming no URL for it. It stays open, so a later certificate listing it carries it again ([CRL-050](crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent)). | A point no certificate lists. |
 
 ## Work
 

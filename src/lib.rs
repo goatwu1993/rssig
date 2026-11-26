@@ -1,95 +1,33 @@
-//! Untrusted container, script, RDP and CMS parsing and explicit Authenticode verification.
+//! The rssig application: the command-line verifier and the default
+//! collaborators the engine ([`rssig_engine`], re-exported as [`engine`])
+//! leaves to its caller.
 //!
-//! Disable default features for a `no_std + alloc` parser. Enable `verify` for
-//! all format verifiers, `verify-core` for the `no_std + alloc` shared verifier,
-//! `system-roots` for native root enumeration, and
-//! `cli` for the command-line adapter. The `msi` and `appx` features expose
-//! structural adapters requiring `std`, without verification. Defaults retain the complete CLI.
-#![cfg_attr(not(feature = "std"), no_std)]
+//! The engine is pure logic over explicit inputs and policy. This package
+//! decides what an application supplies by default:
+//!
+//! - `cli`: argv, files, the clock, host limits, default policy and the
+//!   JSON stream and exit-code contract (feature `cli`);
+//! - `crl::HttpCrlSource`: the default `engine::retrieval::CrlSource`,
+//!   bounded public HTTP (feature `crl-fetch`);
+//! - `roots::system_roots`: the operating system's root store as an
+//!   [`engine::TrustStore`] (feature `system-roots`).
+//!
+//! A library that brings its own roots, CRLs and clock needs only the engine.
 
-extern crate alloc;
-#[cfg(all(test, not(feature = "std")))]
-extern crate std;
+/// The engine, re-exported so an embedder of `cli` can name the types its
+/// collaborators implement (`CrlSource`, `Logger`) without a second
+/// dependency.
+pub use rssig_engine as engine;
 
-/// Error formatting contract: `{}` is the summary, `source()` walks the causes,
-/// and `{:#}` is exactly the summary followed by each cause once.
-#[cfg(test)]
-pub(crate) fn assert_causes_once(error: &dyn core::error::Error, alternate: &str) {
-    use alloc::string::ToString;
-    let mut walked = error.to_string();
-    let mut cause = error.source();
-    while let Some(next) = cause {
-        walked.push_str(&alloc::format!(": {next}"));
-        cause = next.source();
-    }
-    assert_eq!(walked, alternate);
-}
-
-#[cfg(all(feature = "verify-core", feature = "appx"))]
-mod appx;
-#[cfg(feature = "verify-core")]
-mod cab;
 #[cfg(feature = "cli")]
 pub mod cli;
-#[cfg(feature = "verify-core")]
-mod cms;
-#[cfg(feature = "verify-core")]
-mod crypto;
-mod der;
-#[cfg(feature = "verify-core")]
-pub mod domain;
-#[cfg(feature = "verify-core")]
-pub mod format;
-#[cfg(feature = "cli")]
-mod inspection;
-#[cfg(feature = "verify-core")]
-pub mod log;
-#[cfg(all(feature = "verify-core", feature = "msi"))]
-mod msi;
-#[cfg(feature = "verify-core")]
-mod navx;
-pub mod parse;
-#[cfg(feature = "verify-core")]
-mod pe;
-#[cfg(feature = "verify-core")]
-mod powershell;
-#[cfg(feature = "verify-core")]
-mod rdp;
-#[cfg(feature = "verify-core")]
-mod report;
 #[cfg(feature = "crl-fetch")]
-pub mod retrieval;
-#[cfg(feature = "verify-core")]
-mod trust;
-#[cfg(feature = "verify-core")]
-pub mod verify;
-#[cfg(feature = "verify-core")]
-mod wsh;
-#[cfg(feature = "verify-core")]
-pub use domain::{SignatureReport, VerificationBundle, VerificationError};
-#[cfg(feature = "verify-core")]
-pub use trust::{TrustLoadError, TrustLoadErrorCode, TrustLoadErrorKind, TrustStore};
-#[cfg(feature = "verify-core")]
-pub use verify::{
-    RevocationPolicy, Verifier, VerifyOptions, verify, verify_cab, verify_navx, verify_parsed_cab,
-    verify_parsed_navx, verify_parsed_pe, verify_pe, verify_powershell, verify_powershell_xml,
-    verify_rdp, verify_wsh,
-};
-#[cfg(all(test, feature = "verify"))]
-mod tests;
+pub mod crl;
+#[cfg(feature = "system-roots")]
+pub mod roots;
 
-#[cfg(all(feature = "verify-core", feature = "appx"))]
-pub use verify::{verify_appx, verify_parsed_appx};
-#[cfg(all(feature = "verify-core", feature = "msi"))]
-pub use verify::{verify_msi, verify_parsed_msi};
-
-// Older RustCrypto errors implement Error only with std. Keep host causal
-// diagnostics; preserve their Display diagnostic at the alloc-only boundary.
-#[cfg(all(feature = "verify-core", feature = "std"))]
-fn compat_error<E: Into<anyhow::Error>>(error: E) -> anyhow::Error {
-    error.into()
-}
-#[cfg(all(feature = "verify-core", not(feature = "std")))]
-fn compat_error<E: core::fmt::Display>(error: E) -> anyhow::Error {
-    anyhow::anyhow!("{error}")
-}
+// The application's own unit tests (`src/crl.rs`, `src/roots.rs`) take the
+// same guard as its integration tests (tests/common/crosscheck.rs).
+#[cfg(test)]
+#[path = "../tests/common/crosscheck.rs"]
+mod crosscheck;

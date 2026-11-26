@@ -1,12 +1,20 @@
 # Parsing and verification
 
-`rssig::parse::Pe` parses supported signed PE headers and ranges. Its
+The library is the engine package, `rssig-engine` (`engine/`): parsing,
+inspection and verification over caller-supplied bytes, trust store, time and
+policy, with injected collaborators. It reads no files, clock or network and
+enumerates no OS roots. The application package, `rssig`, adds the CLI and the
+default collaborators (`rssig::crl::HttpCrlSource`, `rssig::roots::system_roots`)
+and re-exports the engine as `rssig::engine`. See [code
+responsibilities](architecture.md).
+
+`rssig_engine::parse::Pe` parses supported signed PE headers and ranges. Its
 `signatures()` method extracts CMS bytes and checks certificate-table framing
 and padding. It neither hashes the image nor authenticates its signatures.
 The existing signed-PE layout restrictions still apply: this is not a general
 PE loader or unsigned-image inspection API.
 
-`rssig::parse::Cab` and `rssig::parse::Navx` parse the supported signed container
+`rssig_engine::parse::Cab` and `rssig_engine::parse::Navx` parse the supported signed container
 layouts without decompression or payload interpretation. `as_bytes()` borrows the
 original file, and `signature()` borrows the opaque embedded signature: CAB
 includes its declared padding; NAVX excludes the NXSB wrapper. Container parsing
@@ -25,10 +33,10 @@ nothing. CAB parsing uses temporary allocations for folder/file bounds checks.
 The existing [CAB](cab.md) and [NAVX](navx.md) layout restrictions still apply.
 
 ```rust
-use rssig::parse::Cab;
+use rssig_engine::parse::Cab;
 use sha2::{Digest, Sha256};
 
-fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig::parse::Error> {
+fn cabinet_digest(bytes: &[u8]) -> Result<Vec<u8>, rssig_engine::parse::Error> {
     let cab = Cab::parse(bytes)?;
     let mut hash = Sha256::new();
     for chunk in cab.authenticode_chunks() {
@@ -81,8 +89,8 @@ DTDs and external entities remain forbidden.
 
 ```rust
 # #[cfg(all(feature = "appx", feature = "verify"))] {
-use rssig::{parse::{Appx, BlockMap}, verify::{verify_parsed_appx, VerifyOptions}};
-# let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/good.msix"));
+use rssig_engine::{parse::{Appx, BlockMap}, verify::{verify_parsed_appx, VerifyOptions}};
+# let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/good.msix"));
 let package = Appx::parse(bytes)?;
 let xml = package.block_map_bytes()?;
 let map = BlockMap::parse(&xml)?;
@@ -93,7 +101,7 @@ let options = VerifyOptions {
 let report = verify_parsed_appx(&package, &options)?;
 assert!(!report.signatures[0].chain_trusted);
 # }
-# Ok::<(), rssig::VerificationError>(())
+# Ok::<(), rssig_engine::VerificationError>(())
 ```
 
 `verify_parsed_msi(&mut msi, options)` and
@@ -105,7 +113,7 @@ still checks component digests before metadata/block hashes, then CMS, Publisher
 timestamps and configured trust; bundle identity and child signer binding remain
 mandatory. Catalog reports retain `signature_verified: false`.
 
-`rssig::parse::SignedData` parses attached CMS, legacy PKCS#7, and detached CMS
+`rssig_engine::parse::SignedData` parses attached CMS, legacy PKCS#7, and detached CMS
 envelopes. It exposes content type, encoded content, digest algorithm OIDs and
 parameters, certificate choices, embedded revocation choices, and raw
 SignerInfo encodings. It preserves unfamiliar algorithms rather than requiring
@@ -228,7 +236,7 @@ and disagree with verification. Gaps between nonempty sections are rejected.
 the signer encodings does not allocate. X.509 certificates and parser metadata
 still use allocations; `no_std` does not mean allocation-free.
 
-`rssig::verify::verify_parsed_pe` consumes a parsed PE and explicit
+`rssig_engine::verify::verify_parsed_pe` consumes a parsed PE and explicit
 `VerifyOptions`. It reuses the PE layout while performing all the normal image
 and page hashes, CMS signature/content binding, timestamp, certificate trust,
 and configured CRL checks. Inspecting a CMS envelope does not cache a verified
@@ -236,7 +244,7 @@ verdict; verification parses and authenticates the embedded signatures itself.
 `verify_parsed_cab` and `verify_parsed_navx` similarly consume `parse::Cab` and
 `parse::Navx`, reusing their validated layouts while performing all normal
 framing, digest, CMS, timestamp, and configured trust/revocation checks. These
-functions are exported from both `rssig::verify` and the crate root. The existing
+functions are exported from both `rssig_engine::verify` and the engine's crate root. The existing
 `verify`, `verify_pe`, `verify_cab`, `verify_navx`, and other format-specific
 functions retain their behavior. The CLI uses the same verification engine.
 
@@ -352,7 +360,7 @@ Problem Details contract; all inputs are retained, and the first failure also
 supplies the root problem. Usage errors are plain text on stderr; help/version
 are plain text on stdout. The public report types are `ParseReport`,
 `ParsedCmsReport`, `ParsedAlgorithmReport`, `ParsedCertificateChoice`,
-`ParseFileSuccess`, and `ParseFileResult` in `rssig::domain`.
+`ParseFileSuccess`, and `ParseFileResult` in `rssig_engine::domain`.
 
 The CLI/report adapter requires `std`; the underlying parser builds on
 `core + alloc` without CLI, native-root, or verification dependencies. See the
@@ -445,21 +453,26 @@ or signature succeeds while verification rejects it.
 
 ```toml
 # Containers, scripts, RDP and CMS on core + alloc (an allocator is required).
-rssig = { version = "0.1", default-features = false }
+rssig-engine = { version = "0.1", default-features = false }
 
 # WSF structural inspection without std: add features = ["xml"].
 # MSI/MSP or AppX structural inspection with std, without verification:
 # features = ["msi"] or ["appx"], or both.
-# Alternatively: all verifiers and reports, with explicit roots and CRLs.
-# rssig = { version = "0.1", default-features = false, features = ["verify"] }
+# All verifiers and reports, with explicit roots and CRLs (the default):
+# rssig-engine = "0.1"
+# Plus CRL retrieval through a source of your own: features = ["retrieval"].
+# The defaults an application can reuse (HTTP CRL source, OS roots, CLI):
+# rssig = { version = "0.1", default-features = false, features = ["crl-fetch", "system-roots"] }
 ```
 
-The default `cli` and `system-roots` features preserve the complete command-line
-tool. `verify` enables `std`, all supported format verifiers, and Serde domain
-types, without Clap or the native root loader. `system-roots` separately enables
-`TrustStore::from_system()`; explicit `TrustStore::add_roots`/`add_crl` work with
-`verify` alone. `std` alone enables standard-library support for the parser.
-All configurations retain RustCrypto verification and configured-root trust.
+The engine's default `verify` feature enables `std`, all supported format
+verifiers, inspection and Serde domain types. Explicit
+`TrustStore::add_roots`/`add_crl` work with `verify` alone; OS roots come from
+the application's `rssig::roots::system_roots()` (feature `system-roots`),
+which hands them to `TrustStore::from_system_roots`. `std` alone enables
+standard-library support for the parser. The `rssig` package's default `cli` and
+`system-roots` features build the complete command-line tool. All
+configurations retain RustCrypto verification and configured-root trust.
 
 Two library signatures change from PR #17: parser methods return `parse::Error`
 instead of `VerificationError`, and `SignedData::signer_infos()` returns
@@ -615,8 +628,9 @@ errors are not JSON verification errors; the verifier maps them at its existing
 stage boundaries into `domain::VerificationError` with stable code, stage,
 details and causes. No JSON schema fields or verification claims change in LIB-T008.
 
-Trust loading is `add_roots`, `add_crl`, and (with `system-roots`)
-`from_system`. They return `TrustLoadError`, whose
+Trust loading is `add_roots`, `add_crl`, and `from_system_roots` for the
+roots an OS adapter enumerated (the application's `rssig::roots::system_roots`).
+They return `TrustLoadError`, whose
 non-exhaustive `TrustLoadErrorKind` identifies `Roots`, `Crl`, or `SystemRoots`
 and whose `source()` walks the underlying loading failure. `EmptyInput` has no
 underlying failure, so its `source()` is `None`. These categories describe
@@ -636,14 +650,39 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### Engine and application packages
+
+The single `rssig` package is now two. Depend on `rssig-engine` for the
+library and on `rssig` only for the CLI or its default collaborators. Old to
+new paths:
+
+| Before | Now |
+|---|---|
+| `rssig::{parse, verify, domain, format, log, retrieval}` and the root re-exports (`rssig::TrustStore`, `rssig::verify_pe`, ...) | `rssig_engine::...` (or `rssig::engine::...`) |
+| `rssig::retrieval::{HttpCrlSource, MAX_SOURCE_REQUESTS, MAX_SOURCE_URLS, check_public_http_url}` | `rssig::crl::...` |
+| `rssig::retrieval::MAX_REQUESTS` (16, used both for a certificate's listed points and the HTTP source's request cap) | `rssig_engine::retrieval::MAX_LISTED_URLS` for the points the strict `crl_distribution_points` accepts (the engine offers a source every listed point, CRL-024); `rssig::crl::MAX_HTTP_REQUESTS`, `MAX_NETWORK_BYTES` and `MAX_POINTS_PER_REQUEST` for the HTTP source's own caps |
+| `TrustStore::from_system()`, `from_system_typed()` | `rssig::roots::system_roots()` |
+| `TrustStore::add_roots_typed`, `add_crl_typed` | `add_roots`, `add_crl` (removed aliases) |
+| none (CLI-internal inspection) | `rssig_engine::inspect::{pe, cms, cab, navx}` |
+| feature `rssig/crl-fetch` for `CrlSource` alone | `rssig-engine/retrieval`; `rssig/crl-fetch` adds `HttpCrlSource` |
+| `rssig::cli::*` | unchanged |
+
+An OS adapter of your own builds its store with
+`TrustStore::from_system_roots(ders, errors)`, passing every enumeration error;
+any error rejects the whole enumeration. Results, JSON, exit codes and CLI
+arguments are unchanged.
+
+#### Earlier changes
+
 Parser, verifier and options entry points retain their public signatures.
-`TrustStore::add_roots`, `add_crl` and `from_system` now return
+`TrustStore::add_roots`, `add_crl` and `from_system` (since replaced by
+`rssig::roots::system_roots`; see [Engine and application
+packages](#engine-and-application-packages)) now return
 `Result<_, TrustLoadError>` instead of `anyhow::Result`, so no public signature
 names `anyhow`. Callers using `?` into `anyhow::Error` or `Box<dyn Error>`, or
 `.unwrap()`, compile unchanged; callers that named `anyhow::Result` or downcast
 the error to `TrustLoadError` now receive it directly and match `kind()` and
-`code()` with fallback arms. The `_typed` methods are deprecated aliases of the
-same functions. `VerificationError::from_internal`, which took an
+`code()` with fallback arms. `VerificationError::from_internal`, which took an
 `anyhow::Error`, is no longer public; construct errors with
 `VerificationError::new` and `detail`.
 
@@ -674,7 +713,7 @@ and reports no further `source()`.
 TRUST-T001 deliberately tightens silent exclusion/partial-load behavior; correct a
 rejected input or explicitly configure a controlled store. No dependency or
 native crypto provider is added.
-#### CRL sources (`--fetch-crls`, `crl-fetch` feature)
+#### CRL sources (`--fetch-crls`; the engine's `retrieval` feature, the application's `crl-fetch`)
 
 `CrlSource` is now asked once per certificate rather than once per URL, and
 returns restricted errors. A certificate with no new point, whose issuer name,
@@ -709,7 +748,7 @@ non-HTTP and private URLs before calling `fetch`. Now a source is passed every
 listed URI that passes input hygiene (no control characters, whitespace or
 credentials, and it parses as a URL), including `file:` URLs and addresses
 such as `http://169.254.169.254/`. A source that fetches by URL must screen
-them: `rssig::retrieval::check_public_http_url` applies the built-in source's
+them: `rssig::crl::check_public_http_url` applies the built-in source's
 URL policy and returns a `Denied` error to pass on. It checks the URL only;
 your HTTP client must also refuse nonpublic DNS answers and re-check redirect
 targets, as `HttpCrlSource` does.
@@ -730,7 +769,7 @@ Results: missing evidence is `revocation_unknown` (with each problem in
 certificate without a CRL unasked or cut its request short (CRL-047);
 `crl_fetch_denied` and `crl_fetch_failed` are no longer results.
 
-Report types (`rssig::domain`), Rust and JSON:
+Report types (`rssig_engine::domain`), Rust and JSON:
 
 | Before | Now |
 |---|---|
@@ -752,10 +791,10 @@ human-readable error strings.
 
 ## Shared verification without std (LIB-T009)
 
-Use `rssig = { version = "0.1", default-features = false, features = ["verify-core"] }`
-for shared verification with `core + alloc`. Existing `verify` users retain every
-format and `std`; default CLI and native-root behavior is unchanged. Add `msi`
-or `appx` to `verify-core` independently to enable those host adapters.
+Use `rssig-engine = { version = "0.1", default-features = false, features = ["verify-core"] }`
+for shared verification with `core + alloc`. The engine's `verify` feature (its
+default) adds every format and `std`. Add `msi` or `appx` to `verify-core`
+independently to enable those host adapters.
 
 The core verifies PE, CAB, NAVX, PowerShell hash/XML comments, WSH (including
 WSF XML), and RDP. It includes CMS signatures, nested signatures, PE page hashes,
@@ -778,7 +817,7 @@ remains an explicit policy and reports `chain_trusted: false`.
 | Trust/CRLs | webpki and rustls-pki-types use `alloc` with defaults disabled. The RustCrypto algorithm adapter remains the only crypto backend. `Duration` and `Cell` come from `core`. |
 | Timestamps | Pure DER parsing, digest/signature checks and caller-supplied Unix seconds. No clock or time-zone integration. |
 | Reports/errors | Serde and serde_json use `alloc`; strings, vectors, maps and boxes come from `alloc`. File/path report wrappers require `std`. Domain codes, stages and JSON fields are unchanged. |
-| Dispatch | Bytes and optional UTF-8 filename hints require no filesystem. CLI path-extension handling lives in `src/cli/verify.rs`. Disabled MSI/AppX dispatch returns `configuration` at `configuration`, never a successful integrity report. |
+| Dispatch | Bytes and optional UTF-8 filename hints require no filesystem. CLI path-extension handling lives in the application's `src/cli/verify.rs`. Disabled MSI/AppX dispatch returns `configuration` at `configuration`, never a successful integrity report. |
 | MSI/AppX | CFB cursor I/O and ZIP/DEFLATE package adapters remain behind `msi`/`appx`, each enabling `std`. |
 | Host | CLI filesystem I/O and clocks, path-based command reports, and optional native-root enumeration stay outside the alloc-only feature graph. |
 
@@ -798,12 +837,12 @@ dependency-specific nested causes are not promised identical across features.
 
 ### Evidence and limits
 
-`cargo clippy --locked --lib --no-default-features --features verify-core --target
+`cargo clippy --locked -p rssig-engine --lib --no-default-features --features verify-core --target
 thumbv7em-none-eabi -- -D warnings` compiles the verifier on a target without
 `std`, without host/dev-dependency feature unification. CI runs this alongside
-`cargo test --locked --no-default-features --features verify-core`, which executes
+`cargo test --locked -p rssig-engine --no-default-features --features verify-core`, which executes
 the shared code on the host using committed inert artifacts, fixed time, explicit
-roots and local CRLs. `tests/verification_core.rs` checks supported containers,
+roots and local CRLs. `engine/tests/verification_core.rs` checks supported containers,
 both timestamp types, trusted and revoked chains, image/timestamp tampering,
 serialized trust/revocation flags, and disabled package dispatch. The portable
 `policy-core-trusted-pe` case and named CLI test check the same public verification options.
@@ -816,22 +855,24 @@ MSI/AppX verification and native roots are not claimed to work without `std`.
 
 ## Shared interfaces and packaging (LIB-T010)
 
-The [architecture reassessment](library-architecture.md) retains the single
-feature-separated package and existing facade after reviewing all current format
-consumers. It records the shared interfaces, alternatives, concrete extraction
-coupling, and compatibility requirements for a future split. No caller migration
-or crate split is required for current `no_std` parsing or verification.
+The [architecture reassessment](library-architecture.md) records the shared
+interfaces, alternatives and extraction coupling (LIB-T010), and the split into
+the `rssig-engine` and `rssig` packages at the host boundary. The
+engine keeps its feature-separated parser and verifier in one package; `no_std`
+parsing and verification depend on `rssig-engine` alone.
 
 Verification calls, including parsed-container APIs, share fixed [aggregate work
 budgets](verification-budgets.md) across signers, timestamps and bundle children.
 Budget exhaustion returns a typed failure without a partial success verdict.
 
-The optional `crl-fetch` feature adds `retrieval::CrlSource`, distribution-point
-discovery, and `verify_with_crl_source`. The CLI includes it and opts in through
+The engine's optional `retrieval` feature adds `retrieval::CrlSource`,
+distribution-point discovery, and `verify_with_crl_source`; it has no
+transport. The application's `crl-fetch` feature adds the default source,
+`rssig::crl::HttpCrlSource`. The CLI includes both and opts in through
 `--fetch-crls`; existing verify APIs remain offline. See [provider and network
 policy](crl-retrieval.md).
 
-`rssig::log::Logger` is an optional, caller-injected diagnostic sink, supplied
+`rssig_engine::log::Logger` is an optional, caller-injected diagnostic sink, supplied
 through `verify::Verifier` or `cli::Host`. Nothing is logged without one, and
 `VerifyOptions` and the existing entry points are unchanged. See [injected
 logging](logging.md).

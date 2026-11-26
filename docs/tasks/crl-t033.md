@@ -10,7 +10,7 @@ from copying the issuer key on a hit.
 
 - Every verification decodes each configured root and each applicable CRL
   again. The bytes are charged eight times over to `hash_bytes` and
-  `decoded_bytes` (`TrustStore::charge_loaded` in `src/trust.rs`), but each
+  `decoded_bytes` (`TrustStore::charge_loaded` in `engine/src/trust.rs`), but each
   retrieval round, plus the integrity and trust run before the first
   request, repeats the work against one budget. Cache the decoded roots and
   CRLs on the `TrustStore`.

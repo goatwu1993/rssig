@@ -1,34 +1,67 @@
+# Two packages, one per layer:
+#
+#   engine/  `rssig-engine`: pure verification logic, policy options and the
+#            collaborator interfaces (`CrlSource`, `Logger`). No I/O, clock or OS roots.
+#   ./       `rssig`: the application. The CLI and the default collaborators
+#            the engine leaves to its caller: the HTTP CRL source, OS root
+#            enumeration, host limits and the default policy.
+#
+# `cargo test --locked` at the root runs both packages (`default-members`).
+[workspace]
+# The root package is a member implicitly. Naming "." here would make every
+# path below the root an explicit member, which defeats `exclude`.
+members = ["engine"]
+default-members = [".", "engine"]
+# The read-only reference clones kept at the repository root (.gitignore) are
+# not members: without this, running Cargo inside a Rust one fails, because
+# Cargo takes it for a stray member of this workspace.
+exclude = [
+    "jsign", "relic", "osslsigncode", "authenticode-rs", "authenticode-parser",
+    "cross-authenticode", "rsigncode", "pe-sign", "verifysign",
+]
+resolver = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+# Keep individual lint overrides above the group priority.
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = 0 }
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+[workspace.dependencies]
+anyhow = { version = "1", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+url = { version = "2.5" }
+rustls-pki-types = { version = "1", default-features = false, features = ["alloc"] }
+# Pinned exactly: CRL authority and path behavior are documented as observed at
+# this version (docs/tasks/crl-t001.md). Upgrade deliberately; one pin serves
+# the engine and the application's anchor test.
+webpki = { package = "rustls-webpki", version = "=0.103.16", default-features = false, features = ["alloc"] }
+x509-cert = { version = "0.2", default-features = false }
+
 [package]
 name = "rssig"
 version = "0.1.0"
 edition = "2024"
 description = "Cross-platform embedded Windows PE Authenticode signature verifier"
 license = "Apache-2.0"
+# The published crate is the application only. Tests, fixtures, documentation
+# and repository housekeeping stay in the repository.
+include = ["/src/**", "/README.md", "/LICENSE", "/NOTICE"]
 
 [features]
 default = ["cli", "system-roots"]
-# The parser only needs core + alloc. Host integrations are opt-in for libraries.
-std = ["anyhow/std", "der/std", "x509-cert/std", "roxmltree?/std", "serde?/std", "serde_json?/std", "signature?/std"]
-xml = ["dep:roxmltree"]
-# Structural host adapters, independent of verification and reports.
-msi = ["std", "dep:cfb"]
-appx = ["std", "xml", "dep:flate2", "dep:crc32fast"]
-verify = ["verify-core", "msi", "appx"]
-verify-core = [
-    "xml",
-    "dep:rustls-pki-types", "dep:webpki", "dep:rsa", "dep:sha1", "dep:sha2",
-    "dep:p256", "dep:p384", "dep:signature", "dep:serde", "dep:serde_json",
-    "x509-cert/pem",
-]
-crl-fetch = ["verify", "dep:url", "dep:httparse"]
-cli = ["verify", "crl-fetch", "dep:clap", "dep:libc"]
-system-roots = ["verify", "dep:rustls-native-certs"]
-# Testing only, never for a product build: after rssig's revocation decision,
-# re-run webpki's own revocation check on the accepted path and panic if the
-# two disagree (CRL-T011). Enabled for every test target by the self
-# dev-dependency below. It enables no other feature, so reduced-feature test
-# runs keep their feature set; it has an effect only with `verify-core`.
-revocation-crosscheck = []
+# The default CRL source: bounded public HTTP.
+crl-fetch = ["rssig-engine/retrieval", "dep:url", "dep:httparse", "dep:serde_json"]
+cli = ["crl-fetch", "dep:clap", "dep:libc", "dep:anyhow", "dep:serde", "dep:serde_json"]
+# The default root source: the operating system's store.
+system-roots = ["dep:rustls-native-certs"]
 
 [[bin]]
 name = "rssig"
@@ -47,71 +80,34 @@ required-features = ["cli"]
 name = "spec"
 required-features = ["cli"]
 
-[[test]]
-name = "fixtures"
-required-features = ["verify"]
-
-[[test]]
-name = "manifest"
-required-features = ["verify"]
-
-[[test]]
-name = "parse"
-required-features = ["verify"]
-
-[[test]]
-name = "logging"
-required-features = ["verify"]
-
-[lints.rust]
-unsafe_code = "forbid"
-unused_must_use = "deny"
-
-[lints.clippy]
-# Keep individual lint overrides above the group priority.
-all = { level = "warn", priority = -1 }
-correctness = { level = "deny", priority = 0 }
-dbg_macro = "deny"
-todo = "deny"
-unimplemented = "deny"
+[lints]
+workspace = true
 
 [dependencies]
-url = { version = "2.5", optional = true }
+rssig-engine = { path = "engine", version = "0.1.0", default-features = false, features = ["verify"] }
+anyhow = { workspace = true, features = ["std"], optional = true }
+serde = { workspace = true, features = ["std"], optional = true }
+serde_json = { workspace = true, features = ["std"], optional = true }
+url = { workspace = true, optional = true }
 httparse = { version = "1.10", optional = true }
 libc = { version = "0.2", optional = true, default-features = false }
-flate2 = { version = "1", optional = true, default-features = false, features = ["rust_backend"] }
-crc32fast = { version = "1", optional = true }
-roxmltree = { version = "0.21", optional = true, default-features = false, features = ["positions"] }
-base64ct = { version = "1", default-features = false, features = ["alloc"] }
-anyhow = { version = "1", default-features = false }
 clap = { version = "4", optional = true, features = ["derive"] }
-der = { version = "0.7", default-features = false, features = ["alloc", "derive", "oid"] }
-digest = { version = "0.10", default-features = false }
-x509-cert = { version = "0.2", default-features = false }
 rustls-native-certs = { version = "0.8", optional = true }
-rustls-pki-types = { version = "1", optional = true, default-features = false, features = ["alloc"] }
-# Pinned exactly: CRL authority and path behavior are documented as observed at
-# this version (docs/tasks/crl-t001.md). Upgrade deliberately.
-webpki = { package = "rustls-webpki", version = "=0.103.16", optional = true, default-features = false, features = ["alloc"] }
-rsa = { version = "0.9", optional = true, default-features = false, features = ["sha2", "u64_digit"] }
-sha1 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
-sha2 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
-p256 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
-p384 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
-signature = { version = "2", optional = true }
-serde = { version = "1", optional = true, default-features = false, features = ["derive", "alloc"] }
-serde_json = { version = "1", optional = true, default-features = false, features = ["alloc"] }
-cfb = { version = "0.15", optional = true, default-features = false }
 
 [dev-dependencies]
-# Builds the library with the test-only revocation cross-check for every test
-# target (unit and integration). See the `revocation-crosscheck` feature.
-rssig = { path = ".", default-features = false, features = ["revocation-crosscheck"] }
-rsa = { version = "0.9", features = ["pem"] }
-p256 = { version = "0.13", features = ["ecdsa", "pem"] }
-rand = "0.8"
+# The specification runner and manifest checks deserialize JSON in every
+# feature configuration, not only with `cli`.
+serde = { workspace = true, features = ["std"] }
+serde_json = { workspace = true, features = ["std"] }
+# Runs every test with the engine's test-only revocation cross-check. See the
+# engine's `revocation-crosscheck` feature.
+rssig-engine = { path = "engine", default-features = false, features = ["revocation-crosscheck"] }
 sha2 = { version = "0.10", features = ["oid"] }
-x509-cert = { version = "0.2", features = ["builder"] }
+x509-cert = { workspace = true }
+# tests/cli/trust_loading.rs checks that webpki accepts each committed anchor,
+# at the engine's pinned version (the workspace pin).
+rustls-pki-types = { workspace = true }
+webpki = { workspace = true }
 # Parses Rust test and generator sources for tests/manifest.rs. Already in the
 # lockfile through serde_derive.
 syn = { version = "2", default-features = false, features = ["full", "parsing", "visit"] }

@@ -9,7 +9,7 @@ serial ([CRL-043](../crl.md#crl-043-a-crl-naming-another-certificate-by-issuer-a
 Two other places still read only the key identifier:
 
 - **Retrieval.** A fetched full CRL whose issuer is the certificate's issuer
-  counts as that issuer's answer (`of_issuer` in `src/retrieval.rs`), even
+  counts as that issuer's answer (`of_issuer` in `engine/src/retrieval.rs`), even
   when verification then sets it aside because its authorityKeyIdentifier
   names another key (CRL-040) or another certificate (CRL-043). Retrieval
   then asks no further point, and the certificate stays `revocation_unknown`

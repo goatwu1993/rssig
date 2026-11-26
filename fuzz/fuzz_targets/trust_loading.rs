@@ -2,12 +2,13 @@
 //! valid artifact against the resulting store. The fuzzer mutates the trust
 //! inputs instead of the artifact: fuzzed roots exercise anchor extraction and
 //! path building, fuzzed CRLs exercise CRL decoding, applicability, signature
-//! and freshness checks under required revocation.
+//! and freshness checks under required revocation. The bytes are also one
+//! enumerated OS root (`TrustStore::from_system_roots`).
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::TrustStore;
-use rssig::verify::{RevocationPolicy, VerifyOptions, verify_pe};
+use rssig_engine::TrustStore;
+use rssig_engine::verify::{RevocationPolicy, VerifyOptions, verify_pe};
 
 /// Fixed validation time (2027-01-15T07:59:59Z), matching the pinned test clock.
 const NOW: u64 = 1_799_999_999;
@@ -21,6 +22,12 @@ fuzz_target!(|data: &[u8]| {
     if roots.add_roots(data).is_ok() {
         let options =
             VerifyOptions::trusted_with_revocation(&roots, NOW, RevocationPolicy::Disabled);
+        let _ = verify_pe(SIGNED, &options);
+    }
+    // The same bytes as an OS enumeration's only root.
+    if let Ok(system) = TrustStore::from_system_roots([data], Vec::<std::io::Error>::new()) {
+        let options =
+            VerifyOptions::trusted_with_revocation(&system, NOW, RevocationPolicy::Disabled);
         let _ = verify_pe(SIGNED, &options);
     }
     // The committed root with fuzzed CRLs, revocation required.

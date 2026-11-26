@@ -1,5 +1,8 @@
 //! Host limits apply before parsing and before retaining serialized results.
-use crate::domain::{ErrorCode, Stage, VerificationError};
+use rssig_engine::{
+    TrustStore,
+    domain::{ErrorCode, Stage, VerificationError},
+};
 use serde::Serialize;
 use std::{
     fs::OpenOptions,
@@ -50,6 +53,22 @@ impl Limits {
         }
         Ok(())
     }
+}
+/// The most roots and CRLs a verification loads, from every source together.
+pub(super) const MAX_ROOTS: usize = 4096;
+pub(super) const MAX_CRLS: usize = 64;
+
+/// Bound what the loaded store holds: root and CRL counts and their DER bytes.
+pub(super) fn check_trust(trust: &TrustStore) -> anyhow::Result<()> {
+    check_trust_sizes(trust.root_count(), trust.crl_count(), trust.encoded_len())
+}
+fn check_trust_sizes(roots: usize, crls: usize, bytes: usize) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        roots <= MAX_ROOTS && crls <= MAX_CRLS,
+        "too many loaded roots or CRLs"
+    );
+    anyhow::ensure!(bytes <= TRUST_TOTAL, "loaded roots/CRLs exceed 32 MiB");
+    Ok(())
 }
 pub(super) fn validate_paths(files: &[PathBuf], count: usize) -> anyhow::Result<()> {
     anyhow::ensure!(
@@ -161,6 +180,19 @@ pub(super) fn read_trust(path: &Path, remaining: &mut usize) -> anyhow::Result<V
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn the_loaded_store_bounds_are_inclusive() {
+        assert!(check_trust_sizes(MAX_ROOTS, MAX_CRLS, TRUST_TOTAL).is_ok());
+        for (roots, crls, bytes, message) in [
+            (MAX_ROOTS + 1, 0, 0, "too many loaded roots or CRLs"),
+            (0, MAX_CRLS + 1, 0, "too many loaded roots or CRLs"),
+            (0, 0, TRUST_TOTAL + 1, "loaded roots/CRLs exceed 32 MiB"),
+        ] {
+            let error = check_trust_sizes(roots, crls, bytes).unwrap_err();
+            assert_eq!(error.to_string(), message);
+        }
+        assert_eq!((MAX_ROOTS, MAX_CRLS, TRUST_TOTAL), (4096, 64, 32 << 20));
+    }
     #[test]
     fn stream_limits_handle_growth_short_reads_and_exact_eof() {
         let (bytes, exceeded) = read_stream(io::repeat(7), 17).unwrap();

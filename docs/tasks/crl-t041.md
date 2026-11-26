@@ -8,7 +8,7 @@ to the `CrlSource` implementations ([CRL-039](../crl.md#crl-039-fetch-limits-bou
 [CRL-033](../crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl)
 asks a source once per certificate, and the engine skips a certificate that has
 no new point and whose issuer name, authorityKeyIdentifier bytes and CA role
-(`IssuerKey`, `asked_issuers` in `src/retrieval.rs`) were already asked about:
+(`IssuerKey`, `asked_issuers` in `engine/src/retrieval.rs`) were already asked about:
 CRLs are per issuer key and role, so one answer serves them all.
 
 OpenSSL's verifier has no such rule. It calls `get_crl` or `lookup_crls` for

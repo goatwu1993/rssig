@@ -36,21 +36,24 @@ enum Command {
 #[non_exhaustive]
 pub struct Host<'a> {
     /// Replaces the built-in HTTP CRL source. Called only with `--fetch-crls`.
-    pub crl_source: Option<&'a mut dyn crate::retrieval::CrlSource>,
+    pub crl_source: Option<&'a mut dyn rssig_engine::retrieval::CrlSource>,
     /// Receives verification diagnostics. Nothing is logged without one, and
     /// records never reach stdout or stderr. `parse` does not log.
-    pub logger: Option<&'a dyn crate::log::Logger>,
+    pub logger: Option<&'a dyn rssig_engine::log::Logger>,
 }
 
 impl<'a> Host<'a> {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn with_crl_source(mut self, source: &'a mut dyn crate::retrieval::CrlSource) -> Self {
+    pub fn with_crl_source(
+        mut self,
+        source: &'a mut dyn rssig_engine::retrieval::CrlSource,
+    ) -> Self {
         self.crl_source = Some(source);
         self
     }
-    pub fn with_logger(mut self, logger: &'a dyn crate::log::Logger) -> Self {
+    pub fn with_logger(mut self, logger: &'a dyn rssig_engine::log::Logger) -> Self {
         self.logger = Some(logger);
         self
     }
@@ -139,7 +142,7 @@ pub fn run_with_crl_source<I, T, O, E>(
     arguments: I,
     stdout: O,
     stderr: E,
-    source: &mut dyn crate::retrieval::CrlSource,
+    source: &mut dyn rssig_engine::retrieval::CrlSource,
 ) -> io::Result<u8>
 where
     I: IntoIterator<Item = T>,

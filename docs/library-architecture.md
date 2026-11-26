@@ -1,6 +1,51 @@
-# Shared interfaces and crate boundaries (LIB-T010)
+# Shared interfaces and package boundaries
 
-Decision: retain one `rssig` package and its existing public facade. Keep the
+## Engine and application packages
+
+rssig is a Cargo workspace of two packages, which replaces LIB-T010's
+single-package decision below:
+
+- `rssig-engine` (`engine/`): pure logic, policy options and the
+  collaborator interfaces. Parser, inspection, verifier, trust, timestamps, revocation, CRL
+  retrieval through an injected `CrlSource`, the `Logger` interface, reports
+  and error codes.
+- `rssig` (root): the application. The CLI and the defaults the engine leaves
+  to its caller: `crl::HttpCrlSource`, `roots::system_roots`, host limits and
+  the default policy built from CLI flags.
+
+The cut is at the host boundary, not between parser and verifier: they stay in
+one engine package, so the extraction work listed below for a
+parser/verifier/CLI split (inherent methods on parser types, PE page-hash
+ranges, shared DER helpers) was not needed. Five seams were opened instead,
+each the smallest public interface the application needs:
+
+| Engine interface | Was | For |
+| --- | --- | --- |
+| `TrustStore::from_system_roots` | `TrustStore::from_system` read the OS store inside the engine | `rssig::roots::system_roots` enumerates and hands over the roots and the enumeration errors; the engine still rejects a partial enumeration, validates each anchor and reports its position |
+| `TrustStore::root_count`, `crl_count`, `encoded_len` | the CLI's store-size check lived in the engine (`check_host_limits`) | the CLI's host limits (`cli/limits.rs`) |
+| `retrieval::limit` | crate-private; `HttpCrlSource` used it from inside the engine | `HttpCrlSource`'s own request and URL caps report the same `resource_limit_exceeded` details as the engine's limits |
+| `log::Record::new` | the CLI built a non-exhaustive `Record` in-crate | the CLI's own debug record through the injected logger |
+| `inspect::{pe, cms, cab, navx}` | crate-private `inspection`, compiled only with `cli` | the CLI's `parse` command |
+
+`HttpCrlSource` (with its own caps `MAX_SOURCE_REQUESTS`, `MAX_SOURCE_URLS`,
+`MAX_HTTP_REQUESTS` and `MAX_NETWORK_BYTES`, and
+`check_public_http_url`) moved from `retrieval` to `rssig::crl`; it uses only
+the engine's public `retrieval` interface. Public paths change accordingly
+(pre-release, no compatibility layer): engine items are `rssig_engine::...`,
+re-exported by the application as `rssig::engine`. The behavior, JSON
+contracts, exit codes, fixtures and existing cases are unchanged. Two cases
+were added, `limit-supplied-64-crls` and `limit-supplied-65-crls`, to put the
+CLI's bound on supplied CRLs (now in `cli/limits.rs`) into the specification. Tests run from the repository, where both packages read the one
+`tests/fixtures/` directory; the published crates exclude their tests, and
+`make package-check` (CI's `package` job) checks that each packaged crate
+builds.
+
+The rest of this document is LIB-T010's assessment, kept for its interface
+analysis; its packaging decision is superseded above.
+
+## LIB-T010 assessment
+
+Decision (superseded for packaging by the engine and application packages above): retain one `rssig` package and its existing public facade. Keep the
 feature-separated parser, verification core, host format adapters and CLI as
 modules. Do not introduce a public all-format container trait or split crates
 at this stage. Crate extraction is not required for `no_std` verification.
@@ -10,7 +55,7 @@ through LIB-T001 to LIB-T009. It is based on the repository's implementations an
 consumer tests, not independent downstream adoption or Windows policy testing.
 See [library usage and migration](library.md) for the supported API contracts.
 
-## Interfaces justified by reuse
+### Interfaces justified by reuse
 
 | Consumers | Shared interface in use | Boundary to retain |
 | --- | --- | --- |
@@ -33,18 +78,18 @@ parsers and the private enum rather than freezing those differences into public
 associated types or callbacks. Future external format support needs its own
 decision and security review; opaque CMS bytes plus a computed hash are insufficient.
 
-Existing evidence includes `tests/parse_core.rs`, `tests/parse.rs`,
-`tests/library_stability.rs`, and `tests/verification_core.rs`, plus the portable
+Existing evidence includes `engine/tests/parse_core.rs`, `engine/tests/parse.rs`,
+`engine/tests/library_stability.rs`, and `engine/tests/verification_core.rs`, plus the portable
 cases and format-specific CLI tests. These cover structural inspection versus
 verification, borrowing and repeated policy use, typed errors and explicit trust.
 They justify retaining these interfaces; they do not measure independent consumer
 maintenance cost or constrained-device resource use.
 
-## Packaging alternatives
+### Packaging alternatives
 
 | Option | Feature isolation | Public API and packaging | Maintenance cost / decision |
 | --- | --- | --- | --- |
-| One package with optional features (current) | Base parser uses alloc; `verify-core` adds crypto/reports; `msi`/`appx` add std; `cli` and `system-roots` add host integration | One version, lockfile and facade; parser users must disable defaults | Retain. CI already checks host feature combinations and bare-metal parser/XML/verifier builds. |
+| One package with optional features (LIB-T010; replaced by the two packages) | Base parser uses alloc; `verify-core` adds crypto/reports; `msi`/`appx` add std; `cli` and `system-roots` add host integration | One version, lockfile and facade; parser users must disable defaults | Superseded by the two packages. CI already checks host feature combinations and bare-metal parser/XML/verifier builds. |
 | Parser + verifier + CLI crates, with `rssig` facade | Separate package dependency graphs make boundaries more explicit; additive Cargo features still unify for a shared package | Requires new package manifests, publish order, inter-package version requirements and facade re-exports | Defer until independent consumers or release cadence justify the extra boundaries. Requires resolving the concrete coupling below. |
 | Separate crate per format or host adapter | Could narrow format dependencies further | Many package/version combinations and cross-format CMS/report dependencies | Defer. MSI/AppX already have independent feature gates; no demonstrated need for separate releases. |
 
@@ -54,13 +99,14 @@ A crate split could improve dependency ownership, but cannot by itself guarantee
 that an application's entire graph is `no_std`. The existing bare-metal
 production-library checks avoid host dev-dependency feature unification. Native
 root enumeration remains an optional root source, never a verifier backend.
-`system-roots` currently enables full `verify`, including std format adapters;
-it is not an alloc-only core feature.
+At the time, `system-roots` enabled full `verify`, including std format
+adapters; it was not an alloc-only core feature. (In the two-package layout it
+is an application feature that adds only `rustls-native-certs`.)
 
-### Concrete extraction work, if justified later
+#### Concrete extraction work, if justified later
 
 - Verifier adapters currently add private inherent methods to parser types
-  (`src/pe.rs`, `src/cab.rs`, `src/navx.rs`). An external verifier crate cannot
+  (`engine/src/pe.rs`, `engine/src/cab.rs`, `engine/src/navx.rs`). An external verifier crate cannot
   add inherent implementations to foreign types. Move these to verifier-owned
   functions/newtypes or private extension traits before moving modules.
 - PE page hashing currently reads crate-private validated ranges. Define a
@@ -82,11 +128,12 @@ it is not an alloc-only core feature.
   publish in dependency order. Repository-relative fixture includes and local
   jsign/relic references must never become runtime dependencies.
 
-## Compatibility and reconsideration
+### Compatibility and reconsideration
 
-No caller migration is required by this decision. Existing `rssig::parse`,
-`rssig::verify`, `rssig::domain`, root-level re-exports, feature names, CLI argv,
-and JSON contracts remain intact. Concrete parsed verification ownership remains
+No caller migration was required by this decision at the time. The engine and
+application split later moved those paths; see the [migration
+table](library.md#engine-and-application-packages). CLI argv and JSON contracts
+remain intact. Concrete parsed verification ownership remains
 as documented in [LIB-T008](library.md#ownership-reuse-and-api-stability-lib-t008).
 There are no new fixtures or failing behavior tests for this documentation-only
 reassessment because it changes no parsing, hashing, verification or report behavior.

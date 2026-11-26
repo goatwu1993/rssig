@@ -45,7 +45,10 @@ supported RustCrypto algorithms. Name constraints remain path inputs. The
 [certificate paths](certificate-paths.md) and its existing
 expired/profile/constrained-root fixtures pin these boundaries.
 
-`from_system` treats native enumeration as one atomic operation:
+The application's `rssig::roots::system_roots` enumerates the OS store and
+hands the roots and the enumeration errors to the engine's
+`TrustStore::from_system_roots`, which treats native enumeration as one atomic
+operation:
 
 - Any enumeration error rejects the complete result, including partial results.
   Diagnostics include the returned certificate count and every native error
@@ -86,8 +89,8 @@ built from the kind, code and entry position (for example
 `{:#}` appends every cause once,
 and `source()` walks those causes, so a reporter that walks the chain prints each
 cause once. Native enumeration lists every native error in one cause and reports
-no further `source()`. `add_roots`, `add_crl` and `from_system` return
-`TrustLoadError` directly; the `_typed` names are deprecated aliases. No public
+no further `source()`. `add_roots`, `add_crl`, `from_system_roots` and
+`rssig::roots::system_roots` return `TrustLoadError` directly. No public
 signature names `anyhow`.
 
 CRL loading checks syntax only. A syntactically valid forged, stale, unsupported

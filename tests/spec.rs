@@ -1,4 +1,6 @@
 //! Load the portable CLI specification with Serde and exercise the CLI library.
+#[path = "common/crosscheck.rs"]
+mod crosscheck;
 #[path = "common/spec_suite.rs"]
 mod spec_suite;
 
@@ -268,13 +270,13 @@ fn compare(expected: &Value, actual: &Value, pointer: &str, failures: &mut Vec<S
 /// body over the cap fits and a typo cannot make the runner allocate without
 /// bound. The schema states it as `maximum`. `validate` checks it and the
 /// case total; `execute` checks it again, and the total of each response.
-const MAX_PAD_TO: usize = 2 * rssig::retrieval::MAX_CRL_BYTES;
+const MAX_PAD_TO: usize = 2 * rssig_engine::retrieval::MAX_CRL_BYTES;
 
 /// The most the `pad_to` values of a case may add up to: twice the 32 MiB of
 /// trust evidence a verification may take in all (supplied roots and CRLs
 /// included), so a case can exceed that allowance. Unpadded bodies are
 /// committed fixtures, whose size the manifest pins.
-const MAX_PAD_TOTAL: usize = 2 * rssig::retrieval::MAX_TOTAL_BYTES;
+const MAX_PAD_TOTAL: usize = 2 * rssig_engine::retrieval::MAX_TOTAL_BYTES;
 
 /// What is wrong with a scripted answer, by the rules the schema states: it
 /// holds bodies and failures, or one error; a list that is present is not
@@ -363,7 +365,7 @@ fn validate_json_absent(id: &str, expect: &spec_suite::Expectation) -> Result<()
 /// over either is given on purpose with `pad_to`, never by a fixture that happens
 /// to be large.
 fn unpadded_answer_over_allowance(name: &str, len: usize, max_bytes: usize) -> Option<String> {
-    let cap = max_bytes.min(rssig::retrieval::MAX_CRL_BYTES);
+    let cap = max_bytes.min(rssig_engine::retrieval::MAX_CRL_BYTES);
     (len > cap).then(|| {
         format!(
             "the answer {name} ({len} bytes) exceeds the {cap} bytes a body may have here; \
@@ -426,7 +428,7 @@ fn scripted_bodies(
         if size == len {
             problems.extend(unpadded_answer_over_allowance(&crl.file, len, remaining));
         }
-        if size <= remaining.min(rssig::retrieval::MAX_CRL_BYTES) {
+        if size <= remaining.min(rssig_engine::retrieval::MAX_CRL_BYTES) {
             remaining -= size;
         }
         sizes.push(size);
@@ -492,7 +494,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
     struct Source<'a> {
         responses: &'a BTreeMap<String, String>,
         by_certificate: Option<&'a BTreeMap<String, spec_suite::CertificateAnswer>>,
-        errors: Option<&'a BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
+        errors: Option<&'a BTreeMap<String, rssig_engine::domain::CrlSourceErrorKind>>,
         fixtures: &'a Path,
         requests: &'a mut Vec<String>,
         /// What is wrong with the case itself, reported as its failures.
@@ -500,11 +502,12 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
         /// The certificates whose answer, plain or scripted, the engine asked for.
         asked: &'a mut std::collections::BTreeSet<String>,
     }
-    impl rssig::retrieval::CrlSource for Source<'_> {
+    impl rssig_engine::retrieval::CrlSource for Source<'_> {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             use sha2::Digest;
             let certificate: String = sha2::Sha256::digest(request.certificate)
                 .iter()
@@ -518,7 +521,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 .and_then(|answers| answers.get(&certificate))
             {
                 self.asked.insert(certificate.clone());
-                use rssig::retrieval::{CrlResponse, CrlSourceError, SourcedCrl};
+                use rssig_engine::retrieval::{CrlResponse, CrlSourceError, SourcedCrl};
                 let read =
                     |name: &String| std::fs::read(fixture_path(self.fixtures, name)).unwrap();
                 let failure = |failure: &spec_suite::ScriptedFailure| {
@@ -579,7 +582,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                         if !problems.is_empty() {
                             self.problems.extend(problems);
                             return Err(CrlSourceError::new(
-                                rssig::domain::CrlSourceErrorKind::Abort,
+                                rssig_engine::domain::CrlSourceErrorKind::Abort,
                                 "the case's scripted answer has a problem; nothing is sent",
                             ));
                         }
@@ -602,9 +605,9 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                     }
                 };
             }
-            let response = rssig::retrieval::fetch_each(request, |url, max_bytes| {
-                use rssig::domain::CrlSourceErrorKind;
-                use rssig::retrieval::CrlSourceError;
+            let response = rssig_engine::retrieval::fetch_each(request, |url, max_bytes| {
+                use rssig_engine::domain::CrlSourceErrorKind;
+                use rssig_engine::retrieval::CrlSourceError;
                 self.requests.push(url.to_owned());
                 if let Some(kind) = self.errors.and_then(|errors| errors.get(url)) {
                     return Err(CrlSourceError::new(*kind, "injected CRL fetch error"));
@@ -615,7 +618,7 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 let bytes = std::fs::read(fixture_path(self.fixtures, name)).unwrap();
                 self.problems
                     .extend(unpadded_answer_over_allowance(name, bytes.len(), max_bytes));
-                Ok(rssig::retrieval::SourcedCrl::new(bytes))
+                Ok(rssig_engine::retrieval::SourcedCrl::new(bytes))
             });
             Ok(response)
         }
@@ -1289,7 +1292,7 @@ fn specification_the_schema_and_the_runner_agree_on_the_pad_to_limit() {
 /// (TEST-T003).
 #[test]
 fn specification_the_schema_states_the_rules_of_a_scripted_answer() {
-    use rssig::domain::CrlSourceErrorKind::{self, Abort, Denied, Failed, Unknown};
+    use rssig_engine::domain::CrlSourceErrorKind::{self, Abort, Denied, Failed, Unknown};
     let schema: Value = serde_json::from_str(include_str!("cases.schema.json")).unwrap();
     let defs = &schema["$defs"];
     let answer = &defs["scriptedAnswer"];
@@ -1373,8 +1376,8 @@ fn specification_an_unpadded_answer_over_the_allowance_is_a_problem_of_the_case(
     assert!(problem.contains("a.crl (11 bytes) exceeds the 10 bytes a body may have here"));
     assert!(problem.contains("pad_to"));
     // The per-body cap applies under a larger allowance too.
-    let cap = rssig::retrieval::MAX_CRL_BYTES;
-    let allowance = rssig::retrieval::MAX_TOTAL_BYTES;
+    let cap = rssig_engine::retrieval::MAX_CRL_BYTES;
+    let allowance = rssig_engine::retrieval::MAX_TOTAL_BYTES;
     assert_eq!(
         unpadded_answer_over_allowance("a.crl", cap, allowance),
         None
@@ -1420,7 +1423,7 @@ fn specification_an_unpadded_body_after_a_spent_allowance_is_a_problem_of_the_ca
         pad_to,
         url: None,
     };
-    let cap = rssig::retrieval::MAX_CRL_BYTES;
+    let cap = rssig_engine::retrieval::MAX_CRL_BYTES;
     // Two padded bodies spend 90 of 100 bytes; an unpadded 10 still fits.
     let spent = [body(Some(45)), body(Some(45)), body(None)];
     assert!(scripted_bodies(&spent, &[1, 1, 10], 100).1.is_empty());
@@ -1514,7 +1517,7 @@ fn specification_execute_names_a_misshapen_scripted_answer() {
         panic!("the case scripts its answer");
     };
     script.error = Some(spec_suite::ScriptedFailure {
-        kind: rssig::domain::CrlSourceErrorKind::Failed,
+        kind: rssig_engine::domain::CrlSourceErrorKind::Failed,
         url: None,
     });
     let result = execute(case, &parent, &fixtures, prefix);
@@ -1593,7 +1596,7 @@ fn specification_a_fixture_name_never_leaves_the_fixture_directory() {
 /// case would pass without testing what it says, so this fails instead.
 #[test]
 fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
-    use rssig::retrieval::{MAX_CRL_BYTES, MAX_TOTAL_BYTES};
+    use rssig_engine::retrieval::{MAX_CRL_BYTES, MAX_TOTAL_BYTES};
     let suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
     let bodies_of = |id: &str| -> Vec<spec_suite::ScriptedCrl> {
         let case = suite.cases.iter().find(|c| c.id == id).unwrap();

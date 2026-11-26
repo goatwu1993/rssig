@@ -82,7 +82,7 @@ PowerShell XML, WSH, RDP, and MSIX/AppX packages and bundle members.
     Bouncy Castle `cms/SignerInformation.java:357-496` (`doVerify`) reject
     a signature that does not verify with the signer's key.
 - **Unit tests:** `cms_structure_fixtures_preserve_signature_math` in
-  `src/tests/cms_audit.rs` proves each CMS structure fixture is signed
+  `engine/src/tests/cms_audit.rs` proves each CMS structure fixture is signed
   correctly, so its failure comes from the targeted check.
 
 ### CMS-002: The signature algorithm must agree with the signer key and take no forbidden parameters
@@ -147,7 +147,7 @@ or the selected signer. (Embedded duplicates do not supply trust: PATH-001.)
     signer.
 - **Unit tests:** `cms_signer_selection_shared_timestamp_and_detached` and
   `cms_signer_embedded_duplicates_do_not_supply_trust` in
-  `src/tests/signer_selection.rs` cover RFC 3161, countersignature and RDP
+  `engine/src/tests/signer_selection.rs` cover RFC 3161, countersignature and RDP
   selection.
 
 ### CMS-005: The messageDigest attribute must match the content
@@ -272,7 +272,7 @@ as a second timestamp (`invalid_timestamp` at `timestamp`).
     this attribute may occur with an electronic signature, from different
     TSAs." Neither OpenSSL nor Bouncy Castle limits it
     (`crypto/cms/cms_att.c:39-53`). The count of timestamps is TSA-004's rule,
-    enforced at `src/verify/timestamp.rs:22-28` and `:114-118`.
+    enforced at `engine/src/verify/timestamp.rs:22-28` and `:114-118`.
   - RFC 5652 section 5.3: both attribute sets are
     `SET SIZE (1..MAX) OF Attribute` with no uniqueness rule, and OpenSSL and
     Bouncy Castle restrict only the listed attributes, so a repeated unknown
@@ -287,7 +287,7 @@ as a second timestamp (`invalid_timestamp` at `timestamp`).
   - [cms-security.md](cms-security.md), row "Signed attribute sets";
     [timestamp profile](timestamp-profile.md).
 - **Unit tests:** `cms_attribute_and_integer_boundaries` in
-  `src/tests/cms_audit.rs` and `cms_attribute_multiplicity` in
+  `engine/src/tests/cms_audit.rs` and `cms_attribute_multiplicity` in
   `tests/cli/cms_audit.rs`.
 - **Note:** the library's `Attributes::parse` accepts a repeated OID; the
   single-instance check is part of verification.

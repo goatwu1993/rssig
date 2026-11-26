@@ -62,8 +62,12 @@ current CRL rejects it even if its revocation date is after the signing time.
 Signers with the lifetime-signing EKU are validated at the validation time, not
 the timestamp; see `docs/validation-time.md`.
 
-Diagnostic logging is opt-in through an injected `rssig::log::Logger` (`verify::Verifier`,
-`cli::Host`); see `docs/logging.md`. There is no global logger, the binary injects none,
+The verifier is the `rssig-engine` package and reads no files, clock, network or
+OS root store; the `rssig` application supplies those defaults (the CLI, OS
+roots, `HttpCrlSource`). See `docs/architecture.md`.
+
+Diagnostic logging is opt-in through an injected `rssig_engine::log::Logger` (`verify::Verifier`,
+`rssig::cli::Host`); see `docs/logging.md`. There is no global logger, the binary injects none,
 and a logger must never change a result or write to stdout/stderr.
 
 NAVX embedded signatures use the shared verification engine; see `docs/navx.md` for envelope, SIP, hashing, and interoperability limits.

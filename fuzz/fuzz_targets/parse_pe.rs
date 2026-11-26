@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::parse::{InspectionBudget, Pe, SignedData, authenticode_digest};
+use rssig_engine::parse::{InspectionBudget, Pe, SignedData, authenticode_digest};
 use sha2::{Digest, Sha256};
 
 fuzz_target!(|data: &[u8]| {

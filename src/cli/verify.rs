@@ -1,10 +1,10 @@
 //! Verification-only configuration: roots, CRLs, time, and explicit policy.
 use super::batch;
-use crate::{
+use anyhow::{Context, Result, ensure};
+use rssig_engine::{
     TrustStore, VerifyOptions,
     domain::{FileResult, FileSuccess},
 };
-use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 use std::{
     path::PathBuf,
@@ -80,14 +80,14 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
     } else {
         #[cfg(feature = "system-roots")]
         {
-            TrustStore::from_system()?
+            crate::roots::system_roots()?
         }
         #[cfg(not(feature = "system-roots"))]
         anyhow::bail!(
             "system roots are unavailable in this build; use --no-system-roots with --roots, or --integrity-only"
         );
     };
-    trust.check_host_limits()?;
+    super::limits::check_trust(&trust)?;
     for path in roots {
         trust
             .add_roots(
@@ -95,7 +95,7 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
                     .with_context(|| format!("reading {}", path.display()))?,
             )
             .with_context(|| format!("loading roots from {}", path.display()))?;
-        trust.check_host_limits()?;
+        super::limits::check_trust(&trust)?;
     }
     for path in &crl {
         trust
@@ -104,7 +104,7 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
                     .with_context(|| format!("reading {}", path.display()))?,
             )
             .with_context(|| format!("loading CRL from {}", path.display()))?;
-        trust.check_host_limits()?;
+        super::limits::check_trust(&trust)?;
     }
     let now = match at {
         Some(at) => at,
@@ -117,14 +117,14 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
             &trust,
             now,
             if no_revocation {
-                crate::verify::RevocationPolicy::Disabled
+                rssig_engine::verify::RevocationPolicy::Disabled
             } else {
-                crate::verify::RevocationPolicy::Required
+                rssig_engine::verify::RevocationPolicy::Required
             },
         )
     };
     options.allow_sha1 = allow_sha1;
-    let mut http = crate::retrieval::HttpCrlSource::new();
+    let mut http = crate::crl::HttpCrlSource::new();
     let source = source.unwrap_or(&mut http);
     batch::execute(
         "verify",
@@ -136,15 +136,15 @@ pub(super) fn execute(args: Args, host: super::Host<'_>) -> Result<(Value, u8)> 
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| format!("input.{e}"));
-            let mut verifier = crate::verify::Verifier::new(&options);
+            let mut verifier = rssig_engine::verify::Verifier::new(&options);
             if let Some(logger) = logger {
                 verifier = verifier.with_logger(logger);
-                if logger.enabled(crate::log::Level::Debug) {
-                    logger.log(&crate::log::Record {
-                        level: crate::log::Level::Debug,
-                        stage: crate::domain::Stage::Input,
-                        message: format_args!("verifying file {path:?} ({} bytes)", bytes.len()),
-                    });
+                if logger.enabled(rssig_engine::log::Level::Debug) {
+                    logger.log(&rssig_engine::log::Record::new(
+                        rssig_engine::log::Level::Debug,
+                        rssig_engine::domain::Stage::Input,
+                        format_args!("verifying file {path:?} ({} bytes)", bytes.len()),
+                    ));
                 }
             }
             if fetch_crls {
