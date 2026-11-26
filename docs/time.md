@@ -132,7 +132,7 @@ kept; no floating point is used.
   - RFC 5280 section 4.1.2.5 (validity is inclusive of notBefore and
     notAfter), applied to RFC 3161 `genTime` fractions.
 - **Note:** the check runs after path selection, so it does not consider an
-  alternative issuer with a later notAfter (open in TIME-T002).
+  alternative issuer with a later notAfter (open in TIME-T005).
 
 ### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
 

@@ -45,6 +45,11 @@ they pin or what they check, never after a task.
   `retrieval_trust_bytes` and the other engine limits end the whole
   verification with `resource_limit_exceeded`, rather than recording the
   remaining points and finishing with the evidence gathered.
+- [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
+  RDP `verify_trust` repeats the full path search, including the lifetime leaf
+  check and a 200,000-unit path-work reservation, for each accepted leaf EKU.
+  Stop after an EKU-independent failure without changing first-policy-error
+  reporting, and pin the budget effect.
 
 ### CMS
 
@@ -74,9 +79,26 @@ they pin or what they check, never after a task.
 ### TIME
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
-- [ ] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups.
-  From the PR #43 reviews; none permits an invalid signature to verify. Detail
-  in [time-t002.md](docs/tasks/time-t002.md).
+- [ ] **TIME-T002** docs: Give each kept lifetime-signing review decision a decision entry.
+  The PR #43 review decisions are listed in [time-t002.md](docs/tasks/time-t002.md);
+  check each against the `TIME-` and `PATH-` indexes and add the missing
+  entries. Its follow-ups are TIME-T005, TIME-T006, TIME-T007, LIMIT-T007 and
+  TSA-T004, which are independent of each other.
+- [ ] **TIME-T005** fix: Check fractional expiry during path building.
+  `check_fractional_validity` runs after path selection. With a fractional
+  timestamp and two same-subject/key issuers, webpki can select the one whose
+  notAfter equals the timestamp's whole second, and the signature is rejected
+  as certificate_expired although the other issuer is valid. Move the check
+  into path building, as the lifetime signing-time check does, for every
+  timestamped signer and TSA; add a paired rollover fixture.
+- [ ] **TIME-T006** fix: Reach or type the `certificate_report_error` fallback.
+  When the certificate report for a late lifetime certificate cannot be built,
+  the error carries a free-text `certificate_report_error` detail instead of
+  `certificate`. No fixture reaches it; it needs a certificate that parses but
+  cannot be reported, or a typed detail.
+- [ ] **TIME-T007** test: Add lifetime-signing fixtures for MSI, CAB, script and AppX.
+  Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
+  signers use the same trust call without one.
 
 ### CRL
 
@@ -316,6 +338,10 @@ they pin or what they check, never after a task.
 - [x] **TSA-T002** refactor: Index timestamp decisions as `TSA-NNN`. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
 - [ ] **TSA-T003** refactor: Attach the claimed `TSA-` cases. Name existing
   entries for the cases claimed under `attach`.
+- [ ] **TSA-T004** test: Share the RFC 3161/PKCS#9 token builders across test modules.
+  Share them across `engine/src/tests.rs` and the TSA-T001, TIME-T001 and RDP
+  fixture modules without changing committed bytes; keep per-task regeneration
+  commands (as TSA-T001 does) consistent with `regenerate_cli_fixtures`.
 
 ### CMS
 

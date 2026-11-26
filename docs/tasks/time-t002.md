@@ -1,9 +1,12 @@
-# TIME-T002 fix: Lifetime-signing review decisions and deferred follow-ups
+# TIME-T002 docs: Give each kept lifetime-signing review decision a decision entry
 
 Task detail for **TIME-T002** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
-Recorded from PR #43 reviews; none permits an invalid signature to verify.
+Recorded from the PR #43 reviews; none permits an invalid signature to verify.
+The task is to check each decision below against the `TIME-` and `PATH-`
+indexes ([which index](../decisions.md#which-index)) and add the entries that
+are missing.
 
 ## Kept as decisions
 
@@ -50,28 +53,11 @@ Each changes only with a new decision and paired fixtures.
   a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
   evidence is CRL-T001 and CRL-T002. Both are schema decisions.
 
-## Open follow-ups
+## Follow-ups
 
-- Untested fallback: when the certificate report for a late lifetime
-  certificate cannot be built, the error carries a free-text
-  `certificate_report_error` detail instead of `certificate`. No fixture
-  reaches it; it needs a certificate that parses but cannot be reported, or
-  a typed detail.
-- Format coverage: lifetime-signing fixtures cover PE (primary and nested)
-  and RDP. MSI, CAB, script and AppX signers use the same trust call without
-  a lifetime fixture.
-- Fractional expiry (pre-existing): `check_fractional_validity` runs after
-  path selection. With a fractional timestamp and two same-subject/key
-  issuers, webpki can select the one whose notAfter equals the timestamp's
-  whole second, and the signature is then rejected as certificate_expired
-  although the other issuer is valid. Move the check into path building, as
-  the lifetime signing-time check does, for every timestamped signer and TSA;
-  add a paired rollover fixture.
-- Budget: RDP `verify_trust` repeats the full path search, including the
-  lifetime leaf check and a 200,000-unit path-work reservation, for each
-  accepted leaf EKU. Stop after an EKU-independent failure without changing
-  first-policy-error reporting, and pin the budget effect.
-- Test maintenance: share RFC 3161/PKCS#9 token builders across
-  `engine/src/tests.rs`, TSA-T001, TIME-T001 and RDP fixture modules without changing committed
-  bytes; keep per-task regeneration commands (as TSA-T001 does) consistent with
-  `regenerate_cli_fixtures`.
+The open follow-ups from the same reviews are separate tasks in
+[TODO.md](../../TODO.md), independent of each other: TIME-T005 (fractional
+expiry during path building), TIME-T006 (the `certificate_report_error`
+fallback), TIME-T007 (lifetime fixtures for MSI, CAB, script and AppX),
+LIMIT-T007 (the repeated RDP path search) and TSA-T004 (shared timestamp
+token builders).

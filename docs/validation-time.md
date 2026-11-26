@@ -89,7 +89,7 @@ WinVerifyTrust flags that change timestamp or lifetime-signing treatment.
 webpki compares validity at whole seconds. A fractional timestamp is checked at
 its whole second, then the selected leaf and intermediates must have
 `notAfter > signing_time`. This second step runs after path selection, so it
-does not consider an alternative issuer with a later notAfter (TIME-T002).
+does not consider an alternative issuer with a later notAfter (TIME-T005).
 Consequences pinned by fixtures:
 
 - `signing_time == notAfter` is valid; `notAfter + .5` is `certificate_expired`
