@@ -454,10 +454,12 @@ each time:
   certificate's request used, because the later request carries it too
   (`crl-050-a-certificate-whose-point-another-used-is-still-asked`; the runner
   fails the case if the request leaves the point out);
-- a certificate answered by certificate requests none of its points, even one
-  an earlier answer left unused
-  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`,
-  where the later certificate is the one the URL answers).
+- a certificate given an injected answer by certificate requests none of its
+  own points, and a point its answer leaves unused is still carried by a later
+  certificate, whose URL answer then requests it
+  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`:
+  the signer is answered by certificate, and the issuer's certificate is the
+  one the URL answers).
 
 All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
 engine, which matches normalized URLs; a case for a normalized spelling is

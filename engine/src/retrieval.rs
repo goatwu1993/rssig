@@ -981,8 +981,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // screened: one withheld from the report is still not an answer by
         // certificate.
         let without_url = crl.url.is_none();
-        // The URL as the source gave it keys the point's recorded outcome,
-        // even when it is not fit to be reported.
+        // The URL as the source gave it: the failure recorded for it is
+        // reported without it when it is not fit to be reported.
         let raw_url = crl.url.clone();
         let url = crl.url.filter(|u| hygienic_url(u));
         // A redirect target the source reported but that is not recorded is
@@ -1710,7 +1710,7 @@ mod tests {
         }
     }
     #[test]
-    fn a_point_answered_under_an_unhygienic_spelling_stays_in_later_reports() {
+    fn a_failure_under_an_unhygienic_spelling_is_recorded_for_each_certificate_without_its_url() {
         // The source names the point with a trailing space: the URL is not
         // recorded as given, but the source's failure is, for every
         // certificate it was offered for.

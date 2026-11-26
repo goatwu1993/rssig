@@ -11,5 +11,9 @@ and `in_flight`; measure again. What remains is the points list, `unanswered`,
 the per-request key sets and `recorded` (a fixed-size key per reported point);
 a 64 MiB CMS allows far more.
 
+The built-in source also keys every point of a call (`url_key`, a policy check
+and a parse) and keeps the key of each point it would fetch to report
+`requested`; a source-side bound belongs with this task.
+
 Remaining option: a ceiling on the URIs the engine decodes per certificate.
 The report cap of 16 is still unmeasured against real consumers.

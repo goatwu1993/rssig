@@ -455,7 +455,8 @@ impl CrlSource for HttpCrlSource {
     /// HTTP request; one refused after it (a nonpublic DNS answer, a redirect
     /// to a refused URL, an encoded response) does.
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
-        // What each point costs is decided as it is reached (`fetch_cached`):
+        // What each point costs is decided as it is reached (`fetch_keyed`
+        // and `answer`):
         // a point answered from this verification's memory costs nothing,
         // and only a point that would be fetched counts toward the 16 of this
         // call and, at the first, the request cap. `requested` in a
