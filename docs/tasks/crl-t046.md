@@ -10,9 +10,9 @@ again for the report (`hash_bytes`, 1 GiB). So 256 certificates sharing one
 happened, and about 128 repeats of an 8 MiB body reach the `hash_bytes` budget
 (`resource_limit_exceeded`). A hit is neither an HTTP request nor network
 bytes, so no source limit bounds it; the engine's budgets do. Retention is
-bounded by `MAX_NETWORK_BYTES`. A cached body over a request's allowance is
-not cloned: it is reported as `crl_response_bytes`, so one response copies at
-most its allowance.
+bounded by `MAX_NETWORK_BYTES`. `fetch_each` keeps only the first
+body over a request's allowance and drops the others' bytes, so one response
+keeps at most its allowance plus one body.
 
 Sharing needs `SourcedCrl::bytes` to be shared (`Arc<[u8]>`) and to carry its
 SHA-256, so the engine reuses the digest and does not hash a repeat: a public

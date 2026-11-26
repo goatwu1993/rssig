@@ -74,7 +74,16 @@ fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
 }
 /// The key a URL's outcome is kept under: its parsed, normalized form when it
 /// parses, as the engine compares points.
+/// A string `checked_url` would refuse for its characters is keyed by its
+/// own text, because parsing trims and strips them, so the key would be a
+/// clean URL's and a refused spelling would share its entry.
 fn url_key(raw: &str) -> String {
+    if raw
+        .chars()
+        .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
+    {
+        return raw.to_owned();
+    }
     Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
 }
 fn public_ip(ip: IpAddr) -> bool {
@@ -427,18 +436,25 @@ impl CrlSource for HttpCrlSource {
         let mut fresh = 0;
         let mut tried = Vec::new();
         let mut left = Vec::new();
-        let mut seen = std::collections::BTreeSet::new();
+        // Whether the first occurrence of each URL in this call was left.
+        let mut seen = std::collections::BTreeMap::new();
         for url in points {
-            // A URL offered twice in one call counts once, as a repeat does.
-            if !seen.insert(url_key(url)) || self.answered.contains_key(&url_key(url)) {
-                tried.push(url.clone());
-            } else {
-                fresh += 1;
-                if fresh <= MAX_POINTS_PER_REQUEST {
-                    tried.push(url.clone());
-                } else {
-                    left.push(url.clone());
+            let key = url_key(url);
+            // A URL offered twice in one call goes where its first occurrence
+            // went, and counts once.
+            let is_left = match seen.get(&key) {
+                Some(is_left) => *is_left,
+                None if self.answered.contains_key(&key) => false,
+                None => {
+                    fresh += 1;
+                    fresh > MAX_POINTS_PER_REQUEST
                 }
+            };
+            seen.insert(key, is_left);
+            if is_left {
+                left.push(url.clone());
+            } else {
+                tried.push(url.clone());
             }
         }
         // A call with nothing new to fetch is not a request.
@@ -492,16 +508,6 @@ impl HttpCrlSource {
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         let key = url_key(url);
         if let Some(known) = self.answered.get(&key) {
-            // A body over this request's allowance is reported as a fresh
-            // fetch reports it, without copying it.
-            let cap = max_bytes.min(MAX_CRL_BYTES);
-            if let Ok(crl) = known
-                && crl.bytes.len() > cap
-            {
-                return Err(self
-                    .classify(limit("crl_response_bytes", cap, 0, crl.bytes.len()), false)
-                    .with_url(url.to_owned()));
-            }
             return match known.clone() {
                 Ok(mut crl) => {
                     crl.url = Some(url.to_owned());
@@ -514,7 +520,10 @@ impl HttpCrlSource {
         if let Some((failed_under, e)) = self.too_big.get(&key)
             && allowance <= *failed_under
         {
-            return Err(e.clone().with_url(url.to_owned()));
+            // As this request's room, not the earlier one's.
+            let mut e = e.clone().with_url(url.to_owned());
+            e.details.insert("limit".into(), allowance.into());
+            return Err(e);
         }
         let outcome = self.fetch_one(url, max_bytes);
         if cacheable(&outcome) {
@@ -1039,18 +1048,12 @@ mod tests {
         assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Abort);
     }
     #[test]
-    fn a_cached_body_over_a_later_requests_allowance_is_refused_without_a_copy() {
+    fn a_cached_body_is_returned_under_the_spelling_offered_and_a_duplicate_goes_with_its_first() {
         let mut source = HttpCrlSource::new();
         let url = "http://crl.example.com/x.crl";
         source
             .answered
             .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 10]).with_url(url)));
-        let e = source.fetch_cached(url, 5).unwrap_err();
-        assert_eq!(e.kind, CrlSourceErrorKind::Failed);
-        assert_eq!(e.details["resource"], "crl_response_bytes");
-        assert_eq!(e.details["limit"], 5);
-        assert_eq!(e.url.as_deref(), Some(url));
-        // With room, the same body is returned again, under the offered URL.
         let spelled = "HTTP://CRL.Example.com/x.crl";
         let again = source.fetch_cached(spelled, 10).unwrap();
         assert_eq!(again.bytes.len(), 10);
@@ -1066,6 +1069,50 @@ mod tests {
                 .iter()
                 .all(|f| f.details.get("resource") != Some(&"crl_request_points".into()))
         );
+        // A repeat of a point left by the limit is left with it, not fetched.
+        let mut source = HttpCrlSource::new();
+        let mut points: Vec<String> = (0..=MAX_POINTS_PER_REQUEST)
+            .map(|i| format!("http://127.0.0.1/p-{i}.crl"))
+            .collect();
+        points.push(points[MAX_POINTS_PER_REQUEST].clone());
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        let left: Vec<_> = response
+            .failures
+            .iter()
+            .filter(|f| f.details.get("resource") == Some(&"crl_request_points".into()))
+            .collect();
+        assert_eq!(left.len(), 2);
+        assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
+    }
+    #[test]
+    fn a_refused_spelling_does_not_share_a_clean_urls_cache_entry() {
+        assert_ne!(
+            url_key(" http://crl.example.com/x.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+        assert_ne!(
+            url_key("http://crl.example.com/x\t.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+        assert_eq!(
+            url_key("HTTP://CRL.Example.com:80/x.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+    }
+    #[test]
+    fn a_kept_allowance_failure_reports_the_room_of_the_request_it_answers() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/z.crl";
+        let e = limit("crl_response_bytes", 6, 0, 7);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.too_big.insert(url_key(url), (6, error));
+        let again = source.fetch_cached(url, 2).unwrap_err();
+        assert_eq!(again.details["limit"], 2);
+        assert_eq!(again.details["requested"], 7);
+        assert_eq!(source.requests, 0);
     }
     #[test]
     fn the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification() {
