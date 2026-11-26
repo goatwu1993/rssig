@@ -79,11 +79,7 @@ they pin or what they check, never after a task.
 ### TIME
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
-- [ ] **TIME-T002** docs: Give each kept lifetime-signing review decision a decision entry.
-  The PR #43 review decisions are listed in [time-t002.md](docs/tasks/time-t002.md);
-  check each against the `TIME-` and `PATH-` indexes and add the missing
-  entries. Its follow-ups are TIME-T005, TIME-T006, TIME-T007, LIMIT-T007 and
-  TSA-T004, which are independent of each other.
+- [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); the kept decisions are in [time-t002.md](docs/tasks/time-t002.md), and the follow-ups are TIME-T005, TIME-T006, TIME-T007, TIME-T008, LIMIT-T007 and TSA-T004.
 - [ ] **TIME-T005** fix: Check fractional expiry during path building.
   `check_fractional_validity` runs after path selection. With a fractional
   timestamp and two same-subject/key issuers, webpki can select the one whose
@@ -96,9 +92,6 @@ they pin or what they check, never after a task.
   the error carries a free-text `certificate_report_error` detail instead of
   `certificate`. No fixture reaches it; it needs a certificate that parses but
   cannot be reported, or a typed detail.
-- [ ] **TIME-T007** test: Add lifetime-signing fixtures for MSI, CAB, script and AppX.
-  Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
-  signers use the same trust call without one.
 
 ### CRL
 
@@ -326,6 +319,12 @@ they pin or what they check, never after a task.
   `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
 
+- [ ] **TIME-T007** test: Add lifetime-signing fixtures for MSI, CAB, script and AppX.
+  Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
+  signers use the same trust call without one.
+- [ ] **TIME-T008** docs: Give each kept lifetime-signing review decision a decision entry.
+  Check each decision in [time-t002.md](docs/tasks/time-t002.md) against the
+  `TIME-` and `PATH-` indexes and add the entries that are missing.
 ### PATH
 
 - [x] **PATH-T003** refactor: Index certificate-path decisions as `PATH-NNN`. Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).

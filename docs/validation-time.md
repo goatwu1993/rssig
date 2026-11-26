@@ -13,7 +13,7 @@ and sources, are [Validation-time decisions](time.md) (`TIME-001` to `TIME-013`)
 | Signer chain, lifetime-signing EKU | Validation time, and notBefore at the signing time | See below. `TrustReport.lifetime_signing` is `true`. |
 | TSA chain | Timestamp `signing_time` | The TSA EKU must be exclusively timeStamping, so lifetime signing never applies to it. |
 | Timestamp itself | Validation time | `signing_time` equal to the validation time is accepted; any nonzero fraction in that second, or a later second, is `timestamp_in_future`. |
-| Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [certificate paths](certificate-paths.md). Checking them at a lifetime signing time is TIME-T002. |
+| Configured trust anchors | Not checked | webpki treats configured anchors as keys; see [certificate paths](certificate-paths.md). They are not checked at a lifetime signing time either ([PATH-011](path.md#path-011-configured-anchors-are-keys)). |
 | CRLs | Validation time | Which CRL decides, its scope, freshness and revocation are [CRL decisions](crl.md). A current CRL listing a certificate rejects it even after a valid timestamp, and a lifetime path is revocation-checked at the validation time ([TIME-007](time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time)). |
 
 ## Lifetime signing
@@ -34,7 +34,7 @@ A signer certificate whose ExtendedKeyUsage contains Microsoft lifetime signing
   timestamp claiming a signature predates its leaf or intermediate certificate.
   The comparison is inclusive at whole seconds: notBefore equal to the signing
   time is valid, one second later is not. Configured anchors are not checked
-  (see the table above and TIME-T002 in the roadmap). notAfter needs no separate
+  (see the table above and [PATH-011](path.md#path-011-configured-anchors-are-keys)). notAfter needs no separate
   signing-time check, because the timestamp cannot follow the validation time.
 - This is a consistency check on the timestamp's claim, not a trust boundary.
   Timestamps are unsigned attributes: removing one leaves an ordinary

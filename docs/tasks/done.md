@@ -144,7 +144,8 @@ are pinned. Signer, TSA, anchor and CRL time rules:
 [validation time](../../docs/validation-time.md). Full locked tests, fmt, Clippy,
 verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
-Review items decided against or deferred are recorded in TIME-T002.
+Review items decided against are recorded in [TIME-T002](time-t002.md); the
+deferred ones are TIME-T005, TIME-T006, TIME-T007, LIMIT-T007 and TSA-T004.
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 

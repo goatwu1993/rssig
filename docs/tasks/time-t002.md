@@ -1,12 +1,12 @@
-# TIME-T002 docs: Give each kept lifetime-signing review decision a decision entry
+# TIME-T002 fix: Lifetime-signing review decisions and deferred follow-ups
 
-Task detail for **TIME-T002** in [TODO.md](../../TODO.md), which keeps the ID,
+Record of **TIME-T002** in [TODO.md](../../TODO.md), which keeps the ID,
 title and checkbox.
 
 Recorded from the PR #43 reviews; none permits an invalid signature to verify.
-The task is to check each decision below against the `TIME-` and `PATH-`
-indexes ([which index](../decisions.md#which-index)) and add the entries that
-are missing.
+Giving each decision below a decision entry, where the `TIME-` and `PATH-`
+indexes ([which index](../decisions.md#which-index)) do not have one yet, is
+TIME-T008.
 
 ## Kept as decisions
 
@@ -59,5 +59,5 @@ The open follow-ups from the same reviews are separate tasks in
 [TODO.md](../../TODO.md), independent of each other: TIME-T005 (fractional
 expiry during path building), TIME-T006 (the `certificate_report_error`
 fallback), TIME-T007 (lifetime fixtures for MSI, CAB, script and AppX),
-LIMIT-T007 (the repeated RDP path search) and TSA-T004 (shared timestamp
-token builders).
+TIME-T008 (decision entries for the kept decisions), LIMIT-T007 (the repeated
+RDP path search) and TSA-T004 (shared timestamp token builders).
