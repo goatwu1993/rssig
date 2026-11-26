@@ -75,6 +75,12 @@ fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
         }
     }
 }
+/// The size a kept size failure saw: at least what was read plus what was
+/// refused, so a request with no more room than that fails the same way.
+fn seen_size(e: &CrlSourceError) -> usize {
+    let seen = |field: &str| e.details.get(field).and_then(|v| v.as_u64()).unwrap_or(0);
+    seen("used").saturating_add(seen("requested")) as usize
+}
 /// The key a URL's outcome is kept under in one verification: its parsed,
 /// normalized form, as the engine compares points, for a URL the policy
 /// allows; its own text for one the policy refuses.
@@ -498,7 +504,13 @@ impl HttpCrlSource {
         // A response carries no more bodies than the engine accepts
         // (`MAX_RESPONSE_ENTRIES`), however many points are answered from
         // memory: the rest are not tried, so the engine keeps the response.
-        if self.call.bodies >= MAX_RESPONSE_ENTRIES {
+        // A point whose kept outcome is a failure adds no body.
+        let kept_failure = matches!(self.answered.get(&key), Some(Err(_)))
+            || self.too_big.get(&key).is_some_and(|(under, e)| {
+                let room = max_bytes.min(MAX_CRL_BYTES);
+                room <= *under || room < seen_size(e)
+            });
+        if self.call.bodies >= MAX_RESPONSE_ENTRIES && !kept_failure {
             return Err(CrlSourceError::new(
                 CrlSourceErrorKind::Denied,
                 "not tried: the response already holds the most CRL bodies the engine accepts",
@@ -541,12 +553,6 @@ impl HttpCrlSource {
             };
         }
         let allowance = max_bytes.min(MAX_CRL_BYTES);
-        // The size seen is at least what was read plus what was refused: a
-        // request with no more room than that fails the same way.
-        let seen_size = |e: &CrlSourceError| {
-            let seen = |field: &str| e.details.get(field).and_then(|v| v.as_u64()).unwrap_or(0);
-            seen("used").saturating_add(seen("requested")) as usize
-        };
         if let Some((failed_under, e)) = self.too_big.get(&key)
             && (allowance <= *failed_under || allowance < seen_size(e))
         {
@@ -1194,6 +1200,21 @@ mod tests {
                 .failures
                 .iter()
                 .all(|f| f.details["resource"] == "crl_response_entries")
+        );
+        // A point whose kept outcome is a failure still reports it.
+        let refused = "http://127.0.0.1/x.crl".to_string();
+        source.call = Call::default();
+        source.fetch_cached(&refused, 1024).unwrap_err();
+        let mut more = points[..MAX_RESPONSE_ENTRIES].to_vec();
+        more.push(refused);
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &more, 1024))
+            .unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Denied);
+        assert_ne!(
+            response.failures[0].details.get("resource"),
+            Some(&"crl_response_entries".into())
         );
     }
     #[test]

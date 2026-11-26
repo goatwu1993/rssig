@@ -472,10 +472,6 @@ struct Retrieval<'b, 'l> {
     /// URL (an answer by certificate). Bounded by the bodies a verification
     /// may receive (each certificate's response is bounded).
     decoded: BTreeMap<Vec<u8>, Decoded>,
-    /// The SHA-256 of each retrieved body that is exactly one CRL the store
-    /// holds, by that CRL's index: a body equal to it (a cheap comparison)
-    /// reuses the digest and is not hashed or charged again.
-    body_digests: BTreeMap<usize, Vec<u8>>,
     /// The retained-byte cap, [`MAX_TOTAL_BYTES`] outside tests.
     max_total: usize,
     /// A source just answered by certificate with a new full CRL of the
@@ -515,7 +511,6 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             store: base.clone(),
             report: CrlRetrievalReport::default(),
             decoded: BTreeMap::new(),
-            body_digests: BTreeMap::new(),
             max_total: MAX_TOTAL_BYTES,
             reverify: false,
             aborted: false,
@@ -1011,20 +1006,25 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             return Ok((None, false));
         }
         *total += len;
-        // Every body is hashed for the report, except one that is exactly a
-        // CRL the store holds from an earlier body, whose digest is reused.
-        let held = self
-            .store
-            .crl_index(&crl.bytes)
-            .and_then(|index| self.body_digests.get(&index))
-            .cloned();
-        let digest = match held {
-            Some(digest) => digest,
-            None => {
-                self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
-                crate::crypto::Hash::Sha256.digest(&crl.bytes)
-            }
+        // Every body is hashed, for the report and the lookup below, and
+        // charged: the engine charges every byte it processes, a replay too.
+        // Reducing replays is the source's (CRL-T046).
+        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
+        let digest = crate::crypto::Hash::Sha256.digest(&crl.bytes);
+        let known = match self.decoded.get(&digest) {
+            Some(Decoded::Loaded(None)) if without_url => None,
+            known => known.cloned(),
         };
+        // A body to decode is charged before it is reported, so the report
+        // never lists one the run stopped before decoding.
+        if known.is_none() {
+            for _ in 0..8 {
+                self.budget
+                    .decoded_bytes
+                    .charge(len)
+                    .map_err(crl_internal)?;
+            }
+        }
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
             final_url,
@@ -1042,26 +1042,19 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // so a replay adds nothing; one naming no URL is still an answer by
         // certificate when a CRL in it names this certificate's issuer, which
         // the issuer names kept from the first decode tell.
-        match self.decoded.get(&digest) {
+        // A body decoded first without the issuer names an answer by
+        // certificate needs is decoded again, once (`known` is `None`).
+        match known {
             Some(Decoded::Rejected(e)) => {
-                let e = e.clone();
                 self.skip(sha256, raw_url.as_deref(), e, None);
                 return Ok((None, false));
             }
-            Some(Decoded::Loaded(_)) if !without_url => return Ok((None, false)),
-            Some(Decoded::Loaded(Some(issuers))) => {
+            Some(Decoded::Loaded(Some(issuers))) if without_url => {
                 let answer = issuers.iter().any(|name| name == issuer).then_some(false);
                 return Ok((answer, false));
             }
-            // Decoded first without the issuer names an answer by
-            // certificate needs: decoded again, once.
-            Some(Decoded::Loaded(None)) | None => {}
-        }
-        for _ in 0..8 {
-            self.budget
-                .decoded_bytes
-                .charge(len)
-                .map_err(crl_internal)?;
+            Some(Decoded::Loaded(_)) => return Ok((None, false)),
+            None => {}
         }
         // Before loading: whether this body brings a full CRL of the issuer
         // that is not already loaded (one PEM may hold several CRLs).
@@ -1084,9 +1077,6 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             self.decoded.insert(digest, Decoded::Rejected(e.clone()));
             self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
-        }
-        if let Some(index) = self.store.crl_index(&crl.bytes) {
-            self.body_digests.insert(index, digest.clone());
         }
         self.decoded.insert(
             digest,
@@ -1297,6 +1287,7 @@ fn body_over_allowance(len: usize, total: usize, max_bytes: usize) -> Option<Ver
 }
 
 /// What decoding one retrieved body showed.
+#[derive(Clone)]
 enum Decoded {
     /// It did not load: the rejection, reported again for a replay.
     Rejected(VerificationError),
@@ -2277,6 +2268,7 @@ mod tests {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
+        let len = include_bytes!("../../tests/fixtures/good.crl").len();
         let cert = signer_with_points("shared", 1);
         assert!(ask(&mut state, "a", &cert, &mut Cached).unwrap());
         let retained = state.store.encoded_len();
@@ -2288,10 +2280,9 @@ mod tests {
             assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut Cached).unwrap());
         }
         assert_eq!(state.store.encoded_len(), retained);
-        // The store already holds the exact DER: nothing is decoded or
-        // hashed again.
+        // Nothing is decoded again; every replay is hashed and charged.
         assert_eq!(decoded(&budget), after_first);
-        assert_eq!(budget.hash_bytes.used(), hashed_first);
+        assert_eq!(budget.hash_bytes.used() - hashed_first, 64 * len);
         assert_eq!(state.report.artifacts.len(), 65);
         assert!(
             state.report.failures.is_empty(),
@@ -2747,11 +2738,12 @@ mod tests {
     #[test]
     fn a_source_answering_by_certificate_never_exhausts_the_uri_limit() {
         // Five certificates, each listing the same 16 points, all answered
-        // by the issuer's CRL without a URL: the points are offered every
-        // time; each stays open for a later certificate.
-        struct Source;
+        // by the issuer's CRL without a URL: every request carries all 16
+        // points (CRL-050), and nothing ends the run.
+        struct Source(Vec<usize>);
         impl CrlSource for Source {
-            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                self.0.push(request.distribution_points.len());
                 Ok(CrlResponse::new().with_crl(SourcedCrl::new(
                     include_bytes!("../../tests/fixtures/good.crl").to_vec(),
                 )))
@@ -2761,9 +2753,11 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         let cert = signer_with_points("shared", 16);
+        let mut source = Source(Vec::new());
         for index in 0..5 {
-            ask(&mut state, &format!("c{index}"), &cert, &mut Source).unwrap();
+            ask(&mut state, &format!("c{index}"), &cert, &mut source).unwrap();
         }
+        assert_eq!(source.0, [16; 5]);
     }
     #[test]
     fn a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate() {
