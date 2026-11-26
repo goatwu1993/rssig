@@ -247,7 +247,9 @@ generic chain error is reported. Successful reports set
   - Written argument: a change in webpki's search order must not name the
     wrong certificate.
 - **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec
-  case names this entry yet.
+  case names this entry yet. Webpki validity errors naming the leaf, the
+  `lifetime_signing` default and the signing-time error details are not
+  pinned here yet (TIME-T008).
 
 ## Candidate rules
 

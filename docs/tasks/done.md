@@ -1,7 +1,8 @@
 # Completed tasks
 
 Full records of finished `TODO.md` items, moved here verbatim when
-`TODO.md` was trimmed to one line per finished item.
+`TODO.md` was trimmed to one line per finished item, or written when a task
+closes (TIME-T002). Records are history and are not updated afterwards.
 
 ## LIMIT-T001 fix: Audit arithmetic and structural bounds across every parser
 
@@ -144,7 +145,7 @@ are pinned. Signer, TSA, anchor and CRL time rules:
 [validation time](../../docs/validation-time.md). Full locked tests, fmt, Clippy,
 verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
-Review items decided against or deferred are recorded in [TIME-T002](#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
+Review items decided against or deferred are recorded in TIME-T002.
 
 ## TIME-T002 fix: Lifetime-signing review decisions and deferred follow-ups
 
