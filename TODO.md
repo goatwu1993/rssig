@@ -365,6 +365,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T046** refactor: Share a cached CRL body, and its digest, between the requests that repeat it. Detail in [crl-t046.md](docs/tasks/crl-t046.md).
 - [ ] **CRL-T047** fix: Decide whether a URL the built-in source refuses before any network work uses a distinct-URL slot (owner decision). `HttpCrlSource::fetch_one_keyed` counts it toward `MAX_SOURCE_URLS` before its policy check, as `the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification` pins, so private or local names can spend slots a public point needs.
 - [ ] **CRL-T048** refactor: Drop the always-false `spent_before` argument of `HttpCrlSource::classify`: both callers (`fetch_one_keyed`, which returns first for a spent source, and `answer`, refusing a cached body) pass `false`; keep `source_error_kind`'s tested rule in one place.
+- [ ] **CRL-T049** fix: Record a per-URL failure or body whose URL is not one of the request's points without that URL. A whole-request error naming a foreign URL is already recorded without it; one inside a `CrlResponse` is recorded under the certificate with the foreign URL, crediting it with a point it does not list.
 
 ### TIME
 

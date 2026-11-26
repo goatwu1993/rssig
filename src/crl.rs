@@ -39,7 +39,7 @@ pub const MAX_SOURCE_URLS: usize = 64;
 /// ones it reaches that are not answered from this verification's memory
 /// (those are answered again however many there are). The others are
 /// reported as `Denied` with `details.resource` `crl_request_points` and
-/// `requested` the call's distinct points not answered before it, spend no
+/// `requested` the call's distinct points it reached and would fetch, spend no
 /// request and no distinct-URL slot, and so
 /// cannot end the verification for the certificates after it (CRL-024: the
 /// engine offers every point, and a source decides how many it tries).
@@ -85,10 +85,17 @@ fn seen_size(e: &CrlSourceError) -> usize {
 /// normalized form, as the engine compares points, for a URL the policy
 /// allows; its own text for one the policy refuses.
 fn url_key(raw: &str) -> String {
-    // Any spelling the policy refuses (its characters, its length, its
-    // scheme or host) keeps its own text: parsing shortens and cleans it, so
-    // it could otherwise share a URL the policy allows.
-    if checked_url(raw).is_err() {
+    // A spelling parsing would shorten or clean (whitespace, control
+    // characters, backslashes, or over the length the policy allows) keeps
+    // its own text: normalized, it could share a URL the policy allows. Any
+    // other spelling, allowed or refused (its scheme, host or port), keeps
+    // what makes it refused when normalized, so it is normalized, as the
+    // engine compares points.
+    if raw.len() > 2048
+        || raw
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
+    {
         return raw.to_owned();
     }
     Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
@@ -189,8 +196,8 @@ struct Call {
     counted: bool,
     /// The points it fetched, at most [`MAX_POINTS_PER_REQUEST`].
     fetched: usize,
-    /// Its distinct points it would fetch (not answered from memory),
-    /// reported as `requested`.
+    /// The distinct points it reached and would fetch (not answered from
+    /// memory), reported as `requested`.
     reaching: std::collections::BTreeSet<String>,
     /// The bodies it returned, at most [`MAX_RESPONSE_ENTRIES`].
     bodies: usize,
@@ -472,7 +479,8 @@ impl CrlSource for HttpCrlSource {
             let key = keys.get(url).cloned().unwrap_or_else(|| url_key(url));
             self.fetch_keyed(url, key, max_bytes)
         });
-        // Known only once every point was reached.
+        // Known only once every point it reaches was reached (`fetch_each`
+        // stops at an abort or a spent allowance).
         let requested = self.call.reaching.len();
         for failure in &mut response.failures {
             if failure.details.get("resource") == Some(&"crl_request_points".into()) {
@@ -505,12 +513,17 @@ impl HttpCrlSource {
         // A response carries no more bodies than the engine accepts
         // (`MAX_RESPONSE_ENTRIES`), however many points are answered from
         // memory: the rest are not tried, so the engine keeps the response.
-        // A point whose kept outcome is a failure adds no body.
-        let kept_failure = matches!(self.answered.get(&key), Some(Err(_)))
-            || self.too_big.get(&key).is_some_and(|(under, e)| {
-                let room = max_bytes.min(MAX_CRL_BYTES);
-                room <= *under || room < seen_size(e)
-            });
+        // A point whose kept outcome is a failure adds no body. Checked in
+        // the order `answer` follows, so the two agree.
+        let room = max_bytes.min(MAX_CRL_BYTES);
+        let kept_failure = match self.answered.get(&key) {
+            Some(Ok(crl)) => crl.bytes.len() > room,
+            Some(Err(_)) => true,
+            None => self
+                .too_big
+                .get(&key)
+                .is_some_and(|(under, e)| room <= *under || room < seen_size(e)),
+        };
         if self.call.bodies >= MAX_RESPONSE_ENTRIES && !kept_failure {
             return Err(CrlSourceError::new(
                 CrlSourceErrorKind::Denied,
@@ -593,6 +606,8 @@ impl HttpCrlSource {
         self.call.fetched += 1;
         let outcome = self.fetch_one_keyed(url, &key, max_bytes);
         if cacheable(&outcome) {
+            // A kept outcome replaces an earlier size failure for the URL.
+            self.too_big.remove(&key);
             self.answered.insert(key, outcome.clone());
         } else if let Err(e) = &outcome
             && e.kind != CrlSourceErrorKind::Abort
@@ -1178,6 +1193,26 @@ mod tests {
         assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
     }
     #[test]
+    fn a_kept_body_replaces_an_earlier_size_failure_for_the_body_cap() {
+        // A URL that once failed for its size and later answered with a body:
+        // the body cap treats it as a body, as `answer` returns one.
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/w.crl";
+        let e = limit("crl_response_bytes", 100, 0, 150);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.too_big.insert(url_key(url), (100, error));
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 50]).with_url(url)));
+        source.call.bodies = MAX_RESPONSE_ENTRIES;
+        let e = source.fetch_cached(url, 80).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_response_entries");
+        // A cached body over the room is a failure, reported as its size.
+        let e = source.fetch_cached(url, 40).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+    }
+    #[test]
     fn a_response_carries_no_more_bodies_than_the_engine_accepts() {
         // Replayed points are outside the 16-point limit, so the source
         // bounds the bodies of one response itself: the engine refuses a
@@ -1254,6 +1289,12 @@ mod tests {
             "http://crl.example.com/x.crl"
         );
         assert_ne!(url_key(&long), url_key("http://crl.example.com/x.crl"));
+        // A spelling refused for its host is normalized, as the engine
+        // compares points: two spellings of one refused URL share an entry.
+        assert_eq!(
+            url_key("HTTP://127.0.0.1:80/x.crl"),
+            url_key("http://127.0.0.1/x.crl")
+        );
     }
     #[test]
     fn a_kept_allowance_failure_reports_the_room_of_the_request_it_answers() {
