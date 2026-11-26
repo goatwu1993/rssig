@@ -49,7 +49,8 @@ they pin or what they check, never after a task.
   RDP `verify_trust` repeats the full path search, with the lifetime leaf check
   and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
   failure no other EKU can change, keeping `choose_usage_failure`'s ranking
-  (revocation, then CRL-completable); pin the budget effect.
+  (revocation, then CRL-completable) and the other usages' CRL gaps it merges
+  into a revocation; pin the budget effect.
 
 ### CMS
 
@@ -325,9 +326,9 @@ they pin or what they check, never after a task.
   `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
 - [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
-  `time-001-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
+  The `*-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
   CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
-- [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
+- [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 rules that have none.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
   maps each to its entry: add the `TIME-` entries marked none and extend
   TIME-013 where marked; the keyCertSign one is PATH-T007.

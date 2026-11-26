@@ -193,9 +193,9 @@ reviews; none permits an invalid signature to verify. Kept as decisions
   a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
   evidence is CRL-T001 and CRL-T002. Both are schema decisions.
 
-Where each decision is pinned, in the order above:
+Where each rule is pinned, in the order above:
 
-| Decision | Entry |
+| Rule | Entry |
 |---|---|
 | Trust anchors | [PATH-011](../path.md#path-011-configured-anchors-are-keys); no case pins a root re-issued after the signing time (PATH-T008) |
 | Leaf notBefore before path building | none (TIME-T008) |
