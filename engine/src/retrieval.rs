@@ -42,7 +42,8 @@ const LOGGED_POINTS: usize = 16;
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
 /// The single interface through which the engine obtains CRLs, asked once per
-/// certificate that lacks a usable CRL, with every point it lists, like
+/// certificate that lacks a usable CRL (unless the CRL bytes the verification
+/// retains are at their cap, when it is not asked), with every point it lists, like
 /// OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by issuer name).
 /// The engine reuses no earlier answer: a source that wants to answer a
 /// repeated point or issuer without new work keeps its own cache, as an
@@ -526,7 +527,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
 
     /// Record something that yielded no evidence. This never accepts
     /// anything: the next verification still requires evidence for every
-    /// certificate. Only the engine's own limits end the run.
+    /// certificate. Only the engine's own limits end the run (the retained-byte
+    /// cap does not: a certificate reached with it full is not asked).
     fn skip(
         &mut self,
         certificate: &str,
@@ -789,13 +791,9 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         let used = self.store.encoded_len();
         let max_bytes = self.max_total.saturating_sub(used);
         if max_bytes == 0 {
-            let e = error(
-                ErrorCode::ResourceLimitExceeded,
-                "not tried: the CRL bytes this verification retains are at their cap",
-            )
-            .detail("resource", "retrieval_trust_bytes")
-            .detail("limit", self.max_total)
-            .detail("used", used);
+            let mut e = limit("retrieval_trust_bytes", self.max_total, used, 1);
+            e.message =
+                "not tried: the CRL bytes this verification retains are at their cap".into();
             if points.is_empty() {
                 self.skip(sha256, None, e.clone(), None);
             }
