@@ -7,8 +7,9 @@ title and checkbox. Found in the review of CRL-T041.
 (up to 8 MiB) into each response that repeats the URL. So 256 certificates
 sharing one 8 MiB CRL cost about 2 GiB of copying though one fetch happened.
 The engine decodes a repeat once but hashes every one (`hash_bytes`, 1 GiB),
-since it charges every byte it processes, so about 128 repeats of an 8 MiB
-body reach that budget (`resource_limit_exceeded`, fail closed). A hit is neither an HTTP request nor network
+since it charges every byte it processes. The source bounds replays at 128 MiB
+per verification (`MAX_REPLAY_BYTES`), so they stay inside that budget; this
+task would make them cheap enough to raise or drop that bound. A hit is neither an HTTP request nor network
 bytes, so no source limit bounds it; the engine's budgets do. Retention is
 bounded by `MAX_NETWORK_BYTES`. `fetch_each` keeps only the first
 body over a request's allowance and drops the others' bytes, so one response

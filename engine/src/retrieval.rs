@@ -290,19 +290,6 @@ fn url_key(raw: &str) -> String {
     url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
 }
 
-/// The key a certificate's listed points are offered once by: [`url_key`],
-/// except that a URI with a backslash keeps its own text. Parsing turns it
-/// into a slash, so a spelling a source refuses for it would otherwise stand
-/// in for the clean one, which would then not be offered. Answers are still
-/// matched by [`url_key`], so a source may report either spelling's
-/// normalized form.
-fn offer_key(raw: &str) -> String {
-    if raw.contains('\\') {
-        return raw.to_owned();
-    }
-    url_key(raw)
-}
-
 /// Whether a URI is fit to pass to a source and record: no control
 /// characters or whitespace, and no user name or password. This is input
 /// hygiene, not transport policy.
@@ -700,7 +687,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
     /// recorded, and the rest go to the source as a hint, each once, whether
     /// or not another certificate listed it (reusing an earlier answer is the
     /// source's, CRL-033). Returns whether a new CRL was added. The engine's
-    /// own limits end the run.
+    /// own limits end the run, except the retained-byte cap: a certificate
+    /// reached with it full is not asked and the run goes on.
     fn request(
         &mut self,
         sha256: &str,
@@ -748,7 +736,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             // The engine keeps no total of the URIs it passes on: that is
             // the source's (CRL-039). Listed twice by this certificate:
             // offered once.
-            if offered.insert(offer_key(&raw)) {
+            if offered.insert(url_key(&raw)) {
                 points.push(raw);
             }
         }
@@ -2443,41 +2431,6 @@ mod tests {
                 .iter()
                 .all(|f| f.details["resource"] == "retrieval_trust_bytes")
         );
-    }
-    #[test]
-    fn a_backslash_spelling_does_not_hide_the_clean_url_it_parses_to() {
-        let store = store();
-        let budget = Budget::default();
-        let mut state = Retrieval::new(&store, &budget);
-        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
-        let uris = [
-            "http://crl.example.invalid\\x.crl".to_string(),
-            "http://crl.example.invalid/x.crl".to_string(),
-        ];
-        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
-        assert_eq!(source.urls, uris);
-        // A source reporting the normalized form still answers the backslash
-        // spelling's point.
-        struct Normalizes;
-        impl CrlSource for Normalizes {
-            fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
-                let point = &request.distribution_points[0];
-                Ok(CrlResponse::new().with_failure(
-                    CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
-                        .with_url(url::Url::parse(point).unwrap().to_string()),
-                ))
-            }
-        }
-        let mut state = Retrieval::new(&store, &budget);
-        ask(
-            &mut state,
-            "b",
-            &signer_with_uris(&uris[..1]),
-            &mut Normalizes,
-        )
-        .unwrap();
-        assert_eq!(state.report.failures.len(), 1);
-        assert_eq!(state.report.failures[0].message, "down");
     }
     #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {

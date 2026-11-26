@@ -46,6 +46,13 @@ pub const MAX_SOURCE_URLS: usize = 64;
 /// cannot end the verification for the certificates after it (CRL-024: the
 /// engine offers every point, and a source decides how many it tries).
 pub const MAX_POINTS_PER_REQUEST: usize = 16;
+/// Bytes of kept bodies this source returns again per verification (a body
+/// answered from memory for a later certificate listing its point, CRL-051).
+/// The engine hashes every body it receives, so replays are bounded well
+/// inside its hash budget; one past this is reported as `Denied` with
+/// `details.resource` `crl_replay_bytes` (not tried), the CRL itself having
+/// been delivered when it was fetched.
+pub const MAX_REPLAY_BYTES: usize = 128 * 1024 * 1024;
 /// HTTP requests per verification, redirects included. This source's own
 /// fetch policy (CRL-039), reported past it as an `Abort` with
 /// `details.resource` `crl_http_requests`.
@@ -230,6 +237,9 @@ pub struct HttpCrlSource {
     /// [`MAX_CRL_BYTES`], with that allowance: a request with no more room
     /// gets the same failure, one with more fetches again.
     too_big: std::collections::BTreeMap<String, (usize, CrlSourceError)>,
+    /// Bytes of kept bodies returned again in this verification, bounded by
+    /// [`MAX_REPLAY_BYTES`].
+    replayed: usize,
     requests: usize,
     bytes: usize,
     started: Option<Instant>,
@@ -565,10 +575,35 @@ impl HttpCrlSource {
                     .classify(limit("crl_response_bytes", cap, 0, len), false)
                     .with_url(url.to_owned()));
             }
+            if let Ok(crl) = known {
+                let len = crl.bytes.len();
+                if self.replayed.saturating_add(len) > MAX_REPLAY_BYTES {
+                    return Err(CrlSourceError::new(
+                        CrlSourceErrorKind::Denied,
+                        "not tried: the built-in source returns at most 128 MiB of kept \
+                         CRL bodies again per verification",
+                    )
+                    .with_url(url.to_owned())
+                    .detail("resource", "crl_replay_bytes")
+                    .detail("limit", MAX_REPLAY_BYTES)
+                    .detail("used", self.replayed)
+                    .detail("requested", len));
+                }
+                self.replayed += len;
+            }
             return match known.clone() {
                 Ok(mut crl) => {
                     crl.url = Some(url.to_owned());
                     Ok(crl)
+                }
+                // A kept size failure reports this request's room, as one
+                // kept with its allowance does.
+                Err(e) if e.details.get("resource") == Some(&"crl_response_bytes".into()) => {
+                    let rebuilt = limit("crl_response_bytes", cap, 0, seen_size(&e));
+                    let mut e =
+                        CrlSourceError::new(e.kind, rebuilt.message).with_url(url.to_owned());
+                    e.details = rebuilt.details;
+                    Err(e)
                 }
                 Err(e) => Err(e.with_url(url.to_owned())),
             };
@@ -1200,6 +1235,31 @@ mod tests {
         assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
     }
     #[test]
+    fn replays_are_bounded_per_verification() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/big.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 8]).with_url(url)));
+        source.replayed = MAX_REPLAY_BYTES - 8;
+        assert!(source.fetch_cached(url, 1024).is_ok());
+        let e = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(e.kind, CrlSourceErrorKind::Denied);
+        assert_eq!(e.details["resource"], "crl_replay_bytes");
+        // A new verification starts the allowance afresh.
+        CrlSource::begin_verification(&mut source);
+        assert_eq!(source.replayed, 0);
+        // A size failure kept at the full per-body cap reports the room of
+        // the request it answers.
+        let e = limit("crl_response_bytes", MAX_CRL_BYTES, 0, MAX_CRL_BYTES + 1);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.answered.insert(url_key(url), Err(error));
+        let again = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(again.details["limit"], 1024);
+        assert_eq!(again.details["requested"], MAX_CRL_BYTES + 1);
+    }
+    #[test]
     fn a_kept_body_replaces_an_earlier_size_failure_for_the_body_cap() {
         // A URL that once failed for its size and later answered with a body:
         // the body cap treats it as a body, as `answer` returns one.
@@ -1480,6 +1540,7 @@ mod tests {
             source_requests: MAX_SOURCE_REQUESTS,
             urls: Default::default(),
             answered: Default::default(),
+            replayed: 0,
             call: Call::default(),
             too_big: Default::default(),
             requests: MAX_HTTP_REQUESTS,
