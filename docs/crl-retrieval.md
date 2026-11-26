@@ -151,14 +151,15 @@ page links to them instead of restating them.
    `crl-036-unknown-critical-extension-local-source-abort-is-marked`). An abort
    that left nothing unasked changes nothing.
 
-Two kinds of error, and nothing in between:
+Three outcomes, and nothing in between:
 
 - **The engine's own limits end the run**: CRL bodies and
   failures in one response (64, `MAX_RESPONSE_ENTRIES`, beside one per point offered), retained CRLs,
-  combined bytes supplied before retrieval, and the LIMIT-T002 work budget. Once
-  retrieved CRLs fill the 32 MiB the store may retain, a further certificate is
-  not asked and its points are recorded as not tried (`retrieval_trust_bytes`):
-  nothing was received, so the verifier's result stands.
+  combined bytes supplied before retrieval, and the LIMIT-T002 work budget.
+- **A full store leaves a certificate unasked**: once retrieved CRLs fill the
+  32 MiB the store may retain, a further certificate is not asked and its
+  points are recorded as not tried (`retrieval_trust_bytes`); nothing was
+  received, so the run goes on and the verifier's result stands.
 - **Every other error about one listed point is no evidence from that point**:
   a URI over 2,048 bytes (`crl_url_bytes`); as OpenSSL and Bouncy Castle never
   fail a chain over one certificate's points, every other listed URI goes to
