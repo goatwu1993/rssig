@@ -67,6 +67,10 @@ they pin or what they check, never after a task.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
   Check how it is reported and whether to read it.
+- [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path.
+  The rejection flag is shared across candidate paths, so once any candidate
+  lacked keyCertSign a final unknown-issuer failure from another path is
+  reported as `invalid_key_usage`. Fails closed; recorded in TIME-T002.
 
 ### TRUST
 
@@ -79,7 +83,7 @@ they pin or what they check, never after a task.
 ### TIME
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
-- [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); the kept decisions are in [time-t002.md](docs/tasks/time-t002.md), and the follow-ups are TIME-T005, TIME-T006, TIME-T007, TIME-T008, LIMIT-T007 and TSA-T004.
+- [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
 - [ ] **TIME-T005** fix: Check fractional expiry during path building.
   `check_fractional_validity` runs after path selection. With a fractional
   timestamp and two same-subject/key issuers, webpki can select the one whose
@@ -318,19 +322,26 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
   `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
-
 - [ ] **TIME-T007** test: Add lifetime-signing fixtures for MSI, CAB, script and AppX.
   Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
   signers use the same trust call without one.
-- [ ] **TIME-T008** docs: Give each kept lifetime-signing review decision a decision entry.
-  Check each decision in [time-t002.md](docs/tasks/time-t002.md) against the
-  `TIME-` and `PATH-` indexes and add the entries that are missing.
+- [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
+  The leaf notBefore check before path building, equal-rank first-encountered
+  reporting, webpki validity details naming the leaf, the unsigned-timestamp
+  consistency check and the `lifetime_signing`/`validation_time` schema
+  choices; the others are TIME-007 and TIME-009 to TIME-013
+  ([record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)).
+
 ### PATH
 
 - [x] **PATH-T003** refactor: Index certificate-path decisions as `PATH-NNN`. Done ([PR #69](https://github.com/goatwu1993/rssig/pull/69)); [certificate-path decisions](docs/path.md).
 - [ ] **PATH-T004** refactor: Attach the claimed `PATH-` cases. Name existing
   entries for the cases claimed under `attach` (every format's untrusted-root
   case), and add a PATH entry for `certificate-signature`.
+- [ ] **PATH-T008** test: Pin a root re-issued after a lifetime signing time.
+  [PATH-011](docs/path.md#path-011-configured-anchors-are-keys) accepts such a
+  path, but its cases pin anchors at the validation time only; add a paired
+  fixture.
 
 ### TSA
 
