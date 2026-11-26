@@ -48,9 +48,9 @@ they pin or what they check, never after a task.
 - [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
   RDP `verify_trust` repeats the full path search, with the lifetime leaf check
   and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
-  failure no other EKU can change, keeping `choose_usage_failure`'s ranking
-  (revocation, then CRL-completable) and the other usages' CRL gaps it merges
-  into a revocation; pin the budget effect.
+  failure no other EKU can change, keeping the ranking and merged CRL gaps
+  [CRL-027](docs/crl.md#crl-027-which-error-a-rejected-chain-reports) pins;
+  pin the budget effect.
 
 ### CMS
 
@@ -276,8 +276,8 @@ they pin or what they check, never after a task.
   Found in the review of PR #86.
 - [ ] **TEST-T016** test: Share the RFC 3161/PKCS#9 token builders across test modules.
   Share them across `engine/src/tests.rs` and `engine/src/tests/`
-  `timestamp_structure.rs`, `validation_time.rs` and `rdp_fixtures.rs` without
-  changing committed bytes; keep their regeneration commands consistent with
+  `timestamp_structure.rs`, `validation_time.rs`, `rdp_fixtures.rs` and
+  `cms_audit.rs` without changing committed bytes; keep their regeneration commands consistent with
   `regenerate_cli_fixtures`.
 
 ### BUILD
@@ -329,7 +329,7 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
   The `*-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
   CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
-- [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 rules that have none.
+- [ ] **TIME-T008** docs: Add or extend `TIME-` entries for the TIME-T002 rules not yet pinned.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
   maps each to its entry: add the `TIME-` entries marked none and extend
   TIME-013 where marked; the keyCertSign one is PATH-T009.

@@ -218,7 +218,7 @@ The lifetime-signing rules set the schema and detail rows above, so by the
 
 Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
 `certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
-formats without one), TIME-T008 (the missing `TIME-` entries), PATH-T007 (the
+formats without one), TIME-T008 (the missing or incomplete `TIME-` entries), PATH-T007 (the
 keyCertSign flag, owner decision), PATH-T009 (its entry), PATH-T008 (a root re-issued after the
 signing time), LIMIT-T007 (the repeated RDP path search) and TEST-T016
 (shared timestamp token builders).
