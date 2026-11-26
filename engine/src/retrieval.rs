@@ -271,14 +271,15 @@ pub fn fetch_each(
 }
 
 /// A fixed-size key for a certificate and a point, so that remembering one
-/// costs eight bytes. A collision (the key is fixed, so an input can be
-/// built to have one) only makes the report omit one entry or count one
-/// withheld point too few; it never changes what is accepted.
-fn point_hash(certificate: &str, key: &str) -> u64 {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    (certificate, key).hash(&mut hasher);
-    hasher.finish()
+/// costs sixteen bytes: the first half of the SHA-256 of both, with a
+/// separator no URL or hash contains. A collision would take about 2^64
+/// work, and would only make the report omit one entry; it never changes
+/// what is accepted.
+fn point_hash(certificate: &str, key: &str) -> [u8; 16] {
+    let digest = crate::crypto::Hash::Sha256.digest(format!("{certificate}\n{key}").as_bytes());
+    let mut out = [0; 16];
+    out.copy_from_slice(&digest[..16]);
+    out
 }
 
 /// A dedup key for a URI: its parsed, normalized form when it parses.
@@ -485,7 +486,7 @@ struct Retrieval<'b, 'l> {
     /// entry for (listed or counted as omitted). Report bookkeeping only: it
     /// keeps no outcome, and entries of one certificate are not contiguous
     /// (the unused points of an earlier certificate are recorded last).
-    recorded: BTreeSet<u64>,
+    recorded: BTreeSet<[u8; 16]>,
     /// Per certificate, the failure entries kept, up to
     /// `MAX_FAILURES_PER_CERTIFICATE`.
     kept: BTreeMap<(String, bool), usize>,

@@ -54,11 +54,11 @@ pub const MAX_NETWORK_BYTES: usize = 32 * 1024 * 1024;
 fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
     VerificationError::new(code, Stage::Revocation, message)
 }
-/// Whether a URL's outcome is kept for the verification: not an abort, and
-/// not a size failure under a request's allowance smaller than the fixed
-/// per-body cap (`crl_response_bytes` with a `limit` below
-/// [`MAX_CRL_BYTES`]), which a later request with more allowance may not
-/// share. A body over the fixed cap itself is kept: it fails every time.
+/// Whether a URL's outcome is kept for the verification whatever a later
+/// request's allowance: not an abort, and not a size failure under an
+/// allowance smaller than the fixed per-body cap (`crl_response_bytes` with a
+/// `limit` below [`MAX_CRL_BYTES`]), which `too_big` keeps with its allowance.
+/// A body over the fixed cap itself is kept: it fails every time.
 fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
     match outcome {
         Ok(_) => true,
@@ -185,6 +185,10 @@ pub struct HttpCrlSource {
     /// or the failure it reported. An abort is not kept: after one, the
     /// engine asks nothing more.
     answered: std::collections::BTreeMap<String, Result<SourcedCrl, CrlSourceError>>,
+    /// Per URL (normalized), a size failure under a request allowance below
+    /// [`MAX_CRL_BYTES`], with that allowance: a request with no more room
+    /// gets the same failure, one with more fetches again.
+    too_big: std::collections::BTreeMap<String, (usize, CrlSourceError)>,
     requests: usize,
     bytes: usize,
     started: Option<Instant>,
@@ -456,7 +460,13 @@ impl CrlSource for HttpCrlSource {
         let mut response = fetch_each(&tried_request, |url, max_bytes| {
             self.fetch_cached(url, max_bytes)
         });
-        for url in &left {
+        // After an abort the points left were not tried because of it, and
+        // the engine records them so; the point limit is not their reason.
+        let aborted = response
+            .failures
+            .iter()
+            .any(|f| f.kind == CrlSourceErrorKind::Abort);
+        for url in left.iter().filter(|_| !aborted) {
             response.failures.push(
                 CrlSourceError::new(
                     CrlSourceErrorKind::Denied,
@@ -476,8 +486,9 @@ impl HttpCrlSource {
     /// [`Self::fetch_one`] with this verification's memory of each URL's
     /// outcome (normalized): a repeat returns the same body or failure, under
     /// the spelling it was offered. Not kept: an abort (the engine asks
-    /// nothing more after it), and a failure about the byte allowance this
-    /// request had, which a later request with more may not share.
+    /// nothing more after it); a failure about the byte allowance this request
+    /// had is kept with that allowance, so a request with more room fetches
+    /// again and one with no more gets the same failure.
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         let key = url_key(url);
         if let Some(known) = self.answered.get(&key) {
@@ -499,9 +510,19 @@ impl HttpCrlSource {
                 Err(e) => Err(e.with_url(url.to_owned())),
             };
         }
+        let allowance = max_bytes.min(MAX_CRL_BYTES);
+        if let Some((failed_under, e)) = self.too_big.get(&key)
+            && allowance <= *failed_under
+        {
+            return Err(e.clone().with_url(url.to_owned()));
+        }
         let outcome = self.fetch_one(url, max_bytes);
         if cacheable(&outcome) {
             self.answered.insert(key, outcome.clone());
+        } else if let Err(e) = &outcome
+            && e.kind != CrlSourceErrorKind::Abort
+        {
+            self.too_big.insert(key, (allowance, e.clone()));
         }
         outcome
     }
@@ -992,6 +1013,30 @@ mod tests {
         assert!(cacheable(&size(MAX_CRL_BYTES)));
         assert!(!cacheable(&size(MAX_CRL_BYTES - 1)));
         assert!(!cacheable(&size(0)));
+        // The allowance failure is kept with its allowance: a request with
+        // no more room gets it again without a request.
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/y.crl";
+        let first = source.fetch_cached(url, 0).unwrap_err();
+        assert_eq!(source.too_big.len(), 1);
+        let again = source.fetch_cached(url, 0).unwrap_err();
+        assert_eq!(again.details, first.details);
+        assert_eq!(source.requests, 0);
+    }
+    #[test]
+    fn points_left_after_an_abort_are_left_for_the_engine_to_record_as_not_tried() {
+        let mut source = HttpCrlSource {
+            poisoned: true,
+            ..HttpCrlSource::new()
+        };
+        let points: Vec<String> = (0..MAX_POINTS_PER_REQUEST + 4)
+            .map(|i| format!("http://crl.example.com/p-{i}.crl"))
+            .collect();
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Abort);
     }
     #[test]
     fn a_cached_body_over_a_later_requests_allowance_is_refused_without_a_copy() {
@@ -1140,6 +1185,7 @@ mod tests {
             source_requests: MAX_SOURCE_REQUESTS,
             urls: Default::default(),
             answered: Default::default(),
+            too_big: Default::default(),
             requests: MAX_HTTP_REQUESTS,
             bytes: MAX_NETWORK_BYTES,
             started: Some(Instant::now() - DEADLINE),
