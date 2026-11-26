@@ -25,7 +25,7 @@ impl Counter {
         }
     }
     /// What has been charged so far, for tests.
-    #[cfg(test)]
+    #[cfg(all(test, feature = "retrieval"))]
     pub(crate) fn used(&self) -> usize {
         self.used.load(core::sync::atomic::Ordering::Relaxed)
     }

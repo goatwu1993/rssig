@@ -70,11 +70,6 @@ they pin or what they check, never after a task.
 ### TSA
 
 - [x] **TSA-T001** fix: Complete timestamp structure and multiplicity tests. Done; [record](docs/tasks/done.md#tsa-t001-fix-complete-timestamp-structure-and-multiplicity-tests).
-- [ ] **CRL-T046** refactor: Share a cached CRL body between the requests that repeat it.
-  `HttpCrlSource` clones a cached body (up to 8 MiB) into each response, so 256 certificates sharing one
-  cost about 2 GiB of copying though one fetch happened; retention is bounded by `MAX_NETWORK_BYTES`.
-  Sharing needs `SourcedCrl::bytes` to be shared (`Arc<[u8]>`), a public API change; weigh it against how
-  often a chain repeats a point.
 
 ### TIME
 
@@ -372,6 +367,12 @@ they pin or what they check, never after a task.
   make a file's result depend on the files before it and leave its report without the reused CRL's
   provenance; it would also change how the CRL-039 limits apply between files. Belongs in the application,
   not the engine (CRL-033).
+- [ ] **CRL-T046** refactor: Share a cached CRL body between the requests that repeat it.
+  `HttpCrlSource` clones a cached body (up to 8 MiB) into each response, so 256 certificates sharing one
+  cost about 2 GiB of copying though one fetch happened; retention is bounded by `MAX_NETWORK_BYTES`.
+  A cached body over a request's allowance is not cloned (it is reported as `crl_response_bytes`), so one
+  response copies at most its allowance. Sharing needs `SourcedCrl::bytes` to be shared (`Arc<[u8]>`), a
+  public API change; weigh it against how often a chain repeats a point.
 
 ### TIME
 

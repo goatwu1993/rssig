@@ -54,6 +54,24 @@ pub const MAX_NETWORK_BYTES: usize = 32 * 1024 * 1024;
 fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
     VerificationError::new(code, Stage::Revocation, message)
 }
+/// Whether a URL's outcome is kept for the verification: not an abort, and
+/// not a size failure under a request's allowance smaller than the fixed
+/// per-body cap (`crl_response_bytes` with a `limit` below
+/// [`MAX_CRL_BYTES`]), which a later request with more allowance may not
+/// share. A body over the fixed cap itself is kept: it fails every time.
+fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
+    match outcome {
+        Ok(_) => true,
+        Err(e) => {
+            e.kind != CrlSourceErrorKind::Abort
+                && !(e.details.get("resource") == Some(&"crl_response_bytes".into())
+                    && e.details
+                        .get("limit")
+                        .and_then(|l| l.as_u64())
+                        .is_none_or(|l| l < MAX_CRL_BYTES as u64))
+        }
+    }
+}
 /// The key a URL's outcome is kept under: its parsed, normalized form when it
 /// parses, as the engine compares points.
 fn url_key(raw: &str) -> String {
@@ -405,8 +423,10 @@ impl CrlSource for HttpCrlSource {
         let mut fresh = 0;
         let mut tried = Vec::new();
         let mut left = Vec::new();
+        let mut seen = std::collections::BTreeSet::new();
         for url in points {
-            if self.answered.contains_key(&url_key(url)) {
+            // A URL offered twice in one call counts once, as a repeat does.
+            if !seen.insert(url_key(url)) || self.answered.contains_key(&url_key(url)) {
                 tried.push(url.clone());
             } else {
                 fresh += 1;
@@ -457,11 +477,20 @@ impl HttpCrlSource {
     /// outcome (normalized): a repeat returns the same body or failure, under
     /// the spelling it was offered. Not kept: an abort (the engine asks
     /// nothing more after it), and a failure about the byte allowance this
-    /// request had (`crl_response_bytes`), which a later request with more
-    /// allowance may not share.
+    /// request had, which a later request with more may not share.
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         let key = url_key(url);
         if let Some(known) = self.answered.get(&key) {
+            // A body over this request's allowance is reported as a fresh
+            // fetch reports it, without copying it.
+            let cap = max_bytes.min(MAX_CRL_BYTES);
+            if let Ok(crl) = known
+                && crl.bytes.len() > cap
+            {
+                return Err(self
+                    .classify(limit("crl_response_bytes", cap, 0, crl.bytes.len()), false)
+                    .with_url(url.to_owned()));
+            }
             return match known.clone() {
                 Ok(mut crl) => {
                     crl.url = Some(url.to_owned());
@@ -471,14 +500,7 @@ impl HttpCrlSource {
             };
         }
         let outcome = self.fetch_one(url, max_bytes);
-        let keep = match &outcome {
-            Ok(_) => true,
-            Err(e) => {
-                e.kind != CrlSourceErrorKind::Abort
-                    && e.details.get("resource") != Some(&"crl_response_bytes".into())
-            }
-        };
-        if keep {
+        if cacheable(&outcome) {
             self.answered.insert(key, outcome.clone());
         }
         outcome
@@ -959,6 +981,46 @@ mod tests {
             .unwrap_err();
         assert_eq!(denied.kind, CrlSourceErrorKind::Denied);
         assert_eq!(source.answered.len(), 1);
+        // Over the fixed per-body cap it fails every time, so it is kept;
+        // under a smaller allowance it is not.
+        let size = |cap: usize| {
+            let e = limit("crl_response_bytes", cap, 0, cap + 1);
+            let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+            error.details = e.details;
+            Err(error)
+        };
+        assert!(cacheable(&size(MAX_CRL_BYTES)));
+        assert!(!cacheable(&size(MAX_CRL_BYTES - 1)));
+        assert!(!cacheable(&size(0)));
+    }
+    #[test]
+    fn a_cached_body_over_a_later_requests_allowance_is_refused_without_a_copy() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/x.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 10]).with_url(url)));
+        let e = source.fetch_cached(url, 5).unwrap_err();
+        assert_eq!(e.kind, CrlSourceErrorKind::Failed);
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+        assert_eq!(e.details["limit"], 5);
+        assert_eq!(e.url.as_deref(), Some(url));
+        // With room, the same body is returned again, under the offered URL.
+        let spelled = "HTTP://CRL.Example.com/x.crl";
+        let again = source.fetch_cached(spelled, 10).unwrap();
+        assert_eq!(again.bytes.len(), 10);
+        assert_eq!(again.url.as_deref(), Some(spelled));
+        // Offered twice in one call, a URL counts once toward the point limit.
+        let points = vec![url.to_string(); MAX_POINTS_PER_REQUEST + 1];
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.details.get("resource") != Some(&"crl_request_points".into()))
+        );
     }
     #[test]
     fn the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification() {

@@ -463,6 +463,10 @@ impl crate::verify::Verifier<'_> {
 struct Retrieval<'b, 'l> {
     store: TrustStore,
     report: CrlRetrievalReport,
+    /// What decoding each body that named a URL showed, by SHA-256: nothing
+    /// to report, or the rejection. Bounded by the bodies a verification may
+    /// receive (each certificate's response is bounded).
+    decoded: BTreeMap<Vec<u8>, Option<VerificationError>>,
     /// The retained-byte cap, [`MAX_TOTAL_BYTES`] outside tests.
     max_total: usize,
     /// A source just answered by certificate with a new full CRL of the
@@ -501,6 +505,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         Self {
             store: base.clone(),
             report: CrlRetrievalReport::default(),
+            decoded: BTreeMap::new(),
             max_total: MAX_TOTAL_BYTES,
             reverify: false,
             aborted: false,
@@ -992,31 +997,35 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             return Ok((None, false));
         }
         *total += len;
-        // A body naming a URL whose bytes are exactly a CRL the store holds
-        // is not decoded again: it is the store's own exact-DER check, not a
-        // memory of earlier answers, and it adds nothing. Every other body
-        // is decoded, so it is charged to the work budget, a repeat too:
-        // whether to send one again is the source's choice (CRL-051). Every
-        // body is hashed for the report.
-        let held = !without_url && self.store.has_crl(&crl.bytes);
-        if !held {
-            for _ in 0..8 {
-                self.budget
-                    .decoded_bytes
-                    .charge(len)
-                    .map_err(crl_internal)?;
-            }
-        }
+        // Every body is hashed for the report.
         self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
+        let digest = crate::crypto::Hash::Sha256.digest(&crl.bytes);
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
             final_url,
             url: url.clone(),
-            sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
+            sha256: hex(&digest),
             bytes: len,
         });
-        if held {
+        // Decoding is a pure function of the bytes, so a body naming a URL
+        // that is byte for byte one already decoded in this verification (a
+        // source replaying a point several certificates list, CRL-051) is
+        // not decoded or charged again: what loading it did is reused, and a
+        // rejection is reported for this certificate too. This remembers no
+        // answer of a source. A body naming no URL is an answer by
+        // certificate, whose meaning depends on the issuer, so it is always
+        // decoded and charged: whether a source repeats one is its choice.
+        if !without_url && let Some(rejection) = self.decoded.get(&digest) {
+            if let Some(e) = rejection.clone() {
+                self.skip(sha256, raw_url.as_deref(), e, None);
+            }
             return Ok((None, false));
+        }
+        for _ in 0..8 {
+            self.budget
+                .decoded_bytes
+                .charge(len)
+                .map_err(crl_internal)?;
         }
         // Before loading: whether this body brings a full CRL of the issuer
         // that is not already loaded (one PEM may hold several CRLs).
@@ -1038,8 +1047,14 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 ErrorCode::InvalidCrl,
                 format!("decoding retrieved CRL: {e:#}"),
             );
+            if !without_url {
+                self.decoded.insert(digest, Some(e.clone()));
+            }
             self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
+        }
+        if !without_url {
+            self.decoded.insert(digest, None);
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
@@ -2249,14 +2264,41 @@ mod tests {
         ask(&mut state, "a", &cert, &mut NotACrl).unwrap();
         ask(&mut state, "b", &cert, &mut NotACrl).unwrap();
         assert_eq!(state.store.encoded_len(), store.encoded_len());
-        let rejected: Vec<_> = state
-            .report
-            .failures
-            .iter()
-            .filter(|f| f.code == ErrorCode::InvalidCrl)
-            .map(|f| f.certificate_sha256.as_str())
-            .collect();
-        assert_eq!(rejected, ["a", "b"]);
+        let rejected_for = |state: &Retrieval<'_, '_>| -> Vec<String> {
+            state
+                .report
+                .failures
+                .iter()
+                .filter(|f| f.code == ErrorCode::InvalidCrl)
+                .map(|f| f.certificate_sha256.clone())
+                .collect()
+        };
+        assert_eq!(rejected_for(&state), ["a", "b"]);
+        // Decoded once: the rejection of a repeat is reported for each
+        // certificate without decoding or charging it again.
+        let junk = budget.decoded_bytes.used();
+        for i in 0..64 {
+            ask(&mut state, &format!("d{i}"), &cert, &mut NotACrl).unwrap();
+        }
+        assert_eq!(budget.decoded_bytes.used(), junk);
+        assert_eq!(rejected_for(&state).len(), 66);
+        // A body naming no URL is an answer by certificate: always decoded
+        // and charged, a repeat too.
+        struct ByCertificate;
+        impl CrlSource for ByCertificate {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(SourcedCrl::new(
+                    include_bytes!("../../tests/fixtures/good.crl").to_vec(),
+                )))
+            }
+        }
+        let mut state = Retrieval::new(&store, &budget);
+        let before = budget.decoded_bytes.used();
+        ask(&mut state, "a", &cert, &mut ByCertificate).unwrap();
+        let one = budget.decoded_bytes.used() - before;
+        assert!(one > 0);
+        ask(&mut state, "b", &cert, &mut ByCertificate).unwrap();
+        assert_eq!(budget.decoded_bytes.used() - before, 2 * one);
     }
     #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
