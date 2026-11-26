@@ -780,10 +780,28 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // load, or only repeated a CRL already held, retains nothing. A
         // request's bodies are bounded by what is left, so the store stays
         // within the cap (a CRL's DER is never longer than its body).
+        // With no room left, nothing a source returns could be kept: the
+        // certificate is not asked, and each of its points is recorded as
+        // not tried for that reason. Nothing was received, so the run goes on
+        // and the verifier's result stands (now that every certificate is
+        // asked, ending the run here would replace a definite result).
         let used = self.store.encoded_len();
         let max_bytes = self.max_total.saturating_sub(used);
         if max_bytes == 0 {
-            return Err(limit("retrieval_trust_bytes", self.max_total, used, 1));
+            let e = error(
+                ErrorCode::ResourceLimitExceeded,
+                "not tried: the CRL bytes this verification retains are at their cap",
+            )
+            .detail("resource", "retrieval_trust_bytes")
+            .detail("limit", self.max_total)
+            .detail("used", used);
+            if points.is_empty() {
+                self.skip(sha256, None, e.clone(), None);
+            }
+            for point in &points {
+                self.skip(sha256, Some(point), e.clone(), None);
+            }
+            return Ok(false);
         }
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
         self.budget.log.info(
@@ -2381,12 +2399,11 @@ mod tests {
         assert_eq!(state.report.artifacts.len(), 2);
     }
     #[test]
-    fn a_request_with_no_room_left_ends_the_run() {
+    fn a_certificate_with_no_room_left_is_not_asked_and_the_run_goes_on() {
         // The retained-byte cap is the engine's own limit (CRL-039): once the
-        // store holds all of it, the next certificate asked about ends the
-        // run with `retrieval_trust_bytes`, even one whose points another
-        // certificate already used, since every certificate is asked
-        // (CRL-033). This pins that: no source is asked.
+        // store holds all of it, a certificate is not asked and each of its
+        // points is recorded as not tried (`retrieval_trust_bytes`). Nothing
+        // was received, so the run goes on and the verifier's result stands.
         struct Never;
         impl CrlSource for Never {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2397,9 +2414,22 @@ mod tests {
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
         state.max_total = state.store.encoded_len();
-        let e = ask(&mut state, "a", &signer_with_points("a", 1), &mut Never).unwrap_err();
-        assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
-        assert_eq!(e.details["resource"], "retrieval_trust_bytes");
+        assert!(!ask(&mut state, "a", &signer_with_points("a", 2), &mut Never).unwrap());
+        assert!(!ask(&mut state, "b", &signer_with_uris(&[]), &mut Never).unwrap());
+        let entries: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.certificate_sha256.as_str(), f.url.is_some()))
+            .collect();
+        assert_eq!(entries, [("a", true), ("a", true), ("b", false)]);
+        assert!(
+            state
+                .report
+                .failures
+                .iter()
+                .all(|f| f.details["resource"] == "retrieval_trust_bytes")
+        );
     }
     #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
