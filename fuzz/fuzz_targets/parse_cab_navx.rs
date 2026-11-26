@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::parse::{Cab, Navx, SignedData};
+use rssig_engine::parse::{Cab, Navx, SignedData};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(cab) = Cab::parse(data) {

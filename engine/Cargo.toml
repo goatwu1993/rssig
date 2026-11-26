@@ -1,0 +1,90 @@
+[package]
+name = "rssig-engine"
+version = "0.1.0"
+edition = "2024"
+description = "Pure verification engine for embedded Windows Authenticode signatures and RDP signed settings"
+license = "Apache-2.0"
+# The published crate is the library. Tests run from the repository, where
+# they read the shared fixtures in ../tests/fixtures; neither the integration
+# tests nor the unit-test tree under src/tests is packaged.
+include = ["/src/**", "!/src/tests.rs", "!/src/tests/**", "/LICENSE", "/NOTICE"]
+
+# The engine is pure logic: parsing, hashing, CMS, trust paths, timestamps and
+# revocation over caller-supplied bytes, trust stores, time and policy. It
+# reads no files, clock, environment or network and enumerates no OS roots;
+# collaborators (a `CrlSource`, a `Logger`) are injected by the caller. The
+# `rssig` application at the repository root supplies the defaults.
+[features]
+default = ["verify"]
+# The parser only needs core + alloc.
+std = ["anyhow/std", "der/std", "x509-cert/std", "roxmltree?/std", "serde?/std", "serde_json?/std", "signature?/std"]
+xml = ["dep:roxmltree"]
+# Structural host adapters, independent of verification and reports.
+msi = ["std", "dep:cfb"]
+appx = ["std", "xml", "dep:flate2", "dep:crc32fast"]
+verify = ["verify-core", "msi", "appx"]
+verify-core = [
+    "xml",
+    "dep:rustls-pki-types", "dep:webpki", "dep:rsa", "dep:sha1", "dep:sha2",
+    "dep:p256", "dep:p384", "dep:signature", "dep:serde", "dep:serde_json",
+    "x509-cert/pem",
+]
+# CRL retrieval through an injected `CrlSource`. No transport: the application
+# supplies the source (the `rssig` package's `HttpCrlSource`).
+retrieval = ["verify", "dep:url"]
+# Testing only, never for a product build: after rssig's revocation decision,
+# re-run webpki's own revocation check on the accepted path and panic if the
+# two disagree (CRL-T011). Enabled for every test target by the self
+# dev-dependency below and by the `rssig` package's dev-dependency. It enables
+# no other feature, so reduced-feature test runs keep their feature set; it
+# has an effect only with `verify-core`.
+revocation-crosscheck = []
+
+[[test]]
+name = "fixtures"
+required-features = ["verify"]
+
+[[test]]
+name = "parse"
+required-features = ["verify"]
+
+[[test]]
+name = "logging"
+required-features = ["verify"]
+
+[lints]
+workspace = true
+
+[dependencies]
+url = { workspace = true, optional = true }
+flate2 = { version = "1", optional = true, default-features = false, features = ["rust_backend"] }
+crc32fast = { version = "1", optional = true }
+roxmltree = { version = "0.21", optional = true, default-features = false, features = ["positions"] }
+base64ct = { version = "1", default-features = false, features = ["alloc"] }
+anyhow = { workspace = true }
+der = { version = "0.7", default-features = false, features = ["alloc", "derive", "oid"] }
+digest = { version = "0.10", default-features = false }
+x509-cert = { workspace = true }
+rustls-pki-types = { workspace = true, optional = true }
+# Pinned exactly in the workspace: CRL authority and path behavior are
+# documented as observed at that version (docs/tasks/crl-t001.md).
+webpki = { workspace = true, optional = true }
+rsa = { version = "0.9", optional = true, default-features = false, features = ["sha2", "u64_digit"] }
+sha1 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
+sha2 = { version = "0.10", optional = true, default-features = false, features = ["oid"] }
+p256 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
+p384 = { version = "0.13", optional = true, default-features = false, features = ["ecdsa", "alloc", "pkcs8"] }
+signature = { version = "2", optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+cfb = { version = "0.15", optional = true, default-features = false }
+
+[dev-dependencies]
+# Builds the library with the test-only revocation cross-check for every test
+# target (unit and integration). See the `revocation-crosscheck` feature.
+rssig-engine = { path = ".", default-features = false, features = ["revocation-crosscheck"] }
+rsa = { version = "0.9", features = ["pem"] }
+p256 = { version = "0.13", features = ["ecdsa", "pem"] }
+rand = "0.8"
+sha2 = { version = "0.10", features = ["oid"] }
+x509-cert = { version = "0.2", features = ["builder"] }

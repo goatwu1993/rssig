@@ -2,7 +2,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::parse::{Appx, BlockMap, SignedData};
+use rssig_engine::parse::{Appx, BlockMap, SignedData};
 
 /// Per-part decode limit: far above any seed, far below the fuzzer's memory limit.
 const PART_LIMIT: usize = 1 << 20;

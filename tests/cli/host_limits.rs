@@ -184,3 +184,43 @@ fn batch_count_is_checked_before_reads() {
             .contains("at most 128 file paths")
     );
 }
+
+/// The loaded trust store is bounded by the application, before any file is
+/// verified: 64 CRLs load, a 65th is a configuration error. The bundles hold
+/// 64 and 65 distinct CRLs.
+#[test]
+fn the_loaded_trust_store_is_bounded_before_verification() {
+    let fixture = |name: &str| format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
+    let run = |crls: &str| {
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        let code = rssig::cli::run_with_writers(
+            [
+                "rssig",
+                "verify",
+                "--no-system-roots",
+                "--roots",
+                &fixture("root.der"),
+                "--crl",
+                &fixture(crls),
+                "--time",
+                "1800000000",
+                &fixture("good-pe64.exe"),
+            ],
+            &mut stdout,
+            &mut stderr,
+        )
+        .unwrap();
+        (code, stdout, String::from_utf8(stderr).unwrap())
+    };
+    let (code, stdout, stderr) = run("limit-fetch-65-crls.pem");
+    assert_eq!(code, 2);
+    assert!(stdout.is_empty());
+    assert_eq!(stderr, "error: too many loaded roots or CRLs\n");
+    // At the bound the store loads and verification runs: a JSON result,
+    // whatever its verdict.
+    let (code, stdout, stderr) = run("limit-fetch-64-crls.pem");
+    assert_ne!(code, 2, "{stderr}");
+    assert!(stderr.is_empty());
+    let json: serde_json::Value = serde_json::from_slice(&stdout).unwrap();
+    assert_eq!(json["command"], "verify");
+}

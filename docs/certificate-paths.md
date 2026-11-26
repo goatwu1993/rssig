@@ -57,7 +57,7 @@ check*; they are never implicitly loaded as production trust anchors.
 
 Provenance, hashes and case links are in the
 [fixture manifest](../tests/fixtures/manifest.json). Builders live in
-[`src/tests/certificate_paths.rs`](../src/tests/certificate_paths.rs) and run only through
+[`engine/src/tests/certificate_paths.rs`](../engine/src/tests/certificate_paths.rs) and run only through
 explicit ignored maintenance tests. Normal tests read committed artifacts.
 These are rule regression fixtures, not new independent-producer or Windows
 interoperability evidence.

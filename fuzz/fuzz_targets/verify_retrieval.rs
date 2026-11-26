@@ -10,12 +10,12 @@
 use std::sync::LazyLock;
 
 use libfuzzer_sys::fuzz_target;
-use rssig::TrustStore;
-use rssig::retrieval::{
+use rssig_engine::TrustStore;
+use rssig_engine::retrieval::{
     CrlRequest, CrlResponse, CrlSource, CrlSourceError, CrlSourceErrorKind, SourcedCrl, fetch_each,
     verify_with_crl_source,
 };
-use rssig::verify::VerifyOptions;
+use rssig_engine::verify::VerifyOptions;
 
 /// Fixed validation time (2027-01-15T07:59:59Z), matching the pinned test clock.
 const NOW: u64 = 1_799_999_999;

@@ -20,22 +20,22 @@ invariant remains a human responsibility.
 
 | Area | Inventory groups / native evidence | Limits and missing pairs |
 | --- | --- | --- |
-| PE32/PE32+ | `pe-image`, `page-hashes`, `nested`; `tests/fixtures.rs` checks the isolated payload mutation | Existing synthetic pairs do not establish independent PE interoperability or arbitrary section-layout support. |
+| PE32/PE32+ | `pe-image`, `page-hashes`, `nested`; `engine/tests/fixtures.rs` checks the isolated payload mutation | Existing synthetic pairs do not establish independent PE interoperability or arbitrary section-layout support. |
 | MSI/MSP | `msi-sip`, `msp-sip`; CLI MSI/MSP suites cover metadata, streams and CFB variants | MSP reuses MSI SIP evidence; applicability and Windows patch authorization are outside scope. |
 | CAB/NAVX | `cab-sip`, `navx-sip`; independent jsign artifacts and payload mutations | Limited documented container layouts; not every producer/layout combination. |
 | PowerShell/XML | `powershell-sip`, `psxml-sip`; encoding/BOM and independent jsign pairs | XML hash-comment SIP differs from XMLDSig. Positive encoding cases do not prove every malformed boundary. |
 | WSH | `wsh-sip`; JS/JSE/VBS/VBE/WSF plus independent jsign mutations | Encoded scripts are opaque; signatures are not script execution checks. |
 | RDP | `rdp-scope`; nfedera/rdpsign artifact, changed signed/unsigned settings | No Microsoft rdpsign.exe producer evidence. |
 | MSIX/AppX packages/bundles | `appx-package`, `appx-bundle`; CLI AppX suites cover block maps, Publisher binding and children | CodeIntegrity catalogs are hashed, not independently signature-verified. No deployment-policy claim. |
-| Digests and keys | `sha2`, `sha1-policy`, `key-algorithms`; `src/crypto.rs` and signing fixtures | SHA-384/512 content tests do not establish P-384 signature coverage. Inventory needs a systematic RSA-size/P-256/P-384 and digest/key mismatch matrix (ALG-T001). |
+| Digests and keys | `sha2`, `sha1-policy`, `key-algorithms`; `engine/src/crypto.rs` and signing fixtures | SHA-384/512 content tests do not establish P-384 signature coverage. Inventory needs a systematic RSA-size/P-256/P-384 and digest/key mismatch matrix (ALG-T001). |
 | CMS/signers | `cms-binding`, `cms-structure`, `signer-selection`; CMS-T001 and CMS-T002 native signature-math and shared-path tests | See `cms-security.md` for version/opaque-value exceptions. |
 | Trust paths | `trust-root`, `trust-checks`, `trust-validity`, `trust-path-constraints`, `trust-path-selection`, `trust-anchor-profile`; PATH-T001 named CLI and signature-math tests | Paired constraints, selected chains, cross-signing, wrong-key issuers and cycles are pinned. TIME-T001 pins lifetime signing and leaf/intermediate/validation-time boundaries; see [validation time](validation-time.md). See [certificate paths](certificate-paths.md) for webpki profile, anchor treatment and remaining name-form/rollover limits. |
-| Timestamps | `timestamp`; `src/verify/timestamp.rs` parsing tests | TSA-T001 pins structure, multiplicity, parent binding and TSA checks; see [timestamp profile](timestamp-profile.md). Independent producer diversity remains INTEROP work. |
+| Timestamps | `timestamp`; `engine/src/verify/timestamp.rs` parsing tests | TSA-T001 pins structure, multiplicity, parent binding and TSA checks; see [timestamp profile](timestamp-profile.md). Independent producer diversity remains INTEROP work. |
 | Revocation | `revocation`; local signed good/revoked/stale/forged CRLs; CRL-T001 applicability, competing-CRL, cRLSign and distribution-point cases (`tests/cli/crl_applicability.rs`) | Issuer/AKI applicability, competing CRLs, intermediate cRLSign, revoked intermediates and distribution-point matching (scope flags, several names or points, non-URI and issuer-relative names, reasons and cRLIssuer points) are pinned; see the CRL row of [validation time](validation-time.md). `--fetch-crls` fetches only when verification with the supplied CRLs is `revocation_unknown` (`crl-fetch-*`); per-chain CRLs actually used remain CRL-T002. No OCSP, delta or indirect CRL support. |
 | Reduced-policy modes | `policy-modes`; `tests/cli/policy.rs` | Success in integrity-only mode cannot be counted as trusted-chain evidence. |
-| Retrieval | `retrieval`; `src/retrieval/http.rs` bounded response tests | Injected responses establish validation behavior, not public network interoperability. AIA/HTTPS remain unsupported. |
+| Retrieval | `retrieval`; `src/crl.rs` bounded response tests | Injected responses establish validation behavior, not public network interoperability. AIA/HTTPS remain unsupported. |
 | Resource limits | `work-budgets`, `host-budgets`; native budget callback tests | Byte/work limits and typed failure snapshots are different from fuzz coverage (BUILD-T001). |
-| Inspection/API/CLI streams | `tests/parse*.rs`, `tests/library_stability.rs`, `tests/cli_interface.rs`, spec `parse-*` cases | Parsing establishes no trust. Writer failures are native I/O contracts, not verification JSON failures. |
+| Inspection/API/CLI streams | `engine/tests/parse*.rs`, `engine/tests/library_stability.rs`, `tests/cli_interface.rs`, spec `parse-*` cases | Parsing establishes no trust. Writer failures are native I/O contracts, not verification JSON failures. |
 
 ## Stable error inventory
 

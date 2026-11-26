@@ -4,10 +4,10 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::parse::{Powershell, Rdp, SignedData, Wsh, WshKind};
+use rssig_engine::parse::{Powershell, Rdp, SignedData, Wsh, WshKind};
 use sha2::{Digest, Sha256};
 
-fn powershell(parsed: Result<Powershell<'_>, rssig::parse::Error>) {
+fn powershell(parsed: Result<Powershell<'_>, rssig_engine::parse::Error>) {
     let Ok(script) = parsed else { return };
     let _ = script.authenticode_bytes();
     script.update_digest(&mut Sha256::new());

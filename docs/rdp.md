@@ -68,7 +68,7 @@ limited to 16 MiB and 4,096 total properties, including metadata.
 
 Exactly one string `signscope` and string `signature` property are required for
 signed files. Scope names must match the pinned display-name/key/type mapping in
-`src/rdp.rs`; unknown names return `unsupported_rdp_scope`, rather than being
+`engine/src/rdp.rs`; unknown names return `unsupported_rdp_scope`, rather than being
 omitted from the signature calculation. Every scoped setting must exist once
 with the correct type, and scope must include a nonempty `Full Address`. Duplicate
 scope names and empty scope are rejected. Unknown unscoped property names are

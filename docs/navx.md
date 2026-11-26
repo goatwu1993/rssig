@@ -4,8 +4,8 @@
 `NAVX` magic. `verify_navx` selects this format explicitly for library callers.
 Binary magic takes precedence over script extensions.
 
-Library inspection is available without default features through
-`parse::Navx`. It exposes borrowed container bytes, signature bytes, and
+Library inspection is available in `rssig-engine` without default features
+through `parse::Navx`. It exposes borrowed container bytes, signature bytes, and
 `authenticode_chunks()` without authenticating them. With `verify` enabled,
 `verify_parsed_navx` reuses that parsed layout and applies full
 verification. See the [library API](library.md) for structural errors and the distinction

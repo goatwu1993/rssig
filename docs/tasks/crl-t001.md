@@ -788,7 +788,7 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   (`x509_vfy.cc:697-704`). None refuses private or link-local addresses.
   rssig's built-in `HttpCrlSource` is stricter than all three (public
   addresses, `http` only, no redirects, size and time bounds), and
-  `retrieval::check_public_http_url` gives a custom source the same check.
+  `rssig::crl::check_public_http_url` gives a custom source the same check.
   Pinned by `crl-023-fetch-source-is-asked-for-any-scheme` and
   `crl-037-fetch-builtin-source-denies-https`.
 - **Fetch limits bound one file.** Decided, diagnostics and availability: in
@@ -810,9 +810,9 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   so the partition is not set aside and its listing counts. Unit tests
   `a_listing_counts_only_on_a_positive_scope_match` and
   `unreadable_certificate_points_never_discard_a_partition` in
-  `src/trust.rs`; no committed certificate has an undecodable extension.
-- **Other review fixes without a fixture** (unit tests in `src/trust.rs`,
-  `src/retrieval.rs` and `src/retrieval/http.rs`): a CRL's complete signature
+  `engine/src/trust.rs`; no committed certificate has an undecodable extension.
+- **Other review fixes without a fixture** (unit tests in `engine/src/trust.rs`,
+  `engine/src/retrieval.rs` and `src/crl.rs`): a CRL's complete signature
   AlgorithmIdentifier must be one the webpki adapter accepts; rejected paths
   keep CRL indices and the returned error alone carries the CRL report; a
   path needing only a fresh CRL is completable; a full CRL returned by

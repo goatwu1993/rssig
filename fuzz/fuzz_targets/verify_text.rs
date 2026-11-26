@@ -3,9 +3,9 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::format::Format;
-use rssig::parse::WshKind;
-use rssig::verify::{VerifyOptions, verify, verify_as};
+use rssig_engine::format::Format;
+use rssig_engine::parse::WshKind;
+use rssig_engine::verify::{VerifyOptions, verify, verify_as};
 
 /// Fixed validation time (2027-01-15T07:59:59Z), matching the pinned test clock.
 const NOW: u64 = 1_799_999_999;

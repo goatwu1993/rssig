@@ -1,6 +1,8 @@
 # Fuzzing
 
-Coverage-guided fuzz targets live in the detached `fuzz/` crate. They need a
+Coverage-guided fuzz targets live in the detached `fuzz/` crate. They target
+the engine package (`rssig-engine`), and the application package (`rssig`)
+only for the default CRL source's URL policy (`check_url`). They need a
 nightly toolchain and [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz), so
 they are optional: `cargo test --locked`, `make lint`, and the stable build
 never compile or run them. `fuzz/` has its own `[workspace]` and lockfile.
@@ -21,6 +23,7 @@ separate work.
 | `parse_cms` | `SignedData::parse`/`inspect`, `SignerInfo`, `Attributes`, `AlgorithmIdentifier`, `TstInfo`, `ParsedTime` | `der`, `crl` |
 | `parse_pe` | `Pe::parse`, `signatures`, `authenticode_digest`, then CMS on each blob | `exe` |
 | `parse_cab_navx` | `Cab::parse`, `Navx::parse` and their digest ranges | `cab`, `navx` |
+| `inspect` | The engine's `inspect::pe`, `cms`, `cab` and `navx` reports | `exe`, `der`, `cab`, `navx` |
 | `parse_msi` | `Msi::parse`, metadata and content digest streaming | `msi`, `msp` |
 | `parse_appx` | `Appx::parse`, ZIP parts, content types, identities, `BlockMap` | `msix`, `appx`, bundles |
 | `parse_text` | `Powershell::parse`/`parse_xml`, `Wsh::parse` for each kind, `Rdp::parse` | script and `rdp` fixtures |
@@ -28,7 +31,7 @@ separate work.
 | `verify_text` | `verify_as` for each text format, plus `verify` detection | script and `rdp` fixtures |
 | `verify_trusted` | `verify` against the committed test root and CRLs, with revocation required and disabled | container, script and `rdp` fixtures |
 | `verify_logged` | `Verifier::verify` with an injected logger that formats every record, compared with `verify` | container, script and `rdp` fixtures |
-| `trust_loading` | `TrustStore::add_roots`/`add_crl`, then `verify_pe` of one fixed valid image | `der`, `crl`, `pem` |
+| `trust_loading` | `TrustStore::add_roots`/`add_crl`/`from_system_roots`, then `verify_pe` of one fixed valid image | `der`, `crl`, `pem` |
 
 `verify_binary` and `verify_text` use `VerifyOptions::integrity_only`.
 `verify_binary` repeats every format, including CAB and NAVX, with `allow_sha1`
@@ -42,8 +45,10 @@ applicability. `trust_loading` fixes one valid image (`good-pe64.exe`) and
 mutates the roots or CRLs it is verified against.
 
 All four use a fixed validation time and perform no clock, system-root,
-network, or filesystem access, so runs are reproducible. Opt-in CRL retrieval
-(`crl-fetch`) and its HTTP transport are **not** fuzzed.
+network, or filesystem access, so runs are reproducible. `verify_retrieval`
+drives the engine's retrieval through an in-memory source; the application's
+HTTP transport (`rssig::crl::HttpCrlSource`) is **not** fuzzed beyond its URL
+check (`check_url`).
 
 `fuzz/targets.txt` is the single list of targets and their seed extensions.
 The seeding script, the Makefile, and CI all read it.
@@ -86,7 +91,11 @@ one build:
 | Pull request | 60 seconds | Restored, never saved |
 | Push to `main` | 60 seconds | Restored, minimized, saved |
 | Weekly schedule | 900 seconds | Restored, minimized, saved |
-| Manual dispatch | `seconds` input, at most 1800 | Restored, minimized, saved |
+| Manual dispatch | `seconds` input, at most 16,200 divided by the number of targets (1,157 for 14): 270 minutes of fuzzing, leaving 75 of the 345-minute job for the build, cache and minimization | Restored, minimized, saved |
+
+The scheduled and push durations shrink to 16,200 seconds divided by the
+number of targets when they would exceed it, so adding targets never fails
+those runs; a larger manual `seconds` input is refused.
 
 The cached corpus accumulates inputs across runs, so each run starts from what
 earlier runs discovered instead of from the fixtures alone. Crashing inputs are
@@ -97,7 +106,7 @@ independently of a change.
 
 `make lint` (and therefore the stable Lint job) runs `make fuzz-lint`:
 `fuzz/check.sh`, then rustfmt and Clippy on the fuzz crate. Clippy compiles the
-targets, so a `rssig` API change that breaks one fails Lint without nightly.
+targets, so an `rssig-engine` or `rssig` API change that breaks one fails Lint without nightly.
 
 ## Maintenance
 

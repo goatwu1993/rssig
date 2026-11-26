@@ -1,6 +1,6 @@
 //! TRUST-T001 loading failures are configuration errors, not verification verdicts.
 use super::support::*;
-use der::Decode;
+use x509_cert::der::Decode;
 
 fn rejected(file: &str, flag: &str, fragment: &str) {
     let path = |name: &str| format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));

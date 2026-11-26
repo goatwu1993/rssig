@@ -6,7 +6,7 @@ to RFC 5280 name comparison
 ([CRL-041](../crl.md#crl-041-a-crls-issuer-name-matches-by-rfc-5280-name-comparison)).
 
 Retrieval keys the issuers it has asked about (`asked_issuers`, through
-`issuer_key` in `src/retrieval.rs`) by exact issuer bytes, and a fetched CRL
+`issuer_key` in `engine/src/retrieval.rs`) by exact issuer bytes, and a fetched CRL
 counts as an issuer's answer only by exact bytes too, while verification
 matches a CRL by the comparison. Two certificates whose issuers differ only in
 case, spacing or string type are therefore asked about separately, spending
@@ -14,7 +14,7 @@ fetch limits ([CRL-039](../crl.md#crl-039-fetch-limits-bound-one-verification))
 twice.
 
 Key the asked issuers by the prepared name (`ComparableName` in
-`src/trust/names.rs`). The answer side needs care: an answer counts as the
+`engine/src/trust/names.rs`). The answer side needs care: an answer counts as the
 issuer's only when its issuer is the certificate's byte for byte, because a
 CRL equal only under the comparison may be another CA's, which verification
 sets aside. Decide how a shared ask is credited to the second certificate, and

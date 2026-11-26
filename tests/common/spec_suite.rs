@@ -59,7 +59,7 @@ pub struct ScriptedCrl {
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScriptedFailure {
-    pub kind: rssig::domain::CrlSourceErrorKind,
+    pub kind: rssig_engine::domain::CrlSourceErrorKind,
     /// The URL the failure names; none for one about the whole request.
     pub url: Option<String>,
 }
@@ -115,7 +115,7 @@ pub struct Case {
     pub crl_responses: Option<BTreeMap<String, String>>,
     /// URLs the injected source answers with a fetch error of this kind
     /// instead of a response. Reads no file.
-    pub crl_errors: Option<BTreeMap<String, rssig::domain::CrlSourceErrorKind>>,
+    pub crl_errors: Option<BTreeMap<String, rssig_engine::domain::CrlSourceErrorKind>>,
     /// The injected source also answers a request for the certificate with
     /// this SHA-256 (lowercase hex of its DER): with one response file as a
     /// CRL without a URL, the way a source keyed by certificate or issuer

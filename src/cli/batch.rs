@@ -1,7 +1,7 @@
 //! Shared file I/O, ordered outcomes, and JSON command envelopes.
 //! Operations receive bytes and a filename hint; this layer owns no crypto policy.
-use crate::domain::{CommandReport, ErrorCode, FileFailure, Stage, VerificationError};
 use anyhow::Result;
+use rssig_engine::domain::{CommandReport, ErrorCode, FileFailure, Stage, VerificationError};
 use serde::Serialize;
 use serde_json::Value;
 use std::path::{Path, PathBuf};

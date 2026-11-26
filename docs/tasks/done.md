@@ -215,7 +215,7 @@ Verification now calls the generic function and shares byte selection with
 `Pe::authenticode_chunks`; initial gaps and overlay are hashed once. Covered
 by committed gap/overlay and certificate-range fixtures, portable cases,
 named CLI tests, and external-view bounds/unchanged-sink regressions in
-`tests/parse_core.rs`. Full locked tests, fmt, Clippy, parser-only tests, and
+`engine/tests/parse_core.rs`. Full locked tests, fmt, Clippy, parser-only tests, and
 `thumbv7em-none-eabi` no-default-features check pass on macOS; Linux runs in CI.
 Arbitrary PE layouts remain unsupported.
 
@@ -445,6 +445,6 @@ committed fixtures and injected responses, never external network services.
 
 When a revocation was another error type's source, the merged usage failure
 lost the outer error's cause messages. The fallback in
-`choose_usage_failure` (`src/rdp.rs`) now sets `causes` to the whole error
+`choose_usage_failure` (`engine/src/rdp.rs`) now sets `causes` to the whole error
 chain, as `VerificationError::from_internal` does. Covered by the unit test
 `a_revocation_that_is_another_errors_source_keeps_the_outer_causes`.

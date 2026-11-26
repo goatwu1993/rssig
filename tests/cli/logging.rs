@@ -1,6 +1,6 @@
 //! A logger injected into the in-process CLI never alters streams or results.
-use rssig::{
-    cli::{self, Host},
+use rssig::cli::{self, Host};
+use rssig_engine::{
     domain::Stage,
     log::{Level, Logger, Record},
 };
@@ -104,14 +104,16 @@ fn cli_logger_is_not_used_for_argument_errors_or_parse() {
 #[test]
 fn cli_logger_and_crl_source_combine_and_log_each_request() {
     struct Source(Vec<u8>);
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
-                Ok(rssig::retrieval::SourcedCrl::new(self.0.clone()))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |_url, _max_bytes| Ok(rssig_engine::retrieval::SourcedCrl::new(self.0.clone())),
+            ))
         }
     }
     let (input, root) = (fixture("good-crl-discovery.exe"), fixture("root.der"));

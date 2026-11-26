@@ -119,9 +119,9 @@ digests in `details`. A changed CheckSum alone still verifies.
     SizeOfHeaders (step 8) and do not describe one, while the three references
     and rssig hash it.
 - **Unit tests:** `checksum_is_excluded_but_section_data_is_not` and
-  `validates_page_hashes_and_image_integrity` in `src/tests.rs`;
+  `validates_page_hashes_and_image_integrity` in `engine/src/tests.rs`;
   `borrowed_pe_chunks_preserve_the_authenticode_digest` in
-  `tests/parse_core.rs`.
+  `engine/tests/parse_core.rs`.
 - **Note:** Microsoft's Authenticode PE document states the exclusions and the
   section order (steps 3-13), which the references follow. Its documents
   conflict on data after the last section and are silent on a gap before the
@@ -209,7 +209,7 @@ is checked by PE-001 alone.
     MIPS, and 8 K for Itanium"), as the values SectionAlignment is compared
     with.
 - **Unit tests:** `validates_page_hashes_and_image_integrity` in
-  `src/tests.rs`.
+  `engine/src/tests.rs`.
 - **Note:** SHA-1 page hashes need `--allow-sha1`; that is an `ALG-` rule. The
   owner decided the machine-type page size: Microsoft's page sizes per
   processor, relic and signify agree, AuthHashCalc agrees that the size is not

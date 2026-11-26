@@ -1,6 +1,6 @@
 //! PATH-T001: exact selected chains and typed path-check failures, with offline CRLs.
 use super::support::*;
-use rssig::domain::{ErrorCode, Stage};
+use rssig_engine::domain::{ErrorCode, Stage};
 use sha2::{Digest, Sha256};
 
 fn run(input: &str, roots: &str) -> Output {

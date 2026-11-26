@@ -21,8 +21,8 @@ checked rather than the issuer whose KeyUsage fails; add the issuer (or a
 report is attached when an intermediate is revoked (`crl-revoked-issuer`)
 or has unknown status (`crl-ca-crl-dp-user-scope-excludes-issuer`), so
 the error does not identify the affected certificate; no test asserts it.
-`details.reason` values are string literals in `src/trust.rs`, documented in
-`docs/problems.md` but not a Serde domain enum in `src/domain.rs` and not
+`details.reason` values are string literals in `engine/src/trust.rs`, documented in
+`docs/problems.md` but not a Serde domain enum in `engine/src/domain.rs` and not
 enumerated in `tests/cases.schema.json`. `details.crl` is attached with
 `CrlReport::parse(..).ok()` on the AKI, scope and unsupported-feature paths
 (null if the report parser fails) but with `?` on the nextUpdate and
