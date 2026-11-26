@@ -192,7 +192,6 @@ reviews; none permits an invalid signature to verify. Kept as decisions
   `validation_time` is the failing instant. CRL presence/freshness errors for
   a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
   evidence is CRL-T001 and CRL-T002. Both are schema decisions.
-Open follow-ups:
 
 Where each decision is pinned, in the order above:
 
@@ -210,14 +209,14 @@ Where each decision is pinned, in the order above:
 | `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
 | webpki validity errors name the leaf | none (TIME-T008) |
 | Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
-| KeyUsage precedence | none (TIME-T008); changing it is PATH-T007 |
+| KeyUsage precedence | none (PATH-T007) |
 | `lifetime_signing` defaults to `false` | none (TIME-T008); TIME-013 pins it on successful reports only |
 | Error details on "not valid at the signing time" | none (TIME-T008) |
 
 The deferred follow-ups are TIME-T005 (fractional expiry during path
 building), TIME-T006 (the `certificate_report_error` fallback), TIME-T007
 (lifetime fixtures for MSI, CAB, script and AppX), LIMIT-T007 (the repeated
-RDP path search) and TSA-T004 (shared timestamp token builders).
+RDP path search) and TEST-T016 (shared timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 

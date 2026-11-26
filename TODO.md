@@ -46,10 +46,9 @@ they pin or what they check, never after a task.
   verification with `resource_limit_exceeded`, rather than recording the
   remaining points and finishing with the evidence gathered.
 - [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
-  RDP `verify_trust` repeats the full path search, including the lifetime leaf
-  check and a 200,000-unit path-work reservation, for each accepted leaf EKU.
-  Stop after an EKU-independent failure without changing first-policy-error
-  reporting, and pin the budget effect.
+  RDP `verify_trust` repeats the full path search and its 200,000-unit
+  reservation for each accepted leaf EKU. Stop early without changing
+  first-policy-error reporting, and pin the budget effect.
 
 ### CMS
 
@@ -68,10 +67,9 @@ they pin or what they check, never after a task.
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
   Check how it is reported and whether to read it.
 - [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path (owner decision).
-  The rejection flag is shared across candidate paths, so once any candidate
-  lacked keyCertSign a final unknown-issuer failure from another path is
-  reported as `invalid_key_usage`. Fails closed. This is a decision kept in
-  TIME-T002, so changing it needs a new Decided entry and the owner's approval.
+  A keyCertSign flag shared across candidate paths reports a later
+  unknown-issuer failure as `invalid_key_usage`. Kept in TIME-T002 with no
+  entry: add the PATH entry, and changing it needs the owner's approval.
 
 ### TRUST
 
@@ -86,17 +84,14 @@ they pin or what they check, never after a task.
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
 - [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
 - [ ] **TIME-T005** fix: Check fractional expiry during path building.
-  `check_fractional_validity` runs after path selection. With a fractional
-  timestamp and two same-subject/key issuers, webpki can select the one whose
-  notAfter equals the timestamp's whole second, and the signature is rejected
-  as certificate_expired although the other issuer is valid. Move the check
-  into path building, as the lifetime signing-time check does, for every
-  timestamped signer and TSA; add a paired rollover fixture.
+  `check_fractional_validity` runs after path selection, so with two same-key
+  issuers webpki can pick the one expiring at the timestamp's whole second and
+  reject a valid signature. Check it in path building for every timestamped
+  signer and TSA, with a paired rollover fixture.
 - [ ] **TIME-T006** fix: Reach or type the `certificate_report_error` fallback.
-  When the certificate report for a late lifetime certificate cannot be built,
-  the error carries a free-text `certificate_report_error` detail instead of
-  `certificate`. No fixture reaches it; it needs a certificate that parses but
-  cannot be reported, or a typed detail.
+  A late lifetime certificate whose report cannot be built gets a free-text
+  `certificate_report_error` detail instead of `certificate`; no fixture
+  reaches it.
 
 ### CRL
 
@@ -276,6 +271,10 @@ they pin or what they check, never after a task.
   `N + point_forms().len()` with a hand-kept list of variant files, so a
   fixture added to one list and not the other is skipped without a failure.
   Found in the review of PR #86.
+- [ ] **TEST-T016** test: Share the RFC 3161/PKCS#9 token builders across test modules.
+  Share them across `engine/src/tests.rs` and the TSA-T001, TIME-T001 and RDP
+  fixture modules without changing committed bytes; keep per-task regeneration
+  commands (as TSA-T001 does) consistent with `regenerate_cli_fixtures`.
 
 ### BUILD
 
@@ -328,11 +327,8 @@ they pin or what they check, never after a task.
   signers use the same trust call without one.
 - [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
-  maps each kept decision to its entry; seven have none: the leaf notBefore
-  check before path building, hiding a wrongly signed issuer on another path,
-  equal-rank first-encountered reporting, webpki validity errors naming the
-  leaf, the shared keyCertSign flag, the `lifetime_signing` default and the
-  error details on "not valid at the signing time".
+  maps each to its entry; the `TIME-` ones marked none are this task, the
+  keyCertSign one is PATH-T007.
 
 ### PATH
 
@@ -350,10 +346,6 @@ they pin or what they check, never after a task.
 - [x] **TSA-T002** refactor: Index timestamp decisions as `TSA-NNN`. Done ([PR #70](https://github.com/goatwu1993/rssig/pull/70)); [timestamp decisions](docs/tsa.md).
 - [ ] **TSA-T003** refactor: Attach the claimed `TSA-` cases. Name existing
   entries for the cases claimed under `attach`.
-- [ ] **TSA-T004** test: Share the RFC 3161/PKCS#9 token builders across test modules.
-  Share them across `engine/src/tests.rs` and the TSA-T001, TIME-T001 and RDP
-  fixture modules without changing committed bytes; keep per-task regeneration
-  commands (as TSA-T001 does) consistent with `regenerate_cli_fixtures`.
 
 ### CMS
 
