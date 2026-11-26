@@ -14,9 +14,9 @@ test root's CRLs, `regenerate_path_fixtures` for the PATH-T001 chain), and the
 names do not say which: `crl-root-*.crl` is the rssig test root,
 `crl-path-root-*` and `crl-root-no-crl-sign.der` the PATH-T001 root. 57
 PATH-T001 manifest entries have no `generator` field, so tests select those
-fixtures by filename. The single-URI distribution-point encoding is written
-by hand in three builders (`certificate_paths.rs`, `crl_applicability.rs`,
-`crl_fetch_fixtures.rs`), and the `ski` helper in `crl_applicability.rs`
-compares the OID as a string. `crl-ca-crl-sign-fallback` relies on
+fixtures by filename. `crl-ca-crl-sign-fallback` relies on
 embedded-certificate order to exercise fallback and does not assert that the
-first candidate was tried. Keep committed bytes unchanged when consolidating.
+first candidate was tried. Done: the single-URI distribution-point encoding and the
+subjectKeyIdentifier OID comparison are shared helpers in `src/tests.rs`
+(`single_uri_point`, `SKI_OID`). Keep committed bytes unchanged when
+consolidating.

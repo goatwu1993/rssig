@@ -38,11 +38,8 @@ pub(super) fn write(dir: &std::path::Path) {
             .push(x509_cert::ext::Extension {
                 extn_id: "2.5.29.31".parse().unwrap(),
                 critical: false,
-                extn_value: ::der::asn1::OctetString::new(seq(&[seq(&[tlv(
-                    0xa0,
-                    &tlv(0xa0, &tlv(0x86, url.as_bytes())),
-                )])]))
-                .unwrap(),
+                extn_value: ::der::asn1::OctetString::new(seq(&[seq(&[single_uri_point(url)])]))
+                    .unwrap(),
             });
         let signature: Signature = original
             .root_key

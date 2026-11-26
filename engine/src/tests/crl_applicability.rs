@@ -158,8 +158,7 @@ fn aki_value(id: &[u8]) -> Vec<u8> {
 
 /// IDP whose distributionPoint fullName is one URI.
 pub(super) fn idp_named_point(uri: &str) -> Vec<u8> {
-    let general_name = tlv(0x86, uri.as_bytes());
-    seq(&[tlv(0xa0, &tlv(0xa0, &general_name))])
+    seq(&[single_uri_point(uri)])
 }
 
 /// AuthorityKeyIdentifier [1] authorityCertIssuer (directoryName) and
@@ -186,7 +185,7 @@ fn root_with_other_ski() -> Certificate {
         .as_mut()
         .unwrap()
         .iter_mut()
-        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .find(|e| e.extn_id == SKI_OID)
         .unwrap();
     extension.extn_value = OctetString::new(tlv(4, &[0xbb; 20])).unwrap();
     let signature: p256::ecdsa::Signature =
@@ -204,11 +203,11 @@ fn root_with_ski(extension_value: Option<Vec<u8>>) -> Certificate {
     let mut cert = id.root.clone();
     let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
     match extension_value {
-        None => extensions.retain(|e| e.extn_id.to_string() != "2.5.29.14"),
+        None => extensions.retain(|e| e.extn_id != SKI_OID),
         Some(value) => {
             extensions
                 .iter_mut()
-                .find(|e| e.extn_id.to_string() == "2.5.29.14")
+                .find(|e| e.extn_id == SKI_OID)
                 .unwrap()
                 .extn_value = OctetString::new(value).unwrap();
         }
@@ -227,7 +226,7 @@ fn ski(cert: &Certificate) -> Vec<u8> {
         .as_ref()
         .unwrap()
         .iter()
-        .find(|e| e.extn_id.to_string() == "2.5.29.14")
+        .find(|e| e.extn_id == SKI_OID)
         .unwrap();
     x509_cert::ext::pkix::SubjectKeyIdentifier::from_der(ext.extn_value.as_bytes())
         .unwrap()
