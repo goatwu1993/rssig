@@ -4,8 +4,8 @@
 use rssig_engine::{
     domain::{CrlSourceErrorKind, ErrorCode, Stage, VerificationError},
     retrieval::{
-        CrlRequest, CrlResponse, CrlSource, CrlSourceError, MAX_CRL_BYTES, SourcedCrl, fetch_each,
-        limit,
+        CrlRequest, CrlResponse, CrlSource, CrlSourceError, MAX_CRL_BYTES, MAX_RESPONSE_ENTRIES,
+        SourcedCrl, fetch_each, limit,
     },
 };
 use std::{
@@ -183,8 +183,11 @@ struct Call {
     counted: bool,
     /// The points it fetched, at most [`MAX_POINTS_PER_REQUEST`].
     fetched: usize,
-    /// Its distinct points not answered before it, reported as `requested`.
+    /// Its distinct points with no outcome kept before it, reported as
+    /// `requested`.
     requested: usize,
+    /// The bodies it returned, at most [`MAX_RESPONSE_ENTRIES`].
+    bodies: usize,
 }
 
 /// Bounded public HTTP transport. HTTPS/LDAP, proxies, cookies, compressed and
@@ -451,32 +454,72 @@ impl CrlSource for HttpCrlSource {
         // and only a point that would be fetched counts toward the 16 of this
         // call and, at the first, the request cap. `requested` in a
         // `crl_request_points` failure counts the distinct points of the call
-        // not answered before it.
-        let distinct: std::collections::BTreeSet<String> = request
+        // with no outcome kept before it. Each point's key is computed once.
+        let keys: Vec<String> = request
             .distribution_points
             .iter()
             .map(|url| url_key(url))
-            .filter(|key| !self.answered.contains_key(key))
+            .collect();
+        let distinct: std::collections::BTreeSet<&String> = keys
+            .iter()
+            .filter(|key| !self.answered.contains_key(*key) && !self.too_big.contains_key(*key))
             .collect();
         self.call = Call {
             requested: distinct.len(),
             ..Call::default()
         };
+        // `fetch_each` reaches the points in order and skips none.
+        let mut keys = keys.into_iter();
         Ok(fetch_each(request, |url, max_bytes| {
-            self.fetch_cached(url, max_bytes)
+            let key = keys.next().unwrap_or_else(|| url_key(url));
+            self.fetch_keyed(url, key, max_bytes)
         }))
     }
 }
 
 impl HttpCrlSource {
-    /// [`Self::fetch_one`] with this verification's memory of each URL's
-    /// outcome (normalized): a repeat returns the same body or failure, under
-    /// the spelling it was offered. Not kept: an abort (the engine asks
-    /// nothing more after it); a failure about the byte allowance this request
-    /// had is kept with that allowance, so a request with more room fetches
-    /// again and one with no more gets the same failure.
+    /// [`Self::fetch_keyed`] for a URL whose key is not computed yet.
+    #[cfg(test)]
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
-        let key = url_key(url);
+        self.fetch_keyed(url, url_key(url), max_bytes)
+    }
+    /// [`Self::fetch_one`] with this verification's memory of each URL's
+    /// outcome, by `key` ([`url_key`]): a repeat returns the same body or
+    /// failure, under the spelling it was offered. Not kept: an abort (the
+    /// engine asks nothing more after it); a failure about the byte allowance
+    /// a request had is kept with that allowance, so a request with more room
+    /// than that and than the size seen fetches again, and any other gets the
+    /// same failure. A response holds at most `MAX_RESPONSE_ENTRIES` bodies.
+    fn fetch_keyed(
+        &mut self,
+        url: &str,
+        key: String,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
+        // A response carries no more bodies than the engine accepts
+        // (`MAX_RESPONSE_ENTRIES`), however many points are answered from
+        // memory: the rest are not tried, so the engine keeps the response.
+        if self.call.bodies >= MAX_RESPONSE_ENTRIES {
+            return Err(CrlSourceError::new(
+                CrlSourceErrorKind::Denied,
+                "not tried: the response already holds the most CRL bodies the engine accepts",
+            )
+            .with_url(url.to_owned())
+            .detail("resource", "crl_response_entries")
+            .detail("limit", MAX_RESPONSE_ENTRIES));
+        }
+        let outcome = self.answer(url, key, max_bytes);
+        if outcome.is_ok() {
+            self.call.bodies += 1;
+        }
+        outcome
+    }
+    fn answer(
+        &mut self,
+        url: &str,
+        key: String,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
         if let Some(known) = self.answered.get(&key) {
             // A body over this request's room is refused as a fresh fetch
             // refuses it, without copying it: a replay counts against the
@@ -499,13 +542,17 @@ impl HttpCrlSource {
             };
         }
         let allowance = max_bytes.min(MAX_CRL_BYTES);
-        if let Some((failed_under, e)) = self.too_big.get(&key)
-            && allowance <= *failed_under
-        {
-            // As this request's room, not the earlier one's: the size seen
-            // is at least what was read plus what was refused.
+        // The size seen is at least what was read plus what was refused: a
+        // request with no more room than that fails the same way.
+        let seen_size = |e: &CrlSourceError| {
             let seen = |field: &str| e.details.get(field).and_then(|v| v.as_u64()).unwrap_or(0);
-            let size = seen("used").saturating_add(seen("requested")) as usize;
+            seen("used").saturating_add(seen("requested")) as usize
+        };
+        if let Some((failed_under, e)) = self.too_big.get(&key)
+            && (allowance <= *failed_under || allowance < seen_size(e))
+        {
+            // As this request's room, not the earlier one's.
+            let size = seen_size(e);
             let kind = e.kind;
             let rebuilt = limit("crl_response_bytes", allowance, 0, size);
             let mut e = CrlSourceError::new(kind, rebuilt.message).with_url(url.to_owned());
@@ -1117,13 +1164,29 @@ mod tests {
     }
     #[test]
     fn a_response_carries_no_more_bodies_than_the_engine_accepts() {
-        // Replayed points are not bounded by the 16-point limit: what bounds
-        // the bodies of one response is that each comes from a distinct URL
-        // (the engine offers each point once), and this source fetches at
-        // most MAX_SOURCE_URLS of them. The engine refuses a response with
-        // more than MAX_RESPONSE_ENTRIES bodies, so the first must not exceed
-        // the second.
-        const { assert!(MAX_SOURCE_URLS <= rssig_engine::retrieval::MAX_RESPONSE_ENTRIES) };
+        // Replayed points are outside the 16-point limit, so the source
+        // bounds the bodies of one response itself: the engine refuses a
+        // response with more than MAX_RESPONSE_ENTRIES of them.
+        let mut source = HttpCrlSource::new();
+        let points: Vec<String> = (0..MAX_RESPONSE_ENTRIES + 6)
+            .map(|i| format!("http://crl.example.com/{i}.crl"))
+            .collect();
+        for url in &points {
+            source
+                .answered
+                .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 1]).with_url(url)));
+        }
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert_eq!(response.crls.len(), MAX_RESPONSE_ENTRIES);
+        assert_eq!(response.failures.len(), 6);
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.details["resource"] == "crl_response_entries")
+        );
     }
     #[test]
     fn a_cached_body_over_a_later_requests_room_is_refused_as_a_fetch_is() {
@@ -1166,10 +1229,14 @@ mod tests {
     fn a_kept_allowance_failure_reports_the_room_of_the_request_it_answers() {
         let mut source = HttpCrlSource::new();
         let url = "http://crl.example.com/z.crl";
-        let e = limit("crl_response_bytes", 6, 0, 7);
+        let e = limit("crl_response_bytes", 4, 0, 7);
         let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
         error.details = e.details;
-        source.too_big.insert(url_key(url), (6, error));
+        source.too_big.insert(url_key(url), (4, error));
+        // More room than before, but less than the size seen: no fetch.
+        let more = source.fetch_cached(url, 6).unwrap_err();
+        assert_eq!(more.details["limit"], 6);
+        assert_eq!(source.requests, 0);
         let again = source.fetch_cached(url, 2).unwrap_err();
         assert_eq!(again.details["limit"], 2);
         assert_eq!(again.details["used"], 0);
