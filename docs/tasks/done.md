@@ -207,16 +207,21 @@ Where each decision is pinned, in the order above:
 | Revocation at the validation time only | [TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) |
 | Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) |
 | `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
-| webpki validity errors name the leaf | none (TIME-T008) |
+| webpki validity errors name the leaf | not pinned by TIME-013; extend it (TIME-T008) |
 | Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
 | KeyUsage precedence | none (PATH-T007) |
-| `lifetime_signing` defaults to `false` | none (TIME-T008); TIME-013 pins it on successful reports only |
-| Error details on "not valid at the signing time" | none (TIME-T008) |
+| `lifetime_signing` defaults to `false` | TIME-013 pins it on successful reports only; extend it (TIME-T008) |
+| Error details on "not valid at the signing time", and CRL errors without `lifetime_signing` | none; extend TIME-013 (TIME-T008) |
 
-The deferred follow-ups are TIME-T005 (fractional expiry during path
-building), TIME-T006 (the `certificate_report_error` fallback), TIME-T007
-(lifetime fixtures for the formats without one), LIMIT-T007 (the repeated
-RDP path search) and TEST-T016 (shared timestamp token builders).
+The lifetime-signing rules set the schema and detail rows above, so by the
+[Which index](../decisions.md#which-index) rule they are `TIME-` questions.
+
+Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
+`certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
+formats without one), TIME-T008 (the missing `TIME-` entries), PATH-T007 (the
+keyCertSign flag, owner decision), PATH-T008 (a root re-issued after the
+signing time), LIMIT-T007 (the repeated RDP path search) and TEST-T016
+(shared timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 
@@ -246,7 +251,8 @@ notes follow.
 Deliberately kept in PR #44. When no supplied CRL applies, revocation_unknown
 is returned before path building, so it hides untrusted_root and other chain
 errors. This extends the existing empty-CRL-set precedence. Revisit together
-with TIME-T002's error-precedence notes if consumers need the chain error first.
+with TIME-012 and TIME-T008 (the leaf notBefore check before path building) if
+consumers need the chain error first.
 
 ## CRL-T009 fix: Bind listed-serial revocation to the verified path
 

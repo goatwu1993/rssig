@@ -329,8 +329,8 @@ they pin or what they check, never after a task.
   CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
 - [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
-  maps each to its entry; the `TIME-` ones marked none are this task, the
-  keyCertSign one is PATH-T007.
+  maps each to its entry: add the `TIME-` entries marked none and extend
+  TIME-013 where marked; the keyCertSign one is PATH-T007.
 
 ### PATH
 
