@@ -660,7 +660,7 @@ new paths:
 |---|---|
 | `rssig::{parse, verify, domain, format, log, retrieval}` and the root re-exports (`rssig::TrustStore`, `rssig::verify_pe`, ...) | `rssig_engine::...` (or `rssig::engine::...`) |
 | `rssig::retrieval::{HttpCrlSource, MAX_SOURCE_REQUESTS, MAX_SOURCE_URLS, check_public_http_url}` | `rssig::crl::...` |
-| `rssig::retrieval::MAX_REQUESTS` (16, used both for a certificate's listed points and the HTTP source's request cap) | `rssig_engine::retrieval::MAX_LISTED_URLS` for the listed points; `rssig::crl::MAX_HTTP_REQUESTS` and `MAX_NETWORK_BYTES` for the HTTP source's own caps |
+| `rssig::retrieval::MAX_REQUESTS` (16, used both for a certificate's listed points and the HTTP source's request cap) | `rssig_engine::retrieval::MAX_LISTED_URLS` for the points the strict `crl_distribution_points` accepts (the engine offers a source every listed point, CRL-024); `rssig::crl::MAX_HTTP_REQUESTS`, `MAX_NETWORK_BYTES` and `MAX_POINTS_PER_REQUEST` for the HTTP source's own caps |
 | `TrustStore::from_system()`, `from_system_typed()` | `rssig::roots::system_roots()` |
 | `TrustStore::add_roots_typed`, `add_crl_typed` | `add_roots`, `add_crl` (removed aliases) |
 | none (CLI-internal inspection) | `rssig_engine::inspect::{pe, cms, cab, navx}` |

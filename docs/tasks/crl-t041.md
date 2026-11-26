@@ -1,4 +1,4 @@
-# CRL-T041: Move the per-issuer request dedup out of the engine
+# CRL-T041: Move the engine's reuse of earlier answers to the source
 
 Found while reviewing CRL-T039, which moved the request and distinct-URL totals
 to the `CrlSource` implementations ([CRL-039](../crl.md#crl-039-fetch-limits-bound-one-verification)).
@@ -52,3 +52,29 @@ certificate's points are recorded against it before the skip.
   charge a call with no points (and keeps
   `the_built_in_source_aborts_after_its_request_cap_until_a_new_verification`
   passing for calls with points).
+
+## Also: the per-URL cache
+
+The engine also remembers each offered URL (`Retrieval::asked`, with
+`recorded` and `in_flight`): a URL already offered for an earlier certificate
+is left out of the next request (`CrlRequest::distribution_points` is "without
+those already asked about"), and the failure it yielded is recorded again for
+the later certificate. That is a cache of fetches, so by the same boundary it is
+the source's (OpenSSL's verifier keeps none). It is also the engine's largest
+per-point state, so it is what CRL-T043 measured (about 0.7 KB per point after
+the compact outcome).
+
+- The engine offers every listed point of every selected certificate, without
+  leaving out any earlier one, and records what the source returns for it,
+  bounded by the report cap (CRL-024).
+- `HttpCrlSource` keeps each URL's outcome for one verification, so a repeat
+  costs no request and no distinct-URL slot and returns the same failure.
+- What stays in the engine is reading an answer: the unused points of an
+  answer by certificate (CRL-034) and the failure a source reports for a URL
+  that is not one of the request's points. Check each against the new shape.
+- No decision entry pins the per-URL skip by itself: it is part of the
+  request contract in the rustdoc of `CrlRequest::distribution_points` and in
+  `docs/crl-retrieval.md` (step 2 and the `CrlSource` description). CRL-033
+  and CRL-034 are the nearest entries; audit every index before changing one
+  (AGENTS.md, "Pinned expectations" 7).
+- Needs the owner's approval for any Decided entry changed.

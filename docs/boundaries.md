@@ -44,7 +44,9 @@ differs from the certificate's only that way is not matched, and the status is
 Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to
 a source (CRL-039): the built-in source caps its own at 64 requests and 64 distinct URLs per
-verification, and a custom source owns its counts. AIA fetching, HTTPS retrieval, OCSP,
+verification, and tries the first 16 points of a certificate per request, denying the rest. A custom source owns its counts. The engine offers a source
+every listed URI and keeps 16 failure entries per certificate in its report
+(CRL-024). AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 A PE certificate table may hold only revision 2.0 PKCS#7 WIN_CERTIFICATE

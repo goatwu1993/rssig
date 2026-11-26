@@ -29,6 +29,12 @@ pub const MAX_SOURCE_REQUESTS: usize = 64;
 /// engine keeps no such total (CRL-039): this source does, and reports the
 /// first one past it as an `Abort` with `details.resource` `crl_source_urls`.
 pub const MAX_SOURCE_URLS: usize = 64;
+/// Points of one certificate that this source tries per request: the first
+/// ones listed. The others are reported as `Denied` with `details.resource`
+/// `crl_request_points`, spend no request and no distinct-URL slot, and so
+/// cannot end the verification for the certificates after it (CRL-024: the
+/// engine offers every point, and a source decides how many it tries).
+pub const MAX_POINTS_PER_REQUEST: usize = 16;
 /// HTTP requests per verification, redirects included. This source's own
 /// fetch policy (CRL-039), reported past it as an `Abort` with
 /// `details.resource` `crl_http_requests`.
@@ -379,9 +385,30 @@ impl CrlSource for HttpCrlSource {
             return Err(source_error);
         }
         self.source_requests += 1;
-        Ok(fetch_each(request, |url, max_bytes| {
+        let points = request.distribution_points;
+        let (tried, left) = points.split_at(points.len().min(MAX_POINTS_PER_REQUEST));
+        let tried_request = CrlRequest::new(
+            request.certificate,
+            request.issuer,
+            tried,
+            request.max_bytes,
+        );
+        let mut response = fetch_each(&tried_request, |url, max_bytes| {
             self.fetch_one(url, max_bytes)
-        }))
+        });
+        for url in left {
+            response.failures.push(
+                CrlSourceError::new(
+                    CrlSourceErrorKind::Denied,
+                    "not tried: the built-in source tries at most 16 points per request",
+                )
+                .with_url(url.clone())
+                .detail("resource", "crl_request_points")
+                .detail("limit", MAX_POINTS_PER_REQUEST)
+                .detail("requested", points.len()),
+            );
+        }
+        Ok(response)
     }
 }
 
@@ -846,6 +873,39 @@ mod tests {
         assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Abort);
         assert_eq!(response.failures[0].message, CLOSED_AFTER_DNS_TIMEOUT);
         assert_eq!(source.requests, 0);
+    }
+    #[test]
+    fn points_past_the_per_request_limit_are_denied_without_spending_the_allowances() {
+        // CRL-024: a certificate listing 20 points tries 16; the other 4 are
+        // denied and cost no request and no distinct-URL slot, so the
+        // verification goes on. Every point is refused by policy here, so
+        // no network is used.
+        let mut source = HttpCrlSource::default();
+        let points: Vec<String> = (0..20)
+            .map(|i| format!("http://127.0.0.1/p-{i}.crl"))
+            .collect();
+        let request = CrlRequest::new(&[], &[], &points, 1024);
+        let response = source.crls(&request).unwrap();
+        assert_eq!(response.failures.len(), 20);
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.kind == CrlSourceErrorKind::Denied)
+        );
+        let skipped: Vec<_> = response
+            .failures
+            .iter()
+            .filter(|f| f.details.get("resource") == Some(&"crl_request_points".into()))
+            .filter_map(|f| f.url.as_deref())
+            .collect();
+        assert_eq!(skipped, &points[MAX_POINTS_PER_REQUEST..]);
+        assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
+        assert_eq!(source.requests, 0);
+        // The next certificate is still asked.
+        let next = CrlRequest::new(&[], &[], &points[..1], 1024);
+        let response = source.crls(&next).unwrap();
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Denied);
     }
     #[test]
     fn a_new_verification_restores_a_sources_allowances_but_a_dns_timeout_closes_it_for_good() {

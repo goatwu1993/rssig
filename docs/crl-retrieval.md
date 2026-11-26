@@ -152,15 +152,16 @@ page links to them instead of restating them.
 Two kinds of error, and nothing in between:
 
 - **The engine's own limits end the run**: CRL bodies and
-  failures in one response (64, `MAX_RESPONSE_ENTRIES`), retained CRLs,
+  failures in one response (64, `MAX_RESPONSE_ENTRIES`, beside one per point offered), retained CRLs,
   combined bytes, and the LIMIT-T002 work budget.
 - **Every other error about one listed point is no evidence from that point**:
-  a URI over 2,048 bytes (`crl_url_bytes`), the URIs past a certificate's
-  first 16 (one `crl_urls` entry; the first 16 still go to the source), as
-  OpenSSL and Bouncy Castle never fail a chain over one certificate's points;
-  it is not discovered (reasons, cRLIssuer, a relative or non-URI name; at
-  most 16 such entries are kept per certificate, and one more counts the
-  rest in `details.omitted`), the
+  a URI over 2,048 bytes (`crl_url_bytes`); as OpenSSL and Bouncy Castle never
+  fail a chain over one certificate's points, every other listed URI goes to
+  the source, however many, and the report keeps 16 entries about points and 16
+  about none per certificate (a source's first abort is always kept), counting
+  the rest in one `resource_limit_exceeded` entry each (`crl_failure_entries`,
+  `details.omitted`); it is not discovered (reasons,
+  cRLIssuer, a relative or non-URI name), the
   certificate's cRLDistributionPoints is malformed (webpki skips it offline),
   the URI has control characters, whitespace or credentials, or is not an
   absolute URL so that it cannot be screened (reported with its own message;
@@ -316,9 +317,8 @@ limit on how much to fetch, how often or for how long. A source reports a limit
 it reaches as `abort` with `details.resource`, and the engine reacts to the
 kind, never to the number. A new retrieval limit therefore goes in
 `HttpCrlSource` and in the rustdoc a custom source reads, not in `Retrieval`.
-The remaining engine rules that OpenSSL has no equivalent for are tracked as
-CRL-T040 (the 16 points a certificate offers) and CRL-T041 (the per-issuer
-request skip).
+The remaining engine rule that OpenSSL has no equivalent for is tracked as
+CRL-T041 (the per-issuer request skip).
 
 ## Built-in HTTP policy
 
@@ -336,12 +336,14 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
 | Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
-| Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
+| Response entries | At most 64 CRL bodies, and bodies and failures together at most 64 plus one for each point the request offered, in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
 | Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
+
+The engine offers a source every listed point (CRL-024), and the built-in source tries the first 16 per request (`MAX_POINTS_PER_REQUEST`): the others are `Denied` with `details.resource` `crl_request_points`, cost no HTTP request and no distinct-URL slot, so one certificate cannot spend the allowances the others need.
 
 PEM responses can contain multiple CRLs. After each response is loaded, the
 combined retained count is checked after exact-DER deduplication and before
