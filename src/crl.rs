@@ -491,19 +491,24 @@ impl CrlSource for HttpCrlSource {
             .map(|url| (url.as_str(), url_key(url)))
             .collect();
         self.call = Call::default();
-        // Past the request cap the first point that would be fetched aborts
-        // and `fetch_each` stops there, so the points this verification has
-        // kept outcomes for are answered first: their known outcome, not
+        // Once any allowance of this source is spent, the first point that
+        // would be fetched aborts and `fetch_each` stops there, so the points
+        // answered from memory are answered first: their known outcome, not
         // "not tried", is what the report shows. In listed order otherwise.
         let reordered;
-        let request = if self.source_requests >= MAX_SOURCE_REQUESTS {
+        let request = if self.spent() {
+            let room = request.max_bytes.min(MAX_CRL_BYTES);
             let (known, fresh): (Vec<String>, Vec<String>) = request
                 .distribution_points
                 .iter()
                 .cloned()
                 .partition(|url| {
                     let key = &keys[url.as_str()];
-                    self.answered.contains_key(key) || self.too_big.contains_key(key)
+                    self.answered.contains_key(key)
+                        || self
+                            .too_big
+                            .get(key)
+                            .is_some_and(|(under, e)| room <= *under || room < seen_size(e))
                 });
             reordered = known.into_iter().chain(fresh).collect::<Vec<_>>();
             &CrlRequest::new(
@@ -532,6 +537,17 @@ impl CrlSource for HttpCrlSource {
 }
 
 impl HttpCrlSource {
+    /// Whether a point this source would fetch now aborts: an allowance is
+    /// spent (requests, distinct URLs, HTTP requests, network bytes or time)
+    /// or a DNS timeout closed it.
+    fn spent(&self) -> bool {
+        self.poisoned
+            || self.source_requests >= MAX_SOURCE_REQUESTS
+            || self.urls.len() >= MAX_SOURCE_URLS
+            || self.requests >= MAX_HTTP_REQUESTS
+            || self.bytes >= MAX_NETWORK_BYTES
+            || self.started.is_some() && self.remaining().is_err()
+    }
     /// [`Self::fetch_keyed`] for a URL whose key is not computed yet.
     #[cfg(test)]
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
@@ -1114,6 +1130,23 @@ mod tests {
         // answered with it, before the abort.
         let mixed = vec![points[0].clone(), point(0)[0].clone()];
         let response = source
+            .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
+            .unwrap();
+        let kinds: Vec<_> = response.failures.iter().map(|f| f.kind).collect();
+        assert_eq!(
+            kinds,
+            [CrlSourceErrorKind::Denied, CrlSourceErrorKind::Abort]
+        );
+        // So it is once a DNS timeout closed the source.
+        let mut closed = HttpCrlSource {
+            poisoned: true,
+            ..HttpCrlSource::new()
+        };
+        closed.answered.insert(
+            url_key(&point(0)[0]),
+            Err(CrlSourceError::new(CrlSourceErrorKind::Denied, "kept")),
+        );
+        let response = closed
             .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
             .unwrap();
         let kinds: Vec<_> = response.failures.iter().map(|f| f.kind).collect();
