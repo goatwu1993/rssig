@@ -467,10 +467,15 @@ impl crate::verify::Verifier<'_> {
 struct Retrieval<'b, 'l> {
     store: TrustStore,
     report: CrlRetrievalReport,
-    /// What decoding each body that named a URL showed, by SHA-256: nothing
-    /// to report, or the rejection. Bounded by the bodies a verification may
-    /// receive (each certificate's response is bounded).
+    /// What decoding each retrieved body showed, by SHA-256: the rejection,
+    /// or that it loaded, with the issuer names of its CRLs when it named no
+    /// URL (an answer by certificate). Bounded by the bodies a verification
+    /// may receive (each certificate's response is bounded).
     decoded: BTreeMap<Vec<u8>, Decoded>,
+    /// The SHA-256 of each retrieved body that is exactly one CRL the store
+    /// holds, by that CRL's index: a body equal to it (a cheap comparison)
+    /// reuses the digest and is not hashed or charged again.
+    body_digests: BTreeMap<usize, Vec<u8>>,
     /// The retained-byte cap, [`MAX_TOTAL_BYTES`] outside tests.
     max_total: usize,
     /// A source just answered by certificate with a new full CRL of the
@@ -510,6 +515,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             store: base.clone(),
             report: CrlRetrievalReport::default(),
             decoded: BTreeMap::new(),
+            body_digests: BTreeMap::new(),
             max_total: MAX_TOTAL_BYTES,
             reverify: false,
             aborted: false,
@@ -1005,9 +1011,20 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             return Ok((None, false));
         }
         *total += len;
-        // Every body is hashed for the report.
-        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
-        let digest = crate::crypto::Hash::Sha256.digest(&crl.bytes);
+        // Every body is hashed for the report, except one that is exactly a
+        // CRL the store holds from an earlier body, whose digest is reused.
+        let held = self
+            .store
+            .crl_index(&crl.bytes)
+            .and_then(|index| self.body_digests.get(&index))
+            .cloned();
+        let digest = match held {
+            Some(digest) => digest,
+            None => {
+                self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
+                crate::crypto::Hash::Sha256.digest(&crl.bytes)
+            }
+        };
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
             final_url,
@@ -1067,6 +1084,9 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             self.decoded.insert(digest, Decoded::Rejected(e.clone()));
             self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
+        }
+        if let Some(index) = self.store.crl_index(&crl.bytes) {
+            self.body_digests.insert(index, digest.clone());
         }
         self.decoded.insert(
             digest,
@@ -2263,12 +2283,15 @@ mod tests {
         assert!(retained > store.encoded_len());
         let decoded = |budget: &Budget| budget.decoded_bytes.used();
         let after_first = decoded(&budget);
+        let hashed_first = budget.hash_bytes.used();
         for i in 0..64 {
             assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut Cached).unwrap());
         }
         assert_eq!(state.store.encoded_len(), retained);
-        // The store already holds the exact DER: nothing is decoded again.
+        // The store already holds the exact DER: nothing is decoded or
+        // hashed again.
         assert_eq!(decoded(&budget), after_first);
+        assert_eq!(budget.hash_bytes.used(), hashed_first);
         assert_eq!(state.report.artifacts.len(), 65);
         assert!(
             state.report.failures.is_empty(),

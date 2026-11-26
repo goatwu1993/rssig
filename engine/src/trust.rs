@@ -48,6 +48,11 @@ impl TrustStore {
     pub(crate) fn has_crl(&self, der: &[u8]) -> bool {
         self.crls.iter().any(|crl| crl == der)
     }
+    /// Where this exact CRL (DER) is among the loaded ones.
+    #[cfg(feature = "retrieval")]
+    pub(crate) fn crl_index(&self, der: &[u8]) -> Option<usize> {
+        self.crls.iter().position(|crl| crl == der)
+    }
     /// The number of configured trust anchors.
     pub fn root_count(&self) -> usize {
         self.roots.len()

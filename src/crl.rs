@@ -183,9 +183,9 @@ struct Call {
     counted: bool,
     /// The points it fetched, at most [`MAX_POINTS_PER_REQUEST`].
     fetched: usize,
-    /// Its distinct points with no outcome kept before it, reported as
-    /// `requested`.
-    requested: usize,
+    /// Its distinct points it would fetch (not answered from memory),
+    /// reported as `requested`.
+    reaching: std::collections::BTreeSet<String>,
     /// The bodies it returned, at most [`MAX_RESPONSE_ENTRIES`].
     bodies: usize,
 }
@@ -455,25 +455,24 @@ impl CrlSource for HttpCrlSource {
         // call and, at the first, the request cap. `requested` in a
         // `crl_request_points` failure counts the distinct points of the call
         // with no outcome kept before it. Each point's key is computed once.
-        let keys: Vec<String> = request
+        let keys: std::collections::BTreeMap<&str, String> = request
             .distribution_points
             .iter()
-            .map(|url| url_key(url))
+            .map(|url| (url.as_str(), url_key(url)))
             .collect();
-        let distinct: std::collections::BTreeSet<&String> = keys
-            .iter()
-            .filter(|key| !self.answered.contains_key(*key) && !self.too_big.contains_key(*key))
-            .collect();
-        self.call = Call {
-            requested: distinct.len(),
-            ..Call::default()
-        };
-        // `fetch_each` reaches the points in order and skips none.
-        let mut keys = keys.into_iter();
-        Ok(fetch_each(request, |url, max_bytes| {
-            let key = keys.next().unwrap_or_else(|| url_key(url));
+        self.call = Call::default();
+        let mut response = fetch_each(request, |url, max_bytes| {
+            let key = keys.get(url).cloned().unwrap_or_else(|| url_key(url));
             self.fetch_keyed(url, key, max_bytes)
-        }))
+        });
+        // Known only once every point was reached.
+        let requested = self.call.reaching.len();
+        for failure in &mut response.failures {
+            if failure.details.get("resource") == Some(&"crl_request_points".into()) {
+                failure.details.insert("requested".into(), requested.into());
+            }
+        }
+        Ok(response)
     }
 }
 
@@ -561,6 +560,7 @@ impl HttpCrlSource {
         }
         // Only a point that is fetched costs anything: one of the 16 of this
         // call, and at the first, one of the source's requests.
+        self.call.reaching.insert(key.clone());
         if self.call.fetched >= MAX_POINTS_PER_REQUEST {
             return Err(CrlSourceError::new(
                 CrlSourceErrorKind::Denied,
@@ -570,7 +570,7 @@ impl HttpCrlSource {
             .with_url(url.to_owned())
             .detail("resource", "crl_request_points")
             .detail("limit", MAX_POINTS_PER_REQUEST)
-            .detail("requested", self.call.requested));
+            .detail("requested", self.call.reaching.len()));
         }
         if !self.call.counted {
             if self.source_requests >= MAX_SOURCE_REQUESTS {
@@ -584,7 +584,7 @@ impl HttpCrlSource {
             self.source_requests += 1;
         }
         self.call.fetched += 1;
-        let outcome = self.fetch_one(url, max_bytes);
+        let outcome = self.fetch_one_keyed(url, &key, max_bytes);
         if cacheable(&outcome) {
             self.answered.insert(key, outcome.clone());
         } else if let Err(e) = &outcome
@@ -594,7 +594,16 @@ impl HttpCrlSource {
         }
         outcome
     }
+    #[cfg(test)]
     fn fetch_one(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
+        self.fetch_one_keyed(raw, &url_key(raw), max_bytes)
+    }
+    fn fetch_one_keyed(
+        &mut self,
+        raw: &str,
+        key: &str,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
         // A source closed by a DNS timeout does no work at all, whatever the
         // URL: no request is spent and nothing is called denied.
         if self.poisoned {
@@ -605,15 +614,14 @@ impl HttpCrlSource {
         }
         // A URL beyond the distinct-URL cap does no work: the source can do
         // no more, like a spent request cap. One already seen costs nothing.
-        let key = url_key(raw);
-        if !self.urls.contains(&key) {
+        if !self.urls.contains(key) {
             if self.urls.len() >= MAX_SOURCE_URLS {
                 let e = limit("crl_source_urls", MAX_SOURCE_URLS, self.urls.len(), 1);
                 let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
                 source_error.details = e.details;
                 return Err(source_error);
             }
-            self.urls.insert(key);
+            self.urls.insert(key.to_owned());
         }
         // Whether the source was already spent before this request: then
         // nothing this request reports is about its own URL.
