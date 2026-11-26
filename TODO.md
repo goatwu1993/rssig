@@ -330,10 +330,14 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
   The `*-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
   CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
-- [ ] **TIME-T008** docs: Extend `TIME-` entries for the TIME-T002 rules not yet pinned.
+- [ ] **TIME-T008** docs: Extend and narrow `TIME-` entries for the TIME-T002 rules not yet pinned.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
-  maps each to its entry: extend TIME-009, TIME-011 and TIME-013 where marked;
-  the candidate-path rules are PATH-T009.
+  maps each to its entry: extend TIME-009, TIME-011 and TIME-013 and narrow
+  TIME-010 to intermediates where marked; the candidate-path rules are PATH-T009.
+- [ ] **TIME-T009** fix: Make `TrustReport.lifetime_signing` required (owner decision).
+  Its `#[serde(default)]` only reads reports written before TIME-T001, a
+  compatibility shim the release-status rule in AGENTS.md rules out. It was kept
+  in TIME-T002, so removing it needs the owner's approval.
 
 ### PATH
 

@@ -248,8 +248,8 @@ generic chain error is reported. Successful reports set
     wrong certificate.
 - **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec
   case names this entry yet. Webpki validity errors naming the leaf, the
-  `lifetime_signing` default, the signing-time error details and CRL errors
-  carrying no `lifetime_signing` detail are not pinned here yet (TIME-T008).
+  signing-time error details and CRL errors carrying no `lifetime_signing`
+  detail are not pinned here yet (TIME-T008).
 
 ## Candidate rules
 

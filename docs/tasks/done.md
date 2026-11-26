@@ -206,12 +206,12 @@ Where each rule is pinned, in the order above:
 | It hides a wrongly signed issuer on another path | extend TIME-011 (TIME-T008) |
 | Equal-rank failures report the first encountered | none (PATH-T009) |
 | Revocation at the validation time only | [TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) |
-| Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) |
+| Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check); intermediates only, since the leaf check runs before path building: narrow it (TIME-T008) |
 | `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
 | webpki validity errors name the leaf | not pinned by TIME-013; extend it (TIME-T008) |
 | Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
 | KeyUsage precedence | none (PATH-T009); changing it is PATH-T007 |
-| `lifetime_signing` defaults to `false` | TIME-013 pins it on successful reports only; extend it (TIME-T008) |
+| `lifetime_signing` defaults to `false` | not to be pinned: a compatibility shim the release-status rule in AGENTS.md rules out; removing it is TIME-T009 (owner decision) |
 | Error details on "not valid at the signing time", and CRL errors without `lifetime_signing` | extend TIME-013 (TIME-T008) |
 
 The lifetime-signing rules set the schema and detail rows above, so by the
@@ -219,11 +219,12 @@ The lifetime-signing rules set the schema and detail rows above, so by the
 
 Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
 `certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
-formats without one), TIME-T008 (extending TIME-009, TIME-011 and TIME-013),
-PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root re-issued
-after the signing time), PATH-T009 (entries for the candidate-path reporting
-rules), LIMIT-T007 (the repeated RDP path search) and TEST-T016 (shared
-timestamp token builders).
+formats without one), TIME-T008 (extending TIME-009, TIME-011 and TIME-013 and
+narrowing TIME-010), TIME-T009 (the `lifetime_signing` default, owner
+decision), PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root
+re-issued after the signing time), PATH-T009 (entries for the candidate-path
+reporting rules), LIMIT-T007 (the repeated RDP path search) and TEST-T016
+(shared timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 
