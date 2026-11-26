@@ -491,6 +491,30 @@ impl CrlSource for HttpCrlSource {
             .map(|url| (url.as_str(), url_key(url)))
             .collect();
         self.call = Call::default();
+        // Past the request cap the first point that would be fetched aborts
+        // and `fetch_each` stops there, so the points this verification has
+        // kept outcomes for are answered first: their known outcome, not
+        // "not tried", is what the report shows. In listed order otherwise.
+        let reordered;
+        let request = if self.source_requests >= MAX_SOURCE_REQUESTS {
+            let (known, fresh): (Vec<String>, Vec<String>) = request
+                .distribution_points
+                .iter()
+                .cloned()
+                .partition(|url| {
+                    let key = &keys[url.as_str()];
+                    self.answered.contains_key(key) || self.too_big.contains_key(key)
+                });
+            reordered = known.into_iter().chain(fresh).collect::<Vec<_>>();
+            &CrlRequest::new(
+                request.certificate,
+                request.issuer,
+                &reordered,
+                request.max_bytes,
+            )
+        } else {
+            request
+        };
         let mut response = fetch_each(request, |url, max_bytes| {
             let key = keys.get(url).cloned().unwrap_or_else(|| url_key(url));
             self.fetch_keyed(url, key, max_bytes)
@@ -1086,6 +1110,17 @@ mod tests {
         assert_eq!(e.details["requested"], 1);
         // Still spent for every later request of the verification.
         assert_eq!(abort(&mut source).kind, CrlSourceErrorKind::Abort);
+        // A point with a known outcome listed after a new one is still
+        // answered with it, before the abort.
+        let mixed = vec![points[0].clone(), point(0)[0].clone()];
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
+            .unwrap();
+        let kinds: Vec<_> = response.failures.iter().map(|f| f.kind).collect();
+        assert_eq!(
+            kinds,
+            [CrlSourceErrorKind::Denied, CrlSourceErrorKind::Abort]
+        );
         // A point answered before is still answered, at no cost.
         let known = point(0);
         let response = source
