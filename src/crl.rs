@@ -531,7 +531,10 @@ impl HttpCrlSource {
         // when the body cap stops it.
         let room = max_bytes.min(MAX_CRL_BYTES);
         let kept_failure = match self.answered.get(&key) {
-            Some(Ok(crl)) => crl.bytes.len() > room,
+            Some(Ok(crl)) => {
+                crl.bytes.len() > room
+                    || self.replayed.saturating_add(crl.bytes.len()) > MAX_REPLAY_BYTES
+            }
             Some(Err(_)) => true,
             None => self
                 .too_big
@@ -1246,6 +1249,11 @@ mod tests {
         let e = source.fetch_cached(url, 1024).unwrap_err();
         assert_eq!(e.kind, CrlSourceErrorKind::Denied);
         assert_eq!(e.details["resource"], "crl_replay_bytes");
+        // Past the body cap too, the replay allowance is the reason given.
+        source.call.bodies = MAX_RESPONSE_ENTRIES;
+        let e = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_replay_bytes");
+        source.call = Call::default();
         // A new verification starts the allowance afresh.
         CrlSource::begin_verification(&mut source);
         assert_eq!(source.replayed, 0);

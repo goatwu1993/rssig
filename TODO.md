@@ -45,8 +45,9 @@ they pin or what they check, never after a task.
   The engine limits (the up-front `retrieval_trust_bytes` check of supplied
   roots and CRLs, response entries, retained CRL count) end the whole
   verification with `resource_limit_exceeded`, rather than recording the
-  remaining points and finishing with the evidence gathered. CRL-T041 already
-  does this for a request reached with the retained-byte cap full.
+  remaining points and finishing with the evidence gathered. CRL-T041 left a
+  certificate reached with the retained-byte cap full unasked, so that asking
+  every certificate did not end runs that the issuer skip used to finish.
 
 ### CMS
 
@@ -370,6 +371,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T049** fix: Record a per-URL failure or body whose URL is not one of the request's points without that URL. A whole-request error naming a foreign URL is already recorded without it; one inside a `CrlResponse` is recorded under the certificate with the foreign URL, crediting it with a point it does not list.
 - [ ] **CRL-T050** test: Pin in `tests/cases.json` that a certificate reached once retrieved CRLs fill the 32 MiB the store retains is not asked and its points are recorded as not tried (`retrieval_trust_bytes`), the verifier's result standing. Only the unit test `a_certificate_with_no_room_left_is_not_asked_and_the_run_goes_on` pins it: a case needs CRL bodies that load and total near 32 MiB (a large CRL fixture or a generator).
 - [ ] **CRL-T051** fix: Decide how the engine offers a listed spelling that normalizes to another listed point (owner decision). It offers each point once by its normalized URL, so a spelling `HttpCrlSource` refuses before parsing (a backslash, over 2,048 bytes) listed first stands in for the clean URL, which is then not offered. Keying offers by raw text keeps both but must still match answers and report entries by the normalized URL.
+- [ ] **CRL-T052** fix: Decide whether a request whose byte allowance cannot hold any CRL is made. The engine skips a certificate only when no retained byte is left; with a few left, `HttpCrlSource` still makes HTTP requests that must fail on `crl_response_bytes`, spending its 16-request and 64-URL caps now that every certificate is asked.
 
 ### TIME
 
