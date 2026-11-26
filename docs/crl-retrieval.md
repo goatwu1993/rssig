@@ -341,7 +341,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject single-label names; names ending in the labels `localhost`, `local`, `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion` or `alt` (whole labels); nonpublic/reserved literal addresses; and an entire DNS answer containing nonpublic addresses. A denied host is reported as not public |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, a call counted at the first point it fetches; past the cap a call carrying a point not yet answered is refused, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
+| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, a call counted at the first point it fetches; past the cap that point is answered with the abort, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
 | Response entries | At most 64 CRL bodies, and bodies and failures together at most 64 plus one for each point the request offered, in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
@@ -349,7 +349,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
 
-The engine offers a source every listed point (CRL-024), and the built-in source tries the first 16 per request (`MAX_POINTS_PER_REQUEST`): the others are `Denied` with `details.resource` `crl_request_points`, cost no HTTP request and no distinct-URL slot, so one certificate cannot spend the allowances the others need.
+The engine offers a source every listed point (CRL-024), and the built-in source fetches at most 16 per request (`MAX_POINTS_PER_REQUEST`), counting only points it does not answer from the verification's memory: the others are `Denied` with `details.resource` `crl_request_points`, cost no HTTP request and no distinct-URL slot, so one certificate cannot spend the allowances the others need.
 
 PEM responses can contain multiple CRLs. After each response is loaded, the
 combined retained count is checked after exact-DER deduplication and before

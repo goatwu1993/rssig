@@ -762,8 +762,7 @@ new work keeps its own cache for the verification (reset in
 does; one without a cache gets one more call per such certificate. A request
 may carry no point at all (a certificate that lists none), and a source should
 not count such a call against a request cap: `HttpCrlSource` counts a call at the
-first point it fetches, and past its cap refuses a call that carries a point not
-yet answered.
+first point it fetches, and past its cap answers that point with an `abort`.
 
 **Reusing a source.** The engine calls `CrlSource::begin_verification()` once
 at the start of each verification that may ask the source. `HttpCrlSource`
