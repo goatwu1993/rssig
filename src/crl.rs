@@ -187,6 +187,9 @@ pub struct HttpCrlSource {
     /// not yet answered, bounded by [`MAX_SOURCE_REQUESTS`]; `requests`
     /// counts HTTP requests.
     source_requests: usize,
+    /// Whether the current call to [`CrlSource::crls`] is already counted in
+    /// `source_requests`: it is at its first point that is fetched.
+    call_counted: bool,
     /// The distinct URLs (normalized) asked for in this verification,
     /// bounded by [`MAX_SOURCE_URLS`].
     urls: std::collections::BTreeSet<String>,
@@ -463,16 +466,17 @@ impl CrlSource for HttpCrlSource {
                 tried.push(url.clone());
             }
         }
-        // A call with nothing new to fetch is not a request.
-        if fresh > 0 {
-            if self.source_requests >= MAX_SOURCE_REQUESTS {
-                let e = limit("crl_requests", MAX_SOURCE_REQUESTS, self.source_requests, 1);
-                let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
-                source_error.details = e.details;
-                return Err(source_error);
-            }
-            self.source_requests += 1;
+        // A call with nothing new to fetch is not a request: past the cap it
+        // is refused only if it carries a point that may be fetched, and it
+        // is counted only when a point is (in `fetch_cached`), so a point
+        // answered from memory under the room this call has left costs none.
+        if fresh > 0 && self.source_requests >= MAX_SOURCE_REQUESTS {
+            let e = limit("crl_requests", MAX_SOURCE_REQUESTS, self.source_requests, 1);
+            let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
+            source_error.details = e.details;
+            return Err(source_error);
         }
+        self.call_counted = false;
         let tried_request = CrlRequest::new(
             request.certificate,
             request.issuer,
@@ -530,6 +534,10 @@ impl HttpCrlSource {
             let mut e = e.clone().with_url(url.to_owned());
             e.details.insert("limit".into(), allowance.into());
             return Err(e);
+        }
+        if !self.call_counted {
+            self.call_counted = true;
+            self.source_requests += 1;
         }
         let outcome = self.fetch_one(url, max_bytes);
         if cacheable(&outcome) {
@@ -1119,9 +1127,21 @@ mod tests {
         assert_eq!(again.details["limit"], 2);
         assert_eq!(again.details["requested"], 7);
         assert_eq!(source.requests, 0);
-        // A call with only such a point fetches nothing, so it is not counted.
+        // A call whose point is answered from memory fetches nothing, so it
+        // is not counted, even when the whole request's room is larger than
+        // the failure's: an earlier body took what was left of it.
         let points = vec![url.to_string()];
         let response = source.crls(&CrlRequest::new(&[], &[], &points, 2)).unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(source.source_requests, 0);
+        let cached = "http://crl.example.com/c.crl";
+        source.answered.insert(
+            url_key(cached),
+            Ok(SourcedCrl::new(vec![0; 7]).with_url(cached)),
+        );
+        let points = vec![cached.to_string(), url.to_string()];
+        let response = source.crls(&CrlRequest::new(&[], &[], &points, 8)).unwrap();
+        assert_eq!(response.crls.len(), 1);
         assert_eq!(response.failures.len(), 1);
         assert_eq!(source.source_requests, 0);
     }
@@ -1243,6 +1263,7 @@ mod tests {
             source_requests: MAX_SOURCE_REQUESTS,
             urls: Default::default(),
             answered: Default::default(),
+            call_counted: false,
             too_big: Default::default(),
             requests: MAX_HTTP_REQUESTS,
             bytes: MAX_NETWORK_BYTES,

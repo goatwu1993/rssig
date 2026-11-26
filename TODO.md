@@ -363,6 +363,8 @@ they pin or what they check, never after a task.
 - [x] **CRL-T044** refactor: Give `HttpCrlSource` a per-request point limit. Done in [PR #92](https://github.com/goatwu1993/rssig/pull/92) with CRL-T040; [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification).
 - [ ] **CRL-T045** feat: Decide whether the CLI reuses fetched CRLs across the files of one invocation (owner decision). Detail in [crl-t045.md](docs/tasks/crl-t045.md).
 - [ ] **CRL-T046** refactor: Share a cached CRL body, and its digest, between the requests that repeat it. Detail in [crl-t046.md](docs/tasks/crl-t046.md).
+- [ ] **CRL-T047** fix: Decide whether a URL the built-in source refuses before any network work uses a distinct-URL slot (owner decision). `fetch_one` counts it toward `MAX_SOURCE_URLS`, as `the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification` pins, so private or local names can spend slots a public point needs.
+- [ ] **CRL-T048** refactor: Drop the always-false `spent_before` argument of `HttpCrlSource::classify` (`fetch_one` returns before it for a spent source), keeping `source_error_kind`'s tested rule in one place.
 
 ### TIME
 

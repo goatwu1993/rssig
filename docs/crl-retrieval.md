@@ -322,8 +322,9 @@ limit on how much to fetch, how often or for how long. A source reports a limit
 it reaches as `abort` with `details.resource`, and the engine reacts to the
 kind, never to the number. A new retrieval limit therefore goes in
 `HttpCrlSource` and in the rustdoc a custom source reads, not in `Retrieval`.
-The remaining engine rule that OpenSSL has no equivalent for is tracked as
-CRL-T041 (the per-issuer request skip).
+The engine keeps no rule OpenSSL lacks for reusing an earlier answer: every
+certificate that lacks a CRL is asked, and reuse is the source's (CRL-033,
+CRL-051).
 
 ## Built-in HTTP policy
 
