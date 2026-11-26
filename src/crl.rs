@@ -427,11 +427,13 @@ impl CrlSource for HttpCrlSource {
     /// byte budget, deadline or DNS timeout as `Abort`: after those this
     /// source can do no more work. A call past [`MAX_SOURCE_REQUESTS`] is the
     /// same: an `Abort` for the whole request, `details.resource`
-    /// `crl_requests`. A URL refused before any network work
-    /// costs no request; one refused after it (a nonpublic DNS answer, a
-    /// redirect to a refused URL, an encoded response) does. A URL answered
-    /// earlier in the verification is answered again with the same body or
-    /// failure, at no cost.
+    /// `crl_requests`. A call counts as one source request when it fetches a
+    /// point, even one the policy then refuses before any network work (a
+    /// private address); a call whose points were all answered earlier in
+    /// the verification counts none, and its answers are the same body or
+    /// failure. Separately, a URL refused before any network work costs no
+    /// HTTP request; one refused after it (a nonpublic DNS answer, a redirect
+    /// to a refused URL, an encoded response) does.
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
         let points = request.distribution_points;
         // The points not answered yet: only they cost work, and only the

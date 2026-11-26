@@ -213,7 +213,10 @@ impl CrlSourceError {
 /// still allowed (at most [`MAX_CRL_BYTES`] each), and stops at the first
 /// `Abort` or once the request's byte allowance is spent; the points left are
 /// not answered, and the engine records them as not tried. Each answer
-/// becomes a [`SourcedCrl`] or a failure with its URL.
+/// becomes a [`SourcedCrl`] or a failure with its URL. It tries every point
+/// the request carries: the engine offers every URI a certificate lists
+/// (CRL-024), so a source built on it bounds its own count of points per
+/// request, as the application's `HttpCrlSource` does.
 pub fn fetch_each(
     request: &CrlRequest<'_>,
     mut fetch: impl FnMut(&str, usize) -> Result<SourcedCrl, CrlSourceError>,
