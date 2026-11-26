@@ -67,10 +67,11 @@ they pin or what they check, never after a task.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
   Check how it is reported and whether to read it.
-- [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path.
+- [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path (owner decision).
   The rejection flag is shared across candidate paths, so once any candidate
   lacked keyCertSign a final unknown-issuer failure from another path is
-  reported as `invalid_key_usage`. Fails closed; recorded in TIME-T002.
+  reported as `invalid_key_usage`. Fails closed. This is a decision kept in
+  TIME-T002, so changing it needs a new Decided entry and the owner's approval.
 
 ### TRUST
 
@@ -326,11 +327,12 @@ they pin or what they check, never after a task.
   Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
   signers use the same trust call without one.
 - [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
-  The leaf notBefore check before path building, equal-rank first-encountered
-  reporting, webpki validity details naming the leaf, the unsigned-timestamp
-  consistency check and the `lifetime_signing`/`validation_time` schema
-  choices; the others are TIME-007 and TIME-009 to TIME-013
-  ([record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)).
+  The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
+  maps each kept decision to its entry; seven have none: the leaf notBefore
+  check before path building, hiding a wrongly signed issuer on another path,
+  equal-rank first-encountered reporting, webpki validity errors naming the
+  leaf, the shared keyCertSign flag, the `lifetime_signing` default and the
+  error details on "not valid at the signing time".
 
 ### PATH
 

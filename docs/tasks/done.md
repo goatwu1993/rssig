@@ -148,41 +148,71 @@ Review items decided against or deferred are recorded in [TIME-T002](#time-t002-
 
 ## TIME-T002 fix: Lifetime-signing review decisions and deferred follow-ups
 
-[PR #96](https://github.com/goatwu1993/rssig/pull/96). The PR #43 reviews kept
-these decisions; none permits an invalid signature to verify, and each changes
-only with a new decision and paired fixtures.
+[PR #96](https://github.com/goatwu1993/rssig/pull/96). Recorded from the PR #43
+reviews; none permits an invalid signature to verify. Kept as decisions
+(change only with a new decision and paired fixtures):
 
-- Trust anchors are keys, unchecked at the validation time or a lifetime
-  signing time: [PATH-011](../path.md#path-011-configured-anchors-are-keys).
-  No case pins a root re-issued after the signing time (PATH-T008).
-- Error precedence: the signing-time rejection ranks as a webpki validity
-  error ([TIME-009](../time.md#time-009-the-signing-time-rejection-ranks-as-a-validity-error)),
-  outranks revocation on another path ([TIME-011](../time.md#time-011-lifetime-signing-validity-outranks-revocation-on-another-path),
-  pinned by `time-011-lifetime-rollover-revoked-issuer`), and follows
-  store-wide CRL freshness ([TIME-012](../time.md#time-012-crl-freshness-is-reported-before-the-signing-time-check)).
-  The leaf notBefore check running before path building, and equal-rank
-  failures reporting the first encountered, have no entry (TIME-T008).
-- Revocation is evaluated at the validation time only
-  ([TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time)),
-  and a revocation on a path is reported before that path's signing-time check
-  ([TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check)).
-- `details.certificate` names the chain certificate that failed the
-  signing-time or fractional-expiry check
-  ([TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed)).
-  Errors from webpki's own validity checks name the leaf while
-  `not_before`/`not_after` belong to the failing certificate; no entry
-  (TIME-T008).
-- Unsigned timestamps: the signing-time check is a consistency check, so
-  removing the unsigned timestamp leaves a signature validated at the
-  validation time only; no entry (TIME-T008).
-- KeyUsage precedence: the keyCertSign rejection flag is shared across
-  candidate paths, so a final unknown-issuer failure can be reported as
-  `invalid_key_usage`; fails closed. A per-path reason is PATH-T007.
-- Schema: `TrustReport.lifetime_signing` defaults to `false` for reports
-  written before TIME-T001, and on "not valid at the signing time"
-  `validation_time` is the validation time while `signing_time` is the instant
-  that failed; CRL errors for a lifetime signer carry no `lifetime_signing`
-  detail. No entry (TIME-T008).
+- Trust anchors: configured anchors remain keys. Their validity is not checked
+  at the validation time or at a lifetime signing time, so a lifetime path
+  through a root re-issued after the signing time is accepted.
+- Error precedence: the leaf lifetime notBefore check runs before path
+  building (like webpki's leaf validity check), so it precedes
+  untrusted_root/unknown-issuer and unknown revocation status of the signer
+  path. Store-wide CRL freshness errors are still reported first, by the TSA
+  check. A rejected issuer issued after signing ranks as a webpki validity
+  error, so it can hide a revoked or wrongly signed issuer on another
+  candidate path (pinned by `time-011-lifetime-rollover-revoked-issuer`); the
+  signature is still rejected. Equal-rank failures report the first
+  encountered.
+- CRL/revocation: revocation is evaluated only at the validation time, and a
+  revocation failure on a path is reported before the signing-time check of
+  that path. Historical (signing-time) revocation status is not modeled.
+- Diagnostics: `details.certificate` names the chain certificate that failed
+  the signing-time or fractional-expiry check (an intermediate when it is the
+  cause), matching the existing fractional-expiry convention, not always the
+  signer leaf. Errors from webpki's own validity checks instead name the leaf
+  in `details.certificate` while `not_before`/`not_after` belong to the
+  certificate that failed, lifetime or not. This includes a lifetime
+  intermediate issued after a timestamp that equals the validation time.
+- Unsigned timestamps: the signing-time check (and the non-lifetime
+  timestamp-before-notBefore rejection) is a consistency check. Removing the
+  unsigned timestamp leaves an untimestamped signature validated at the
+  validation time only.
+- KeyUsage precedence (pre-existing, PATH-T001): the keyCertSign rejection flag
+  is shared across candidate paths, so once any candidate lacked keyCertSign a
+  final unknown-issuer failure from another path is reported as
+  invalid_key_usage. Fails closed; a per-path reason needs separate work.
+- Schema: `TrustReport.lifetime_signing` defaults to `false` when reading
+  reports written before TIME-T001, so an older report cannot distinguish "not
+  lifetime-signed" from "not evaluated". `validation_time` shows which time
+  was used; `Option<bool>` would be a schema change.
+- Error details: on "not valid at the signing time", `validation_time` is the
+  validation time (when the certificate may be valid) and `signing_time` is
+  the instant that failed, unlike other validity errors where
+  `validation_time` is the failing instant. CRL presence/freshness errors for
+  a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
+  evidence is CRL-T001 and CRL-T002. Both are schema decisions.
+Open follow-ups:
+
+Where each decision is pinned, in the order above:
+
+| Decision | Entry |
+|---|---|
+| Trust anchors | [PATH-011](../path.md#path-011-configured-anchors-are-keys); no case pins a root re-issued after the signing time (PATH-T008) |
+| Leaf notBefore before path building | none (TIME-T008) |
+| CRL freshness reported first | [TIME-012](../time.md#time-012-crl-freshness-is-reported-before-the-signing-time-check) |
+| Signing-time rejection ranks as a validity error | [TIME-009](../time.md#time-009-the-signing-time-rejection-ranks-as-a-validity-error) |
+| It hides a revoked issuer on another path | [TIME-011](../time.md#time-011-lifetime-signing-validity-outranks-revocation-on-another-path) |
+| It hides a wrongly signed issuer on another path | none (TIME-T008) |
+| Equal-rank failures report the first encountered | none (TIME-T008) |
+| Revocation at the validation time only | [TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) |
+| Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check) |
+| `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
+| webpki validity errors name the leaf | none (TIME-T008) |
+| Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
+| KeyUsage precedence | none (TIME-T008); changing it is PATH-T007 |
+| `lifetime_signing` defaults to `false` | none (TIME-T008); TIME-013 pins it on successful reports only |
+| Error details on "not valid at the signing time" | none (TIME-T008) |
 
 The deferred follow-ups are TIME-T005 (fractional expiry during path
 building), TIME-T006 (the `certificate_report_error` fallback), TIME-T007
