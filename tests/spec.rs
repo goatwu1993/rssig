@@ -1638,6 +1638,19 @@ fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join(&suite.fixtures);
+    let allowance = scripted_request_allowance(&suite, id);
+    let last_file = bodies_of(id).pop().unwrap().file;
+    let last = std::fs::metadata(fixtures.join(last_file)).unwrap().len() as usize;
+    assert!(4 * size + last <= allowance && 5 * size > allowance);
+}
+
+/// The byte allowance of the one request case `id` scripts an answer for:
+/// what the supplied roots (`--roots`) leave of `MAX_TOTAL_BYTES`. Panics
+/// when anything else could spend it: a supplied CRL, or an answer by URL.
+fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join(&suite.fixtures);
     let case = suite.cases.iter().find(|c| c.id == id).unwrap();
     let roots: usize = case
         .command
@@ -1659,15 +1672,54 @@ fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
         case.crl_responses.as_ref().is_none_or(|r| r.is_empty()),
         "{id} answers nothing by URL"
     );
+    let answers = case.crl_certificate_responses.as_ref().unwrap();
+    assert_eq!(answers.len(), 1, "{id} scripts one answer");
     // Supplied CRLs would spend the allowance too; the case has none.
     assert!(
         !case.command.iter().any(|arg| arg == "--crl"),
         "{id} supplies no CRL"
     );
-    let last_file = bodies_of(id).pop().unwrap().file;
-    let last = std::fs::metadata(fixtures.join(last_file)).unwrap().len() as usize;
-    let allowance = MAX_TOTAL_BYTES - roots;
-    assert!(4 * size + last <= allowance && 5 * size > allowance);
+    rssig_engine::retrieval::MAX_TOTAL_BYTES - roots
+}
+
+/// The CRL-046 cases for a spent allowance rest on the engine's caps: their
+/// bodies, each within `MAX_CRL_BYTES`, add up to exactly the request's
+/// allowance, or to one byte less. If a cap or the roots move, the first
+/// would no longer spend the allowance, or the second would, and each would
+/// test the other's point, so this fails instead.
+#[test]
+fn specification_the_crl_046_allowance_cases_rest_on_the_engines_caps() {
+    use rssig_engine::retrieval::MAX_CRL_BYTES;
+    let suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
+    for (id, short) in [
+        (
+            "crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried",
+            0,
+        ),
+        (
+            "crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed",
+            1,
+        ),
+    ] {
+        let case = suite.cases.iter().find(|c| c.id == id).unwrap();
+        let answers = case.crl_certificate_responses.as_ref().unwrap();
+        let [spec_suite::CertificateAnswer::Scripted(script)] =
+            answers.values().collect::<Vec<_>>()[..]
+        else {
+            panic!("{id} scripts one answer");
+        };
+        let pads: Vec<usize> = script
+            .crls
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|c| c.pad_to.expect("every body is padded"))
+            .collect();
+        // Within the per-body cap, every body is accepted and spends bytes.
+        assert!(pads.iter().all(|&pad| pad <= MAX_CRL_BYTES), "{id}");
+        let allowance = scripted_request_allowance(&suite, id);
+        assert_eq!(pads.iter().sum::<usize>() + short, allowance, "{id}");
+    }
 }
 
 /// `pad_to` only pads: a size under the file's own would cut it, and the case

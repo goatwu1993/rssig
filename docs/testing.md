@@ -516,6 +516,14 @@ shared result code, each pins its own entry's part:
   pins its failures in CRL-049's order)
 - `crl-046-an-over-cap-body-reports-the-cap-it-hit` (CRL-046: the cap it hit,
   `limit`, `requested` and `used`, then the point it left)
+- `crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried` and
+  `crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed` (CRL-046: four
+  bodies within 8 MiB, none a CRL, that add up to exactly the request's
+  allowance leave the point not tried, `resource_limit_exceeded` with `limit`
+  and `used` both the allowance; one byte less leaves it `crl_fetch_failed`.
+  The first pins only the failures: having spent the verification's 32 MiB,
+  the next certificate asked about ends the run with `retrieval_trust_bytes`,
+  which is LIMIT-T004's to change)
 - `crl-045-oversized-body-does-not-count-against-the-next` (two rejected 16 MiB
   bodies would reach the allowance if they counted)
 - `crl-045-over-allowance-body-does-not-count-against-the-next` (bodies under
@@ -541,6 +549,11 @@ was checked by changing the engine; the single-body case pins only that an
 over-cap body is no answer. Their sizes are chosen against the engine's caps,
 and `specification_the_crl_045_cases_rest_on_the_engines_caps` fails if a cap
 moves so that a case would pass without testing what it says.
+`specification_the_crl_046_allowance_cases_rest_on_the_engines_caps` does the
+same for the two allowance cases of CRL-046, whose bodies must add up to the
+allowance and to one byte less. The first case fails if the engine took an
+allowance as spent only once passed, the second if it took one as spent a byte
+early; both were checked by changing the engine.
 
 Named tests in `tests/cli/crl_fetch.rs` check what the cases leave out:
 - `crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point`: the
@@ -602,13 +615,9 @@ them through the CLI, or, where noted, no case pins them yet:
   Every certificate reaching retrieval has already been decoded from DER, and
   a decoded name always re-encodes, so no fixture reaches this branch.
 - At most 64 CRL bodies, and bodies and failures together at most 64 plus one per point offered, in one source response
-  (`crl_response_entries`), and points recorded as not tried once a request's
-  byte allowance is spent. A scripted answer can now reach both, and neither
-  has a case: the first is an engine budget (LIMIT-T006), the second CRL-046's
-  (CRL-T037);
-  `retrieval::tests::a_response_with_too_many_entries_ends_the_run` and
-  `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`
-  cover them.
+  (`crl_response_entries`). A scripted answer can now reach it, and no case
+  pins it yet (LIMIT-T006);
+  `retrieval::tests::a_response_with_too_many_entries_ends_the_run` covers it.
 - The built-in HTTP source's kinds (a last request keeping its own failure,
   aborts when spent). Tests never use the network, so these are unit tests
   in `src/crl.rs`.

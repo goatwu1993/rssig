@@ -35612,6 +35612,214 @@
       }
     },
     {
+      "id": "crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-046",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388246
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388246
+                      }
+                    ],
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "resource_limit_exceeded",
+                        "details": {
+                          "resource": "crl_response_bytes",
+                          "limit": 33554070,
+                          "used": 33554070
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-046",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388608
+            },
+            {
+              "file": "root.der",
+              "pad_to": 8388245
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388608
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "bytes": 8388245
+                      }
+                    ],
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": null,
+                        "code": "invalid_crl"
+                      },
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "code": "crl_fetch_failed"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "crl-045-oversized-body-does-not-count-against-the-next",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-045",
