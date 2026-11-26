@@ -366,6 +366,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T047** fix: Decide whether a URL the built-in source refuses before any network work uses a distinct-URL slot (owner decision). `HttpCrlSource::fetch_one_keyed` counts it toward `MAX_SOURCE_URLS` before its policy check, as `the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification` pins, so private or local names can spend slots a public point needs.
 - [ ] **CRL-T048** refactor: Drop the always-false `spent_before` argument of `HttpCrlSource::classify`: both callers (`fetch_one_keyed`, which returns first for a spent source, and `answer`, refusing a cached body) pass `false`; keep `source_error_kind`'s tested rule in one place.
 - [ ] **CRL-T049** fix: Record a per-URL failure or body whose URL is not one of the request's points without that URL. A whole-request error naming a foreign URL is already recorded without it; one inside a `CrlResponse` is recorded under the certificate with the foreign URL, crediting it with a point it does not list.
+- [ ] **CRL-T050** test: Pin in `tests/cases.json` that a certificate reached once retrieved CRLs fill the 32 MiB the store retains is not asked and its points are recorded as not tried (`retrieval_trust_bytes`), the verifier's result standing. Only the unit test `a_certificate_with_no_room_left_is_not_asked_and_the_run_goes_on` pins it: a case needs CRL bodies that load and total near 32 MiB (a large CRL fixture or a generator).
 
 ### TIME
 

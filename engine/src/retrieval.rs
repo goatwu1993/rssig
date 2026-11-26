@@ -3025,8 +3025,9 @@ mod tests {
     #[test]
     fn a_failure_beside_an_answer_by_certificate_is_not_about_the_points() {
         // The issuer's full CRL, naming no URL, plus a failure naming none:
-        // the points were not used, so they are not failures, they stay
-        // open, and verification runs before anything else is asked.
+        // the points were not used, so they are not failures now (they are
+        // held to be reported as not used if the status stays unsettled),
+        // and verification runs before anything else is asked.
         struct Source;
         impl CrlSource for Source {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {

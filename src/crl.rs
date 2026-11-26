@@ -497,7 +497,7 @@ impl HttpCrlSource {
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         self.fetch_keyed(url, url_key(url), max_bytes)
     }
-    /// [`Self::fetch_one`] with this verification's memory of each URL's
+    /// [`Self::fetch_one_keyed`] with this verification's memory of each URL's
     /// outcome, by `key` ([`url_key`]): a repeat returns the same body or
     /// failure, under the spelling it was offered. Not kept: an abort (the
     /// engine asks nothing more after it); a failure about the byte allowance
