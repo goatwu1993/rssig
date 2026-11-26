@@ -1,11 +1,11 @@
 //! Inspection arguments deliberately have no verification policy or root loading.
 use super::batch;
-use crate::{
-    domain::{ParseFileResult, ParseFileSuccess},
-    inspection,
-};
 use anyhow::Result;
 use clap::ValueEnum;
+use rssig_engine::{
+    domain::{ParseFileResult, ParseFileSuccess},
+    inspect,
+};
 use serde_json::Value;
 use std::path::PathBuf;
 
@@ -35,10 +35,10 @@ pub(super) fn execute(args: Args) -> Result<(Value, u8)> {
         args.files,
         &args.limits,
         |_, bytes| match args.format {
-            Format::Pe => inspection::pe(bytes),
-            Format::Cms => inspection::cms(bytes),
-            Format::Cab => inspection::container(bytes, crate::format::Format::Cab),
-            Format::Navx => inspection::container(bytes, crate::format::Format::Navx),
+            Format::Pe => inspect::pe(bytes),
+            Format::Cms => inspect::cms(bytes),
+            Format::Cab => inspect::cab(bytes),
+            Format::Navx => inspect::navx(bytes),
         },
         |file, parse| {
             ParseFileResult::Success(ParseFileSuccess {

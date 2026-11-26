@@ -30,7 +30,7 @@ whatever step 1 decided (CRL-T006).
 - The second webpki call is removed. webpki builds paths without revocation
   options; the callback is the only revocation check.
 - The one result the second call decided on its own is now an rssig rule on
-  the accepted path, `ambiguous_issuer_keys` in `src/trust.rs`. It applies
+  the accepted path, `ambiguous_issuer_keys` in `engine/src/trust.rs`. It applies
   when two certificates on the path have issuers of one name with different
   keys, and the CRLs chosen for them do not both name their issuer's key in an
   authorityKeyIdentifier. The result is the same as before:
@@ -41,7 +41,7 @@ whatever step 1 decided (CRL-T006).
   unsupported CRL features as `invalid_crl`. Removing that parse, and with it
   the extra CRL decoding, stays in CRL-T033.
 - The removed webpki check is kept as a **test-only cross-check**
-  (`src/trust/crosscheck.rs`, feature `revocation-crosscheck`). See below.
+  (`engine/src/trust/crosscheck.rs`, feature `revocation-crosscheck`). See below.
 
 ## Why the rule is right
 
@@ -100,10 +100,14 @@ every test build:
 - It asserts that every chosen CRL is one webpki can parse, which holds
   today because rssig sets such CRLs aside. Supporting CRL features webpki
   lacks (CRL-T006) must make it skip those paths on purpose.
-- The `revocation-crosscheck` feature enables no other feature. A
-  self dev-dependency (`rssig = { path = ".", default-features = false,
-  features = ["revocation-crosscheck"] }`) turns it on for unit and
-  integration test builds only. Plain release and debug product builds do
+- The `revocation-crosscheck` feature, now the engine package's, enables no
+  other feature. Two dev-dependencies turn it on for unit and integration
+  test builds only: the engine's self dev-dependency (`rssig-engine = { path
+  = ".", default-features = false, features = ["revocation-crosscheck"] }` in
+  `engine/Cargo.toml`) for the engine's tests, and the application's
+  dev-dependency on `rssig-engine` with the same feature (root `Cargo.toml`)
+  for the CLI and specification tests. Guards in every test crate fail the
+  build without it. Plain release and debug product builds do
   not pass `--cfg feature="revocation-crosscheck"` (checked with `cargo build
   -v`). `cargo build --all-targets` does, because the self dev-dependency's
   feature is unified with the library and binary built in the same
@@ -117,10 +121,12 @@ every test build:
 **Accepted risk:** production has no runtime backstop for revocation any
 more. A regression in serial matching or CRL signature handling is caught by
 the cases and, in debug test runs, by this cross-check; a release build or a
-test run without it has neither. CI runs `cargo test --locked` in debug, and a
-compile-time guard in the unit-test module (`src/tests/crosscheck_active.rs`)
-fails the debug test build if the cross-check is not compiled in, for example
-if the self dev-dependency is removed.
+test run without it has neither. CI runs `cargo test --locked` in debug, and
+compile-time guards fail the debug test build if the cross-check is not
+compiled in, for example if either dev-dependency loses the feature: one in
+the engine's unit-test module (`engine/src/tests/crosscheck_active.rs`), and
+one included by every integration test crate of both packages
+(`engine/tests/common/crosscheck.rs`, `tests/common/crosscheck.rs`).
 
 What it can catch is limited. webpki only sees the CRLs rssig chose, so it
 checks serial lookup, the CRL signature under the algorithm adapter, and the

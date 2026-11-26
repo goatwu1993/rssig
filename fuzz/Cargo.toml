@@ -8,13 +8,15 @@ license = "Apache-2.0"
 [package.metadata]
 cargo-fuzz = true
 
-# Detached from the parent package so the nightly-only fuzzing toolchain and
+# Detached from the parent workspace so the nightly-only fuzzing toolchain and
 # its lockfile never affect `cargo test --locked` at the repository root.
 [workspace]
 
 [dependencies]
 libfuzzer-sys = "0.4"
-rssig = { path = "..", default-features = false, features = ["verify", "crl-fetch"] }
+rssig-engine = { path = "../engine", default-features = false, features = ["verify", "retrieval"] }
+# The application package, for the default CRL source's URL policy only.
+rssig = { path = "..", default-features = false, features = ["crl-fetch"] }
 sha2 = { version = "0.10", default-features = false }
 
 [profile.release]
@@ -37,6 +39,13 @@ bench = false
 [[bin]]
 name = "parse_cab_navx"
 path = "fuzz_targets/parse_cab_navx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "inspect"
+path = "fuzz_targets/inspect.rs"
 test = false
 doc = false
 bench = false

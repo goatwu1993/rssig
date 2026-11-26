@@ -18,7 +18,7 @@ Fuzz targets for these parsers are described in [fuzzing](fuzzing.md).
 | RDP | Input/property budgets precede signature decoding; wrapper length compared by subtraction after a minimum-header check. Existing scope/encoding and maximum-count cases retained. |
 | AppX XML | Footprint byte and XML node limits; bounded block sizes and checked accumulation. Existing namespace, identity, block-map, and bundle cases retained. |
 
-`tests/parser_bounds.rs` verifies known-good committed artifacts, then exercises
+`engine/tests/parser_bounds.rs` verifies known-good committed artifacts, then exercises
 short header prefixes and zero/maximum DWORD mutations through explicit public
 format entry points. Mutated fields may be intentionally unauthenticated, so the
 mutation property is absence of panic and serializable typed failures, not blanket

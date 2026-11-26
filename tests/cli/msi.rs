@@ -136,7 +136,7 @@ fn current_crl() {
     assert!(signature.revocation_checked);
     assert!(matches!(
         signature.trust.as_ref().unwrap().revocation.status,
-        rssig::domain::RevocationStatus::Good
+        rssig_engine::domain::RevocationStatus::Good
     ));
     assert_eq!(
         signature

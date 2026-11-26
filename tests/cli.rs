@@ -5,6 +5,8 @@ mod appx;
 mod appx_bundle;
 #[path = "cli/cab.rs"]
 mod cab;
+#[path = "common/crosscheck.rs"]
+mod crosscheck;
 #[path = "cli/msi.rs"]
 mod msi;
 #[path = "cli/msp.rs"]

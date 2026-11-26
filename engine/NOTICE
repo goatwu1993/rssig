@@ -1,0 +1,53 @@
+rssig
+Copyright 2026 The rssig authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+No project named below is a build or runtime dependency of rssig, and this
+attribution does not imply endorsement or verified compatibility.
+
+Third-party material
+====================
+
+Jsign (https://github.com/ebourg/jsign)
+Copyright Emmanuel Bourg and the Jsign contributors
+Licensed under the Apache License, Version 2.0
+
+  - Two test fixtures are unmodified copies of Jsign test resources at
+    revision cf5d2ceaf2ec80cb793f7377749ef811d4be4d34:
+      tests/fixtures/msi-independent-signtool.msi
+        (jsign-core/src/test/resources/minimal-signed-with-signtool.msi)
+      tests/fixtures/appx-independent-signtool.msix
+        (jsign-core/src/test/resources/minimal-signed-by-signtool.msix)
+  - Other "independent-jsign" fixtures are repository-created containers
+    signed with the Jsign 7.6 release.
+  - The Jsign source at the revision above was consulted as a read-only
+    reference for MSI, CAB, NAVX, PowerShell, and APPX/MSIX hashing and
+    signature behaviour.
+
+relic (https://github.com/sassoftware/relic)
+Copyright (c) SAS Institute Inc.
+Licensed under the Apache License, Version 2.0
+
+  - The relic source at revision 02c54d584ca9eaa8f648763cd53bc77c4ff3d19c
+    was consulted as a read-only reference for MSI, CAB, PowerShell, and
+    APPX verification behaviour.
+
+rdpsign (https://github.com/nfedera/rdpsign)
+Copyright (C) 2015 Norbert Federa
+Licensed under the Apache License, Version 2.0
+
+  - tests/fixtures/rdp-independent-nfedera.rdp, and the fixtures derived
+    from it, were produced with rdpsign.py at revision
+    89cd08646ea5a91988820e319b3c5eef030b0fcf.
+
+IETF RFCs (https://www.rfc-editor.org)
+Copyright (c) IETF Trust and the persons identified as the document authors
+
+  - docs/rfc/ holds unmodified copies of RFCs that decision entries quote,
+    reproduced under the IETF Trust's Legal Provisions (BCP 78). They are not
+    covered by this project's Apache-2.0 licence.
+
+None of these projects ships a NOTICE file at the revisions listed, so no
+upstream notice text is reproduced here. Per-fixture provenance and licence
+information is recorded in tests/fixtures/manifest.json and under docs/.

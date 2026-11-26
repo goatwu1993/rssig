@@ -1,3 +1,5 @@
+# Reference clones (read-only; tests/manifest.rs checks that the workspace
+# excludes each name in this block, which ends at the first blank line).
 jsign
 relic
 osslsigncode
@@ -7,6 +9,7 @@ cross-authenticode
 rsigncode
 pe-sign
 verifysign
+
 /target/
 
 # LLVM coverage profiles belong in target, not source control.

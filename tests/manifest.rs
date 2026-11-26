@@ -4,6 +4,8 @@
 //! `check` is a pure function over an in-memory [`Corpus`], so every rule is
 //! also exercised against a deliberately broken copy. Nothing here regenerates
 //! or rewrites a fixture. See `docs/testing.md` for the rules and exceptions.
+#[path = "common/crosscheck.rs"]
+mod crosscheck;
 #[path = "common/spec_suite.rs"]
 mod spec_suite;
 
@@ -253,8 +255,9 @@ struct Corpus {
     /// Anything else found there; fixtures live in one flat directory.
     other_entries: BTreeSet<String>,
     cases: Suite,
-    /// Every Rust file under `src/` and `tests/`, plus `build.rs` when present,
-    /// by repository-relative path.
+    /// Every Rust file under each package's `src/` and `tests/` (the
+    /// application's and `engine/`'s), plus `build.rs` when present, by
+    /// repository-relative path.
     sources: BTreeMap<String, SourceIndex>,
 }
 
@@ -308,6 +311,8 @@ static COMMITTED: LazyLock<Corpus> = LazyLock::new(|| {
     let mut sources = BTreeMap::new();
     read_sources(root, "src", &mut sources);
     read_sources(root, "tests", &mut sources);
+    read_sources(root, "engine/src", &mut sources);
+    read_sources(root, "engine/tests", &mut sources);
     if let Ok(bytes) = std::fs::read(root.join("build.rs")) {
         sources.insert("build.rs".to_owned(), SourceIndex::read(&bytes));
     }
@@ -349,6 +354,85 @@ fn generator_exists(sources: &BTreeMap<String, SourceIndex>, generator: &str) ->
     sources
         .get(path)
         .is_some_and(|index| function.is_none_or(|name| index.functions.contains(name)))
+}
+
+/// Reference clones kept at the repository root (the block under the
+/// "Reference clones" header in .gitignore, up to the first blank line) must
+/// be excluded from the workspace, or Cargo refuses to run inside a Rust one.
+#[test]
+fn reference_clones_are_excluded_from_the_workspace() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let manifest = std::fs::read_to_string(root.join("Cargo.toml")).unwrap();
+    let exclude = manifest
+        .split_once("\nexclude = [")
+        .and_then(|(_, rest)| rest.split_once(']'))
+        .map(|(list, _)| list)
+        .expect("the workspace has an exclude list");
+    let ignored = std::fs::read_to_string(root.join(".gitignore")).unwrap();
+    let clones: Vec<&str> = ignored
+        .lines()
+        .skip_while(|line| !line.starts_with("# Reference clones"))
+        .take_while(|line| !line.is_empty())
+        .filter(|line| !line.starts_with('#'))
+        .collect();
+    assert!(clones.contains(&"pe-sign"), "{clones:?}");
+    for clone in clones {
+        let name = clone.trim_matches('/');
+        assert!(exclude.contains(&format!("\"{name}\"")), "{clone}");
+    }
+}
+
+/// Every integration test crate of both packages includes its package's
+/// revocation cross-check guard (CRL-T011): `cargo test --test <name>` builds
+/// no other target, so a crate without it would run without the oracle
+/// unnoticed.
+#[test]
+fn every_test_crate_includes_the_crosscheck_guard() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut crates = 0;
+    for directory in ["tests", "engine/tests"] {
+        for entry in std::fs::read_dir(root.join(directory)).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().is_some_and(|e| e == "rs") {
+                crates += 1;
+                let source = std::fs::read_to_string(&path).unwrap();
+                assert!(
+                    source.contains("#[path = \"common/crosscheck.rs\"]\nmod crosscheck;"),
+                    "{} does not include common/crosscheck.rs",
+                    path.display()
+                );
+            }
+        }
+    }
+    assert!(crates >= 18, "{crates}");
+    // The unit-test crates take the same guard from their lib.rs.
+    for (lib, guard) in [
+        (
+            "src/lib.rs",
+            "#[cfg(test)]\n#[path = \"../tests/common/crosscheck.rs\"]\nmod crosscheck;",
+        ),
+        (
+            "engine/src/lib.rs",
+            "#[cfg(all(test, feature = \"verify-core\"))]\n#[path = \"tests/crosscheck_active.rs\"]\nmod crosscheck_active;",
+        ),
+    ] {
+        let source = std::fs::read_to_string(root.join(lib)).unwrap();
+        assert!(source.contains(guard), "{lib} does not include its guard");
+    }
+}
+
+/// The engine package publishes its own copies of the licence files; they
+/// must stay identical to the repository's.
+#[test]
+fn the_engine_licence_files_match_the_repository() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for name in ["LICENSE", "NOTICE"] {
+        assert_eq!(
+            std::fs::read(root.join("engine").join(name)).unwrap(),
+            std::fs::read(root.join(name)).unwrap(),
+            "engine/{name}"
+        );
+    }
 }
 
 /// `cli/<module>.rs` paths that a test target directly under `tests/` includes.
@@ -912,29 +996,41 @@ fn externally_produced_artifacts_must_state_a_license() {
 #[test]
 fn rejects_generators_that_do_not_exist() {
     assert_eq!(
-        broken(|c| artifact(c, FILE)["generator"] = json!("src/tests/absent.rs::write")),
+        broken(|c| artifact(c, FILE)["generator"] = json!("src/absent.rs::write")),
         one(Rule::Generator, FILE)
     );
     assert_eq!(
-        broken(|c| artifact(c, FILE)["generator"] = json!("src/tests.rs::regenerate_cli")),
+        broken(|c| artifact(c, FILE)["generator"] = json!("tests/manifest.rs::rejects_generators")),
         one(Rule::Generator, FILE),
         "a prefix of a real function name is not that function"
     );
     assert_eq!(
-        broken(|c| c.manifest["provenance"]["generator"] = json!("src/tests.rs::absent")),
+        broken(|c| c.manifest["provenance"]["generator"] = json!("tests/manifest.rs::absent")),
         one(Rule::Generator, "manifest")
     );
+    // References into the engine package are checked the same way.
+    for generator in [
+        "engine/src/tests/absent.rs::write",
+        "engine/src/tests.rs::regenerate_cli",
+    ] {
+        assert_eq!(
+            broken(|c| artifact(c, FILE)["generator"] = json!(generator)),
+            one(Rule::Generator, FILE),
+            "{generator}"
+        );
+    }
     const NESTED: &str = "appx-independent-signtool.msix";
     assert_eq!(
         broken(|c| artifact(c, NESTED)["provenance"]["generator"] = json!("tests/absent.rs")),
         one(Rule::Generator, NESTED)
     );
-    // Accepted: a function in src/ or tests/, a whole file, and a trailing note.
+    // Accepted: a function in a package's src/ or tests/, a whole file, and a trailing note.
     for generator in [
-        "src/tests.rs::regenerate_cli_fixtures",
-        "tests/fixtures.rs::mismatched_image_fixture_preserves_the_original_signature",
-        "src/tests/crl_fetch_fixtures.rs",
-        "src/tests/trust_loading.rs::write via regenerate_cli_fixtures",
+        "engine/src/tests.rs::regenerate_cli_fixtures",
+        "engine/tests/fixtures.rs::mismatched_image_fixture_preserves_the_original_signature",
+        "engine/src/tests/crl_fetch_fixtures.rs",
+        "engine/src/tests/trust_loading.rs::write via regenerate_cli_fixtures",
+        "tests/manifest.rs::rejects_generators_that_do_not_exist",
     ] {
         assert_eq!(
             broken(|c| artifact(c, FILE)["generator"] = json!(generator)),

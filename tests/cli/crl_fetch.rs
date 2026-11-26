@@ -41,16 +41,20 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
         bytes: Vec<u8>,
         calls: usize,
     }
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
-                assert_eq!(url, "http://crl.example.invalid/test.crl");
-                self.calls += 1;
-                Ok(rssig::retrieval::SourcedCrl::new(self.bytes.clone()))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |url, _max_bytes| {
+                    assert_eq!(url, "http://crl.example.invalid/test.crl");
+                    self.calls += 1;
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(self.bytes.clone()))
+                },
+            ))
         }
     }
     for (crl, expected) in [
@@ -108,17 +112,21 @@ fn crl_fetch_injected_bytes_are_authenticated_and_reported() {
 #[test]
 fn crl_fetch_undecodable_response_reports_each_cause_once() {
     struct Source;
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             // A certificate is valid DER but not a CertificateList.
-            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
-                Ok(rssig::retrieval::SourcedCrl::new(
-                    include_bytes!("../fixtures/root.der").to_vec(),
-                ))
-            }))
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |_url, _max_bytes| {
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(
+                        include_bytes!("../fixtures/root.der").to_vec(),
+                    ))
+                },
+            ))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -175,14 +183,18 @@ fn crl_fetch_undecodable_response_reports_each_cause_once() {
 #[test]
 fn usable_supplied_crls_and_offline_mode_do_not_call_the_provider() {
     struct NoCalls;
-    impl rssig::retrieval::CrlSource for NoCalls {
+    impl rssig_engine::retrieval::CrlSource for NoCalls {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
-                panic!("supplied CRL or offline mode must not call the provider");
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |_url, _max_bytes| {
+                    panic!("supplied CRL or offline mode must not call the provider");
+                },
+            ))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -237,15 +249,19 @@ fn fetched_bundles_enforce_retained_crl_limit() {
         bytes: Vec<u8>,
         calls: usize,
     }
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |_url, _max_bytes| {
-                self.calls += 1;
-                Ok(rssig::retrieval::SourcedCrl::new(self.bytes.clone()))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |_url, _max_bytes| {
+                    self.calls += 1;
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(self.bytes.clone()))
+                },
+            ))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -321,17 +337,21 @@ fn crl_fetch_coverage_uses_the_verification_authority_rule() {
         response: Option<Vec<u8>>,
         requests: Vec<String>,
     }
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
-                self.requests.push(url.into());
-                Ok(rssig::retrieval::SourcedCrl::new(
-                    self.response.clone().expect("unexpected provider call"),
-                ))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |url, _max_bytes| {
+                    self.requests.push(url.into());
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(
+                        self.response.clone().expect("unexpected provider call"),
+                    ))
+                },
+            ))
         }
     }
     const LEAF: &str = "crl-leaf-crl-dp.exe";
@@ -443,25 +463,29 @@ fn crl_fetch_follows_the_verification_result() {
         responses: Vec<(&'static str, Vec<u8>)>,
         requests: Vec<String>,
     }
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
-                self.requests.push(url.into());
-                let (_, bytes) = self
-                    .responses
-                    .iter()
-                    .find(|(known, _)| *known == url)
-                    .ok_or_else(|| {
-                        rssig::retrieval::CrlSourceError::new(
-                            rssig::domain::CrlSourceErrorKind::Failed,
-                            "no response for this URL",
-                        )
-                    })?;
-                Ok(rssig::retrieval::SourcedCrl::new(bytes.clone()))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |url, _max_bytes| {
+                    self.requests.push(url.into());
+                    let (_, bytes) = self
+                        .responses
+                        .iter()
+                        .find(|(known, _)| *known == url)
+                        .ok_or_else(|| {
+                            rssig_engine::retrieval::CrlSourceError::new(
+                                rssig_engine::domain::CrlSourceErrorKind::Failed,
+                                "no response for this URL",
+                            )
+                        })?;
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(bytes.clone()))
+                },
+            ))
         }
     }
     const EXAMPLE_POINT: &str = "http://crl.example.invalid/test.crl";
@@ -592,18 +616,22 @@ fn crl_fetch_follows_the_verification_result() {
 #[test]
 fn crl_fetch_asks_only_the_certificate_without_a_crl() {
     struct Unreachable(Vec<String>);
-    impl rssig::retrieval::CrlSource for Unreachable {
+    impl rssig_engine::retrieval::CrlSource for Unreachable {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
-                self.0.push(url.into());
-                Err(rssig::retrieval::CrlSourceError::new(
-                    rssig::domain::CrlSourceErrorKind::Failed,
-                    "unreachable",
-                ))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |url, _max_bytes| {
+                    self.0.push(url.into());
+                    Err(rssig_engine::retrieval::CrlSourceError::new(
+                        rssig_engine::domain::CrlSourceErrorKind::Failed,
+                        "unreachable",
+                    ))
+                },
+            ))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -651,28 +679,33 @@ fn crl_fetch_asks_only_the_certificate_without_a_crl() {
 #[test]
 fn crl_fetch_bad_response_is_no_evidence_beside_another_point() {
     struct Source(Vec<String>);
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _max_bytes| {
-                self.0.push(url.into());
-                let file = match url {
-                    "http://crl.invalid/sec10-c.crl" => "path-root.der", // a certificate
-                    "http://crl.invalid/sec10-e.crl" => "crl-issuer-idp-second-point.crl",
-                    _ => {
-                        return Err(rssig::retrieval::CrlSourceError::new(
-                            rssig::domain::CrlSourceErrorKind::Failed,
-                            "unreachable",
-                        ));
-                    }
-                };
-                let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-                Ok(rssig::retrieval::SourcedCrl::new(
-                    std::fs::read(base.join(file)).unwrap(),
-                ))
-            }))
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(
+                request,
+                |url, _max_bytes| {
+                    self.0.push(url.into());
+                    let file = match url {
+                        "http://crl.invalid/sec10-c.crl" => "path-root.der", // a certificate
+                        "http://crl.invalid/sec10-e.crl" => "crl-issuer-idp-second-point.crl",
+                        _ => {
+                            return Err(rssig_engine::retrieval::CrlSourceError::new(
+                                rssig_engine::domain::CrlSourceErrorKind::Failed,
+                                "unreachable",
+                            ));
+                        }
+                    };
+                    let base =
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+                    Ok(rssig_engine::retrieval::SourcedCrl::new(
+                        std::fs::read(base.join(file)).unwrap(),
+                    ))
+                },
+            ))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -735,18 +768,19 @@ fn crl_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
         crl: Vec<u8>,
         asked: Vec<(Vec<u8>, Vec<u8>, usize)>,
     }
-    impl rssig::retrieval::CrlSource for ByCertificate {
+    impl rssig_engine::retrieval::CrlSource for ByCertificate {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.asked.push((
                 request.certificate.to_vec(),
                 request.issuer.to_vec(),
                 request.distribution_points.len(),
             ));
-            Ok(rssig::retrieval::CrlResponse::new()
-                .with_crl(rssig::retrieval::SourcedCrl::new(self.crl.clone())))
+            Ok(rssig_engine::retrieval::CrlResponse::new()
+                .with_crl(rssig_engine::retrieval::SourcedCrl::new(self.crl.clone())))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -812,14 +846,15 @@ fn crl_fetch_completes_the_path_without_a_crl_beside_a_revoked_path() {
 #[test]
 fn crl_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
     struct Fresh(Vec<u8>, usize);
-    impl rssig::retrieval::CrlSource for Fresh {
+    impl rssig_engine::retrieval::CrlSource for Fresh {
         fn crls(
             &mut self,
-            _: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.1 += 1;
-            Ok(rssig::retrieval::CrlResponse::new()
-                .with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone())))
+            Ok(rssig_engine::retrieval::CrlResponse::new()
+                .with_crl(rssig_engine::retrieval::SourcedCrl::new(self.0.clone())))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -875,14 +910,15 @@ fn crl_a_revocation_names_and_fetch_refreshes_another_paths_expired_crl() {
 #[test]
 fn crl_fetch_abort_beside_a_revoked_path_is_reported() {
     struct Aborts(usize);
-    impl rssig::retrieval::CrlSource for Aborts {
+    impl rssig_engine::retrieval::CrlSource for Aborts {
         fn crls(
             &mut self,
-            _: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.0 += 1;
-            Err(rssig::retrieval::CrlSourceError::new(
-                rssig::domain::CrlSourceErrorKind::Abort,
+            Err(rssig_engine::retrieval::CrlSourceError::new(
+                rssig_engine::domain::CrlSourceErrorKind::Abort,
                 "deadline",
             ))
         }
@@ -976,13 +1012,14 @@ fn crl_fetch_keeps_a_definite_crl_result_on_a_path_failing_key_usage() {
 #[test]
 fn crl_fetch_never_asks_about_a_path_failing_key_usage() {
     struct Counts(usize);
-    impl rssig::retrieval::CrlSource for Counts {
+    impl rssig_engine::retrieval::CrlSource for Counts {
         fn crls(
             &mut self,
-            _: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.0 += 1;
-            Ok(rssig::retrieval::CrlResponse::new())
+            Ok(rssig_engine::retrieval::CrlResponse::new())
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -1040,13 +1077,14 @@ fn crl_fetch_never_asks_about_a_path_failing_key_usage() {
 #[test]
 fn crl_fetch_abort_that_cut_nothing_short_is_not_reported() {
     struct Source(Vec<u8>);
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            use rssig::domain::CrlSourceErrorKind;
-            use rssig::retrieval::{CrlResponse, CrlSourceError, SourcedCrl};
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            use rssig_engine::domain::CrlSourceErrorKind;
+            use rssig_engine::retrieval::{CrlResponse, CrlSourceError, SourcedCrl};
             if request
                 .distribution_points
                 .iter()
@@ -1056,7 +1094,7 @@ fn crl_fetch_abort_that_cut_nothing_short_is_not_reported() {
                     .with_crl(SourcedCrl::new(self.0.clone()))
                     .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "deadline")));
             }
-            Ok(rssig::retrieval::fetch_each(request, |_, _| {
+            Ok(rssig_engine::retrieval::fetch_each(request, |_, _| {
                 Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down"))
             }))
         }
@@ -1094,14 +1132,15 @@ fn crl_fetch_abort_that_cut_nothing_short_is_not_reported() {
 #[test]
 fn crl_fetch_https_point_is_the_source_decision() {
     struct Answers(Vec<u8>, Vec<String>);
-    impl rssig::retrieval::CrlSource for Answers {
+    impl rssig_engine::retrieval::CrlSource for Answers {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _| {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(request, |url, _| {
                 self.1.push(url.to_owned());
-                Ok(rssig::retrieval::SourcedCrl::new(self.0.clone()).with_url(url))
+                Ok(rssig_engine::retrieval::SourcedCrl::new(self.0.clone()).with_url(url))
             }))
         }
     }
@@ -1152,14 +1191,15 @@ fn crl_fetch_https_point_is_the_source_decision() {
 #[test]
 fn crl_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
     struct ByCertificate(Vec<u8>, usize);
-    impl rssig::retrieval::CrlSource for ByCertificate {
+    impl rssig_engine::retrieval::CrlSource for ByCertificate {
         fn crls(
             &mut self,
-            _: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.1 += 1;
-            Ok(rssig::retrieval::CrlResponse::new()
-                .with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone())))
+            Ok(rssig_engine::retrieval::CrlResponse::new()
+                .with_crl(rssig_engine::retrieval::SourcedCrl::new(self.0.clone())))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -1215,19 +1255,20 @@ fn crl_an_expired_path_does_not_hide_a_path_that_lacks_only_a_crl() {
 #[test]
 fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
     struct Source(Option<Vec<u8>>, Vec<String>);
-    impl rssig::retrieval::CrlSource for Source {
+    impl rssig_engine::retrieval::CrlSource for Source {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _| {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(request, |url, _| {
                 self.1.push(url.to_owned());
                 self.0
                     .clone()
-                    .map(rssig::retrieval::SourcedCrl::new)
+                    .map(rssig_engine::retrieval::SourcedCrl::new)
                     .ok_or_else(|| {
-                        rssig::retrieval::CrlSourceError::new(
-                            rssig::domain::CrlSourceErrorKind::Failed,
+                        rssig_engine::retrieval::CrlSourceError::new(
+                            rssig_engine::domain::CrlSourceErrorKind::Failed,
                             "down",
                         )
                     })
@@ -1287,14 +1328,15 @@ fn a_stale_supplied_crl_is_refreshed_from_the_provider() {
 #[test]
 fn crl_fetch_by_certificate_answer_leaves_no_point_failures() {
     struct ByCertificate(Vec<u8>, Vec<usize>);
-    impl rssig::retrieval::CrlSource for ByCertificate {
+    impl rssig_engine::retrieval::CrlSource for ByCertificate {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             self.1.push(request.distribution_points.len());
-            Ok(rssig::retrieval::CrlResponse::new()
-                .with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone())))
+            Ok(rssig_engine::retrieval::CrlResponse::new()
+                .with_crl(rssig_engine::retrieval::SourcedCrl::new(self.0.clone())))
         }
     }
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
@@ -1370,8 +1412,8 @@ const STALE_SIGNER: &str = "the signer was never asked about: DISCOVERY_SIGNER i
 /// also pins the stage, the problem type and the title.
 #[test]
 fn crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point() {
-    use rssig::domain::CrlSourceErrorKind::{self, Abort, Denied, Failed, Unknown};
-    use rssig::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError};
+    use rssig_engine::domain::CrlSourceErrorKind::{self, Abort, Denied, Failed, Unknown};
+    use rssig_engine::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError};
     // Fails for the signer only, as the spec cases do: the chain's other
     // certificates are asked about too, and get nothing. The last field
     // records that the signer was asked.
@@ -1495,16 +1537,17 @@ fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered
     // Answers the signer only, as the spec case does: the chain's other
     // certificates are asked about too, and get nothing.
     struct NotACrl(Vec<u8>, bool);
-    impl rssig::retrieval::CrlSource for NotACrl {
+    impl rssig_engine::retrieval::CrlSource for NotACrl {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             let signer = sha256_hex(request.certificate);
-            let response = rssig::retrieval::CrlResponse::new();
+            let response = rssig_engine::retrieval::CrlResponse::new();
             self.1 |= signer == DISCOVERY_SIGNER;
             Ok(if signer == DISCOVERY_SIGNER {
-                response.with_crl(rssig::retrieval::SourcedCrl::new(self.0.clone()))
+                response.with_crl(rssig_engine::retrieval::SourcedCrl::new(self.0.clone()))
             } else {
                 response
             })
@@ -1548,18 +1591,19 @@ fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered
 #[test]
 fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered() {
     struct Oversized(bool);
-    impl rssig::retrieval::CrlSource for Oversized {
+    impl rssig_engine::retrieval::CrlSource for Oversized {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             let signer = sha256_hex(request.certificate);
-            let response = rssig::retrieval::CrlResponse::new();
+            let response = rssig_engine::retrieval::CrlResponse::new();
             self.0 |= signer == DISCOVERY_SIGNER;
             Ok(if signer == DISCOVERY_SIGNER {
-                response.with_crl(rssig::retrieval::SourcedCrl::new(vec![
+                response.with_crl(rssig_engine::retrieval::SourcedCrl::new(vec![
                     0;
-                    rssig::retrieval::MAX_CRL_BYTES
+                    rssig_engine::retrieval::MAX_CRL_BYTES
                         + 1
                 ]))
             } else {
@@ -1591,12 +1635,15 @@ fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_
         .find(|f| f["code"] == "resource_limit_exceeded")
         .unwrap_or_else(|| panic!("{failures:?}"));
     assert_eq!(cap["details"]["resource"], "crl_response_bytes");
-    assert_eq!(cap["details"]["limit"], rssig::retrieval::MAX_CRL_BYTES);
+    assert_eq!(
+        cap["details"]["limit"],
+        rssig_engine::retrieval::MAX_CRL_BYTES
+    );
     // The per-body cap counts no earlier body (CRL-046).
     assert_eq!(cap["details"]["used"], 0);
     assert_eq!(
         cap["details"]["requested"],
-        rssig::retrieval::MAX_CRL_BYTES + 1
+        rssig_engine::retrieval::MAX_CRL_BYTES + 1
     );
     let unanswered = failures
         .iter()
@@ -1611,11 +1658,12 @@ fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_
 #[test]
 fn fetch_asks_nothing_before_the_whole_input_is_authenticated() {
     struct NoCalls;
-    impl rssig::retrieval::CrlSource for NoCalls {
+    impl rssig_engine::retrieval::CrlSource for NoCalls {
         fn crls(
             &mut self,
-            _: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
             panic!("a source must not be asked before the input is authenticated");
         }
     }
@@ -1648,14 +1696,15 @@ fn fetch_asks_nothing_before_the_whole_input_is_authenticated() {
 #[test]
 fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
     struct Fresh(Vec<u8>, usize);
-    impl rssig::retrieval::CrlSource for Fresh {
+    impl rssig_engine::retrieval::CrlSource for Fresh {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |_, _| {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(request, |_, _| {
                 self.1 += 1;
-                Ok(rssig::retrieval::SourcedCrl::new(self.0.clone()))
+                Ok(rssig_engine::retrieval::SourcedCrl::new(self.0.clone()))
             }))
         }
     }
@@ -1743,15 +1792,16 @@ fn crl_fetch_refreshes_a_replaceable_supplied_crl_and_not_a_forged_one() {
 #[test]
 fn crl_unknown_status_names_a_missing_and_a_replaceable_crl() {
     struct Points(Vec<(&'static str, Vec<u8>)>, Vec<String>);
-    impl rssig::retrieval::CrlSource for Points {
+    impl rssig_engine::retrieval::CrlSource for Points {
         fn crls(
             &mut self,
-            request: &rssig::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig::retrieval::CrlResponse, rssig::retrieval::CrlSourceError> {
-            Ok(rssig::retrieval::fetch_each(request, |url, _| {
+            request: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            Ok(rssig_engine::retrieval::fetch_each(request, |url, _| {
                 self.1.push(url.to_owned());
                 let (_, bytes) = self.0.iter().find(|(known, _)| *known == url).unwrap();
-                Ok(rssig::retrieval::SourcedCrl::new(bytes.clone()))
+                Ok(rssig_engine::retrieval::SourcedCrl::new(bytes.clone()))
             }))
         }
     }
@@ -1833,8 +1883,8 @@ fn crl_unknown_status_names_a_missing_and_a_replaceable_crl() {
 /// a certificate the result names; a revocation names none.
 #[test]
 fn crl_fetch_an_abort_beside_a_revoking_crl_leaves_the_result_unmarked() {
-    use rssig::domain::CrlSourceErrorKind;
-    use rssig::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError, SourcedCrl};
+    use rssig_engine::domain::CrlSourceErrorKind;
+    use rssig_engine::retrieval::{CrlRequest, CrlResponse, CrlSource, CrlSourceError, SourcedCrl};
     // The signer gets a CRL revoking it and an abort in the same response.
     struct RevokesAndAborts(Vec<u8>, bool);
     impl CrlSource for RevokesAndAborts {

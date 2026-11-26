@@ -27,7 +27,7 @@ lint: fuzz-lint
 .PHONY: coverage
 coverage: check-coverage-tools
 	$(CARGO) llvm-cov clean --workspace
-	RSSIG_SPEC_REPORT="$(CURDIR)/target/coverage/conformance.json" $(CARGO) llvm-cov --locked --all-targets --no-report
+	RSSIG_SPEC_REPORT="$(CURDIR)/target/coverage/conformance.json" $(CARGO) llvm-cov --locked --workspace --all-targets --no-report
 	$(CARGO) llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$$)' --html --output-dir target/coverage
 	$(CARGO) llvm-cov report --ignore-filename-regex '(^|/)tests(/|\.rs$$)' --cobertura --output-path target/coverage/cobertura.xml
 
@@ -39,6 +39,16 @@ check-coverage-tools:
 		echo "  cargo install cargo-llvm-cov --version 0.9.1 --locked  # rustup"; \
 		exit 1; \
 	}
+
+# Package both crates as they would be published. `cargo package` builds each
+# packaged crate from its own files, so a library source that reaches outside
+# its package fails here. Tests are not packaged: they run from the
+# repository, where both packages read the shared tests/fixtures.
+# PACKAGE_FLAGS takes e.g. --allow-dirty for an uncommitted tree.
+PACKAGE_FLAGS ?=
+.PHONY: package-check
+package-check:
+	$(CARGO) package --workspace --locked $(PACKAGE_FLAGS)
 
 .PHONY: build
 build:

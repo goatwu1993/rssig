@@ -76,7 +76,7 @@ fn coverage_inventory_references_existing_assertions_and_provenance() {
         );
     }
     for (code, evidence) in &inventory.errors {
-        let _: rssig::domain::ErrorCode =
+        let _: rssig_engine::domain::ErrorCode =
             serde_json::from_value(Value::String(code.clone())).unwrap();
         assert_eq!(evidence.cases.is_empty(), !evidence.gap.is_empty());
         for id in &evidence.cases {

@@ -3,7 +3,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rssig::parse::{
+use rssig_engine::parse::{
     AlgorithmIdentifier, Attributes, InspectionBudget, ParsedTime, SignedData, SignerInfo, TstInfo,
 };
 

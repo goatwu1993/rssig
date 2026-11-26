@@ -325,7 +325,9 @@
       "crl-count": [
         "limit-fetch-64-crls",
         "limit-fetch-65-crls",
-        "limit-fetch-supplied-plus-bundle"
+        "limit-fetch-supplied-plus-bundle",
+        "limit-supplied-64-crls",
+        "limit-supplied-65-crls"
       ],
       "host-input": [
         "limit-batch-count",

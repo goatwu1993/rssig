@@ -777,6 +777,16 @@ dependencies = [
 name = "rssig"
 version = "0.1.0"
 dependencies = [
+ "httparse",
+ "rssig-engine",
+ "serde_json",
+ "url",
+]
+
+[[package]]
+name = "rssig-engine"
+version = "0.1.0"
+dependencies = [
  "anyhow",
  "base64ct",
  "cfb",
@@ -784,7 +794,6 @@ dependencies = [
  "der",
  "digest",
  "flate2",
- "httparse",
  "p256",
  "p384",
  "roxmltree",
@@ -806,6 +815,7 @@ version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
  "rssig",
+ "rssig-engine",
  "sha2",
 ]
 

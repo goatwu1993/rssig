@@ -108,7 +108,7 @@ scopes:
   lib:
     kind: project
     index: null
-    description: Public library API and crate structure
+    description: Public library API and workspace package structure (engine and application)
   doc:
     kind: project
     index: null

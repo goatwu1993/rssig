@@ -170,24 +170,3 @@ fn help_advertises_msp() {
     );
     assert!(String::from_utf8(stdout).unwrap().contains("MSP"));
 }
-
-#[test]
-fn library_dispatch_uses_the_msi_family_without_a_filename() {
-    let bytes = std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/msp-good.msp"
-    ))
-    .unwrap();
-    let options = rssig::VerifyOptions {
-        trust: None,
-        check_revocation: true,
-        allow_sha1: false,
-        now: 1800000000,
-    };
-    let auto = rssig::verify(&bytes, &options).unwrap();
-    let explicit = rssig::verify_msi(&bytes, &options).unwrap();
-    assert_eq!(
-        serde_json::to_value(auto).unwrap(),
-        serde_json::to_value(explicit).unwrap()
-    );
-}

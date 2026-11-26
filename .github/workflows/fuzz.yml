@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       seconds:
-        description: Seconds to fuzz each target (at most 1800)
+        description: Seconds to fuzz each target (at most 16200 divided by the number of targets)
         default: "300"
 
 permissions:
@@ -24,7 +24,9 @@ jobs:
   fuzz:
     name: Fuzz all targets
     runs-on: ubuntu-latest
-    # Ten targets at the 1800 second maximum is five hours, plus one build.
+    # 270 minutes of fuzzing shared by every target in fuzz/targets.txt (the
+    # duration check below enforces it), leaving 75 for the toolchain, build,
+    # corpus cache and minimization.
     timeout-minutes: 345
     env:
       CARGO_TERM_COLOR: always
@@ -36,9 +38,29 @@ jobs:
         run: |
           case "$FUZZ_SECONDS" in
             ''|*[!0-9]*) echo "seconds must be a whole number"; exit 1 ;;
+            # Over six digits is never valid, and would overflow `[ -gt ]`.
+            ???????*) echo "seconds must be at most 999999"; exit 1 ;;
           esac
-          if [ "$FUZZ_SECONDS" -gt 1800 ]; then
-            echo "seconds must be at most 1800 to fit the job timeout"; exit 1
+          # libFuzzer reads -max_total_time=0 as no limit.
+          if [ "$FUZZ_SECONDS" -eq 0 ]; then
+            echo "seconds must be at least 1"; exit 1
+          fi
+          # `grep -c .` counts a last line without a trailing newline too.
+          targets=$(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' fuzz/targets.txt | grep -c .) || true
+          if [ "$targets" -eq 0 ]; then
+            echo "fuzz/targets.txt lists no targets"; exit 1
+          fi
+          max=$((16200 / targets))
+          if [ "$max" -eq 0 ]; then
+            echo "$targets targets cannot share 270 minutes"; exit 1
+          fi
+          if [ "$FUZZ_SECONDS" -gt "$max" ]; then
+            # A requested duration is refused; the fixed push, pull-request
+            # and weekly durations shrink to fit as targets are added.
+            if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+              echo "seconds must be at most $max: $targets targets share 270 minutes of the job timeout"; exit 1
+            fi
+            echo "FUZZ_SECONDS=$max" >> "$GITHUB_ENV"
           fi
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable

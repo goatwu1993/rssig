@@ -25,7 +25,7 @@ fn success(file: &str, integrity: bool, count: usize) {
     let out = output(file, integrity);
     expect_success(&out);
     let appx = out.success().appx.as_ref().unwrap();
-    assert_eq!(appx.kind, rssig::domain::AppxKind::Bundle);
+    assert_eq!(appx.kind, rssig_engine::domain::AppxKind::Bundle);
     let packages = appx.bundle_packages.as_ref().unwrap();
     assert_eq!(packages.len(), count);
     if file.contains("multi") {
@@ -40,7 +40,7 @@ fn success(file: &str, integrity: bool, count: usize) {
     for p in packages {
         assert_eq!(
             p.verification.appx.as_ref().unwrap().kind,
-            rssig::domain::AppxKind::Package
+            rssig_engine::domain::AppxKind::Package
         );
         assert!(
             p.verification

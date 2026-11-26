@@ -6,8 +6,8 @@ The verifier parses and hashes cabinet bytes in Rust and shares the PE/MSI CMS,
 certificate-chain, nested-signature, timestamp, and local-CRL verification engine.
 It never extracts, decompresses, or executes cabinet contents.
 
-Library inspection is available without default features through
-`parse::Cab`. It exposes borrowed container bytes, signature bytes, and
+Library inspection is available in `rssig-engine` without default features
+through `parse::Cab`. It exposes borrowed container bytes, signature bytes, and
 `authenticode_chunks()` without authenticating them. With `verify` enabled,
 `verify_parsed_cab` reuses that parsed layout and applies full
 verification. See the [library API](library.md) for structural errors and the distinction

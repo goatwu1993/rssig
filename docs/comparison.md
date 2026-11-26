@@ -301,8 +301,8 @@ PE implementations (authenticode-rs, cross-authenticode, rsigncode, and pe-sign)
 CMS checks, configured trust anchors, signer/TSA EKUs, timestamp
 binding, chain revocation, and explicit reporting when trust or revocation is
 disabled. Its shared engine applies those checks across Windows formats.
-`src/crypto.rs`, `src/trust.rs`, and `src/verify.rs` are the implementation
-references; `src/domain.rs` defines the consumer contract.
+`engine/src/crypto.rs`, `engine/src/trust.rs`, and `engine/src/verify/` are the
+implementation references; `engine/src/domain.rs` defines the consumer contract.
 
 The dependency graph uses RustCrypto with webpki's native crypto features
 disabled. The macOS root adapter includes Security Framework bindings for root

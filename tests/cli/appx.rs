@@ -4,7 +4,7 @@ fn expect_appx(output: &Output) {
     assert_eq!(output.success().format, "appx_authenticode");
     assert_eq!(
         output.success().appx.as_ref().unwrap().kind,
-        rssig::domain::AppxKind::Package
+        rssig_engine::domain::AppxKind::Package
     );
     assert!(
         output
@@ -880,7 +880,7 @@ fn appx_bundle_trusted() {
     expect_success(&output);
     assert_eq!(output.success().format, "appx_authenticode");
     let appx = output.success().appx.as_ref().unwrap();
-    assert!(matches!(&appx.kind, rssig::domain::AppxKind::Bundle));
+    assert!(matches!(&appx.kind, rssig_engine::domain::AppxKind::Bundle));
     assert_eq!(appx.identity.name, "rssig.test");
     assert_eq!(appx.block_map.files_verified, 1);
     let packages = appx.bundle_packages.as_ref().unwrap();
@@ -894,7 +894,7 @@ fn appx_bundle_trusted() {
     assert!(packages[0].verification.signatures[0].chain_trusted);
     assert!(matches!(
         &packages[0].verification.appx.as_ref().unwrap().kind,
-        rssig::domain::AppxKind::Package
+        rssig_engine::domain::AppxKind::Package
     ));
     assert_eq!(
         packages[0]

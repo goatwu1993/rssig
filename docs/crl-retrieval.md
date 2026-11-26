@@ -238,8 +238,10 @@ artifact never implies that its signature or revocation status is valid.
 
 ## Provider boundary
 
-Enable the optional `crl-fetch` feature for `rssig::retrieval`; `cli` includes it.
-The parser and `verify-core` remain usable without network dependencies or std.
+The engine's optional `retrieval` feature enables `rssig_engine::retrieval`; it
+has no transport. The application's `crl-fetch` feature adds the default
+source, `rssig::crl::HttpCrlSource`, and `cli` includes it. The parser and
+`verify-core` remain usable without network dependencies or std.
 
 - `crl_distribution_points(&Certificate)` decodes URI discovery metadata and
   fails at the first unsupported point; retrieval itself skips such points one
@@ -260,7 +262,7 @@ The parser and `verify-core` remain usable without network dependencies or std.
   HTTPS, LDAP, a proxy, a cache, a directory of CRLs by issuer), and refuses
   the rest as `denied`. A source that fetches by URL must screen them, since they
   come from the certificates of the file being verified and can name
-  `file:` URLs or internal addresses: `retrieval::check_public_http_url`
+  `file:` URLs or internal addresses: `rssig::crl::check_public_http_url`
   applies the built-in source's URL policy. A custom source therefore owns its own destination
   safety. Implementations must bound their own I/O, allocation, latency and
   number of requests per verification (the engine keeps no total of requests,
@@ -286,9 +288,11 @@ rssig follows OpenSSL's boundary. Its verifier only asks for CRLs by certificate
 (`get_crl`, `lookup_crls`, `x509_vfy.c:2228`) and judges what comes back; the
 application, which in OpenSSL is a callback (`apps/lib/apps.c:2866-2867`,
 `apps/verify.c:220-232`) and in Bouncy Castle the fetch helper (`CrlCache.java`),
-decides what to fetch, from where and how much. Here the engine is the library's
-verification and retrieval code, and the application is the `CrlSource` it is
-given: `HttpCrlSource` in the CLI, or one the library user writes
+decides what to fetch, from where and how much. Here the boundary is also a
+package boundary: the engine is `rssig-engine` (`engine/src/retrieval.rs` and
+the verifier), and the application is the `rssig` package and the `CrlSource`
+it injects: `HttpCrlSource` (`src/crl.rs`) in the CLI, or one the library user
+writes
 ([CRL-023](crl.md#crl-023-the-source-decides-transport-the-core-screens-hygiene-only),
 [CRL-039](crl.md#crl-039-fetch-limits-bound-one-verification)).
 
@@ -304,7 +308,7 @@ given: `HttpCrlSource` in the CLI, or one the library user writes
 | Which URLs to try, which schemes, destinations, redirects, DNS, TLS, proxies, caches (CRL-023, CRL-037) | Source |
 | How many requests and distinct URLs per verification, time, bytes on the wire (CRL-039) | Source |
 | Renewing those allowances for each file or call: `begin_verification` | Source, called by the engine |
-| Which flags build which source, `--fetch-crls`, one source for a batch of files | Application (the CLI) |
+| Which flags build which source, `--fetch-crls`, one source for a batch of files | Application (`rssig::cli`) |
 
 A rule belongs in the engine when it judges evidence or protects what the
 engine itself records and returns, and in the source when it is fetch policy: a
@@ -331,7 +335,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject single-label names; names ending in the labels `localhost`, `local`, `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion` or `alt` (whole labels); nonpublic/reserved literal addresses; and an entire DNS answer containing nonpublic addresses. A denied host is reported as not public |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included); both are the built-in source's own, not the engine's |
+| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
 | Response entries | At most 64 CRL bodies and failures together in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |

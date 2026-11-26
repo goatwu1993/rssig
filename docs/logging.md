@@ -1,11 +1,11 @@
 # Injected diagnostic logging
 
 rssig has no global logger and no logging dependency. The engine writes to no
-stream and emits nothing unless the caller supplies a `rssig::log::Logger`.
+stream and emits nothing unless the caller supplies a `rssig_engine::log::Logger`.
 Logging is available with `verify-core`, including `no_std + alloc` builds.
 
 ```rust
-use rssig::{log::{Level, Logger, Record}, verify::{Verifier, VerifyOptions}};
+use rssig_engine::{log::{Level, Logger, Record}, verify::{Verifier, VerifyOptions}};
 use std::sync::Mutex;
 
 struct Lines(Mutex<Vec<String>>);
@@ -30,9 +30,10 @@ let report = Verifier::new(&options).with_logger(&lines).verify(bytes)?;
   across threads. Keep interior state in atomics or a lock.
 - `Record` has a `level`, the verification `stage` (the same `domain::Stage` that
   errors carry), and a lazily formatted `message`. `Level` is ordered
-  `Debug < Info < Warn`. Both types are non-exhaustive.
+  `Debug < Info < Warn`. Both types are non-exhaustive; an application that reports its own steps
+  through the same logger builds a record with `Record::new`.
 - `verify::Verifier::new(&options).with_logger(&logger)` offers `verify`,
-  `verify_with_hint`, `verify_as` and, with `crl-fetch`, `verify_with_crl_source`.
+  `verify_with_hint`, `verify_as` and, with the engine's `retrieval` feature, `verify_with_crl_source`.
   Without a logger each behaves exactly like the free function of the same name.
 - `cli::run_with_host(argv, stdout, stderr, Host::new().with_logger(&logger))`
   injects a logger into the in-process CLI. `Host` also carries the optional
