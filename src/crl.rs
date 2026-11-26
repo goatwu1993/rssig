@@ -37,7 +37,9 @@ pub const MAX_SOURCE_REQUESTS: usize = 64;
 pub const MAX_SOURCE_URLS: usize = 64;
 /// Points of one certificate that this source fetches per request: the first
 /// ones it reaches that are not answered from this verification's memory
-/// (those are answered again however many there are). The others are
+/// (those are answered again, up to the 64 bodies a response may hold,
+/// `MAX_RESPONSE_ENTRIES`; the points past those are denied with
+/// `crl_response_entries`). The others are
 /// reported as `Denied` with `details.resource` `crl_request_points` and
 /// `requested` the call's distinct points it reached and would fetch, spend no
 /// request and no distinct-URL slot, and so
@@ -518,9 +520,6 @@ impl HttpCrlSource {
         // outcome is one the call would fetch, counted in `requested` even
         // when the body cap stops it.
         let room = max_bytes.min(MAX_CRL_BYTES);
-        if !self.answered.contains_key(&key) && !self.too_big.contains_key(&key) {
-            self.call.reaching.insert(key.clone());
-        }
         let kept_failure = match self.answered.get(&key) {
             Some(Ok(crl)) => crl.bytes.len() > room,
             Some(Err(_)) => true,
@@ -529,6 +528,9 @@ impl HttpCrlSource {
                 .get(&key)
                 .is_some_and(|(under, e)| room <= *under || room < seen_size(e)),
         };
+        if !kept_failure && !self.answered.contains_key(&key) {
+            self.call.reaching.insert(key.clone());
+        }
         if self.call.bodies >= MAX_RESPONSE_ENTRIES && !kept_failure {
             return Err(CrlSourceError::new(
                 CrlSourceErrorKind::Denied,

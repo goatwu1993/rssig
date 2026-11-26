@@ -42,9 +42,11 @@ they pin or what they check, never after a task.
 - [x] **LIMIT-T002** fix: Enforce aggregate verification budgets. Done; [record](docs/tasks/done.md#limit-t002-fix-enforce-aggregate-verification-budgets).
 - [x] **LIMIT-T003** fix: Bound host input and report memory. Done; [record](docs/tasks/done.md#limit-t003-fix-bound-host-input-and-report-memory).
 - [ ] **LIMIT-T004** fix: Finish with the gathered evidence when an engine limit is reached.
-  `retrieval_trust_bytes` and the other engine limits end the whole
+  The engine limits (the up-front `retrieval_trust_bytes` check of supplied
+  roots and CRLs, response entries, retained CRL count) end the whole
   verification with `resource_limit_exceeded`, rather than recording the
-  remaining points and finishing with the evidence gathered.
+  remaining points and finishing with the evidence gathered. CRL-T041 already
+  does this for a request reached with the retained-byte cap full.
 
 ### CMS
 
