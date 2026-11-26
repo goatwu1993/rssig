@@ -70,6 +70,11 @@ they pin or what they check, never after a task.
 ### TSA
 
 - [x] **TSA-T001** fix: Complete timestamp structure and multiplicity tests. Done; [record](docs/tasks/done.md#tsa-t001-fix-complete-timestamp-structure-and-multiplicity-tests).
+- [ ] **CRL-T046** refactor: Share a cached CRL body between the requests that repeat it.
+  `HttpCrlSource` clones a cached body (up to 8 MiB) into each response, so 256 certificates sharing one
+  cost about 2 GiB of copying though one fetch happened; retention is bounded by `MAX_NETWORK_BYTES`.
+  Sharing needs `SourcedCrl::bytes` to be shared (`Arc<[u8]>`), a public API change; weigh it against how
+  often a chain repeats a point.
 
 ### TIME
 
@@ -359,7 +364,7 @@ they pin or what they check, never after a task.
 - [x] **CRL-T040** refactor: Offer every listed point to the source and cap only the report. Done ([PR #92](https://github.com/goatwu1993/rssig/pull/92)); [CRL-024](docs/crl.md#crl-024-one-certificates-distribution-points-never-end-the-run).
 - [x] **CRL-T041** refactor: Move the engine's reuse of earlier answers to the source. Done ([PR #95](https://github.com/goatwu1993/rssig/pull/95)); [CRL-033](docs/crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-050](docs/crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before), [CRL-051](docs/crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources).
 - [ ] **CRL-T042** test: Add a `tests/cases.json` case and CLI test for a certificate listing more than 16 distribution points (CRL-024): all reach the source, and the report keeps 16 entries plus one `details.omitted` entry. Needs a fixture with a many-point certificate.
-- [ ] **CRL-T043** refactor: Bound the engine's per-point state for a certificate listing many URIs. Measured in release mode with a source that answers nothing, before CRL-T041: 200,000 URIs took about 1.0 s and 135 MB. CRL-T041 removed `Retrieval::asked`, `in_flight` and the per-verification `recorded` (now the current certificate's only); measure again. The rest is the points list, `unanswered` and the per-request key sets; a 64 MiB CMS allows far more. Remaining option: a ceiling on the URIs the engine decodes per certificate. The report cap of 16 is still unmeasured against real consumers.
+- [ ] **CRL-T043** refactor: Bound the engine's per-point state for a certificate listing many URIs. Measured in release mode with a source that answers nothing, before CRL-T041: 200,000 URIs took about 1.0 s and 135 MB. CRL-T041 removed `Retrieval::asked` and `in_flight`; measure again. The rest is the points list, `unanswered` and the per-request key sets; a 64 MiB CMS allows far more. Remaining option: a ceiling on the URIs the engine decodes per certificate. The report cap of 16 is still unmeasured against real consumers.
 - [x] **CRL-T044** refactor: Give `HttpCrlSource` a per-request point limit. Done in [PR #92](https://github.com/goatwu1993/rssig/pull/92) with CRL-T040; [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification).
 - [ ] **CRL-T045** feat: Decide whether the CLI reuses fetched CRLs across the files of one invocation (owner decision).
   `HttpCrlSource` keeps each URL's outcome for one verification only (CRL-051), so every file of a batch

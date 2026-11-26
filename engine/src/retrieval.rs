@@ -270,6 +270,17 @@ pub fn fetch_each(
     response
 }
 
+/// A fixed-size key for a certificate and a point, so that remembering one
+/// costs eight bytes. A collision (the key is fixed, so an input can be
+/// built to have one) only makes the report omit one entry or count one
+/// withheld point too few; it never changes what is accepted.
+fn point_hash(certificate: &str, key: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    (certificate, key).hash(&mut hasher);
+    hasher.finish()
+}
+
 /// A dedup key for a URI: its parsed, normalized form when it parses.
 fn url_key(raw: &str) -> String {
     url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
@@ -466,12 +477,11 @@ struct Retrieval<'b, 'l> {
     /// unused when it answered by certificate: recorded only for a
     /// certificate the failed result still names (its status unsettled).
     unused_points: Vec<(String, Vec<String>)>,
-    /// The certificate whose entries are being recorded, and the normalized
-    /// URLs the report already has an entry for under it (listed or counted
-    /// as omitted). Each certificate is asked about once, so this is only
-    /// the current one's: the engine keeps no outcome of a point across
-    /// certificates.
-    recorded: (String, BTreeSet<String>),
+    /// Per certificate and normalized URL, what the report already has an
+    /// entry for (listed or counted as omitted). Report bookkeeping only: it
+    /// keeps no outcome, and entries of one certificate are not contiguous
+    /// (the unused points of an earlier certificate are recorded last).
+    recorded: BTreeSet<u64>,
     /// Per certificate, the failure entries kept, up to
     /// `MAX_FAILURES_PER_CERTIFICATE`.
     kept: BTreeMap<(String, bool), usize>,
@@ -496,7 +506,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             aborted: false,
             aborted_for: None,
             unused_points: Vec::new(),
-            recorded: (String::new(), BTreeSet::new()),
+            recorded: BTreeSet::new(),
             kept: BTreeMap::new(),
             omitted_at: BTreeMap::new(),
             abort_kept: BTreeSet::new(),
@@ -555,11 +565,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             && !self.abort_kept.contains(certificate);
         // One entry per certificate and URL: a repeat of a point, listed or
         // withheld by the bound below, is not counted twice.
-        if self.recorded.0 != certificate {
-            self.recorded = (certificate.to_owned(), BTreeSet::new());
-        }
         if let Some(url) = url
-            && !self.recorded.1.insert(url_key(url))
+            && !self.recorded.insert(point_hash(certificate, &url_key(url)))
             && !first_abort
         {
             return;
@@ -985,14 +992,20 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             return Ok((None, false));
         }
         *total += len;
-        // Every body is decoded and hashed, so each is charged to the work
-        // budget, a repeat of an earlier one too: whether to send it again
-        // is the source's choice (CRL-051).
-        for _ in 0..8 {
-            self.budget
-                .decoded_bytes
-                .charge(len)
-                .map_err(crl_internal)?;
+        // A body naming a URL whose bytes are exactly a CRL the store holds
+        // is not decoded again: it is the store's own exact-DER check, not a
+        // memory of earlier answers, and it adds nothing. Every other body
+        // is decoded, so it is charged to the work budget, a repeat too:
+        // whether to send one again is the source's choice (CRL-051). Every
+        // body is hashed for the report.
+        let held = !without_url && self.store.has_crl(&crl.bytes);
+        if !held {
+            for _ in 0..8 {
+                self.budget
+                    .decoded_bytes
+                    .charge(len)
+                    .map_err(crl_internal)?;
+            }
         }
         self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
         self.report.artifacts.push(CrlRetrievalArtifact {
@@ -1002,6 +1015,9 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
             bytes: len,
         });
+        if held {
+            return Ok((None, false));
+        }
         // Before loading: whether this body brings a full CRL of the issuer
         // that is not already loaded (one PEM may hold several CRLs).
         let of_issuer: Vec<bool> = if without_url {
@@ -2180,12 +2196,13 @@ mod tests {
         assert_eq!(not_tried, 2, "{:?}", state.report.failures);
     }
     #[test]
-    fn the_retained_bytes_count_what_the_store_holds_and_every_body_is_work() {
+    fn the_retained_bytes_count_what_the_store_holds_and_a_decoded_body_is_work() {
         // A source that answers a shared point from its cache returns the
         // same body for each certificate (CRL-051): each certificate gets an
-        // artifact and each body is decoded and charged to the work budget,
-        // but the store holds the CRL once, so repeats leave the retained
-        // bytes, and every later request's allowance, unchanged.
+        // artifact, but the store holds the CRL once, so repeats leave the
+        // retained bytes, and every later request's allowance, unchanged,
+        // and are not decoded again (so cannot exhaust the work budget).
+        // A body that is not exactly held is decoded and charged.
         struct Cached;
         impl CrlSource for Cached {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2200,7 +2217,6 @@ mod tests {
         let store = store();
         let budget = Budget::default();
         let mut state = Retrieval::new(&store, &budget);
-        let len = include_bytes!("../../tests/fixtures/good.crl").len();
         let cert = signer_with_points("shared", 1);
         assert!(ask(&mut state, "a", &cert, &mut Cached).unwrap());
         let retained = state.store.encoded_len();
@@ -2211,7 +2227,8 @@ mod tests {
             assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut Cached).unwrap());
         }
         assert_eq!(state.store.encoded_len(), retained);
-        assert_eq!(decoded(&budget) - after_first, 64 * 8 * len);
+        // The store already holds the exact DER: nothing is decoded again.
+        assert_eq!(decoded(&budget), after_first);
         assert_eq!(state.report.artifacts.len(), 65);
         assert!(
             state.report.failures.is_empty(),
@@ -2240,6 +2257,24 @@ mod tests {
             .map(|f| f.certificate_sha256.as_str())
             .collect();
         assert_eq!(rejected, ["a", "b"]);
+    }
+    #[test]
+    fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
+        // The unused points of an earlier certificate are recorded after a
+        // later certificate's entries: its repeats are still one entry.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let e = error(ErrorCode::CrlFetchFailed, "down");
+        let (p, q) = (
+            "http://crl.example.invalid/p",
+            "http://crl.example.invalid/q",
+        );
+        state.record("a", Some(p), &e, None);
+        state.record("b", Some(q), &e, None);
+        state.record("a", Some(p), &e, None);
+        state.record("b", Some(q), &e, None);
+        assert_eq!(state.report.failures.len(), 2);
     }
     #[test]
     fn fetch_each_tries_the_next_point_after_an_over_allowance_body() {
