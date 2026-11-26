@@ -7,8 +7,10 @@ instant ranks against other failures. Whether a timestamp token can be trusted
 at all is a [timestamp token decision](tsa.md); see [which
 index](decisions.md#which-index). The entry format is defined in [Decision
 indexes](decisions.md); the rules are explained in [validation
-time](validation-time.md), and the review history is in TIME-T001 and TIME-T002
-([done](tasks/done.md)).
+time](validation-time.md), and the review history is in
+[TIME-T001](tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules)
+and
+[TIME-T002](tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
 
 TIME-003 and TIME-004 check a timestamp's time, but against certificate
 validity and the validation time, so they belong here rather than to the

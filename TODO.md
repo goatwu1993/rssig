@@ -86,15 +86,16 @@ they pin or what they check, never after a task.
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
 - [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
-- [ ] **TIME-T005** fix: Check fractional expiry during path building.
+- [ ] **TIME-T005** fix: Check fractional expiry during path building (owner decision).
   Pre-existing: `check_fractional_validity` runs after path selection, so with
   two same-key issuers webpki can pick the one expiring at the timestamp's
   whole second and reject a valid signature. Check it in path building, as
   TIME-008 does, for every timestamped signer and TSA; pair a rollover fixture.
-- [ ] **TIME-T006** fix: Reach or type the `certificate_report_error` fallback.
-  A late lifetime certificate whose report cannot be built gets a free-text
-  `certificate_report_error` detail instead of `certificate`. No fixture
-  reaches it: add one that parses but cannot be reported, or type the detail.
+  This changes Decided TIME-005, so it needs the owner's approval.
+- [ ] **TIME-T006** fix: Replace the free-text `certificate_report_error` detail with a typed one.
+  A late lifetime certificate whose report cannot be built gets prose instead
+  of `certificate`, and no fixture reaches it. Type the detail, reach it with a
+  fixture if a certificate can parse but not be reported, and extend TIME-013.
 
 ### CRL
 
