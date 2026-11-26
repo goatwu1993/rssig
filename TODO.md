@@ -46,9 +46,10 @@ they pin or what they check, never after a task.
   verification with `resource_limit_exceeded`, rather than recording the
   remaining points and finishing with the evidence gathered.
 - [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
-  RDP `verify_trust` repeats the full path search and its 200,000-unit
-  reservation for each accepted leaf EKU. Stop early without changing
-  first-policy-error reporting, and pin the budget effect.
+  RDP `verify_trust` repeats the full path search, with the lifetime leaf check
+  and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
+  failure no other EKU can change, keeping `choose_usage_failure`'s ranking
+  (revocation, then CRL-completable); pin the budget effect.
 
 ### CMS
 
@@ -84,14 +85,14 @@ they pin or what they check, never after a task.
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
 - [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
 - [ ] **TIME-T005** fix: Check fractional expiry during path building.
-  `check_fractional_validity` runs after path selection, so with two same-key
-  issuers webpki can pick the one expiring at the timestamp's whole second and
-  reject a valid signature. Check it in path building for every timestamped
-  signer and TSA, with a paired rollover fixture.
+  Pre-existing: `check_fractional_validity` runs after path selection, so with
+  two same-key issuers webpki can pick the one expiring at the timestamp's
+  whole second and reject a valid signature. Check it in path building, as
+  TIME-008 does, for every timestamped signer and TSA; pair a rollover fixture.
 - [ ] **TIME-T006** fix: Reach or type the `certificate_report_error` fallback.
   A late lifetime certificate whose report cannot be built gets a free-text
-  `certificate_report_error` detail instead of `certificate`; no fixture
-  reaches it.
+  `certificate_report_error` detail instead of `certificate`. No fixture
+  reaches it: add one that parses but cannot be reported, or type the detail.
 
 ### CRL
 
@@ -272,9 +273,10 @@ they pin or what they check, never after a task.
   fixture added to one list and not the other is skipped without a failure.
   Found in the review of PR #86.
 - [ ] **TEST-T016** test: Share the RFC 3161/PKCS#9 token builders across test modules.
-  Share them across `engine/src/tests.rs` and the TSA-T001, TIME-T001 and RDP
-  fixture modules without changing committed bytes; keep per-task regeneration
-  commands (as TSA-T001 does) consistent with `regenerate_cli_fixtures`.
+  Share them across `engine/src/tests.rs` and `engine/src/tests/`
+  `timestamp_structure.rs`, `validation_time.rs` and `rdp_fixtures.rs` without
+  changing committed bytes; keep their regeneration commands consistent with
+  `regenerate_cli_fixtures`.
 
 ### BUILD
 
@@ -322,9 +324,9 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
   `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
-- [ ] **TIME-T007** test: Add lifetime-signing fixtures for MSI, CAB, script and AppX.
-  Lifetime-signing fixtures cover PE (primary and nested) and RDP; the other
-  signers use the same trust call without one.
+- [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
+  `time-001-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
+  CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
 - [ ] **TIME-T008** docs: Add decision entries for the TIME-T002 decisions that have none.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
   maps each to its entry; the `TIME-` ones marked none are this task, the

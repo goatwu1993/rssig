@@ -215,7 +215,7 @@ Where each decision is pinned, in the order above:
 
 The deferred follow-ups are TIME-T005 (fractional expiry during path
 building), TIME-T006 (the `certificate_report_error` fallback), TIME-T007
-(lifetime fixtures for MSI, CAB, script and AppX), LIMIT-T007 (the repeated
+(lifetime fixtures for the formats without one), LIMIT-T007 (the repeated
 RDP path search) and TEST-T016 (shared timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
