@@ -450,10 +450,13 @@ asked by URL, and the runner's source, which keeps no cache, is asked for it
 each time:
 - a point that fails is requested and recorded for each certificate
   (`crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate`);
+- a scripted answer for a later certificate may name a point an earlier
+  certificate's request used, because the later request carries it too
+  (`crl-050-a-certificate-whose-point-another-used-is-still-asked`; the runner
+  fails the case if the request leaves the point out);
 - a certificate answered by certificate requests none of its points, even one
-  another certificate's request used
-  (`crl-050-a-certificate-whose-point-another-used-is-still-asked`) or left
-  unused (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`,
+  an earlier answer left unused
+  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`,
   where the later certificate is the one the URL answers).
 
 All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
@@ -529,8 +532,9 @@ by certificate, fail a point or deny it:
   (the signer's answer by certificate leaves the point unused, so the issuer's
   certificate carries it and the URL answers it)
 - `crl-050-a-certificate-whose-point-another-used-is-still-asked` (the URL
-  answers the signer, and the issuer's certificate, carrying the same point, is
-  asked and answered by certificate)
+  answers the signer, and the issuer's certificate is asked carrying the same
+  point: its scripted answer names it, which the runner accepts only for a
+  point the request carries)
 - `crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate` and
   `crl-051-a-denied-point-is-recorded-for-each-certificate` (the point is
   requested for each certificate, fails or is denied each time, and each

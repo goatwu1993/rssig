@@ -37177,7 +37177,14 @@
         "http://crl.invalid/sec10-a.crl": "path-issuer.crl"
       },
       "crl_certificate_responses": {
-        "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975": "path-root.crl"
+        "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975": {
+          "crls": [
+            {
+              "file": "path-root.crl",
+              "url": "http://crl.invalid/sec10-a.crl"
+            }
+          ]
+        }
       },
       "command": [
         "verify",
@@ -37204,6 +37211,9 @@
                     "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
                   },
                   {
+                    "url": "http://crl.invalid/sec10-a.crl",
+                    "final_url": "http://crl.invalid/sec10-a.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
                     "certificate_sha256": "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975"
                   }
                 ]

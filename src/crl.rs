@@ -498,7 +498,8 @@ impl CrlSource for HttpCrlSource {
             response.failures.push(
                 CrlSourceError::new(
                     CrlSourceErrorKind::Denied,
-                    "not tried: the built-in source tries at most 16 points per request",
+                    "not tried: the built-in source fetches at most 16 points per request \
+                     that it has not answered earlier in the verification",
                 )
                 .with_url(url.clone())
                 .detail("resource", "crl_request_points")
@@ -520,6 +521,18 @@ impl HttpCrlSource {
     fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
         let key = url_key(url);
         if let Some(known) = self.answered.get(&key) {
+            // A body over this request's room is refused as a fresh fetch
+            // refuses it, without copying it: a replay counts against the
+            // allowance like any body (CRL-051).
+            let cap = max_bytes.min(MAX_CRL_BYTES);
+            if let Ok(crl) = known
+                && crl.bytes.len() > cap
+            {
+                let len = crl.bytes.len();
+                return Err(self
+                    .classify(limit("crl_response_bytes", cap, 0, len), false)
+                    .with_url(url.to_owned()));
+            }
             return match known.clone() {
                 Ok(mut crl) => {
                     crl.url = Some(url.to_owned());
@@ -532,9 +545,14 @@ impl HttpCrlSource {
         if let Some((failed_under, e)) = self.too_big.get(&key)
             && allowance <= *failed_under
         {
-            // As this request's room, not the earlier one's.
-            let mut e = e.clone().with_url(url.to_owned());
-            e.details.insert("limit".into(), allowance.into());
+            // As this request's room, not the earlier one's: the size seen
+            // is at least what was read plus what was refused.
+            let seen = |field: &str| e.details.get(field).and_then(|v| v.as_u64()).unwrap_or(0);
+            let size = seen("used").saturating_add(seen("requested")) as usize;
+            let kind = e.kind;
+            let rebuilt = limit("crl_response_bytes", allowance, 0, size);
+            let mut e = CrlSourceError::new(kind, rebuilt.message).with_url(url.to_owned());
+            e.details = rebuilt.details;
             return Err(e);
         }
         if !self.call_counted {
@@ -1115,6 +1133,20 @@ mod tests {
         const { assert!(MAX_SOURCE_URLS <= rssig_engine::retrieval::MAX_RESPONSE_ENTRIES) };
     }
     #[test]
+    fn a_cached_body_over_a_later_requests_room_is_refused_as_a_fetch_is() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/x.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 10]).with_url(url)));
+        let e = source.fetch_cached(url, 5).unwrap_err();
+        assert_eq!(e.kind, CrlSourceErrorKind::Failed);
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+        assert_eq!(e.details["limit"], 5);
+        assert_eq!(e.url.as_deref(), Some(url));
+        assert!(source.fetch_cached(url, 10).is_ok());
+    }
+    #[test]
     fn a_refused_spelling_does_not_share_a_clean_urls_cache_entry() {
         assert_ne!(
             url_key(" http://crl.example.com/x.crl"),
@@ -1147,6 +1179,7 @@ mod tests {
         source.too_big.insert(url_key(url), (6, error));
         let again = source.fetch_cached(url, 2).unwrap_err();
         assert_eq!(again.details["limit"], 2);
+        assert_eq!(again.details["used"], 0);
         assert_eq!(again.details["requested"], 7);
         assert_eq!(source.requests, 0);
         // A call whose point is answered from memory fetches nothing, so it

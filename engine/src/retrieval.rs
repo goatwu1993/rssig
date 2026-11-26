@@ -2367,6 +2367,27 @@ mod tests {
         assert_eq!(state.report.artifacts.len(), 2);
     }
     #[test]
+    fn a_request_with_no_room_left_ends_the_run() {
+        // The retained-byte cap is the engine's own limit (CRL-039): once the
+        // store holds all of it, the next certificate asked about ends the
+        // run with `retrieval_trust_bytes`, even one whose points another
+        // certificate already used, since every certificate is asked
+        // (CRL-033). This pins that: no source is asked.
+        struct Never;
+        impl CrlSource for Never {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                panic!("no source is asked with no room left")
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        state.max_total = state.store.encoded_len();
+        let e = ask(&mut state, "a", &signer_with_points("a", 1), &mut Never).unwrap_err();
+        assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(e.details["resource"], "retrieval_trust_bytes");
+    }
+    #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
         // The unused points of an earlier certificate are recorded after a
         // later certificate's entries: its repeats are still one entry.
