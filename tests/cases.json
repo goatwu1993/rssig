@@ -37107,6 +37107,234 @@
       }
     },
     {
+      "id": "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
+      "input": "crl-chain-shared-crl-dp.exe",
+      "decision": "CRL-050",
+      "crl_responses": {
+        "http://crl.invalid/sec10-a.crl": "path-root.crl"
+      },
+      "crl_certificate_responses": {
+        "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1": "path-issuer.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                  },
+                  {
+                    "url": "http://crl.invalid/sec10-a.crl",
+                    "final_url": "http://crl.invalid/sec10-a.crl",
+                    "sha256": "414c61c3355c219d55f3ca43a3d6394f7fa865766d88e40217e1a53018dae514",
+                    "certificate_sha256": "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl"
+        ],
+        "json_absent": [
+          "/results/0/crl_retrieval/failures",
+          "/results/0/crl_retrieval/artifacts/0/url"
+        ]
+      }
+    },
+    {
+      "id": "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
+      "input": "crl-chain-shared-crl-dp.exe",
+      "decision": "CRL-050",
+      "crl_responses": {
+        "http://crl.invalid/sec10-a.crl": "path-issuer.crl"
+      },
+      "crl_certificate_responses": {
+        "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975": "path-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "crl_retrieval": {
+                "artifacts": [
+                  {
+                    "url": "http://crl.invalid/sec10-a.crl",
+                    "final_url": "http://crl.invalid/sec10-a.crl",
+                    "sha256": "ff4b0fde7497af4be99fa0a2df9bb049e112ba9b08ddd07c5767d1dc3e51b3b9",
+                    "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                  },
+                  {
+                    "certificate_sha256": "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975"
+                  }
+                ]
+              },
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl"
+        ],
+        "json_absent": [
+          "/results/0/crl_retrieval/failures"
+        ]
+      }
+    },
+    {
+      "id": "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+      "input": "crl-chain-shared-crl-dp.exe",
+      "decision": "CRL-051",
+      "crl_responses": {},
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_failed",
+                        "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                      },
+                      {
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_failed",
+                        "certificate_sha256": "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl"
+        ]
+      }
+    },
+    {
+      "id": "crl-051-a-denied-point-is-recorded-for-each-certificate",
+      "input": "crl-chain-shared-crl-dp.exe",
+      "decision": "CRL-051",
+      "crl_responses": {},
+      "crl_errors": {
+        "http://crl.invalid/sec10-a.crl": "denied"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_denied",
+                        "certificate_sha256": "53af4ab427625a14a3f148cb35f101dd2c79725123085d301dec3df57dc419a1"
+                      },
+                      {
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "code": "crl_fetch_denied",
+                        "certificate_sha256": "a8f2c1e6c33cad7e4fc99f4b85a85ce10436ee3ffc0091063b58c089fffb0975"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": [
+          "http://crl.invalid/sec10-a.crl"
+        ]
+      }
+    },
+    {
       "id": "crl-033-fetch-covered-signer-is-not-asked",
       "input": "crl-chain-crl-dp.exe",
       "decision": "CRL-033",

@@ -444,10 +444,21 @@ no URL is recorded once per listed point; the unit test
 
 A scripted `url` must be one of the points this request carries, spelled exactly
 as listed. The runner fails a case whose URL is not one of them, and its message
-prints the listed points. A point already asked about for another certificate is
-not carried again, so a case about a shared point (CRL-T036) needs another way
-to say it. It is stricter than the engine, which matches normalized URLs; a case for a
-normalized spelling is CRL-T038. A
+prints the listed points. For a point shared by two certificates:
+- a point an earlier request spent (a body or a failure for it) is not carried
+  again, so a scripted `url` for it on a later certificate fails the case. The
+  earlier certificate takes the URL answer or fails, and the later one gets no
+  scripted URL: it is answered by certificate
+  (`crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left`) or
+  carries no point at all, so its report repeats the earlier outcome
+  (`crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate`);
+- a point the earlier answer left unused (an answer by certificate, CRL-034)
+  is carried again, so a scripted `url` for it passes
+  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`).
+
+All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
+engine, which matches normalized URLs; a case for a normalized spelling is
+CRL-T038. A
 URL that went stale or was mistyped therefore cannot turn a case about the point
 into one about a URL outside the request; the engine's handling of one outside it
 is unit-tested
@@ -512,6 +523,18 @@ shared result code, each pins its own entry's part:
   CRL, so only the last body can answer whatever the CRL decoder accepts, and the
   artifacts show the fifth was not taken)
 
+The cases on `crl-chain-shared-crl-dp.exe` (CRL-050 and CRL-051), which answer
+by certificate, fail a point or deny it:
+- `crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`
+  (the signer's answer by certificate leaves the point unused, so the issuer's
+  certificate carries it and the URL answers it)
+- `crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left` (the URL
+  answers the signer, and the issuer's certificate, carrying no point, is asked
+  and answered by certificate)
+- `crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate` and
+  `crl-051-a-denied-point-is-recorded-for-each-certificate` (the point fails or
+  is denied once, and each certificate's report records it)
+
 The `crl-045-` cases pin CRL-045. The two `does-not-count-against-the-next`
 cases each fail if a rejected body counted against the bodies after it, which
 was checked by changing the engine; the single-body case pins only that an
@@ -535,9 +558,11 @@ load before a point left unanswered), so the
 cases `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`
 and `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` pin them.
 
-Not expressible in a case: a point shared by certificates of two issuers needs
-an input with two issuers (CRL-T036), and the built-in source's deadline and
-byte cap need real HTTP, which a case never makes. The built-in source's are
+A point shared by certificates of two issuers is expressible: the
+`crl-050-` and `crl-051-` cases run `crl-chain-shared-crl-dp.exe`, whose signer
+and issuer certificate list one point. The built-in source's deadline and
+byte cap are not expressible in a case, because they need real HTTP, which a
+case never makes. The built-in source's are
 unit-tested without a network in `src/crl.rs`, which stays their
 place.
 

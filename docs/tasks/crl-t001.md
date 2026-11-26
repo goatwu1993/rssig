@@ -250,7 +250,7 @@ Change these only with a new decision and paired fixtures.
 ## Known limitations tracked elsewhere
 
 The review of PR #60 is concluded; everything it left open is a task in
-`TODO.md` (CRL-T014 to CRL-T024, TEST-T010, CRL-T036, CRL-T037, CRL-T038, LIMIT-T006, LIB-T011 and CRL-T029),
+`TODO.md` (CRL-T014 to CRL-T024, TEST-T010, CRL-T037, CRL-T038, LIMIT-T006, LIB-T011 and CRL-T029),
 with CRL-T002, CRL-T006, CRL-T010 and CRL-T033 for the larger items.
 
 - **CRL-T002:** excluded CRLs are still reported as supplied.
