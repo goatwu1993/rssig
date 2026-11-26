@@ -74,9 +74,9 @@ fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
         }
     }
 }
-/// The key a URL's outcome is kept under: its parsed, normalized form when it
-/// parses, as the engine compares points.
-/// The key a URL's outcome is kept under in one verification.
+/// The key a URL's outcome is kept under in one verification: its parsed,
+/// normalized form, as the engine compares points, for a URL the policy
+/// allows; its own text for one the policy refuses.
 fn url_key(raw: &str) -> String {
     // Any spelling the policy refuses (its characters, its length, its
     // scheme or host) keeps its own text: parsing shortens and cleans it, so

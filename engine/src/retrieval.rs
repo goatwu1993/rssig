@@ -470,7 +470,7 @@ struct Retrieval<'b, 'l> {
     /// What decoding each body that named a URL showed, by SHA-256: nothing
     /// to report, or the rejection. Bounded by the bodies a verification may
     /// receive (each certificate's response is bounded).
-    decoded: BTreeMap<Vec<u8>, Option<VerificationError>>,
+    decoded: BTreeMap<Vec<u8>, Decoded>,
     /// The retained-byte cap, [`MAX_TOTAL_BYTES`] outside tests.
     max_total: usize,
     /// A source just answered by certificate with a new full CRL of the
@@ -1015,19 +1015,30 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             sha256: hex(&digest),
             bytes: len,
         });
-        // Decoding is a pure function of the bytes, so a body naming a URL
-        // that is byte for byte one already decoded in this verification (a
-        // source replaying a point several certificates list, CRL-051) is
-        // not decoded or charged again: what loading it did is reused, and a
+        // Decoding is a pure function of the bytes, so a body that is byte
+        // for byte one already decoded in this verification (a source
+        // replaying a point several certificates list, or the same answer by
+        // certificate for several certificates of one issuer, CRL-051) is not
+        // decoded or charged again: what loading it did is reused, and a
         // rejection is reported for this certificate too. This remembers no
-        // answer of a source. A body naming no URL is an answer by
-        // certificate, whose meaning depends on the issuer, so it is always
-        // decoded and charged: whether a source repeats one is its choice.
-        if !without_url && let Some(rejection) = self.decoded.get(&digest) {
-            if let Some(e) = rejection.clone() {
+        // answer of a source. Every CRL of a body that loaded is in the store,
+        // so a replay adds nothing; one naming no URL is still an answer by
+        // certificate when a CRL in it names this certificate's issuer, which
+        // the issuer names kept from the first decode tell.
+        match self.decoded.get(&digest) {
+            Some(Decoded::Rejected(e)) => {
+                let e = e.clone();
                 self.skip(sha256, raw_url.as_deref(), e, None);
+                return Ok((None, false));
             }
-            return Ok((None, false));
+            Some(Decoded::Loaded(_)) if !without_url => return Ok((None, false)),
+            Some(Decoded::Loaded(Some(issuers))) => {
+                let answer = issuers.iter().any(|name| name == issuer).then_some(false);
+                return Ok((answer, false));
+            }
+            // Decoded first without the issuer names an answer by
+            // certificate needs: decoded again, once.
+            Some(Decoded::Loaded(None)) | None => {}
         }
         for _ in 0..8 {
             self.budget
@@ -1037,33 +1048,30 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         }
         // Before loading: whether this body brings a full CRL of the issuer
         // that is not already loaded (one PEM may hold several CRLs).
-        let of_issuer: Vec<bool> = if without_url {
-            crate::trust::crl_issuers(&crl.bytes)
-                .into_iter()
-                // Exact bytes: a body whose issuer equals the certificate's
-                // only under CRL-041 may be another CA's, which verification
-                // sets aside, so it does not count as this issuer's answer.
-                .filter(|(name, _, _)| name == issuer)
-                .map(|(_, full, der)| full && !self.store.has_crl(&der))
-                .collect()
-        } else {
-            Vec::new()
-        };
+        let issuers = without_url.then(|| crate::trust::crl_issuers(&crl.bytes));
+        let of_issuer: Vec<bool> = issuers
+            .iter()
+            .flatten()
+            // Exact bytes: a body whose issuer equals the certificate's only
+            // under CRL-041 may be another CA's, which verification sets
+            // aside, so it does not count as this issuer's answer.
+            .filter(|(name, _, _)| name == issuer)
+            .map(|(_, full, der)| *full && !self.store.has_crl(der))
+            .collect();
         let prior = self.store.crl_count();
         if let Err(e) = self.store.add_crl(&crl.bytes) {
             let e = error(
                 ErrorCode::InvalidCrl,
                 format!("decoding retrieved CRL: {e:#}"),
             );
-            if !without_url {
-                self.decoded.insert(digest, Some(e.clone()));
-            }
+            self.decoded.insert(digest, Decoded::Rejected(e.clone()));
             self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
         }
-        if !without_url {
-            self.decoded.insert(digest, None);
-        }
+        self.decoded.insert(
+            digest,
+            Decoded::Loaded(issuers.map(|all| all.into_iter().map(|(name, _, _)| name).collect())),
+        );
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
         let loaded = self.store.crl_count();
@@ -1266,6 +1274,15 @@ fn body_over_allowance(len: usize, total: usize, max_bytes: usize) -> Option<Ver
     } else {
         None
     }
+}
+
+/// What decoding one retrieved body showed.
+enum Decoded {
+    /// It did not load: the rejection, reported again for a replay.
+    Rejected(VerificationError),
+    /// It loaded, so every CRL in it is in the store; with the issuer names
+    /// of its CRLs when it was decoded as an answer by certificate.
+    Loaded(Option<Vec<Vec<u8>>>),
 }
 
 /// What one response's bodies turned out to be.
@@ -2290,8 +2307,8 @@ mod tests {
         }
         assert_eq!(budget.decoded_bytes.used(), junk);
         assert_eq!(rejected_for(&state).len(), 66);
-        // A body naming no URL is an answer by certificate: always decoded
-        // and charged, a repeat too.
+        // A body naming no URL (an answer by certificate) is decoded once
+        // too, and a replay is still an answer by certificate for its issuer.
         struct ByCertificate;
         impl CrlSource for ByCertificate {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2305,8 +2322,13 @@ mod tests {
         ask(&mut state, "a", &cert, &mut ByCertificate).unwrap();
         let one = budget.decoded_bytes.used() - before;
         assert!(one > 0);
+        assert!(state.reverify);
+        state.reverify = false;
         ask(&mut state, "b", &cert, &mut ByCertificate).unwrap();
-        assert_eq!(budget.decoded_bytes.used() - before, 2 * one);
+        assert_eq!(budget.decoded_bytes.used() - before, one);
+        // Answered by certificate (its point left unused), with nothing new.
+        assert!(!state.reverify);
+        assert!(state.unused_points.iter().any(|(held, _)| held == "b"));
     }
     #[test]
     fn a_replayed_body_counts_against_the_requests_allowance() {
