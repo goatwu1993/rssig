@@ -344,7 +344,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Response entries | At most 64 CRL bodies, and bodies and failures together at most 64 plus one for each point the request offered, in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
-| Combined trust evidence | At most 32 MiB of original roots/CRLs plus retrieved response bytes per verification |
+| Combined trust evidence | At most 32 MiB of roots and CRLs the verification's store holds (supplied and retrieved, after exact-DER deduplication); a body that does not load, or repeats a CRL already held, adds nothing, and each request's bodies are bounded by what is left |
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
 

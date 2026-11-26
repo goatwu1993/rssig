@@ -21,7 +21,9 @@ use x509_cert::{
 /// The most bytes of one CRL body the engine accepts from a source.
 pub const MAX_CRL_BYTES: usize = 8 * 1024 * 1024;
 /// The most bytes of roots and CRLs, supplied and fetched together, that one
-/// verification retains. A source's own wire-byte total is its own.
+/// verification retains: what its store holds, so a body that does not load,
+/// or repeats a CRL already held, adds nothing. A source's own wire-byte
+/// total is its own.
 pub const MAX_TOTAL_BYTES: usize = 32 * 1024 * 1024;
 /// The listed distribution points of one certificate that the strict
 /// [`crl_distribution_points`] accepts. The engine offers a source every point
@@ -447,14 +449,11 @@ impl crate::verify::Verifier<'_> {
 
 /// Retrieval state for one verification: the store that grows with fetched
 /// CRLs and the provenance report.
-struct Retrieval<'s, 'b, 'l> {
-    base: &'s TrustStore,
+struct Retrieval<'b, 'l> {
     store: TrustStore,
     report: CrlRetrievalReport,
-    downloaded: usize,
-    /// The SHA-256 of each retrieved body that loaded, so that a repeat of
-    /// one is not charged again. Bounded by the retained bytes.
-    loaded_bodies: BTreeSet<Vec<u8>>,
+    /// The retained-byte cap, [`MAX_TOTAL_BYTES`] outside tests.
+    max_total: usize,
     /// A source just answered by certificate with a new full CRL of the
     /// issuer: verification runs again before any further request, since
     /// only it can tell which certificates that CRL covers.
@@ -487,14 +486,12 @@ fn crl_internal(e: anyhow::Error) -> VerificationError {
     VerificationError::from_internal(e, ErrorCode::InvalidCrl, Stage::Revocation)
 }
 
-impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
-    fn new(base: &'s TrustStore, budget: &'b Budget<'l>) -> Self {
+impl<'b, 'l> Retrieval<'b, 'l> {
+    fn new(base: &TrustStore, budget: &'b Budget<'l>) -> Self {
         Self {
-            base,
             store: base.clone(),
             report: CrlRetrievalReport::default(),
-            downloaded: 0,
-            loaded_bodies: BTreeSet::new(),
+            max_total: MAX_TOTAL_BYTES,
             reverify: false,
             aborted: false,
             aborted_for: None,
@@ -762,12 +759,14 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
         // reusing that answer is the source's (CRL-033). The engine keeps no
         // total of requests: that is the source's to bound (CRL-039). Each
         // certificate is asked about at most once.
-        // The retained-CRL limit is enforced as CRLs are loaded, so a request
-        // that adds nothing new does not hit it.
-        let used = self.base.encoded_len() + self.downloaded;
-        let max_bytes = MAX_TOTAL_BYTES.saturating_sub(used);
+        // The retained bytes are what the store holds: a body that did not
+        // load, or only repeated a CRL already held, retains nothing. A
+        // request's bodies are bounded by what is left, so the store stays
+        // within the cap (a CRL's DER is never longer than its body).
+        let used = self.store.encoded_len();
+        let max_bytes = self.max_total.saturating_sub(used);
         if max_bytes == 0 {
-            return Err(limit("retrieval_trust_bytes", MAX_TOTAL_BYTES, used, 1));
+            return Err(limit("retrieval_trust_bytes", self.max_total, used, 1));
         }
         let request = CrlRequest::new(der, issuer, &points, max_bytes);
         self.budget.log.info(
@@ -986,34 +985,23 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             return Ok((None, false));
         }
         *total += len;
-        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
-        let digest = crate::crypto::Hash::Sha256.digest(&crl.bytes);
-        // A body naming a URL that is byte for byte one already loaded in
-        // this verification (a source answering a point several
-        // certificates list from its own cache, CRL-051) is reported for
-        // this certificate too, but retains and decodes nothing new, so a
-        // repeat is not charged again. It cannot be an answer by
-        // certificate, which names no URL.
-        let repeat = !without_url && self.loaded_bodies.contains(digest.as_slice());
-        if !repeat {
-            for _ in 0..8 {
-                self.budget
-                    .decoded_bytes
-                    .charge(len)
-                    .map_err(crl_internal)?;
-            }
-            self.downloaded += len;
+        // Every body is decoded and hashed, so each is charged to the work
+        // budget, a repeat of an earlier one too: whether to send it again
+        // is the source's choice (CRL-051).
+        for _ in 0..8 {
+            self.budget
+                .decoded_bytes
+                .charge(len)
+                .map_err(crl_internal)?;
         }
+        self.budget.hash_bytes.charge(len).map_err(crl_internal)?;
         self.report.artifacts.push(CrlRetrievalArtifact {
             certificate_sha256: Some(sha256.into()),
             final_url,
             url: url.clone(),
-            sha256: hex(&digest),
+            sha256: hex(&crate::crypto::Hash::Sha256.digest(&crl.bytes)),
             bytes: len,
         });
-        if repeat {
-            return Ok((None, false));
-        }
         // Before loading: whether this body brings a full CRL of the issuer
         // that is not already loaded (one PEM may hold several CRLs).
         let of_issuer: Vec<bool> = if without_url {
@@ -1037,7 +1025,6 @@ impl<'s, 'b, 'l> Retrieval<'s, 'b, 'l> {
             self.skip(sha256, raw_url.as_deref(), e, None);
             return Ok((None, false));
         }
-        self.loaded_bodies.insert(digest.to_vec());
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
         let loaded = self.store.crl_count();
@@ -1545,7 +1532,7 @@ mod tests {
     }
     /// Ask the source about `cert` through the engine's per-certificate path.
     fn ask(
-        state: &mut Retrieval<'_, '_, '_>,
+        state: &mut Retrieval<'_, '_>,
         sha256: &str,
         cert: &Certificate,
         source: &mut dyn CrlSource,
@@ -2182,7 +2169,7 @@ mod tests {
         assert!(response.failures.is_empty());
         // Through the engine, with a 10-byte allowance left for the request:
         // those points are recorded as not tried.
-        state.downloaded = MAX_TOTAL_BYTES - state.base.encoded_len() - 10;
+        state.max_total = state.store.encoded_len() + 10;
         ask(&mut state, "a", &request_points, &mut Fills(0)).unwrap();
         let not_tried = state
             .report
@@ -2193,11 +2180,12 @@ mod tests {
         assert_eq!(not_tried, 2, "{:?}", state.report.failures);
     }
     #[test]
-    fn a_repeated_body_naming_a_url_is_reported_but_not_charged_again() {
+    fn the_retained_bytes_count_what_the_store_holds_and_every_body_is_work() {
         // A source that answers a shared point from its cache returns the
         // same body for each certificate (CRL-051): each certificate gets an
-        // artifact, but the retained bytes and the decode budget are charged
-        // once, so repeats cannot reach the engine's byte limits.
+        // artifact and each body is decoded and charged to the work budget,
+        // but the store holds the CRL once, so repeats leave the retained
+        // bytes, and every later request's allowance, unchanged.
         struct Cached;
         impl CrlSource for Cached {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2215,19 +2203,23 @@ mod tests {
         let len = include_bytes!("../../tests/fixtures/good.crl").len();
         let cert = signer_with_points("shared", 1);
         assert!(ask(&mut state, "a", &cert, &mut Cached).unwrap());
-        assert_eq!(state.downloaded, len);
+        let retained = state.store.encoded_len();
+        assert!(retained > store.encoded_len());
+        let decoded = |budget: &Budget| budget.decoded_bytes.used();
+        let after_first = decoded(&budget);
         for i in 0..64 {
             assert!(!ask(&mut state, &format!("c{i}"), &cert, &mut Cached).unwrap());
         }
-        assert_eq!(state.downloaded, len);
+        assert_eq!(state.store.encoded_len(), retained);
+        assert_eq!(decoded(&budget) - after_first, 64 * 8 * len);
         assert_eq!(state.report.artifacts.len(), 65);
         assert!(
             state.report.failures.is_empty(),
             "{:?}",
             state.report.failures
         );
-        // A body that did not load is not remembered: a repeat is rejected
-        // again, for its own certificate.
+        // A body that does not load retains nothing either, and is rejected
+        // for each certificate it is returned for.
         struct NotACrl;
         impl CrlSource for NotACrl {
             fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -2239,6 +2231,7 @@ mod tests {
         let mut state = Retrieval::new(&store, &budget);
         ask(&mut state, "a", &cert, &mut NotACrl).unwrap();
         ask(&mut state, "b", &cert, &mut NotACrl).unwrap();
+        assert_eq!(state.store.encoded_len(), store.encoded_len());
         let rejected: Vec<_> = state
             .report
             .failures

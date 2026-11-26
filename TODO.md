@@ -361,6 +361,12 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T042** test: Add a `tests/cases.json` case and CLI test for a certificate listing more than 16 distribution points (CRL-024): all reach the source, and the report keeps 16 entries plus one `details.omitted` entry. Needs a fixture with a many-point certificate.
 - [ ] **CRL-T043** refactor: Bound the engine's per-point state for a certificate listing many URIs. Measured in release mode with a source that answers nothing, before CRL-T041: 200,000 URIs took about 1.0 s and 135 MB. CRL-T041 removed `Retrieval::asked`, `in_flight` and the per-verification `recorded` (now the current certificate's only); measure again. The rest is the points list, `unanswered` and the per-request key sets; a 64 MiB CMS allows far more. Remaining option: a ceiling on the URIs the engine decodes per certificate. The report cap of 16 is still unmeasured against real consumers.
 - [x] **CRL-T044** refactor: Give `HttpCrlSource` a per-request point limit. Done in [PR #92](https://github.com/goatwu1993/rssig/pull/92) with CRL-T040; [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification).
+- [ ] **CRL-T045** feat: Decide whether the CLI reuses fetched CRLs across the files of one invocation (owner decision).
+  `HttpCrlSource` keeps each URL's outcome for one verification only (CRL-051), so every file of a batch
+  fetches again (`docs/crl-retrieval.md`). A caching source wrapping it for one CLI run would save fetches but
+  make a file's result depend on the files before it and leave its report without the reused CRL's
+  provenance; it would also change how the CRL-039 limits apply between files. Belongs in the application,
+  not the engine (CRL-033).
 
 ### TIME
 
