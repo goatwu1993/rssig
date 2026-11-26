@@ -502,7 +502,7 @@ Diagnostics pins on which requests a source receives and how retrieval is report
 Which requests are made. Each certificate the verifier reports without a usable CRL is asked about once in a verification, and no other certificate is. The engine reuses no earlier answer: a certificate whose issuer name, authority key and CA role, or whose points, another certificate's request already carried is still asked (what the request carries is CRL-050's). Answering a repeat without new work is the source's, as any reuse is the lookup callback's in OpenSSL; the built-in source's is CRL-051's.
 
 - **Status:** Decided
-- **Decided by:** references agree (OpenSSL, Bouncy Castle); the issuer skip (a certificate with no new point, whose issuer, authority key and role were already asked about, was not asked) was moved to the source by CRL-T041, owner approval to be recorded in its pull request
+- **Decided by:** references agree (OpenSSL, Bouncy Castle); the issuer skip (a certificate with no new point, whose issuer, authority key and role were already asked about, was not asked) was moved to the source by CRL-T041 (PR #95), owner approval to be recorded there
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL crypto/x509/x509_vfy.c:2206-2254 (get_crl_delta; lookup_crls at :2228) called from :1444-1537 (check_cert_crl): CRLs are looked up for the certificate being checked, by its issuer name, and only when the context holds none for it. The verifier keeps no record of earlier lookups: it calls the lookup for each certificate. Any reuse is the store's (CRLs a lookup method such as `by_dir` loaded stay in the `X509_STORE` the application owns) or the lookup callback's.
@@ -580,7 +580,7 @@ The engine keeps no total of requests to a source, and none of the distinct URIs
 The engine still enforces what bounds its own work and what no source can be trusted to bound, because the points and CRLs are the input's, not the source's: each body (8 MiB) and the bytes its store retains (32 MiB of roots and CRLs held after exact-DER deduplication, so a body that does not load, or repeats a CRL already held, adds nothing; before CRL-T041 the bytes of every body were counted), CRL bodies in one response (64), bodies and failures together (64 beside one per point offered), the CRLs retained, and the LIMIT-T002 work budget. Requests to a source are bounded only indirectly: each certificate is asked about at most once, and the budget bounds the certificates (256 decoded, 4,096 report slots). The engine sets no time limit, so a source that fetches over a network must set its own.
 
 - **Status:** Decided
-- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle lets one validation exhaust the next); owner, the pull request of CRL-T039 (the engine stops counting source requests); a call that fetches nothing is not counted since CRL-T041, owner approval to be recorded in its pull request
+- **Decided by:** references agree (neither OpenSSL nor Bouncy Castle lets one validation exhaust the next); owner, the pull request of CRL-T039 (the engine stops counting source requests); a call that fetches nothing is not counted since CRL-T041 (PR #95), owner approval to be recorded there
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL `apps/lib/apps.c:2866-2867`, `apps/verify.c:220-232`: per-fetch limits, nothing accumulated. `crypto/x509/x509_vfy.c:2228`: the verifier only calls `lookup_crls`; limits live in the application callback.
