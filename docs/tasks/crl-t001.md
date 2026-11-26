@@ -177,7 +177,7 @@ One box per item in the scope above.
     one chain, preferring currently valid issuers, and checks revocation
     before validity on it; Bouncy Castle tries every path and reports the
     last failure, checking validity before revocation per certificate. The
-    TIME-011 precedence is kept.
+    TIME-T002 precedence is kept.
 
 Change these only with a new decision and paired fixtures.
 
