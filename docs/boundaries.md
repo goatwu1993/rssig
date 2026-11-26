@@ -44,7 +44,11 @@ differs from the certificate's only that way is not matched, and the status is
 Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to
 a source (CRL-039): the built-in source caps its own at 64 requests and 64 distinct URLs per
-verification, and tries the first 16 points of a certificate per request, denying the rest. A custom source owns its counts. The engine offers a source
+verification, keeps each URL's outcome for the verification and answers a repeat
+from it without counting (CRL-051), and tries the first 16 points of a certificate
+per request that it has not answered before, denying the rest. The engine asks every
+certificate that lacks a CRL with every point it lists, and reuses no answer
+(CRL-033). A custom source owns its counts. The engine offers a source
 every listed URI and keeps 16 failure entries per certificate in its report
 (CRL-024). AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,

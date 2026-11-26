@@ -21,11 +21,13 @@ const DEADLINE: Duration = Duration::from_secs(30);
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
 const HEADER_LIMIT: usize = 16 * 1024;
 /// Requests to this source per verification: calls to [`CrlSource::crls`]
-/// (one per certificate) that carry a point not yet answered in the
-/// verification. A call with no point, or whose points were all answered
-/// before, does no network work and is not counted. The engine keeps no such
-/// total (CRL-039): this source does, and reports the call past it as an
-/// `Abort` with `details.resource` `crl_requests`.
+/// (one per certificate) that fetch a point, counted at the first point
+/// fetched, even one the policy then refuses. A call with no point, or whose
+/// points are all answered from this verification's memory, is not counted.
+/// Once the cap is reached, a call that carries a point not yet answered is
+/// refused as a whole. The engine keeps no such total (CRL-039): this source
+/// does, and reports that refusal as an `Abort` with `details.resource`
+/// `crl_requests`.
 pub const MAX_SOURCE_REQUESTS: usize = 64;
 /// Distinct URLs (compared after normalization) per verification that this
 /// source is asked to fetch. A URL answered earlier in the verification is
@@ -74,14 +76,12 @@ fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
 }
 /// The key a URL's outcome is kept under: its parsed, normalized form when it
 /// parses, as the engine compares points.
-/// A string `checked_url` would refuse for its characters is keyed by its
-/// own text, because parsing trims and strips them, so the key would be a
-/// clean URL's and a refused spelling would share its entry.
+/// The key a URL's outcome is kept under in one verification.
 fn url_key(raw: &str) -> String {
-    if raw
-        .chars()
-        .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
-    {
+    // Any spelling the policy refuses (its characters, its length, its
+    // scheme or host) keeps its own text: parsing shortens and cleans it, so
+    // it could otherwise share a URL the policy allows.
+    if checked_url(raw).is_err() {
         return raw.to_owned();
     }
     Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
@@ -973,9 +973,11 @@ mod tests {
         assert_eq!(source.source_requests, 1);
         assert_eq!(first.failures.len(), 1);
         assert_eq!(first.failures[0].kind, CrlSourceErrorKind::Denied);
-        // Many more certificates listing the same point, under another
-        // spelling, or listing none: the cap is never reached.
-        let spelled = vec!["HTTP://127.0.0.1:80/x.crl".to_string()];
+        // Many more certificates listing the same point, or listing none:
+        // the cap is never reached. (A refused URL is kept under its own
+        // spelling; normalization of an allowed one is tested with
+        // `a_cached_body_is_returned_under_the_spelling_offered_and_a_duplicate_goes_with_its_first`.)
+        let spelled = points.clone();
         for _ in 0..=MAX_SOURCE_REQUESTS {
             let again = source
                 .crls(&CrlRequest::new(&[], &[], &spelled, 1024))
@@ -1103,6 +1105,16 @@ mod tests {
         assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
     }
     #[test]
+    fn a_response_carries_no_more_bodies_than_the_engine_accepts() {
+        // Replayed points are not bounded by the 16-point limit: what bounds
+        // the bodies of one response is that each comes from a distinct URL
+        // (the engine offers each point once), and this source fetches at
+        // most MAX_SOURCE_URLS of them. The engine refuses a response with
+        // more than MAX_RESPONSE_ENTRIES bodies, so the first must not exceed
+        // the second.
+        const { assert!(MAX_SOURCE_URLS <= rssig_engine::retrieval::MAX_RESPONSE_ENTRIES) };
+    }
+    #[test]
     fn a_refused_spelling_does_not_share_a_clean_urls_cache_entry() {
         assert_ne!(
             url_key(" http://crl.example.com/x.crl"),
@@ -1116,6 +1128,14 @@ mod tests {
             url_key("HTTP://CRL.Example.com:80/x.crl"),
             url_key("http://crl.example.com/x.crl")
         );
+        // Over 2,048 bytes, refused, though it normalizes to the short URL.
+        let long = format!("http://crl.example.com/{}x.crl", "a/../".repeat(500));
+        assert!(long.len() > 2048);
+        assert_eq!(
+            Url::parse(&long).unwrap().as_str(),
+            "http://crl.example.com/x.crl"
+        );
+        assert_ne!(url_key(&long), url_key("http://crl.example.com/x.crl"));
     }
     #[test]
     fn a_kept_allowance_failure_reports_the_room_of_the_request_it_answers() {
