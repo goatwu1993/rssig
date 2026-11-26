@@ -34,8 +34,10 @@ A signer certificate whose ExtendedKeyUsage contains Microsoft lifetime signing
   timestamp claiming a signature predates its leaf or intermediate certificate.
   The comparison is inclusive at whole seconds: notBefore equal to the signing
   time is valid, one second later is not. Configured anchors are not checked
-  (see the table above and [PATH-011](path.md#path-011-configured-anchors-are-keys)). notAfter needs no separate
-  signing-time check, because the timestamp cannot follow the validation time.
+  (see the table above and
+  [PATH-011](path.md#path-011-configured-anchors-are-keys)). notAfter needs no
+  separate signing-time check, because the timestamp cannot follow the
+  validation time.
 - This is a consistency check on the timestamp's claim, not a trust boundary.
   Timestamps are unsigned attributes: removing one leaves an ordinary
   untimestamped signature, which is validated at the validation time only.

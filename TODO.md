@@ -70,8 +70,8 @@ they pin or what they check, never after a task.
   Check how it is reported and whether to read it.
 - [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path (owner decision).
   A keyCertSign flag shared across candidate paths reports a later
-  unknown-issuer failure as `invalid_key_usage`. Kept in TIME-T002 with no
-  entry: add the PATH entry, and changing it needs the owner's approval.
+  unknown-issuer failure as `invalid_key_usage`. This changes a rule kept in
+  TIME-T002 (entry: PATH-T009), so it needs the owner's approval.
 
 ### TRUST
 
@@ -343,6 +343,9 @@ they pin or what they check, never after a task.
   [PATH-011](docs/path.md#path-011-configured-anchors-are-keys) accepts such a
   path, but its cases pin anchors at the validation time only; add a paired
   fixture.
+- [ ] **PATH-T009** docs: Add a decision entry for the shared keyCertSign rejection flag.
+  The rule kept in TIME-T002: once any candidate lacked keyCertSign, a final
+  unknown-issuer failure from another path is reported as `invalid_key_usage`.
 
 ### TSA
 
