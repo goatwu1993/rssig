@@ -286,7 +286,13 @@ fn point_hash(certificate: &str, key: &str) -> [u8; 16] {
 }
 
 /// A dedup key for a URI: its parsed, normalized form when it parses.
+/// A URI with a backslash keeps its own text: parsing turns it into a slash,
+/// so a spelling a source refuses for it would otherwise stand in for the
+/// clean one, which would then not be offered.
 fn url_key(raw: &str) -> String {
+    if raw.contains('\\') {
+        return raw.to_owned();
+    }
     url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
 }
 
@@ -2430,6 +2436,19 @@ mod tests {
                 .iter()
                 .all(|f| f.details["resource"] == "retrieval_trust_bytes")
         );
+    }
+    #[test]
+    fn a_backslash_spelling_does_not_hide_the_clean_url_it_parses_to() {
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Kinds::new(vec![CrlSourceErrorKind::Failed]);
+        let uris = [
+            "http://crl.example.invalid\\x.crl".to_string(),
+            "http://crl.example.invalid/x.crl".to_string(),
+        ];
+        ask(&mut state, "a", &signer_with_uris(&uris), &mut source).unwrap();
+        assert_eq!(source.urls, uris);
     }
     #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {

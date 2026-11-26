@@ -91,14 +91,20 @@ fn url_key(raw: &str) -> String {
     // other spelling, allowed or refused (its scheme, host or port), keeps
     // what makes it refused when normalized, so it is normalized, as the
     // engine compares points.
-    if raw.len() > 2048
-        || raw
-            .chars()
-            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
-    {
+    if refused_before_parsing(raw) {
         return raw.to_owned();
     }
     Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
+}
+/// What `checked_url` refuses before parsing, because parsing would change
+/// the string: over 2,048 bytes, whitespace (as the engine's own screening,
+/// any Unicode whitespace; `Url::parse` would trim it), control characters
+/// or backslashes. `url_key` keys such a spelling by its own text.
+fn refused_before_parsing(raw: &str) -> bool {
+    raw.len() > 2048
+        || raw
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
 }
 fn public_ip(ip: IpAddr) -> bool {
     match ip {
@@ -138,14 +144,8 @@ fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             "CRL URL host is not public: a private, reserved or special-use name or address",
         )
     };
-    // Whitespace too (as the engine's own screening, any Unicode whitespace):
-    // `Url::parse` would trim it, so the string as given would not be the
-    // URL that was checked.
-    if raw.len() > 2048
-        || raw
-            .chars()
-            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
-    {
+    // The string as given must be the URL that is checked.
+    if refused_before_parsing(raw) {
         return Err(error(
             ErrorCode::CrlFetchDenied,
             "CRL URL is over 2,048 bytes or has whitespace, control characters or backslashes",
@@ -514,8 +514,13 @@ impl HttpCrlSource {
         // (`MAX_RESPONSE_ENTRIES`), however many points are answered from
         // memory: the rest are not tried, so the engine keeps the response.
         // A point whose kept outcome is a failure adds no body. Checked in
-        // the order `answer` follows, so the two agree.
+        // the order `answer` follows, so the two agree. A point with no kept
+        // outcome is one the call would fetch, counted in `requested` even
+        // when the body cap stops it.
         let room = max_bytes.min(MAX_CRL_BYTES);
+        if !self.answered.contains_key(&key) && !self.too_big.contains_key(&key) {
+            self.call.reaching.insert(key.clone());
+        }
         let kept_failure = match self.answered.get(&key) {
             Some(Ok(crl)) => crl.bytes.len() > room,
             Some(Err(_)) => true,
@@ -1231,6 +1236,9 @@ mod tests {
             .unwrap();
         assert_eq!(response.crls.len(), MAX_RESPONSE_ENTRIES);
         assert_eq!(response.failures.len(), 6);
+        // Points the call would fetch are counted in `requested` even when
+        // the body cap stops them (none here: all were answered).
+        assert!(source.call.reaching.is_empty());
         assert!(
             response
                 .failures
@@ -1266,6 +1274,21 @@ mod tests {
         assert_eq!(e.details["limit"], 5);
         assert_eq!(e.url.as_deref(), Some(url));
         assert!(source.fetch_cached(url, 10).is_ok());
+    }
+    #[test]
+    fn every_spelling_refused_before_parsing_keeps_its_own_key() {
+        // `url_key` and `checked_url` share `refused_before_parsing`: every
+        // spelling it refuses is refused by the policy and keyed by its text.
+        for raw in [
+            format!("http://crl.example.com/{}", "a".repeat(2048)),
+            " http://crl.example.com/x.crl".to_string(),
+            "http://crl.example.com/x\u{7}.crl".to_string(),
+            "http://crl.example.com\\x.crl".to_string(),
+        ] {
+            assert!(refused_before_parsing(&raw), "{raw:?}");
+            assert!(checked_url(&raw).is_err(), "{raw:?}");
+            assert_eq!(url_key(&raw), raw);
+        }
     }
     #[test]
     fn a_refused_spelling_does_not_share_a_clean_urls_cache_entry() {
