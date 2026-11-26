@@ -210,19 +210,20 @@ they pin or what they check, never after a task.
   path's ignored listings reach the logger.
 - [ ] **CRL-T032** fix: Re-ask retrieval about a certificate an earlier answer did not cover.
   A certificate whose points, issuer, key and role were already asked about
-  stays `revocation_unknown` even when that answer added no CRL covering it;
-  re-ask then, with a paired fixture. From CRL-T005.
+  stayed `revocation_unknown` even when that answer added no CRL covering it.
+  CRL-T041 removed that skip (every such certificate is asked); what remains is
+  a paired fixture case pinning it. From CRL-T005.
 - [ ] **CRL-T033** refactor: Cache trust inputs and charge the remaining CRL work.
   Results unchanged except where noted. Detail in
   [crl-t033.md](docs/tasks/crl-t033.md).
-- [ ] **CRL-T034** fix: Key retrieval's asked issuers by the compared name.
-  Issuers that differ only in case, spacing or string type are asked about
-  twice, and a fetched CRL counts as an answer only by exact bytes. Detail in
-  [crl-t034.md](docs/tasks/crl-t034.md).
+- [ ] **CRL-T034** fix: Decide whether an answer by certificate matches its issuer by the compared name.
+  A fetched CRL counts as an answer by certificate only by exact issuer bytes.
+  Retrieval keeps no asked issuers since CRL-T041, so the asking side is gone.
+  Detail in [crl-t034.md](docs/tasks/crl-t034.md).
 - [ ] **CRL-T035** fix: Decide whether CRL-008 compares issuer names canonically (owner decision).
   It compares the path's issuers by exact bytes, as webpki does; OpenSSL
   compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
-- [x] **CRL-T036** test: Express a point shared by certificates of two issuers in the case format. Done ([PR #86](https://github.com/goatwu1993/rssig/pull/86); [CRL-050](docs/crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent), [CRL-051](docs/crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)).
+- [x] **CRL-T036** test: Express a point shared by certificates of two issuers in the case format. Done ([PR #86](https://github.com/goatwu1993/rssig/pull/86); [CRL-050](docs/crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before), [CRL-051](docs/crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources)).
 - [ ] **CRL-T037** test: Pin a spent byte allowance in a case. A scripted
   answer can now spend a request's allowance, which CRL-046 decides (the points
   left are not tried), but no case pins it. From TEST-T009.
@@ -356,9 +357,9 @@ they pin or what they check, never after a task.
   have no fixture or spec case.
 - [x] **CRL-T039** refactor: Move the request-count limit from the CRL retrieval engine to the `CrlSource` implementations. Done ([PR #91](https://github.com/goatwu1993/rssig/pull/91)); [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification), [CRL retrieval](docs/crl-retrieval.md).
 - [x] **CRL-T040** refactor: Offer every listed point to the source and cap only the report. Done ([PR #92](https://github.com/goatwu1993/rssig/pull/92)); [CRL-024](docs/crl.md#crl-024-one-certificates-distribution-points-never-end-the-run).
-- [ ] **CRL-T041** refactor: Move the engine's reuse of earlier answers to the source: the per-issuer request dedup and the per-URL "already asked" cache (`asked`, `recorded`, `in_flight`). Ask a source for every selected certificate with every listed point and leave reuse to the source, as OpenSSL does; `HttpCrlSource` remembers each URL's outcome and stops charging a call with no points. Needs the owner's approval (CRL-033 is Decided). Detail in [crl-t041.md](docs/tasks/crl-t041.md).
+- [x] **CRL-T041** refactor: Move the engine's reuse of earlier answers to the source. Done (pull request to be linked); [CRL-033](docs/crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-050](docs/crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before), [CRL-051](docs/crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources).
 - [ ] **CRL-T042** test: Add a `tests/cases.json` case and CLI test for a certificate listing more than 16 distribution points (CRL-024): all reach the source, and the report keeps 16 entries plus one `details.omitted` entry. Needs a fixture with a many-point certificate.
-- [ ] **CRL-T043** refactor: Bound the engine's per-point state for a certificate listing many URIs. Measured in release mode with a source that answers nothing: 200,000 URIs took about 1.0 s and 135 MB (was 1.3 s and 330 MB before the compact outcome in `Retrieval::asked`, the boxed `listed_points` errors, hashed `recorded` and the shared `in_flight` set). The rest is the points list, `unanswered`, the key sets and `asked` keys (about 0.7 KB per point); a 64 MiB CMS allows far more. Remaining options: remove `asked` (CRL-T041, Decided CRL-033), or a ceiling on the URIs the engine decodes per certificate. The report cap of 16 is still unmeasured against real consumers.
+- [ ] **CRL-T043** refactor: Bound the engine's per-point state for a certificate listing many URIs. Measured in release mode with a source that answers nothing, before CRL-T041: 200,000 URIs took about 1.0 s and 135 MB. CRL-T041 removed `Retrieval::asked`, `in_flight` and the per-verification `recorded` (now the current certificate's only); measure again. The rest is the points list, `unanswered` and the per-request key sets; a 64 MiB CMS allows far more. Remaining option: a ceiling on the URIs the engine decodes per certificate. The report cap of 16 is still unmeasured against real consumers.
 - [x] **CRL-T044** refactor: Give `HttpCrlSource` a per-request point limit. Done in [PR #92](https://github.com/goatwu1993/rssig/pull/92) with CRL-T040; [CRL-039](docs/crl.md#crl-039-fetch-limits-bound-one-verification).
 
 ### TIME

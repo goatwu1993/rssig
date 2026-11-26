@@ -24,7 +24,7 @@ page links to them instead of restating them.
 | Missing evidence, and the four source outcomes | [CRL-026](crl.md#crl-026-missing-evidence-is-revocation_unknown-a-source-has-four-outcome-kinds), [CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted) |
 | Which error a rejected chain or path reports | [CRL-027](crl.md#crl-027-which-error-a-rejected-chain-reports), [CRL-029](crl.md#crl-029-a-definite-result-keeps-its-code-with---fetch-crls), [CRL-031](crl.md#crl-031-a-revocation-names-another-paths-refreshable-certificates), [CRL-032](crl.md#crl-032-a-path-a-source-could-complete-is-reported-over-a-stuck-path) |
 | Which CRLs are refreshed or asked about | [CRL-018](crl.md#crl-018-a-crl-with-a-bad-signature-is-not-refreshed), [CRL-019](crl.md#crl-019-an-expired-supplied-crl-is-refreshed), [CRL-020](crl.md#crl-020-a-supplied-crl-the-references-would-look-past-is-refreshed), [CRL-035](crl.md#crl-035-a-missing-nextupdate-blocks-retrieval-only-as-a-crls-sole-defect), [CRL-036](crl.md#crl-036-without-an-answer-an-expired-or-replaceable-crls-error-stands) |
-| What a source is asked, and what its answer means | [CRL-030](crl.md#crl-030-a-partition-for-another-point-is-no-evidence), [CRL-033](crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-034](crl.md#crl-034-a-source-answering-by-certificate-leaves-no-per-point-failures), [CRL-048](crl.md#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it), [CRL-050](crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent), [CRL-051](crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it) |
+| What a source is asked, and what its answer means | [CRL-030](crl.md#crl-030-a-partition-for-another-point-is-no-evidence), [CRL-033](crl.md#crl-033-retrieval-asks-per-certificate-only-about-what-lacks-a-crl), [CRL-034](crl.md#crl-034-a-source-answering-by-certificate-leaves-no-per-point-failures), [CRL-048](crl.md#crl-048-a-crl-from-a-source-is-evidence-only-when-verification-authenticates-it), [CRL-050](crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before), [CRL-051](crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources) |
 | The built-in source and its limits | [CRL-037](crl.md#crl-037-the-built-in-source-refuses-what-it-does-not-fetch), [CRL-038](crl.md#crl-038-a-uri-that-is-not-an-absolute-url-is-never-offered-to-a-source), [CRL-039](crl.md#crl-039-fetch-limits-bound-one-verification), [CRL-045](crl.md#crl-045-a-retrieved-crl-over-the-size-cap-is-never-evidence), [CRL-046](crl.md#crl-046-a-retrieved-crl-over-the-size-cap-is-reported-with-the-cap-it-hit) |
 | Order of `crl_retrieval.failures` | [CRL-049](crl.md#crl-049-retrieval-failures-are-reported-in-a-fixed-order) |
 
@@ -122,17 +122,19 @@ page links to them instead of restating them.
    points it did not use are not recorded as failures
    (`crl-034-fetch-by-certificate-answer-requests-no-listed-point`). Only a
    body that loads as a CRL of the certificate's issuer counts as such an
-   answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Those
-   unused points stay open: a later certificate listing one still offers it.
-   Each offer is a request to the source, which counts its own requests and
-   distinct URIs (CRL-039). When
+   answer, as OpenSSL and Bouncy Castle look CRLs up by issuer name. Each
+   request carries every point the certificate lists, whatever an earlier
+   request carried or yielded (CRL-050): the engine reuses no earlier answer,
+   and a source that wants to answer a repeat without new work keeps its own
+   cache (CRL-051), as it counts its own requests and distinct URIs (CRL-039). When
    the answer adds a full CRL (no issuingDistributionPoint), verification
    runs again before anything else is asked: its name and syntax do not
    establish authority or freshness, so only verification can tell which of
    the issuer's certificates it covers. A body whose URL is withheld from
    the report is not an answer by certificate.
-   CRLs are per issuer, so a certificate with no point left to pass on,
-   whose issuer was already asked about, is not asked again. A list that is present but empty (a certificate the
+   A certificate whose issuer was already asked about is still asked: the
+   engine keeps no record of issuers, and a source that stores CRLs by issuer
+   answers the repeat itself (CRL-033). A list that is present but empty (a certificate the
    verifier could not name) asks nothing.
 3. Verify again with what was added, and repeat steps 2 and 3 while a round
    adds a CRL and another certificate is still reported without one.
@@ -195,8 +197,9 @@ No evidence never accepts anything: the next verification still requires
 evidence for every selected certificate. Each such point is listed in
 `crl_retrieval.failures` with the certificate's SHA-256, the URL when there is
 one, and the error's code, stage, message, details and causes. A URL is
-requested once; if it failed, it is listed again for each further certificate
-that lists it. An unsupported point is skipped on its own, so a plain URI
+offered for each certificate that lists it, and what the source answered for
+that certificate is recorded under it (CRL-051): the built-in source fetches
+it once per verification and returns the same body or failure for each. An unsupported point is skipped on its own, so a plain URI
 beside it is still requested (`crl-033-fetch-mixed-point-requests-plain-uri`). A
 response identical to a CRL already loaded adds nothing and does not trigger
 another verification.
@@ -248,11 +251,12 @@ source, `rssig::crl::HttpCrlSource`, and `cli` includes it. The parser and
   fails at the first unsupported point; retrieval itself skips such points one
   by one.
 - `CrlSource` is the single interface through which the engine obtains CRLs,
-  asked once per certificate (see step 2 for the one exception): `crls(&CrlRequest)` receives the certificate
+  asked once per certificate that lacks a usable CRL (CRL-033): `crls(&CrlRequest)` receives the certificate
   (DER, as rssig re-encodes it), its issuer name (DER, the key for a store of CRLs by issuer, like
   OpenSSL's `lookup_crls`), its supported listed URIs in order (a hint:
-  without URIs already asked about in this verification, deduplicated after
-  normalization) and a byte budget for the whole response. It returns a
+  each once, deduplicated after normalization, including URIs offered for
+  another certificate earlier in the verification) and a byte budget for the
+  whole response. Reusing an earlier answer is the source's. It returns a
   `CrlResponse` of zero or more `SourcedCrl` bodies (bytes, and optionally the
   URL and redirect target they came from) plus per-URL `failures`, or a
   `CrlSourceError` for the whole request. Every error carries one of the four
@@ -300,6 +304,7 @@ writes
 | Decision | Owner |
 | --- | --- |
 | Which certificates lack a CRL, what to ask about, in what order, and asking each certificate once (CRL-033) | Engine |
+| Reusing an earlier answer for a repeated point or issuer (CRL-051) | `CrlSource` |
 | Whether a returned CRL is evidence: authentication, scope, freshness, issuer matching (CRL-048) | Engine |
 | Failing closed: no evidence is `revocation_unknown`, never an acceptance | Engine |
 | What a source's `Abort` means: ask nothing further, report `crl_fetch_aborted` (CRL-047) | Engine |
@@ -335,7 +340,7 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Destinations | Reject single-label names; names ending in the labels `localhost`, `local`, `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion` or `alt` (whole labels); nonpublic/reserved literal addresses; and an entire DNS answer containing nonpublic addresses. A denied host is reported as not public |
 | DNS | At most 16 answers; selected checked address is pinned directly to the TCP connection |
 | Redirects | At most three per artifact; resolve, revalidate and pin every new destination |
-| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per certificate, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
+| Requests | At most 64 requests to the source and 64 distinct URLs per verification (`MAX_SOURCE_REQUESTS`, one request per call that carries a point not yet answered in the verification, `crl_requests`; `MAX_SOURCE_URLS`, `crl_source_urls`; each an `Abort` source error), and 16 HTTP hops per verification (redirects included; `MAX_HTTP_REQUESTS`, `crl_http_requests`) within 32 MiB read from the network (`MAX_NETWORK_BYTES`, `crl_network_bytes`); all are the built-in source's own constants in `rssig::crl`, not the engine's |
 | Response entries | At most 64 CRL bodies, and bodies and failures together at most 64 plus one for each point the request offered, in one source response (`crl_response_entries`, `MAX_RESPONSE_ENTRIES`) |
 | Response | At most 8 MiB per artifact; do not allocate from Content-Length |
 | Loaded CRLs | At most 64 supplied and fetched artifacts combined |
@@ -369,7 +374,9 @@ One state does persist: after a DNS timeout the source stays closed for the
 rest of the invocation (see below), and each later file that needs a CRL is
 reported `crl_fetch_aborted` without a request. This is deterministic, and it
 keeps at most one unfinished resolver thread.
-There is no persistent HTTP or disk cache. A verification deduplicates requested URLs; final validation checks all
+There is no persistent HTTP or disk cache. The built-in source keeps each URL's
+outcome for one verification (CRL-051), so a point several certificates list
+is fetched once; final validation checks all
 freshness against the caller's validation time. Other invocations fetch again.
 HTTP cache headers cannot override signed CRL validity.
 

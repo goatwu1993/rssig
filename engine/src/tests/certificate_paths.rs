@@ -1227,7 +1227,7 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         core::slice::from_ref(&signer_hash)
     );
     assert_eq!(
-        keys("crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left"),
+        keys("crl-050-a-certificate-whose-point-another-used-is-still-asked"),
         core::slice::from_ref(&shared_hash)
     );
     // The shared point is the one the cases script, and the crl-051 cases script
@@ -1257,7 +1257,7 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         let errors = case.get("crl_errors").and_then(|e| e.as_object());
         match id {
             "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer"
-            | "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left" => {
+            | "crl-050-a-certificate-whose-point-another-used-is-still-asked" => {
                 assert_eq!(responses.len(), 1, "{id}");
                 assert!(errors.is_none(), "{id}");
                 // The pairing each case rests on: the first leaves the
@@ -1274,7 +1274,7 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
                 assert_eq!(answers.len(), 1, "{id}");
                 assert_eq!(answers.values().next().unwrap(), certificate_file, "{id}");
             }
-            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate" => {
+            "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate" => {
                 assert!(errors.is_none(), "{id}");
             }
             "crl-051-a-denied-point-is-recorded-for-each-certificate" => {
@@ -1314,8 +1314,8 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         named,
         [
             "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
-            "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
-            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+            "crl-050-a-certificate-whose-point-another-used-is-still-asked",
+            "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate",
             "crl-051-a-denied-point-is-recorded-for-each-certificate",
         ]
         .into_iter()

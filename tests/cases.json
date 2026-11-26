@@ -37170,7 +37170,7 @@
       }
     },
     {
-      "id": "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
+      "id": "crl-050-a-certificate-whose-point-another-used-is-still-asked",
       "input": "crl-chain-shared-crl-dp.exe",
       "decision": "CRL-050",
       "crl_responses": {
@@ -37232,7 +37232,7 @@
       }
     },
     {
-      "id": "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+      "id": "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate",
       "input": "crl-chain-shared-crl-dp.exe",
       "decision": "CRL-051",
       "crl_responses": {},
@@ -37277,6 +37277,7 @@
           ]
         },
         "crl_requests": [
+          "http://crl.invalid/sec10-a.crl",
           "http://crl.invalid/sec10-a.crl"
         ]
       }
@@ -37330,6 +37331,7 @@
           ]
         },
         "crl_requests": [
+          "http://crl.invalid/sec10-a.crl",
           "http://crl.invalid/sec10-a.crl"
         ]
       }

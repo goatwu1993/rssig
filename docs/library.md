@@ -716,9 +716,7 @@ native crypto provider is added.
 #### CRL sources (`--fetch-crls`; the engine's `retrieval` feature, the application's `crl-fetch`)
 
 `CrlSource` is now asked once per certificate rather than once per URL, and
-returns restricted errors. A certificate with no new point, whose issuer name,
-authority key and CA role were already asked about, is not asked again: CRLs
-are per issuer key and role. Old to new:
+returns restricted errors. Old to new:
 
 | Before | Now |
 |---|---|
@@ -752,6 +750,19 @@ them: `rssig::crl::check_public_http_url` applies the built-in source's
 URL policy and returns a `Denied` error to pass on. It checks the URL only;
 your HTTP client must also refuse nonpublic DNS answers and re-check redirect
 targets, as `HttpCrlSource` does.
+
+**Reusing answers is the source's (CRL-T041).** The engine asks about every
+certificate that lacks a usable CRL, with every point it lists. Before, it
+skipped a certificate with no new point whose issuer name, authority key and
+CA role were already asked about, and left out of `distribution_points` a URL
+offered for an earlier certificate (recording that URL's earlier failure
+itself). Now a source sees each repeat: one that wants to answer it without
+new work keeps its own cache for the verification (reset in
+`begin_verification`) and returns the same body or failure, as `HttpCrlSource`
+does; one without a cache gets one more call per such certificate. A request
+may carry no point at all (a certificate that lists none), and a source should
+not count such a call against a request cap: `HttpCrlSource` counts only calls
+that carry a point not yet answered.
 
 **Reusing a source.** The engine calls `CrlSource::begin_verification()` once
 at the start of each verification that may ask the source. `HttpCrlSource`
