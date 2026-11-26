@@ -212,7 +212,7 @@ Where each rule is pinned, in the order above:
 | Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
 | KeyUsage precedence | none (PATH-T009); changing it is PATH-T007 |
 | `lifetime_signing` defaults to `false` | not to be pinned: a compatibility shim the release-status rule in AGENTS.md rules out; removing it is TIME-T009 (owner decision) |
-| Error details on "not valid at the signing time", and CRL errors without `lifetime_signing` | extend TIME-013 (TIME-T008) |
+| Error details on "not valid at the signing time", and store-wide CRL presence and freshness errors without `lifetime_signing` (`time-012-lifetime-before-not-before-crl-expired`; revocation errors carry it) | extend TIME-013 (TIME-T008) |
 
 The lifetime-signing rules set the schema and detail rows above, so by the
 [Which index](../decisions.md#which-index) rule they are `TIME-` questions.
