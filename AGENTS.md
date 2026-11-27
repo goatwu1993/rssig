@@ -56,7 +56,7 @@ Claude conversation; nothing on GitHub is an approval.
    Microsoft or the references settle it), list it in the PR description as
    decided without asking, and tell the owner when the PR merges.
 3. **One task, one PR, one commit**, kept with the `pr-maintenance` skill.
-   `/review-loop` runs at most three rounds; after that only a new important
+   `/review-loop` runs at most ten rounds; after that only a new important
    finding is fixed. A PR with no unanswered ask-first change merges by
    squash, without asking, once its checks are green (the fuzz job may still
    be running), and the owner is told what merged.

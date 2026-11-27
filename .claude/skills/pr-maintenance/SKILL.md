@@ -42,7 +42,9 @@ is how to keep them.
 
 - Merge when AGENTS.md "Pre-1.0 flow" allows: one commit on the latest main,
   checks green (the fuzz job may still be running), review finished, and no
-  ask-first change unanswered.
+  ask-first change unanswered. Review is finished when `/review-loop` has
+  run on the pushed commit and stopped; start it yourself after the first
+  push, without waiting to be asked.
 - Squash, with the head you checked pinned (`expectedHeadSha`), the PR title
   as subject and the commit body as body; never GitHub's default message.
 - Then tell the owner in the conversation: the merge commit, the checks
