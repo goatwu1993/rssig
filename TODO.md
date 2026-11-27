@@ -193,10 +193,7 @@ they pin or what they check, never after a task.
   compares canonically. Detail in [crl-t035.md](docs/tasks/crl-t035.md).
 - [x] **CRL-T036** test: Express a point shared by certificates of two issuers in the case format. Done ([PR #86](https://github.com/goatwu1993/rssig/pull/86); [CRL-050](docs/crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before), [CRL-051](docs/crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources)).
 - [x] **CRL-T037** test: Pin a spent byte allowance in a case. Done ([PR #98](https://github.com/goatwu1993/rssig/pull/98)); [CRL-046](docs/crl.md#crl-046-a-retrieved-crl-over-the-size-cap-is-reported-with-the-cap-it-hit).
-- [ ] **CRL-T038** test: Express an answer naming a point by its normalized URL.
-  The engine matches a source's URL to a listed point by normalized form, but
-  the case runner accepts only the exact spelling, so that path is unit-tested
-  only. From TEST-T009.
+- [x] **CRL-T038** test: Express an answer naming a point by its normalized URL. Done ([PR #106](https://github.com/goatwu1993/rssig/pull/106)).
 - [ ] **CRL-T053** refactor: Give the spent-allowance rule an entry that asks its question (owner decision).
   A reindex. CRL-046's title asks how an over-cap body
   is reported, but it also decides that points left once accepted bodies spend

@@ -6917,6 +6917,7 @@
         "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
         "crl-048-a-crl-of-another-issuer-is-never-evidence",
         "crl-026-a-failure-naming-the-point-is-recorded-for-it",
+        "crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it",
         "crl-026-url-less-unknown-failure-answers-the-listed-point",
         "crl-045-body-over-the-size-cap-is-no-answer",
         "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",

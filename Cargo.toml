@@ -111,6 +111,9 @@ webpki = { workspace = true }
 # Parses Rust test and generator sources for tests/manifest.rs. Already in the
 # lockfile through serde_derive.
 syn = { version = "2", default-features = false, features = ["full", "parsing", "visit"] }
+# The specification runner compares a scripted URL with the listed points
+# after normalization, as the engine does. Already a dependency of `crl-fetch`.
+url = { workspace = true }
 
 [profile.release]
 lto = true

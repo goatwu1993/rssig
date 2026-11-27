@@ -442,8 +442,15 @@ no URL is recorded once per listed point; the unit test
 `a_failure_without_a_url_in_a_response_answers_every_point` in
 `engine/src/retrieval.rs` pins that.
 
-A scripted `url` must be one of the points this request carries, spelled exactly
-as listed. The runner fails a case whose URL is not one of them, and its message
+A scripted `url` must be one of the points this request carries, spelled as
+listed or in its normalized form: the two are equal once each is parsed and
+serialized as the WHATWG URL Standard does (the `url` crate's `Url`), which
+lower-cases the scheme and host and drops a default port. The engine matches a
+source's URL to a listed point the same way, and the report keeps the
+source's spelling
+(`crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it`,
+guarded by `specification_a_point_named_by_its_normalized_url_is_spelled_otherwise`).
+The runner fails a case whose URL is not one of them, and its message
 prints the listed points. A point shared by two certificates is carried by
 each request (CRL-050), so a scripted `url` answers it for every certificate
 asked by URL, and the runner's source, which keeps no cache, is asked for it
@@ -461,9 +468,7 @@ each time:
   the signer is answered by certificate, and the issuer's certificate is the
   one the URL answers).
 
-All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
-engine, which matches normalized URLs; a case for a normalized spelling is
-CRL-T038. A
+All of these run on `crl-chain-shared-crl-dp.exe`. A
 URL that went stale or was mistyped therefore cannot turn a case about the point
 into one about a URL outside the request; the engine's handling of one outside it
 is unit-tested
@@ -505,7 +510,8 @@ shared result code, each pins its own entry's part:
 - `crl-047-whole-request-abort-is-reported` and
   `crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked` (a
   definite result after an abort keeps its code, unmarked)
-- `crl-026-a-failure-naming-the-point-is-recorded-for-it`
+- `crl-026-a-failure-naming-the-point-is-recorded-for-it` and
+  `crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it`
 - `crl-034-an-answer-with-several-bodies-settles-the-status`
 - `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left` and
   `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` (CRL-049: a

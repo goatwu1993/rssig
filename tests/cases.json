@@ -36493,6 +36493,59 @@
       }
     },
     {
+      "id": "crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-026",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "failures": [
+            {
+              "kind": "denied",
+              "url": "HTTP://CRL.Example.Invalid/test.crl"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
+                        "url": "HTTP://CRL.Example.Invalid/test.crl",
+                        "code": "crl_fetch_denied",
+                        "source_error": "denied"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "crl-026-url-less-unknown-failure-answers-the-listed-point",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-026",
