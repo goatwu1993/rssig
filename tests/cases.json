@@ -29833,13 +29833,23 @@
             {
               "ok": false,
               "error": {
-                "code": "resource_limit_exceeded",
+                "code": "revocation_unknown",
                 "stage": "revocation",
                 "details": {
-                  "resource": "retrieval_crl_artifacts",
-                  "limit": 64,
-                  "used": 0,
-                  "requested": 65
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "code": "resource_limit_exceeded",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "details": {
+                          "resource": "retrieval_crl_artifacts",
+                          "limit": 64,
+                          "used": 0,
+                          "requested": 65
+                        }
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -29875,13 +29885,23 @@
             {
               "ok": false,
               "error": {
-                "code": "resource_limit_exceeded",
+                "code": "revocation_unknown",
                 "stage": "revocation",
                 "details": {
-                  "resource": "retrieval_crl_artifacts",
-                  "limit": 64,
-                  "used": 1,
-                  "requested": 64
+                  "crl_retrieval": {
+                    "failures": [
+                      {
+                        "code": "resource_limit_exceeded",
+                        "url": "http://crl.example.invalid/test.crl",
+                        "details": {
+                          "resource": "retrieval_crl_artifacts",
+                          "limit": 64,
+                          "used": 1,
+                          "requested": 64
+                        }
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -29890,6 +29910,68 @@
         "crl_requests": [
           "http://crl.example.invalid/test.crl"
         ]
+      }
+    },
+    {
+      "id": "limit-fetch-with-64-supplied-crls-asks-nothing",
+      "input": "crl-chain-crl-dp.exe",
+      "crl_responses": {
+        "http://crl.invalid/sec10-a.crl": "crl-issuer-idp-match.crl",
+        "http://crl.invalid/sec10-issuer.crl": "path-root.crl"
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--crl",
+        "fixtures/limit-fetch-64-crls.pem",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "artifacts": [],
+                    "failures": [
+                      {
+                        "code": "resource_limit_exceeded",
+                        "url": "http://crl.invalid/sec10-a.crl",
+                        "details": {
+                          "resource": "retrieval_crl_artifacts",
+                          "limit": 64,
+                          "used": 64,
+                          "requested": 1
+                        }
+                      },
+                      {
+                        "code": "resource_limit_exceeded",
+                        "url": "http://crl.invalid/sec10-issuer.crl",
+                        "details": {
+                          "resource": "retrieval_crl_artifacts",
+                          "limit": 64,
+                          "used": 64,
+                          "requested": 1
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "crl_requests": []
       }
     },
     {

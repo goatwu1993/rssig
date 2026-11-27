@@ -194,6 +194,15 @@ mod tests {
         assert_eq!((MAX_ROOTS, MAX_CRLS, TRUST_TOTAL), (4096, 64, 32 << 20));
     }
     #[test]
+    fn the_cli_never_supplies_more_than_the_engine_retains() {
+        // Supplied evidence over the engine's retained-byte cap (LIMIT-T004:
+        // every certificate unasked) is reached only through the library:
+        // the CLI loads at most what the engine retains. LIMIT-T008 tracks
+        // a case for the store at the cap.
+        const { assert!(TRUST_TOTAL <= rssig_engine::retrieval::MAX_TOTAL_BYTES) };
+        const { assert!(MAX_CRLS <= rssig_engine::retrieval::MAX_RETAINED_CRLS) };
+    }
+    #[test]
     fn stream_limits_handle_growth_short_reads_and_exact_eof() {
         let (bytes, exceeded) = read_stream(io::repeat(7), 17).unwrap();
         assert_eq!(bytes, vec![7; 17]);

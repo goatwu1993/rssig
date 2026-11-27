@@ -48,6 +48,12 @@ impl TrustStore {
     pub(crate) fn has_crl(&self, der: &[u8]) -> bool {
         self.crls.iter().any(|crl| crl == der)
     }
+    /// Drop the CRLs loaded after the first `len`: undoes an `add_crl`
+    /// that would exceed a cap, since it only appends.
+    #[cfg(feature = "retrieval")]
+    pub(crate) fn truncate_crls(&mut self, len: usize) {
+        self.crls.truncate(len);
+    }
     /// The number of configured trust anchors.
     pub fn root_count(&self) -> usize {
         self.roots.len()

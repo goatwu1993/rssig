@@ -59,7 +59,10 @@ per request, counting only points it has not answered before, denying the rest. 
 certificate that lacks a CRL with every point it lists, and reuses no answer
 (CRL-033). A custom source owns its counts. The engine offers a source
 every listed URI and keeps 16 failure entries per certificate in its report
-(CRL-024). AIA fetching, HTTPS retrieval, OCSP,
+(CRL-024). The engine's own retrieval limits are recorded and the run goes on
+(LIMIT-T004): once the store retains 32 MiB of roots and CRLs, or 64 CRLs,
+supplied ones included, no further certificate is asked, so `--fetch-crls`
+with 64 supplied CRLs fetches nothing. AIA fetching, HTTPS retrieval, OCSP,
 catalog signatures, delta/indirect CRLs, RSA-PSS, arbitrary PE section layouts,
 Windows-specific trust lists, and Windows policy parity are not implemented.
 A PE certificate table may hold only revision 2.0 PKCS#7 WIN_CERTIFICATE

@@ -244,7 +244,7 @@ fn usable_supplied_crls_and_offline_mode_do_not_call_the_provider() {
 }
 
 #[test]
-fn fetched_bundles_enforce_retained_crl_limit() {
+fn a_fetched_bundle_past_the_retained_crl_limit_is_not_loaded() {
     struct Source {
         bytes: Vec<u8>,
         calls: usize,
@@ -308,22 +308,80 @@ fn fetched_bundles_enforce_retained_crl_limit() {
                 crls.iter().map(|c| c["sha256"].as_str().unwrap()).collect();
             assert_eq!(unique.len(), 64);
         } else {
+            // LIMIT-T004: a response that would take the retained CRLs past
+            // the cap is not loaded and is recorded; the verifier's result
+            // with the evidence it has stands, instead of ending the run.
             assert!(result.get("signatures").is_none());
-            assert_eq!(result["error"]["code"], "resource_limit_exceeded");
+            assert_eq!(result["error"]["code"], "revocation_unknown");
             assert_eq!(result["error"]["stage"], "revocation");
-            let details = &result["error"]["details"];
+            let retrieval = &result["error"]["details"]["crl_retrieval"];
+            assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 1);
+            let failures = retrieval["failures"].as_array().unwrap();
+            assert_eq!(failures.len(), 1, "{failures:?}");
+            assert_eq!(failures[0]["code"], "resource_limit_exceeded");
+            assert_eq!(failures[0]["url"], "http://crl.example.invalid/test.crl");
+            let details = &failures[0]["details"];
             assert_eq!(details["resource"], "retrieval_crl_artifacts");
             assert_eq!(details["limit"], 64);
             assert_eq!(details["used"], usize::from(supplied));
             assert_eq!(details["requested"], count);
-            assert_eq!(
-                details["crl_retrieval"]["artifacts"]
-                    .as_array()
-                    .unwrap()
-                    .len(),
-                1
-            );
         }
+    }
+}
+
+/// LIMIT-T004: with 64 CRLs supplied the store retains as many as it may, so a
+/// certificate without a CRL is not asked about and each of its points is
+/// recorded as not tried (`retrieval_crl_artifacts`); the result is the
+/// verifier's.
+#[test]
+fn a_store_holding_64_crls_asks_the_source_nothing() {
+    struct Never;
+    impl rssig_engine::retrieval::CrlSource for Never {
+        fn crls(
+            &mut self,
+            _: &rssig_engine::retrieval::CrlRequest<'_>,
+        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
+        {
+            panic!("no source is asked with 64 CRLs retained")
+        }
+    }
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let root = base.join("path-root.der");
+    let crls = base.join("limit-fetch-64-crls.pem");
+    let input = base.join("crl-chain-crl-dp.exe");
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code = rssig::cli::run_with_crl_source(
+        [
+            "rssig",
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            root.to_str().unwrap(),
+            "--crl",
+            crls.to_str().unwrap(),
+            "--time",
+            "1800000000",
+            "--fetch-crls",
+            input.to_str().unwrap(),
+        ],
+        &mut out,
+        &mut err,
+        &mut Never,
+    )
+    .unwrap();
+    assert!(err.is_empty());
+    assert_eq!(code, 1);
+    let json: serde_json::Value = serde_json::from_slice(&out).unwrap();
+    let error = &json["results"][0]["error"];
+    assert_eq!(error["code"], "revocation_unknown");
+    let retrieval = &error["details"]["crl_retrieval"];
+    assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 0);
+    let failures = retrieval["failures"].as_array().unwrap();
+    assert_eq!(failures.len(), 2, "{failures:?}");
+    for failure in failures {
+        assert_eq!(failure["code"], "resource_limit_exceeded");
+        assert_eq!(failure["details"]["resource"], "retrieval_crl_artifacts");
+        assert_eq!(failure["details"]["used"], 64);
     }
 }
 

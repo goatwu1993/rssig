@@ -787,6 +787,13 @@ Results: missing evidence is `revocation_unknown` (with each problem in
 `crl_retrieval.failures`) or `crl_fetch_aborted` when an aborted source left a
 certificate without a CRL unasked or cut its request short (CRL-047);
 `crl_fetch_denied` and `crl_fetch_failed` are no longer results.
+Since LIMIT-T004 the engine's retrieval limits are no longer results either:
+`resource_limit_exceeded` with `details.resource` `retrieval_trust_bytes`
+(supplied roots and CRLs over the 32 MiB the store retains),
+`crl_response_entries` or `retrieval_crl_artifacts` appears only as an entry
+in `crl_retrieval.failures`, and the result is the verifier's with the
+evidence held (`revocation_unknown` in `limit-fetch-65-crls`). Only the
+LIMIT-T002 work budget still ends a run with `resource_limit_exceeded`.
 
 Report types (`rssig_engine::domain`), Rust and JSON:
 
