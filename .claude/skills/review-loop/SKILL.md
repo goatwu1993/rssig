@@ -1,10 +1,16 @@
 ---
 name: review-loop
-description: Run /code-review on the current PR or diff, fix every valid finding, track valid findings that don't belong in this PR, and repeat until a round finds nothing valid.
-disable-model-invocation: true
+description: >-
+  Run /code-review on the current PR or diff, fix every valid finding, track
+  valid findings that don't belong in this PR, and repeat until a round finds
+  nothing valid. Use on your own, without being asked, once a PR's commit is
+  pushed and before it merges; also when asked to review a PR or diff.
 ---
 
-Review and fix in rounds, in this same turn, with no timer or wakeup.
+Review and fix in rounds, in this same turn, with no timer or wakeup. Start
+it yourself: a PR is not ready to merge until a run has finished
+(pr-maintenance, "Merge"). The ten rounds below count per PR, not per
+run: starting it again does not reset them.
 
 Each round:
 
@@ -23,8 +29,8 @@ Each round:
    diff, needs no test; say what it misread.
 6. Run the checks AGENTS.md lists, commit as the PR requires, and push.
 
-Stop when a round has no new valid finding, or after three rounds (AGENTS.md,
-"Pre-1.0 flow"): after the third, fix only a new finding marked important,
+Stop when a round has no new valid finding, or after ten rounds (AGENTS.md,
+"Pre-1.0 flow"): after the tenth, fix only a new finding marked important,
 and track or drop the rest with a reason. Then report what was fixed, what
 is tracked and where, and what was judged invalid, why, and which test guards
 each reason.

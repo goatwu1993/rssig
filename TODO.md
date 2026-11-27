@@ -467,6 +467,7 @@ they pin or what they check, never after a task.
 - [x] **DOC-T011** docs: Define the pre-1.0 flow: who decides, how to ask, how a PR is kept. Done ([PR #101](https://github.com/goatwu1993/rssig/pull/101)); [AGENTS.md](AGENTS.md#pre-10-flow).
 - [ ] **DOC-T012** docs: Hold the 1.0 gate for decisions (owner decision). Detail in [doc-t012.md](docs/tasks/doc-t012.md).
 - [ ] **DOC-T013** test: Check the frontmatter of the project skills. Parse each `.claude/skills/*/SKILL.md` and require `name` (the directory's) and `description`; choose the YAML parser once with DOC-T010.
+- [x] **DOC-T014** docs: Let Claude start `/review-loop` itself, with up to ten rounds. Done ([PR #104](https://github.com/goatwu1993/rssig/pull/104)); [review-loop](.claude/skills/review-loop/SKILL.md).
 
 ### ALG
 
