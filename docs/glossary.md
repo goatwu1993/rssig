@@ -18,6 +18,7 @@ same change.
 | **check** | The code or verification step that enforces a rule ("path checks", "signature checks"). | |
 | **profile** | The supported subset of an external format or standard, for example the [timestamp profile](timestamp-profile.md) of RFC 3161. | |
 | **verification mode** | One of the selectable policies above: trusted, integrity-only or revocation disabled. | |
+| **fail closed** / **fail open** | How a rule treats missing, malformed or unsupported evidence: failing closed rejects there; failing open would accept there. rssig fails closed ([AGENTS.md](../AGENTS.md#architecture-and-constraints)). An explicit integrity-only or no-revocation mode is a policy the caller selects, not failing open. | |
 
 External policies keep their own names: Windows trust and code-integrity
 policy, Group Policy, PowerShell execution policy, the RFC 3161 TSA policy OID,
@@ -38,6 +39,7 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **candidate rule** | An unnumbered rule in an index's "Candidate rules" section, waiting to become an entry. |
 | **claim** | The assignment of a case without a decision to one index and candidate rule, in `tests/decision-claims.json`. |
 | **reindex** | An owner-approved change that moves, merges or renumbers entries and renames their cases; its PR description lists the old-to-new mapping ([IDs](decisions.md#ids)). |
+| **owner question** | A question only the repository owner can settle, asked and answered in the Claude conversation ([AGENTS.md](../AGENTS.md#pre-10-flow) says when; the `owner-question` skill says how). |
 
 ## Specification and tests
 

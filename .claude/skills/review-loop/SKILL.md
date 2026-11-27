@@ -23,6 +23,8 @@ Each round:
    diff, needs no test; say what it misread.
 6. Run the checks AGENTS.md lists, commit as the PR requires, and push.
 
-Stop when a round has no new valid finding. Then report what was fixed, what
+Stop when a round has no new valid finding, or after three rounds (AGENTS.md,
+"Pre-1.0 flow"): after the third, fix only a new finding marked important,
+and track or drop the rest with a reason. Then report what was fixed, what
 is tracked and where, and what was judged invalid, why, and which test guards
 each reason.
