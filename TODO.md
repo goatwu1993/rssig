@@ -48,6 +48,12 @@ they pin or what they check, never after a task.
   remaining points and finishing with the evidence gathered. CRL-T041 left a
   certificate reached with the retained-byte cap full unasked, so that asking
   every certificate did not end runs that the issuer skip used to finish.
+- [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
+  RDP `verify_trust` repeats the full path search, with the lifetime leaf check
+  and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
+  failure no other EKU can change, keeping the ranking and merged CRL gaps
+  [CRL-027](docs/crl.md#crl-027-which-error-a-rejected-chain-reports) pins;
+  pin the budget effect.
 
 ### CMS
 
@@ -65,6 +71,11 @@ they pin or what they check, never after a task.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
   Check how it is reported and whether to read it.
+- [ ] **PATH-T007** fix: Report the keyCertSign rejection per candidate path (owner decision).
+  A keyCertSign flag shared across candidate paths reports a later
+  unknown-issuer failure as `invalid_key_usage`. This changes a rule kept in
+  TIME-T002: PATH-T009 adds its entry first, and the change needs the owner's
+  approval.
 
 ### TRUST
 
@@ -77,73 +88,17 @@ they pin or what they check, never after a task.
 ### TIME
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
-- [ ] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups.
-  Recorded from PR #43 reviews; none permits an invalid signature to verify.
-  Kept as decisions (change only with a new decision and paired fixtures):
-  - Trust anchors: configured anchors remain keys. Their validity is not checked
-    at the validation time or at a lifetime signing time, so a lifetime path
-    through a root re-issued after the signing time is accepted.
-  - Error precedence: the leaf lifetime notBefore check runs before path
-    building (like webpki's leaf validity check), so it precedes
-    untrusted_root/unknown-issuer and unknown revocation status of the signer
-    path. Store-wide CRL freshness errors are still reported first, by the TSA
-    check. A rejected issuer issued after signing ranks as a webpki validity
-    error, so it can hide a revoked or wrongly signed issuer on another
-    candidate path (pinned by `time-011-lifetime-rollover-revoked-issuer`); the
-    signature is still rejected. Equal-rank failures report the first
-    encountered.
-  - CRL/revocation: revocation is evaluated only at the validation time, and a
-    revocation failure on a path is reported before the signing-time check of
-    that path. Historical (signing-time) revocation status is not modeled.
-  - Diagnostics: `details.certificate` names the chain certificate that failed
-    the signing-time or fractional-expiry check (an intermediate when it is the
-    cause), matching the existing fractional-expiry convention, not always the
-    signer leaf. Errors from webpki's own validity checks instead name the leaf
-    in `details.certificate` while `not_before`/`not_after` belong to the
-    certificate that failed, lifetime or not. This includes a lifetime
-    intermediate issued after a timestamp that equals the validation time.
-  - Unsigned timestamps: the signing-time check (and the non-lifetime
-    timestamp-before-notBefore rejection) is a consistency check. Removing the
-    unsigned timestamp leaves an untimestamped signature validated at the
-    validation time only.
-  - KeyUsage precedence (pre-existing, PATH-T001): the keyCertSign rejection flag
-    is shared across candidate paths, so once any candidate lacked keyCertSign a
-    final unknown-issuer failure from another path is reported as
-    invalid_key_usage. Fails closed; a per-path reason needs separate work.
-  - Schema: `TrustReport.lifetime_signing` defaults to `false` when reading
-    reports written before TIME-T001, so an older report cannot distinguish "not
-    lifetime-signed" from "not evaluated". `validation_time` shows which time
-    was used; `Option<bool>` would be a schema change.
-  - Error details: on "not valid at the signing time", `validation_time` is the
-    validation time (when the certificate may be valid) and `signing_time` is
-    the instant that failed, unlike other validity errors where
-    `validation_time` is the failing instant. CRL presence/freshness errors for
-    a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
-    evidence is CRL-T001 and CRL-T002. Both are schema decisions.
-  Open follow-ups:
-  - Untested fallback: when the certificate report for a late lifetime
-    certificate cannot be built, the error carries a free-text
-    `certificate_report_error` detail instead of `certificate`. No fixture
-    reaches it; it needs a certificate that parses but cannot be reported, or
-    a typed detail.
-  - Format coverage: lifetime-signing fixtures cover PE (primary and nested)
-    and RDP. MSI, CAB, script and AppX signers use the same trust call without
-    a lifetime fixture.
-  - Fractional expiry (pre-existing): `check_fractional_validity` runs after
-    path selection. With a fractional timestamp and two same-subject/key
-    issuers, webpki can select the one whose notAfter equals the timestamp's
-    whole second, and the signature is then rejected as certificate_expired
-    although the other issuer is valid. Move the check into path building, as
-    the lifetime signing-time check does, for every timestamped signer and TSA;
-    add a paired rollover fixture.
-  - Budget: RDP `verify_trust` repeats the full path search, including the
-    lifetime leaf check and a 200,000-unit path-work reservation, for each
-    accepted leaf EKU. Stop after an EKU-independent failure without changing
-    first-policy-error reporting, and pin the budget effect.
-  - Test maintenance: share RFC 3161/PKCS#9 token builders across
-    `engine/src/tests.rs`, TSA-T001, TIME-T001 and RDP fixture modules without changing committed
-    bytes; keep per-task regeneration commands (as TSA-T001 does) consistent with
-    `regenerate_cli_fixtures`.
+- [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
+- [ ] **TIME-T005** fix: Check fractional expiry during path building (owner decision).
+  Pre-existing: `check_fractional_validity` runs after path selection, so with
+  two same-key issuers webpki can pick the one expiring at the timestamp's
+  whole second and reject a valid signature. Check it in path building, as
+  TIME-008 does, for every timestamped signer and TSA; pair a rollover fixture.
+  This changes Decided TIME-005, so it needs the owner's approval.
+- [ ] **TIME-T006** fix: Replace the free-text `certificate_report_error` detail with a typed one.
+  A late lifetime certificate whose report cannot be built gets prose instead
+  of `certificate`, and no fixture reaches it. Type the detail, reach it with a
+  fixture if a certificate can parse but not be reported, and extend TIME-013.
 
 ### CRL
 
@@ -324,6 +279,11 @@ they pin or what they check, never after a task.
   `N + point_forms().len()` with a hand-kept list of variant files, so a
   fixture added to one list and not the other is skipped without a failure.
   Found in the review of PR #86.
+- [ ] **TEST-T016** test: Share the RFC 3161/PKCS#9 token builders across test modules.
+  Share them across `engine/src/tests.rs` and `engine/src/tests/`
+  `timestamp_structure.rs`, `validation_time.rs`, `rdp_fixtures.rs` and
+  `cms_audit.rs` without changing committed bytes; keep their regeneration commands consistent with
+  `regenerate_cli_fixtures`.
 
 ### BUILD
 
@@ -379,6 +339,14 @@ they pin or what they check, never after a task.
 - [ ] **TIME-T004** refactor: Attach the claimed `TIME-` cases. The cases claimed under
   `TIME` `attach` (the pre-TIME-T001 time cases and every format's
   expired-with-timestamp copy) name their TIME entries.
+- [ ] **TIME-T007** test: Add lifetime-signing fixtures for the formats without one.
+  The `*-lifetime-*` cases cover PE (primary and nested) and RDP; MSI, MSP,
+  CAB, NAVX, PowerShell, WSH and MSIX/AppX use the same trust call without one.
+- [ ] **TIME-T008** docs: Extend and narrow `TIME-` entries for the TIME-T002 rules not yet pinned.
+  The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
+  maps each to its entry: extend TIME-009, TIME-011 and TIME-013 and narrow
+  TIME-010 to intermediates where marked; the candidate-path rules are PATH-T009.
+- [x] **TIME-T009** fix: Make `TrustReport.lifetime_signing` required. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); owner-approved removal of the pre-TIME-T001 `serde(default)`.
 
 ### PATH
 
@@ -386,6 +354,14 @@ they pin or what they check, never after a task.
 - [ ] **PATH-T004** refactor: Attach the claimed `PATH-` cases. Name existing
   entries for the cases claimed under `attach` (every format's untrusted-root
   case), and add a PATH entry for `certificate-signature`.
+- [ ] **PATH-T008** test: Pin a root re-issued after a lifetime signing time.
+  [PATH-011](docs/path.md#path-011-configured-anchors-are-keys) accepts such a
+  path, but its cases pin anchors at the validation time only; add a paired
+  fixture.
+- [ ] **PATH-T009** docs: Add decision entries for how candidate-path failures are reported.
+  Rules kept in TIME-T002: equal-rank failures report the first encountered,
+  and once any candidate lacked keyCertSign, a final unknown-issuer failure
+  from another path is reported as `invalid_key_usage`.
 
 ### TSA
 
@@ -453,6 +429,10 @@ they pin or what they check, never after a task.
 - [ ] **APPX-T001** refactor: Number the `APPX-` index. Fill
   [docs/appx-decisions.md](docs/appx-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
+- [ ] **APPX-T003** fix: Make `AppxReport.kind` required.
+  Its bare `#[serde(default)]` only reads reports written before the field, the
+  compatibility shim the release-status rule in AGENTS.md rules out, as
+  TIME-T009 removed for `lifetime_signing`; `engine/src/appx.rs` tests reading one.
 
 ### DOC
 

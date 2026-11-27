@@ -7,8 +7,10 @@ instant ranks against other failures. Whether a timestamp token can be trusted
 at all is a [timestamp token decision](tsa.md); see [which
 index](decisions.md#which-index). The entry format is defined in [Decision
 indexes](decisions.md); the rules are explained in [validation
-time](validation-time.md), and the review history is in TIME-T001 and TIME-T002
-([done](tasks/done.md), [TODO.md](../TODO.md)).
+time](validation-time.md), and the review history is in
+[TIME-T001](tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules)
+and
+[TIME-T002](tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
 
 TIME-003 and TIME-004 check a timestamp's time, but against certificate
 validity and the validation time, so they belong here rather than to the
@@ -132,7 +134,7 @@ kept; no floating point is used.
   - RFC 5280 section 4.1.2.5 (validity is inclusive of notBefore and
     notAfter), applied to RFC 3161 `genTime` fractions.
 - **Note:** the check runs after path selection, so it does not consider an
-  alternative issuer with a later notAfter (open in TIME-T002).
+  alternative issuer with a later notAfter (open in TIME-T005).
 
 ### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
 
@@ -236,16 +238,23 @@ fractional-expiry check, an intermediate when it is the cause. A signing-time
 message and certificate are attached only when the surviving webpki error
 carries that certificate's notBefore at the signing time; otherwise the
 generic chain error is reported. Successful reports set
-`TrustReport.lifetime_signing` and `validation_time`.
+`TrustReport.lifetime_signing` and `validation_time`, and a report without
+`lifetime_signing` does not deserialize.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as a decision in TIME-T002
+- **Decided by:** written choice, kept as a decision in TIME-T002; the field
+  made required with the owner's approval in PR #96 (TIME-T009)
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: a change in webpki's search order must not name the
     wrong certificate.
-- **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec
-  case names this entry yet.
+  - AGENTS.md, "Release status": no compatibility shims for earlier shapes.
+- **Note:** pinned by named tests in `tests/cli/validation_time.rs`, and the
+  required field by `core_checks_trust_revocation_and_integrity` in
+  `engine/tests/verification_core.rs`; no spec case names this entry yet.
+  Webpki validity errors naming the leaf, the signing-time error details and
+  store-wide CRL presence and freshness errors carrying no `lifetime_signing`
+  detail are not pinned here yet (TIME-T008).
 
 ## Candidate rules
 

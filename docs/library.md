@@ -650,6 +650,13 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### Required `TrustReport.lifetime_signing`
+
+`TrustReport.lifetime_signing` no longer defaults to `false` when absent, so a
+`VerificationBundle` serialized before the field existed no longer
+deserializes (``missing field `lifetime_signing` ``). rssig always writes the
+field; re-run verification to produce a current report. Output is unchanged.
+
 #### Engine and application packages
 
 The single `rssig` package is now two. Depend on `rssig-engine` for the

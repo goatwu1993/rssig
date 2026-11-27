@@ -193,7 +193,7 @@ time is accepted.
   - RFC 5280 section 6.1.1 (d): trust anchor information is a name and key,
     optionally with constraints.
 - **Note:** the cases pin the rule at the validation time only; no case pins
-  a root re-issued after a lifetime signing time.
+  a root re-issued after a lifetime signing time (PATH-T008).
 
 ## Tier 3: result diagnostics
 

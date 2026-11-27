@@ -20,6 +20,21 @@ fn core_checks_trust_revocation_and_integrity() {
     let json = serde_json::to_value(report).unwrap();
     assert_eq!(json["signatures"][0]["chain_trusted"], true);
     assert_eq!(json["signatures"][0]["revocation_checked"], true);
+    // TIME-013: a successful report always states `lifetime_signing`, so a
+    // report without it is not one rssig writes and does not read back.
+    assert_eq!(json["signatures"][0]["trust"]["lifetime_signing"], false);
+    let mut missing = json.clone();
+    missing["signatures"][0]["trust"]
+        .as_object_mut()
+        .unwrap()
+        .remove("lifetime_signing");
+    let error = serde_json::from_value::<rssig_engine::domain::VerificationBundle>(missing)
+        .unwrap_err()
+        .to_string();
+    assert!(
+        error.contains("missing field `lifetime_signing`"),
+        "{error}"
+    );
     assert_eq!(
         rssig_engine::verify(
             include_bytes!("../../tests/fixtures/bad-image-digest.exe"),

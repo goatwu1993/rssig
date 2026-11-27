@@ -1,7 +1,8 @@
 # Completed tasks
 
 Full records of finished `TODO.md` items, moved here verbatim when
-`TODO.md` was trimmed to one line per finished item.
+`TODO.md` was trimmed to one line per finished item, or written when a task
+closes (TIME-T002). Records are history and are not updated afterwards.
 
 ## LIMIT-T001 fix: Audit arithmetic and structural bounds across every parser
 
@@ -145,6 +146,85 @@ are pinned. Signer, TSA, anchor and CRL time rules:
 verify-core/verify/cli feature tests and bare-metal verify-core Clippy pass on
 macOS. Dependencies are unchanged; Linux runtime validation remains in CI.
 Review items decided against or deferred are recorded in TIME-T002.
+
+## TIME-T002 fix: Lifetime-signing review decisions and deferred follow-ups
+
+[PR #96](https://github.com/goatwu1993/rssig/pull/96). Recorded from the PR #43
+reviews; none permits an invalid signature to verify. Kept as decisions
+(change only with a new decision and paired fixtures):
+
+- Trust anchors: configured anchors remain keys. Their validity is not checked
+  at the validation time or at a lifetime signing time, so a lifetime path
+  through a root re-issued after the signing time is accepted.
+- Error precedence: the leaf lifetime notBefore check runs before path
+  building (like webpki's leaf validity check), so it precedes
+  untrusted_root/unknown-issuer and unknown revocation status of the signer
+  path. Store-wide CRL freshness errors are still reported first, by the TSA
+  check. A rejected issuer issued after signing ranks as a webpki validity
+  error, so it can hide a revoked or wrongly signed issuer on another
+  candidate path (pinned by `time-011-lifetime-rollover-revoked-issuer`); the
+  signature is still rejected. Equal-rank failures report the first
+  encountered.
+- CRL/revocation: revocation is evaluated only at the validation time, and a
+  revocation failure on a path is reported before the signing-time check of
+  that path. Historical (signing-time) revocation status is not modeled.
+- Diagnostics: `details.certificate` names the chain certificate that failed
+  the signing-time or fractional-expiry check (an intermediate when it is the
+  cause), matching the existing fractional-expiry convention, not always the
+  signer leaf. Errors from webpki's own validity checks instead name the leaf
+  in `details.certificate` while `not_before`/`not_after` belong to the
+  certificate that failed, lifetime or not. This includes a lifetime
+  intermediate issued after a timestamp that equals the validation time.
+- Unsigned timestamps: the signing-time check (and the non-lifetime
+  timestamp-before-notBefore rejection) is a consistency check. Removing the
+  unsigned timestamp leaves an untimestamped signature validated at the
+  validation time only.
+- KeyUsage precedence (pre-existing, PATH-T001): the keyCertSign rejection flag
+  is shared across candidate paths, so once any candidate lacked keyCertSign a
+  final unknown-issuer failure from another path is reported as
+  invalid_key_usage. Fails closed; a per-path reason needs separate work.
+- Schema: `TrustReport.lifetime_signing` defaults to `false` when reading
+  reports written before TIME-T001, so an older report cannot distinguish "not
+  lifetime-signed" from "not evaluated". `validation_time` shows which time
+  was used; `Option<bool>` would be a schema change.
+- Error details: on "not valid at the signing time", `validation_time` is the
+  validation time (when the certificate may be valid) and `signing_time` is
+  the instant that failed, unlike other validity errors where
+  `validation_time` is the failing instant. CRL presence/freshness errors for
+  a lifetime signer carry no `lifetime_signing` detail; per-chain revocation
+  evidence is CRL-T001 and CRL-T002. Both are schema decisions.
+
+Where each rule is pinned, in the order above:
+
+| Rule | Entry |
+|---|---|
+| Trust anchors | [PATH-011](../path.md#path-011-configured-anchors-are-keys); no case pins a root re-issued after the signing time (PATH-T008) |
+| Leaf notBefore before path building | extend TIME-009 (TIME-T008) |
+| CRL freshness reported first | [TIME-012](../time.md#time-012-crl-freshness-is-reported-before-the-signing-time-check) |
+| Signing-time rejection ranks as a validity error | [TIME-009](../time.md#time-009-the-signing-time-rejection-ranks-as-a-validity-error) |
+| It hides a revoked issuer on another path | [TIME-011](../time.md#time-011-lifetime-signing-validity-outranks-revocation-on-another-path) |
+| It hides a wrongly signed issuer on another path | extend TIME-011 (TIME-T008) |
+| Equal-rank failures report the first encountered | none (PATH-T009) |
+| Revocation at the validation time only | [TIME-007](../time.md#time-007-a-lifetime-path-is-still-revocation-checked-at-the-validation-time) |
+| Same-path revocation before the signing-time check | [TIME-010](../time.md#time-010-a-revocation-on-the-same-path-is-reported-before-the-signing-time-check); intermediates only, since the leaf check runs before path building: narrow it (TIME-T008) |
+| `details.certificate` names the failing chain certificate | [TIME-013](../time.md#time-013-failure-details-name-the-chain-certificate-that-failed) |
+| webpki validity errors name the leaf | not pinned by TIME-013; extend it (TIME-T008) |
+| Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
+| KeyUsage precedence | none (PATH-T009); changing it is PATH-T007 |
+| `lifetime_signing` defaults to `false` | dropped with the owner's approval: a compatibility shim the release-status rule in AGENTS.md rules out. TIME-T009 made the field required; TIME-013 pins it |
+| Error details on "not valid at the signing time", and store-wide CRL presence and freshness errors without `lifetime_signing` (`time-012-lifetime-before-not-before-crl-expired`; revocation errors carry it) | extend TIME-013 (TIME-T008) |
+
+The lifetime-signing rules set the schema and detail rows above, so by the
+[Which index](../decisions.md#which-index) rule they are `TIME-` questions.
+
+Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
+`certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
+formats without one), TIME-T008 (extending TIME-009, TIME-011 and TIME-013 and
+narrowing TIME-010), TIME-T009 (done here:
+`lifetime_signing` required), PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root
+re-issued after the signing time), PATH-T009 (entries for the candidate-path
+reporting rules), LIMIT-T007 (the repeated RDP path search) and TEST-T016
+(shared timestamp token builders).
 
 ## CRL-T003 fix: Select CRLs against the selected chain, not every candidate
 
