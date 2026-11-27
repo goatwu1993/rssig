@@ -212,10 +212,7 @@ they pin or what they check, never after a task.
 ### RDP
 
 - [x] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback. Done in #89; [record](docs/tasks/done.md#rdp-t001-fix-keep-the-outer-errors-causes-on-the-rdp-revocation-fallback).
-- [ ] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. RDP-T001 is
-  guarded by a unit test through `from_internal`; no fixture yet reaches a
-  revocation that is another error type's source, so no spec case pins the
-  serialized `causes`.
+- [x] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. Done; [record](docs/tasks/done.md#rdp-t004-test-cover-rdp-usage-failure-causes-through-rssigclirun).
 
 ## P1 — Clean parse/verify interfaces
 
@@ -487,6 +484,12 @@ they pin or what they check, never after a task.
   batches, and writer/flush failures through in-process CLI entry points. Prevent
   panic paths while preserving one JSON document where output is writable;
   argument/configuration errors remain plain stderr with exit 2.
+- [ ] **CLI-T004** fix: Keep the causes an inner conversion already reported.
+  `VerificationError::from_internal` rebuilds `causes` from the chain even
+  when the typed error on top already carries causes from an earlier
+  conversion, so a public `verify_*` boundary reduces them to the message
+  (RDP: `at`, then `verify_rdp`). The outer messages RDP-T001 keeps never
+  reach the JSON; no case yet pins more than one cause.
 
 ### DOC
 
