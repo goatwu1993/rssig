@@ -74,6 +74,10 @@ struct Spec {
     lifetime: bool,
     issuers: Issuers,
     stamp: Stamp,
+    /// Rolled-over intermediates (one subject and key, each issued by the
+    /// root) that issue the TSA, in embedded order; empty for the ordinary
+    /// test TSA, which the root issues.
+    tsa_issuers: Vec<Ca>,
 }
 
 pub(super) const LABELS: &[&str] = &[
@@ -93,6 +97,16 @@ pub(super) const LABELS: &[&str] = &[
     "intermediate-expired",
     "intermediate-not-before-fraction-inside",
     "intermediate-not-before-fraction-early",
+    "intermediate-not-after-fraction-rollover",
+    "intermediate-rollover-not-after-fraction",
+    "rdp-intermediate-not-after-fraction",
+    "rdp-intermediate-not-after-fraction-rollover",
+    "tsa-intermediate-not-after-fraction",
+    "tsa-intermediate-not-after-fraction-rollover",
+    "root-not-after-fraction",
+    "chain-ca-usage-not-after-fraction",
+    "chain-not-after-fraction-ca-usage",
+    "intermediate-expired-then-not-after-fraction",
     "untimestamped",
     "counter-expired-timestamped",
     "lifetime-intermediate-late",
@@ -144,6 +158,56 @@ fn spec(label: &'static str) -> Spec {
             (-9000, 9000),
             false,
             Rollover(vec![ca(-9000, -2000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        // TIME-T005: a same-key issuer valid at the fractional time is
+        // embedded after, or before, the one expiring in that second.
+        "intermediate-not-after-fraction-rollover"
+        | "rdp-intermediate-not-after-fraction-rollover" => (
+            (-9000, 9000),
+            false,
+            Rollover(vec![ca(-9000, -2000), ca(-9000, 9000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        "intermediate-rollover-not-after-fraction" => (
+            (-9000, 9000),
+            false,
+            Rollover(vec![ca(-9000, 9000), ca(-9000, -2000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        "rdp-intermediate-not-after-fraction" => (
+            (-9000, 9000),
+            false,
+            Rollover(vec![ca(-9000, -2000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        // The same boundary on the TSA's own chain.
+        "tsa-intermediate-not-after-fraction" | "tsa-intermediate-not-after-fraction-rollover" => {
+            ((-9000, 9000), false, Root, Stamp::Rfc(-2000, Some("5")))
+        }
+        // The configured root's notAfter plus .5 seconds: an anchor is not
+        // checked against the fraction.
+        "root-not-after-fraction" => ((-9000, 20000), false, Root, Stamp::Rfc(10000, Some("5"))),
+        // TIME-014: one path with both a missing keyCertSign and an issuer
+        // expiring in the timestamp's second, in either position.
+        "chain-ca-usage-not-after-fraction" => (
+            (-9000, 9000),
+            false,
+            Chain(vec![no_cert_sign(-9000, 9000), ca(-9000, -2000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        "chain-not-after-fraction-ca-usage" => (
+            (-9000, 9000),
+            false,
+            Chain(vec![ca(-9000, -2000), no_cert_sign(-9000, 9000)]),
+            Stamp::Rfc(-2000, Some("5")),
+        ),
+        // TIME-014: an issuer already expired at the whole second is embedded
+        // before the one expiring within it.
+        "intermediate-expired-then-not-after-fraction" => (
+            (-9000, 9000),
+            false,
+            Rollover(vec![ca(-9500, -3000), ca(-9000, -2000)]),
             Stamp::Rfc(-2000, Some("5")),
         ),
         "intermediate-expired" => (
@@ -225,8 +289,20 @@ fn spec(label: &'static str) -> Spec {
     };
     let container = match label {
         "nested-expired-timestamped" | "lifetime-nested-expired" => Container::NestedPe,
-        "rdp-expired-timestamped" | "lifetime-rdp-expired" => Container::Rdp,
+        "rdp-expired-timestamped"
+        | "lifetime-rdp-expired"
+        | "rdp-intermediate-not-after-fraction"
+        | "rdp-intermediate-not-after-fraction-rollover" => Container::Rdp,
         _ => Container::Pe,
+    };
+    let tsa_issuers = match label {
+        "tsa-intermediate-not-after-fraction" => vec![ca(-9000, -2000)],
+        "tsa-intermediate-not-after-fraction-rollover" => {
+            vec![ca(-9000, -2000), ca(-9000, 9000)]
+        }
+        // A TSA that outlives the root, for a timestamp at the root's notAfter.
+        "root-not-after-fraction" => vec![ca(-9000, 20000)],
+        _ => vec![],
     };
     Spec {
         label,
@@ -235,6 +311,7 @@ fn spec(label: &'static str) -> Spec {
         lifetime,
         issuers,
         stamp,
+        tsa_issuers,
     }
 }
 
@@ -359,10 +436,68 @@ fn signer(spec: &Spec) -> (Identity, Vec<Certificate>) {
     (id, intermediates)
 }
 
+/// The TSA and the intermediates that issue it: the ordinary test TSA, or
+/// one issued by `spec.tsa_issuers`.
+fn tsa(spec: &Spec) -> (Identity, Vec<Certificate>) {
+    if spec.tsa_issuers.is_empty() {
+        return (tsa_identity(), vec![]);
+    }
+    let root = identity();
+    let ca_key = SigningKey::from_bytes((&[64u8; 32]).into()).unwrap();
+    let ca_name = Name::from_str("CN=SEC-09 TSA intermediate").unwrap();
+    let intermediates = spec
+        .tsa_issuers
+        .iter()
+        .enumerate()
+        .map(|(index, ca)| {
+            CertificateBuilder::new(
+                Profile::SubCA {
+                    issuer: root.root.tbs_certificate.subject.clone(),
+                    path_len_constraint: None,
+                },
+                SerialNumber::from(1921 + 10 * index as u32),
+                validity(ca.window),
+                ca_name.clone(),
+                SubjectPublicKeyInfoOwned::from_key(*ca_key.verifying_key()).unwrap(),
+                &root.root_key,
+            )
+            .unwrap()
+            .build::<p256::ecdsa::DerSignature>()
+            .unwrap()
+        })
+        .collect();
+    let key = SigningKey::from_bytes((&[65u8; 32]).into()).unwrap();
+    let mut builder = CertificateBuilder::new(
+        Profile::Leaf {
+            issuer: ca_name,
+            enable_key_agreement: false,
+            enable_key_encipherment: false,
+        },
+        SerialNumber::from(903u32),
+        validity((-10000, 20000)),
+        Name::from_str("CN=SEC-09 TSA").unwrap(),
+        SubjectPublicKeyInfoOwned::from_key(*key.verifying_key()).unwrap(),
+        &ca_key,
+    )
+    .unwrap();
+    builder
+        .add_extension(&ExtendedKeyUsage(vec![ObjectIdentifier::new_unwrap(
+            "1.3.6.1.5.5.7.3.8",
+        )]))
+        .unwrap();
+    let id = Identity {
+        key,
+        cert: builder.build::<p256::ecdsa::DerSignature>().unwrap(),
+        root_key: root.root_key.clone(),
+        root: root.root.clone(),
+    };
+    (id, intermediates)
+}
+
 /// Unsigned timestamp attributes over the parent signature value.
-fn timestamp(stamp: &Stamp, parent: &[u8]) -> Vec<Vec<u8>> {
-    let tsa = tsa_identity();
-    match *stamp {
+fn timestamp(spec: &Spec, parent: &[u8]) -> Vec<Vec<u8>> {
+    let (tsa, tsa_intermediates) = tsa(spec);
+    match spec.stamp {
         Stamp::None => vec![],
         Stamp::Rfc(offset, fraction) => {
             let encoded = tm(at(offset)).to_der().unwrap();
@@ -379,11 +514,15 @@ fn timestamp(stamp: &Stamp, parent: &[u8]) -> Vec<Vec<u8>> {
                 tlv(2, &[9]),
                 tlv(0x18, &text),
             ]);
-            let token = signed_data(
+            let token = signed_data_extra(
                 &tsa,
                 tlv(4, &info),
                 cms::TST_INFO,
                 signer_info(&tsa, &info, Some(cms::TST_INFO), vec![], vec![]),
+                tsa_intermediates
+                    .iter()
+                    .map(|c| c.to_der().unwrap())
+                    .collect(),
             );
             vec![attr(cms::RFC3161, token)]
         }
@@ -404,7 +543,9 @@ fn artifact(spec: &Spec) -> Vec<u8> {
     let (id, intermediates) = signer(spec);
     let mut extra: Vec<Vec<u8>> = intermediates.iter().map(|c| c.to_der().unwrap()).collect();
     if !matches!(spec.stamp, Stamp::None) {
-        extra.push(tsa_identity().cert.to_der().unwrap());
+        let (tsa, tsa_intermediates) = tsa(spec);
+        extra.push(tsa.cert.to_der().unwrap());
+        extra.extend(tsa_intermediates.iter().map(|c| c.to_der().unwrap()));
     }
     if spec.container == Container::Rdp {
         let hash = crypto::Hash::Sha256;
@@ -420,7 +561,7 @@ fn artifact(spec: &Spec) -> Vec<u8> {
         );
         let mut parts = rdp_fixtures::fields(&direct);
         let parent = der::one(parts.last().unwrap(), 4).unwrap().body.to_vec();
-        let unsigned = timestamp(&spec.stamp, &parent);
+        let unsigned = timestamp(spec, &parent);
         if !unsigned.is_empty() {
             parts.push(tlv(0xa1, &unsigned.concat()));
         }
@@ -437,7 +578,7 @@ fn artifact(spec: &Spec) -> Vec<u8> {
         body,
         Some(cms::INDIRECT),
         vec![],
-        timestamp(&spec.stamp, parent),
+        timestamp(spec, parent),
     );
     let signature = signed_data_extra(&id, content.clone(), cms::INDIRECT, si, extra);
     let signature = match spec.container {
@@ -680,6 +821,21 @@ fn check_signer(spec: &Spec, certs: &[Certificate], si: der::Node<'_>, direct: O
                 };
                 assert_eq!(info.parsed_time.unix_seconds(), at(offset), "{label}");
                 assert_eq!(info.parsed_time.fractional_seconds(), fraction, "{label}");
+                // The token embeds its TSA, the root, then the TSA's issuers.
+                assert_eq!(token.certs.len(), 2 + spec.tsa_issuers.len(), "{label}");
+                for (ca, issuer) in spec.tsa_issuers.iter().zip(&token.certs[2..]) {
+                    let cert = &issuer.tbs_certificate;
+                    assert_eq!(token.certs[0].tbs_certificate.issuer, cert.subject);
+                    assert_eq!(
+                        (
+                            cert.validity.not_before.to_unix_duration().as_secs(),
+                            cert.validity.not_after.to_unix_duration().as_secs()
+                        ),
+                        (at(ca.window.0), at(ca.window.1)),
+                        "{label} TSA intermediate"
+                    );
+                    verify_certificate(&token.certs[0], issuer);
+                }
                 // The token is bound to this signer's signature value.
                 let imprint = token.content.children().unwrap()[2].children().unwrap()[1].body;
                 assert_eq!(imprint, crypto::Hash::Sha256.digest(parent), "{label}");

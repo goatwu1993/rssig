@@ -1,4 +1,4 @@
-//! Timestamp binding, TSA trust, and exact fractional-time checks.
+//! Timestamp binding, TSA trust and canonical time decoding.
 use super::{VerifyOptions, budget::Budget};
 use crate::{
     cms::{self, SignedData},
@@ -105,7 +105,10 @@ pub(crate) fn verify_timestamp(
                         leaf: tsa.cert,
                         certificates: &token.certs,
                         eku: trust::TIME_STAMPING,
-                        signing_time: Some(at),
+                        signing_time: Some(trust::SigningTime {
+                            seconds: at,
+                            fraction: fractional_seconds.as_deref(),
+                        }),
                         now: options.now,
                         revocation: options.check_revocation,
                     },
@@ -114,7 +117,6 @@ pub(crate) fn verify_timestamp(
             } else {
                 None
             };
-            check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
             budget.certificate_bytes(core::slice::from_ref(tsa.cert))?;
             let certificate = CertificateReport::parse(tsa.cert)?;
             timestamp = Some(TimestampReport {
@@ -162,7 +164,10 @@ pub(crate) fn verify_timestamp(
                         leaf: tsa.cert,
                         certificates,
                         eku: trust::TIME_STAMPING,
-                        signing_time: Some(at),
+                        signing_time: Some(trust::SigningTime {
+                            seconds: at,
+                            fraction: fractional_seconds.as_deref(),
+                        }),
                         now: options.now,
                         revocation: options.check_revocation,
                     },
@@ -171,7 +176,6 @@ pub(crate) fn verify_timestamp(
             } else {
                 None
             };
-            check_fractional_validity(trust_report.as_ref(), at, fractional_seconds.as_deref())?;
             budget.certificate_bytes(core::slice::from_ref(tsa.cert))?;
             timestamp = Some(TimestampReport {
                 fractional_seconds,
@@ -186,32 +190,6 @@ pub(crate) fn verify_timestamp(
     Ok(timestamp)
 }
 
-pub(crate) fn check_fractional_validity(
-    trust: Option<&TrustReport>,
-    seconds: u64,
-    fraction: Option<&str>,
-) -> Result<()> {
-    if let (Some(trust), Some(fraction)) = (trust, fraction) {
-        // webpki checks notBefore and notAfter at whole seconds. Also check the
-        // nonzero fraction against leaf/intermediate expiry. Trust anchors are
-        // configured keys and retain webpki's validity checks.
-        for cert in trust.chain.iter().take(trust.chain.len().saturating_sub(1)) {
-            if cert.not_after <= seconds {
-                return Err(VerificationError::new(
-                    ErrorCode::CertificateExpired,
-                    Stage::CertificateChain,
-                    "fractional timestamp exceeds certificate validity",
-                )
-                .detail("certificate", cert)
-                .detail("validation_time", seconds)
-                .detail("fractional_seconds", fraction)
-                .into());
-            }
-        }
-    }
-    Ok(())
-}
-
 fn parse_time(node: Node<'_>) -> Result<(u64, Option<String>)> {
     let time = crate::parse::ParsedTime::parse(node.full).map_err(|error| error.inner)?;
     Ok((
@@ -223,7 +201,6 @@ fn parse_time(node: Node<'_>) -> Result<(u64, Option<String>)> {
 #[cfg(test)]
 mod time_tests {
     use super::*;
-    use crate::{TrustStore, verify_pe};
 
     fn time(text: &str) -> Result<(u64, Option<String>)> {
         let mut bytes = vec![0x18, text.len() as u8];
@@ -251,35 +228,6 @@ mod time_tests {
             "20270115086000.5Z",
         ] {
             assert!(time(text).is_err(), "{text}");
-        }
-    }
-
-    #[test]
-    fn fractional_expiry_checks_leaf_and_intermediates_but_not_configured_anchor() {
-        let bytes = include_bytes!("../../../tests/fixtures/good-intermediate.exe");
-        let mut store = TrustStore::default();
-        store
-            .add_roots(include_bytes!("../../../tests/fixtures/root.der"))
-            .unwrap();
-        let options = VerifyOptions {
-            trust: Some(&store),
-            check_revocation: false,
-            allow_sha1: false,
-            now: 1800000000,
-        };
-        let verified = verify_pe(bytes, &options).unwrap();
-        let trust = verified.signatures[0].trust.as_ref().unwrap();
-        assert_eq!(trust.chain.len(), 3);
-        for index in 0..trust.chain.len() {
-            let mut trust = trust.clone();
-            trust.chain[index].not_after = options.now;
-            assert!(check_fractional_validity(Some(&trust), options.now, None).is_ok());
-            let result = check_fractional_validity(Some(&trust), options.now, Some("001"));
-            if index < 2 {
-                assert!(result.is_err());
-            } else {
-                assert!(result.is_ok());
-            }
         }
     }
 }

@@ -32642,6 +32642,391 @@
       }
     },
     {
+      "id": "time-005-intermediate-not-after-fraction-rollover",
+      "input": "time-intermediate-not-after-fraction-rollover.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_after": 1800009000
+                      },
+                      {}
+                    ]
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-005-intermediate-not-after-fraction-rollover-revocation",
+      "input": "time-intermediate-not-after-fraction-rollover.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/time-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_after": 1800009000
+                      },
+                      {}
+                    ],
+                    "revocation": {
+                      "status": "good"
+                    }
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-005-intermediate-rollover-not-after-fraction",
+      "input": "time-intermediate-rollover-not-after-fraction.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_after": 1800009000
+                      },
+                      {}
+                    ]
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-005-rdp-intermediate-not-after-fraction",
+      "input": "time-rdp-intermediate-not-after-fraction.rdp",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998000,
+                  "fractional_seconds": "5",
+                  "certificate": {
+                    "not_after": 1799998000,
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
+        }
+      }
+    },
+    {
+      "id": "time-005-rdp-intermediate-not-after-fraction-rollover",
+      "input": "time-rdp-intermediate-not-after-fraction-rollover.rdp",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "trust": {
+                    "validation_time": 1799998000,
+                    "lifetime_signing": false,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=SEC-09 intermediate"
+                        },
+                        "not_after": 1800009000
+                      },
+                      {}
+                    ]
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-005-tsa-intermediate-not-after-fraction",
+      "input": "time-tsa-intermediate-not-after-fraction.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998000,
+                  "fractional_seconds": "5",
+                  "certificate": {
+                    "not_after": 1799998000,
+                    "subject": {
+                      "display": "CN=SEC-09 TSA intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
+        }
+      }
+    },
+    {
+      "id": "time-005-tsa-intermediate-not-after-fraction-rollover",
+      "input": "time-tsa-intermediate-not-after-fraction-rollover.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1799998000,
+                  "timestamp_verification": {
+                    "fractional_seconds": "5",
+                    "trust": {
+                      "validation_time": 1799998000,
+                      "chain": [
+                        {
+                          "subject": {
+                            "display": "CN=SEC-09 TSA"
+                          }
+                        },
+                        {
+                          "subject": {
+                            "display": "CN=SEC-09 TSA intermediate"
+                          },
+                          "not_after": 1800009000
+                        },
+                        {}
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-005-root-not-after-fraction",
+      "input": "time-root-not-after-fraction.exe",
+      "decision": "TIME-005",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800010001"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "timestamp": 1800010000,
+                  "trust": {
+                    "validation_time": 1800010000,
+                    "chain": [
+                      {},
+                      {
+                        "subject": {
+                          "display": "CN=rssig test root"
+                        },
+                        "not_after": 1800010000
+                      }
+                    ]
+                  },
+                  "timestamp_verification": {
+                    "fractional_seconds": "5",
+                    "trust": {
+                      "chain": [
+                        {},
+                        {},
+                        {
+                          "subject": {
+                            "display": "CN=rssig test root"
+                          },
+                          "not_after": 1800010000
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "time-006-untimestamped-before-not-before",
       "input": "time-untimestamped.exe",
       "decision": "TIME-006",
@@ -33761,6 +34146,205 @@
         },
         "contains": {
           "/results/0/error/message": "lifetime-signing certificate was not valid at the signing time"
+        }
+      }
+    },
+    {
+      "id": "time-014-chain-ca-usage-not-after-fraction",
+      "input": "time-chain-ca-usage-not-after-fraction.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-014-chain-not-after-fraction-ca-usage",
+      "input": "time-chain-not-after-fraction-ca-usage.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_key_usage",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-014-fraction-expiry-revoked-leaf",
+      "input": "time-intermediate-not-after-fraction.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/time-intermediate-revoked-leaf.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-014-fraction-expiry-missing-crl",
+      "input": "time-intermediate-not-after-fraction.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "certificates_without_crl": []
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-014-fraction-expiry-revoked-other-issuer",
+      "input": "time-intermediate-not-after-fraction-rollover.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--crl",
+        "fixtures/time-intermediate.crl",
+        "--crl",
+        "fixtures/time-root-revoked-intermediate.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_revoked",
+                "stage": "revocation"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time-014-fraction-expiry-after-expired-issuer",
+      "input": "time-intermediate-expired-then-not-after-fraction.exe",
+      "decision": "TIME-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_expired",
+                "stage": "certificate_chain",
+                "details": {
+                  "validation_time": 1799998000,
+                  "fractional_seconds": "5",
+                  "certificate": {
+                    "not_after": 1799998000,
+                    "subject": {
+                      "display": "CN=SEC-09 intermediate"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "fractional timestamp exceeds certificate validity"
         }
       }
     },

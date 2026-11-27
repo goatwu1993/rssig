@@ -10099,7 +10099,9 @@
       "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-005-intermediate-not-after-fraction"
+        "time-005-intermediate-not-after-fraction",
+        "time-014-fraction-expiry-revoked-leaf",
+        "time-014-fraction-expiry-missing-crl"
       ],
       "paired_good": "time-intermediate-not-after-exact.exe"
     },
@@ -10137,6 +10139,120 @@
         "time-005-intermediate-not-before-fraction-early"
       ],
       "paired_good": "time-intermediate-not-before-fraction-inside.exe"
+    },
+    {
+      "file": "time-intermediate-not-after-fraction-rollover.exe",
+      "sha256": "1bf345d643549df89bb278b09fee0d2f8f6b48f4e9c3a727459441f83427b30a",
+      "bytes": 4600,
+      "description": "TIME-T005: RFC 3161 time is the first embedded intermediate's notAfter plus .5 seconds; a second intermediate with the same subject and key is valid then. Deterministic public test keys; image unchanged. Expected valid through the second intermediate.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-intermediate-not-after-fraction-rollover",
+        "time-005-intermediate-not-after-fraction-rollover-revocation",
+        "time-014-fraction-expiry-revoked-other-issuer"
+      ]
+    },
+    {
+      "file": "time-intermediate-rollover-not-after-fraction.exe",
+      "sha256": "d28e67d57508687a16dba754a6788002e9d670d095e0a491b23642ec4185b0a3",
+      "bytes": 4600,
+      "description": "TIME-T005: as time-intermediate-not-after-fraction-rollover.exe with the valid intermediate embedded first. Deterministic public test keys; image unchanged. Expected valid.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-intermediate-rollover-not-after-fraction"
+      ]
+    },
+    {
+      "file": "time-rdp-intermediate-not-after-fraction.rdp",
+      "sha256": "72dd60d0e0bd3175b9db5e906f808f004c9fa9fd93f28e243de6df4e77261f0c",
+      "bytes": 4186,
+      "description": "TIME-T005: RDP signed settings whose RFC 3161 time is the only intermediate's notAfter plus .5 seconds. Deterministic public test keys. Expected certificate_expired at certificate_chain.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-rdp-intermediate-not-after-fraction"
+      ],
+      "paired_good": "time-rdp-intermediate-not-after-fraction-rollover.rdp"
+    },
+    {
+      "file": "time-rdp-intermediate-not-after-fraction-rollover.rdp",
+      "sha256": "7de919ceb8a3aa07773b1798cb56842f307ff8be9a9a2cf227325bd77ea54f00",
+      "bytes": 4730,
+      "description": "TIME-T005: RDP signed settings whose RFC 3161 time is the first embedded intermediate's notAfter plus .5 seconds; a second same-key intermediate is valid then. Deterministic public test keys. Expected valid through the second intermediate.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-rdp-intermediate-not-after-fraction-rollover"
+      ]
+    },
+    {
+      "file": "time-tsa-intermediate-not-after-fraction.exe",
+      "sha256": "a60a76120dcdaf93f54936f795d3656dd4fa824c3ca95ce4863744e55be46578",
+      "bytes": 4608,
+      "description": "TIME-T005: RFC 3161 time is the TSA's only intermediate's notAfter plus .5 seconds. Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-tsa-intermediate-not-after-fraction"
+      ],
+      "paired_good": "time-tsa-intermediate-not-after-fraction-rollover.exe"
+    },
+    {
+      "file": "time-tsa-intermediate-not-after-fraction-rollover.exe",
+      "sha256": "54b0bd45970221f1efb5048be75a1e1c07bc4a95e5624b5dd57a80f01295638e",
+      "bytes": 5424,
+      "description": "TIME-T005: RFC 3161 time is the TSA's first embedded intermediate's notAfter plus .5 seconds; a second same-key TSA intermediate is valid then. Deterministic public test keys; image unchanged. Expected valid through the second intermediate.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-tsa-intermediate-not-after-fraction-rollover"
+      ]
+    },
+    {
+      "file": "time-root-not-after-fraction.exe",
+      "sha256": "bff6c0c6d417011d509e12f505c0f506d99a15af128e428cb32064b0f030e1f9",
+      "bytes": 4600,
+      "description": "TIME-T005: RFC 3161 time is the configured root's notAfter plus .5 seconds; the signer, the TSA and the TSA's intermediate outlive the root. Deterministic public test keys; image unchanged. Expected valid at validation time 1800010001: a configured anchor is not checked against the fraction.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-005-root-not-after-fraction"
+      ]
+    },
+    {
+      "file": "time-chain-ca-usage-not-after-fraction.exe",
+      "sha256": "db373f64b8ba35b6af2c6858cceaf7a0287ba605e5712133f40d3a7ccd35bc7d",
+      "bytes": 4608,
+      "description": "TIME-T005: one path of two intermediates; the leaf's issuer lacks keyCertSign and that issuer's own issuer has notAfter equal to the RFC 3161 time's whole second (fraction .5). Deterministic public test keys; image unchanged. Expected invalid_key_usage at certificate_chain.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-014-chain-ca-usage-not-after-fraction"
+      ]
+    },
+    {
+      "file": "time-chain-not-after-fraction-ca-usage.exe",
+      "sha256": "42f75b8dc15bdc06877ee82356c9c113159af3915f598887d28aa1ffd5ad0a5d",
+      "bytes": 4608,
+      "description": "TIME-T005: one path of two intermediates; the leaf's issuer has notAfter equal to the RFC 3161 time's whole second (fraction .5) and that issuer's own issuer lacks keyCertSign. Deterministic public test keys; image unchanged. Expected invalid_key_usage at certificate_chain.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-014-chain-not-after-fraction-ca-usage"
+      ]
+    },
+    {
+      "file": "time-intermediate-expired-then-not-after-fraction.exe",
+      "sha256": "904f5270b20d95eeb1b6ac45738a393948e62f7b51a033136c384e40f7257b53",
+      "bytes": 4600,
+      "description": "TIME-T005: two intermediates with one subject and key; the first embedded expired before the RFC 3161 time's whole second, the second has notAfter equal to that second (fraction .5). Deterministic public test keys; image unchanged. Expected certificate_expired at certificate_chain naming the second.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "time-014-fraction-expiry-after-expired-issuer"
+      ]
     },
     {
       "file": "time-untimestamped.exe",
@@ -10256,7 +10372,9 @@
         "time-002-lifetime-late-revocation",
         "time-011-lifetime-rollover-revoked-issuer",
         "time-002-lifetime-intermediate-not-before-exact",
-        "time-002-lifetime-intermediate-not-before-early"
+        "time-002-lifetime-intermediate-not-before-early",
+        "time-005-intermediate-not-after-fraction-rollover-revocation",
+        "time-014-fraction-expiry-revoked-other-issuer"
       ]
     },
     {
@@ -10268,7 +10386,8 @@
       "license": "Apache-2.0",
       "cases": [
         "time-010-lifetime-late-revoked-leaf",
-        "time-007-lifetime-rollover-revoked-leaf"
+        "time-007-lifetime-rollover-revoked-leaf",
+        "time-014-fraction-expiry-revoked-leaf"
       ],
       "paired_good": "time-intermediate.crl"
     },
@@ -10280,7 +10399,8 @@
       "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "time-011-lifetime-rollover-revoked-issuer"
+        "time-011-lifetime-rollover-revoked-issuer",
+        "time-014-fraction-expiry-revoked-other-issuer"
       ],
       "paired_good": "good.crl"
     },

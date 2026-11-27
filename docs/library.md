@@ -411,8 +411,9 @@ reading older reports. No floating-point rounding is used.
 
 Validation time is supplied in whole seconds. A timestamp with a nonzero
 fraction in that same second is in the future and is rejected. Certificate
-paths are checked at the whole second (including notBefore), then the selected
-leaf and intermediates are checked against the fractional expiry boundary.
+paths are checked at the whole second (including notBefore), and during path
+building the leaf and intermediates of each candidate path are checked against
+the fractional expiry boundary, so another valid issuer is still found.
 A timestamp even slightly after notAfter is rejected for both the TSA and the
 publisher chain. Configured trust anchors retain the existing webpki validity
 rules. For a timestamped signer without lifetime signing, and for TSA reports,
