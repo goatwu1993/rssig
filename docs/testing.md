@@ -625,6 +625,12 @@ them through the CLI, or, where noted, no case pins them yet:
   (`crl_response_entries`). A scripted answer can now reach it, and no case
   pins it yet (LIMIT-T006);
   `retrieval::tests::a_response_with_too_many_entries_ends_the_run` covers it.
+- Several points left once a request's byte allowance is spent: the cases
+  `crl-046-a-spent-byte-allowance-leaves-the-point-not-tried` and
+  `crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed` run on an
+  input listing one point;
+  `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`
+  covers several.
 - The built-in HTTP source's kinds (a last request keeping its own failure,
   aborts when spent). Tests never use the network, so these are unit tests
   in `src/crl.rs`.
