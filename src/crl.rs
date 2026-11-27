@@ -440,17 +440,17 @@ fn dns_timeout() -> VerificationError {
     error(ErrorCode::CrlFetchFailed, "CRL DNS deadline exceeded").detail("source_spent", true)
 }
 
-/// The kind of a failed request. `Abort` only when the source was spent
-/// before it, or this request ran out of the source's own requests, bytes or
-/// time: a request that failed for its own reason keeps that reason, even if
-/// it was the last the source could make (the next one then aborts).
-fn source_error_kind(e: &VerificationError, spent_before: bool) -> CrlSourceErrorKind {
+/// The kind of a failed request. `Abort` only when this request ran out of
+/// the source's own requests, bytes or time: a request that failed for its
+/// own reason keeps that reason, even if it was the last the source could
+/// make (the next one then aborts, before any work, in `fetch_one_keyed`).
+fn source_error_kind(e: &VerificationError) -> CrlSourceErrorKind {
     let ran_out = matches!(
         e.details.get("resource").and_then(|r| r.as_str()),
         Some("crl_http_requests" | "crl_network_bytes")
     ) || e.details.get("source_spent") == Some(&serde_json::Value::Bool(true));
     match e.code {
-        _ if spent_before || ran_out => CrlSourceErrorKind::Abort,
+        _ if ran_out => CrlSourceErrorKind::Abort,
         ErrorCode::CrlFetchDenied => CrlSourceErrorKind::Denied,
         ErrorCode::CrlFetchFailed | ErrorCode::ResourceLimitExceeded => CrlSourceErrorKind::Failed,
         _ => CrlSourceErrorKind::Unknown,
@@ -620,7 +620,7 @@ impl HttpCrlSource {
             {
                 let len = crl.bytes.len();
                 return Err(self
-                    .classify(limit("crl_response_bytes", cap, 0, len), false)
+                    .classify(limit("crl_response_bytes", cap, 0, len))
                     .with_url(url.to_owned()));
             }
             if let Ok(crl) = known {
@@ -758,18 +758,18 @@ impl HttpCrlSource {
             return Err(source_error);
         }
         self.fetch_http(raw, max_bytes)
-            .map_err(|e| self.classify(e, spent_before))
+            .map_err(|e| self.classify(e))
     }
     /// The source error a failed request is reported as. An I/O failure
     /// once the deadline has run out is the deadline (each wait is cut to
     /// the time left), so the source is spent: `Abort`.
-    fn classify(&self, e: VerificationError, spent_before: bool) -> CrlSourceError {
+    fn classify(&self, e: VerificationError) -> CrlSourceError {
         let deadline_passed = self.started.is_some() && self.remaining().is_err();
         let io = e.details.get("io_error") == Some(&serde_json::Value::Bool(true));
         let kind = if deadline_passed && io {
             CrlSourceErrorKind::Abort
         } else {
-            source_error_kind(&e, spent_before)
+            source_error_kind(&e)
         };
         let mut source_error = CrlSourceError::new(kind, e.message);
         source_error.details = e.details;
@@ -1031,34 +1031,21 @@ mod tests {
         // The 16th request returns 404: the source is now spent, but that
         // URL failed for its own reason. Only the next request aborts.
         let not_found = error(ErrorCode::CrlFetchFailed, "HTTP 404");
-        assert_eq!(
-            source_error_kind(&not_found, false),
-            CrlSourceErrorKind::Failed
-        );
+        assert_eq!(source_error_kind(&not_found), CrlSourceErrorKind::Failed);
         let refused = error(ErrorCode::CrlFetchDenied, "redirect refused");
-        assert_eq!(
-            source_error_kind(&refused, false),
-            CrlSourceErrorKind::Denied
-        );
-        // Spent before the request, or ran out during it: abort.
-        assert_eq!(source_error_kind(&refused, true), CrlSourceErrorKind::Abort);
+        assert_eq!(source_error_kind(&refused), CrlSourceErrorKind::Denied);
+        // Ran out during the request: abort.
         let deadline = HttpCrlSource {
             started: Some(Instant::now() - DEADLINE),
             ..HttpCrlSource::new()
         }
         .remaining()
         .unwrap_err();
-        assert_eq!(
-            source_error_kind(&deadline, false),
-            CrlSourceErrorKind::Abort
-        );
+        assert_eq!(source_error_kind(&deadline), CrlSourceErrorKind::Abort);
         // The request whose DNS lookup times out is itself the abort.
-        assert_eq!(
-            source_error_kind(&dns_timeout(), false),
-            CrlSourceErrorKind::Abort
-        );
+        assert_eq!(source_error_kind(&dns_timeout()), CrlSourceErrorKind::Abort);
         let budget = limit("crl_http_requests", MAX_HTTP_REQUESTS, MAX_HTTP_REQUESTS, 1);
-        assert_eq!(source_error_kind(&budget, false), CrlSourceErrorKind::Abort);
+        assert_eq!(source_error_kind(&budget), CrlSourceErrorKind::Abort);
         // An I/O error once the deadline has run out is the deadline: the
         // wait was cut to the time left.
         let mut source = HttpCrlSource {
@@ -1066,33 +1053,19 @@ mod tests {
             ..HttpCrlSource::new()
         };
         let timed_out = io_error(std::io::Error::from(std::io::ErrorKind::TimedOut));
-        assert_eq!(
-            source.classify(timed_out, false).kind,
-            CrlSourceErrorKind::Abort
-        );
+        assert_eq!(source.classify(timed_out).kind, CrlSourceErrorKind::Abort);
         // A request that completed and failed for its own reason (an HTTP
         // status) keeps that reason, even past the deadline.
         source.started = Some(Instant::now() - DEADLINE);
         let status = error(ErrorCode::CrlFetchFailed, "CRL HTTP status 404");
-        assert_eq!(
-            source.classify(status, false).kind,
-            CrlSourceErrorKind::Failed
-        );
+        assert_eq!(source.classify(status).kind, CrlSourceErrorKind::Failed);
         // The I/O marker is not part of the reported failure.
         let timed_out = io_error(std::io::Error::from(std::io::ErrorKind::TimedOut));
-        assert!(
-            !source
-                .classify(timed_out, false)
-                .details
-                .contains_key("io_error")
-        );
+        assert!(!source.classify(timed_out).details.contains_key("io_error"));
         // With time left, an I/O failure is the request's own.
         source.started = Some(Instant::now());
         let timed_out = io_error(std::io::Error::from(std::io::ErrorKind::TimedOut));
-        assert_eq!(
-            source.classify(timed_out, false).kind,
-            CrlSourceErrorKind::Failed
-        );
+        assert_eq!(source.classify(timed_out).kind, CrlSourceErrorKind::Failed);
     }
     #[test]
     fn the_built_in_source_aborts_after_its_request_cap_until_a_new_verification() {
