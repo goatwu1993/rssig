@@ -313,6 +313,68 @@ fn repeating_intermediate_is_passed_over_for_a_valid_issuer() {
 }
 
 #[test]
+fn repeat_is_reported_before_an_earlier_malformed_value() {
+    // PATH-014 with PATH-013: the subjectKeyIdentifier that does not decode
+    // comes first, the repeated authorityKeyIdentifier is reported.
+    for who in ["leaf", "ca"] {
+        let output = run(
+            &format!("bad-path-{who}-repeated-and-malformed.exe"),
+            "fixtures/path-root.der",
+        );
+        assert_eq!(output.exit_code, 1, "{who}: {}", output.json);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+        assert_eq!(error["stage"], "certificate_chain", "{error}");
+        assert_eq!(error["details"]["reason"], "repeated_extension", "{error}");
+        assert_eq!(error["details"]["extension"], "2.5.29.35", "{error}");
+    }
+}
+
+/// PATH-014: a candidate that repeats an extension webpki keeps fails in
+/// webpki, with its message and no `details.reason`.
+fn fails_in_webpki(input: &str, roots: &str) {
+    let output = run(input, roots);
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    assert!(output.json["results"][0].get("signatures").is_none());
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["stage"], "certificate_chain", "{error}");
+    let message = error["message"].as_str().unwrap();
+    assert!(message.contains("ExtensionValueInvalid"), "{error}");
+    assert!(error["details"].get("reason").is_none(), "{error}");
+}
+
+#[test]
+fn intermediate_repeating_its_san_fails_in_webpki() {
+    fails_in_webpki("bad-path-ca-repeated-san.exe", "fixtures/path-root.der");
+}
+
+#[test]
+fn intermediate_webpki_rejects_is_passed_over_for_a_valid_issuer() {
+    selected(
+        "good-path-ca-repeated-san-first.exe",
+        "fixtures/path-root.der",
+        &["leaf", "issuer", "root"],
+    );
+}
+
+#[test]
+fn candidate_webpki_rejects_is_reported_when_no_path_is_found() {
+    // webpki 0.103.16 parses each embedded candidate before it compares its
+    // subject, and ranks the parse failure above the unknown issuer: under a
+    // root that issued neither candidate, and for a CA on no path, the result
+    // is not untrusted_root (PATH-T019).
+    fails_in_webpki(
+        "good-path-ca-repeated-san-first.exe",
+        "fixtures/path-other-root.der",
+    );
+    fails_in_webpki(
+        "bad-path-unrelated-repeated-issuer.exe",
+        "fixtures/path-root.der",
+    );
+}
+
+#[test]
 fn non_ascii_ia5_string_in_the_leaf_san_fails_the_path() {
     let output = run("bad-path-leaf-san-non-ascii.exe", "fixtures/path-root.der");
     assert_eq!(output.exit_code, 1, "{}", output.json);
@@ -534,7 +596,7 @@ fn malformed_ca_of_an_unrelated_chain_is_not_blamed() {
     assert!(error["details"].get("reason").is_none(), "{error}");
 }
 
-fn malformed_extension_of_another_format_fails_the_path(input: &str, extension: &str) {
+fn extension_of_another_format_fails_the_path(input: &str, reason: &str, extension: &str) {
     let output = run_fixture(
         input,
         &[
@@ -552,18 +614,44 @@ fn malformed_extension_of_another_format_fails_the_path(input: &str, extension: 
     let error = &output.json["results"][0]["error"];
     assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
     assert_eq!(error["stage"], "certificate_chain", "{error}");
-    assert_eq!(error["details"]["reason"], "malformed_extension", "{error}");
+    assert_eq!(error["details"]["reason"], reason, "{error}");
     assert_eq!(error["details"]["extension"], extension, "{error}");
 }
 
 #[test]
 fn malformed_extension_in_an_rdp_signer_fails_the_path() {
-    malformed_extension_of_another_format_fails_the_path("bad-rdp-malformed-eku.rdp", "2.5.29.37");
+    extension_of_another_format_fails_the_path(
+        "bad-rdp-malformed-eku.rdp",
+        "malformed_extension",
+        "2.5.29.37",
+    );
 }
 
 #[test]
 fn malformed_extension_in_a_tsa_certificate_fails_the_path() {
-    malformed_extension_of_another_format_fails_the_path("tsa-malformed-ski.exe", "2.5.29.14");
+    extension_of_another_format_fails_the_path(
+        "tsa-malformed-ski.exe",
+        "malformed_extension",
+        "2.5.29.14",
+    );
+}
+
+#[test]
+fn repeated_extension_in_an_rdp_signer_fails_the_path() {
+    extension_of_another_format_fails_the_path(
+        "bad-rdp-repeated-eku.rdp",
+        "repeated_extension",
+        "2.5.29.37",
+    );
+}
+
+#[test]
+fn repeated_extension_in_a_tsa_certificate_fails_the_path() {
+    extension_of_another_format_fails_the_path(
+        "tsa-repeated-ski.exe",
+        "repeated_extension",
+        "2.5.29.14",
+    );
 }
 
 #[test]

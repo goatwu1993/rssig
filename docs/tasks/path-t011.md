@@ -17,6 +17,9 @@ Which error webpki reports depends on that rank, and no fixture pins it:
   certificate that webpki itself cannot parse, ahead of the malformed issuer,
   hides PATH-013's `details.reason`; in the other order it is reported. Decide
   which is reported, and pin it in both orders.
+- **Off-path candidates.** webpki raises such errors for an embedded
+  certificate on no path too (PATH-T019 decides whether it is blamed there);
+  keep the two in step.
 - **Never raised by webpki.** `path_error` reads the callback's error as a
   malformed intermediate only with one recorded, and a `debug_assert!` checks
   that webpki never raises it itself while building a path; in a release

@@ -456,6 +456,10 @@
         "bad-intermediate-signature",
         "msi-bad-certificate-signature",
         "msi-bad-intermediate-signature"
+      ],
+      "unparsed-candidate": [
+        "path-bad-ca-repeated-san-first-under-another-root",
+        "path-bad-unrelated-repeated-issuer-fails-in-webpki"
       ]
     },
     "POLICY": {

@@ -503,6 +503,26 @@ fn write_eku_retry_fixture(dir: &std::path::Path) {
         &[],
     ));
     std::fs::write(dir.join("bad-rdp-malformed-eku.rdp"), bytes).unwrap();
+    // PATH-014: the same signer with its extKeyUsage twice.
+    let mut repeated = cert.clone();
+    let extensions = repeated.tbs_certificate.extensions.as_mut().unwrap();
+    let eku = extensions
+        .iter()
+        .find(|e| e.extn_id.to_string() == "2.5.29.37")
+        .unwrap()
+        .clone();
+    extensions.push(eku);
+    let signature: Signature = identity()
+        .root_key
+        .sign(&repeated.tbs_certificate.to_der().unwrap());
+    repeated.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let bytes = frame(&envelope(
+        &repeated,
+        crypto::Hash::Sha256,
+        &ec_signer(&repeated, false),
+        &[],
+    ));
+    std::fs::write(dir.join("bad-rdp-repeated-eku.rdp"), bytes).unwrap();
 }
 
 /// A signer with codeSigning and serverAuth under a CA whose own EKU admits

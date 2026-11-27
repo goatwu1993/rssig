@@ -6816,6 +6816,21 @@
       ]
     },
     {
+      "file": "bad-rdp-repeated-eku.rdp",
+      "sha256": "86f474b1f62269b7b9296565fcfa9cc596bf476b53a0d6b2f1808315377c487e",
+      "bytes": 1550,
+      "description": "PATH-014 RDP signed settings; the signer of good-rdp-multiple-ekus.rdp with its extKeyUsage extension appended a second time and re-signed. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "provenance": {
+        "generator": "engine/src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
+        "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Existing deterministic test root/key and RDP body; repeat the leaf EKU extension and re-sign with the public test-only root key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "path-014-bad-rdp-leaf-repeated-eku"
+      ]
+    },
+    {
       "file": "good-rdp-eku-retry-ca.rdp",
       "sha256": "857b8a41463a9e80c31ca1f3adbf825ed3ab7069167fe4540de2ec3c7336a1f3",
       "bytes": 2102,
@@ -7595,6 +7610,87 @@
       "cases": [
         "path-014-bad-ca-repeated-bc",
         "path-014-good-integrity-only-ca-repeated-bc"
+      ]
+    },
+    {
+      "file": "bad-path-ca-repeated-san.exe",
+      "sha256": "52fb0d40a9710b9fd182c17e492f7969adb7040f78a9fe0f9a6661c2a4e9ce06",
+      "bytes": 2272,
+      "description": "PATH-014 signed inert PE; the intermediate CA carries a subjectAltName extension (one dNSName) twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain, rejected by webpki before the path callback.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-ca-repeated-san"
+      ]
+    },
+    {
+      "file": "good-path-ca-repeated-san-first.exe",
+      "sha256": "188de4f80af3bdfdb712b875cefe3625204af0778603ea7b3f0638ff9b70cef8",
+      "bytes": 2664,
+      "description": "PATH-014 signed inert PE; two intermediate candidates of one name and key, the first carrying a subjectAltName extension twice, which webpki rejects. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: trusted chain with CRL validation through the valid intermediate; certificate_chain_invalid at certificate_chain (ExtensionValueInvalid) under a root that issued neither.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-good-ca-repeated-san-first",
+        "path-bad-ca-repeated-san-first-under-another-root"
+      ]
+    },
+    {
+      "file": "bad-path-unrelated-repeated-issuer.exe",
+      "sha256": "413fa1425fd80cdb1720fd8b0be903a1d64916a0f0e7cc061902eb257de3ce86",
+      "bytes": 2696,
+      "description": "PATH-014 signed inert PE; the signer's issuer is not embedded, and besides the signer the embedded certificates are an unrelated end-entity certificate and the CA that issued it (issued by the path root but on no path of the signer), which carries a subjectAltName extension twice. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (ExtensionValueInvalid), because webpki parses each embedded candidate before comparing its subject.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45, 47, 48; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-bad-unrelated-repeated-issuer-fails-in-webpki"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-repeated-and-malformed.exe",
+      "sha256": "b10f1b3c956c18e436db4aff11bd87e6bddfbe14bf8e39bf8c6f2c1f5b99f2c5",
+      "bytes": 2216,
+      "description": "PATH-014 signed inert PE; the leaf's subjectKeyIdentifier value is SEQUENCE { NULL } and, after it, its authorityKeyIdentifier extension appears a second time. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension 2.5.29.35).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-leaf-repeated-and-malformed-reports-the-repeat"
+      ]
+    },
+    {
+      "file": "bad-path-ca-repeated-and-malformed.exe",
+      "sha256": "f0f3724e22a6371f9b764fbab49f9ee516bb9c94e2d0de834dc0370a41c6d104",
+      "bytes": 2216,
+      "description": "PATH-014 signed inert PE; the intermediate CA's subjectKeyIdentifier value is SEQUENCE { NULL } and, after it, its authorityKeyIdentifier extension appears a second time. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension 2.5.29.35).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-ca-repeated-and-malformed-reports-the-repeat"
       ]
     },
     {
@@ -9647,6 +9743,18 @@
         "path-013-bad-tsa-malformed-ski"
       ],
       "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-repeated-ski.exe",
+      "sha256": "0c51d0891412840b72b373f8c6e4f5d736397cfe181184d5f278f31a3fd52710",
+      "bytes": 3832,
+      "description": "PATH-014: repeated-ski. The TSA certificate carries its subjectKeyIdentifier extension twice, each instance well formed; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "paired_good": "tsa-good.exe",
+      "cases": [
+        "path-014-bad-tsa-repeated-ski"
+      ]
     },
     {
       "file": "tsa-eku-mixed.exe",
