@@ -1657,7 +1657,10 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
         .windows(2)
         .filter(|pair| pair[0] == "--roots")
         .map(|pair| {
-            let name = pair[1].strip_prefix("fixtures/").unwrap();
+            let prefix = format!("{}/", suite.fixtures);
+            let name = pair[1]
+                .strip_prefix(&prefix)
+                .unwrap_or_else(|| panic!("{id}: root {} is under {prefix}", pair[1]));
             // The engine counts a root's DER, which is the file only when the
             // file is DER: a PEM root would be measured wrong.
             let bytes = std::fs::read(fixtures.join(name)).unwrap();
