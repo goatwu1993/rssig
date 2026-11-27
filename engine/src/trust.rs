@@ -62,8 +62,9 @@ impl TrustStore {
         self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
             + self.crls.iter().map(Vec::len).sum::<usize>()
     }
-    /// PATH-013 for the signer, which is on every path: a signer whose
-    /// extension does not decode fails before any path is built. A format
+    /// PATH-013 and PATH-014 for the signer, which is on every path: a signer
+    /// that repeats an extension, or whose extension does not decode, fails
+    /// before any path is built. A format
     /// that reads the signer's extensions before `verify` calls this first;
     /// without a configured root it passes, so that `verify` reports that
     /// first for every format.
@@ -72,12 +73,12 @@ impl TrustStore {
             return Ok(());
         }
         charge_extensions(leaf, budget)?;
-        let Some(oid) = malformed_extension(leaf) else {
+        let Some(defect) = extension_defect(leaf) else {
             return Ok(());
         };
         // A leaf whose basicConstraints, keyUsage or extKeyUsage does not
-        // decode has no report.
-        let mut error = malformed_extension_error(leaf, oid);
+        // decode, or is repeated, has no report.
+        let mut error = extension_defect_error(leaf, defect);
         if let Ok(report) = CertificateReport::parse(leaf) {
             error = error.detail("certificate", report);
         }
@@ -508,9 +509,10 @@ struct PathState {
     invalid_ca_usage: bool,
     /// The first CA found issued after the lifetime signing time.
     issued_after_signing: Option<Certificate>,
-    /// The first intermediate found on a candidate path with an extension
-    /// that does not decode, and that extension (PATH-013).
-    malformed_extension: Option<(Certificate, ::der::asn1::ObjectIdentifier)>,
+    /// The first intermediate found on a candidate path that repeats an
+    /// extension (PATH-014) or has one that does not decode (PATH-013), and
+    /// what is wrong with it.
+    extension_defect: Option<(Certificate, ExtensionDefect)>,
 }
 
 impl PathState {
@@ -555,28 +557,33 @@ struct PathEvaluator<'a, 'b> {
 impl PathEvaluator<'_, '_> {
     fn check(&self, path: &webpki::VerifiedPath<'_>) -> core::result::Result<(), webpki::Error> {
         let path_certificates = self.path_certificates(path)?;
-        // PATH-013: webpki has linked this path to a configured root, so an
-        // intermediate whose extension does not decode is what rejects it.
-        // The signer was judged before any path was built.
+        // PATH-013 and PATH-014: webpki has linked this path to a configured
+        // root, so an intermediate that repeats an extension, or whose
+        // extension does not decode, is what rejects it. The signer was
+        // judged before any path was built.
         for cert in &path_certificates[1..] {
             charge_extensions(cert, self.budget).map_err(|_| webpki::Error::BadDer)?;
         }
-        if let Some((cert, oid)) = path_certificates[1..]
+        if let Some((cert, defect)) = path_certificates[1..]
             .iter()
-            .find_map(|cert| Some((cert, malformed_extension(cert)?)))
+            .find_map(|cert| Some((cert, extension_defect(cert)?)))
         {
             self.budget.log.debug(
                 Stage::CertificateChain,
                 format_args!(
-                    "candidate path rejected: intermediate {:?} has extension {oid} that \
-                     does not decode",
-                    cert.tbs_certificate.subject.to_string()
+                    "candidate path rejected: intermediate {:?} {}",
+                    cert.tbs_certificate.subject.to_string(),
+                    match defect {
+                        ExtensionDefect::Repeated(oid) => format!("repeats extension {oid}"),
+                        ExtensionDefect::Malformed(oid) =>
+                            format!("has extension {oid} that does not decode"),
+                    }
                 ),
             );
             self.state
                 .borrow_mut()
-                .malformed_extension
-                .get_or_insert_with(|| (cert.clone(), oid));
+                .extension_defect
+                .get_or_insert_with(|| (cert.clone(), defect));
             return Err(MALFORMED_INTERMEDIATE);
         }
         // The other path checks are judged first but applied after
@@ -769,7 +776,7 @@ fn path_error(
     // Only the path callback returns MALFORMED_INTERMEDIATE, and it records
     // why first; webpki cannot, as paths are built without revocation.
     debug_assert!(
-        e != MALFORMED_INTERMEDIATE || state.malformed_extension.is_some(),
+        e != MALFORMED_INTERMEDIATE || state.extension_defect.is_some(),
         "MALFORMED_INTERMEDIATE without a recorded intermediate"
     );
     // webpki ranks another path's validity error above unknown revocation
@@ -824,10 +831,11 @@ fn path_error(
             Stage::CertificateChain,
             "intermediate certificate KeyUsage lacks keyCertSign",
         )
-    } else if let (&MALFORMED_INTERMEDIATE, Some((cert, oid))) = (&e, &state.malformed_extension) {
-        // The path callback rejected a path through an intermediate whose
-        // extension does not decode (PATH-013).
-        malformed_extension_error(cert, *oid)
+    } else if let (&MALFORMED_INTERMEDIATE, Some((cert, defect))) = (&e, &state.extension_defect) {
+        // The path callback rejected a path through an intermediate that
+        // repeats an extension (PATH-014) or whose extension does not decode
+        // (PATH-013).
+        extension_defect_error(cert, *defect)
     } else if e == MALFORMED_INTERMEDIATE {
         // Not reached (see the assertion above); never reported as a CRL
         // error if it is.
@@ -1085,14 +1093,45 @@ fn crl_may_apply(bytes: &[u8], issuer_names: &[ComparableName]) -> bool {
         .is_none_or(|issuer| issuer_names.iter().any(|name| name.matches(&issuer)))
 }
 
-/// The error the path callback rejects a path with for an intermediate whose
-/// extension does not decode (PATH-013). webpki returns trailing data in a
+/// The error the path callback rejects a path with for an intermediate that
+/// repeats an extension (PATH-014) or whose extension does not decode
+/// (PATH-013). webpki returns trailing data in a
 /// revoked-certificate entry only while parsing a CRL (`crl/types.rs`), never
 /// while building a path, so it names only the callback's rejection. webpki
 /// ranks it (40) below its search limits, so an unfinished search is still
 /// reported as one, and above `BadDer` and the callback's `UnknownIssuer`.
 const MALFORMED_INTERMEDIATE: webpki::Error =
     webpki::Error::TrailingData(webpki::DerTypeId::RevokedCertEntry);
+
+/// What makes a path certificate's extensions fail the path.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ExtensionDefect {
+    /// PATH-014: the extension occurs more than once.
+    Repeated(::der::asn1::ObjectIdentifier),
+    /// PATH-013: the extension's value does not decode.
+    Malformed(::der::asn1::ObjectIdentifier),
+}
+
+/// The defect `cert`'s extensions fail a path for: a repeat (PATH-014) is
+/// reported before a value that does not decode (PATH-013).
+fn extension_defect(cert: &Certificate) -> Option<ExtensionDefect> {
+    repeated_extension(cert)
+        .map(ExtensionDefect::Repeated)
+        .or_else(|| malformed_extension(cert).map(ExtensionDefect::Malformed))
+}
+
+/// PATH-014: the first extension of `cert` whose OID an earlier extension of
+/// the certificate carries, whatever the extension and whether or not the two
+/// values are equal (RFC 5280 section 4.2).
+fn repeated_extension(cert: &Certificate) -> Option<::der::asn1::ObjectIdentifier> {
+    let mut seen = alloc::collections::BTreeSet::new();
+    cert.tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| !seen.insert(e.extn_id))
+        .map(|e| e.extn_id)
+}
 
 /// PATH-013: the first extension of `cert` that rssig or webpki decodes and
 /// whose value does not decode as that extension. OpenSSL and BoringSSL mark
@@ -1142,17 +1181,27 @@ fn charge_extensions(cert: &Certificate, budget: &Budget) -> Result<()> {
     Ok(())
 }
 
-/// PATH-013's failure for `cert`, whose extension `oid` does not decode.
-fn malformed_extension_error(
-    cert: &Certificate,
-    oid: ::der::asn1::ObjectIdentifier,
-) -> VerificationError {
+/// The failure of PATH-013 or PATH-014 for `cert`, whose extensions have
+/// `defect`.
+fn extension_defect_error(cert: &Certificate, defect: ExtensionDefect) -> VerificationError {
+    let (oid, reason, message) = match defect {
+        ExtensionDefect::Repeated(oid) => (
+            oid,
+            "repeated_extension",
+            format!("certificate extension {oid} occurs more than once"),
+        ),
+        ExtensionDefect::Malformed(oid) => (
+            oid,
+            "malformed_extension",
+            format!("certificate extension {oid} does not decode"),
+        ),
+    };
     let error = VerificationError::new(
         ErrorCode::CertificateChainInvalid,
         Stage::CertificateChain,
-        format!("certificate extension {oid} does not decode"),
+        message,
     )
-    .detail("reason", "malformed_extension")
+    .detail("reason", reason)
     .detail("extension", oid.to_string());
     // Hashed as the certificate report hashes it, so it matches that report's
     // `sha256`; left out for one that does not re-encode.
@@ -3472,5 +3521,71 @@ mod malformed_extensions {
         // (PATH-T012).
         let x400 = with("2.5.29.17", &[0x30, 0x04, 0xa3, 0x02, 0x30, 0x00]);
         assert!(malformed_extension(&x400).is_some());
+    }
+
+    /// PATH-014: any OID an earlier extension carries, whatever the values.
+    #[test]
+    fn a_repeat_of_any_extension_is_found_and_reported_first() {
+        use ExtensionDefect::{Malformed, Repeated};
+        let issuer = include_bytes!("../../tests/fixtures/path-issuer.der");
+        let issuer = Certificate::from_der(issuer).unwrap();
+        assert_eq!(extension_defect(&issuer), None);
+        let adding = |added: &[(&str, &[u8])]| {
+            let mut cert = issuer.clone();
+            let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
+            for (oid, value) in added {
+                extensions.push(x509_cert::ext::Extension {
+                    extn_id: oid.parse().unwrap(),
+                    critical: false,
+                    extn_value: ::der::asn1::OctetString::new(*value).unwrap(),
+                });
+            }
+            cert
+        };
+        let oid = |text: &str| text.parse::<::der::asn1::ObjectIdentifier>().unwrap();
+        let null: &[u8] = &[0x05, 0x00];
+        // One instance of an unfamiliar extension is PATH-006's.
+        assert_eq!(extension_defect(&adding(&[("1.2.3.4.5", null)])), None);
+        // Two are a repeat, with equal values or different ones.
+        for second in [null, &[0x04, 0x00]] {
+            assert_eq!(
+                extension_defect(&adding(&[("1.2.3.4.5", null), ("1.2.3.4.5", second)])),
+                Some(Repeated(oid("1.2.3.4.5")))
+            );
+        }
+        // An extension the certificate already has, repeated once.
+        let has = |cert: &Certificate, id: &str| {
+            let extensions = cert.tbs_certificate.extensions.as_ref().unwrap();
+            extensions.iter().filter(|e| e.extn_id == oid(id)).count()
+        };
+        assert_eq!(has(&issuer, "2.5.29.14"), 1);
+        let ski: &[u8] = &[0x04, 0x01, 0x07];
+        assert_eq!(
+            extension_defect(&adding(&[("2.5.29.14", ski)])),
+            Some(Repeated(oid("2.5.29.14")))
+        );
+        // The repeat is reported before a value that does not decode,
+        // wherever each sits; without a repeat the malformed value is.
+        let malformed: &[u8] = &[0x30, 0x02, 0x05, 0x00];
+        assert_eq!(has(&issuer, "2.5.29.30"), 0);
+        assert_eq!(
+            extension_defect(&adding(&[("2.5.29.30", malformed)])),
+            Some(Malformed(oid("2.5.29.30")))
+        );
+        assert_eq!(
+            extension_defect(&adding(&[
+                ("2.5.29.30", malformed),
+                ("1.2.3.4.5", null),
+                ("1.2.3.4.5", null),
+            ])),
+            Some(Repeated(oid("1.2.3.4.5")))
+        );
+        assert_eq!(
+            extension_defect(&adding(&[
+                ("2.5.29.30", malformed),
+                ("2.5.29.30", malformed)
+            ])),
+            Some(Repeated(oid("2.5.29.30")))
+        );
     }
 }

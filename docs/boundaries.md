@@ -44,8 +44,11 @@ A leaf or intermediate whose basicConstraints, keyUsage, extKeyUsage,
 subjectAltName, nameConstraints, cRLDistributionPoints, subjectKeyIdentifier or
 authorityKeyIdentifier does not decode fails the path
 ([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path));
-other extensions are not decoded, so a malformed one is unfamiliar (PATH-006),
-and a configured root's extensions are not judged (PATH-011).
+other extensions are not decoded, so a malformed one is unfamiliar (PATH-006).
+A leaf or intermediate that carries any extension more than once fails the
+path too
+([PATH-014](path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path)).
+A configured root's extensions are not judged (PATH-011).
 
 Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to

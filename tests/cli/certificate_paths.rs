@@ -238,6 +238,73 @@ fn malformed_intermediate_is_passed_over_for_a_valid_issuer() {
 }
 
 #[test]
+fn repeated_extension_fails_the_path() {
+    // PATH-014: any extension, in the leaf or an intermediate.
+    let mut certificates = Vec::new();
+    for (who, label, oid) in [
+        ("leaf", "ski", "2.5.29.14"),
+        ("leaf", "eku", "2.5.29.37"),
+        ("leaf", "unfamiliar", "1.2.3.4.5"),
+        ("ca", "ski", "2.5.29.14"),
+    ] {
+        let output = run(
+            &format!("bad-path-{who}-repeated-{label}.exe"),
+            "fixtures/path-root.der",
+        );
+        assert_eq!(output.exit_code, 1, "{who} {label}: {}", output.json);
+        assert!(output.json["results"][0].get("signatures").is_none());
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+        assert_eq!(error["stage"], "certificate_chain", "{error}");
+        let details = &error["details"];
+        assert_eq!(details["reason"], "repeated_extension", "{error}");
+        assert_eq!(details["extension"], oid, "{error}");
+        let sha256 = details["certificate_sha256"].as_str().unwrap();
+        // details.certificate is the signer, as in every chain error: absent
+        // only for a signer whose report cannot be built, as one that
+        // repeats its extKeyUsage.
+        match details.get("certificate") {
+            Some(signer) => assert_eq!(
+                signer["sha256"] == sha256,
+                who == "leaf",
+                "{who} {label}: {error}"
+            ),
+            None => assert_eq!((who, label), ("leaf", "eku"), "{error}"),
+        }
+        // The signer is judged before any usage; an intermediate with it.
+        assert_eq!(
+            details.get("required_eku").is_some(),
+            who == "ca",
+            "{error}"
+        );
+        certificates.push(sha256.to_owned());
+    }
+    certificates.sort();
+    certificates.dedup();
+    assert_eq!(certificates.len(), 4);
+}
+
+#[test]
+fn intermediate_repeating_an_extension_webpki_keeps_fails_in_webpki() {
+    rejected(
+        "bad-path-ca-repeated-bc.exe",
+        "fixtures/path-root.der",
+        ErrorCode::CertificateChainInvalid,
+        Stage::CertificateChain,
+        "ExtensionValueInvalid",
+    );
+}
+
+#[test]
+fn repeating_intermediate_is_passed_over_for_a_valid_issuer() {
+    selected(
+        "good-path-ca-repeated-first.exe",
+        "fixtures/path-root.der",
+        &["leaf", "issuer", "root"],
+    );
+}
+
+#[test]
 fn non_ascii_ia5_string_in_the_leaf_san_fails_the_path() {
     let output = run("bad-path-leaf-san-non-ascii.exe", "fixtures/path-root.der");
     assert_eq!(output.exit_code, 1, "{}", output.json);

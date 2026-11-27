@@ -73,10 +73,16 @@ they pin or what they check, never after a task.
   `x509-cert` 0.2 has no x400Address [3] choice, so since PATH-013 a path
   certificate whose subjectAltName (or another GeneralNames) holds one fails
   the path, where OpenSSL reads it (`GEN_X400`; found in PR #97).
-- [ ] **PATH-T013** fix: Fail the path on a certificate that repeats an extension.
-  RFC 5280 section 4.2 allows one instance of an extension; OpenSSL and
-  BoringSSL mark a repeat invalid. webpki rejects a repeat only of the
-  extensions it keeps, so two subjectKeyIdentifiers pass (found in PR #97).
+- [x] **PATH-T013** fix: Fail the path on a certificate that repeats an extension. Done ([PR #102](https://github.com/goatwu1993/rssig/pull/102)); [PATH-014](docs/path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path).
+- [ ] **PATH-T014** test: Pin the rest of PATH-014 in `tests/cases.json`.
+  A timestamp signer, an RDP signer, a certificate with both defects, and a
+  repeat webpki rejects in a candidate that is first or on no path. Detail in
+  [path-t014.md](docs/tasks/path-t014.md).
+- [ ] **PATH-T015** fix: Decide whether an extension OID with a padded arc is rejected.
+  `const-oid` 0.9 is reported to accept a base-128 arc with a leading 0x80
+  octet, so `55 1D 80 0E` would read as an extension other than 2.5.29.14 and
+  PATH-014 would not see it as a repeat; OpenSSL is believed to refuse such an
+  encoding. Check both first (from the PR #102 review).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).

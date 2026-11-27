@@ -7506,6 +7506,104 @@
       ]
     },
     {
+      "file": "bad-path-leaf-repeated-ski.exe",
+      "sha256": "2c2416474eab0719fbd35ab9cc4f0ee5ed79a75093b67d1aa4ecb03c40058634",
+      "bytes": 2232,
+      "description": "PATH-014 signed inert PE; the signing leaf carries its subjectKeyIdentifier extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension); verified under --integrity-only, which builds no path.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-leaf-repeated-ski",
+        "path-014-good-integrity-only-leaf-repeated-ski"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-repeated-eku.exe",
+      "sha256": "342661b9fc926fc4721e5f1dd6aef1e08e09b589dffdc80f80fe70fefa8d0876",
+      "bytes": 2224,
+      "description": "PATH-014 signed inert PE; the signing leaf carries its ExtendedKeyUsage extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-leaf-repeated-eku"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-repeated-unfamiliar.exe",
+      "sha256": "d524ea27485346ee5dccfb414f2507f05d730472892478d9204eebae6504dcc6",
+      "bytes": 2224,
+      "description": "PATH-014 signed inert PE; the signing leaf carries a noncritical extension 1.2.3.4.5 twice, holding NULL and then an empty OCTET STRING, so the two values differ. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-leaf-repeated-unfamiliar"
+      ]
+    },
+    {
+      "file": "bad-path-ca-repeated-ski.exe",
+      "sha256": "c5878fbbb0f548ba015aa2ec763e80b7cd76f4b4a1ddaab48d57d1cfd9dceb53",
+      "bytes": 2232,
+      "description": "PATH-014 signed inert PE; the intermediate CA carries its subjectKeyIdentifier extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-ca-repeated-ski"
+      ]
+    },
+    {
+      "file": "bad-path-ca-repeated-bc.exe",
+      "sha256": "b45950fbb6968b6d3410ca07047bc49adf0aee8e3e9ba21a369cb850822fd87a",
+      "bytes": 2216,
+      "description": "PATH-014 signed inert PE; the intermediate CA carries its BasicConstraints extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain, rejected by webpki before the path callback.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-bad-ca-repeated-bc"
+      ]
+    },
+    {
+      "file": "good-path-ca-repeated-first.exe",
+      "sha256": "273b6090c5e8835fa03db221f73fe068aa62d77d0953ae8d3bdc427969c9b3dc",
+      "bytes": 2624,
+      "description": "PATH-014 signed inert PE; two intermediate candidates of one name and key, the first carrying its subjectKeyIdentifier extension twice. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: trusted chain with CRL validation through the valid intermediate; untrusted_root at certificate_chain under a root that issued neither.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-014-good-ca-repeated-first",
+        "path-014-bad-ca-repeated-first-under-another-root"
+      ]
+    },
+    {
       "file": "bad-path-ca-eku.exe",
       "sha256": "992197ec41a67130f7665ec3af3c578a1853c3683d26537c57fe99d7a787337f",
       "bytes": 2224,

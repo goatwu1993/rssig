@@ -32,3 +32,10 @@ certificate's extensions only when it validates a path
   integrity-only results for the `bad-path-{leaf,ca}-malformed-{bc,ku,eku}`
   fixtures that `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
   expects to fail.
+
+The report also cannot be built for a certificate that repeats its
+basicConstraints, keyUsage or extKeyUsage
+([PATH-014](../path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path)),
+with the same `invalid_certificate` result; this task covers that repeat the
+same way (the report marks it, PATH-014 judges path certificates). The
+fixtures are `bad-path-leaf-repeated-eku.exe` and `bad-path-ca-repeated-bc.exe`.
