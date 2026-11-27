@@ -36,6 +36,7 @@ Observed ones. A new entry takes the next free number.
 | [PATH-011](#path-011-configured-anchors-are-keys) | Configured anchors are keys | Decided | acceptance |
 | [PATH-012](#path-012-the-reported-anchor-is-the-one-whose-constraints-accepted-the-path) | The reported anchor is the one whose constraints accepted the path | Decided | diagnostics |
 | [PATH-013](#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path) | A path certificate whose extension does not decode fails the path | Decided | acceptance |
+| [PATH-014](#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path) | A path certificate that repeats an extension fails the path | Observed | acceptance |
 
 ## Tier 1: fail-open
 
@@ -190,6 +191,8 @@ a byte above 0x7F does not decode.
   reported through (PATH-T007 tracks that shared flag).
 - The rule holds for a timestamp signer's chain too, with the same code and
   stage.
+- A certificate that also repeats an extension is reported for the repeat
+  (PATH-014).
 - Integrity-only verification builds no path, so the rule does not apply
   there, as OpenSSL checks no extension without path verification: a signer
   whose subjectKeyIdentifier does not decode verifies. One whose
@@ -268,6 +271,68 @@ a byte above 0x7F does not decode.
   `details.reason`; the others, and nameConstraints in the leaf, read as
   absent and the path stood. The configured root is exempt as every anchor
   rule is (PATH-011); OpenSSL also judges a root it finds in its store.
+
+### PATH-014: A path certificate that repeats an extension fails the path
+
+A signing leaf or an intermediate that carries two extensions with the same
+OID fails the path, whatever the extension (one rssig decodes or an
+unfamiliar one), critical or not, and whether or not the two values are
+equal. It is judged where PATH-013 is, and reported the same way:
+
+- The signer fails before any path is built (after the check for a
+  configured root): `certificate_chain_invalid` at `certificate_chain`, with
+  `details.reason` `repeated_extension`, `details.extension` the repeated OID
+  and `details.certificate_sha256` the signer, and `details.certificate` its
+  report when that can be built: the report of a certificate that repeats
+  its basicConstraints, keyUsage or extKeyUsage cannot be.
+- An intermediate rejects each candidate path through it in the path
+  callback, and path building goes on (PATH-009); it is named, with the same
+  details, under the conditions PATH-013 gives for an intermediate. webpki
+  itself rejects, before the callback, an intermediate that repeats an
+  extension it keeps (basicConstraints, keyUsage, extKeyUsage,
+  subjectAltName, nameConstraints or cRLDistributionPoints): that failure is
+  `certificate_chain_invalid` at `certificate_chain` with webpki's message
+  (`ExtensionValueInvalid`) and no `details.reason`.
+- A certificate with both defects is reported for the repeat: the first
+  extension whose OID an earlier one carries.
+- Integrity-only verification builds no path, so the rule does not apply
+  there: a signer that repeats its subjectKeyIdentifier verifies. One that
+  repeats its basicConstraints, keyUsage or extKeyUsage still fails, as does
+  a signature that embeds such a certificate off the path, with
+  `invalid_certificate` at `certificate`, because its report cannot be built
+  (PATH-T010).
+- A configured root is a key (PATH-011) and is not judged.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** acceptance
+- **Sources:**
+  - RFC 5280 section 4.2: "A certificate MUST NOT include more than one
+    instance of a particular extension."
+  - Bouncy Castle (bb81bfa7)
+    `core/src/main/java/org/bouncycastle/asn1/x509/Extensions.java:131-136`
+    refuses to build the extensions of any certificate that repeats an OID
+    ("repeated extension found"), unless the property
+    `org.bouncycastle.x509.ignore_repeated_extensions` is set. rssig agrees
+    with it for every extension.
+  - OpenSSL 3.3 (7f736187) `crypto/x509/v3_lib.c:186-199` (`X509V3_get_d2i`
+    returns NULL with `*crit = -2` for an extension found more than once) and
+    `crypto/x509/v3_purp.c:401-587` (`ossl_x509v3_cache_extensions` marks the
+    certificate `EXFLAG_INVALID` for that result, for the eight extensions
+    PATH-013 names). BoringSSL (289645a4) `crypto/x509/v3_lib.cc:228-241` and
+    `v3_purp.cc:255-419` do the same. Both agree with rssig for those eight.
+  - Not followed: OpenSSL and BoringSSL look for a repeat only of the
+    extensions they cache, so a certificate that repeats another extension
+    (authorityInfoAccess, an unfamiliar OID) verifies there. rssig rejects it, as RFC 5280 and Bouncy Castle do: a relying
+    party that read either instance could disagree with one that read the
+    other, and no CA has a reason to issue such a certificate.
+  - webpki 0.103.16 `x509.rs` (`set_extension_once`) rejects a repeat of an
+    extension it keeps with `ExtensionValueInvalid`, and ignores a repeat of
+    any other.
+- **Note:** Before this entry a repeated subjectKeyIdentifier,
+  authorityKeyIdentifier or unfamiliar extension passed (the first instance
+  was read), and a repeat of an extension webpki keeps already failed the
+  path with its message. Found in PR #97 (PATH-T013).
 
 ## Tier 2: availability
 

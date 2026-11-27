@@ -35,6 +35,16 @@ const MALFORMED_EXTENSIONS: [(&str, &str); 8] = [
     ("ski", "2.5.29.14"),
     ("aki", "2.5.29.35"),
 ];
+/// PATH-014: the certificate that repeats an extension, a label and the
+/// extension. webpki keeps basicConstraints and rejects its repeat itself;
+/// 1.2.3.4.5 is an extension nothing decodes.
+const REPEATED_EXTENSIONS: [(&str, &str, &str); 5] = [
+    ("leaf", "ski", "2.5.29.14"),
+    ("leaf", "eku", "2.5.29.37"),
+    ("leaf", "unfamiliar", "1.2.3.4.5"),
+    ("ca", "ski", "2.5.29.14"),
+    ("ca", "bc", "2.5.29.19"),
+];
 /// SEQUENCE { NULL }: none of the extensions above decodes from it.
 const MALFORMED_VALUE: [u8; 4] = [0x30, 0x02, 0x05, 0x00];
 const PARTITIONS: [(&str, &str, bool); 5] = [
@@ -217,6 +227,29 @@ fn extension(cert: &mut Certificate, oid: &str, critical: bool, value: Option<Ve
             extn_value: OctetString::new(value).unwrap(),
         });
     }
+}
+/// Append a second instance of `cert`'s extension `oid`; when it has none,
+/// add a noncritical one holding NULL and a second holding an empty OCTET
+/// STRING, so that the two values differ.
+fn repeat_extension(cert: &mut Certificate, oid: &str) {
+    let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
+    let copy = extensions
+        .iter()
+        .find(|e| e.extn_id.to_string() == oid)
+        .cloned()
+        .unwrap_or_else(|| {
+            let added = Extension {
+                extn_id: oid.parse().unwrap(),
+                critical: false,
+                extn_value: OctetString::new([0x05, 0x00]).unwrap(),
+            };
+            extensions.push(added.clone());
+            Extension {
+                extn_value: OctetString::new([0x04, 0x00]).unwrap(),
+                ..added
+            }
+        });
+    extensions.push(copy);
 }
 fn sign(cert: &mut Certificate, key: &SigningKey) {
     let sig: Signature = key.sign(&cert.tbs_certificate.to_der().unwrap());
@@ -828,6 +861,34 @@ pub(super) fn write(dir: &std::path::Path) {
         &non_ascii,
         core::slice::from_ref(&ca),
     );
+    // PATH-014: a certificate that repeats an extension, the second instance
+    // a copy of the first so that each one decodes.
+    for (who, label, oid) in REPEATED_EXTENSIONS {
+        let (mut changed_leaf, mut changed_ca) = (leaf.clone(), ca.clone());
+        if who == "leaf" {
+            repeat_extension(&mut changed_leaf, oid);
+            sign(&mut changed_leaf, &ca_key);
+        } else {
+            repeat_extension(&mut changed_ca, oid);
+            sign(&mut changed_ca, &root_key);
+        }
+        if (who, label) == ("ca", "ski") {
+            // PATH-014 with PATH-009: the repeating candidate comes first,
+            // and path building must go on to the valid issuer.
+            write_pe(
+                dir,
+                "good-path-ca-repeated-first",
+                &leaf,
+                &[changed_ca.clone(), ca.clone()],
+            );
+        }
+        write_pe(
+            dir,
+            &format!("bad-path-{who}-repeated-{label}"),
+            &changed_leaf,
+            &[changed_ca],
+        );
+    }
     let mut lower = ca.clone();
     lower.tbs_certificate.issuer = name("upper");
     // Remove the old issuer's AKI when cross-signing; issuer DN/signature bind it.
@@ -1132,7 +1193,13 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             ["leaf", "ca"]
                 .iter()
                 .any(|who| filename == format!("bad-path-{who}-malformed-{label}.exe"))
-        }) || filename == "bad-path-ca-malformed-bc-first.exe";
+        }) || [
+            "bad-path-ca-malformed-bc-first.exe",
+            // PATH-014: nor can one that repeats one of the three.
+            "bad-path-leaf-repeated-eku.exe",
+            "bad-path-ca-repeated-bc.exe",
+        ]
+        .contains(&filename);
         if unreportable {
             let error = integrity.unwrap_err();
             assert_eq!(
@@ -1170,7 +1237,7 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
     }
     assert_eq!(
         count,
-        49 + 2 * MALFORMED_EXTENSIONS.len() + point_forms().len()
+        50 + 2 * MALFORMED_EXTENSIONS.len() + REPEATED_EXTENSIONS.len() + point_forms().len()
     );
 }
 
@@ -1207,6 +1274,53 @@ fn extension_value(cert: &Certificate, oid: &str) -> Vec<u8> {
         .extn_value
         .as_bytes()
         .to_vec()
+}
+
+/// PATH-014's cases rest on each fixture changing one certificate so that
+/// it carries exactly one extension twice, and the other certificate
+/// carrying none. The two instances are equal (so each decodes as the single
+/// one did), except those of the unfamiliar extension, which nothing decodes
+/// and which differ.
+#[test]
+fn the_repeated_extension_cases_rest_on_one_repeat_in_one_certificate() {
+    let (root, issuer) = (
+        committed_certificate("path-root.der"),
+        committed_certificate("path-issuer.der"),
+    );
+    let repeats = |cert: &Certificate| {
+        let extensions = cert.tbs_certificate.extensions.as_ref().unwrap();
+        let mut repeated = Vec::new();
+        for (index, extension) in extensions.iter().enumerate() {
+            if let Some(first) = extensions[..index]
+                .iter()
+                .find(|e| e.extn_id == extension.extn_id)
+            {
+                let unfamiliar = extension.extn_id.to_string() == "1.2.3.4.5";
+                assert_eq!(first == extension, !unfamiliar);
+                repeated.push(extension.extn_id.to_string());
+            }
+        }
+        repeated
+    };
+    for (who, label, oid) in REPEATED_EXTENSIONS {
+        let name = format!("bad-path-{who}-repeated-{label}.exe");
+        let (leaf, ca) = (embedded(&name, &issuer), embedded(&name, &root));
+        let (changed, other) = if who == "leaf" {
+            (&leaf, &ca)
+        } else {
+            (&ca, &leaf)
+        };
+        assert_eq!(repeats(changed), [oid], "{name}");
+        assert!(repeats(other).is_empty(), "{name}");
+    }
+    // The candidate offered first repeats; the second is the committed issuer.
+    let first = embedded("good-path-ca-repeated-first.exe", &root);
+    assert_eq!(repeats(&first), ["2.5.29.14"]);
+    assert_eq!(
+        embedded("bad-path-ca-repeated-ski.exe", &root),
+        first,
+        "the same repeating intermediate"
+    );
 }
 
 /// A committed CRL is signed by `issuer` over its committed TBS bytes (as
