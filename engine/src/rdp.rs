@@ -639,6 +639,32 @@ mod tests {
             ErrorCode::ContentDigestMismatch
         );
     }
+    /// PATH-014's RDP case rests on the signer of `bad-rdp-repeated-eku.rdp`
+    /// being that of `good-rdp-multiple-ekus.rdp` with one copy of its
+    /// extKeyUsage appended, and every other certificate unchanged.
+    #[test]
+    fn the_repeated_eku_rdp_signer_differs_only_by_the_appended_copy() {
+        let certs = |name: &str| {
+            let rdp = Rdp::parse(&fixture(name)).unwrap();
+            DetachedData::parse(&rdp.signature).unwrap().certs
+        };
+        let (good, bad) = (
+            certs("good-rdp-multiple-ekus.rdp"),
+            certs("bad-rdp-repeated-eku.rdp"),
+        );
+        assert_eq!(bad.len(), good.len());
+        let mut changed = Vec::new();
+        for (good, bad) in good.iter().zip(&bad).filter(|(good, bad)| good != bad) {
+            let mut bad = bad.tbs_certificate.clone();
+            let extensions = bad.extensions.as_mut().unwrap();
+            let copy = extensions.pop().unwrap();
+            assert_eq!(copy.extn_id.to_string(), "2.5.29.37");
+            assert!(extensions.contains(&copy));
+            assert_eq!(bad, good.tbs_certificate);
+            changed.push(good.tbs_certificate.subject.to_string());
+        }
+        assert_eq!(changed, ["CN=rssig test publisher"]);
+    }
     #[test]
     fn direct_signatures_do_not_relax_authenticode_or_countersignature_policy() {
         let pe_bytes = fixture("bad-rdp-pe-no-attributes.exe");

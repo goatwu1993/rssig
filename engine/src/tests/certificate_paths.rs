@@ -36,15 +36,21 @@ const MALFORMED_EXTENSIONS: [(&str, &str); 8] = [
     ("aki", "2.5.29.35"),
 ];
 /// PATH-014: the certificate that repeats an extension, a label and the
-/// extension. webpki keeps basicConstraints and rejects its repeat itself;
-/// 1.2.3.4.5 is an extension nothing decodes.
-const REPEATED_EXTENSIONS: [(&str, &str, &str); 5] = [
+/// extension. webpki keeps basicConstraints and subjectAltName and rejects
+/// their repeat itself; the report decodes basicConstraints and not
+/// subjectAltName. 1.2.3.4.5 is an extension nothing decodes.
+const REPEATED_EXTENSIONS: [(&str, &str, &str); 6] = [
     ("leaf", "ski", "2.5.29.14"),
     ("leaf", "eku", "2.5.29.37"),
     ("leaf", "unfamiliar", "1.2.3.4.5"),
     ("ca", "ski", "2.5.29.14"),
     ("ca", "bc", "2.5.29.19"),
+    ("ca", "san", "2.5.29.17"),
 ];
+/// PATH-014 with PATH-013: the certificate that repeats its
+/// authorityKeyIdentifier and, at an earlier position, has a
+/// subjectKeyIdentifier that does not decode.
+const BOTH_DEFECTS: [&str; 2] = ["leaf", "ca"];
 /// SEQUENCE { NULL }: none of the extensions above decodes from it.
 const MALFORMED_VALUE: [u8; 4] = [0x30, 0x02, 0x05, 0x00];
 const PARTITIONS: [(&str, &str, bool); 5] = [
@@ -869,6 +875,9 @@ pub(super) fn write(dir: &std::path::Path) {
             repeat_extension(&mut changed_leaf, oid);
             sign(&mut changed_leaf, &ca_key);
         } else {
+            if label == "san" {
+                dns(&mut changed_ca, "issuer.example.invalid");
+            }
             repeat_extension(&mut changed_ca, oid);
             sign(&mut changed_ca, &root_key);
         }
@@ -882,11 +891,67 @@ pub(super) fn write(dir: &std::path::Path) {
                 &[changed_ca.clone(), ca.clone()],
             );
         }
+        if (who, label) == ("ca", "san") {
+            // PATH-014 with PATH-009: a candidate webpki rejects comes first,
+            // and path building must go on to the valid issuer.
+            write_pe(
+                dir,
+                "good-path-ca-repeated-san-first",
+                &leaf,
+                &[changed_ca.clone(), ca.clone()],
+            );
+            // PATH-014: the signer's issuer is missing, and a CA that
+            // repeats its subjectAltName issues only an unrelated embedded
+            // certificate, so it is on no path.
+            let stranger_key = key(47);
+            let stranger = certificate("stranger", 142, &stranger_key, "dangling", &key(48), false);
+            let mut dangling = certificate("dangling", 143, &key(48), "root", &root_key, true);
+            dns(&mut dangling, "dangling.example.invalid");
+            repeat_extension(&mut dangling, "2.5.29.17");
+            sign(&mut dangling, &root_key);
+            write_pe(
+                dir,
+                "bad-path-unrelated-repeated-issuer",
+                &leaf,
+                &[stranger, dangling],
+            );
+        }
         write_pe(
             dir,
             &format!("bad-path-{who}-repeated-{label}"),
             &changed_leaf,
             &[changed_ca],
+        );
+    }
+    // PATH-014 with PATH-013: the repeat is reported, though the malformed
+    // value sits before it.
+    for who in BOTH_DEFECTS {
+        let (mut changed, issuer_key) = if who == "leaf" {
+            (leaf.clone(), &ca_key)
+        } else {
+            (ca.clone(), &root_key)
+        };
+        changed
+            .tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|e| e.extn_id.to_string() == "2.5.29.14")
+            .unwrap()
+            .extn_value = OctetString::new(MALFORMED_VALUE.to_vec()).unwrap();
+        repeat_extension(&mut changed, "2.5.29.35");
+        sign(&mut changed, issuer_key);
+        let (signer, candidate) = if who == "leaf" {
+            (changed, ca.clone())
+        } else {
+            (leaf.clone(), changed)
+        };
+        write_pe(
+            dir,
+            &format!("bad-path-{who}-repeated-and-malformed"),
+            &signer,
+            &[candidate],
         );
     }
     let mut lower = ca.clone();
@@ -1337,6 +1402,82 @@ fn the_repeated_extension_cases_rest_on_one_repeat_in_one_certificate() {
         first,
         "the same repeating intermediate"
     );
+    // The same for the subjectAltName webpki rejects, an extension the
+    // certificate report does not decode.
+    let first = embedded("good-path-ca-repeated-san-first.exe", &root);
+    assert_eq!(repeats(&first), ["2.5.29.17"]);
+    assert_eq!(embedded("bad-path-ca-repeated-san.exe", &root), first);
+    // It is the committed issuer with one subjectAltName added twice, offered
+    // before the committed issuer itself.
+    let mut unchanged = first.tbs_certificate.clone();
+    unchanged
+        .extensions
+        .as_mut()
+        .unwrap()
+        .retain(|e| e.extn_id.to_string() != "2.5.29.17");
+    assert_eq!(unchanged, issuer.tbs_certificate);
+    let signed = committed("good-path-ca-repeated-san-first.exe");
+    let pe = pe::Pe::parse(&signed).unwrap();
+    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
+    assert_eq!(sd.certs[1..], [first.clone(), issuer.clone()]);
+    // The CA on no path repeats its subjectAltName, and the signer's issuer
+    // is neither it nor any other embedded certificate.
+    let leaf = committed_certificate("path-leaf.der");
+    let signed = committed("bad-path-unrelated-repeated-issuer.exe");
+    let pe = pe::Pe::parse(&signed).unwrap();
+    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
+    assert!(
+        sd.certs
+            .iter()
+            .all(|c| c.tbs_certificate.subject != leaf.tbs_certificate.issuer)
+    );
+    let dangling = embedded("bad-path-unrelated-repeated-issuer.exe", &root);
+    assert_eq!(repeats(&dangling), ["2.5.29.17"]);
+    // The signer is the committed leaf, and the only other certificate is the
+    // one the CA issued, which repeats nothing.
+    assert_eq!(sd.certs.len(), 3);
+    assert_eq!(sd.certs[0], leaf);
+    let stranger = embedded("bad-path-unrelated-repeated-issuer.exe", &dangling);
+    assert!(repeats(&stranger).is_empty());
+    // With both defects, the subjectKeyIdentifier that does not decode sits
+    // before the repeated authorityKeyIdentifier, so a scan that reported
+    // the first defect it met would report it instead.
+    for who in BOTH_DEFECTS {
+        let name = format!("bad-path-{who}-repeated-and-malformed.exe");
+        let changed = embedded(&name, if who == "leaf" { &issuer } else { &root });
+        assert_eq!(repeats(&changed), ["2.5.29.35"], "{name}");
+        let extensions = changed.tbs_certificate.extensions.as_ref().unwrap();
+        let position = |oid: &str| {
+            extensions
+                .iter()
+                .rposition(|e| e.extn_id.to_string() == oid)
+                .unwrap()
+        };
+        assert!(position("2.5.29.14") < position("2.5.29.35"), "{name}");
+        assert_eq!(
+            extension_value(&changed, "2.5.29.14"),
+            MALFORMED_VALUE,
+            "{name}"
+        );
+        // Otherwise it is the committed certificate: drop the copy and
+        // restore the subjectKeyIdentifier.
+        let committed = if who == "leaf" { &leaf } else { &issuer };
+        let mut restored = changed.tbs_certificate.clone();
+        let extensions = restored.extensions.as_mut().unwrap();
+        assert_eq!(extensions.pop().unwrap().extn_id.to_string(), "2.5.29.35");
+        let ski = extensions
+            .iter_mut()
+            .find(|e| e.extn_id.to_string() == "2.5.29.14")
+            .unwrap();
+        ski.extn_value = OctetString::new(extension_value(committed, "2.5.29.14")).unwrap();
+        assert_eq!(&restored, &committed.tbs_certificate, "{name}");
+        // The other certificate is the committed one.
+        if who == "leaf" {
+            assert_eq!(embedded(&name, &root), issuer, "{name}");
+        } else {
+            assert_eq!(embedded(&name, &issuer), leaf, "{name}");
+        }
+    }
 }
 
 /// A committed CRL is signed by `issuer` over its committed TBS bytes (as

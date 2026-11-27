@@ -308,9 +308,15 @@ equal. It is judged where PATH-013 is, and reported the same way:
   extension it keeps (basicConstraints, keyUsage, extKeyUsage,
   subjectAltName, nameConstraints or cRLDistributionPoints): that failure is
   `certificate_chain_invalid` at `certificate_chain` with webpki's message
-  (`ExtensionValueInvalid`) and no `details.reason`.
+  (`ExtensionValueInvalid`) and no `details.reason`. Such a candidate is
+  passed over when a path through another one is accepted (PATH-009). What
+  is reported when none is, for a certificate on no path too, is not this
+  entry's: see the candidate rule `unparsed-candidate` and PATH-T019.
+- The rule holds for a timestamp signer and an RDP signer too, with the same
+  code, stage, `details.reason` and `details.extension`.
 - A certificate with both defects is reported for the repeat: the first
-  extension whose OID an earlier one carries.
+  extension whose OID an earlier one carries, also when the value that does
+  not decode sits before it.
 - Integrity-only verification builds no path, so the rule does not apply
   there: a signer that repeats an extension verifies, as does a signature
   that embeds such a certificate.
@@ -454,4 +460,5 @@ and PATH-014's.
 Unnumbered. `tests/decision-claims.json` assigns these cases here until they name an entry.
 
 - `attach`: cases that pin an existing PATH entry but do not name it yet: every format's untrusted-root case, verification against an empty trust store (PATH-001) and RDP's key-usage case.
+- `unparsed-candidate`: an embedded certificate that webpki cannot parse, on no accepted path, where the result would otherwise be `untrusted_root`. webpki 0.103.16 parses each candidate (`Cert::from_der`) before it compares its subject (`verify_cert.rs:120-124`, `build_chain_inner`) and keeps that error, which outranks `UnknownIssuer` (`error.rs`, `rank`), so it is reported instead, even for a certificate on no path. PATH-T019 decides which is right, and needs an entry.
 - `certificate-signature`: a certificate whose signature does not verify under its correct issuer's key breaks the path (`certificate_chain_invalid`); this needs a new entry. It differs from PATH-002, where the issuer is a same-name certificate with the wrong key.

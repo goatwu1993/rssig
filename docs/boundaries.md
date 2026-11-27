@@ -45,9 +45,14 @@ subjectAltName, nameConstraints, cRLDistributionPoints, subjectKeyIdentifier or
 authorityKeyIdentifier does not decode fails the path
 ([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path));
 other extensions are not decoded, so a malformed one is unfamiliar (PATH-006).
-A leaf or intermediate that carries any extension more than once fails the
-path too
+A leaf, intermediate, timestamp signer or RDP signer that carries any
+extension more than once fails the path too
 ([PATH-014](path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path)).
+An embedded certificate webpki cannot parse, such as one that repeats its
+subjectAltName, on no path or on a path to a root that is not configured,
+turns what would be `untrusted_root` into webpki's parse error
+(`ExtensionValueInvalid` for that repeat); how it ranks against rssig's
+other failures is open (PATH-T019, PATH-T011).
 A configured root's extensions are not judged (PATH-011).
 Both rules judge a path only: integrity-only verification and `parse` build
 none, and a certificate report marks a basicConstraints, keyUsage or

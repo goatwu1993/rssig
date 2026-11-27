@@ -27864,6 +27864,328 @@
       }
     },
     {
+      "id": "path-014-bad-tsa-repeated-ski",
+      "input": "tsa-repeated-ski.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "repeated_extension",
+                  "extension": "2.5.29.14"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-bad-rdp-leaf-repeated-eku",
+      "input": "bad-rdp-repeated-eku.rdp",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "repeated_extension",
+                  "extension": "2.5.29.37"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-bad-leaf-repeated-and-malformed-reports-the-repeat",
+      "input": "bad-path-leaf-repeated-and-malformed.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "repeated_extension",
+                  "extension": "2.5.29.35"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-bad-ca-repeated-and-malformed-reports-the-repeat",
+      "input": "bad-path-ca-repeated-and-malformed.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "repeated_extension",
+                  "extension": "2.5.29.35"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-bad-ca-repeated-san",
+      "input": "bad-path-ca-repeated-san.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "ExtensionValueInvalid"
+        }
+      }
+    },
+    {
+      "id": "path-014-good-ca-repeated-san-first",
+      "input": "good-path-ca-repeated-san-first.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-bad-ca-repeated-san-first-under-another-root",
+      "input": "good-path-ca-repeated-san-first.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-other-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "ExtensionValueInvalid"
+        }
+      }
+    },
+    {
+      "id": "path-bad-unrelated-repeated-issuer-fails-in-webpki",
+      "input": "bad-path-unrelated-repeated-issuer.exe",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain"
+              }
+            }
+          ]
+        },
+        "contains": {
+          "/results/0/error/message": "ExtensionValueInvalid"
+        }
+      }
+    },
+    {
       "id": "path-004-bad-pathlen",
       "input": "bad-path-pathlen.exe",
       "decision": "PATH-004",

@@ -74,10 +74,7 @@ they pin or what they check, never after a task.
   certificate whose subjectAltName (or another GeneralNames) holds one fails
   the path, where OpenSSL reads it (`GEN_X400`; found in PR #97).
 - [x] **PATH-T013** fix: Fail the path on a certificate that repeats an extension. Done ([PR #102](https://github.com/goatwu1993/rssig/pull/102)); [PATH-014](docs/path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path).
-- [ ] **PATH-T014** test: Pin the rest of PATH-014 in `tests/cases.json`.
-  A timestamp signer, an RDP signer, a certificate with both defects, and a
-  repeat webpki rejects in a candidate that is first or on no path. Detail in
-  [path-t014.md](docs/tasks/path-t014.md).
+- [x] **PATH-T014** test: Pin the rest of PATH-014 in `tests/cases.json`. Done ([PR #107](https://github.com/goatwu1993/rssig/pull/107)); [PATH-014](docs/path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path).
 - [ ] **PATH-T015** fix: Decide whether an extension OID with a padded arc is rejected.
   `const-oid` 0.9 is reported to accept a base-128 arc with a leading 0x80
   octet, so `55 1D 80 0E` would read as an extension other than 2.5.29.14 and
@@ -96,6 +93,9 @@ they pin or what they check, never after a task.
   marked in `timestamp_verification.certificate`, and PATH-013 rejects it with
   a root; only `tsa-malformed-ski.exe` exists. Add a `tsa-malformed-eku`
   fixture to `regenerate_tsa_fixtures` and both cases (found in PR #108).
+- [ ] **PATH-T019** fix: Decide whether an embedded certificate webpki cannot parse is blamed when no path is found.
+  It replaces `untrusted_root`, and hides PATH-008's `invalid_key_usage`.
+  Detail in [path-t019.md](docs/tasks/path-t019.md).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
