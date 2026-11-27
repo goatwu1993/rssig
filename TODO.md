@@ -323,13 +323,17 @@ they pin or what they check, never after a task.
   `timestamp_structure.rs`, `validation_time.rs`, `rdp_fixtures.rs` and
   `cms_audit.rs` without changing committed bytes; keep their regeneration commands consistent with
   `regenerate_cli_fixtures`.
-- [ ] **TEST-T017** test: Check that committed path fixtures match their generator.
-  `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
-  runs `certificate_paths::write` but compares only the `.exe` names with the
-  manifest, never the bytes, nor the `.der`, `.crl` and `.pem` files it also
-  writes, so a generator change without a regeneration goes unnoticed. The
-  output should be deterministic (fixed keys, RFC 6979 ECDSA); confirm first.
-  Collecting the files in memory would also drop the scratch directory. Found in the review of PR #105.
+- [x] **TEST-T017** test: Check that committed path fixtures match their generator. Done ([PR #110](https://github.com/goatwu1993/rssig/pull/110)).
+- [ ] **TEST-T018** test: State every key the path fixtures use. Their manifest
+  provenance names P-256 constants `[40..45; 32]`, but
+  `certificate_paths.rs` uses `key(40)` to `key(45)`, `key(47)` and
+  `key(48)`: 47 and 48 are missing, and 45 is too if the range is exclusive.
+  List the keys exactly, or check the text against the generator. Found in the review of PR #110.
+- [ ] **TEST-T019** test: Fail when two fixture generators write one name.
+  `regenerate_cli_fixtures` runs several generators into one directory, and a
+  later one silently overwrites a file an earlier one wrote. Have them return
+  their files and merge them, failing on a repeated name. Found in the review
+  of PR #110.
 
 ### BUILD
 
@@ -351,6 +355,12 @@ they pin or what they check, never after a task.
   process adapter from in-process engine coverage. Evaluate a coverage regression
   policy after measuring the baseline, without redundant tests or exclusions
   that hide production code.
+- [ ] **BUILD-T006** build: Keep fixture bytes unchanged on checkout. No
+  `.gitattributes` marks `tests/fixtures/` binary, so `core.autocrlf=true`
+  rewrites every text fixture (`.pem`, `.rdp`, `.ps1`, `.vbs`, `.json`, ...)
+  with CRLF and the manifest SHA-256 check fails, as it already did before
+  PR #110 added the generator byte check. Mark them `-text`, with a check that
+  fails without it. Found in the review of PR #110.
 
 ### CRL
 

@@ -291,7 +291,25 @@ fn constraints(cert: &mut Certificate, permitted: &str, excluded: Option<&str>) 
     }
     extension(cert, "2.5.29.30", true, Some(seq(&fields)));
 }
-fn write_pe(dir: &std::path::Path, label: &str, leaf: &Certificate, candidates: &[Certificate]) {
+/// Generated fixture files by name.
+type Files = std::collections::BTreeMap<String, Vec<u8>>;
+/// Adds one generated file; a name generated twice would leave only the
+/// second on disk, so it fails instead.
+fn put(out: &mut Files, name: impl Into<String>, bytes: impl Into<Vec<u8>>) {
+    let name = name.into();
+    assert!(
+        out.insert(name.clone(), bytes.into()).is_none(),
+        "{name} generated twice"
+    );
+}
+#[test]
+#[should_panic(expected = "path-x.der generated twice")]
+fn a_path_fixture_name_generated_twice_fails() {
+    let mut out = Files::new();
+    put(&mut out, "path-x.der", vec![1]);
+    put(&mut out, "path-x.der", vec![2]);
+}
+fn write_pe(out: &mut Files, label: &str, leaf: &Certificate, candidates: &[Certificate]) {
     let id = Identity {
         key: key(42),
         cert: leaf.clone(),
@@ -324,15 +342,15 @@ fn write_pe(dir: &std::path::Path, label: &str, leaf: &Certificate, candidates: 
             ]),
         ),
     ]);
-    std::fs::write(dir.join(format!("{label}.exe")), attach(base, &cms, true)).unwrap();
+    put(out, format!("{label}.exe"), attach(base, &cms, true));
 }
-fn write_crl(dir: &std::path::Path, issuer: &Certificate, issuer_key: &SigningKey, label: &str) {
-    write_crl_with(dir, issuer, issuer_key, label, false, None);
+fn write_crl(out: &mut Files, issuer: &Certificate, issuer_key: &SigningKey, label: &str) {
+    write_crl_with(out, issuer, issuer_key, label, false, None);
 }
 /// With `key_identified`, the CRL carries an authorityKeyIdentifier naming
 /// the issuer's subjectKeyIdentifier.
 fn write_crl_with(
-    dir: &std::path::Path,
+    out: &mut Files,
     issuer: &Certificate,
     issuer_key: &SigningKey,
     label: &str,
@@ -340,7 +358,7 @@ fn write_crl_with(
     revoked: Option<u32>,
 ) {
     write_crl_at(
-        dir,
+        out,
         issuer,
         issuer_key,
         label,
@@ -351,7 +369,7 @@ fn write_crl_with(
 }
 /// `window` is (thisUpdate, nextUpdate).
 fn write_crl_at(
-    dir: &std::path::Path,
+    out: &mut Files,
     issuer: &Certificate,
     issuer_key: &SigningKey,
     label: &str,
@@ -360,7 +378,7 @@ fn write_crl_at(
     window: (u64, u64),
 ) {
     write_crl_named(
-        dir,
+        out,
         issuer,
         issuer_key,
         label,
@@ -396,7 +414,7 @@ fn printable_name(name: &Name) -> Name {
 
 #[allow(clippy::too_many_arguments)]
 fn write_crl_named(
-    dir: &std::path::Path,
+    out: &mut Files,
     issuer: &Certificate,
     issuer_key: &SigningKey,
     label: &str,
@@ -452,12 +470,12 @@ fn write_crl_named(
         signature_algorithm: algorithm,
         signature: BitString::from_bytes(sig.to_der().as_bytes()).unwrap(),
     };
-    std::fs::write(dir.join(format!("path-{label}.crl")), crl.to_der().unwrap()).unwrap();
+    put(out, format!("path-{label}.crl"), crl.to_der().unwrap());
 }
 /// Write a fresh CRL-T001 CRL from `issuer` with this critical
 /// issuingDistributionPoint value, if any, revoking `revoked`, if any.
 fn write_scoped_crl(
-    dir: &std::path::Path,
+    out: &mut Files,
     file: &str,
     issuer: (&Certificate, &SigningKey),
     scope: Option<Vec<u8>>,
@@ -484,16 +502,25 @@ fn write_scoped_crl(
         scope.into_iter().collect(),
         entries,
     );
-    std::fs::write(dir.join(file), crl).unwrap();
+    put(out, file, crl);
 }
-fn write_cert(dir: &std::path::Path, label: &str, cert: &Certificate) {
-    std::fs::write(
-        dir.join(format!("path-{label}.der")),
-        cert.to_der().unwrap(),
-    )
-    .unwrap();
+fn write_cert(out: &mut Files, label: &str, cert: &Certificate) {
+    put(out, format!("path-{label}.der"), cert.to_der().unwrap());
 }
+/// Writes every path fixture into `dir`.
 pub(super) fn write(dir: &std::path::Path) {
+    std::fs::create_dir_all(dir).unwrap();
+    for (name, bytes) in files() {
+        std::fs::write(dir.join(name), bytes).unwrap();
+    }
+}
+/// Every path fixture, generated in memory.
+fn files() -> Files {
+    let mut out = Files::new();
+    generate(&mut out);
+    out
+}
+fn generate(out: &mut Files) {
     let root_key = key(40);
     let ca_key = key(41);
     let leaf_key = key(42);
@@ -521,11 +548,11 @@ pub(super) fn write(dir: &std::path::Path) {
         ("upper", &upper, &upper_key),
         ("other-root", &other, &other_key),
     ] {
-        write_cert(dir, label, cert);
-        write_crl(dir, cert, key, label);
+        write_cert(out, label, cert);
+        write_crl(out, cert, key, label);
     }
-    write_cert(dir, "leaf", &leaf);
-    write_pe(dir, "good-path-basic", &leaf, core::slice::from_ref(&ca));
+    write_cert(out, "leaf", &leaf);
+    write_pe(out, "good-path-basic", &leaf, core::slice::from_ref(&ca));
     // Each bad variant retains valid image, CMS and certificate signatures.
     for label in [
         "ca-false",
@@ -569,24 +596,24 @@ pub(super) fn write(dir: &std::path::Path) {
         sign(&mut changed, &root_key);
         let good = matches!(label, "ca-noncritical" | "ca-no-ku" | "ca-good-eku");
         if good {
-            write_cert(dir, label, &changed);
+            write_cert(out, label, &changed);
         }
         if label == "ca-ku" {
             write_pe(
-                dir,
+                out,
                 "good-path-ca-ku-first",
                 &leaf,
                 &[changed.clone(), ca.clone()],
             );
             write_pe(
-                dir,
+                out,
                 "good-path-ca-ku-last",
                 &leaf,
                 &[ca.clone(), changed.clone()],
             );
         }
         write_pe(
-            dir,
+            out,
             &format!("{}-path-{label}", if good { "good" } else { "bad" }),
             &leaf,
             &[changed],
@@ -600,7 +627,7 @@ pub(super) fn write(dir: &std::path::Path) {
         extension(&mut changed, "2.5.29.15", true, Some(tlv(3, &bits)));
         sign(&mut changed, &root_key);
         write_pe(
-            dir,
+            out,
             &format!("crl-{label}"),
             &leaf,
             core::slice::from_ref(&changed),
@@ -608,17 +635,13 @@ pub(super) fn write(dir: &std::path::Path) {
         usages.push(changed);
     }
     // The candidate without cRLSign comes first; path building must fall back.
-    write_pe(dir, "crl-ca-crl-sign-fallback", &leaf, &usages);
+    write_pe(out, "crl-ca-crl-sign-fallback", &leaf, &usages);
     // CRL-T001: the same root key and name as a configured anchor whose KeyUsage
     // lacks cRLSign; anchors are keys, so path-root.crl is still usable.
     let mut anchor = root.clone();
     extension(&mut anchor, "2.5.29.15", true, Some(tlv(3, &[2, 0x04])));
     sign(&mut anchor, &root_key);
-    std::fs::write(
-        dir.join("crl-root-no-crl-sign.der"),
-        anchor.to_der().unwrap(),
-    )
-    .unwrap();
+    put(out, "crl-root-no-crl-sign.der", anchor.to_der().unwrap());
     // CRL-T001: a leaf with its own serial that lists one CRL distribution point,
     // and issuer CRLs partitioned by issuingDistributionPoint.
     let mut scoped = certificate(
@@ -631,10 +654,10 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     extension(&mut scoped, "2.5.29.31", false, Some(listed_points()));
     sign(&mut scoped, &ca_key);
-    write_pe(dir, "crl-leaf-crl-dp", &scoped, core::slice::from_ref(&ca));
+    write_pe(out, "crl-leaf-crl-dp", &scoped, core::slice::from_ref(&ca));
     for (label, uri, revoked) in PARTITIONS {
         write_scoped_crl(
-            dir,
+            out,
             &format!("crl-issuer-idp-{label}.crl"),
             (&ca, &ca_key),
             Some(crl_applicability::idp_named_point(uri)),
@@ -648,8 +671,9 @@ pub(super) fn write(dir: &std::path::Path) {
         critical: true,
         extn_value: OctetString::new(crl_applicability::idp_named_point(OTHER_POINT)).unwrap(),
     };
-    std::fs::write(
-        dir.join("crl-issuer-idp-other-expired.crl"),
+    put(
+        out,
+        "crl-issuer-idp-other-expired.crl",
         crl_applicability::crl_full(
             &ca.tbs_certificate.subject.to_string(),
             &ca_key,
@@ -659,15 +683,14 @@ pub(super) fn write(dir: &std::path::Path) {
             vec![other_scope],
             None,
         ),
-    )
-    .unwrap();
+    );
     // CRL-T001: other distribution-point forms on the signer and on issuer CRLs.
     for (label, serial, points) in point_forms() {
         let mut signer = certificate("publisher", serial, &leaf_key, "issuer", &ca_key, false);
         extension(&mut signer, "2.5.29.31", false, Some(points));
         sign(&mut signer, &ca_key);
         write_pe(
-            dir,
+            out,
             &format!("crl-leaf-crl-dp-{label}"),
             &signer,
             core::slice::from_ref(&ca),
@@ -675,7 +698,7 @@ pub(super) fn write(dir: &std::path::Path) {
     }
     for (label, scope) in scope_forms() {
         let file = format!("crl-issuer-idp-{label}.crl");
-        write_scoped_crl(dir, &file, (&ca, &ca_key), Some(scope), None);
+        write_scoped_crl(out, &file, (&ca, &ca_key), Some(scope), None);
     }
     // CRL-T001: an intermediate that lists a distribution point, and PATH-T001 root
     // CRLs naming it with a CA-only or user-only scope.
@@ -687,11 +710,11 @@ pub(super) fn write(dir: &std::path::Path) {
         Some(one_point(ISSUER_POINT)),
     );
     sign(&mut pointed, &root_key);
-    write_pe(dir, "crl-ca-crl-dp", &leaf, core::slice::from_ref(&pointed));
+    write_pe(out, "crl-ca-crl-dp", &leaf, core::slice::from_ref(&pointed));
     // CRL-T001: both selected certificates list a distribution point, the signer
     // LISTED_POINT and its issuer ISSUER_POINT.
     write_pe(
-        dir,
+        out,
         "crl-chain-crl-dp",
         &scoped,
         core::slice::from_ref(&pointed),
@@ -707,18 +730,18 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     sign(&mut shared, &root_key);
     write_pe(
-        dir,
+        out,
         "crl-chain-shared-crl-dp",
         &scoped,
         core::slice::from_ref(&shared),
     );
     for (label, scope) in root_scope_forms() {
         let file = format!("crl-path-root-idp-{label}.crl");
-        write_scoped_crl(dir, &file, (&root, &root_key), Some(scope), None);
+        write_scoped_crl(out, &file, (&root, &root_key), Some(scope), None);
     }
     // CRL-T001: a full root CRL that revokes the intermediate issuer.
     write_scoped_crl(
-        dir,
+        out,
         "crl-path-root-revoked-issuer.crl",
         (&root, &root_key),
         None,
@@ -728,7 +751,7 @@ pub(super) fn write(dir: &std::path::Path) {
     // issuer re-signed by the other root, same serial), so that one candidate
     // path is revoked while the other only lacks a root CRL.
     write_scoped_crl(
-        dir,
+        out,
         "crl-path-other-root-revoked-cross.crl",
         (&other, &other_key),
         None,
@@ -758,10 +781,10 @@ pub(super) fn write(dir: &std::path::Path) {
         sign(&mut changed, &ca_key);
         let good = matches!(label, "leaf-no-bc" | "leaf-noncritical" | "leaf-no-ku");
         if good {
-            write_cert(dir, label, &changed);
+            write_cert(out, label, &changed);
         }
         write_pe(
-            dir,
+            out,
             &format!("{}-path-{label}", if good { "good" } else { "bad" }),
             &changed,
             &[ca.clone()],
@@ -775,7 +798,7 @@ pub(super) fn write(dir: &std::path::Path) {
             // PATH-013 with PATH-009: the malformed candidate comes first, and
             // path building must go on to the valid issuer.
             write_pe(
-                dir,
+                out,
                 "good-path-ca-malformed-first",
                 &leaf,
                 &[changed_ca.clone(), ca.clone()],
@@ -787,7 +810,7 @@ pub(super) fn write(dir: &std::path::Path) {
             extension(&mut no_cert_sign, "2.5.29.15", true, Some(tlv(3, &[1, 2])));
             sign(&mut no_cert_sign, &root_key);
             write_pe(
-                dir,
+                out,
                 "bad-path-ca-ku-and-malformed",
                 &leaf,
                 &[changed_ca.clone(), no_cert_sign],
@@ -797,14 +820,14 @@ pub(super) fn write(dir: &std::path::Path) {
             // PATH-013: a candidate whose basicConstraints does not decode is
             // set aside by the path, and reported with the extension marked.
             write_pe(
-                dir,
+                out,
                 "good-path-ca-malformed-bc-first",
                 &leaf,
                 &[changed_ca.clone(), ca.clone()],
             );
         }
         write_pe(
-            dir,
+            out,
             &format!("bad-path-ca-malformed-{label}"),
             &leaf,
             &[changed_ca],
@@ -818,7 +841,7 @@ pub(super) fn write(dir: &std::path::Path) {
         );
         sign(&mut changed_leaf, &ca_key);
         write_pe(
-            dir,
+            out,
             &format!("bad-path-leaf-malformed-{label}"),
             &changed_leaf,
             &[ca.clone()],
@@ -829,7 +852,7 @@ pub(super) fn write(dir: &std::path::Path) {
     extension(&mut san_octets, "2.5.29.17", false, Some(vec![0x04, 0x00]));
     sign(&mut san_octets, &root_key);
     write_pe(
-        dir,
+        out,
         "bad-path-ca-san-not-a-sequence",
         &leaf,
         core::slice::from_ref(&san_octets),
@@ -847,7 +870,7 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     sign(&mut dangling, &root_key);
     write_pe(
-        dir,
+        out,
         "bad-path-unrelated-malformed-issuer",
         &leaf,
         &[stranger, dangling],
@@ -862,7 +885,7 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     sign(&mut non_ascii, &ca_key);
     write_pe(
-        dir,
+        out,
         "bad-path-leaf-san-non-ascii",
         &non_ascii,
         core::slice::from_ref(&ca),
@@ -885,7 +908,7 @@ pub(super) fn write(dir: &std::path::Path) {
             // PATH-014 with PATH-009: the repeating candidate comes first,
             // and path building must go on to the valid issuer.
             write_pe(
-                dir,
+                out,
                 "good-path-ca-repeated-first",
                 &leaf,
                 &[changed_ca.clone(), ca.clone()],
@@ -895,7 +918,7 @@ pub(super) fn write(dir: &std::path::Path) {
             // PATH-014 with PATH-009: a candidate webpki rejects comes first,
             // and path building must go on to the valid issuer.
             write_pe(
-                dir,
+                out,
                 "good-path-ca-repeated-san-first",
                 &leaf,
                 &[changed_ca.clone(), ca.clone()],
@@ -910,14 +933,14 @@ pub(super) fn write(dir: &std::path::Path) {
             repeat_extension(&mut dangling, "2.5.29.17");
             sign(&mut dangling, &root_key);
             write_pe(
-                dir,
+                out,
                 "bad-path-unrelated-repeated-issuer",
                 &leaf,
                 &[stranger, dangling],
             );
         }
         write_pe(
-            dir,
+            out,
             &format!("bad-path-{who}-repeated-{label}"),
             &changed_leaf,
             &[changed_ca],
@@ -948,7 +971,7 @@ pub(super) fn write(dir: &std::path::Path) {
             (leaf.clone(), changed)
         };
         write_pe(
-            dir,
+            out,
             &format!("bad-path-{who}-repeated-and-malformed"),
             &signer,
             &[candidate],
@@ -959,9 +982,9 @@ pub(super) fn write(dir: &std::path::Path) {
     // Remove the old issuer's AKI when cross-signing; issuer DN/signature bind it.
     extension(&mut lower, "2.5.29.35", false, None);
     sign(&mut lower, &upper_key);
-    write_cert(dir, "lower", &lower);
+    write_cert(out, "lower", &lower);
     write_pe(
-        dir,
+        out,
         "good-path-pathlen",
         &leaf,
         &[lower.clone(), upper.clone()],
@@ -969,7 +992,7 @@ pub(super) fn write(dir: &std::path::Path) {
     let mut short = upper.clone();
     bc(&mut short, true, Some(0));
     sign(&mut short, &root_key);
-    write_pe(dir, "bad-path-pathlen", &leaf, &[lower, short]);
+    write_pe(out, "bad-path-pathlen", &leaf, &[lower, short]);
     let mut constrained = ca.clone();
     constraints(
         &mut constrained,
@@ -977,7 +1000,7 @@ pub(super) fn write(dir: &std::path::Path) {
         Some("blocked.allowed.invalid"),
     );
     sign(&mut constrained, &root_key);
-    write_cert(dir, "constrained", &constrained);
+    write_cert(out, "constrained", &constrained);
     for (label, host) in [
         ("good", "app.allowed.invalid"),
         ("outside", "outside.invalid"),
@@ -987,10 +1010,10 @@ pub(super) fn write(dir: &std::path::Path) {
         dns(&mut changed, host);
         sign(&mut changed, &ca_key);
         if label == "good" {
-            write_cert(dir, &format!("dns-{label}"), &changed);
+            write_cert(out, &format!("dns-{label}"), &changed);
         }
         write_pe(
-            dir,
+            out,
             &format!(
                 "{}-path-name-{label}",
                 if label == "good" { "good" } else { "bad" }
@@ -1002,31 +1025,31 @@ pub(super) fn write(dir: &std::path::Path) {
     // Same DN, wrong key is not an issuer; test both candidate orders.
     let wrong = certificate("issuer", 111, &key(45), "root", &root_key, true);
     write_pe(
-        dir,
+        out,
         "bad-path-wrong-key",
         &leaf,
         core::slice::from_ref(&wrong),
     );
     write_pe(
-        dir,
+        out,
         "good-path-wrong-key-first",
         &leaf,
         &[wrong.clone(), ca.clone()],
     );
-    write_pe(dir, "good-path-wrong-key-last", &leaf, &[ca.clone(), wrong]);
+    write_pe(out, "good-path-wrong-key-last", &leaf, &[ca.clone(), wrong]);
     let mut cross = ca.clone();
     cross.tbs_certificate.issuer = name("other root");
     extension(&mut cross, "2.5.29.35", false, None);
     sign(&mut cross, &other_key);
-    write_cert(dir, "cross", &cross);
+    write_cert(out, "cross", &cross);
     write_pe(
-        dir,
+        out,
         "bad-path-cross-untrusted",
         &leaf,
         &[cross.clone(), other.clone()],
     );
     write_pe(
-        dir,
+        out,
         "good-path-cross-first",
         &leaf,
         &[cross.clone(), other.clone(), ca.clone()],
@@ -1042,7 +1065,7 @@ pub(super) fn write(dir: &std::path::Path) {
     );
     sign(&mut cross_no_cert_sign, &other_key);
     write_pe(
-        dir,
+        out,
         "crl-path-cross-no-cert-sign",
         &leaf,
         &[cross_no_cert_sign, other.clone(), ca.clone()],
@@ -1055,17 +1078,17 @@ pub(super) fn write(dir: &std::path::Path) {
     let rollover = certificate("root", 140, &rollover_key, "root", &root_key, true);
     let rolled_leaf = certificate("publisher", 141, &leaf_key, "root", &rollover_key, false);
     write_pe(
-        dir,
+        out,
         "good-path-self-issued-rollover",
         &rolled_leaf,
         core::slice::from_ref(&rollover),
     );
-    write_crl(dir, &rollover, &rollover_key, "rollover");
+    write_crl(out, &rollover, &rollover_key, "rollover");
     // CRL-T004: the same CRL with its issuer as a PrintableString. Its bytes
     // differ from the root CRL's issuer, but the two issuers on the path are
     // still one name, so CRL-008 still rejects the path.
     write_crl_named(
-        dir,
+        out,
         &rollover,
         &rollover_key,
         "rollover-printable",
@@ -1079,7 +1102,7 @@ pub(super) fn write(dir: &std::path::Path) {
     // CRL-T001: the root's CRL, expired: on a cross-certified file the root
     // path's only CRL then needs a refresh while the other path is revoked.
     write_crl_at(
-        dir,
+        out,
         &root,
         &root_key,
         "root-expired",
@@ -1090,7 +1113,7 @@ pub(super) fn write(dir: &std::path::Path) {
     // PR #64: the root's CRL, not yet valid: a CRL a source could replace,
     // named under certificates_with_replaceable_crl rather than as expired.
     write_crl_at(
-        dir,
+        out,
         &root,
         &root_key,
         "root-not-yet-valid",
@@ -1098,12 +1121,12 @@ pub(super) fn write(dir: &std::path::Path) {
         None,
         (NOW + 1000, NOW + 2000),
     );
-    write_crl_with(dir, &root, &root_key, "root-akid", true, None);
-    write_crl_with(dir, &rollover, &rollover_key, "rollover-akid", true, None);
+    write_crl_with(out, &root, &root_key, "root-akid", true, None);
+    write_crl_with(out, &rollover, &rollover_key, "rollover-akid", true, None);
     // The root key's CRL revoking the rollover certificate, which webpki's
     // confirmation of such a path does not look at.
     write_crl_with(
-        dir,
+        out,
         &root,
         &root_key,
         "root-akid-revoked-rollover",
@@ -1117,13 +1140,13 @@ pub(super) fn write(dir: &std::path::Path) {
     cross_expired.tbs_certificate.validity.not_after = tm(NOW - 1);
     sign(&mut cross_expired, &other_key);
     write_pe(
-        dir,
+        out,
         "crl-path-cross-expired-first",
         &leaf,
         &[cross_expired, other.clone(), ca.clone()],
     );
     write_pe(
-        dir,
+        out,
         "good-path-cross-last",
         &leaf,
         &[ca.clone(), cross, other],
@@ -1140,25 +1163,25 @@ pub(super) fn write(dir: &std::path::Path) {
     extension(&mut cycle_b, "2.5.29.35", false, None);
     sign(&mut cycle_b, &ca_key);
     write_pe(
-        dir,
+        out,
         "bad-path-cycle",
         &leaf,
         &[cycle_a.clone(), cycle_b.clone()],
     );
     write_pe(
-        dir,
+        out,
         "bad-path-cycle-reversed",
         &leaf,
         &[cycle_b.clone(), cycle_a.clone()],
     );
     write_pe(
-        dir,
+        out,
         "good-path-cycle-escape",
         &leaf,
         &[cycle_a.clone(), cycle_b.clone(), ca.clone()],
     );
     write_pe(
-        dir,
+        out,
         "good-path-cycle-escape-reversed",
         &leaf,
         &[ca.clone(), cycle_b, cycle_a],
@@ -1167,7 +1190,7 @@ pub(super) fn write(dir: &std::path::Path) {
     let mut expired = root.clone();
     expired.tbs_certificate.validity.not_after = tm(NOW - 1);
     sign(&mut expired, &root_key);
-    write_cert(dir, "root-expired", &expired);
+    write_cert(out, "root-expired", &expired);
     let mut profile = root.clone();
     bc(&mut profile, false, Some(0));
     extension(&mut profile, "2.5.29.15", true, Some(tlv(3, &[7, 128])));
@@ -1182,26 +1205,26 @@ pub(super) fn write(dir: &std::path::Path) {
         ),
     );
     sign(&mut profile, &root_key);
-    write_cert(dir, "root-profile", &profile);
+    write_cert(out, "root-profile", &profile);
     let mut root_nc = root.clone();
     constraints(&mut root_nc, "allowed.invalid", None);
     sign(&mut root_nc, &root_key);
-    write_cert(dir, "root-constrained", &root_nc);
+    write_cert(out, "root-constrained", &root_nc);
     let mut root_deny = root.clone();
     constraints(&mut root_deny, "elsewhere.invalid", None);
     sign(&mut root_deny, &root_key);
-    write_cert(dir, "root-denied", &root_deny);
+    write_cert(out, "root-denied", &root_deny);
     let mut named = leaf.clone();
     dns(&mut named, "app.allowed.invalid");
     sign(&mut named, &ca_key);
-    write_pe(dir, "good-path-root-name", &named, &[ca]);
+    write_pe(out, "good-path-root-name", &named, &[ca]);
     use ::der::EncodePem;
     let pem = [
         root_deny.to_pem(::der::pem::LineEnding::LF).unwrap(),
         root_nc.to_pem(::der::pem::LineEnding::LF).unwrap(),
     ]
     .concat();
-    std::fs::write(dir.join("path-roots-alternative.pem"), pem).unwrap();
+    put(out, "path-roots-alternative.pem", pem);
 }
 #[test]
 #[ignore = "explicit fixture maintenance; review binaries and update manifest"]
@@ -1216,24 +1239,19 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/..")).join("tests/fixtures");
     let manifest: serde_json::Value =
         serde_json::from_slice(&std::fs::read(dir.join("manifest.json")).unwrap()).unwrap();
-    let witnesses: Vec<Certificate> = ["root", "issuer", "upper", "other-root"]
-        .iter()
-        .map(|label| {
-            Certificate::from_der(&std::fs::read(dir.join(format!("path-{label}.der"))).unwrap())
-                .unwrap()
-        })
-        .collect();
-    // The names checked are the PEs `write` generates, so a fixture added to
-    // the generator is checked without a hand-kept list or count to update.
-    // They must be exactly the PEs the manifest attributes to this generator:
-    // a generated PE the manifest does not attribute to it fails the first
-    // assertion, an attributed PE `write` no longer produces the second, and a
-    // committed file the manifest does not list at all fails
-    // `committed_manifest_fixtures_and_cases_are_consistent`. The bytes checked
-    // are the committed ones; nothing yet compares them with what `write`
-    // produces (TEST-T017).
-    let generated = generated_pe_fixtures();
-    let attributed: std::collections::BTreeSet<String> = manifest["artifacts"]
+    // The files checked are the ones `write` generates, in memory, so a
+    // fixture added to the generator is checked without a hand-kept list or
+    // count to update. They must be exactly the files the manifest attributes
+    // to this generator: a generated file the manifest does not attribute to
+    // it fails the first assertion, an attributed file `write` no longer
+    // produces the second, and a committed file the manifest does not list at
+    // all fails `committed_manifest_fixtures_and_cases_are_consistent`, which
+    // also checks each committed file's SHA-256 against the manifest. Each
+    // committed file must then hold exactly the bytes generated (the
+    // generator uses fixed keys and RFC 6979 ECDSA), so a generator change
+    // without a regeneration fails here.
+    let generated = files();
+    let attributed: std::collections::BTreeSet<&str> = manifest["artifacts"]
         .as_array()
         .unwrap()
         .iter()
@@ -1245,31 +1263,65 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             generator.and_then(|g| g.as_str()?.split_whitespace().next())
                 == Some("engine/src/tests/certificate_paths.rs::regenerate_path_fixtures")
         })
-        .map(|artifact| artifact["file"].as_str().unwrap().to_owned())
-        .filter(|file| file.ends_with(".exe"))
+        .map(|artifact| artifact["file"].as_str().unwrap())
         .collect();
+    let names: std::collections::BTreeSet<&str> = generated.keys().map(String::as_str).collect();
     assert_eq!(
-        generated.difference(&attributed).collect::<Vec<_>>(),
-        Vec::<&String>::new(),
+        names.difference(&attributed).collect::<Vec<_>>(),
+        Vec::<&&str>::new(),
         "generated but not listed with this generator in the manifest"
     );
     assert_eq!(
-        attributed.difference(&generated).collect::<Vec<_>>(),
-        Vec::<&String>::new(),
+        attributed.difference(&names).collect::<Vec<_>>(),
+        Vec::<&&str>::new(),
         "listed with this generator in the manifest but not generated"
     );
-    assert!(!generated.is_empty());
-    for filename in &generated {
-        let filename = filename.as_str();
-        let bytes = std::fs::read(dir.join(filename)).unwrap();
+    // Every unreadable or changed file is listed at once; only a changed one
+    // calls for regeneration.
+    let mut unreadable = Vec::new();
+    let mut stale = Vec::new();
+    for (name, bytes) in &generated {
+        match std::fs::read(dir.join(name)) {
+            Err(error) => unreadable.push(format!("{name}: {error}")),
+            Ok(committed) if committed != *bytes => stale.push(name.as_str()),
+            Ok(_) => {}
+        }
+    }
+    assert_eq!(
+        (unreadable, stale),
+        (Vec::<String>::new(), Vec::<&str>::new()),
+        "committed files that cannot be read (not a reason to regenerate), then committed \
+         bytes that differ from the generator's. If the generator changed, run \
+         regenerate_path_fixtures, review the binaries and update the manifest (docs/testing.md#fixtures); \
+         first rule out a checkout that rewrote line endings, or another generator in \
+         regenerate_cli_fixtures writing the same name"
+    );
+    // The issuers outside each PE, taken from what was just checked.
+    let witnesses: Vec<Certificate> = ["root", "issuer", "upper", "other-root"]
+        .iter()
+        .map(|label| {
+            let name = format!("path-{label}.der");
+            let der = generated
+                .get(&name)
+                .unwrap_or_else(|| panic!("the generator no longer writes {name}"));
+            Certificate::from_der(der).unwrap()
+        })
+        .collect();
+    let pes: Vec<(&str, &Vec<u8>)> = generated
+        .iter()
+        .filter(|(name, _)| name.ends_with(".exe"))
+        .map(|(name, bytes)| (name.as_str(), bytes))
+        .collect();
+    assert!(!pes.is_empty());
+    for (filename, bytes) in pes {
         // Reduced-policy verification is evidence only of container/CMS integrity.
-        let integrity = verify::verify_pe(&bytes, &verify::VerifyOptions::integrity_only(NOW));
+        let integrity = verify::verify_pe(bytes, &verify::VerifyOptions::integrity_only(NOW));
         // PATH-013 and PATH-014 judge path certificates only, and the report
         // marks an extension it cannot decode, so every fixture verifies.
         if let Err(error) = integrity {
             panic!("{filename}: {error:?}");
         }
-        let pe = pe::Pe::parse(&bytes).unwrap();
+        let pe = pe::Pe::parse(bytes).unwrap();
         let envelopes = pe.certificates().unwrap();
         let sd = cms::SignedData::parse(envelopes[0]).unwrap();
         for cert in &sd.certs {
@@ -1294,32 +1346,6 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-}
-
-/// The `.exe` fixtures `write` generates, by file name.
-fn generated_pe_fixtures() -> std::collections::BTreeSet<String> {
-    /// Removes the scratch directory even when `write` panics.
-    struct Scratch(std::path::PathBuf);
-    impl Drop for Scratch {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-    let scratch = Scratch(std::env::temp_dir().join(format!(
-        "rssig-certificate-paths-{}-{:?}",
-        std::process::id(),
-        std::thread::current().id()
-    )));
-    let _ = std::fs::remove_dir_all(&scratch.0);
-    // Fails rather than reuse a directory that survived the removal.
-    std::fs::create_dir(&scratch.0)
-        .unwrap_or_else(|error| panic!("{}: {error}", scratch.0.display()));
-    write(&scratch.0);
-    std::fs::read_dir(&scratch.0)
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
-        .filter(|name| name.ends_with(".exe"))
-        .collect()
 }
 
 fn committed(name: &str) -> Vec<u8> {
