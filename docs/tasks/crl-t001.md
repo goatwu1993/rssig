@@ -698,11 +698,11 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   - A certificate named both without a CRL and with an expired one (on two
     paths) is one retrieval target; a point a certificate left unused is no
     longer reported as not requested once another certificate's request
-    offers it (`a_certificate_named_twice_is_one_target`,
-    `a_point_requested_later_is_reported_with_its_outcome`). Such a
-    point is reported for the first certificate with the outcome its later
-    request got (its failure, or nothing if it was answered), and as not
-    requested only if no request carried it. The shared-point variant has no
+    offers it (`a_certificate_named_twice_is_one_target`). Since CRL-T041
+    such a point is reported for the first certificate as not used, whatever
+    a later certificate's request got for it
+    (`a_point_one_certificates_answer_left_unused_is_reported_as_not_used`,
+    CRL-051). The shared-point variant has no
     spec case: no committed file has two certificates of different issuers
     listing one URI; the unit test checks the serialized failure entries.
     Only a certificate the failed result still names (its status not

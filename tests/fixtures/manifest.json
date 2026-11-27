@@ -10523,8 +10523,8 @@
       "license": "Apache-2.0",
       "cases": [
         "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
-        "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
-        "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+        "crl-050-a-certificate-whose-point-another-used-is-still-asked",
+        "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate",
         "crl-051-a-denied-point-is-recorded-for-each-certificate"
       ]
     },
