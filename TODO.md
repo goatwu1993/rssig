@@ -232,8 +232,8 @@ they pin or what they check, never after a task.
   The engine matches a source's URL to a listed point by normalized form, but
   the case runner accepts only the exact spelling, so that path is unit-tested
   only. From TEST-T009.
-- [ ] **CRL-T053** refactor: Give the spent-allowance rule an entry that asks its
-  question (a reindex; needs the owner's approval). CRL-046's title asks how an over-cap body
+- [ ] **CRL-T053** refactor: Give the spent-allowance rule an entry that asks its question (owner decision).
+  A reindex. CRL-046's title asks how an over-cap body
   is reported, but it also decides that points left once accepted bodies spend
   a request's allowance are not tried, which the two
   `crl-046-a-spent-byte-allowance-` and `-a-byte-short-` cases pin. From CRL-T037.
