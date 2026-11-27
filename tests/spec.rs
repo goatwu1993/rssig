@@ -1666,6 +1666,11 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
         })
         .sum();
     assert!(roots > 0, "{id} supplies its roots with --roots");
+    // A root given as `--roots=<path>` would go uncounted.
+    assert!(
+        !case.command.iter().any(|arg| arg.starts_with("--roots=")),
+        "{id} gives each root as a separate argument"
+    );
     // A CRL an earlier request loaded would spend it too (the allowance is
     // what the store does not yet hold); only the one scripted answer
     // returns bodies, and nothing is answered by URL.
@@ -1677,7 +1682,10 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
     assert_eq!(answers.len(), 1, "{id} scripts one answer");
     // Supplied CRLs would spend the allowance too; the case has none.
     assert!(
-        !case.command.iter().any(|arg| arg == "--crl"),
+        !case
+            .command
+            .iter()
+            .any(|arg| arg == "--crl" || arg.starts_with("--crl=")),
         "{id} supplies no CRL"
     );
     rssig_engine::retrieval::MAX_TOTAL_BYTES - roots
