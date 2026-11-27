@@ -143,6 +143,240 @@ fn bad_path_leaf_critical() {
     );
 }
 
+/// PATH-013: each extension rssig or webpki decodes, given a value that does
+/// not decode as it, on the signing leaf (`leaf`) or the intermediate (`ca`).
+const MALFORMED_EXTENSIONS: [(&str, &str); 8] = [
+    ("bc", "2.5.29.19"),
+    ("ku", "2.5.29.15"),
+    ("eku", "2.5.29.37"),
+    ("san", "2.5.29.17"),
+    ("nc", "2.5.29.30"),
+    ("crldp", "2.5.29.31"),
+    ("ski", "2.5.29.14"),
+    ("aki", "2.5.29.35"),
+];
+
+fn malformed_extension_fails_the_path(certificate: &str) {
+    let mut certificates = Vec::new();
+    for (label, oid) in MALFORMED_EXTENSIONS {
+        let output = run(
+            &format!("bad-path-{certificate}-malformed-{label}.exe"),
+            "fixtures/path-root.der",
+        );
+        assert_eq!(output.exit_code, 1, "{label}: {}", output.json);
+        assert!(output.json["results"][0].get("signatures").is_none());
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(
+            error["code"], "certificate_chain_invalid",
+            "{label}: {error}"
+        );
+        assert_eq!(error["stage"], "certificate_chain", "{label}: {error}");
+        let details = &error["details"];
+        // webpki itself rejects an intermediate whose basicConstraints,
+        // extKeyUsage or nameConstraints does not decode while it builds the
+        // path, before rssig's path callback can name the extension.
+        if certificate == "ca" && ["bc", "eku", "nc"].contains(&label) {
+            assert!(details.get("reason").is_none(), "{label}: {error}");
+            assert!(
+                error["message"].as_str().unwrap().contains("BadDer"),
+                "{label}: {error}"
+            );
+            continue;
+        }
+        assert_eq!(details["reason"], "malformed_extension", "{label}: {error}");
+        assert_eq!(details["extension"], oid, "{label}: {error}");
+        let sha256 = details["certificate_sha256"].as_str().unwrap();
+        assert_eq!(sha256.len(), 64, "{label}: {error}");
+        // details.certificate is the signer, as in every chain error: absent
+        // only for a signer whose report cannot be built.
+        match (certificate, details.get("certificate")) {
+            ("leaf", Some(signer)) => assert_eq!(signer["sha256"], sha256, "{label}"),
+            ("leaf", None) => assert!(["bc", "ku", "eku"].contains(&label), "{label}"),
+            (_, signer) => assert_ne!(signer.unwrap()["sha256"], sha256, "{label}"),
+        }
+        certificates.push(sha256.to_owned());
+    }
+    // Each fixture changes one certificate, so each names its own.
+    let named = certificates.len();
+    certificates.sort();
+    certificates.dedup();
+    assert_eq!(certificates.len(), named);
+    assert_eq!(
+        named,
+        MALFORMED_EXTENSIONS.len() - if certificate == "ca" { 3 } else { 0 }
+    );
+}
+
+#[test]
+fn intermediate_san_that_is_no_sequence_fails_in_webpki() {
+    rejected(
+        "bad-path-ca-san-not-a-sequence.exe",
+        "fixtures/path-root.der",
+        ErrorCode::CertificateChainInvalid,
+        Stage::CertificateChain,
+        "BadDer",
+    );
+}
+
+#[test]
+fn malformed_extension_in_the_leaf_fails_the_path() {
+    malformed_extension_fails_the_path("leaf");
+}
+
+#[test]
+fn malformed_extension_in_an_intermediate_fails_the_path() {
+    malformed_extension_fails_the_path("ca");
+}
+
+#[test]
+fn malformed_intermediate_is_passed_over_for_a_valid_issuer() {
+    selected(
+        "good-path-ca-malformed-first.exe",
+        "fixtures/path-root.der",
+        &["leaf", "issuer", "root"],
+    );
+}
+
+#[test]
+fn non_ascii_ia5_string_in_the_leaf_san_fails_the_path() {
+    let output = run("bad-path-leaf-san-non-ascii.exe", "fixtures/path-root.der");
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["details"]["reason"], "malformed_extension", "{error}");
+    assert_eq!(error["details"]["extension"], "2.5.29.17", "{error}");
+}
+
+#[test]
+fn unreportable_malformed_intermediate_fails_the_signature() {
+    let output = run(
+        "bad-path-ca-malformed-bc-first.exe",
+        "fixtures/path-root.der",
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_certificate", "{error}");
+    assert_eq!(error["stage"], "certificate", "{error}");
+}
+
+#[test]
+fn malformed_duplicate_is_not_blamed_for_an_untrusted_root() {
+    let output = run(
+        "good-path-ca-malformed-first.exe",
+        "fixtures/path-other-root.der",
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "untrusted_root", "{error}");
+    assert_eq!(error["stage"], "certificate_chain", "{error}");
+    assert!(error["details"].get("reason").is_none(), "{error}");
+}
+
+#[test]
+fn integrity_only_builds_no_path_so_a_malformed_signer_extension_verifies() {
+    // PATH-013 judges path certificates; integrity-only builds no path, as
+    // OpenSSL checks no extension without path verification (PATH-T010).
+    let output = run_fixture(
+        "bad-path-leaf-malformed-ski.exe",
+        &["verify", "--integrity-only", "--time", "1800000000"],
+    );
+    assert_eq!(output.exit_code, 0, "{}", output.json);
+    let signature = &output.json["results"][0]["signatures"][0];
+    assert_eq!(signature["chain_trusted"], false);
+}
+
+#[test]
+fn malformed_intermediate_is_reported_before_its_revocation() {
+    // As OpenSSL's verify_chain runs check_extensions before
+    // check_revocation; crl-path-root-revoked-issuer.crl revokes the CA's
+    // serial, which the malformed CA shares.
+    let output = run_fixture(
+        "bad-path-ca-malformed-ski.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/path-root.der",
+            "--time",
+            "1800000000",
+            "--crl",
+            "fixtures/path-issuer.crl",
+            "--crl",
+            "fixtures/crl-path-root-revoked-issuer.crl",
+        ],
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["details"]["reason"], "malformed_extension", "{error}");
+}
+
+#[test]
+fn malformed_ca_is_not_blamed_for_an_untrusted_root() {
+    let output = run(
+        "bad-path-ca-malformed-ski.exe",
+        "fixtures/path-other-root.der",
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "untrusted_root", "{error}");
+    assert!(error["details"].get("reason").is_none(), "{error}");
+}
+
+#[test]
+fn malformed_candidate_outranks_a_missing_key_cert_sign() {
+    let output = run("bad-path-ca-ku-and-malformed.exe", "fixtures/path-root.der");
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["details"]["reason"], "malformed_extension", "{error}");
+    assert_eq!(error["details"]["extension"], "2.5.29.14", "{error}");
+}
+
+#[test]
+fn malformed_ca_of_an_unrelated_chain_is_not_blamed() {
+    let output = run(
+        "bad-path-unrelated-malformed-issuer.exe",
+        "fixtures/path-root.der",
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "untrusted_root", "{error}");
+    assert!(error["details"].get("reason").is_none(), "{error}");
+}
+
+fn malformed_extension_of_another_format_fails_the_path(input: &str, extension: &str) {
+    let output = run_fixture(
+        input,
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            "fixtures/good.crl",
+            "--time",
+            "1800000000",
+        ],
+    );
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["stage"], "certificate_chain", "{error}");
+    assert_eq!(error["details"]["reason"], "malformed_extension", "{error}");
+    assert_eq!(error["details"]["extension"], extension, "{error}");
+}
+
+#[test]
+fn malformed_extension_in_an_rdp_signer_fails_the_path() {
+    malformed_extension_of_another_format_fails_the_path("bad-rdp-malformed-eku.rdp", "2.5.29.37");
+}
+
+#[test]
+fn malformed_extension_in_a_tsa_certificate_fails_the_path() {
+    malformed_extension_of_another_format_fails_the_path("tsa-malformed-ski.exe", "2.5.29.14");
+}
+
 #[test]
 fn bad_path_pathlen() {
     rejected(

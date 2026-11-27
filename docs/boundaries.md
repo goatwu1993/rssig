@@ -40,6 +40,12 @@ normalization and the other RFC 4518 steps are not applied on purpose, so rssig
 matches fewer names than RFC 5280 section 7.1 requires: a CRL whose issuer
 differs from the certificate's only that way is not matched, and the status is
 `revocation_unknown`. A name with a UniversalString does not decode (PATH-T006).
+A leaf or intermediate whose basicConstraints, keyUsage, extKeyUsage,
+subjectAltName, nameConstraints, cRLDistributionPoints, subjectKeyIdentifier or
+authorityKeyIdentifier does not decode fails the path
+([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path));
+other extensions are not decoded, so a malformed one is unfamiliar (PATH-006),
+and a configured root's extensions are not judged (PATH-011).
 
 Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to

@@ -62,6 +62,27 @@ impl TrustStore {
         self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
             + self.crls.iter().map(Vec::len).sum::<usize>()
     }
+    /// PATH-013 for the signer, which is on every path: a signer whose
+    /// extension does not decode fails before any path is built. A format
+    /// that reads the signer's extensions before `verify` calls this first;
+    /// without a configured root it passes, so that `verify` reports that
+    /// first for every format.
+    pub(crate) fn check_signer(&self, leaf: &Certificate, budget: &Budget) -> Result<()> {
+        if self.roots.is_empty() {
+            return Ok(());
+        }
+        charge_extensions(leaf, budget)?;
+        let Some(oid) = malformed_extension(leaf) else {
+            return Ok(());
+        };
+        // A leaf whose basicConstraints, keyUsage or extKeyUsage does not
+        // decode has no report.
+        let mut error = malformed_extension_error(leaf, oid);
+        if let Ok(report) = CertificateReport::parse(leaf) {
+            error = error.detail("certificate", report);
+        }
+        Err(error.into())
+    }
     /// Build and validate the signer's chain to a configured root, checking
     /// revocation per certificate on each candidate path when requested.
     pub(crate) fn verify(&self, request: ChainRequest<'_>, budget: &Budget) -> Result<TrustReport> {
@@ -88,6 +109,7 @@ impl TrustStore {
             )
             .into());
         }
+        self.check_signer(leaf, budget)?;
         let requirements = SignerRequirements::check(leaf, eku, signing_time, now)?;
         if let Some(at) = issued_after(leaf, requirements.lifetime_signed_at) {
             return Err(requirements.not_valid_at_signing(leaf, at).into());
@@ -486,6 +508,9 @@ struct PathState {
     invalid_ca_usage: bool,
     /// The first CA found issued after the lifetime signing time.
     issued_after_signing: Option<Certificate>,
+    /// The first intermediate found on a candidate path with an extension
+    /// that does not decode, and that extension (PATH-013).
+    malformed_extension: Option<(Certificate, ::der::asn1::ObjectIdentifier)>,
 }
 
 impl PathState {
@@ -530,6 +555,30 @@ struct PathEvaluator<'a, 'b> {
 impl PathEvaluator<'_, '_> {
     fn check(&self, path: &webpki::VerifiedPath<'_>) -> core::result::Result<(), webpki::Error> {
         let path_certificates = self.path_certificates(path)?;
+        // PATH-013: webpki has linked this path to a configured root, so an
+        // intermediate whose extension does not decode is what rejects it.
+        // The signer was judged before any path was built.
+        for cert in &path_certificates[1..] {
+            charge_extensions(cert, self.budget).map_err(|_| webpki::Error::BadDer)?;
+        }
+        if let Some((cert, oid)) = path_certificates[1..]
+            .iter()
+            .find_map(|cert| Some((cert, malformed_extension(cert)?)))
+        {
+            self.budget.log.debug(
+                Stage::CertificateChain,
+                format_args!(
+                    "candidate path rejected: intermediate {:?} has extension {oid} that \
+                     does not decode",
+                    cert.tbs_certificate.subject.to_string()
+                ),
+            );
+            self.state
+                .borrow_mut()
+                .malformed_extension
+                .get_or_insert_with(|| (cert.clone(), oid));
+            return Err(MALFORMED_INTERMEDIATE);
+        }
         // The other path checks are judged first but applied after
         // revocation, as webpki checked revocation while verifying the
         // path's signatures: only a path that would pass it can still be
@@ -717,6 +766,12 @@ fn path_error(
     requirements: &SignerRequirements,
     leaf_report: &CertificateReport,
 ) -> VerificationError {
+    // Only the path callback returns MALFORMED_INTERMEDIATE, and it records
+    // why first; webpki cannot, as paths are built without revocation.
+    debug_assert!(
+        e != MALFORMED_INTERMEDIATE || state.malformed_extension.is_some(),
+        "MALFORMED_INTERMEDIATE without a recorded intermediate"
+    );
     // webpki ranks another path's validity error above unknown revocation
     // status, but a path that passes every path check and only lacks CRLs
     // is the one a CRL could complete: it outranks every other path's error,
@@ -769,6 +824,14 @@ fn path_error(
             Stage::CertificateChain,
             "intermediate certificate KeyUsage lacks keyCertSign",
         )
+    } else if let (&MALFORMED_INTERMEDIATE, Some((cert, oid))) = (&e, &state.malformed_extension) {
+        // The path callback rejected a path through an intermediate whose
+        // extension does not decode (PATH-013).
+        malformed_extension_error(cert, *oid)
+    } else if e == MALFORMED_INTERMEDIATE {
+        // Not reached (see the assertion above); never reported as a CRL
+        // error if it is.
+        webpki_error(webpki::Error::UnknownIssuer)
     } else {
         webpki_error(e)
     };
@@ -1020,6 +1083,86 @@ fn crl_may_apply(bytes: &[u8], issuer_names: &[ComparableName]) -> bool {
         .and_then(|name| name.to_der().ok())
         .map(ComparableName::new)
         .is_none_or(|issuer| issuer_names.iter().any(|name| name.matches(&issuer)))
+}
+
+/// The error the path callback rejects a path with for an intermediate whose
+/// extension does not decode (PATH-013). webpki returns trailing data in a
+/// revoked-certificate entry only while parsing a CRL (`crl/types.rs`), never
+/// while building a path, so it names only the callback's rejection. webpki
+/// ranks it (40) below its search limits, so an unfinished search is still
+/// reported as one, and above `BadDer` and the callback's `UnknownIssuer`.
+const MALFORMED_INTERMEDIATE: webpki::Error =
+    webpki::Error::TrailingData(webpki::DerTypeId::RevokedCertEntry);
+
+/// PATH-013: the first extension of `cert` that rssig or webpki decodes and
+/// whose value does not decode as that extension. OpenSSL and BoringSSL mark
+/// such a certificate invalid; an extension neither decodes is PATH-006's.
+fn malformed_extension(cert: &Certificate) -> Option<::der::asn1::ObjectIdentifier> {
+    use ::der::{Decode, asn1::ObjectIdentifier};
+    use x509_cert::ext::pkix::{
+        BasicConstraints, CrlDistributionPoints, ExtendedKeyUsage, KeyUsage, NameConstraints,
+        SubjectAltName,
+    };
+    /// Whether `value` decodes as the extension `oid`; `None` for one
+    /// neither rssig nor webpki decodes.
+    fn decodes(oid: ObjectIdentifier, value: &[u8]) -> Option<bool> {
+        fn as_type<T: for<'a> Decode<'a>>(value: &[u8]) -> Option<bool> {
+            Some(T::from_der(value).is_ok())
+        }
+        match oid {
+            BasicConstraints::OID => as_type::<BasicConstraints>(value),
+            KeyUsage::OID => as_type::<KeyUsage>(value),
+            ExtendedKeyUsage::OID => as_type::<ExtendedKeyUsage>(value),
+            SubjectAltName::OID => as_type::<SubjectAltName>(value),
+            NameConstraints::OID => as_type::<NameConstraints>(value),
+            CrlDistributionPoints::OID => as_type::<CrlDistributionPoints>(value),
+            SubjectKeyIdentifier::OID => as_type::<SubjectKeyIdentifier>(value),
+            AuthorityKeyIdentifier::OID => as_type::<AuthorityKeyIdentifier>(value),
+            _ => None,
+        }
+    }
+    cert.tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| decodes(e.extn_id, e.extn_value.as_bytes()) == Some(false))
+        .map(|e| e.extn_id)
+}
+
+/// Charge the decode of `cert`'s extension values to the decode budget.
+fn charge_extensions(cert: &Certificate, budget: &Budget) -> Result<()> {
+    let len = cert
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .map(|e| e.extn_value.as_bytes().len())
+        .sum();
+    budget.decoded_bytes.charge(len)?;
+    Ok(())
+}
+
+/// PATH-013's failure for `cert`, whose extension `oid` does not decode.
+fn malformed_extension_error(
+    cert: &Certificate,
+    oid: ::der::asn1::ObjectIdentifier,
+) -> VerificationError {
+    let error = VerificationError::new(
+        ErrorCode::CertificateChainInvalid,
+        Stage::CertificateChain,
+        format!("certificate extension {oid} does not decode"),
+    )
+    .detail("reason", "malformed_extension")
+    .detail("extension", oid.to_string());
+    // Hashed as the certificate report hashes it, so it matches that report's
+    // `sha256`; left out for one that does not re-encode.
+    match cert.to_der() {
+        Ok(der) => error.detail(
+            "certificate_sha256",
+            crate::domain::hex(&crate::crypto::Hash::Sha256.digest(&der)),
+        ),
+        Err(_) => error,
+    }
 }
 
 /// A path-check failure other than revocation, judged without side effects.
@@ -3252,5 +3395,82 @@ mod revocation_reporting {
             Some(&names(Some(name("CN=Root")), Some(vec![3]))),
             &same_anchor
         ));
+    }
+}
+
+/// PATH-013: which extensions are judged, and what decodes.
+#[cfg(test)]
+mod malformed_extensions {
+    use super::*;
+
+    #[test]
+    fn only_the_extensions_rssig_or_webpki_decode_are_judged() {
+        let issuer = include_bytes!("../../tests/fixtures/path-issuer.der");
+        let issuer = Certificate::from_der(issuer).unwrap();
+        assert_eq!(malformed_extension(&issuer), None);
+        let with = |oid: &str, value: &[u8]| {
+            let mut cert = issuer.clone();
+            let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
+            extensions.retain(|e| e.extn_id.to_string() != oid);
+            extensions.push(x509_cert::ext::Extension {
+                extn_id: oid.parse().unwrap(),
+                critical: false,
+                extn_value: ::der::asn1::OctetString::new(value).unwrap(),
+            });
+            cert
+        };
+        let malformed = [0x30, 0x02, 0x05, 0x00];
+        for oid in [
+            "2.5.29.19",
+            "2.5.29.15",
+            "2.5.29.37",
+            "2.5.29.17",
+            "2.5.29.30",
+            "2.5.29.31",
+            "2.5.29.14",
+            "2.5.29.35",
+        ] {
+            assert_eq!(
+                malformed_extension(&with(oid, &malformed)),
+                Some(oid.parse().unwrap()),
+                "{oid}"
+            );
+        }
+        // An extension neither decodes is PATH-006's, however malformed.
+        for oid in ["2.5.29.32", "1.3.6.1.5.5.7.1.1", "1.2.3.4.5"] {
+            assert_eq!(malformed_extension(&with(oid, &malformed)), None, "{oid}");
+        }
+        // Well-formed values of the judged extensions pass.
+        let ski = with("2.5.29.14", &[0x04, 0x01, 0x07]);
+        let san = with("2.5.29.17", &[0x30, 0x03, 0x82, 0x01, b'a']);
+        assert_eq!(malformed_extension(&ski), None);
+        assert_eq!(malformed_extension(&san), None);
+        // An IA5String holds 7-bit characters only.
+        let non_ascii = with("2.5.29.17", &[0x30, 0x03, 0x81, 0x01, 0xe9]);
+        assert!(malformed_extension(&non_ascii).is_some());
+        // x509-cert bounds what OpenSSL does not (PATH-013, "Not followed"):
+        // an authorityCertSerialNumber of 25 octets. A ReasonFlags bit past
+        // aACompromise still decodes, as in OpenSSL.
+        let mut aki = vec![
+            0x30, 0x21, 0xa1, 0x04, 0xa4, 0x02, 0x30, 0x00, 0x82, 0x19, 0x01,
+        ];
+        aki.extend([0x02; 24]);
+        assert!(malformed_extension(&with("2.5.29.35", &aki)).is_some());
+        let mut short = vec![
+            0x30, 0x0d, 0xa1, 0x04, 0xa4, 0x02, 0x30, 0x00, 0x82, 0x05, 0x01,
+        ];
+        short.extend([0x02; 4]);
+        assert_eq!(malformed_extension(&with("2.5.29.35", &short)), None);
+        let reasons = |last: u8| [0x30, 0x07, 0x30, 0x05, 0x81, 0x03, 0x07, 0x00, last];
+        assert_eq!(
+            malformed_extension(&with("2.5.29.31", &reasons(0x80))),
+            None
+        );
+        let past = [0x30, 0x07, 0x30, 0x05, 0x81, 0x03, 0x06, 0x00, 0x40];
+        assert_eq!(malformed_extension(&with("2.5.29.31", &past)), None);
+        // x509-cert has no x400Address [3] choice, which OpenSSL reads
+        // (PATH-T012).
+        let x400 = with("2.5.29.17", &[0x30, 0x04, 0xa3, 0x02, 0x30, 0x00]);
+        assert!(malformed_extension(&x400).is_some());
     }
 }

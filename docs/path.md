@@ -35,6 +35,7 @@ Observed ones. A new entry takes the next free number.
 | [PATH-010](#path-010-cross-signed-paths-lead-to-the-configured-root) | Cross-signed paths lead to the configured root | Decided | acceptance |
 | [PATH-011](#path-011-configured-anchors-are-keys) | Configured anchors are keys | Decided | acceptance |
 | [PATH-012](#path-012-the-reported-anchor-is-the-one-whose-constraints-accepted-the-path) | The reported anchor is the one whose constraints accepted the path | Decided | diagnostics |
+| [PATH-013](#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path) | A path certificate whose extension does not decode fails the path | Decided | acceptance |
 
 ## Tier 1: fail-open
 
@@ -145,6 +146,128 @@ do not.
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.2.1.3.
+
+### PATH-013: A path certificate whose extension does not decode fails the path
+
+An extension that rssig or webpki decodes (basicConstraints, keyUsage,
+extKeyUsage, subjectAltName, nameConstraints, cRLDistributionPoints,
+subjectKeyIdentifier or authorityKeyIdentifier) whose value does not decode as
+that extension, critical or not, fails the path when it is in the signing leaf
+or an intermediate. A value decodes as DER of the extension's ASN.1 type,
+string contents included, so an IA5String (a dNSName, rfc822Name or URI) with
+a byte above 0x7F does not decode.
+
+- The signer is on every path, so it fails before any path is built (after
+  the check for a configured root): `certificate_chain_invalid` at
+  `certificate_chain`, with `details.reason` `malformed_extension`,
+  `details.extension` its OID and `details.certificate_sha256` the signer.
+- An intermediate rejects each candidate path through it, and path building
+  goes on (PATH-009). rssig rejects the path in its path callback, which
+  webpki calls only for a path it has linked by signature to a configured
+  root, so the error names the intermediate (with the same `reason`,
+  `extension` and `certificate_sha256`) only when it is what kept such a path
+  from being accepted, and no other candidate path failed for a reason webpki
+  ranks higher (it reports the most specific failure); a path that reaches no
+  root stays `untrusted_root`. The rejection is logged at debug level either
+  way.
+  webpki itself rejects, before the callback, an intermediate whose
+  basicConstraints, extKeyUsage or nameConstraints does not decode, and one
+  whose subjectAltName or cRLDistributionPoints is not a SEQUENCE at all (it
+  keeps those two only as a SEQUENCE): that failure is
+  `certificate_chain_invalid` at `certificate_chain` with webpki's message
+  (`BadDer`) and no `details.reason`.
+- A path through such an intermediate is rejected before its revocation and
+  other path checks are judged, as OpenSSL's `verify_chain` runs
+  `check_extensions` before `check_revocation` (`x509_vfy.c`): a revoked
+  malformed intermediate is reported as the malformed extension.
+- As in every chain error, `details.certificate` is the signer's report,
+  left out when the signer is the malformed certificate and its report cannot
+  be built. The signer's own failure is judged before any usage, so it has no
+  `required_eku`, `lifetime_signing` or `signing_time` detail.
+- When one candidate lacks keyCertSign and another is rejected for a
+  malformed extension, the malformed extension is reported: webpki ranks the
+  callback's rejection above the unknown issuer a missing keyCertSign is
+  reported through (PATH-T007 tracks that shared flag).
+- The rule holds for a timestamp signer's chain too, with the same code and
+  stage.
+- Integrity-only verification builds no path, so the rule does not apply
+  there, as OpenSSL checks no extension without path verification: a signer
+  whose subjectKeyIdentifier does not decode verifies. One whose
+  basicConstraints, keyUsage or extKeyUsage does not decode still fails, as
+  its report cannot be built, until PATH-T010.
+- Every embedded certificate is also reported, and the report of one whose
+  basicConstraints, keyUsage or extKeyUsage does not decode cannot be built,
+  so a signature that embeds one fails with `invalid_certificate` at
+  `certificate` even when the path goes around it (PATH-T010).
+- A configured root is a key (PATH-011): its extensions are not judged, and
+  one whose subjectKeyIdentifier does not decode still reads as having none
+  (CRL-042).
+
+- **Status:** Decided
+- **Decided by:** owner, PR #97 (PATH-T002)
+- **Pins:** acceptance
+- **Sources:**
+  - OpenSSL 3.3 (7f736187) `crypto/x509/v3_purp.c:401-587`
+    (`ossl_x509v3_cache_extensions` marks the certificate `EXFLAG_INVALID`
+    when basicConstraints (454), keyUsage (490), extKeyUsage (534),
+    subjectKeyIdentifier (552), authorityKeyIdentifier (556), subjectAltName
+    (571), nameConstraints (574) or cRLDistributionPoints (577-579) is present
+    and does not decode), `v3_purp.c:961-973` (`ossl_x509_likely_issued` fails
+    when either certificate is invalid, so neither the leaf nor a CA can be
+    linked to an issuer) and `crypto/x509/x509_vfy.c:545-561`
+    (`X509_check_ca` is 0 for an invalid CA: `X509_V_ERR_INVALID_CA`).
+    BoringSSL (289645a4) `crypto/x509/v3_purp.cc:255-419` does the same for
+    the same eight (307, 323, 371, 377, 382, 396, 401, 404) and
+    `v3_purp.cc:429-438` (`X509_check_issued`). Both agree with rssig on
+    which extensions are judged; their decoders are more lenient in what
+    decodes (below).
+  - Bouncy Castle (bb81bfa7) rejects basicConstraints and keyUsage when it
+    builds the certificate (`X509CertificateObject.java:311-356`),
+    subjectAltName and nameConstraints in path validation
+    (`RFC3280CertPathUtilities.java:1015-1022`, `1505-1512`) and
+    cRLDistributionPoints when it checks revocation (`1765-1773`). Its
+    validator does not read extKeyUsage (left to the caller),
+    subjectKeyIdentifier or authorityKeyIdentifier: it differs for those
+    three, where rssig takes OpenSSL's and BoringSSL's stricter reading.
+  - webpki 0.103.16 `cert.rs` (`remember_cert_extension`) requires a
+    SEQUENCE for each extension it keeps except keyUsage and decodes
+    basicConstraints and extKeyUsage on every certificate and nameConstraints
+    on a CA (`verify_cert.rs`, `check_issuer_independent_properties`); it
+    does not decode subjectKeyIdentifier or authorityKeyIdentifier, nor
+    subjectAltName or cRLDistributionPoints past their outer SEQUENCE
+    without name constraints or its own revocation check, which rssig does
+    not use.
+  - Not followed: OpenSSL decodes an IA5String without checking its
+    characters (`crypto/asn1/tasn_dec.c:930-977`, `asn1_ex_c2i` copies the
+    bytes), so it accepts a subjectAltName or cRLDistributionPoints name
+    holding a byte above 0x7F. rssig's decoder (`der` 0.7, `Ia5StringRef`)
+    rejects it: X.680 defines IA5String as the 7-bit IA5 set, so the value is
+    malformed, and rssig takes the fail-closed reading.
+  - Not followed: rssig decodes each value with `x509-cert` 0.2 as strict
+    DER, as RFC 5280 section 4.1 requires of a certificate; OpenSSL's d2i
+    also accepts some BER (a BOOLEAN TRUE other than 0xFF, a non-minimal
+    INTEGER). And `x509-cert`'s DirectoryString has no BMPString or
+    UniversalString, so an ediPartyName in a subjectAltName,
+    authorityKeyIdentifier or cRLDistributionPoints that uses one does not
+    decode, where OpenSSL accepts it; nor does an authorityKeyIdentifier whose
+    authorityCertSerialNumber is longer than `x509-cert`'s 20-octet serial
+    bound allows. `x509-cert`'s GeneralName has no x400Address [3] choice,
+    so a subjectAltName, nameConstraints, authorityKeyIdentifier or
+    cRLDistributionPoints name that is one does not decode, where OpenSSL
+    reads it (`GEN_X400`); PATH-T012 tracks reading it. Such a certificate
+    fails the path in rssig and not in OpenSSL; the non-ASCII IA5String case
+    and the unit test
+    `only_the_extensions_rssig_or_webpki_decode_are_judged` pin this class.
+  - Not followed: OpenSSL also marks a malformed proxyCertInfo, Netscape
+    certificate type or RFC 3779 extension invalid, and an empty keyUsage.
+    rssig decodes none of them, so they are unfamiliar extensions (PATH-006);
+    a keyUsage without bits decodes and is judged by PATH-008.
+- **Note:** Before this entry a malformed basicConstraints, keyUsage or
+  extKeyUsage already failed the path from either certificate, and a
+  nameConstraints from an intermediate, with a message from the decoder and no
+  `details.reason`; the others, and nameConstraints in the leaf, read as
+  absent and the path stood. The configured root is exempt as every anchor
+  rule is (PATH-011); OpenSSL also judges a root it finds in its store.
 
 ## Tier 2: availability
 

@@ -64,9 +64,19 @@ they pin or what they check, never after a task.
 ### PATH
 
 - [x] **PATH-T001** fix: Expand certificate-path rule coverage. Done; [record](docs/tasks/done.md#path-t001-fix-expand-certificate-path-rule-coverage).
-- [ ] **PATH-T002** fix: Decide whether a malformed extension in a CA certificate fails the path.
-  OpenSSL and BoringSSL do; rssig reads it as absent (CRL-042). Detail in
-  [path-t002.md](docs/tasks/path-t002.md).
+- [x] **PATH-T002** fix: Decide whether a malformed extension in a CA certificate fails the path. Done ([PR #97](https://github.com/goatwu1993/rssig/pull/97)); [PATH-013](docs/path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path).
+- [ ] **PATH-T010** fix: Report an embedded certificate whose extension does not decode instead of failing the signature.
+  Owner decision: follow OpenSSL. Detail in [path-t010.md](docs/tasks/path-t010.md).
+- [ ] **PATH-T011** test: Pin how the PATH-013 callback rejection ranks against webpki's errors.
+  Detail in [path-t011.md](docs/tasks/path-t011.md).
+- [ ] **PATH-T012** fix: Read an x400Address in a certificate's GeneralNames.
+  `x509-cert` 0.2 has no x400Address [3] choice, so since PATH-013 a path
+  certificate whose subjectAltName (or another GeneralNames) holds one fails
+  the path, where OpenSSL reads it (`GEN_X400`; found in PR #97).
+- [ ] **PATH-T013** fix: Fail the path on a certificate that repeats an extension.
+  RFC 5280 section 4.2 allows one instance of an extension; OpenSSL and
+  BoringSSL mark a repeat invalid. webpki rejects a repeat only of the
+  extensions it keeps, so two subjectKeyIdentifiers pass (found in PR #97).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
@@ -213,6 +223,10 @@ they pin or what they check, never after a task.
 
 - [x] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback. Done in #89; [record](docs/tasks/done.md#rdp-t001-fix-keep-the-outer-errors-causes-on-the-rdp-revocation-fallback).
 - [x] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. Done; [record](docs/tasks/done.md#rdp-t004-test-cover-rdp-usage-failure-causes-through-rssigclirun).
+- [ ] **RDP-T005** fix: Report `untrusted_root` before reading the signer's EKU.
+  With trust on and no configured root, an RDP signer whose extKeyUsage does
+  not decode fails reading the EKU in `rdp::verify_trust`, where every other
+  format reports `untrusted_root` first (found in PR #97).
 
 ## P1 — Clean parse/verify interfaces
 

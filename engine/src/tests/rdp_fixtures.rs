@@ -481,6 +481,28 @@ fn write_eku_retry_fixture(dir: &std::path::Path) {
         &[],
     ));
     std::fs::write(dir.join("good-rdp-multiple-ekus.rdp"), bytes).unwrap();
+    // PATH-013: the same signer with an extKeyUsage that does not decode.
+    let mut malformed = cert.clone();
+    malformed
+        .tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|e| e.extn_id.to_string() == "2.5.29.37")
+        .unwrap()
+        .extn_value = ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap();
+    let signature: Signature = identity()
+        .root_key
+        .sign(&malformed.tbs_certificate.to_der().unwrap());
+    malformed.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let bytes = frame(&envelope(
+        &malformed,
+        crypto::Hash::Sha256,
+        &ec_signer(&malformed, false),
+        &[],
+    ));
+    std::fs::write(dir.join("bad-rdp-malformed-eku.rdp"), bytes).unwrap();
 }
 
 /// A signer with codeSigning and serverAuth under a CA whose own EKU admits

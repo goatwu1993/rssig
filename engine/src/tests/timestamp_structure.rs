@@ -36,6 +36,8 @@ pub(super) const FAULTS: &[&str] = &[
     "counter-eku-mixed",
     "counter-eku-missing",
     "counter-key-usage",
+    // PATH-013: a TSA certificate whose subjectKeyIdentifier does not decode.
+    "malformed-ski",
 ];
 
 fn artifact(fault: &str) -> Vec<u8> {
@@ -48,9 +50,19 @@ fn artifact(fault: &str) -> Vec<u8> {
         "duplicate-eku-rfc" | "duplicate-eku-counter" => "eku-missing",
         other => other.strip_prefix("counter-").unwrap_or(other),
     };
-    if policy_fault.starts_with("eku-") || policy_fault == "key-usage" {
+    if policy_fault.starts_with("eku-")
+        || policy_fault == "key-usage"
+        || policy_fault == "malformed-ski"
+    {
         let exts = tsa.cert.tbs_certificate.extensions.as_mut().unwrap();
-        if policy_fault == "eku-missing" {
+        if policy_fault == "malformed-ski" {
+            exts.retain(|e| e.extn_id.to_string() != "2.5.29.14");
+            exts.push(x509_cert::ext::Extension {
+                extn_id: "2.5.29.14".parse().unwrap(),
+                critical: false,
+                extn_value: ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap(),
+            });
+        } else if policy_fault == "eku-missing" {
             exts.retain(|e| e.extn_id.to_string() != "2.5.29.37");
         } else if policy_fault == "key-usage" {
             let ext = exts

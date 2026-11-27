@@ -6800,6 +6800,21 @@
       ]
     },
     {
+      "file": "bad-rdp-malformed-eku.rdp",
+      "sha256": "0e7bfa0a30f646f4d00319eab209761b5c12e6e7552b11f7f358d1c686bb844b",
+      "bytes": 1482,
+      "description": "PATH-013 RDP signed settings; the signer of good-rdp-multiple-ekus.rdp with its extKeyUsage value replaced by SEQUENCE { NULL } and re-signed. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "generator": "engine/src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
+        "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Existing deterministic test root/key and RDP body; replace the leaf EKU extension and re-sign with the public test-only root key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "path-013-bad-rdp-leaf-malformed-eku"
+      ]
+    },
+    {
       "file": "good-rdp-eku-retry-ca.rdp",
       "sha256": "857b8a41463a9e80c31ca1f3adbf825ed3ab7069167fe4540de2ec3c7336a1f3",
       "bytes": 2102,
@@ -7132,6 +7147,362 @@
       },
       "cases": [
         "path-006-bad-ca-critical"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-bc.exe",
+      "sha256": "86a742242d90cbcb1a99dfe10a81c7d56270d46de792a57229bdf60c521b9dc9",
+      "bytes": 2200,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-bc"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-ku.exe",
+      "sha256": "9f45a59a01039b977bc8a1d8cae70af0ee475697be6d6dc0f9bee275c691285c",
+      "bytes": 2192,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-ku"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-eku.exe",
+      "sha256": "d1a8a2157401c9123a834e806e3f54764916205eb7e18acfe3879780f5d71928",
+      "bytes": 2184,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-eku"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-san.exe",
+      "sha256": "4b85d10cbf1b5c31e1ba55e53d7a9e28ac4f13607650dd1c9c27c9d634cc8ac6",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical subjectAltName extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-san"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-nc.exe",
+      "sha256": "9171849e6e7b505dcc6b501511e26e42aa7cc4ba6a6a53878307715cbf8d2ad8",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical NameConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-nc"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-crldp.exe",
+      "sha256": "64274bdb33a2f8b09b99a5964941f31cd0a41a89e9d279f1e8d843a56dcb85d0",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical cRLDistributionPoints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-crldp"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-ski.exe",
+      "sha256": "4fa5f1b744764a8b2ff04325dbf0efee1e6f3abd7a0a3b1bd6744c8e1da4cbda",
+      "bytes": 2184,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical subjectKeyIdentifier extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, which builds no path.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-ski",
+        "path-013-good-integrity-only-leaf-malformed-ski"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-malformed-aki.exe",
+      "sha256": "8a381a5d6ef2c1216d8374e02ed9bf13ce849947cc06de959bbd38db7b167138",
+      "bytes": 2176,
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical authorityKeyIdentifier extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-malformed-aki"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-bc.exe",
+      "sha256": "775dd6079586232aad45cabaadf5b6009800bc14586cd250857bb18b3fdf597e",
+      "bytes": 2192,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-bc"
+      ]
+    },
+    {
+      "file": "bad-path-ca-san-not-a-sequence.exe",
+      "sha256": "60d4aaaed617aa4bf882a73865fcc70560f96a28363b53b29875797c144f4db8",
+      "bytes": 2208,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical subjectAltName whose value is an empty OCTET STRING, not a SEQUENCE. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-san-not-a-sequence"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-ku.exe",
+      "sha256": "8410ebb5abe094b89ef246a4f9d4dbd7871bc85b9655cb927dc86756356c088d",
+      "bytes": 2200,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-ku"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-eku.exe",
+      "sha256": "0a7db251f0406761f58f508581f96378b5ce2fdbc75966778a5464d2088e7d65",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-eku"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-san.exe",
+      "sha256": "aab1bef27cd8a3cdd254e8828bf42639e971e08ec0185078f6aac6f726629bf2",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical subjectAltName extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-san"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-nc.exe",
+      "sha256": "3f1711da859a7e2bdfa727fb01c96ef87eaf93adc83005609c94b82c56328dcd",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical NameConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-nc"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-crldp.exe",
+      "sha256": "182fb7f37d57f4cd1a5d161dda36948c510a7a4b649dd1441ad2210ac3195daf",
+      "bytes": 2216,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical cRLDistributionPoints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-crldp"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-ski.exe",
+      "sha256": "0a37bdb0a9c88b5bb6d03d67155257ca7c8048c2ec17642761fbb724c5296a5e",
+      "bytes": 2184,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical subjectKeyIdentifier extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); untrusted_root at certificate_chain under a root that did not issue the intermediate; still malformed_extension when a root CRL revokes the intermediate.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-ski",
+        "path-013-bad-ca-malformed-ski-under-another-root",
+        "path-013-bad-ca-malformed-ski-revoked-reports-the-extension"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-aki.exe",
+      "sha256": "aeea3ca781f75d0fbf064d36848b49e318242da6ec33b7bfb30650d1c1e4b0d5",
+      "bytes": 2184,
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical authorityKeyIdentifier extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-aki"
+      ]
+    },
+    {
+      "file": "good-path-ca-malformed-first.exe",
+      "sha256": "45ad317513f2de800cb234e86ca11aabf19a51291b05ab9a678e8f60dcab0e80",
+      "bytes": 2576,
+      "description": "PATH-013 signed inert PE; two intermediate candidates of one name and key, the first carrying a noncritical subjectKeyIdentifier whose value is SEQUENCE { NULL }. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: trusted chain with CRL validation through the valid intermediate; untrusted_root at certificate_chain under a root that issued neither.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-good-ca-malformed-first",
+        "path-013-bad-ca-malformed-first-under-another-root"
+      ]
+    },
+    {
+      "file": "bad-path-ca-ku-and-malformed.exe",
+      "sha256": "9f2a7ebe74e73334faa1d722749717597db1b61f067c47e60935e28132d93fe4",
+      "bytes": 2576,
+      "description": "PATH-013 signed inert PE; two intermediate candidates of one name and key, the first with a noncritical subjectKeyIdentifier whose value is SEQUENCE { NULL }, the second with a KeyUsage lacking keyCertSign. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-ku-and-malformed-reports-the-extension"
+      ]
+    },
+    {
+      "file": "bad-path-ca-malformed-bc-first.exe",
+      "sha256": "b45934ab36c1b583c90396499f30e883507f23698fe869732fad9e2c6e658655",
+      "bytes": 2584,
+      "description": "PATH-013 signed inert PE; two intermediate candidates of one name and key, the first carrying a noncritical basicConstraints whose value is SEQUENCE { NULL }. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: invalid_certificate at certificate, as the first candidate cannot be reported.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-ca-malformed-bc-first"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-san-non-ascii.exe",
+      "sha256": "7dadd58bcf08cc6be8c11404743803172dac475f16c7fe09b9570980c0594c01",
+      "bytes": 2240,
+      "description": "PATH-013 signed inert PE; the signing leaf's subjectAltName holds an rfc822Name with the UTF-8 bytes C3 A9, which an IA5String cannot hold. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-leaf-san-non-ascii"
+      ]
+    },
+    {
+      "file": "bad-path-unrelated-malformed-issuer.exe",
+      "sha256": "b72380faacb2773840cece545d3c6aa2112349d0c71b6cd4cd11359d134364bb",
+      "bytes": 2600,
+      "description": "PATH-013 signed inert PE; the signer's issuer is not embedded, and the embedded certificates are an unrelated end-entity certificate and the CA that issued it, whose subjectKeyIdentifier value is SEQUENCE { NULL }. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: untrusted_root at certificate_chain, not blaming the malformed CA.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-013-bad-unrelated-malformed-issuer-is-not-blamed"
       ]
     },
     {
@@ -9154,6 +9525,18 @@
       "paired_good": "tsa-good.exe"
     },
     {
+      "file": "tsa-malformed-ski.exe",
+      "sha256": "b9bbf77ca92cb03e7b72519e0887c99d178d290a9cc68c1acbe50fcc75b071e6",
+      "bytes": 3720,
+      "description": "PATH-013: malformed-ski. The TSA certificate carries a noncritical subjectKeyIdentifier whose value is SEQUENCE { NULL }; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-013-bad-tsa-malformed-ski"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
       "file": "tsa-eku-mixed.exe",
       "sha256": "0302def880b576794559181d8fe9f98028330c21ce24ded1f3a414408e3f036f",
       "bytes": 3784,
@@ -10644,7 +11027,8 @@
         "crl-revoked-issuer-after-good-root-crl",
         "crl-revoked-issuer-before-good-root-crl",
         "crl-revoked-issuer-issuer-crl-first",
-        "crl-027-cross-revoked-path-beside-path-failing-key-usage-is-revoked"
+        "crl-027-cross-revoked-path-beside-path-failing-key-usage-is-revoked",
+        "path-013-bad-ca-malformed-ski-revoked-reports-the-extension"
       ]
     },
     {

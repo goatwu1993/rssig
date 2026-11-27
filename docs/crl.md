@@ -204,7 +204,7 @@ A named partition's listing counts only on a positive match with a fullName URI 
 - **Pins:** acceptance
 - **Sources:**
   - OpenSSL `crl_crldp_check`; Bouncy Castle processCRLB2.
-- **Note:** no spec case (no committed certificate has an undecodable extension).
+- **Note:** no spec case: since PATH-013 (PR #97) a path certificate whose cRLDistributionPoints does not decode fails the path before revocation is checked, so this rule, and the `certificate_distribution_points` reason, stay as a guard the unit tests pin.
 - **Unit tests:** `a_listing_counts_only_on_a_positive_scope_match`, `unreadable_certificate_points_never_discard_a_partition` in `engine/src/trust.rs`.
 
 ### CRL-011: Nothing is fetched for an input that cannot verify
@@ -614,15 +614,15 @@ A CRL is a candidate for a certificate when its issuer name matches the certific
 
 ### CRL-042: An issuer without a usable key identifier cannot disprove another key's CRL
 
-A CRL whose issuer is spelled as the certificate's issuer and that is signed by another key is set aside as another issuer's only when its authorityKeyIdentifier names a key identifier and the issuer's certificate carries a parseable subjectKeyIdentifier that differs, or names another certificate (CRL-043); one spelled differently is CRL-041's. An issuer certificate with no subjectKeyIdentifier, or one that does not parse, cannot disprove the match: the CRL is forged (`invalid_crl_signature`). Both outcomes reject.
+A CRL whose issuer is spelled as the certificate's issuer and that is signed by another key is set aside as another issuer's only when its authorityKeyIdentifier names a key identifier and the issuer's certificate carries a parseable subjectKeyIdentifier that differs, or names another certificate (CRL-043); one spelled differently is CRL-041's. An issuer certificate with no subjectKeyIdentifier, or a configured root whose subjectKeyIdentifier does not parse (in a path certificate it fails the path, PATH-013), cannot disprove the match: the CRL is forged (`invalid_crl_signature`). Both outcomes reject.
 
 - **Status:** Decided
-- **Decided by:** owner, PR #79
+- **Decided by:** owner, PR #79; narrowed to configured roots with PATH-013, PR #97
 - **Pins:** diagnostics
 - **Sources:**
   - OpenSSL 3.3 (7f736187) `crypto/x509/v3_purp.c:1007` (`X509_check_akid` compares key identifiers only when the issuer has one, so the check passes) and `crypto/x509/x509_vfy.c:1676` (a signature that then fails is `CRL_SIGNATURE_FAILURE`); BoringSSL (289645a4) `v3_purp.cc:453-460`, `x509_vfy.cc:491-499`. Both agree with rssig.
   - Bouncy Castle (bb81bfa7) `RFC3280CertPathUtilities.java:382-391` narrows candidate certificates by subjectKeyIdentifier and skips a CRL that fails to verify, then tries the next: it differs.
-  - A subjectKeyIdentifier that does not parse: OpenSSL (`v3_purp.c:550-552`) and BoringSSL (`v3_purp.cc:371-375`) mark the certificate invalid, which fails the path; rssig reads it as none. Both reject; whether a malformed extension in a CA certificate fails the path is a `PATH-` question.
+  - A subjectKeyIdentifier that does not parse: OpenSSL (`v3_purp.c:550-552`) and BoringSSL (`v3_purp.cc:371-375`) mark the certificate invalid, which fails the path. So does rssig for a path certificate (PATH-013), so only a configured root, which is a key (PATH-011), reads as having none here.
 - **Unit tests:** `only_a_differing_key_identifier_sets_a_failed_crl_aside` in `engine/src/trust.rs`.
 - **Note:** The owner kept rssig's rule, which OpenSSL and BoringSSL share: a CRL that cannot be shown to be another key's and fails its signature is forged, the fail-closed reading. Bouncy Castle's skip-and-try-the-next is looser.
 
