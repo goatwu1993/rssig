@@ -44,9 +44,9 @@ they pin or what they check, never after a task.
 - [ ] **LIMIT-T004** fix: Finish with the gathered evidence when an engine limit is reached.
   `retrieval_trust_bytes` and the other engine limits end the whole
   verification with `resource_limit_exceeded`, rather than recording the
-  remaining points and finishing with the evidence gathered. The case
-  `crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried` reaches
-  `retrieval_trust_bytes` and leaves the top-level code unpinned for this task.
+  remaining points and finishing with the evidence gathered. The decision
+  for the retrieval byte allowance, with its sources, is in
+  [docs/tasks/limit-t004.md](docs/tasks/limit-t004.md).
 
 ### CMS
 
