@@ -263,7 +263,10 @@ source, `rssig::crl::HttpCrlSource`, and `cli` includes it. The parser and
   whole response. Reusing an earlier answer is the source's. It returns a
   `CrlResponse` of zero or more `SourcedCrl` bodies (bytes, and optionally the
   URL and redirect target they came from) plus per-URL `failures`, or a
-  `CrlSourceError` for the whole request. Every error carries one of the four
+  `CrlSourceError` for the whole request. A body or failure naming a URL
+  answers the listed point it equals once both are normalized as URLs (the
+  WHATWG serialization of the `url` crate), so a source may report the
+  normalized form; the report keeps the source's spelling. Every error carries one of the four
   kinds above (`CrlSourceErrorKind`), a message, an optional URL and optional
   details. A source never returns a trust verdict.
 - The engine applies no transport rule: every listed URI, of any scheme, is

@@ -230,7 +230,7 @@
               "url": {
                 "type": "string",
                 "minLength": 1,
-                "description": "The URL the body is said to come from; omitted for a body offered by certificate or issuer (whether it counts as an answer by certificate is CRL-034's). The runner, not the schema, fails a case whose url is not one of the request's listed points."
+                "description": "The URL the body is said to come from; omitted for a body offered by certificate or issuer (whether it counts as an answer by certificate is CRL-034's). The runner, not the schema, fails a case whose url is not one of the request's listed points, spelled as listed or in its normalized form."
               }
             }
           },
@@ -286,7 +286,7 @@
         "url": {
           "type": "string",
           "minLength": 1,
-          "description": "The URL the failure names; omitted for one about the whole request. The runner, not the schema, fails a case whose url is not one of the request's listed points."
+          "description": "The URL the failure names; omitted for one about the whole request. The runner, not the schema, fails a case whose url is not one of the request's listed points, spelled as listed or in its normalized form."
         }
       }
     },

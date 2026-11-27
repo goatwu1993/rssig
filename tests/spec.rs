@@ -487,6 +487,16 @@ fn argv(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> V
     args
 }
 
+/// Whether a scripted URL names one of the listed points: spelled as listed,
+/// or equal to it after both are normalized as URLs (the WHATWG URL
+/// serialization, which the engine compares).
+fn names_a_listed_point(url: &str, points: &[String]) -> bool {
+    let normalized = |raw: &str| url::Url::parse(raw).ok().map(String::from);
+    points.iter().any(|point| {
+        point == url || normalized(url).is_some_and(|url| normalized(point) == Some(url))
+    })
+}
+
 fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -> CaseResult {
     let command = argv(case, parent, fixtures, fixture_prefix);
     let mut stdout = Vec::new();
@@ -534,14 +544,15 @@ fn execute(case: &Case, parent: &Path, fixtures: &Path, fixture_prefix: &Path) -
                 // A scripted URL that is no listed point of this request would
                 // turn a case about the point into one about a URL outside
                 // the request. A source may name one, but a case must not do
-                // it by accident.
+                // it by accident. A point may be named as listed or in its
+                // normalized form, which the engine matches too.
                 let unlisted = |url: &Option<String>| {
                     url.as_ref()
-                        .filter(|url| !request.distribution_points.contains(url))
+                        .filter(|url| !names_a_listed_point(url, request.distribution_points))
                         .map(|url| {
                             format!(
                                 "scripted url {url} is not a listed point of the request {:?} \
-                                 (spell it exactly as listed)",
+                                 (spell it as listed or in its normalized form)",
                                 request.distribution_points
                             )
                         })
@@ -1266,6 +1277,54 @@ fn specification_a_scripted_url_must_name_a_listed_point() {
         .filter(|f| f.contains("is not a listed point of the request"))
         .count();
     assert_eq!(reported, 1, "{:?}", result.failures);
+}
+
+/// The case that names its point by the normalized URL tests that only while
+/// its spelling differs from the listed one and normalizes to it: spelled as
+/// listed, it would pass as the exact-spelling case does, and spelled as some
+/// other point, the runner fails it.
+#[test]
+fn specification_a_point_named_by_its_normalized_url_is_spelled_otherwise() {
+    let parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
+    let fixtures = parent.join(&suite.fixtures);
+    let prefix = Path::new(&suite.fixtures);
+    let case = suite
+        .cases
+        .iter()
+        .find(|c| {
+            c.id == "crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it"
+        })
+        .unwrap();
+    let answers = case.crl_certificate_responses.as_ref().unwrap();
+    let Some(spec_suite::CertificateAnswer::Scripted(script)) = answers.values().next() else {
+        panic!("the case scripts its answer");
+    };
+    let urls: Vec<&str> = script
+        .failures
+        .iter()
+        .flatten()
+        .filter_map(|f| f.url.as_deref())
+        .collect();
+    let listed = "http://crl.example.invalid/test.crl";
+    assert_eq!(urls.len(), 1, "{urls:?}");
+    assert_ne!(urls[0], listed);
+    assert!(names_a_listed_point(urls[0], &[listed.to_owned()]));
+    // The runner accepts it, and the engine records the source's spelling.
+    let result = execute(case, &parent, &fixtures, prefix);
+    assert!(result.failures.is_empty(), "{:?}", result.failures);
+    // Another point, or a typo, is still no listed point.
+    for other in [
+        "http://crl.example.invalid/other.crl",
+        "http://crl2.example.invalid/test.crl",
+        "https://crl.example.invalid/test.crl",
+        "not a url",
+    ] {
+        assert!(
+            !names_a_listed_point(other, &[listed.to_owned()]),
+            "{other}"
+        );
+    }
 }
 
 /// The per-body limit is stated twice, in the schema and in the runner.
