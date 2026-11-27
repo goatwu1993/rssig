@@ -323,12 +323,13 @@ The manifest pins the bytes, SHA-256, provenance, and intended outcomes of the
 fixtures. `cases` links identify declarative cases; optional `tests` links point
 to additional native regressions. Neither fixture generation nor expected-output
 regeneration is part of ordinary tests or coverage, with one exception that
-never touches `tests/fixtures/`:
+writes nothing:
 `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
-runs the path fixture generator into a fresh scratch directory under the
-system temp directory (a library unit test has no `CARGO_TARGET_TMPDIR`), only
-to learn which PE names it writes, and removes it once the names are collected
-or the generator panics; it checks the committed bytes, not the generated ones.
+runs the path fixture generator in memory and requires that the files it
+generates are exactly those the manifest attributes to
+`regenerate_path_fixtures` and that each committed file holds the generated
+bytes. The generator is deterministic (fixed keys, RFC 6979 ECDSA), so a change
+to it fails this test until the fixtures are regenerated and reviewed.
 
 ### Manifest consistency
 
