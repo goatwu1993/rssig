@@ -197,3 +197,38 @@ fn an_ignored_crl_listing_is_logged_and_the_result_is_unchanged() {
     assert!(err.is_empty());
     assert!(capture.has(Level::Warn, Stage::Revocation, "not counted"));
 }
+
+#[test]
+fn cli_logger_records_a_candidate_path_rejected_for_a_malformed_extension() {
+    // PATH-013 with PATH-009: the malformed duplicate is offered first and
+    // rejected by the path callback before the valid issuer is chosen.
+    let (input, root) = (
+        fixture("good-path-ca-malformed-first.exe"),
+        fixture("path-root.der"),
+    );
+    let crls = ["path-root.crl", "path-issuer.crl"].map(fixture);
+    let args = [
+        "rssig",
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        &root,
+        "--time",
+        "1800000000",
+        "--crl",
+        &crls[0],
+        "--crl",
+        &crls[1],
+        &input,
+    ];
+    let capture = Capture::default();
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    let code =
+        cli::run_with_host(args, &mut out, &mut err, Host::new().with_logger(&capture)).unwrap();
+    assert_eq!(code, 0, "{}", String::from_utf8_lossy(&out));
+    assert!(capture.has(
+        Level::Debug,
+        Stage::CertificateChain,
+        "extension 2.5.29.14 that does not decode"
+    ));
+}

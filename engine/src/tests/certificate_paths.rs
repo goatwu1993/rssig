@@ -23,6 +23,20 @@ const ISSUER_POINT: &str = "http://crl.invalid/sec10-issuer.crl";
 /// The PATH-T001 issuer certificate's serial, revoked by
 /// `crl-path-root-revoked-issuer.crl`.
 const ISSUER_SERIAL: u32 = 110;
+/// PATH-013: the extensions rssig or webpki decode in a path certificate,
+/// each given a value that is one well-formed DER element of the wrong type.
+const MALFORMED_EXTENSIONS: [(&str, &str); 8] = [
+    ("bc", "2.5.29.19"),
+    ("ku", "2.5.29.15"),
+    ("eku", "2.5.29.37"),
+    ("san", "2.5.29.17"),
+    ("nc", "2.5.29.30"),
+    ("crldp", "2.5.29.31"),
+    ("ski", "2.5.29.14"),
+    ("aki", "2.5.29.35"),
+];
+/// SEQUENCE { NULL }: none of the extensions above decodes from it.
+const MALFORMED_VALUE: [u8; 4] = [0x30, 0x02, 0x05, 0x00];
 const PARTITIONS: [(&str, &str, bool); 5] = [
     ("match", LISTED_POINT, false),
     ("match-revoked", LISTED_POINT, true),
@@ -714,6 +728,106 @@ pub(super) fn write(dir: &std::path::Path) {
             &[ca.clone()],
         );
     }
+    for (label, oid) in MALFORMED_EXTENSIONS {
+        let mut changed_ca = ca.clone();
+        extension(&mut changed_ca, oid, false, Some(MALFORMED_VALUE.to_vec()));
+        sign(&mut changed_ca, &root_key);
+        if label == "ski" {
+            // PATH-013 with PATH-009: the malformed candidate comes first, and
+            // path building must go on to the valid issuer.
+            write_pe(
+                dir,
+                "good-path-ca-malformed-first",
+                &leaf,
+                &[changed_ca.clone(), ca.clone()],
+            );
+            // PATH-013 with PATH-008: one candidate lacks keyCertSign and the
+            // other has a malformed extension; the malformed extension is
+            // reported.
+            let mut no_cert_sign = ca.clone();
+            extension(&mut no_cert_sign, "2.5.29.15", true, Some(tlv(3, &[1, 2])));
+            sign(&mut no_cert_sign, &root_key);
+            write_pe(
+                dir,
+                "bad-path-ca-ku-and-malformed",
+                &leaf,
+                &[changed_ca.clone(), no_cert_sign],
+            );
+        }
+        if label == "bc" {
+            // PATH-013: a candidate whose basicConstraints does not decode is
+            // set aside by the path, but its report cannot be built.
+            write_pe(
+                dir,
+                "bad-path-ca-malformed-bc-first",
+                &leaf,
+                &[changed_ca.clone(), ca.clone()],
+            );
+        }
+        write_pe(
+            dir,
+            &format!("bad-path-ca-malformed-{label}"),
+            &leaf,
+            &[changed_ca],
+        );
+        let mut changed_leaf = leaf.clone();
+        extension(
+            &mut changed_leaf,
+            oid,
+            false,
+            Some(MALFORMED_VALUE.to_vec()),
+        );
+        sign(&mut changed_leaf, &ca_key);
+        write_pe(
+            dir,
+            &format!("bad-path-leaf-malformed-{label}"),
+            &changed_leaf,
+            &[ca.clone()],
+        );
+    }
+    // PATH-013: webpki itself rejects a subjectAltName that is no SEQUENCE.
+    let mut san_octets = ca.clone();
+    extension(&mut san_octets, "2.5.29.17", false, Some(vec![0x04, 0x00]));
+    sign(&mut san_octets, &root_key);
+    write_pe(
+        dir,
+        "bad-path-ca-san-not-a-sequence",
+        &leaf,
+        core::slice::from_ref(&san_octets),
+    );
+    // PATH-013: the signer's issuer is missing, and a malformed CA issues only
+    // an unrelated embedded certificate, so it is not the cause.
+    let stranger_key = key(47);
+    let stranger = certificate("stranger", 140, &stranger_key, "dangling", &key(48), false);
+    let mut dangling = certificate("dangling", 141, &key(48), "root", &root_key, true);
+    extension(
+        &mut dangling,
+        "2.5.29.14",
+        false,
+        Some(MALFORMED_VALUE.to_vec()),
+    );
+    sign(&mut dangling, &root_key);
+    write_pe(
+        dir,
+        "bad-path-unrelated-malformed-issuer",
+        &leaf,
+        &[stranger, dangling],
+    );
+    // PATH-013: an rfc822Name with a byte above 0x7F is no IA5String.
+    let mut non_ascii = leaf.clone();
+    extension(
+        &mut non_ascii,
+        "2.5.29.17",
+        false,
+        Some(seq(&[tlv(0x81, b"us\xc3\xa9r@example.invalid")])),
+    );
+    sign(&mut non_ascii, &ca_key);
+    write_pe(
+        dir,
+        "bad-path-leaf-san-non-ascii",
+        &non_ascii,
+        core::slice::from_ref(&ca),
+    );
     let mut lower = ca.clone();
     lower.tbs_certificate.issuer = name("upper");
     // Remove the old issuer's AKI when cross-signing; issuer DN/signature bind it.
@@ -1010,7 +1124,25 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
         count += 1;
         let bytes = std::fs::read(dir.join(filename)).unwrap();
         // Reduced-policy verification is evidence only of container/CMS integrity.
-        verify::verify_pe(&bytes, &verify::VerifyOptions::integrity_only(NOW)).unwrap();
+        let integrity = verify::verify_pe(&bytes, &verify::VerifyOptions::integrity_only(NOW));
+        // PATH-013: a certificate whose basicConstraints, keyUsage or
+        // extKeyUsage does not decode cannot be reported, so even integrity-only
+        // verification rejects it; its signatures are checked below.
+        let unreportable = ["bc", "ku", "eku"].iter().any(|label| {
+            ["leaf", "ca"]
+                .iter()
+                .any(|who| filename == format!("bad-path-{who}-malformed-{label}.exe"))
+        }) || filename == "bad-path-ca-malformed-bc-first.exe";
+        if unreportable {
+            let error = integrity.unwrap_err();
+            assert_eq!(
+                error.code,
+                crate::domain::ErrorCode::InvalidCertificate,
+                "{filename}"
+            );
+        } else {
+            integrity.unwrap();
+        }
         let pe = pe::Pe::parse(&bytes).unwrap();
         let envelopes = pe.certificates().unwrap();
         let sd = cms::SignedData::parse(envelopes[0]).unwrap();
@@ -1036,7 +1168,10 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(count, 43 + point_forms().len());
+    assert_eq!(
+        count,
+        49 + 2 * MALFORMED_EXTENSIONS.len() + point_forms().len()
+    );
 }
 
 fn committed(name: &str) -> Vec<u8> {

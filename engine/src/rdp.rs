@@ -189,6 +189,10 @@ fn verify_trust(
         &[43, 6, 1, 5, 5, 7, 3, 1],
         &[43, 6, 1, 4, 1, 130, 55, 54, 1, 2],
     ];
+    // PATH-013 for the signer before its EKU is read, as `verify` makes it
+    // for every other format. Without a configured root it passes, and a
+    // malformed extKeyUsage then fails reading the EKU below.
+    store.check_signer(leaf, budget)?;
     let usage = leaf
         .tbs_certificate
         .get::<ExtendedKeyUsage>()
