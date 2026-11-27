@@ -674,7 +674,7 @@ A body skipped under CRL-045 is reported in `crl_retrieval.failures` as `resourc
 - **Pins:** diagnostics
 - **Sources:**
   - [crl-retrieval.md](crl-retrieval.md): the limits table, and no listed point disappears from the report (CRL-034's written argument).
-- **Unit tests:** `an_over_allowance_body_reports_the_cap_it_hit` in `engine/src/retrieval.rs`; the named test `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`.
+- **Unit tests:** `an_over_allowance_body_reports_the_cap_it_hit`, `an_oversized_body_naming_its_point_is_its_only_failure` and `points_left_when_the_byte_allowance_is_spent_are_not_tried` in `engine/src/retrieval.rs`; the named test `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered` in `tests/cli/crl_fetch.rs`.
 
 ### CRL-047: An aborted source stops retrieval and is reported as `crl_fetch_aborted`
 
