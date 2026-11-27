@@ -26033,7 +26033,15 @@
                 "stage": "certificate_chain",
                 "details": {
                   "reason": "malformed_extension",
-                  "extension": "2.5.29.19"
+                  "extension": "2.5.29.19",
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.19",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -26073,7 +26081,15 @@
                 "stage": "certificate_chain",
                 "details": {
                   "reason": "malformed_extension",
-                  "extension": "2.5.29.15"
+                  "extension": "2.5.29.15",
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.15",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -26113,7 +26129,15 @@
                 "stage": "certificate_chain",
                 "details": {
                   "reason": "malformed_extension",
-                  "extension": "2.5.29.37"
+                  "extension": "2.5.29.37",
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -26302,6 +26326,305 @@
                 {
                   "chain_trusted": false,
                   "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-leaf-malformed-bc",
+      "input": "bad-path-leaf-malformed-bc.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.19",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-leaf-malformed-ku",
+      "input": "bad-path-leaf-malformed-ku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.15",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-leaf-malformed-eku",
+      "input": "bad-path-leaf-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-ca-malformed-bc",
+      "input": "bad-path-ca-malformed-bc.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "embedded_certificates": [
+                    {},
+                    {
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.19",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-ca-malformed-ku",
+      "input": "bad-path-ca-malformed-ku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "embedded_certificates": [
+                    {},
+                    {
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.15",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-ca-malformed-eku",
+      "input": "bad-path-ca-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "embedded_certificates": [
+                    {},
+                    {
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.37",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-rdp-leaf-malformed-eku",
+      "input": "bad-rdp-malformed-eku.rdp",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-015-good-parse-leaf-malformed-bc",
+      "input": "bad-path-leaf-malformed-bc.exe",
+      "decision": "PATH-015",
+      "command": [
+        "parse"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "certificate_choices": [
+                    {
+                      "certificate": {
+                        "undecoded_extensions": [
+                          {
+                            "oid": "2.5.29.19",
+                            "reason": "malformed_extension"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "certificate": {}
+                    }
+                  ]
                 }
               ]
             }
@@ -26805,8 +27128,8 @@
       }
     },
     {
-      "id": "path-013-bad-ca-malformed-bc-first",
-      "input": "bad-path-ca-malformed-bc-first.exe",
+      "id": "path-013-good-ca-malformed-bc-first",
+      "input": "good-path-ca-malformed-bc-first.exe",
       "decision": "PATH-013",
       "command": [
         "verify",
@@ -26825,16 +27148,51 @@
         "fixtures/path-other-root.crl"
       ],
       "expect": {
-        "exit_code": 1,
+        "exit_code": 0,
         "json": {
-          "ok": false,
+          "ok": true,
           "results": [
             {
-              "ok": false,
-              "error": {
-                "code": "invalid_certificate",
-                "stage": "certificate"
-              }
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": true,
+                  "revocation_checked": true,
+                  "trust": {
+                    "chain": [
+                      {
+                        "sha256": "c7af6d8c68640fa0974ba67d0cceb597bd33da0de279922f9da1d2dd235bb3cf"
+                      },
+                      {
+                        "sha256": "d04249adc82c33d5cc0b2de207defa23a91114277340d310e10c34d6a95d54ea"
+                      },
+                      {
+                        "sha256": "a8dec5a4c63abcc48f4c0555889cd4f6d26e9bb31e2f0de478a0ab1797703c8c"
+                      }
+                    ],
+                    "validation_time": 1800000000,
+                    "required_eku": {
+                      "oid": "1.3.6.1.5.5.7.3.3"
+                    },
+                    "revocation": {
+                      "status": "good",
+                      "method": "crl"
+                    }
+                  },
+                  "embedded_certificates": [
+                    {},
+                    {
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.19",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    },
+                    {}
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -27050,7 +27408,15 @@
                 "stage": "certificate_chain",
                 "details": {
                   "reason": "malformed_extension",
-                  "extension": "2.5.29.37"
+                  "extension": "2.5.29.37",
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "malformed_extension"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -27164,7 +27530,15 @@
                 "stage": "certificate_chain",
                 "details": {
                   "reason": "repeated_extension",
-                  "extension": "2.5.29.37"
+                  "extension": "2.5.29.37",
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "repeated_extension"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -27233,6 +27607,81 @@
                 {
                   "chain_trusted": false,
                   "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-good-integrity-only-leaf-repeated-eku",
+      "input": "bad-path-leaf-repeated-eku.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "certificate": {
+                    "undecoded_extensions": [
+                      {
+                        "oid": "2.5.29.37",
+                        "reason": "repeated_extension"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-good-integrity-only-ca-repeated-bc",
+      "input": "bad-path-ca-repeated-bc.exe",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "embedded_certificates": [
+                    {},
+                    {
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.19",
+                          "reason": "repeated_extension"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

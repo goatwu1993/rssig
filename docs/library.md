@@ -349,7 +349,9 @@ envelopes. There is no shallow CLI mode or recursion flag.
 
 Certificate metadata uses the existing `CertificateReport` fields, including
 names/RDNs, EKUs, key usage, validity, extensions, DER, and a SHA-256 certificate
-fingerprint. Fingerprint calculation is for identification, not signature or
+fingerprint. A basicConstraints, keyUsage or extKeyUsage that does not decode,
+or is repeated, is not an error: its field is null and `undecoded_extensions`
+names it (PATH-015). Fingerprint calculation is for identification, not signature or
 file-integrity verification. The report contains no selected chain, trust
 verdict, revocation verdict, or validation time. Verification policy flags such
 as `--roots`, `--crl`, `--time`, and `--integrity-only` are rejected by `parse`.

@@ -66,8 +66,7 @@ they pin or what they check, never after a task.
 
 - [x] **PATH-T001** fix: Expand certificate-path rule coverage. Done; [record](docs/tasks/done.md#path-t001-fix-expand-certificate-path-rule-coverage).
 - [x] **PATH-T002** fix: Decide whether a malformed extension in a CA certificate fails the path. Done ([PR #97](https://github.com/goatwu1993/rssig/pull/97)); [PATH-013](docs/path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path).
-- [ ] **PATH-T010** fix: Report an embedded certificate whose extension does not decode instead of failing the signature.
-  Owner decision: follow OpenSSL. Detail in [path-t010.md](docs/tasks/path-t010.md).
+- [x] **PATH-T010** fix: Report an embedded certificate whose extension does not decode instead of failing the signature. Done ([PR #108](https://github.com/goatwu1993/rssig/pull/108)); [PATH-013](docs/path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path).
 - [ ] **PATH-T011** test: Pin how the PATH-013 callback rejection ranks against webpki's errors.
   Detail in [path-t011.md](docs/tasks/path-t011.md).
 - [ ] **PATH-T012** fix: Read an x400Address in a certificate's GeneralNames.
@@ -84,6 +83,19 @@ they pin or what they check, never after a task.
   octet, so `55 1D 80 0E` would read as an extension other than 2.5.29.14 and
   PATH-014 would not see it as a repeat; OpenSSL is believed to refuse such an
   encoding. Check both first (from the PR #102 review).
+- [ ] **PATH-T016** fix: Decide whether a path may end at a configured root whose basicConstraints, keyUsage or extKeyUsage does not decode (owner decision).
+  It fails today, a leftover of the report that could not be built (found in
+  PR #108), while a root with a malformed subjectKeyIdentifier verifies.
+  Detail in [path-t016.md](docs/tasks/path-t016.md).
+- [ ] **PATH-T017** fix: Report `untrusted_root` for an RDP signer with a malformed extKeyUsage when no root is configured.
+  `rdp::verify_trust` reads the EKU before `TrustStore::verify` checks for a
+  root, so the result is `certificate_chain_invalid` with a decoder message
+  where every other format reports `untrusted_root` (found in PR #108).
+- [ ] **PATH-T018** test: Pin a timestamp signer whose basicConstraints, keyUsage or extKeyUsage does not decode.
+  Since PATH-T010 it verifies under `--integrity-only` with the extension
+  marked in `timestamp_verification.certificate`, and PATH-013 rejects it with
+  a root; only `tsa-malformed-ski.exe` exists. Add a `tsa-malformed-eku`
+  fixture to `regenerate_tsa_fixtures` and both cases (found in PR #108).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
@@ -114,8 +126,10 @@ they pin or what they check, never after a task.
   This changes Decided TIME-005, so it needs the owner's approval.
 - [ ] **TIME-T006** fix: Replace the free-text `certificate_report_error` detail with a typed one.
   A late lifetime certificate whose report cannot be built gets prose instead
-  of `certificate`, and no fixture reaches it. Type the detail, reach it with a
-  fixture if a certificate can parse but not be reported, and extend TIME-013.
+  of `certificate`, and no fixture reaches it. Since PATH-T010 a report fails
+  only for a certificate that does not re-encode, so first show whether any
+  certificate can parse and not be reported; if none can, remove the detail.
+  Otherwise type it, reach it with a fixture, and extend TIME-013.
 
 ### CRL
 

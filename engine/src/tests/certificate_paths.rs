@@ -789,10 +789,10 @@ pub(super) fn write(dir: &std::path::Path) {
         }
         if label == "bc" {
             // PATH-013: a candidate whose basicConstraints does not decode is
-            // set aside by the path, but its report cannot be built.
+            // set aside by the path, and reported with the extension marked.
             write_pe(
                 dir,
-                "bad-path-ca-malformed-bc-first",
+                "good-path-ca-malformed-bc-first",
                 &leaf,
                 &[changed_ca.clone(), ca.clone()],
             );
@@ -1199,29 +1199,10 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
         let bytes = std::fs::read(dir.join(filename)).unwrap();
         // Reduced-policy verification is evidence only of container/CMS integrity.
         let integrity = verify::verify_pe(&bytes, &verify::VerifyOptions::integrity_only(NOW));
-        // PATH-013: a certificate whose basicConstraints, keyUsage or
-        // extKeyUsage does not decode cannot be reported, so even integrity-only
-        // verification rejects it; its signatures are checked below.
-        let unreportable = ["bc", "ku", "eku"].iter().any(|label| {
-            ["leaf", "ca"]
-                .iter()
-                .any(|who| filename == format!("bad-path-{who}-malformed-{label}.exe"))
-        }) || [
-            "bad-path-ca-malformed-bc-first.exe",
-            // PATH-014: nor can one that repeats one of the three.
-            "bad-path-leaf-repeated-eku.exe",
-            "bad-path-ca-repeated-bc.exe",
-        ]
-        .contains(&filename);
-        if unreportable {
-            let error = integrity.unwrap_err();
-            assert_eq!(
-                error.code,
-                crate::domain::ErrorCode::InvalidCertificate,
-                "{filename}"
-            );
-        } else {
-            integrity.unwrap();
+        // PATH-013 and PATH-014 judge path certificates only, and the report
+        // marks an extension it cannot decode, so every fixture verifies.
+        if let Err(error) = integrity {
+            panic!("{filename}: {error:?}");
         }
         let pe = pe::Pe::parse(&bytes).unwrap();
         let envelopes = pe.certificates().unwrap();
@@ -1817,4 +1798,110 @@ fn crl_distribution_point_forms_decode_as_intended() {
             .flatten()
             .all(|e| e.extn_id.to_string() != "2.5.29.31")
     );
+}
+
+/// PATH-T016: the rejection PATH-T010 kept. When the owner decides, this test
+/// and the check in `TrustStore::chain_report` change together.
+#[test]
+fn a_path_to_a_root_whose_reported_extension_does_not_decode_still_fails() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures");
+    let bytes = std::fs::read(dir.join("good-path-basic.exe")).unwrap();
+    let root_key = key(40);
+    let verify_with = |root: &Certificate| {
+        let mut store = crate::TrustStore::default();
+        store.add_roots(&root.to_der().unwrap()).unwrap();
+        let options = verify::VerifyOptions::trusted_with_revocation(
+            &store,
+            NOW,
+            verify::RevocationPolicy::Disabled,
+        );
+        verify::verify_pe(&bytes, &options)
+    };
+    let root = certificate("root", 100, &root_key, "root", &root_key, true);
+    verify_with(&root).unwrap();
+    for oid in ["2.5.29.19", "2.5.29.15", "2.5.29.37"] {
+        let mut changed = root.clone();
+        extension(&mut changed, oid, false, Some(MALFORMED_VALUE.to_vec()));
+        sign(&mut changed, &root_key);
+        let error = verify_with(&changed).unwrap_err();
+        assert_eq!(
+            error.code,
+            crate::domain::ErrorCode::CertificateChainInvalid,
+            "{oid}"
+        );
+        assert!(error.message.contains(oid), "{oid}: {}", error.message);
+        assert!(error.details.is_empty(), "{oid}");
+    }
+    // A root that repeats one of the three never gets that far: webpki
+    // refuses it as an anchor when the roots are loaded.
+    for oid in ["2.5.29.19", "2.5.29.15", "2.5.29.37"] {
+        let mut changed = root.clone();
+        repeat_extension(&mut changed, oid);
+        sign(&mut changed, &root_key);
+        let mut store = crate::TrustStore::default();
+        assert!(
+            store.add_roots(&changed.to_der().unwrap()).is_err(),
+            "{oid}"
+        );
+    }
+    // A root is otherwise not judged: a malformed subjectKeyIdentifier passes.
+    let mut changed = root.clone();
+    extension(
+        &mut changed,
+        "2.5.29.14",
+        false,
+        Some(MALFORMED_VALUE.to_vec()),
+    );
+    sign(&mut changed, &root_key);
+    verify_with(&changed).unwrap();
+}
+
+/// A certificate with two defects lists them in the report's own order.
+#[test]
+fn undecoded_extensions_are_listed_basic_constraints_first() {
+    use crate::domain::{CertificateReport, UndecodedReason};
+    let mut cert = committed_certificate("path-issuer.der");
+    extension(
+        &mut cert,
+        "2.5.29.37",
+        false,
+        Some(MALFORMED_VALUE.to_vec()),
+    );
+    repeat_extension(&mut cert, "2.5.29.19");
+    let report = CertificateReport::parse(&cert).unwrap();
+    let listed: Vec<_> = report
+        .undecoded_extensions
+        .iter()
+        .map(|u| (u.oid.as_str(), u.reason))
+        .collect();
+    assert_eq!(
+        listed,
+        [
+            ("2.5.29.19", UndecodedReason::RepeatedExtension),
+            ("2.5.29.37", UndecodedReason::MalformedExtension),
+        ]
+    );
+    assert!(report.basic_constraints.is_none() && report.extended_key_usage.is_none());
+    assert!(report.key_usage.is_some());
+    // Only the three extensions the report decodes are ever listed (PATH-015).
+    // `TrustStore::chain_report` rests on it: a root with any other malformed
+    // extension must stay unjudged (PATH-011, PATH-T016).
+    let mut cert = committed_certificate("path-issuer.der");
+    for (_, oid) in MALFORMED_EXTENSIONS {
+        extension(&mut cert, oid, false, Some(MALFORMED_VALUE.to_vec()));
+    }
+    extension(
+        &mut cert,
+        "1.2.3.4.5",
+        false,
+        Some(MALFORMED_VALUE.to_vec()),
+    );
+    repeat_extension(&mut cert, "1.2.3.4.5");
+    let report = CertificateReport::parse(&cert).unwrap();
+    let listed: Vec<_> = report
+        .undecoded_extensions
+        .iter()
+        .map(|u| u.oid.as_str())
+        .collect();
+    assert_eq!(listed, ["2.5.29.19", "2.5.29.15", "2.5.29.37"]);
 }

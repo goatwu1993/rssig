@@ -187,13 +187,17 @@ fn malformed_extension_fails_the_path(certificate: &str) {
         assert_eq!(details["extension"], oid, "{label}: {error}");
         let sha256 = details["certificate_sha256"].as_str().unwrap();
         assert_eq!(sha256.len(), 64, "{label}: {error}");
-        // details.certificate is the signer, as in every chain error: absent
-        // only for a signer whose report cannot be built.
-        match (certificate, details.get("certificate")) {
-            ("leaf", Some(signer)) => assert_eq!(signer["sha256"], sha256, "{label}"),
-            ("leaf", None) => assert!(["bc", "ku", "eku"].contains(&label), "{label}"),
-            (_, signer) => assert_ne!(signer.unwrap()["sha256"], sha256, "{label}"),
-        }
+        // details.certificate is the signer, as in every chain error. Its
+        // report marks an extension the report decodes and could not.
+        let signer = &details["certificate"];
+        assert!(signer.is_object(), "{error}");
+        assert_eq!(signer["sha256"] == sha256, certificate == "leaf", "{label}");
+        let undecoded = if certificate == "leaf" && ["bc", "ku", "eku"].contains(&label) {
+            serde_json::json!([{"oid": oid, "reason": "malformed_extension"}])
+        } else {
+            serde_json::Value::Null
+        };
+        assert_eq!(signer["undecoded_extensions"], undecoded, "{label}");
         certificates.push(sha256.to_owned());
     }
     // Each fixture changes one certificate, so each names its own.
@@ -260,17 +264,21 @@ fn repeated_extension_fails_the_path() {
         assert_eq!(details["reason"], "repeated_extension", "{error}");
         assert_eq!(details["extension"], oid, "{error}");
         let sha256 = details["certificate_sha256"].as_str().unwrap();
-        // details.certificate is the signer, as in every chain error: absent
-        // only for a signer whose report cannot be built, as one that
-        // repeats its extKeyUsage.
-        match details.get("certificate") {
-            Some(signer) => assert_eq!(
-                signer["sha256"] == sha256,
-                who == "leaf",
-                "{who} {label}: {error}"
-            ),
-            None => assert_eq!((who, label), ("leaf", "eku"), "{error}"),
-        }
+        // details.certificate is the signer, as in every chain error. Its
+        // report marks a repeat of an extension the report decodes.
+        let signer = &details["certificate"];
+        assert!(signer.is_object(), "{error}");
+        assert_eq!(
+            signer["sha256"] == sha256,
+            who == "leaf",
+            "{who} {label}: {error}"
+        );
+        let undecoded = if (who, label) == ("leaf", "eku") {
+            serde_json::json!([{"oid": oid, "reason": "repeated_extension"}])
+        } else {
+            serde_json::Value::Null
+        };
+        assert_eq!(signer["undecoded_extensions"], undecoded, "{who} {label}");
         // The signer is judged before any usage; an intermediate with it.
         assert_eq!(
             details.get("required_eku").is_some(),
@@ -315,15 +323,129 @@ fn non_ascii_ia5_string_in_the_leaf_san_fails_the_path() {
 }
 
 #[test]
-fn unreportable_malformed_intermediate_fails_the_signature() {
-    let output = run(
-        "bad-path-ca-malformed-bc-first.exe",
-        "fixtures/path-root.der",
+fn intermediate_with_malformed_basic_constraints_is_passed_over_and_reported() {
+    // PATH-013: the candidate the path goes around is still reported.
+    let input = "good-path-ca-malformed-bc-first.exe";
+    selected(input, "fixtures/path-root.der", &["leaf", "issuer", "root"]);
+    let output = run(input, "fixtures/path-root.der");
+    let signature = &output.json["results"][0]["signatures"][0];
+    let embedded = signature["embedded_certificates"].as_array().unwrap();
+    let marked: Vec<_> = embedded
+        .iter()
+        .filter(|c| c.get("undecoded_extensions").is_some())
+        .collect();
+    assert_eq!(marked.len(), 1, "{signature}");
+    undecoded(
+        marked[0],
+        "basic_constraints",
+        "2.5.29.19",
+        "malformed_extension",
     );
-    assert_eq!(output.exit_code, 1, "{}", output.json);
-    let error = &output.json["results"][0]["error"];
-    assert_eq!(error["code"], "invalid_certificate", "{error}");
-    assert_eq!(error["stage"], "certificate", "{error}");
+    for certificate in signature["trust"]["chain"].as_array().unwrap() {
+        assert!(certificate.get("undecoded_extensions").is_none());
+        assert_ne!(certificate["sha256"], marked[0]["sha256"]);
+    }
+}
+
+/// `report` marks the extension `oid` as one it could not decode: the typed
+/// `field` is null, the reason is given, and the value stays in `extensions`.
+fn undecoded(report: &serde_json::Value, field: &str, oid: &str, reason: &str) {
+    assert_eq!(
+        report["undecoded_extensions"],
+        serde_json::json!([{"oid": oid, "reason": reason}]),
+        "{report}"
+    );
+    assert!(report[field].is_null(), "{report}");
+    let raw = report["extensions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["oid"] == oid)
+        .count();
+    let expected = if reason == "repeated_extension" { 2 } else { 1 };
+    assert_eq!(raw, expected, "{report}");
+}
+
+const REPORTED_EXTENSIONS: [(&str, &str, &str); 3] = [
+    ("bc", "basic_constraints", "2.5.29.19"),
+    ("ku", "key_usage", "2.5.29.15"),
+    ("eku", "extended_key_usage", "2.5.29.37"),
+];
+
+fn integrity_only(input: &str) -> Output {
+    let output = run_fixture(
+        input,
+        &["verify", "--integrity-only", "--time", "1800000000"],
+    );
+    assert_eq!(output.exit_code, 0, "{input}: {}", output.json);
+    output
+}
+
+#[test]
+fn integrity_only_reports_a_signer_extension_it_cannot_decode() {
+    for (label, field, oid) in REPORTED_EXTENSIONS {
+        let output = integrity_only(&format!("bad-path-leaf-malformed-{label}.exe"));
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert_eq!(signature["chain_trusted"], false);
+        undecoded(&signature["certificate"], field, oid, "malformed_extension");
+        // The two fields the defect does not touch are still decoded.
+        for (_, other, _) in REPORTED_EXTENSIONS {
+            assert_eq!(
+                signature["certificate"][other].is_null(),
+                other == field,
+                "{label} {other}"
+            );
+        }
+    }
+    let output = integrity_only("bad-path-leaf-repeated-eku.exe");
+    let signer = &output.json["results"][0]["signatures"][0]["certificate"];
+    undecoded(
+        signer,
+        "extended_key_usage",
+        "2.5.29.37",
+        "repeated_extension",
+    );
+}
+
+#[test]
+fn integrity_only_reports_an_embedded_certificate_extension_it_cannot_decode() {
+    let mut inputs: Vec<_> = REPORTED_EXTENSIONS
+        .iter()
+        .map(|(label, field, oid)| {
+            let input = format!("bad-path-ca-malformed-{label}.exe");
+            (input, *field, *oid, "malformed_extension")
+        })
+        .collect();
+    inputs.push((
+        "bad-path-ca-repeated-bc.exe".into(),
+        "basic_constraints",
+        "2.5.29.19",
+        "repeated_extension",
+    ));
+    for (input, field, oid, reason) in inputs {
+        let output = integrity_only(&input);
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert!(
+            signature["certificate"]
+                .get("undecoded_extensions")
+                .is_none()
+        );
+        let embedded = signature["embedded_certificates"].as_array().unwrap();
+        assert_eq!(embedded.len(), 2, "{input}");
+        undecoded(&embedded[1], field, oid, reason);
+    }
+}
+
+#[test]
+fn well_formed_certificate_report_has_no_undecoded_extensions_field() {
+    let output = integrity_only("good-path-basic.exe");
+    let signature = &output.json["results"][0]["signatures"][0];
+    assert!(
+        signature["certificate"]
+            .get("undecoded_extensions")
+            .is_none()
+    );
+    assert!(signature["certificate"]["basic_constraints"].is_object());
 }
 
 #[test]
@@ -342,7 +464,7 @@ fn malformed_duplicate_is_not_blamed_for_an_untrusted_root() {
 #[test]
 fn integrity_only_builds_no_path_so_a_malformed_signer_extension_verifies() {
     // PATH-013 judges path certificates; integrity-only builds no path, as
-    // OpenSSL checks no extension without path verification (PATH-T010).
+    // OpenSSL checks no extension without path verification.
     let output = run_fixture(
         "bad-path-leaf-malformed-ski.exe",
         &["verify", "--integrity-only", "--time", "1800000000"],

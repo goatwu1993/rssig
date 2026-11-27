@@ -82,8 +82,8 @@ impl TrustStore {
         let Some(defect) = extension_defect(leaf) else {
             return Ok(());
         };
-        // A leaf whose basicConstraints, keyUsage or extKeyUsage does not
-        // decode, or is repeated, has no report.
+        // The report fails only for a certificate that does not re-encode;
+        // the defect is reported without it then.
         let mut error = extension_defect_error(leaf, defect);
         if let Ok(report) = CertificateReport::parse(leaf) {
             error = error.detail("certificate", report);
@@ -327,9 +327,22 @@ impl TrustStore {
             .zip(anchors)
             .find(|(_, anchor)| same_anchor(anchor, path.anchor()))
         {
-            chain.push(CertificateReport::parse(
+            let root = CertificateReport::parse(
                 &Certificate::from_der(root.as_ref()).map_err(crate::compat_error)?,
-            )?);
+            )?;
+            // A root is a key and is not judged (PATH-011), but until
+            // PATH-T010 a path to a root whose report could not be built
+            // failed here. Accepting it is the owner's call (PATH-T016), so
+            // the rejection stays.
+            // It is untyped, as the report failure was, so each caller
+            // still gives it its own code and stage.
+            if let Some(undecoded) = root.undecoded_extensions.first() {
+                anyhow::bail!(
+                    "configured root extension {} cannot be decoded for its report",
+                    undecoded.oid
+                );
+            }
+            chain.push(root);
         }
         Ok(chain)
     }
@@ -490,7 +503,8 @@ impl SignerRequirements {
         .detail("validation_time", self.now)
         .detail("not_before", not_before(cert).as_secs())
         .detail("required_eku", self.eku_oid.to_string());
-        // Keep the signing-time reason even if the report cannot be built.
+        // Keep the signing-time reason even if the report cannot be built
+        // (a certificate that does not re-encode).
         match CertificateReport::parse(cert) {
             Ok(report) => error.detail("certificate", report),
             Err(cause) => error.detail("certificate_report_error", format!("{cause:#}")),
@@ -1920,8 +1934,8 @@ fn completable_path(outcomes: &[CertificateEvidence]) -> Option<VerificationErro
 }
 
 /// The certificates with no CRL at all, once each, and whether there were
-/// any. A certificate whose report cannot be built still counts; it is only
-/// not offered for retrieval by name.
+/// any. A certificate whose report cannot be built (one that does not
+/// re-encode) still counts; it is only not offered for retrieval by name.
 fn without_crl(outcomes: &[&CertificateEvidence]) -> (bool, Vec<CertificateReport>) {
     reports(outcomes, |o| matches!(o, Outcome::Missing(None)))
 }

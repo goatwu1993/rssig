@@ -321,6 +321,27 @@ pub struct ExtensionReport {
     pub critical: bool,
     pub value_der_hex: String,
 }
+/// An extension the certificate report decodes (basicConstraints, keyUsage or
+/// extKeyUsage) and could not. The report's field for it is `None`, and each
+/// instance stays in `extensions` as DER (PATH-015). The report judges nothing:
+/// PATH-013 and PATH-014 fail a path certificate that has one.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UndecodedExtension {
+    pub oid: String,
+    pub reason: UndecodedReason,
+}
+/// Why the report could not decode an extension. The names are those of
+/// `details.reason` in a PATH-013 or PATH-014 failure.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum UndecodedReason {
+    /// The value does not decode as the extension.
+    MalformedExtension,
+    /// The certificate carries the extension more than once, so no one
+    /// instance is its value; none is decoded.
+    RepeatedExtension,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CertificateReport {
     pub sha256: String,
@@ -336,6 +357,11 @@ pub struct CertificateReport {
     pub extended_key_usage: Option<EkuReport>,
     pub key_usage: Option<KeyUsageReport>,
     pub basic_constraints: Option<BasicConstraintsReport>,
+    /// The extensions among the three above that are present and could not
+    /// be decoded, basicConstraints first, then keyUsage, then extKeyUsage;
+    /// left out when there is none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub undecoded_extensions: Vec<UndecodedExtension>,
     pub extensions: Vec<ExtensionReport>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
