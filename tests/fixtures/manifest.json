@@ -6803,7 +6803,7 @@
       "file": "bad-rdp-malformed-eku.rdp",
       "sha256": "0e7bfa0a30f646f4d00319eab209761b5c12e6e7552b11f7f358d1c686bb844b",
       "bytes": 1482,
-      "description": "PATH-013 RDP signed settings; the signer of good-rdp-multiple-ekus.rdp with its extKeyUsage value replaced by SEQUENCE { NULL } and re-signed. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013 RDP signed settings; the signer of good-rdp-multiple-ekus.rdp with its extKeyUsage value replaced by SEQUENCE { NULL } and re-signed. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "generator": "engine/src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
         "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
@@ -6811,7 +6811,8 @@
         "license": "Apache-2.0"
       },
       "cases": [
-        "path-013-bad-rdp-leaf-malformed-eku"
+        "path-013-bad-rdp-leaf-malformed-eku",
+        "path-013-good-integrity-only-rdp-leaf-malformed-eku"
       ]
     },
     {
@@ -7154,7 +7155,7 @@
       "file": "bad-path-leaf-malformed-bc.exe",
       "sha256": "86a742242d90cbcb1a99dfe10a81c7d56270d46de792a57229bdf60c521b9dc9",
       "bytes": 2200,
-      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7163,14 +7164,16 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-leaf-malformed-bc"
+        "path-013-bad-leaf-malformed-bc",
+        "path-013-good-integrity-only-leaf-malformed-bc",
+        "path-015-good-parse-leaf-malformed-bc"
       ]
     },
     {
       "file": "bad-path-leaf-malformed-ku.exe",
       "sha256": "9f45a59a01039b977bc8a1d8cae70af0ee475697be6d6dc0f9bee275c691285c",
       "bytes": 2192,
-      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7179,14 +7182,15 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-leaf-malformed-ku"
+        "path-013-bad-leaf-malformed-ku",
+        "path-013-good-integrity-only-leaf-malformed-ku"
       ]
     },
     {
       "file": "bad-path-leaf-malformed-eku.exe",
       "sha256": "d1a8a2157401c9123a834e806e3f54764916205eb7e18acfe3879780f5d71928",
       "bytes": 2184,
-      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013 signed inert PE; the signing leaf carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7195,7 +7199,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-leaf-malformed-eku"
+        "path-013-bad-leaf-malformed-eku",
+        "path-013-good-integrity-only-leaf-malformed-eku"
       ]
     },
     {
@@ -7283,7 +7288,7 @@
       "file": "bad-path-ca-malformed-bc.exe",
       "sha256": "775dd6079586232aad45cabaadf5b6009800bc14586cd250857bb18b3fdf597e",
       "bytes": 2192,
-      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback).",
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical BasicConstraints extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7292,7 +7297,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-ca-malformed-bc"
+        "path-013-bad-ca-malformed-bc",
+        "path-013-good-integrity-only-ca-malformed-bc"
       ]
     },
     {
@@ -7315,7 +7321,7 @@
       "file": "bad-path-ca-malformed-ku.exe",
       "sha256": "8410ebb5abe094b89ef246a4f9d4dbd7871bc85b9655cb927dc86756356c088d",
       "bytes": 2200,
-      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical KeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7324,14 +7330,15 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-ca-malformed-ku"
+        "path-013-bad-ca-malformed-ku",
+        "path-013-good-integrity-only-ca-malformed-ku"
       ]
     },
     {
       "file": "bad-path-ca-malformed-eku.exe",
       "sha256": "0a7db251f0406761f58f508581f96378b5ce2fdbc75966778a5464d2088e7d65",
       "bytes": 2216,
-      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback).",
+      "description": "PATH-013 signed inert PE; the intermediate CA carries a noncritical ExtendedKeyUsage extension whose value is SEQUENCE { NULL }, which does not decode as that extension. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (webpki BadDer, no reason: webpki rejects the intermediate before rssig's path callback); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7340,7 +7347,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-ca-malformed-eku"
+        "path-013-bad-ca-malformed-eku",
+        "path-013-good-integrity-only-ca-malformed-eku"
       ]
     },
     {
@@ -7459,10 +7467,10 @@
       ]
     },
     {
-      "file": "bad-path-ca-malformed-bc-first.exe",
+      "file": "good-path-ca-malformed-bc-first.exe",
       "sha256": "b45934ab36c1b583c90396499f30e883507f23698fe869732fad9e2c6e658655",
       "bytes": 2584,
-      "description": "PATH-013 signed inert PE; two intermediate candidates of one name and key, the first carrying a noncritical basicConstraints whose value is SEQUENCE { NULL }. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: invalid_certificate at certificate, as the first candidate cannot be reported.",
+      "description": "PATH-013 signed inert PE; two intermediate candidates of one name and key, the first carrying a noncritical basicConstraints whose value is SEQUENCE { NULL }. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: verified through the second candidate; the first is reported with its basicConstraints marked undecoded.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7471,7 +7479,7 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-013-bad-ca-malformed-bc-first"
+        "path-013-good-ca-malformed-bc-first"
       ]
     },
     {
@@ -7527,7 +7535,7 @@
       "file": "bad-path-leaf-repeated-eku.exe",
       "sha256": "342661b9fc926fc4721e5f1dd6aef1e08e09b589dffdc80f80fe70fefa8d0876",
       "bytes": 2224,
-      "description": "PATH-014 signed inert PE; the signing leaf carries its ExtendedKeyUsage extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension).",
+      "description": "PATH-014 signed inert PE; the signing leaf carries its ExtendedKeyUsage extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (repeated_extension); verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7536,7 +7544,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-014-bad-leaf-repeated-eku"
+        "path-014-bad-leaf-repeated-eku",
+        "path-014-good-integrity-only-leaf-repeated-eku"
       ]
     },
     {
@@ -7575,7 +7584,7 @@
       "file": "bad-path-ca-repeated-bc.exe",
       "sha256": "b45950fbb6968b6d3410ca07047bc49adf0aee8e3e9ba21a369cb850822fd87a",
       "bytes": 2216,
-      "description": "PATH-014 signed inert PE; the intermediate CA carries its BasicConstraints extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain, rejected by webpki before the path callback.",
+      "description": "PATH-014 signed inert PE; the intermediate CA carries its BasicConstraints extension twice, each instance well formed. Image, CMS, and certificate signatures are valid. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain, rejected by webpki before the path callback; verified under --integrity-only, or parsed, with the extension marked undecoded in the certificate report.",
       "provenance": {
         "kind": "synthetic",
         "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
@@ -7584,7 +7593,8 @@
         "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
       },
       "cases": [
-        "path-014-bad-ca-repeated-bc"
+        "path-014-bad-ca-repeated-bc",
+        "path-014-good-integrity-only-ca-repeated-bc"
       ]
     },
     {

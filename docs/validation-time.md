@@ -56,7 +56,8 @@ A signer certificate whose ExtendedKeyUsage contains Microsoft lifetime signing
   `certificate_not_yet_valid` with message "lifetime-signing certificate was
   not valid at the signing time". Details name the offending `certificate`, its
   `not_before`, the `signing_time` that failed, the `validation_time` and
-  `required_eku`. If the certificate report cannot be built,
+  `required_eku`. If the certificate report cannot be built (the certificate
+  does not re-encode; a malformed extension is marked in the report instead),
   `certificate_report_error` replaces `certificate` so the signing-time reason
   is still reported.
 - Candidate rejection follows webpki's error ranking: the signing-time

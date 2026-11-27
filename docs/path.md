@@ -37,6 +37,7 @@ Observed ones. A new entry takes the next free number.
 | [PATH-012](#path-012-the-reported-anchor-is-the-one-whose-constraints-accepted-the-path) | The reported anchor is the one whose constraints accepted the path | Decided | diagnostics |
 | [PATH-013](#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path) | A path certificate whose extension does not decode fails the path | Decided | acceptance |
 | [PATH-014](#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path) | A path certificate that repeats an extension fails the path | Observed | acceptance |
+| [PATH-015](#path-015-a-certificate-report-marks-an-extension-it-cannot-decode) | A certificate report marks an extension it cannot decode | Observed | diagnostics |
 
 ## Tier 1: fail-open
 
@@ -181,9 +182,8 @@ a byte above 0x7F does not decode.
   other path checks are judged, as OpenSSL's `verify_chain` runs
   `check_extensions` before `check_revocation` (`x509_vfy.c`): a revoked
   malformed intermediate is reported as the malformed extension.
-- As in every chain error, `details.certificate` is the signer's report,
-  left out when the signer is the malformed certificate and its report cannot
-  be built. The signer's own failure is judged before any usage, so it has no
+- As in every chain error, `details.certificate` is the signer's report.
+  The signer's own failure is judged before any usage, so it has no
   `required_eku`, `lifetime_signing` or `signing_time` detail.
 - When one candidate lacks keyCertSign and another is rejected for a
   malformed extension, the malformed extension is reported: webpki ranks the
@@ -195,21 +195,38 @@ a byte above 0x7F does not decode.
   (PATH-014).
 - Integrity-only verification builds no path, so the rule does not apply
   there, as OpenSSL checks no extension without path verification: a signer
-  whose subjectKeyIdentifier does not decode verifies. One whose
-  basicConstraints, keyUsage or extKeyUsage does not decode still fails, as
-  its report cannot be built, until PATH-T010.
-- Every embedded certificate is also reported, and the report of one whose
-  basicConstraints, keyUsage or extKeyUsage does not decode cannot be built,
-  so a signature that embeds one fails with `invalid_certificate` at
-  `certificate` even when the path goes around it (PATH-T010).
+  whose basicConstraints, keyUsage, extKeyUsage or subjectKeyIdentifier does
+  not decode verifies, and so does a signature that embeds such a
+  certificate.
+- The rule judges a path, not a report. Every embedded certificate is
+  reported, with or without a path, and the report decodes basicConstraints,
+  keyUsage and extKeyUsage. One it cannot decode never fails the signature:
+  the report marks it (PATH-015). So a signature whose path goes around a
+  candidate with a malformed basicConstraints verifies and reports that
+  candidate.
 - A configured root is a key (PATH-011): its extensions are not judged, and
   one whose subjectKeyIdentifier does not decode still reads as having none
-  (CRL-042).
+  (CRL-042). One exception stands, by history and not by this rule: a path
+  that ends at a root whose basicConstraints, keyUsage or extKeyUsage does
+  not decode fails as it did when that root's report could not be built
+  (a root that repeats one of them is refused when the roots are loaded, by
+  webpki): `certificate_chain_invalid` at `certificate_chain` for a
+  signer, with a message that names the extension and no details. Whether it should
+  verify is the owner's to decide (PATH-T016).
 
 - **Status:** Decided
-- **Decided by:** owner, PR #97 (PATH-T002)
+- **Decided by:** owner, PR #97 (PATH-T002); the report and integrity-only
+  rule by the owner's answer of 2026-11-27, "follow OpenSSL", applied in
+  PR #108 (PATH-T010)
 - **Pins:** acceptance
 - **Sources:**
+  - OpenSSL 3.3 (7f736187) decodes a certificate's extensions only when it
+    validates a path (`crypto/x509/v3_purp.c`,
+    `ossl_x509v3_cache_extensions`, reached from `x509_vfy.c` and
+    `X509_check_purpose`), not when it parses one (`crypto/x509/x_x509.c`),
+    and with chain verification off (`CMS_NO_SIGNER_CERT_VERIFY` in
+    `crypto/cms/cms_smime.c`) it checks none: the reason a report and an
+    integrity-only verification do not fail on one.
   - OpenSSL 3.3 (7f736187) `crypto/x509/v3_purp.c:401-587`
     (`ossl_x509v3_cache_extensions` marks the certificate `EXFLAG_INVALID`
     when basicConstraints (454), keyUsage (490), extKeyUsage (534),
@@ -283,8 +300,7 @@ equal. It is judged where PATH-013 is, and reported the same way:
   configured root): `certificate_chain_invalid` at `certificate_chain`, with
   `details.reason` `repeated_extension`, `details.extension` the repeated OID
   and `details.certificate_sha256` the signer, and `details.certificate` its
-  report when that can be built: the report of a certificate that repeats
-  its basicConstraints, keyUsage or extKeyUsage cannot be.
+  report.
 - An intermediate rejects each candidate path through it in the path
   callback, and path building goes on (PATH-009); it is named, with the same
   details, under the conditions PATH-013 gives for an intermediate. webpki
@@ -296,11 +312,12 @@ equal. It is judged where PATH-013 is, and reported the same way:
 - A certificate with both defects is reported for the repeat: the first
   extension whose OID an earlier one carries.
 - Integrity-only verification builds no path, so the rule does not apply
-  there: a signer that repeats its subjectKeyIdentifier verifies. One that
-  repeats its basicConstraints, keyUsage or extKeyUsage still fails, as does
-  a signature that embeds such a certificate off the path, with
-  `invalid_certificate` at `certificate`, because its report cannot be built
-  (PATH-T010).
+  there: a signer that repeats an extension verifies, as does a signature
+  that embeds such a certificate.
+  The owner's answer for PATH-013 (2026-11-27, applied in PR #108) covers
+  the repeat: before it, one that repeated its basicConstraints, keyUsage or
+  extKeyUsage failed with `invalid_certificate`, as its report could not be
+  built. The report now marks the repeat (PATH-015).
 - A configured root is a key (PATH-011) and is not judged.
 
 - **Status:** Observed
@@ -396,6 +413,41 @@ whose name constraints accepted the path.
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: the report must name the anchor webpki actually used.
+
+### PATH-015: A certificate report marks an extension it cannot decode
+
+A certificate report (the signer, each embedded certificate, each chain
+certificate, a `parse` certificate choice, a certificate in an error's
+details) decodes basicConstraints, keyUsage and extKeyUsage. For one that is
+present and does not decode, or is repeated, the report is still built:
+
+- its field (`basic_constraints`, `key_usage`, `extended_key_usage`) is
+  null, as for an absent extension;
+- `undecoded_extensions` lists `{"oid", "reason"}` for it, basicConstraints
+  first, then keyUsage, then extKeyUsage. The reason is
+  `malformed_extension` or `repeated_extension`, the names of
+  `details.reason` in PATH-013 and PATH-014; a repeat is reported as one
+  whether or not an instance is also malformed, and neither instance is
+  decoded;
+- every instance stays in `extensions` as DER;
+- `undecoded_extensions` is left out when it is empty.
+
+The field names only those three extensions, because they are the ones the
+report decodes: it says what the report could not show and is no verdict on
+the certificate. A repeat or a malformed value of another extension shows
+only in `extensions`. Whether the certificate may be on a path is PATH-013's
+and PATH-014's.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** diagnostics
+- **Sources:**
+  - The owner's answer for PATH-013 (2026-11-27): a report must not fail on
+    an extension that does not decode, and marks it. The field's name, shape
+    and order are the agent's choice in PR #108 (PATH-T010).
+  - Written argument: a null field alone would read as an absent extension,
+    and a consumer that trusts `key_usage: null` to mean "unrestricted" must
+    be able to tell the two apart without decoding `extensions` itself.
 
 ## Candidate rules
 

@@ -49,6 +49,9 @@ A leaf or intermediate that carries any extension more than once fails the
 path too
 ([PATH-014](path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path)).
 A configured root's extensions are not judged (PATH-011).
+Both rules judge a path only: integrity-only verification and `parse` build
+none, and a certificate report marks a basicConstraints, keyUsage or
+extKeyUsage it cannot decode in `undecoded_extensions` instead of failing.
 
 Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an injected
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to

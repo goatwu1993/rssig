@@ -116,6 +116,35 @@ fn parse_pe_reports_metadata_without_verifying_tampered_images_or_signatures() {
 }
 
 #[test]
+fn parse_reports_a_certificate_extension_it_cannot_decode() {
+    // PATH-015: the report marks the extension; only a path judges it.
+    let (exit, json) = invoke(&["bad-path-leaf-malformed-bc.exe"], &[]);
+    assert_eq!(exit, 0, "{json}");
+    let choices = json["results"][0]["signatures"][0]["certificate_choices"]
+        .as_array()
+        .unwrap();
+    let leaf = &choices[0]["certificate"];
+    assert_eq!(
+        leaf["undecoded_extensions"],
+        serde_json::json!([{"oid": "2.5.29.19", "reason": "malformed_extension"}])
+    );
+    assert!(leaf["basic_constraints"].is_null());
+    assert!(leaf["key_usage"].is_object());
+    assert!(
+        leaf["extensions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| e["oid"] == "2.5.29.19" && e["value_der_hex"] == "30020500")
+    );
+    assert!(
+        choices[1]["certificate"]
+            .get("undecoded_extensions")
+            .is_none()
+    );
+}
+
+#[test]
 fn parse_preserves_unknown_algorithms_and_opaque_certificate_choices() {
     let (exit, json) = invoke(&["parse-unknown-digest.exe"], &[]);
     assert_eq!(exit, 0);

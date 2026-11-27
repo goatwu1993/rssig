@@ -76,4 +76,5 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **signing time** | The time a timestamp attests. |
 | **lifetime signing** | The EKU that keeps a signer from being extended by a timestamp. |
 | **configured root** (anchor) | A trust anchor from `--roots` or the system store; embedded certificates are only candidates. |
+| **undecoded extension** | A basicConstraints, keyUsage or extKeyUsage that a certificate report could not decode (malformed or repeated), listed in the report's `undecoded_extensions` with its field null. A report fact; it fails nothing by itself; a malformed or repeated extension of a path certificate is what fails the path (PATH-013, PATH-014, PATH-015). |
 | **supplied CRL** / **fetched CRL** | A CRL given locally with `--crl`, or one a `CrlSource` returned. |

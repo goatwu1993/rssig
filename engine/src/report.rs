@@ -99,49 +99,84 @@ impl OidReport {
         Self { oid, name }
     }
 }
+/// The extension `T` of `tbs` for the report: its criticality and value, or
+/// `None` when it is absent or cannot be decoded, which `undecoded` then
+/// records. A repeat is recorded as one whatever its values, as PATH-014
+/// names it first.
+fn decoded<T>(
+    tbs: &x509_cert::TbsCertificate,
+    undecoded: &mut Vec<UndecodedExtension>,
+) -> Option<(bool, T)>
+where
+    T: for<'a> Decode<'a> + ::der::oid::AssociatedOid,
+{
+    let mut instances = tbs
+        .extensions
+        .iter()
+        .flatten()
+        .filter(|e| e.extn_id == T::OID);
+    let first = instances.next()?;
+    let reason = if instances.next().is_some() {
+        UndecodedReason::RepeatedExtension
+    } else {
+        match T::from_der(first.extn_value.as_bytes()) {
+            Ok(value) => return Some((first.critical, value)),
+            Err(_) => UndecodedReason::MalformedExtension,
+        }
+    };
+    undecoded.push(UndecodedExtension {
+        oid: T::OID.to_string(),
+        reason,
+    });
+    None
+}
+
 impl CertificateReport {
+    /// The report of `cert`. It reports and does not judge, as OpenSSL
+    /// decodes a certificate's extensions only when it validates a path
+    /// (PATH-013): an extension it cannot decode is listed in
+    /// `undecoded_extensions`, never an error.
     pub(crate) fn parse(cert: &Certificate) -> anyhow::Result<Self> {
         use x509_cert::ext::pkix::{BasicConstraints, ExtendedKeyUsage, KeyUsage};
         let tbs = &cert.tbs_certificate;
         let der = cert.to_der().map_err(crate::compat_error)?;
-        let extended_key_usage = tbs
-            .get::<ExtendedKeyUsage>()
-            .map_err(crate::compat_error)?
-            .map(|(critical, eku)| EkuReport {
-                critical,
-                usages: eku.0.iter().map(OidReport::new).collect(),
+        let mut undecoded_extensions = Vec::new();
+        let basic_constraints =
+            decoded::<BasicConstraints>(tbs, &mut undecoded_extensions).map(|(critical, bc)| {
+                BasicConstraintsReport {
+                    critical,
+                    ca: bc.ca,
+                    path_length: bc.path_len_constraint,
+                }
             });
         let key_usage =
-            tbs.get::<KeyUsage>()
-                .map_err(crate::compat_error)?
-                .map(|(critical, ku)| {
-                    let values = [
-                        ("digital_signature", ku.digital_signature()),
-                        ("content_commitment", ku.non_repudiation()),
-                        ("key_encipherment", ku.key_encipherment()),
-                        ("data_encipherment", ku.data_encipherment()),
-                        ("key_agreement", ku.key_agreement()),
-                        ("key_cert_sign", ku.key_cert_sign()),
-                        ("crl_sign", ku.crl_sign()),
-                        ("encipher_only", ku.encipher_only()),
-                        ("decipher_only", ku.decipher_only()),
-                    ];
-                    KeyUsageReport {
-                        critical,
-                        usages: values
-                            .into_iter()
-                            .filter(|(_, enabled)| *enabled)
-                            .map(|(name, _)| name.to_owned())
-                            .collect(),
-                    }
-                });
-        let basic_constraints = tbs
-            .get::<BasicConstraints>()
-            .map_err(crate::compat_error)?
-            .map(|(critical, bc)| BasicConstraintsReport {
-                critical,
-                ca: bc.ca,
-                path_length: bc.path_len_constraint,
+            decoded::<KeyUsage>(tbs, &mut undecoded_extensions).map(|(critical, ku)| {
+                let values = [
+                    ("digital_signature", ku.digital_signature()),
+                    ("content_commitment", ku.non_repudiation()),
+                    ("key_encipherment", ku.key_encipherment()),
+                    ("data_encipherment", ku.data_encipherment()),
+                    ("key_agreement", ku.key_agreement()),
+                    ("key_cert_sign", ku.key_cert_sign()),
+                    ("crl_sign", ku.crl_sign()),
+                    ("encipher_only", ku.encipher_only()),
+                    ("decipher_only", ku.decipher_only()),
+                ];
+                KeyUsageReport {
+                    critical,
+                    usages: values
+                        .into_iter()
+                        .filter(|(_, enabled)| *enabled)
+                        .map(|(name, _)| name.to_owned())
+                        .collect(),
+                }
+            });
+        let extended_key_usage =
+            decoded::<ExtendedKeyUsage>(tbs, &mut undecoded_extensions).map(|(critical, eku)| {
+                EkuReport {
+                    critical,
+                    usages: eku.0.iter().map(OidReport::new).collect(),
+                }
             });
         Ok(Self {
             sha256: hex(&Hash::Sha256.digest(&der)),
@@ -157,6 +192,7 @@ impl CertificateReport {
             extended_key_usage,
             key_usage,
             basic_constraints,
+            undecoded_extensions,
             extensions: extensions(tbs.extensions.as_deref().unwrap_or_default()),
         })
     }
