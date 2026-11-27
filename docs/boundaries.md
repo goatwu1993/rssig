@@ -45,7 +45,7 @@ Opt-in bounded HTTP CRL fetching is available through `--fetch-crls` and an inje
 `CrlSource`; see `docs/crl-retrieval.md`. The engine keeps no total of requests to
 a source (CRL-039): the built-in source caps its own at 64 requests and 64 distinct URLs per
 verification, keeps each URL's outcome for the verification and answers a repeat
-from it without counting, up to 32 MiB of bodies returned again (CRL-051), and fetches at most 16 points of a certificate
+from it without counting, up to 16 MiB of bodies returned again (CRL-051), and fetches at most 16 points of a certificate
 per request, counting only points it has not answered before, denying the rest. The engine asks every
 certificate that lacks a CRL with every point it lists, and reuses no answer
 (CRL-033). A custom source owns its counts. The engine offers a source

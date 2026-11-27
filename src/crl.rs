@@ -48,12 +48,13 @@ pub const MAX_SOURCE_URLS: usize = 64;
 pub const MAX_POINTS_PER_REQUEST: usize = 16;
 /// Bytes of kept bodies this source returns again per verification (a body
 /// answered from memory for a later certificate listing its point, CRL-051).
-/// The engine hashes every body it receives, so with the network bytes
-/// ([`MAX_NETWORK_BYTES`]) the CRL bodies it hashes per verification stay
-/// within 64 MiB, well inside its hash budget; one past this is reported as `Denied` with
+/// The engine decodes, hashes and charges every body it receives, a repeat
+/// too, so with the network bytes ([`MAX_NETWORK_BYTES`]) the CRL bodies it
+/// processes per verification stay within 48 MiB: 384 MiB of its 512 MiB
+/// decode budget, which charges a body eight times. One past this is reported as `Denied` with
 /// `details.resource` `crl_replay_bytes` (not tried), the CRL itself having
 /// been delivered when it was fetched.
-pub const MAX_REPLAY_BYTES: usize = 32 * 1024 * 1024;
+pub const MAX_REPLAY_BYTES: usize = 16 * 1024 * 1024;
 /// HTTP requests per verification, redirects included. This source's own
 /// fetch policy (CRL-039), reported past it as an `Abort` with
 /// `details.resource` `crl_http_requests`.
@@ -627,7 +628,7 @@ impl HttpCrlSource {
                 if self.replayed.saturating_add(len) > MAX_REPLAY_BYTES {
                     return Err(CrlSourceError::new(
                         CrlSourceErrorKind::Denied,
-                        "not tried: the built-in source returns at most 32 MiB of kept \
+                        "not tried: the built-in source returns at most 16 MiB of kept \
                          CRL bodies again per verification",
                     )
                     .with_url(url.to_owned())
