@@ -90,10 +90,12 @@ WinVerifyTrust flags that change timestamp or lifetime-signing treatment.
 ## Fractional time boundaries
 
 webpki compares validity at whole seconds. A fractional timestamp is checked at
-its whole second, then the selected leaf and intermediates must have
-`notAfter > signing_time`. This second step runs after path selection, so it
-does not consider an alternative issuer with a later notAfter (TIME-T005).
-Consequences pinned by fixtures:
+its whole second, then the leaf and intermediates of a candidate path must
+have `notAfter > signing_time`. This second step runs inside path building
+(TIME-005), so an issuer that expires within the timestamp's second is passed
+over for another issuer with the same subject and key that is still valid,
+in either embedded order. The anchor a path ends at is not compared with the
+fraction. Consequences pinned by fixtures:
 
 - `signing_time == notAfter` is valid; `notAfter + .5` is `certificate_expired`
   with "fractional timestamp exceeds certificate validity", for both the leaf
@@ -105,9 +107,9 @@ Consequences pinned by fixtures:
 
 ## Evidence and maintenance
 
-32 committed deterministic test-only signed fixtures (28 single-signature PE
-files, 2 PE files with a nested signature and 2 inert RDP files) and 3 CRLs
-(`time-*`) back 47 portable cases and 37 named in-process CLI tests in
+42 committed deterministic test-only signed fixtures (36 single-signature PE
+files, 2 PE files with a nested signature and 4 inert RDP files) and 3 CRLs
+(`time-*`) back 61 portable cases and 47 named in-process CLI tests in
 `tests/cli/validation_time.rs`. Paired cases isolate:
 
 - the lifetime-signing EKU: the same expired signer and valid RFC 3161 or
@@ -118,6 +120,12 @@ files, 2 PE files with a nested signature and 2 inert RDP files) and 3 CRLs
   path;
 - notAfter and notBefore at, and one second past, the validation time, and the
   leaf and intermediate boundaries described above;
+- the fractional notAfter boundary with two same-key issuers in both
+  embedded orders, for a PE signer (with and without revocation), an RDP
+  signer and the TSA's own chain, and at the configured root's notAfter;
+  and which failure is reported when such a path also lacks keyCertSign, has
+  a revoked or CRL-less certificate, or the other issuer is revoked or
+  already expired;
 - the lifetime signing-time boundary: leaf and intermediate notBefore equal to
   the timestamp (accepted) and one second after it (rejected);
 - revocation for a lifetime signer issued by an intermediate: good status with

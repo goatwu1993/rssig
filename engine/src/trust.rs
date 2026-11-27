@@ -117,7 +117,8 @@ impl TrustStore {
             .into());
         }
         self.check_signer(leaf, budget)?;
-        let requirements = SignerRequirements::check(leaf, eku, signing_time, now)?;
+        let requirements =
+            SignerRequirements::check(leaf, eku, signing_time.map(|at| at.seconds), now)?;
         if let Some(at) = issued_after(leaf, requirements.lifetime_signed_at) {
             return Err(requirements.not_valid_at_signing(leaf, at).into());
         }
@@ -167,6 +168,7 @@ impl TrustStore {
             now,
             revocation,
             lifetime_signed_at: requirements.lifetime_signed_at,
+            fractional_at: signing_time.and_then(SigningTime::fractional),
             budget,
             state: Default::default(),
         };
@@ -199,7 +201,8 @@ impl TrustStore {
         budget.hash_bytes.check()?;
         budget.decoded_bytes.check()?;
         let state = evaluator.state.into_inner();
-        let path = path.map_err(|e| path_error(e, &state, &crls, &requirements, &leaf_report))?;
+        let path = path
+            .map_err(|e| path_error(e, &state, &crls, &requirements, signing_time, &leaf_report))?;
         // rssig's per-certificate check above is the only revocation
         // decision. Issuers of one name with different keys on the accepted
         // path are rejected here when their CRLs cannot be told apart by key,
@@ -377,11 +380,36 @@ pub(crate) struct ChainRequest<'a> {
     /// The extended key usage the signer must have.
     pub(crate) eku: &'static [u8],
     /// A verified timestamp's signing time, if any.
-    pub(crate) signing_time: Option<u64>,
+    pub(crate) signing_time: Option<SigningTime<'a>>,
     /// The validation time.
     pub(crate) now: u64,
     /// Whether to check revocation against CRLs.
     pub(crate) revocation: bool,
+}
+
+/// A verified timestamp's time: whole seconds and, when it has one, the exact
+/// digits of its nonzero fraction. The two travel together so that no caller
+/// validates a path at the whole second alone (TIME-005).
+#[derive(Clone, Copy)]
+pub(crate) struct SigningTime<'a> {
+    pub(crate) seconds: u64,
+    pub(crate) fraction: Option<&'a str>,
+}
+
+impl<'a> SigningTime<'a> {
+    /// The signing time a verified timestamp reports.
+    pub(crate) fn of(timestamp: &'a crate::domain::TimestampReport) -> Self {
+        Self {
+            seconds: timestamp.signing_time,
+            fraction: timestamp.fractional_seconds.as_deref(),
+        }
+    }
+
+    /// The whole second of a fractional time: a certificate whose notAfter
+    /// is at or before it has expired by the signing time.
+    fn fractional(self) -> Option<u64> {
+        self.fraction.map(|_| self.seconds)
+    }
 }
 
 /// Whether two anchors are the same one to webpki: one key, name and
@@ -529,6 +557,9 @@ struct PathState {
     invalid_ca_usage: bool,
     /// The first CA found issued after the lifetime signing time.
     issued_after_signing: Option<Certificate>,
+    /// The first certificate found that expires within the whole second of
+    /// a fractional signing time.
+    expired_at_fraction: Option<Certificate>,
     /// The first intermediate found on a candidate path that repeats an
     /// extension (PATH-014) or has one that does not decode (PATH-013), and
     /// what is wrong with it.
@@ -570,6 +601,8 @@ struct PathEvaluator<'a, 'b> {
     now: u64,
     revocation: bool,
     lifetime_signed_at: Option<u64>,
+    /// The whole second of a fractional signing time.
+    fractional_at: Option<u64>,
     budget: &'a Budget<'b>,
     state: core::cell::RefCell<PathState>,
 }
@@ -610,7 +643,11 @@ impl PathEvaluator<'_, '_> {
         // revocation, as webpki checked revocation while verifying the
         // path's signatures: only a path that would pass it can still be
         // completed by a fetched CRL.
-        let other_failure = path_check_failure(&path_certificates, self.lifetime_signed_at)?;
+        let other_failure = path_check_failure(
+            &path_certificates,
+            self.lifetime_signed_at,
+            self.fractional_at,
+        )?;
         if self.revocation {
             self.check_revocation(path, &path_certificates, other_failure.is_none())?;
         }
@@ -626,6 +663,29 @@ impl PathEvaluator<'_, '_> {
                 self.state
                     .borrow_mut()
                     .issued_after_signing
+                    .get_or_insert_with(|| cert.clone());
+                Err(error)
+            }
+            Some(PathCheckFailure::ExpiredAtFraction(cert, at)) => {
+                self.budget.log.debug(
+                    Stage::CertificateChain,
+                    format_args!(
+                        "candidate path rejected: {:?} expires at {}, within the second \
+                         of the fractional signing time",
+                        cert.tbs_certificate.subject.to_string(),
+                        not_after(cert).as_secs()
+                    ),
+                );
+                // TIME-005: webpki accepted this path at the whole second.
+                // Rejecting it here, ranked like webpki's own expiry, lets
+                // webpki try another issuer of the same name and key.
+                let error = webpki::Error::CertExpired {
+                    time: UnixTime::since_unix_epoch(Duration::from_secs(at)),
+                    not_after: UnixTime::since_unix_epoch(not_after(cert)),
+                };
+                self.state
+                    .borrow_mut()
+                    .expired_at_fraction
                     .get_or_insert_with(|| cert.clone());
                 Err(error)
             }
@@ -791,6 +851,7 @@ fn path_error(
     state: &PathState,
     crls: &[LoadedCrl],
     requirements: &SignerRequirements,
+    signing_time: Option<SigningTime<'_>>,
     leaf_report: &CertificateReport,
 ) -> VerificationError {
     // Only the path callback returns MALFORMED_INTERMEDIATE, and it records
@@ -837,7 +898,44 @@ fn path_error(
         // Every candidate path failed; report the issuer that postdates signing.
         return requirements.not_valid_at_signing(cert, at);
     }
-    let revocation_error = if revocation_rejected {
+    // TIME-014: a path that failed only the fractional comparison passed
+    // webpki's checks, every other path check and revocation. Its expiry is
+    // reported whatever validity error of another candidate webpki kept (an
+    // issuer expired at the whole second ranks equally and may come first),
+    // unless the search did not finish or CRL-027 decides: a revocation on
+    // another path, or a path a CRL could still complete.
+    let fraction_expiry = state
+        .expired_at_fraction
+        .as_ref()
+        .filter(|_| viable.is_none() && !search_limit(&e));
+    let revoked_elsewhere = fraction_expiry.is_some()
+        && state
+            .outcomes
+            .iter()
+            .any(|o| matches!(o.outcome, Outcome::Revoked(_)));
+    if let (
+        Some(SigningTime {
+            seconds,
+            fraction: Some(fraction),
+        }),
+        Some(cert),
+        false,
+    ) = (signing_time, fraction_expiry, revoked_elsewhere)
+    {
+        let error = VerificationError::new(
+            ErrorCode::CertificateExpired,
+            Stage::CertificateChain,
+            "fractional timestamp exceeds certificate validity",
+        );
+        let error = match CertificateReport::parse(cert) {
+            Ok(report) => error.detail("certificate", report),
+            Err(_) => error,
+        };
+        return error
+            .detail("validation_time", seconds)
+            .detail("fractional_seconds", fraction);
+    }
+    let revocation_error = if revocation_rejected || revoked_elsewhere {
         revocation_failure(&state.outcomes)
     } else {
         viable
@@ -1238,6 +1336,9 @@ fn extension_defect_error(cert: &Certificate, defect: ExtensionDefect) -> Verifi
 enum PathCheckFailure<'c> {
     /// A CA certificate issued after the lifetime signing time.
     IssuedAfterSigning(&'c Certificate, u64),
+    /// A signer or CA certificate whose notAfter is at or before the whole
+    /// second of a fractional signing time.
+    ExpiredAtFraction(&'c Certificate, u64),
     /// A CA certificate whose KeyUsage lacks keyCertSign.
     LacksCertSign,
 }
@@ -1245,10 +1346,16 @@ enum PathCheckFailure<'c> {
 /// The first path-check failure on a path, in the order it is reported:
 /// without a lifetime signing time a missing keyCertSign is reported where it
 /// is found; with one, every signing-time check comes first, so it outranks a
-/// missing keyCertSign wherever each defect sits in the path.
+/// missing keyCertSign wherever each defect sits in the path. Last, as when
+/// it ran after path selection (TIME-014), the signer or a CA that expires
+/// within the second of a fractional signing time (`fractional_at`,
+/// TIME-005). The path's anchor is not among `path_certificates`, so it is
+/// never compared; an embedded certificate that webpki uses as an
+/// intermediate is, whatever it shares with a configured root.
 fn path_check_failure(
     path_certificates: &[Certificate],
     lifetime_signed_at: Option<u64>,
+    fractional_at: Option<u64>,
 ) -> core::result::Result<Option<PathCheckFailure<'_>>, webpki::Error> {
     let mut lacks_cert_sign = false;
     for cert in &path_certificates[1..] {
@@ -1267,7 +1374,15 @@ fn path_check_failure(
             lacks_cert_sign = true;
         }
     }
-    Ok(lacks_cert_sign.then_some(PathCheckFailure::LacksCertSign))
+    if lacks_cert_sign {
+        return Ok(Some(PathCheckFailure::LacksCertSign));
+    }
+    Ok(fractional_at.and_then(|at| {
+        path_certificates
+            .iter()
+            .find(|cert| not_after(cert).as_secs() <= at)
+            .map(|cert| PathCheckFailure::ExpiredAtFraction(cert, at))
+    }))
 }
 
 /// The CRL that decided one certificate's status on the accepted path.
@@ -2256,6 +2371,10 @@ fn authority_for(
 
 fn not_before(cert: &Certificate) -> Duration {
     cert.tbs_certificate.validity.not_before.to_unix_duration()
+}
+
+fn not_after(cert: &Certificate) -> Duration {
+    cert.tbs_certificate.validity.not_after.to_unix_duration()
 }
 
 /// The lifetime signing time, when `cert` was issued after it.
@@ -3464,6 +3583,47 @@ mod revocation_reporting {
             Some(&names(Some(name("CN=Root")), Some(vec![3]))),
             &same_anchor
         ));
+    }
+}
+
+/// TIME-005: which certificates are compared with a fractional signing time.
+#[cfg(test)]
+mod fractional_expiry {
+    use super::*;
+
+    /// TIME-005: only the path's anchor is left out of the comparison. An
+    /// embedded certificate used as an intermediate is compared even when it
+    /// is a copy of a configured root, as when the comparison ran on the
+    /// selected chain.
+    #[test]
+    fn the_signer_and_every_intermediate_are_compared_with_the_fraction() {
+        let root = Certificate::from_der(include_bytes!("../../tests/fixtures/root.der")).unwrap();
+        let pe = crate::parse::Pe::parse(include_bytes!(
+            "../../tests/fixtures/time-root-not-after-fraction.exe"
+        ))
+        .unwrap();
+        let sd = crate::parse::SignedData::parse(pe.signatures().unwrap()[0]).unwrap();
+        let leaf = sd.certificate_choices()[0].x509().unwrap().clone();
+        let at = not_after(&root).as_secs();
+        assert!(not_after(&leaf).as_secs() > at);
+        let path = [leaf, root];
+        assert!(matches!(
+            path_check_failure(&path, None, Some(at)),
+            Ok(Some(PathCheckFailure::ExpiredAtFraction(cert, time)))
+                if time == at && cert == &path[1]
+        ));
+        assert!(matches!(
+            path_check_failure(&path[..1], None, Some(at)),
+            Ok(None)
+        ));
+        // The signer itself is compared.
+        assert!(matches!(
+            path_check_failure(&path[1..], None, Some(at)),
+            Ok(Some(PathCheckFailure::ExpiredAtFraction(cert, _))) if cert == &path[1]
+        ));
+        // Without a fraction nothing is compared here; webpki's whole-second
+        // check is the only one.
+        assert!(matches!(path_check_failure(&path, None, None), Ok(None)));
     }
 }
 

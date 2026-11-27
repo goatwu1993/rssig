@@ -4,7 +4,7 @@ use super::{
     budget::Budget,
     container::{Container, cms_der},
     integrity, tagged,
-    timestamp::{check_fractional_validity, verify_timestamp},
+    timestamp::verify_timestamp,
 };
 use crate::{
     cms::{self, SignedData},
@@ -185,7 +185,7 @@ fn verify_signature(
                         leaf: signer.cert,
                         certificates: &sd.certs,
                         eku: trust::CODE_SIGNING,
-                        signing_time: timestamp,
+                        signing_time: timestamp_verification.as_ref().map(trust::SigningTime::of),
                         now: options.now,
                         revocation: options.check_revocation,
                     },
@@ -199,13 +199,6 @@ fn verify_signature(
         };
         let certificate = CertificateReport::parse(signer.cert)?;
         log_signer(budget, &certificate, timestamp, trust_report.as_ref());
-        if let Some(timestamp) = &timestamp_verification {
-            check_fractional_validity(
-                trust_report.as_ref(),
-                timestamp.signing_time,
-                timestamp.fractional_seconds.as_deref(),
-            )?;
-        }
         reports.push(SignatureReport {
             unverified_certificate_choices: sd.unverified_certificate_choices.clone(),
             subject: certificate.subject.display.clone(),

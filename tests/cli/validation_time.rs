@@ -290,6 +290,189 @@ fn time_intermediate_fraction_after_not_after_is_expired() {
     assert_eq!(details["certificate"]["not_after"], T - 2000);
 }
 
+/// TIME-T005: the issuer expiring in the timestamp's second is skipped for a
+/// same-key issuer valid at the fractional time, wherever each is embedded.
+#[test]
+fn time_fraction_after_not_after_selects_the_issuer_still_valid() {
+    for file in [
+        "intermediate-not-after-fraction-rollover.exe",
+        "intermediate-rollover-not-after-fraction.exe",
+        "rdp-intermediate-not-after-fraction-rollover.rdp",
+    ] {
+        let output = run_file(file, &[]);
+        let signature = signature(&output);
+        intermediate_chain(signature);
+        assert_eq!(signature["trust"]["validation_time"], T - 2000, "{file}");
+        assert_eq!(
+            signature["trust"]["chain"][1]["not_after"],
+            T + 9000,
+            "{file}"
+        );
+        assert_eq!(
+            signature["timestamp_verification"]["fractional_seconds"], "5",
+            "{file}"
+        );
+        // Both issuers are embedded: one expires in the timestamp's second.
+        let expiring = signature["embedded_certificates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["not_after"] == T - 2000)
+            .count();
+        assert_eq!(expiring, 1, "{file}");
+    }
+}
+
+#[test]
+fn time_fraction_after_not_after_selects_the_issuer_still_valid_with_revocation() {
+    let output = run_file(
+        "intermediate-not-after-fraction-rollover.exe",
+        &["good.crl", "time-intermediate.crl"],
+    );
+    let signature = signature(&output);
+    intermediate_chain(signature);
+    assert_eq!(signature["trust"]["chain"][1]["not_after"], T + 9000);
+    assert_eq!(signature["trust"]["revocation"]["status"], "good");
+}
+
+/// A configured anchor is not checked against the fraction: the timestamp is
+/// the root's notAfter plus .5 seconds, for the signer's path and the TSA's.
+#[test]
+fn time_fraction_after_root_not_after_is_valid() {
+    let output = run_file_at("root-not-after-fraction.exe", T + 10001, &[]);
+    let signature = signature(&output);
+    assert_eq!(signature["timestamp"], T + 10000);
+    assert_eq!(
+        signature["timestamp_verification"]["fractional_seconds"],
+        "5"
+    );
+    for chain in [
+        &signature["trust"]["chain"],
+        &signature["timestamp_verification"]["trust"]["chain"],
+    ] {
+        let root = chain.as_array().unwrap().last().unwrap();
+        assert_eq!(root["subject"]["display"], "CN=rssig test root");
+        assert_eq!(root["not_after"], T + 10000);
+    }
+}
+
+/// TIME-014: what is reported when a path fails the fractional comparison
+/// and something else.
+#[test]
+fn time_fraction_expiry_is_reported_after_a_missing_key_cert_sign() {
+    for label in [
+        "chain-ca-usage-not-after-fraction",
+        "chain-not-after-fraction-ca-usage",
+    ] {
+        let output = run(label, T, false);
+        expect_failure(
+            &output,
+            1,
+            "invalid_key_usage",
+            "Invalid key usage",
+            Some("certificate_chain"),
+            Some("keyCertSign"),
+        );
+    }
+}
+
+#[test]
+fn time_fraction_expiry_is_reported_after_revocation_on_the_same_path() {
+    let file = "intermediate-not-after-fraction.exe";
+    let output = run_file(file, &["good.crl", "time-intermediate-revoked-leaf.crl"]);
+    assert_eq!(
+        output.json["results"][0]["error"]["code"],
+        "certificate_revoked"
+    );
+    // With no CRL for the leaf nothing is named: no CRL completes the path
+    // (CRL-027).
+    let output = run_file(file, &["good.crl"]);
+    assert_eq!(
+        output.json["results"][0]["error"]["code"],
+        "revocation_unknown"
+    );
+    assert_eq!(details(&output)["certificates_without_crl"], json!([]));
+}
+
+#[test]
+fn time_a_revoked_issuer_on_another_path_is_reported_over_fraction_expiry() {
+    // The issuer valid at the fractional time is revoked by the root
+    // (CRL-027: a revocation is reported over another path's failure).
+    let output = run_file(
+        "intermediate-not-after-fraction-rollover.exe",
+        &[
+            "good.crl",
+            "time-intermediate.crl",
+            "time-root-revoked-intermediate.crl",
+        ],
+    );
+    assert_eq!(
+        output.json["results"][0]["error"]["code"],
+        "certificate_revoked"
+    );
+    assert_eq!(output.json["results"][0]["error"]["stage"], "revocation");
+}
+
+#[test]
+fn time_fraction_expiry_is_reported_over_an_issuer_expired_earlier() {
+    // The first embedded issuer expired before the timestamp's second; the
+    // second, the one that passes at the whole second, is the one named.
+    let output = run("intermediate-expired-then-not-after-fraction", T, false);
+    expired(
+        &output,
+        Some("fractional timestamp exceeds certificate validity"),
+    );
+    let details = details(&output);
+    assert_eq!(details["fractional_seconds"], "5");
+    assert_eq!(details["certificate"]["not_after"], T - 2000);
+}
+
+#[test]
+fn time_rdp_intermediate_fraction_after_not_after_is_expired() {
+    let output = run_file("rdp-intermediate-not-after-fraction.rdp", &[]);
+    expired(
+        &output,
+        Some("fractional timestamp exceeds certificate validity"),
+    );
+    let details = details(&output);
+    assert_eq!(details["validation_time"], T - 2000);
+    assert_eq!(details["fractional_seconds"], "5");
+    assert_eq!(
+        details["certificate"]["subject"]["display"],
+        "CN=SEC-09 intermediate"
+    );
+}
+
+#[test]
+fn time_tsa_intermediate_fraction_after_not_after_is_expired() {
+    let output = run("tsa-intermediate-not-after-fraction", T, false);
+    expired(
+        &output,
+        Some("fractional timestamp exceeds certificate validity"),
+    );
+    let details = details(&output);
+    assert_eq!(details["validation_time"], T - 2000);
+    assert_eq!(details["fractional_seconds"], "5");
+    assert_eq!(
+        details["certificate"]["subject"]["display"],
+        "CN=SEC-09 TSA intermediate"
+    );
+    assert_eq!(details["certificate"]["not_after"], T - 2000);
+}
+
+#[test]
+fn time_tsa_fraction_after_not_after_selects_the_issuer_still_valid() {
+    let output = run("tsa-intermediate-not-after-fraction-rollover", T, false);
+    let trust = &signature(&output)["timestamp_verification"]["trust"];
+    assert_eq!(trust["validation_time"], T - 2000);
+    assert_eq!(trust["chain"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        trust["chain"][1]["subject"]["display"],
+        "CN=SEC-09 TSA intermediate"
+    );
+    assert_eq!(trust["chain"][1]["not_after"], T + 9000);
+}
+
 #[test]
 fn time_intermediate_one_second_after_not_after_is_expired() {
     let output = run("intermediate-expired", T, false);

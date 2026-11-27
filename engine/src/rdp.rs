@@ -124,7 +124,16 @@ pub(crate) fn verify_budget(
         let timestamp = timestamp_verification.as_ref().map(|t| t.signing_time);
         let trust = if let Some(store) = options.trust {
             Some(at(
-                verify_trust(store, signer.cert, &sd.certs, timestamp, options, budget),
+                verify_trust(
+                    store,
+                    signer.cert,
+                    &sd.certs,
+                    timestamp_verification
+                        .as_ref()
+                        .map(crate::trust::SigningTime::of),
+                    options,
+                    budget,
+                ),
                 ErrorCode::CertificateChainInvalid,
                 Stage::CertificateChain,
             )?)
@@ -133,13 +142,6 @@ pub(crate) fn verify_budget(
         };
         let certificate = CertificateReport::parse(signer.cert)?;
         crate::verify::log_signer(budget, &certificate, timestamp, trust.as_ref());
-        if let Some(timestamp) = &timestamp_verification {
-            crate::verify::timestamp::check_fractional_validity(
-                trust.as_ref(),
-                timestamp.signing_time,
-                timestamp.fractional_seconds.as_deref(),
-            )?;
-        }
         signatures.push(SignatureReport {
             unverified_certificate_choices: sd.unverified_certificate_choices.clone(),
             subject: certificate.subject.display.clone(),
@@ -179,7 +181,7 @@ fn verify_trust(
     store: &crate::TrustStore,
     leaf: &x509_cert::Certificate,
     certificates: &[x509_cert::Certificate],
-    signing_time: Option<u64>,
+    signing_time: Option<crate::trust::SigningTime<'_>>,
     options: &VerifyOptions<'_>,
     budget: &Budget,
 ) -> Result<TrustReport> {

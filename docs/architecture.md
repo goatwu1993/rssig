@@ -31,7 +31,7 @@ clock depends on `rssig-engine` alone.
 | `verify/integrity.rs` | SIP/content binding, algorithm checks, image/package/script digests, and PE page hashes. Returns digest evidence to the signer pipeline. |
 | `verify/authenticode.rs` | Ordered signer pipeline: integrity, CMS authentication, publisher binding, timestamp, configured trust, report, nested signatures. |
 | `verify/appx.rs` | Embedded bundle package verification and package identity/signer binding. |
-| `verify/timestamp.rs` | RFC 3161/PKCS#9 binding, TSA validation, canonical time decoding, and fractional expiry checks. Shared with RDP verification. |
+| `verify/timestamp.rs` | RFC 3161/PKCS#9 binding, TSA validation and canonical time decoding. Shared with RDP verification. |
 | `verify/budget.rs` | Aggregate per-verification work budgets. |
 | `cms` / `crypto` | Authenticode/CMS interpretation and signature verification using RustCrypto primitives. |
 | `trust` | Configured trust anchors (explicit DER/PEM, or roots an OS adapter hands to `TrustStore::from_system_roots`), webpki path building, rssig's per-certificate CRL evaluation (the only revocation check); `trust/error.rs` maps adapter errors. |

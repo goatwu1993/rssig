@@ -118,18 +118,25 @@ they pin or what they check, never after a task.
 
 - [x] **TIME-T001** fix: Define lifetime-signing and time-boundary rules. Done ([PR #43](https://github.com/goatwu1993/rssig/pull/43)); [record](docs/tasks/done.md#time-t001-fix-define-lifetime-signing-and-time-boundary-rules).
 - [x] **TIME-T002** fix: Lifetime-signing review decisions and deferred follow-ups. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups).
-- [ ] **TIME-T005** fix: Check fractional expiry during path building (owner decision).
-  Pre-existing: `check_fractional_validity` runs after path selection, so with
-  two same-key issuers webpki can pick the one expiring at the timestamp's
-  whole second and reject a valid signature. Check it in path building, as
-  TIME-008 does, for every timestamped signer and TSA; pair a rollover fixture.
-  This changes Decided TIME-005, so it needs the owner's approval.
+- [x] **TIME-T005** fix: Check fractional expiry during path building. Done ([PR #109](https://github.com/goatwu1993/rssig/pull/109)). Owner decision (PR #109): check it in path building, for the signer's path and the TSA's.
 - [ ] **TIME-T006** fix: Replace the free-text `certificate_report_error` detail with a typed one.
   A late lifetime certificate whose report cannot be built gets prose instead
   of `certificate`, and no fixture reaches it. Since PATH-T010 a report fails
   only for a certificate that does not re-encode, so first show whether any
   certificate can parse and not be reported; if none can, remove the detail.
-  Otherwise type it, reach it with a fixture, and extend TIME-013.
+  Otherwise type it, reach it with a fixture, and extend TIME-013. The
+  fractional-expiry error (TIME-005) omits `certificate` in the same
+  situation; treat both alike.
+- [ ] **TIME-T010** test: Pin the fractional-expiry orderings TIME-014 leaves open.
+  Since TIME-T005 the comparison runs inside path building, so three results
+  may differ from before and no fixture reaches them: an RDP signer with two
+  accepted usages where the other usage fails differently
+  (`choose_usage_failure`), a path also rejected for `ambiguous_issuer_keys`
+  after selection, and another path that only lacks a CRL (CRL-027). Also
+  unpinned: a revocation on another path that fails a path check of its own
+  is reported over the expiry, and a webpki search limit reached after a
+  fractional rejection is reported instead of it. Add fixtures and cases;
+  restore the earlier result where it is the better diagnostic.
 
 ### CRL
 

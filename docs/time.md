@@ -45,6 +45,7 @@ Observed ones. A new entry takes the next free number.
 | [TIME-011](#time-011-lifetime-signing-validity-outranks-revocation-on-another-path) | Lifetime-signing validity outranks revocation on another path | Decided | diagnostics |
 | [TIME-012](#time-012-crl-freshness-is-reported-before-the-signing-time-check) | CRL freshness is reported before the signing-time check | Decided | diagnostics |
 | [TIME-013](#time-013-failure-details-name-the-chain-certificate-that-failed) | Failure details name the chain certificate that failed | Decided | diagnostics |
+| [TIME-014](#time-014-the-fractional-expiry-rejection-is-reported-last-on-its-path) | The fractional-expiry rejection is reported last on its path | Observed | diagnostics |
 
 ## Tier 1: fail-open
 
@@ -121,20 +122,41 @@ fraction in that second, or a later second, is `timestamp_in_future`.
 ### TIME-005: A fractional timestamp is compared exactly with validity
 
 A fractional signing time is compared exactly with the inclusive validity of
-TIME-006: the selected leaf and intermediates must have notBefore at or before
-it and notAfter at or after it. So `notAfter` itself is valid and
+TIME-006: the leaf and intermediates of the path that verifies must have
+notBefore at or before it and notAfter at or after it. So `notAfter` itself is valid and
 `notAfter + .5` is `certificate_expired`; `notBefore + .5` is valid and
 `notBefore - 1 + .5` is `certificate_not_yet_valid`. Exact decimal digits are
-kept; no floating point is used.
+kept; no floating point is used. The comparison runs inside path building,
+for the signer's path and the TSA's: an issuer that expires within the
+timestamp's whole second is rejected as a candidate and another issuer with
+the same subject and key that is valid at the fractional time is used,
+wherever each is embedded. The anchor a path ends at is not compared with
+the fraction; an embedded certificate used as an intermediate is.
 
 - **Status:** Decided
-- **Decided by:** written choice, PR #43 (TIME-T001)
+- **Decided by:** written choice, PR #43 (TIME-T001); checked in path
+  building by owner, PR #109 (TIME-T005)
 - **Pins:** acceptance
 - **Sources:**
   - RFC 5280 section 4.1.2.5 (validity is inclusive of notBefore and
     notAfter), applied to RFC 3161 `genTime` fractions.
-- **Note:** the check runs after path selection, so it does not consider an
-  alternative issuer with a later notAfter (open in TIME-T005).
+  - Validity counts while an issuer is chosen. OpenSSL
+    `crypto/x509/x509_vfy.c:411-415` (`get0_best_issuer_sk`: "Prefer the
+    first match with suitable validity period or latest expiration"), at
+    whole seconds only (`ossl_x509_check_cert_time`, `x509_vfy.c:2503-2540`):
+    it has no fractional verification time. Bouncy Castle
+    `PKIXCertPathBuilderSpi.java:209` validates each candidate path and
+    `:253-262` tries the next issuer when it fails; `cert.checkValidity`
+    (`RFC3280CertPathUtilities.java:1292`) compares a `Date`, which carries
+    milliseconds. Read at the pinned commits; neither library was run.
+- **Unit tests:** `fractional_expiry::the_signer_and_every_intermediate_are_compared_with_the_fraction`
+  (`engine/src/trust.rs`); `time-005-root-not-after-fraction` pins that the
+  path's anchor is left out.
+- **Note:** before PR #109 the comparison ran after path selection, so a
+  file whose first embedded issuer expired within the timestamp's second was
+  rejected although a valid same-key issuer was embedded, and verified with
+  the two in the other order. Which failure is reported when a path fails
+  this comparison and something else is TIME-014.
 
 ### TIME-006: An untimestamped signer is validated at the validation time, inclusive at whole seconds
 
@@ -255,6 +277,40 @@ generic chain error is reported. Successful reports set
   Webpki validity errors naming the leaf, the signing-time error details and
   store-wide CRL presence and freshness errors carrying no `lifetime_signing`
   detail are not pinned here yet (TIME-T008).
+
+### TIME-014: The fractional-expiry rejection is reported last on its path
+
+On one candidate path the fractional comparison of TIME-005 is judged after
+every other path check and applied after revocation, as the signing-time
+check is (TIME-010). A path that also has an intermediate lacking keyCertSign
+is `invalid_key_usage`, wherever each defect sits; a revoked certificate on
+it is `certificate_revoked`; a certificate on it with no CRL is
+`revocation_unknown` that names nothing, since no CRL completes the path
+(CRL-027). A path that fails only this comparison passed everything else, so
+its expiry is reported over another candidate's validity failure: an issuer
+already expired at the whole second, in either embedded order. CRL-027 still
+decides across paths: a revocation on another path is reported over it, and
+so is a path that only lacks a CRL. All outcomes reject.
+
+- **Status:** Observed
+- **Decided by:** —
+- **Pins:** diagnostics
+- **Sources:**
+  - Written argument: moving the comparison into path building (TIME-T005)
+    is meant to change which issuer is chosen, not which failure is
+    reported. Within a path it keeps the order it had after path selection;
+    across paths it follows CRL-027, which now applies because the failure
+    is known while paths are built.
+- **Note:** named tests `time_fraction_expiry_is_reported_after_a_missing_key_cert_sign`,
+  `time_fraction_expiry_is_reported_after_revocation_on_the_same_path`,
+  `time_a_revoked_issuer_on_another_path_is_reported_over_fraction_expiry`
+  and `time_fraction_expiry_is_reported_over_an_issuer_expired_earlier` in
+  `tests/cli/validation_time.rs`. Two results differ from before PR #109:
+  the missing-CRL result named the certificate, and a revoked issuer on the
+  other path was reported as the fractional expiry. Not pinned (TIME-T010):
+  an RDP signer with two accepted usages whose other usage fails
+  differently, a path that would also be rejected for ambiguous issuer keys
+  after selection, and another path that only lacks a CRL.
 
 ## Candidate rules
 
