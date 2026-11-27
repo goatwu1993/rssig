@@ -1598,16 +1598,7 @@ fn specification_a_fixture_name_never_leaves_the_fixture_directory() {
 fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
     use rssig_engine::retrieval::{MAX_CRL_BYTES, MAX_TOTAL_BYTES};
     let suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
-    let bodies_of = |id: &str| -> Vec<spec_suite::ScriptedCrl> {
-        let case = suite.cases.iter().find(|c| c.id == id).unwrap();
-        let answers = case.crl_certificate_responses.as_ref().unwrap();
-        let [spec_suite::CertificateAnswer::Scripted(script)] =
-            answers.values().collect::<Vec<_>>()[..]
-        else {
-            panic!("{id} scripts one answer");
-        };
-        script.crls.clone().unwrap()
-    };
+    let bodies_of = |id: &str| scripted_answer_bodies(&suite, id);
     let pads =
         |id: &str| -> Vec<Option<usize>> { bodies_of(id).iter().map(|c| c.pad_to).collect() };
     // One body over the per-body cap.
@@ -1642,6 +1633,18 @@ fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
     assert!(4 * size + last <= allowance && 5 * size > allowance);
 }
 
+/// The bodies of the one scripted answer case `id` holds.
+fn scripted_answer_bodies(suite: &Suite, id: &str) -> Vec<spec_suite::ScriptedCrl> {
+    let case = suite.cases.iter().find(|c| c.id == id).unwrap();
+    let answers = case.crl_certificate_responses.as_ref().unwrap();
+    let [spec_suite::CertificateAnswer::Scripted(script)] =
+        answers.values().collect::<Vec<_>>()[..]
+    else {
+        panic!("{id} scripts one answer");
+    };
+    script.crls.clone().unwrap()
+}
+
 /// The directory the suite's fixtures are in.
 fn suite_fixtures(suite: &Suite) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1664,7 +1667,7 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
             let prefix = format!("{}/", suite.fixtures);
             let name = pair[1]
                 .strip_prefix(&prefix)
-                .unwrap_or_else(|| panic!("{id}: root {} is under {prefix}", pair[1]));
+                .unwrap_or_else(|| panic!("{id}: root {} is not under {prefix}", pair[1]));
             // The engine counts a root's DER, which is the file only when the
             // file is DER: a PEM root would be measured wrong.
             let bytes = std::fs::read(fixtures.join(name)).unwrap();
@@ -1722,17 +1725,7 @@ fn specification_the_crl_046_allowance_cases_rest_on_the_engines_caps() {
             1,
         ),
     ] {
-        let case = suite.cases.iter().find(|c| c.id == id).unwrap();
-        let answers = case.crl_certificate_responses.as_ref().unwrap();
-        let [spec_suite::CertificateAnswer::Scripted(script)] =
-            answers.values().collect::<Vec<_>>()[..]
-        else {
-            panic!("{id} scripts one answer");
-        };
-        let pads: Vec<usize> = script
-            .crls
-            .as_ref()
-            .unwrap()
+        let pads: Vec<usize> = scripted_answer_bodies(&suite, id)
             .iter()
             .map(|c| c.pad_to.expect("every body is padded"))
             .collect();
