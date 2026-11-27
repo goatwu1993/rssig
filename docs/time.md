@@ -238,18 +238,23 @@ fractional-expiry check, an intermediate when it is the cause. A signing-time
 message and certificate are attached only when the surviving webpki error
 carries that certificate's notBefore at the signing time; otherwise the
 generic chain error is reported. Successful reports set
-`TrustReport.lifetime_signing` and `validation_time`.
+`TrustReport.lifetime_signing` and `validation_time`, and a report without
+`lifetime_signing` does not deserialize.
 
 - **Status:** Decided
-- **Decided by:** written choice, kept as a decision in TIME-T002
+- **Decided by:** written choice, kept as a decision in TIME-T002; the field
+  made required with the owner's approval in PR #96 (TIME-T009)
 - **Pins:** diagnostics
 - **Sources:**
   - Written argument: a change in webpki's search order must not name the
     wrong certificate.
-- **Note:** pinned by named tests in `tests/cli/validation_time.rs`; no spec
-  case names this entry yet. Webpki validity errors naming the leaf, the
-  signing-time error details and store-wide CRL presence and freshness errors
-  carrying no `lifetime_signing` detail are not pinned here yet (TIME-T008).
+  - AGENTS.md, "Release status": no compatibility shims for earlier shapes.
+- **Note:** pinned by named tests in `tests/cli/validation_time.rs`, and the
+  required field by `core_checks_trust_revocation_and_integrity` in
+  `engine/tests/verification_core.rs`; no spec case names this entry yet.
+  Webpki validity errors naming the leaf, the signing-time error details and
+  store-wide CRL presence and freshness errors carrying no `lifetime_signing`
+  detail are not pinned here yet (TIME-T008).
 
 ## Candidate rules
 

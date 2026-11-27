@@ -334,10 +334,7 @@ they pin or what they check, never after a task.
   The [record](docs/tasks/done.md#time-t002-fix-lifetime-signing-review-decisions-and-deferred-follow-ups)
   maps each to its entry: extend TIME-009, TIME-011 and TIME-013 and narrow
   TIME-010 to intermediates where marked; the candidate-path rules are PATH-T009.
-- [ ] **TIME-T009** fix: Make `TrustReport.lifetime_signing` required (owner decision).
-  Its `#[serde(default)]` only reads reports written before TIME-T001, a
-  compatibility shim the release-status rule in AGENTS.md rules out. It was kept
-  in TIME-T002, so removing it needs the owner's approval.
+- [x] **TIME-T009** fix: Make `TrustReport.lifetime_signing` required. Done ([PR #96](https://github.com/goatwu1993/rssig/pull/96)); owner-approved removal of the pre-TIME-T001 `serde(default)`.
 
 ### PATH
 
@@ -420,6 +417,10 @@ they pin or what they check, never after a task.
 - [ ] **APPX-T001** refactor: Number the `APPX-` index. Fill
   [docs/appx-decisions.md](docs/appx-decisions.md) from its skeleton. Move an
   `embedded-signature` case to `CMS-` where its rule is shared.
+- [ ] **APPX-T003** fix: Make `AppxReport.kind` required.
+  Its bare `#[serde(default)]` only reads reports written before the field, the
+  compatibility shim the release-status rule in AGENTS.md rules out, as
+  TIME-T009 removed for `lifetime_signing`; `engine/src/appx.rs` tests reading one.
 
 ### DOC
 

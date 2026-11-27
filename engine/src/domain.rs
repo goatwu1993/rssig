@@ -374,8 +374,7 @@ pub struct TrustReport {
     /// Whole-second time at which the selected chain was validated.
     pub validation_time: u64,
     /// The signer has the lifetime-signing EKU, so its chain was validated at
-    /// the validation time rather than at the timestamp. Absent in older reports.
-    #[serde(default)]
+    /// the validation time rather than at the timestamp.
     pub lifetime_signing: bool,
     pub required_eku: OidReport,
     pub chain: Vec<CertificateReport>,

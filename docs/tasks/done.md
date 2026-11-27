@@ -211,7 +211,7 @@ Where each rule is pinned, in the order above:
 | webpki validity errors name the leaf | not pinned by TIME-013; extend it (TIME-T008) |
 | Unsigned timestamps are a consistency check | [TIME-002](../time.md#time-002-a-lifetime-signers-chain-must-be-valid-at-the-signing-time), [TIME-003](../time.md#time-003-a-timestamped-signers-chain-is-validated-at-the-signing-time) |
 | KeyUsage precedence | none (PATH-T009); changing it is PATH-T007 |
-| `lifetime_signing` defaults to `false` | not to be pinned: a compatibility shim the release-status rule in AGENTS.md rules out; removing it is TIME-T009 (owner decision) |
+| `lifetime_signing` defaults to `false` | dropped with the owner's approval: a compatibility shim the release-status rule in AGENTS.md rules out. TIME-T009 made the field required; TIME-013 pins it |
 | Error details on "not valid at the signing time", and store-wide CRL presence and freshness errors without `lifetime_signing` (`time-012-lifetime-before-not-before-crl-expired`; revocation errors carry it) | extend TIME-013 (TIME-T008) |
 
 The lifetime-signing rules set the schema and detail rows above, so by the
@@ -220,8 +220,8 @@ The lifetime-signing rules set the schema and detail rows above, so by the
 Follow-ups: TIME-T005 (fractional expiry during path building), TIME-T006 (the
 `certificate_report_error` fallback), TIME-T007 (lifetime fixtures for the
 formats without one), TIME-T008 (extending TIME-009, TIME-011 and TIME-013 and
-narrowing TIME-010), TIME-T009 (the `lifetime_signing` default, owner
-decision), PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root
+narrowing TIME-010), TIME-T009 (done here:
+`lifetime_signing` required), PATH-T007 (the keyCertSign flag, owner decision), PATH-T008 (a root
 re-issued after the signing time), PATH-T009 (entries for the candidate-path
 reporting rules), LIMIT-T007 (the repeated RDP path search) and TEST-T016
 (shared timestamp token builders).
