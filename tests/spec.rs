@@ -1666,8 +1666,9 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
         })
         .sum();
     assert!(roots > 0, "{id} supplies its roots with --roots");
-    // Bytes an earlier request downloaded would spend it too; only the one
-    // scripted answer returns bodies, and nothing is answered by URL.
+    // A CRL an earlier request loaded would spend it too (the allowance is
+    // what the store does not yet hold); only the one scripted answer
+    // returns bodies, and nothing is answered by URL.
     assert!(
         case.crl_responses.as_ref().is_none_or(|r| r.is_empty()),
         "{id} answers nothing by URL"

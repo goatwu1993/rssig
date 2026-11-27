@@ -716,9 +716,7 @@ native crypto provider is added.
 #### CRL sources (`--fetch-crls`; the engine's `retrieval` feature, the application's `crl-fetch`)
 
 `CrlSource` is now asked once per certificate rather than once per URL, and
-returns restricted errors. A certificate with no new point, whose issuer name,
-authority key and CA role were already asked about, is not asked again: CRLs
-are per issuer key and role. Old to new:
+returns restricted errors. Old to new:
 
 | Before | Now |
 |---|---|
@@ -753,10 +751,24 @@ URL policy and returns a `Denied` error to pass on. It checks the URL only;
 your HTTP client must also refuse nonpublic DNS answers and re-check redirect
 targets, as `HttpCrlSource` does.
 
+**Reusing answers is the source's (CRL-T041).** The engine asks about every
+certificate that lacks a usable CRL, with every point it lists. Before, it
+skipped a certificate with no new point whose issuer name, authority key and
+CA role were already asked about, and left out of `distribution_points` a URL
+offered for an earlier certificate (recording that URL's earlier failure
+itself). Now a source sees each repeat: one that wants to answer it without
+new work keeps its own cache for the verification (reset in
+`begin_verification`) and returns the same body or failure, as `HttpCrlSource`
+does; one without a cache gets one more call per such certificate. A request
+may carry no point at all (a certificate that lists none), and a source should
+not count such a call against a request cap: `HttpCrlSource` counts a call at the
+first point it fetches, and past its cap answers that point with an `abort`.
+
 **Reusing a source.** The engine calls `CrlSource::begin_verification()` once
 at the start of each verification that may ask the source. `HttpCrlSource`
 uses it to start its allowances (64 source requests, 64 distinct URLs, 16 HTTP requests, 32 MiB,
-30 seconds from its first fetch) afresh, so one instance can serve many files; the CLI relies on this.
+16 MiB of kept bodies returned again, 30 seconds from its first fetch) and its memory of each
+URL's outcome afresh, so one instance can serve many files; the CLI relies on this.
 The engine counts no requests to a source (CRL-039), so a source of your own
 that wants a cap enforces it, and reports the call past it as `abort`. One that
 keeps per-verification allowances should do the
