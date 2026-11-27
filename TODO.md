@@ -290,17 +290,19 @@ they pin or what they check, never after a task.
   `rdp-independent-nfedera-parser`, `psxml-independent-ascii-parser` and
   `appx-publisher-parser` (found in the task reindex). Drop them or make each
   pin what its named test checks.
-- [ ] **TEST-T015** test: Derive the fixture count from the checked list.
-  `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
-  (`src/tests/certificate_paths.rs`) compares a hand-edited
-  `N + point_forms().len()` with a hand-kept list of variant files, so a
-  fixture added to one list and not the other is skipped without a failure.
-  Found in the review of PR #86.
+- [x] **TEST-T015** test: Derive the fixture count from the checked list. Done ([PR #105](https://github.com/goatwu1993/rssig/pull/105)).
 - [ ] **TEST-T016** test: Share the RFC 3161/PKCS#9 token builders across test modules.
   Share them across `engine/src/tests.rs` and `engine/src/tests/`
   `timestamp_structure.rs`, `validation_time.rs`, `rdp_fixtures.rs` and
   `cms_audit.rs` without changing committed bytes; keep their regeneration commands consistent with
   `regenerate_cli_fixtures`.
+- [ ] **TEST-T017** test: Check that committed path fixtures match their generator.
+  `certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
+  runs `certificate_paths::write` but compares only the `.exe` names with the
+  manifest, never the bytes, nor the `.der`, `.crl` and `.pem` files it also
+  writes, so a generator change without a regeneration goes unnoticed. The
+  output should be deterministic (fixed keys, RFC 6979 ECDSA); confirm first.
+  Collecting the files in memory would also drop the scratch directory. Found in the review of PR #105.
 
 ### BUILD
 
