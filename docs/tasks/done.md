@@ -539,3 +539,36 @@ reaches a revocation that is another error type's source: the engine unit test
 does, so that branch then gets an end-to-end case. Making that branch
 reachable showed that the public `verify_rdp` boundary drops the outer
 messages RDP-T001 keeps; that is CLI-T004.
+
+## LIMIT-T004 fix: Finish with the gathered evidence when an engine limit is reached
+
+Three engine retrieval limits ended the whole verification with
+`resource_limit_exceeded` and no verifier result: the up-front check that
+supplied roots and CRLs fit the 32 MiB the store retains
+(`retrieval_trust_bytes`), the bound on CRL bodies and failures in one source
+response (`crl_response_entries`), and the 64 CRLs the store retains
+(`retrieval_crl_artifacts`). Each is now recorded in
+`crl_retrieval.failures` and the run goes on, so the verifier's result with
+the evidence gathered stands: supplied evidence over the byte cap leaves every
+certificate unasked, as a store filled by fetched CRLs already did since
+CRL-T041; a response past the entry bound is not used and each point it was
+offered is recorded (an `Abort` in it still stops retrieval); a body past the
+retained-CRL cap is not loaded (its CRLs are dropped again from the store),
+and a certificate reached with the store holding 64 CRLs is not asked.
+Only the LIMIT-T002 work budget still ends the run. The cases
+`limit-fetch-65-crls` and `limit-fetch-supplied-plus-bundle` (candidate rule
+`crl-count`) moved from `resource_limit_exceeded` to `revocation_unknown`
+with the limit as a failure entry. The run can now accept where it used to
+end: a library store over the byte cap gets the verdict verification without
+retrieval gives, and a body refused for the CRL count is no evidence, like a
+body over the byte allowance, so an older CRL from the same answer can decide.
+The owner approved this in PR #100 (2026-11-27). CRL-024 and CRL-039 describe the
+new outcome. Covered by the unit tests
+`supplied_evidence_over_the_retained_byte_cap_asks_nothing_and_the_result_stands`,
+`a_response_with_too_many_entries_is_not_used_and_the_run_goes_on`,
+`an_abort_in_a_response_past_the_entry_bound_still_stops_retrieval` and
+`a_certificate_reached_with_the_retained_crls_full_is_not_asked`, and the
+CLI tests `a_fetched_bundle_past_the_retained_crl_limit_is_not_loaded` and
+`a_store_holding_64_crls_asks_the_source_nothing`, and the unit test
+`the_cli_never_supplies_more_than_the_engine_retains` in `src/cli/limits.rs`; the case
+`limit-fetch-with-64-supplied-crls-asks-nothing` pins the store at 64 CRLs.

@@ -25,4 +25,4 @@ Unnumbered. `tests/decision-claims.json` assigns every unindexed case to one of 
 
 - `budgets`: per-file budgets bound entries, width and nesting depth (eight, for verification and `parse` alike); exceeding one is `resource_limit_exceeded` or a fail-closed parse error.
 - `host-input`: input, report and batch sizes are bounded by the host.
-- `crl-count`: the number of supplied and fetched CRLs is bounded.
+- `crl-count`: the number of supplied and fetched CRLs is bounded; a fetched body past it is not loaded and is recorded (`retrieval_crl_artifacts`), a certificate reached with the store full is not asked and its points are recorded as not tried, and the verifier's result with the evidence held stands (LIMIT-T004).

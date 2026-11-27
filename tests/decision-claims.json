@@ -326,6 +326,7 @@
         "limit-fetch-64-crls",
         "limit-fetch-65-crls",
         "limit-fetch-supplied-plus-bundle",
+        "limit-fetch-with-64-supplied-crls-asks-nothing",
         "limit-supplied-64-crls",
         "limit-supplied-65-crls"
       ],

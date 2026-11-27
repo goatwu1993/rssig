@@ -41,13 +41,14 @@ they pin or what they check, never after a task.
 - [x] **LIMIT-T001** fix: Audit arithmetic and structural bounds across every parser. Done; [record](docs/tasks/done.md#limit-t001-fix-audit-arithmetic-and-structural-bounds-across-every-parser).
 - [x] **LIMIT-T002** fix: Enforce aggregate verification budgets. Done; [record](docs/tasks/done.md#limit-t002-fix-enforce-aggregate-verification-budgets).
 - [x] **LIMIT-T003** fix: Bound host input and report memory. Done; [record](docs/tasks/done.md#limit-t003-fix-bound-host-input-and-report-memory).
-- [ ] **LIMIT-T004** fix: Finish with the gathered evidence when an engine limit is reached.
-  The engine limits (the up-front `retrieval_trust_bytes` check of supplied
-  roots and CRLs, response entries, retained CRL count) end the whole
-  verification with `resource_limit_exceeded`, rather than recording the
-  remaining points and finishing with the evidence gathered. CRL-T041 left a
-  certificate reached with the retained-byte cap full unasked, so that asking
-  every certificate did not end runs that the issuer skip used to finish.
+- [x] **LIMIT-T004** fix: Finish with the gathered evidence when an engine limit is reached. Done; [record](docs/tasks/done.md#limit-t004-fix-finish-with-the-gathered-evidence-when-an-engine-limit-is-reached).
+- [ ] **LIMIT-T008** test: Pin in a case that supplied roots and CRLs filling the retained-byte cap leave every certificate unasked (`retrieval_trust_bytes`), the verifier's result standing. Only the unit test `supplied_evidence_over_the_retained_byte_cap_asks_nothing_and_the_result_stands` pins it; the CLI supplies at most the cap (`the_cli_never_supplies_more_than_the_engine_retains`), so a case needs 32 MiB of supplied evidence, as CRL-T050 does for fetched CRLs.
+- [ ] **LIMIT-T010** docs: Say that a supplied store may exceed the retained-byte cap.
+  The comment in `Retrieval::request` and the "Combined trust evidence" row of
+  `docs/crl-retrieval.md` still say the store holds at most 32 MiB; since
+  LIMIT-T004 a library store over it is verified as supplied and retrieval adds
+  nothing. CRL-039 pins diagnostics but its "Decided by" line states the
+  acceptance change: keep that statement in CRL-024 and refer to it. From LIMIT-T004.
 - [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
   RDP `verify_trust` repeats the full path search, with the lifetime leaf check
   and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
@@ -205,6 +206,11 @@ they pin or what they check, never after a task.
   is reported, but it also decides that points left once accepted bodies spend
   a request's allowance are not tried, which the two
   `crl-046-a-spent-byte-allowance-` and `-a-byte-short-` cases pin. From CRL-T037.
+- [ ] **CRL-T054** fix: Record a refused URL-less body as the answer to the points it left.
+  A body naming no URL that is refused (over the byte allowance, not a CRL, or
+  past the retained-CRL cap) is not an answer by certificate, so each point
+  the source did not name is also recorded as `crl_fetch_failed` "returned
+  nothing". Record those points with the refusal instead. From LIMIT-T004.
 
 ### POLICY
 

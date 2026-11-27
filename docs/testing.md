@@ -636,7 +636,16 @@ them through the CLI, or, where noted, no case pins them yet:
 - At most 64 CRL bodies, and bodies and failures together at most 64 plus one per point offered, in one source response
   (`crl_response_entries`). A scripted answer can now reach it, and no case
   pins it yet (LIMIT-T006);
-  `retrieval::tests::a_response_with_too_many_entries_ends_the_run` covers it.
+  `retrieval::tests::a_response_with_too_many_entries_is_not_used_and_the_run_goes_on` covers it,
+  and `retrieval::tests::an_abort_in_a_response_past_the_entry_bound_still_stops_retrieval`
+  an abort inside such a response.
+- Supplied roots and CRLs over the retained-byte cap, which leave every
+  certificate unasked (`retrieval_trust_bytes`): only the library can supply
+  them, since the CLI loads at most the cap
+  (`the_cli_never_supplies_more_than_the_engine_retains`), and no case pins the
+  store at the cap yet (LIMIT-T008);
+  `retrieval::tests::supplied_evidence_over_the_retained_byte_cap_asks_nothing_and_the_result_stands`
+  covers it.
 - Several points left once a request's byte allowance is spent: no case pins
   them, since the input of the CRL-046 allowance cases lists one point;
   `retrieval::tests::points_left_when_the_byte_allowance_is_spent_are_not_tried`

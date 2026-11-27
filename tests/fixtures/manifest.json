@@ -8729,7 +8729,8 @@
         "crl-022-fetch-replaces-the-path-with-a-not-yet-valid-crl-beside-a-revoked-path",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
         "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate",
-        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected",
+        "limit-fetch-with-64-supplied-crls-asks-nothing"
       ]
     },
     {
@@ -8855,7 +8856,8 @@
         "crl-036-chain-unknown-names-missing-and-not-yet-valid-crl",
         "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
         "crl-021-fetch-no-listed-point-scope-crl-replaced-by-certificate",
-        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected"
+        "crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected",
+        "limit-fetch-with-64-supplied-crls-asks-nothing"
       ]
     },
     {
@@ -9317,6 +9319,7 @@
       "cases": [
         "limit-fetch-64-crls",
         "limit-fetch-supplied-plus-bundle",
+        "limit-fetch-with-64-supplied-crls-asks-nothing",
         "limit-supplied-64-crls"
       ]
     },
@@ -10803,7 +10806,8 @@
         "crl-033-fetch-asks-each-certificate-without-crl",
         "crl-033-fetch-mixed-point-requests-plain-uri",
         "crl-030-fetch-expired-partition-for-another-point-still-fetches",
-        "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
+        "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
+        "limit-fetch-with-64-supplied-crls-asks-nothing"
       ]
     },
     {
@@ -10993,7 +10997,8 @@
         "crl-033-fetch-asks-only-the-uncovered-certificate",
         "crl-047-fetch-source-abort-stops-requests",
         "crl-036-chain-unknown-names-missing-and-not-yet-valid-crl",
-        "crl-020-fetch-completes-missing-and-not-yet-valid-crl"
+        "crl-020-fetch-completes-missing-and-not-yet-valid-crl",
+        "limit-fetch-with-64-supplied-crls-asks-nothing"
       ]
     },
     {

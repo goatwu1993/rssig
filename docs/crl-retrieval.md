@@ -153,13 +153,23 @@ page links to them instead of restating them.
 
 Three outcomes, and nothing in between:
 
-- **The engine's own limits end the run**: CRL bodies and
-  failures in one response (64, `MAX_RESPONSE_ENTRIES`, beside one per point offered), retained CRLs,
-  combined bytes supplied before retrieval, and the LIMIT-T002 work budget.
-- **A full store leaves a certificate unasked**: once retrieved CRLs fill the
-  32 MiB the store may retain, a further certificate is not asked and its
-  points are recorded as not tried (`retrieval_trust_bytes`); nothing was
-  received, so the run goes on and the verifier's result stands.
+- **The LIMIT-T002 work budget ends the run** with `resource_limit_exceeded`.
+- **The engine's retrieval limits are recorded and the run goes on** with
+  the evidence gathered, so the verifier's result stands (LIMIT-T004):
+  once the store holds the 32 MiB of roots and CRLs it may retain (supplied
+  ones included), a further certificate is not asked and its points are
+  recorded as not tried (`retrieval_trust_bytes`); a response with more than
+  64 CRL bodies, or more bodies and failures together than 64 plus one per
+  point offered (`MAX_RESPONSE_ENTRIES`), is not used: none of its bodies is
+  loaded and none of its failures is listed, even when only the failures
+  overflow, and each point it was offered is recorded with
+  `crl_response_entries` (the first `Abort` in it is still recorded and
+  stops retrieval); a body that would take the retained CRLs, supplied and
+  fetched, past 64 is not loaded and is recorded with
+  `retrieval_crl_artifacts`, and once the store holds 64 a further
+  certificate is not asked and its points are recorded as not tried with
+  that resource. Each entry is `resource_limit_exceeded` with
+  `details.resource`, `limit`, `used` and `requested`.
 - **Every other error about one listed point is no evidence from that point**:
   a URI over 2,048 bytes (`crl_url_bytes`); as OpenSSL and Bouncy Castle never
   fail a chain over one certificate's points, every other listed URI goes to
@@ -355,18 +365,22 @@ reviewed pure-Rust TLS backend; no TLS downgrade is attempted.
 | Combined trust evidence | At most 32 MiB of roots and CRLs the verification's store holds (supplied and retrieved, after exact-DER deduplication); a body that does not load, or repeats a CRL already held, adds nothing, and each request's bodies are bounded by what is left |
 | Wire bytes | At most 32 MiB of response headers and bodies per verification for the built-in HTTP source |
 | HTTP headers | At most 16 KiB and 64 fields; duplicate Content-Length/Location rejected |
-
-The engine offers a source every listed point (CRL-024), and the built-in source fetches at most 16 per request (`MAX_POINTS_PER_REQUEST`), counting only points it does not answer from the verification's memory: the others are `Denied` with `details.resource` `crl_request_points`, cost no HTTP request and no distinct-URL slot, so one certificate cannot spend the allowances the others need.
-
-PEM responses can contain multiple CRLs. After each response is loaded, the
-combined retained count is checked after exact-DER deduplication and before
-final verification. An oversized bundle fails with `resource_limit_exceeded`,
-resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
-`requested` counts distinct CRLs added by that response. The failure retains
-download provenance but returns no successful signature report.
 | HTTP bodies | HTTP 200 only; identity, EOF-terminated body; Content-Length, if present, must match exactly |
 | Unsupported framing | Chunked transfer and content encodings fail closed |
 | Time | 30 seconds per verification, starting with its first fetch (restarted by `begin_verification`); after them, or after a DNS timeout (which closes the source for the rest of the run), the source reports `abort`: no further request is made, and the result is `crl_fetch_aborted` when that left a certificate unasked or cut its request short ([CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted)); each DNS/connect/read/write wait is capped at five seconds and the remaining lifetime |
+
+The engine offers a source every listed point (CRL-024), and the built-in source fetches at most 16 per request (`MAX_POINTS_PER_REQUEST`), counting only points it does not answer from the verification's memory: the others are `Denied` with `details.resource` `crl_request_points`, cost no HTTP request and no distinct-URL slot, so one certificate cannot spend the allowances the others need.
+
+PEM responses can contain multiple CRLs. After each body is loaded, the
+combined retained count is checked after exact-DER deduplication and before
+final verification. A body past it is not loaded: its CRLs are dropped again
+and it is recorded in `crl_retrieval.failures` as `resource_limit_exceeded`,
+resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
+`requested` counts distinct CRLs the body would have added. Its artifact keeps
+its download provenance, and the verifier's result with the evidence held
+stands (`limit-fetch-65-crls`, `limit-fetch-supplied-plus-bundle`). Once the
+store holds 64 CRLs, supplied ones included, a further certificate is not
+asked (`limit-fetch-with-64-supplied-crls-asks-nothing`).
 
 The built-in source's HTTP limits bound one verification, not a batch or a
 reused instance: the engine calls `CrlSource::begin_verification` first, so in
@@ -411,7 +425,7 @@ Points that yielded no evidence are listed in `crl_retrieval.failures` (omitted
 when empty), on success and in failure `details.crl_retrieval`; a successful
 result can therefore show that some requests failed or were denied without
 that evidence being needed. Missing evidence is `revocation_unknown`, unless an aborted source left a certificate without a CRL unasked or cut its request short, which is `crl_fetch_aborted` ([CRL-047](crl.md#crl-047-an-aborted-source-stops-retrieval-and-is-reported-as-crl_fetch_aborted)).
-The engine's own limits use `resource_limit_exceeded`. Successfully downloaded artifacts remain visible in
+The engine's retrieval limits are failure entries with `resource_limit_exceeded`; only its work budget ends the run with that code. Successfully downloaded artifacts remain visible in
 failure `details.crl_retrieval`.
 Malformed, stale, forged or revoked evidence retains existing verifier error
 codes. CLI failures remain ordered entries in one JSON document, without partial

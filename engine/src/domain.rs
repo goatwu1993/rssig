@@ -558,10 +558,17 @@ impl CrlSourceErrorKind {
 /// (from the source; `source_error` then says which kind it reported), but
 /// other codes are possible: `invalid_crl` for a response that is not a CRL,
 /// `invalid_certificate` for a malformed cRLDistributionPoints extension, or
-/// `resource_limit_exceeded` for a response body the engine itself rejects as
-/// over its size cap (with `fetch_each`, only the first such body of a
-/// request reaches the engine; later ones are the source's `failed`, with
-/// `details.resource`). A source's own limits (the built-in HTTP source's
+/// `resource_limit_exceeded` for one of the engine's own retrieval limits,
+/// named by `details.resource`: a response body over its size cap or the
+/// request's allowance (`crl_response_bytes`; with `fetch_each`, only the
+/// first such body of a request reaches the engine, later ones are the
+/// source's `failed`), a certificate not asked because the store holds all
+/// the bytes it may retain (`retrieval_trust_bytes`), a response with more
+/// entries than allowed (`crl_response_entries`), a body that would take the
+/// retained CRLs past their cap or a certificate not asked because the store
+/// already holds as many CRLs as it may (`retrieval_crl_artifacts`), or the entry
+/// counting a certificate's further failures (`crl_failure_entries`). None of
+/// these ends the run. A source's own limits (the built-in HTTP source's
 /// response size, header size or redirect count) are that source's failures:
 /// `crl_fetch_failed` with `details.resource` naming the limit. Verification
 /// still decides whether the missing evidence mattered.

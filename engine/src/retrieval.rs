@@ -35,6 +35,10 @@ pub const MAX_LISTED_URLS: usize = 16;
 /// counted in one entry (`details.omitted`), CRL-024. A bound on the report,
 /// not on what is offered to a source.
 const MAX_FAILURES_PER_CERTIFICATE: usize = 16;
+/// The most CRLs, supplied and fetched together, one verification's store
+/// retains after exact-DER deduplication. A body that would take it past this
+/// is not loaded.
+pub const MAX_RETAINED_CRLS: usize = 64;
 /// Points the log line for one request names; it always gives the count.
 const LOGGED_POINTS: usize = 16;
 /// CRL bodies and failures one [`CrlResponse`] may carry together, besides one
@@ -42,8 +46,9 @@ const LOGGED_POINTS: usize = 16;
 pub const MAX_RESPONSE_ENTRIES: usize = 64;
 
 /// The single interface through which the engine obtains CRLs, asked once per
-/// certificate that lacks a usable CRL (unless the CRL bytes the verification
-/// retains are at their cap, when it is not asked), with every point it lists, like
+/// certificate that lacks a usable CRL (unless the CRL bytes or the CRLs the
+/// verification retains are at or over their cap, when it is not asked), with
+/// every point it lists, like
 /// OpenSSL's `get_crl` (by certificate) or `lookup_crls` (by issuer name).
 /// The engine reuses no earlier answer: a source that wants to answer a
 /// repeated point or issuer without new work keeps its own cache, as an
@@ -521,8 +526,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
 
     /// Record something that yielded no evidence. This never accepts
     /// anything: the next verification still requires evidence for every
-    /// certificate. Only the engine's own limits end the run (the retained-byte
-    /// cap does not: a certificate reached with it full is not asked).
+    /// certificate. Only the LIMIT-T002 work budget ends the run; the
+    /// engine's retrieval limits are recorded here and the run goes on.
     fn skip(
         &mut self,
         certificate: &str,
@@ -683,8 +688,10 @@ impl<'b, 'l> Retrieval<'b, 'l> {
     /// recorded, and the rest go to the source as a hint, each once, whether
     /// or not another certificate listed it (reusing an earlier answer is the
     /// source's, CRL-033). Returns whether a new CRL was added. The engine's
-    /// own limits end the run, except the retained-byte cap: a certificate
-    /// reached with it full is not asked and the run goes on.
+    /// retrieval limits are recorded and the run goes on (LIMIT-T004): a
+    /// certificate reached with the retained-byte cap full is not asked, a
+    /// response past the entry bound is not used, and a body past the
+    /// retained-CRL cap is not loaded. Only the work budget ends the run.
     fn request(
         &mut self,
         sha256: &str,
@@ -781,13 +788,28 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // certificate is not asked, and each of its points is recorded as
         // not tried for that reason. Nothing was received, so the run goes on
         // and the verifier's result stands (now that every certificate is
-        // asked, ending the run here would replace a definite result).
+        // asked, ending the run here would replace a definite result). So
+        // do supplied roots and CRLs already over the cap (LIMIT-T004).
+        // The same holds when the store already retains as many CRLs as it
+        // may: no new CRL could be kept (LIMIT-T004).
         let used = self.store.encoded_len();
         let max_bytes = self.max_total.saturating_sub(used);
-        if max_bytes == 0 {
+        let held = self.store.crl_count();
+        let full = if max_bytes == 0 {
             let mut e = limit("retrieval_trust_bytes", self.max_total, used, 1);
             e.message =
-                "not tried: the CRL bytes this verification retains are at their cap".into();
+                "not tried: the CRL bytes this verification retains are at or over their cap"
+                    .into();
+            Some(e)
+        } else if held >= MAX_RETAINED_CRLS {
+            let mut e = limit("retrieval_crl_artifacts", MAX_RETAINED_CRLS, held, 1);
+            e.message =
+                "not tried: the CRLs this verification retains are at or over their cap".into();
+            Some(e)
+        } else {
+            None
+        };
+        if let Some(e) = full {
             if points.is_empty() {
                 self.skip(sha256, None, e.clone(), None);
             }
@@ -838,18 +860,42 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // Bodies are loaded, so their count is fixed; a source may answer each
         // point it was offered (the input's, so as many as the certificate
         // lists) with a failure, and no more than the bound beside.
-        if response.crls.len() > MAX_RESPONSE_ENTRIES {
-            return Err(limit(
+        // A response past the bound is not used: none of its bodies is
+        // loaded and none of its entries listed, each point it was offered
+        // is recorded with the limit, and the run goes on with the evidence
+        // it has (LIMIT-T004). An `Abort` in it still means the source can
+        // do no more, so the first one is recorded and stops retrieval.
+        let allowed = MAX_RESPONSE_ENTRIES.saturating_add(points.len());
+        let entries = response.crls.len().saturating_add(response.failures.len());
+        let over = if response.crls.len() > MAX_RESPONSE_ENTRIES {
+            Some(limit(
                 "crl_response_entries",
                 MAX_RESPONSE_ENTRIES,
                 0,
                 response.crls.len(),
-            ));
-        }
-        let allowed = MAX_RESPONSE_ENTRIES.saturating_add(points.len());
-        let entries = response.crls.len().saturating_add(response.failures.len());
-        if entries > allowed {
-            return Err(limit("crl_response_entries", allowed, 0, entries));
+            ))
+        } else if entries > allowed {
+            Some(limit("crl_response_entries", allowed, 0, entries))
+        } else {
+            None
+        };
+        if let Some(mut e) = over {
+            e.message =
+                "not used: the CRL source's response carried more entries than allowed".into();
+            if points.is_empty() {
+                self.skip(sha256, None, e.clone(), None);
+            }
+            for point in &points {
+                self.skip(sha256, Some(point), e.clone(), None);
+            }
+            if let Some(abort) = response
+                .failures
+                .into_iter()
+                .find(|f| f.kind == CrlSourceErrorKind::Abort)
+            {
+                self.source_failure(sha256, abort);
+            }
+            return Ok(false);
         }
         // A point is answered by a CRL or failure naming it, compared as
         // URLs (a source may report the normalized form).
@@ -1060,9 +1106,21 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
         // retained store after deduplication, before verification.
+        // A body that would take it past the cap is not loaded: the CRLs it
+        // added are dropped again, it is recorded with the limit, and the
+        // run goes on with the evidence it has (LIMIT-T004).
         let loaded = self.store.crl_count();
-        if loaded > 64 {
-            return Err(limit("retrieval_crl_artifacts", 64, prior, loaded - prior));
+        if loaded > MAX_RETAINED_CRLS {
+            self.store.truncate_crls(prior);
+            let mut e = limit(
+                "retrieval_crl_artifacts",
+                MAX_RETAINED_CRLS,
+                prior,
+                loaded - prior,
+            );
+            e.message = "not loaded: the body would take the retained CRLs past their cap".into();
+            self.skip(sha256, raw_url.as_deref(), e, None);
+            return Ok((None, false));
         }
         // An answer by certificate, and whether it brought a new full CRL,
         // which serves every certificate of that issuer and role.
@@ -1079,6 +1137,19 @@ fn retrieve(
     source: &mut dyn CrlSource,
     budget: &Budget,
 ) -> Result<VerificationBundle, VerificationError> {
+    retrieve_capped(bytes, filename, options, source, budget, MAX_TOTAL_BYTES)
+}
+
+/// [`retrieve`] with the retained-byte cap given, so that a test can reach it
+/// without 32 MiB of evidence.
+fn retrieve_capped(
+    bytes: &[u8],
+    filename: Option<&str>,
+    options: &VerifyOptions<'_>,
+    source: &mut dyn CrlSource,
+    budget: &Budget,
+    max_total: usize,
+) -> Result<VerificationBundle, VerificationError> {
     let base = options.trust.ok_or_else(|| {
         error(
             ErrorCode::Configuration,
@@ -1094,15 +1165,12 @@ fn retrieve(
     let format = crate::format::detect(bytes, filename)?;
     source.begin_verification();
     let mut state = Retrieval::new(base, budget);
+    state.max_total = max_total;
     let result = (|| {
-        if base.encoded_len() > MAX_TOTAL_BYTES {
-            return Err(limit(
-                "retrieval_trust_bytes",
-                MAX_TOTAL_BYTES,
-                0,
-                base.encoded_len(),
-            ));
-        }
+        // Supplied roots and CRLs over the retained-byte cap are not an end
+        // of the run: they leave no room, so every certificate the verifier
+        // names is recorded as not tried (`Retrieval::request`), and the
+        // verifier's result with the supplied evidence stands (LIMIT-T004).
         // The verifier decides first, with the supplied CRLs: a good result
         // is final, and so is any failure that names no certificate to ask
         // about. An unknown status names the certificates that lacked a
@@ -1232,7 +1300,7 @@ fn retrieve(
     })();
     // A certificate the failed result still names, whose source answered by
     // certificate, reports the points that answer left unused. A run ended
-    // by an engine limit or a failed check reports what was recorded until
+    // by the work budget or a failed check reports what was recorded until
     // then: that error is the result.
     if let Err(e) = &result
         && let Uncovered::Listed(reports) = uncovered(e)
@@ -2350,6 +2418,118 @@ mod tests {
         );
     }
     #[test]
+    fn supplied_evidence_over_the_retained_byte_cap_asks_nothing_and_the_result_stands() {
+        // LIMIT-T004: roots and CRLs supplied past the retained-byte cap
+        // leave no room for a fetched CRL. The run is not ended up front:
+        // the verifier decides with what was supplied, and each certificate
+        // it names is recorded as not tried (`retrieval_trust_bytes`).
+        struct Never;
+        impl CrlSource for Never {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                panic!("no source is asked with no room left")
+            }
+        }
+        let store = store();
+        let options = VerifyOptions::trusted(&store, 1800000000);
+        let cap = store.encoded_len() - 1;
+        let e = retrieve_capped(
+            include_bytes!("../../tests/fixtures/good-crl-discovery.exe"),
+            None,
+            &options,
+            &mut Never,
+            &Budget::default(),
+            cap,
+        )
+        .unwrap_err();
+        assert_eq!(e.code, ErrorCode::RevocationUnknown, "{e:?}");
+        let failures = e.details["crl_retrieval"]["failures"].as_array().unwrap();
+        assert!(!failures.is_empty());
+        for failure in failures {
+            assert_eq!(failure["code"], "resource_limit_exceeded");
+            assert_eq!(failure["details"]["resource"], "retrieval_trust_bytes");
+            assert_eq!(failure["details"]["limit"], cap);
+            assert_eq!(failure["details"]["used"], store.encoded_len());
+        }
+    }
+    #[test]
+    fn a_certificate_reached_with_the_retained_crls_full_is_not_asked() {
+        // Like the byte cap: with the store holding as many CRLs as it may
+        // retain, no new CRL could be kept, so the certificate is not asked
+        // and each point is recorded as not tried (`retrieval_crl_artifacts`).
+        struct Never;
+        impl CrlSource for Never {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                panic!("no source is asked with the retained CRLs full")
+            }
+        }
+        // A library store may hold more than the cap; it is not asked either.
+        for (pem, held) in [
+            (
+                include_bytes!("../../tests/fixtures/limit-fetch-64-crls.pem").as_slice(),
+                MAX_RETAINED_CRLS,
+            ),
+            (
+                include_bytes!("../../tests/fixtures/limit-fetch-65-crls.pem").as_slice(),
+                MAX_RETAINED_CRLS + 1,
+            ),
+        ] {
+            let mut store = store();
+            store.add_crl(pem).unwrap();
+            assert_eq!(store.crl_count(), held);
+            let budget = Budget::default();
+            let mut state = Retrieval::new(&store, &budget);
+            assert!(!ask(&mut state, "a", &signer_with_points("a", 2), &mut Never).unwrap());
+            assert!(!ask(&mut state, "b", &signer_with_uris(&[]), &mut Never).unwrap());
+            let entries: Vec<_> = state
+                .report
+                .failures
+                .iter()
+                .map(|f| (f.certificate_sha256.as_str(), f.url.is_some()))
+                .collect();
+            assert_eq!(entries, [("a", true), ("a", true), ("b", false)]);
+            for failure in &state.report.failures {
+                assert_eq!(failure.details["resource"], "retrieval_crl_artifacts");
+                assert_eq!(failure.details["limit"], MAX_RETAINED_CRLS);
+                assert_eq!(failure.details["used"], held);
+            }
+        }
+    }
+    #[test]
+    fn an_abort_in_a_response_past_the_entry_bound_still_stops_retrieval() {
+        // The response is not used, but `Abort` anywhere means the source
+        // can do no more: it is recorded and nothing further is asked.
+        struct Floods;
+        impl CrlSource for Floods {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new()
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Abort, "done"));
+                for _ in 0..=MAX_RESPONSE_ENTRIES {
+                    response = response.with_crl(SourcedCrl::new(Vec::new()));
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        assert!(!ask(&mut state, "a", &signer_with_points("a", 1), &mut Floods).unwrap());
+        assert!(state.aborted);
+        assert!(state.report.artifacts.is_empty());
+        let seen: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.code, f.source_error))
+            .collect();
+        assert_eq!(
+            seen,
+            [
+                (ErrorCode::ResourceLimitExceeded, None),
+                (ErrorCode::CrlFetchAborted, Some(CrlSourceErrorKind::Abort)),
+            ]
+        );
+    }
+    #[test]
     fn a_certificates_report_entries_are_deduplicated_when_they_interleave() {
         // The unused points of an earlier certificate are recorded after a
         // later certificate's entries: its repeats are still one entry.
@@ -3277,9 +3457,12 @@ mod tests {
         );
     }
     #[test]
-    fn a_response_with_too_many_entries_ends_the_run() {
+    fn a_response_with_too_many_entries_is_not_used_and_the_run_goes_on() {
         // Each body and failure becomes a report entry: the engine bounds how
-        // many one response may carry, whatever the source does.
+        // many one response may carry, whatever the source does. A response
+        // past the bound is not used: nothing in it is loaded or listed,
+        // each point it was offered is recorded with the limit, and the run
+        // goes on with the evidence it has (LIMIT-T004).
         struct Floods(usize, usize);
         impl CrlSource for Floods {
             fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
@@ -3297,24 +3480,30 @@ mod tests {
         let store = store();
         for (bodies, failures, bound) in [
             // Bodies are bound at 64; bodies and failures together at 64
-            // plus the one point this request offered.
+            // plus the two points this request offered.
             (MAX_RESPONSE_ENTRIES + 1, 0, MAX_RESPONSE_ENTRIES),
-            (0, MAX_RESPONSE_ENTRIES + 2, MAX_RESPONSE_ENTRIES + 1),
-            (MAX_RESPONSE_ENTRIES, 2, MAX_RESPONSE_ENTRIES + 1),
+            (0, MAX_RESPONSE_ENTRIES + 3, MAX_RESPONSE_ENTRIES + 2),
+            (MAX_RESPONSE_ENTRIES, 3, MAX_RESPONSE_ENTRIES + 2),
         ] {
             let budget = Budget::default();
             let mut state = Retrieval::new(&store, &budget);
-            let e = ask(
-                &mut state,
-                "a",
-                &signer_with_points("a", 1),
-                &mut Floods(bodies, failures),
-            )
-            .unwrap_err();
-            assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
-            assert_eq!(e.details["resource"], "crl_response_entries");
-            assert_eq!(e.details["limit"], bound);
+            let cert = signer_with_points("a", 2);
+            let added = ask(&mut state, "a", &cert, &mut Floods(bodies, failures)).unwrap();
+            assert!(!added);
+            assert!(!state.aborted);
             assert!(state.report.artifacts.is_empty());
+            assert_eq!(
+                state.report.failures.len(),
+                2,
+                "{:?}",
+                state.report.failures
+            );
+            for failure in &state.report.failures {
+                assert_eq!(failure.code, ErrorCode::ResourceLimitExceeded);
+                assert!(failure.url.is_some());
+                assert_eq!(failure.details["resource"], "crl_response_entries");
+                assert_eq!(failure.details["limit"], bound);
+            }
         }
         // At the limit, every entry is taken.
         let budget = Budget::default();
