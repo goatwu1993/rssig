@@ -322,7 +322,13 @@ roots, and local CRLs pinned so expected results are portable and offline.
 The manifest pins the bytes, SHA-256, provenance, and intended outcomes of the
 fixtures. `cases` links identify declarative cases; optional `tests` links point
 to additional native regressions. Neither fixture generation nor expected-output
-regeneration is part of ordinary tests or coverage.
+regeneration is part of ordinary tests or coverage, with one exception that
+never touches `tests/fixtures/`:
+`certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures`
+runs the path fixture generator into a fresh scratch directory under the
+system temp directory (a library unit test has no `CARGO_TARGET_TMPDIR`), only
+to learn which PE names it writes, and removes it once the names are collected
+or the generator panics; it checks the committed bytes, not the generated ones.
 
 ### Manifest consistency
 

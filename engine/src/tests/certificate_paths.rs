@@ -1158,31 +1158,44 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
                 .unwrap()
         })
         .collect();
-    let mut count = 0;
-    for artifact in manifest["artifacts"].as_array().unwrap() {
-        let filename = artifact["file"].as_str().unwrap();
-        // CRL-T001 variants built here on the PATH-T001 chain.
-        let crl_variants = [
-            "crl-ca-no-crl-sign.exe",
-            "crl-ca-crl-sign.exe",
-            "crl-ca-crl-sign-fallback.exe",
-            "crl-leaf-crl-dp.exe",
-            "crl-ca-crl-dp.exe",
-            "crl-chain-crl-dp.exe",
-            "crl-chain-shared-crl-dp.exe",
-        ];
-        let form = point_forms()
-            .iter()
-            .any(|(label, ..)| filename == format!("crl-leaf-crl-dp-{label}.exe"));
-        let on_path_chain = ["good-path-", "bad-path-", "crl-path-"]
-            .iter()
-            .any(|prefix| filename.starts_with(prefix))
-            || crl_variants.contains(&filename)
-            || form;
-        if !on_path_chain || !filename.ends_with(".exe") {
-            continue;
-        }
-        count += 1;
+    // The names checked are the PEs `write` generates, so a fixture added to
+    // the generator is checked without a hand-kept list or count to update.
+    // They must be exactly the PEs the manifest attributes to this generator:
+    // a generated PE the manifest does not attribute to it fails the first
+    // assertion, an attributed PE `write` no longer produces the second, and a
+    // committed file the manifest does not list at all fails
+    // `committed_manifest_fixtures_and_cases_are_consistent`. The bytes checked
+    // are the committed ones; nothing yet compares them with what `write`
+    // produces (TEST-T017).
+    let generated = generated_pe_fixtures();
+    let attributed: std::collections::BTreeSet<String> = manifest["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|artifact| {
+            let generator = artifact
+                .get("generator")
+                .or_else(|| artifact.get("provenance")?.get("generator"));
+            // A generator may be followed by whitespace and a note.
+            generator.and_then(|g| g.as_str()?.split_whitespace().next())
+                == Some("engine/src/tests/certificate_paths.rs::regenerate_path_fixtures")
+        })
+        .map(|artifact| artifact["file"].as_str().unwrap().to_owned())
+        .filter(|file| file.ends_with(".exe"))
+        .collect();
+    assert_eq!(
+        generated.difference(&attributed).collect::<Vec<_>>(),
+        Vec::<&String>::new(),
+        "generated but not listed with this generator in the manifest"
+    );
+    assert_eq!(
+        attributed.difference(&generated).collect::<Vec<_>>(),
+        Vec::<&String>::new(),
+        "listed with this generator in the manifest but not generated"
+    );
+    assert!(!generated.is_empty());
+    for filename in &generated {
+        let filename = filename.as_str();
         let bytes = std::fs::read(dir.join(filename)).unwrap();
         // Reduced-policy verification is evidence only of container/CMS integrity.
         let integrity = verify::verify_pe(&bytes, &verify::VerifyOptions::integrity_only(NOW));
@@ -1235,10 +1248,32 @@ fn certificate_paths_fixtures_preserve_image_cms_and_certificate_signatures() {
             );
         }
     }
-    assert_eq!(
-        count,
-        50 + 2 * MALFORMED_EXTENSIONS.len() + REPEATED_EXTENSIONS.len() + point_forms().len()
-    );
+}
+
+/// The `.exe` fixtures `write` generates, by file name.
+fn generated_pe_fixtures() -> std::collections::BTreeSet<String> {
+    /// Removes the scratch directory even when `write` panics.
+    struct Scratch(std::path::PathBuf);
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let scratch = Scratch(std::env::temp_dir().join(format!(
+        "rssig-certificate-paths-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    )));
+    let _ = std::fs::remove_dir_all(&scratch.0);
+    // Fails rather than reuse a directory that survived the removal.
+    std::fs::create_dir(&scratch.0)
+        .unwrap_or_else(|error| panic!("{}: {error}", scratch.0.display()));
+    write(&scratch.0);
+    std::fs::read_dir(&scratch.0)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .filter(|name| name.ends_with(".exe"))
+        .collect()
 }
 
 fn committed(name: &str) -> Vec<u8> {
