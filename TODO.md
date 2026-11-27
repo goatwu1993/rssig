@@ -233,7 +233,7 @@ they pin or what they check, never after a task.
   the case runner accepts only the exact spelling, so that path is unit-tested
   only. From TEST-T009.
 - [ ] **CRL-T053** refactor: Give the spent-allowance rule an entry that asks its
-  question (owner-approved reindex). CRL-046's title asks how an over-cap body
+  question (a reindex; needs the owner's approval). CRL-046's title asks how an over-cap body
   is reported, but it also decides that points left once accepted bodies spend
   a request's allowance are not tried, which the two
   `crl-046-a-spent-byte-allowance-` and `-a-byte-short-` cases pin. From CRL-T037.

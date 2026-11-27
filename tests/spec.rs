@@ -1635,22 +1635,26 @@ fn specification_the_crl_045_cases_rest_on_the_engines_caps() {
     assert_eq!(bodies.len(), 6);
     assert!(bodies[..5].iter().all(|&pad| pad == Some(size)));
     assert!(size <= MAX_CRL_BYTES);
-    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join(&suite.fixtures);
+    let fixtures = suite_fixtures(&suite);
     let allowance = scripted_request_allowance(&suite, id);
     let last_file = bodies_of(id).pop().unwrap().file;
     let last = std::fs::metadata(fixtures.join(last_file)).unwrap().len() as usize;
     assert!(4 * size + last <= allowance && 5 * size > allowance);
 }
 
+/// The directory the suite's fixtures are in.
+fn suite_fixtures(suite: &Suite) -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join(&suite.fixtures)
+}
+
 /// The byte allowance of the one request case `id` scripts an answer for:
 /// what the supplied roots (`--roots`) leave of `MAX_TOTAL_BYTES`. Panics
-/// when anything else could spend it: a supplied CRL, or an answer by URL.
+/// when anything else could spend it: OS roots, a supplied CRL, or an answer
+/// by URL.
 fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
-    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join(&suite.fixtures);
+    let fixtures = suite_fixtures(suite);
     let case = suite.cases.iter().find(|c| c.id == id).unwrap();
     let roots: usize = case
         .command
@@ -1669,6 +1673,11 @@ fn scripted_request_allowance(suite: &Suite, id: &str) -> usize {
         })
         .sum();
     assert!(roots > 0, "{id} supplies its roots with --roots");
+    // OS roots would spend the allowance uncounted.
+    assert!(
+        case.command.iter().any(|arg| arg == "--no-system-roots"),
+        "{id} passes --no-system-roots"
+    );
     // A root given as `--roots=<path>` would go uncounted.
     assert!(
         !case.command.iter().any(|arg| arg.starts_with("--roots=")),
