@@ -528,3 +528,14 @@ lost the outer error's cause messages. The fallback in
 `choose_usage_failure` (`engine/src/rdp.rs`) now sets `causes` to the whole error
 chain, as `VerificationError::from_internal` does. Covered by the unit test
 `a_revocation_that_is_another_errors_source_keeps_the_outer_causes`.
+
+## RDP-T004 test: Cover RDP usage-failure causes through `rssig::cli::run`
+
+The CRL-027 RDP usage cases (`crl-027-rdp-eku-retry-ca-missing-crl-is-unknown`,
+`crl-027-rdp-eku-retry-ca-revoked-usage-is-revoked`) and their tests in
+`tests/cli/rdp.rs` now pin the serialized `message` and `causes`. No fixture
+reaches a revocation that is another error type's source: the engine unit test
+`a_revoked_usage_from_a_fixture_is_not_another_errors_source` fails when one
+does, so that branch then gets an end-to-end case. Making that branch
+reachable showed that the public `verify_rdp` boundary drops the outer
+messages RDP-T001 keeps; that is CLI-T004.

@@ -1460,6 +1460,11 @@ fn rdp_eku_retry_reports_the_missing_crl_over_another_ekus_path_failure() {
             .len(),
         1
     );
+    // The chosen usage's own error, with no other usage's messages.
+    assert_eq!(
+        error["causes"],
+        serde_json::json!(["no usable authoritative CRL for a certificate on the path"])
+    );
     let mut with_crl = base.to_vec();
     with_crl.extend(["--crl", "fixtures/rdp-eku-retry-ca.crl"]);
     expect_rdp_success(&run_fixture("good-rdp-eku-retry-ca.rdp", &with_crl));
@@ -1485,9 +1490,15 @@ fn rdp_a_revoked_usage_is_reported_over_another_usages_eku_failure() {
         ],
     );
     assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_revoked");
+    // The revocation is the usage's own error, not another error type's
+    // source, so its causes are its message alone; the engine unit test
+    // `a_revoked_usage_from_a_fixture_is_not_another_errors_source` fails
+    // if that changes.
     assert_eq!(
-        output.json["results"][0]["error"]["code"],
-        "certificate_revoked"
+        error["causes"],
+        serde_json::json!(["certificate chain validation failed: CertRevoked"])
     );
 }
 

@@ -736,6 +736,30 @@ mod tests {
         assert!(!has_extension(Path::new("connection")));
         assert!(!has_extension(Path::new("connection.exe")));
     }
+    /// The only fixture with a revoked usage beside another usage's failure
+    /// reports the revocation as that usage's own error, so its causes, as
+    /// `at` reports them, are its message alone. A change that makes the
+    /// revocation another error type's source adds the outer messages here,
+    /// and needs an end-to-end case for that branch of `choose_usage_failure`.
+    #[test]
+    fn a_revoked_usage_from_a_fixture_is_not_another_errors_source() {
+        let mut trust = crate::TrustStore::default();
+        trust.add_roots(&fixture("root.der")).unwrap();
+        trust.add_crl(&fixture("good.crl")).unwrap();
+        trust
+            .add_crl(&fixture("rdp-eku-retry-ca-revoked.crl"))
+            .unwrap();
+        let options = VerifyOptions {
+            trust: Some(&trust),
+            check_revocation: true,
+            allow_sha1: false,
+            now: 1_800_000_000,
+        };
+        let error = verify(&fixture("good-rdp-eku-retry-ca.rdp"), &options).unwrap_err();
+        let error = error.downcast_ref::<VerificationError>().unwrap();
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(error.causes, vec![error.message.clone()]);
+    }
     #[test]
     fn trust_selection_and_serialized_coverage_are_explicit() {
         let mut trust = crate::TrustStore::default();

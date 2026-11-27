@@ -23994,13 +23994,17 @@
               "ok": false,
               "error": {
                 "code": "revocation_unknown",
+                "message": "no usable authoritative CRL for a certificate on the path",
                 "details": {
                   "certificates_without_crl": [
                     {
                       "sha256": "659967d0ba738ea80d092732b5e77bef06862f43346c64d12b93a96426a9a109"
                     }
                   ]
-                }
+                },
+                "causes": [
+                  "no usable authoritative CRL for a certificate on the path"
+                ]
               }
             }
           ]
@@ -24070,7 +24074,11 @@
               "ok": false,
               "error": {
                 "code": "certificate_revoked",
-                "stage": "revocation"
+                "stage": "revocation",
+                "message": "certificate chain validation failed: CertRevoked",
+                "causes": [
+                  "certificate chain validation failed: CertRevoked"
+                ]
               }
             }
           ]
