@@ -521,13 +521,14 @@ shared result code, each pins its own entry's part:
   pins its failures in CRL-049's order)
 - `crl-046-an-over-cap-body-reports-the-cap-it-hit` (CRL-046: the cap it hit,
   `limit`, `requested` and `used`, then the point it left)
-- `crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried` and
+- `crl-046-a-spent-byte-allowance-leaves-the-point-not-tried` and
   `crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed` (CRL-046: four
   bodies within 8 MiB, none a CRL, that add up to exactly the request's
   allowance leave the point not tried, `resource_limit_exceeded` with `limit`
   and `used` both the allowance; one byte less leaves it `crl_fetch_failed`.
-  Either way the result is `revocation_unknown`: the bodies do not load, so
-  they are not retained and the next certificate is still asked, CRL-039)
+  Either way the result is `revocation_unknown`. The input lists one point,
+  so the spent case pins the unanswered point, not several left over; that is
+  `points_left_when_the_byte_allowance_is_spent_are_not_tried`)
 - `crl-045-oversized-body-does-not-count-against-the-next` (two rejected 16 MiB
   bodies would reach the allowance if they counted)
 - `crl-045-over-allowance-body-does-not-count-against-the-next` (bodies under

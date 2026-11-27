@@ -1694,7 +1694,7 @@ fn specification_the_crl_046_allowance_cases_rest_on_the_engines_caps() {
     let suite: Suite = serde_json::from_str(include_str!("cases.json")).unwrap();
     for (id, short) in [
         (
-            "crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried",
+            "crl-046-a-spent-byte-allowance-leaves-the-point-not-tried",
             0,
         ),
         (
@@ -1717,6 +1717,8 @@ fn specification_the_crl_046_allowance_cases_rest_on_the_engines_caps() {
             .map(|c| c.pad_to.expect("every body is padded"))
             .collect();
         // Within the per-body cap, every body is accepted and spends bytes.
+        // That no body loads as a CRL (CRL-034 would then leave the point
+        // unused) is pinned by each case's four `invalid_crl` failures.
         assert!(pads.iter().all(|&pad| pad <= MAX_CRL_BYTES), "{id}");
         let allowance = scripted_request_allowance(&suite, id);
         assert_eq!(pads.iter().sum::<usize>() + short, allowance, "{id}");

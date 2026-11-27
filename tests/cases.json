@@ -35612,7 +35612,7 @@
       }
     },
     {
-      "id": "crl-046-a-spent-byte-allowance-leaves-the-points-left-not-tried",
+      "id": "crl-046-a-spent-byte-allowance-leaves-the-point-not-tried",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-046",
       "crl_responses": {},
