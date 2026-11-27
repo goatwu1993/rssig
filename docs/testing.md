@@ -444,17 +444,22 @@ no URL is recorded once per listed point; the unit test
 
 A scripted `url` must be one of the points this request carries, spelled exactly
 as listed. The runner fails a case whose URL is not one of them, and its message
-prints the listed points. For a point shared by two certificates:
-- a point an earlier request spent (a body or a failure for it) is not carried
-  again, so a scripted `url` for it on a later certificate fails the case. The
-  earlier certificate takes the URL answer or fails, and the later one gets no
-  scripted URL: it is answered by certificate
-  (`crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left`) or
-  carries no point at all, so its report repeats the earlier outcome
-  (`crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate`);
-- a point the earlier answer left unused (an answer by certificate, CRL-034)
-  is carried again, so a scripted `url` for it passes
-  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`).
+prints the listed points. A point shared by two certificates is carried by
+each request (CRL-050), so a scripted `url` answers it for every certificate
+asked by URL, and the runner's source, which keeps no cache, is asked for it
+each time:
+- a point that fails is requested and recorded for each certificate
+  (`crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate`);
+- a scripted answer for a later certificate may name a point an earlier
+  certificate's request used, because the later request carries it too
+  (`crl-050-a-certificate-whose-point-another-used-is-still-asked`; the runner
+  fails the case if the request leaves the point out);
+- a certificate given an injected answer by certificate requests none of its
+  own points, and a point its answer leaves unused is still carried by a later
+  certificate, whose URL answer then requests it
+  (`crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`:
+  the signer is answered by certificate, and the issuer's certificate is the
+  one the URL answers).
 
 All of these run on `crl-chain-shared-crl-dp.exe`. The runner is stricter than the
 engine, which matches normalized URLs; a case for a normalized spelling is
@@ -462,7 +467,7 @@ CRL-T038. A
 URL that went stale or was mistyped therefore cannot turn a case about the point
 into one about a URL outside the request; the engine's handling of one outside it
 is unit-tested
-(`a_failure_naming_a_url_outside_the_request_does_not_change_its_outcome`).
+(`a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`).
 
 The runner also fails a case whose `pad_to` would cut its file, and a case with an
 injected answer, plain or scripted, that nobody requested (a stale certificate
@@ -528,12 +533,14 @@ by certificate, fail a point or deny it:
 - `crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer`
   (the signer's answer by certificate leaves the point unused, so the issuer's
   certificate carries it and the URL answers it)
-- `crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left` (the URL
-  answers the signer, and the issuer's certificate, carrying no point, is asked
-  and answered by certificate)
-- `crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate` and
-  `crl-051-a-denied-point-is-recorded-for-each-certificate` (the point fails or
-  is denied once, and each certificate's report records it)
+- `crl-050-a-certificate-whose-point-another-used-is-still-asked` (the URL
+  answers the signer, and the issuer's certificate is asked carrying the same
+  point: its scripted answer names it, which the runner accepts only for a
+  point the request carries)
+- `crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate` and
+  `crl-051-a-denied-point-is-recorded-for-each-certificate` (the point is
+  requested for each certificate, fails or is denied each time, and each
+  certificate's report records it)
 
 The `crl-045-` cases pin CRL-045. The two `does-not-count-against-the-next`
 cases each fail if a rejected body counted against the bodies after it, which

@@ -1227,7 +1227,7 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         core::slice::from_ref(&signer_hash)
     );
     assert_eq!(
-        keys("crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left"),
+        keys("crl-050-a-certificate-whose-point-another-used-is-still-asked"),
         core::slice::from_ref(&shared_hash)
     );
     // The shared point is the one the cases script, and the crl-051 cases script
@@ -1257,13 +1257,15 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         let errors = case.get("crl_errors").and_then(|e| e.as_object());
         match id {
             "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer"
-            | "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left" => {
+            | "crl-050-a-certificate-whose-point-another-used-is-still-asked" => {
                 assert_eq!(responses.len(), 1, "{id}");
                 assert!(errors.is_none(), "{id}");
                 // The pairing each case rests on: the first leaves the
                 // signer's point unused, so the root CRL comes from the URL
                 // and the issuer's CRL from the answer by certificate; the
-                // second is the reverse.
+                // second is the reverse, and the issuer certificate's scripted
+                // answer names the shared point, which the runner accepts only
+                // if that certificate's request carried it (CRL-050).
                 let (url_file, certificate_file) = if id.contains("unused") {
                     ("path-root.crl", "path-issuer.crl")
                 } else {
@@ -1272,9 +1274,15 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
                 assert_eq!(responses[LISTED_POINT], url_file, "{id}");
                 let answers = case["crl_certificate_responses"].as_object().unwrap();
                 assert_eq!(answers.len(), 1, "{id}");
-                assert_eq!(answers.values().next().unwrap(), certificate_file, "{id}");
+                let answer = answers.values().next().unwrap();
+                if id.contains("unused") {
+                    assert_eq!(answer, certificate_file, "{id}");
+                } else {
+                    assert_eq!(answer["crls"][0]["file"], certificate_file, "{id}");
+                    assert_eq!(answer["crls"][0]["url"], LISTED_POINT, "{id}");
+                }
             }
-            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate" => {
+            "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate" => {
                 assert!(errors.is_none(), "{id}");
             }
             "crl-051-a-denied-point-is-recorded-for-each-certificate" => {
@@ -1314,8 +1322,8 @@ fn the_shared_point_cases_rest_on_the_fixtures_certificates() {
         named,
         [
             "crl-050-a-point-left-unused-is-offered-for-a-certificate-of-another-issuer",
-            "crl-050-a-certificate-of-another-issuer-is-asked-with-no-point-left",
-            "crl-051-a-failed-point-is-asked-once-and-recorded-for-each-certificate",
+            "crl-050-a-certificate-whose-point-another-used-is-still-asked",
+            "crl-051-a-failed-point-is-asked-and-recorded-for-each-certificate",
             "crl-051-a-denied-point-is-recorded-for-each-certificate",
         ]
         .into_iter()

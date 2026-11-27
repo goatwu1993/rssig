@@ -4,8 +4,8 @@
 use rssig_engine::{
     domain::{CrlSourceErrorKind, ErrorCode, Stage, VerificationError},
     retrieval::{
-        CrlRequest, CrlResponse, CrlSource, CrlSourceError, MAX_CRL_BYTES, SourcedCrl, fetch_each,
-        limit,
+        CrlRequest, CrlResponse, CrlSource, CrlSourceError, MAX_CRL_BYTES, MAX_RESPONSE_ENTRIES,
+        SourcedCrl, fetch_each, limit,
     },
 };
 use std::{
@@ -20,21 +20,41 @@ const CLOSED_AFTER_DNS_TIMEOUT: &str = "CRL source is closed after a DNS timeout
 const DEADLINE: Duration = Duration::from_secs(30);
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
 const HEADER_LIMIT: usize = 16 * 1024;
-/// Requests to this source (calls to [`CrlSource::crls`], one per certificate)
-/// per verification. The engine keeps no such total (CRL-039): this source
-/// does, and reports the call past it as an `Abort` with
-/// `details.resource` `crl_requests`.
+/// Requests to this source per verification: calls to [`CrlSource::crls`]
+/// (one per certificate) that fetch a point, counted at the first point
+/// fetched, even one the policy then refuses. A call with no point, or whose
+/// points are all answered from this verification's memory, is not counted.
+/// Once the cap is reached, the first point a call would fetch is answered
+/// with an `Abort` with `details.resource` `crl_requests`, which ends
+/// retrieval; points answered from memory before it still are. The engine
+/// keeps no such total (CRL-039): this source does.
 pub const MAX_SOURCE_REQUESTS: usize = 64;
-/// Distinct URLs per verification that this source is asked to fetch. The
-/// engine keeps no such total (CRL-039): this source does, and reports the
-/// first one past it as an `Abort` with `details.resource` `crl_source_urls`.
+/// Distinct URLs (compared after normalization) per verification that this
+/// source is asked to fetch. A URL answered earlier in the verification is
+/// answered again without a slot. The engine keeps no such total (CRL-039):
+/// this source does, and reports the first one past it as an `Abort` with
+/// `details.resource` `crl_source_urls`.
 pub const MAX_SOURCE_URLS: usize = 64;
-/// Points of one certificate that this source tries per request: the first
-/// ones listed. The others are reported as `Denied` with `details.resource`
-/// `crl_request_points`, spend no request and no distinct-URL slot, and so
+/// Points of one certificate that this source fetches per request: the first
+/// ones it reaches that are not answered from this verification's memory
+/// (those are answered again, up to the 64 bodies a response may hold,
+/// `MAX_RESPONSE_ENTRIES`; the points past those are denied with
+/// `crl_response_entries`). The others are
+/// reported as `Denied` with `details.resource` `crl_request_points` and
+/// `requested` the call's distinct points it reached and would fetch, spend no
+/// request and no distinct-URL slot, and so
 /// cannot end the verification for the certificates after it (CRL-024: the
 /// engine offers every point, and a source decides how many it tries).
 pub const MAX_POINTS_PER_REQUEST: usize = 16;
+/// Bytes of kept bodies this source returns again per verification (a body
+/// answered from memory for a later certificate listing its point, CRL-051).
+/// The engine decodes, hashes and charges every body it receives, a repeat
+/// too, so with the network bytes ([`MAX_NETWORK_BYTES`]) the CRL bodies it
+/// processes per verification stay within 48 MiB: 384 MiB of its 512 MiB
+/// decode budget, which charges a body eight times. One past this is reported as `Denied` with
+/// `details.resource` `crl_replay_bytes` (not tried), the CRL itself having
+/// been delivered when it was fetched.
+pub const MAX_REPLAY_BYTES: usize = 16 * 1024 * 1024;
 /// HTTP requests per verification, redirects included. This source's own
 /// fetch policy (CRL-039), reported past it as an `Abort` with
 /// `details.resource` `crl_http_requests`.
@@ -47,6 +67,55 @@ pub const MAX_NETWORK_BYTES: usize = 32 * 1024 * 1024;
 
 fn error(code: ErrorCode, message: impl Into<String>) -> VerificationError {
     VerificationError::new(code, Stage::Revocation, message)
+}
+/// Whether a URL's outcome is kept for the verification whatever a later
+/// request's allowance: not an abort, and not a size failure under an
+/// allowance smaller than the fixed per-body cap (`crl_response_bytes` with a
+/// `limit` below [`MAX_CRL_BYTES`]), which `too_big` keeps with its allowance.
+/// A body over the fixed cap itself is kept: it fails every time.
+fn cacheable(outcome: &Result<SourcedCrl, CrlSourceError>) -> bool {
+    match outcome {
+        Ok(_) => true,
+        Err(e) => {
+            e.kind != CrlSourceErrorKind::Abort
+                && !(e.details.get("resource") == Some(&"crl_response_bytes".into())
+                    && e.details
+                        .get("limit")
+                        .and_then(|l| l.as_u64())
+                        .is_none_or(|l| l < MAX_CRL_BYTES as u64))
+        }
+    }
+}
+/// The size a kept size failure saw: at least what was read plus what was
+/// refused, so a request with no more room than that fails the same way.
+fn seen_size(e: &CrlSourceError) -> usize {
+    let seen = |field: &str| e.details.get(field).and_then(|v| v.as_u64()).unwrap_or(0);
+    seen("used").saturating_add(seen("requested")) as usize
+}
+/// The key a URL's outcome is kept under in one verification: its parsed,
+/// normalized form, as the engine compares points, for a URL the policy
+/// allows; its own text for one the policy refuses.
+fn url_key(raw: &str) -> String {
+    // A spelling parsing would shorten or clean (whitespace, control
+    // characters, backslashes, or over the length the policy allows) keeps
+    // its own text: normalized, it could share a URL the policy allows. Any
+    // other spelling, allowed or refused (its scheme, host or port), keeps
+    // what makes it refused when normalized, so it is normalized, as the
+    // engine compares points.
+    if refused_before_parsing(raw) {
+        return raw.to_owned();
+    }
+    Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
+}
+/// What `checked_url` refuses before parsing, because parsing would change
+/// the string: over 2,048 bytes, whitespace (as the engine's own screening,
+/// any Unicode whitespace; `Url::parse` would trim it), control characters
+/// or backslashes. `url_key` keys such a spelling by its own text.
+fn refused_before_parsing(raw: &str) -> bool {
+    raw.len() > 2048
+        || raw
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
 }
 fn public_ip(ip: IpAddr) -> bool {
     match ip {
@@ -86,14 +155,8 @@ fn checked_url(raw: &str) -> Result<Url, VerificationError> {
             "CRL URL host is not public: a private, reserved or special-use name or address",
         )
     };
-    // Whitespace too (as the engine's own screening, any Unicode whitespace):
-    // `Url::parse` would trim it, so the string as given would not be the
-    // URL that was checked.
-    if raw.len() > 2048
-        || raw
-            .chars()
-            .any(|c| c.is_control() || c.is_whitespace() || c == '\\')
-    {
+    // The string as given must be the URL that is checked.
+    if refused_before_parsing(raw) {
         return Err(error(
             ErrorCode::CrlFetchDenied,
             "CRL URL is over 2,048 bytes or has whitespace, control characters or backslashes",
@@ -137,17 +200,48 @@ fn checked_url(raw: &str) -> Result<Url, VerificationError> {
     Ok(url)
 }
 
+/// One call to [`CrlSource::crls`].
+#[derive(Default)]
+struct Call {
+    /// Whether it is counted in `source_requests`: at its first point fetched.
+    counted: bool,
+    /// The points it fetched, at most [`MAX_POINTS_PER_REQUEST`].
+    fetched: usize,
+    /// The distinct points it reached and would fetch (not answered from
+    /// memory), reported as `requested`.
+    reaching: std::collections::BTreeSet<String>,
+    /// The bodies it returned, at most [`MAX_RESPONSE_ENTRIES`].
+    bodies: usize,
+}
+
 /// Bounded public HTTP transport. HTTPS/LDAP, proxies, cookies, compressed and
 /// chunked responses are unsupported. DNS results are checked and pinned to the
-/// connection; every redirect is revalidated. No persistent cache is used.
+/// connection; every redirect is revalidated. No persistent cache is used:
+/// each URL's outcome is kept for one verification only, so a point that
+/// several certificates list is fetched once and its body or failure is
+/// returned for each (the engine reuses no answer itself, CRL-033).
 #[derive(Default)]
 pub struct HttpCrlSource {
-    /// Calls to [`CrlSource::crls`] in this verification, bounded by
-    /// [`MAX_SOURCE_REQUESTS`]; `requests` counts HTTP requests.
+    /// Calls to [`CrlSource::crls`] in this verification that carried a point
+    /// not yet answered, bounded by [`MAX_SOURCE_REQUESTS`]; `requests`
+    /// counts HTTP requests.
     source_requests: usize,
-    /// The distinct URLs asked for in this verification, bounded by
-    /// [`MAX_SOURCE_URLS`].
+    /// The current call to [`CrlSource::crls`].
+    call: Call,
+    /// The distinct URLs (normalized) asked for in this verification,
+    /// bounded by [`MAX_SOURCE_URLS`].
     urls: std::collections::BTreeSet<String>,
+    /// What each URL (normalized) yielded in this verification: its body,
+    /// or the failure it reported. An abort is not kept: after one, the
+    /// engine asks nothing more.
+    answered: std::collections::BTreeMap<String, Result<SourcedCrl, CrlSourceError>>,
+    /// Per URL (normalized), a size failure under a request allowance below
+    /// [`MAX_CRL_BYTES`], with that allowance: a request with no more room
+    /// gets the same failure, one with more fetches again.
+    too_big: std::collections::BTreeMap<String, (usize, CrlSourceError)>,
+    /// Bytes of kept bodies returned again in this verification, bounded by
+    /// [`MAX_REPLAY_BYTES`].
+    replayed: usize,
     requests: usize,
     bytes: usize,
     started: Option<Instant>,
@@ -372,48 +466,256 @@ impl CrlSource for HttpCrlSource {
     /// [`fetch_each`]). Reports a URL its policy refuses as `Denied`, a
     /// request that did not work as `Failed`, and its own spent request or
     /// byte budget, deadline or DNS timeout as `Abort`: after those this
-    /// source can do no more work. A call past [`MAX_SOURCE_REQUESTS`] is the
-    /// same: an `Abort` for the whole request, `details.resource`
-    /// `crl_requests`. A URL refused before any network work
-    /// costs no request; one refused after it (a nonpublic DNS answer, a
-    /// redirect to a refused URL, an encoded response) does.
+    /// source can do no more work. Past [`MAX_SOURCE_REQUESTS`], the first
+    /// point a call would fetch is the same: an `Abort` with
+    /// `details.resource` `crl_requests`. A call counts as one source request when it fetches a
+    /// point, even one the policy then refuses before any network work (a
+    /// private address); a call whose points were all answered earlier in
+    /// the verification counts none, and its answers are the same body or
+    /// failure, except a kept body the request has no room for
+    /// (`crl_response_bytes`), past the replay allowance (`crl_replay_bytes`)
+    /// or past the 64 bodies of one response (`crl_response_entries`).
+    /// Separately, a URL refused before any network work costs no
+    /// HTTP request; one refused after it (a nonpublic DNS answer, a redirect
+    /// to a refused URL, an encoded response) does.
     fn crls(&mut self, request: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
-        if self.source_requests >= MAX_SOURCE_REQUESTS {
-            let e = limit("crl_requests", MAX_SOURCE_REQUESTS, self.source_requests, 1);
-            let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
-            source_error.details = e.details;
-            return Err(source_error);
-        }
-        self.source_requests += 1;
-        let points = request.distribution_points;
-        let (tried, left) = points.split_at(points.len().min(MAX_POINTS_PER_REQUEST));
-        let tried_request = CrlRequest::new(
-            request.certificate,
-            request.issuer,
-            tried,
-            request.max_bytes,
-        );
-        let mut response = fetch_each(&tried_request, |url, max_bytes| {
-            self.fetch_one(url, max_bytes)
+        // What each point costs is decided as it is reached (`fetch_keyed`
+        // and `answer`):
+        // a point answered from this verification's memory costs nothing,
+        // and only a point that would be fetched counts toward the 16 of this
+        // call and, at the first, the request cap. `requested` in a
+        // `crl_request_points` failure counts the distinct points of the call
+        // with no outcome kept before it. Each point's key is computed once.
+        let keys: std::collections::BTreeMap<&str, String> = request
+            .distribution_points
+            .iter()
+            .map(|url| (url.as_str(), url_key(url)))
+            .collect();
+        self.call = Call::default();
+        // Once any allowance of this source is spent, the first point that
+        // would be fetched aborts and `fetch_each` stops there, so the points
+        // answered from memory are answered first: their known outcome, not
+        // "not tried", is what the report shows. In listed order otherwise.
+        let reordered;
+        let request = if self.spent() {
+            let room = request.max_bytes.min(MAX_CRL_BYTES);
+            let (known, fresh): (Vec<String>, Vec<String>) = request
+                .distribution_points
+                .iter()
+                .cloned()
+                .partition(|url| {
+                    let key = &keys[url.as_str()];
+                    self.answered.contains_key(key)
+                        || self
+                            .too_big
+                            .get(key)
+                            .is_some_and(|(under, e)| room <= *under || room < seen_size(e))
+                });
+            reordered = known.into_iter().chain(fresh).collect::<Vec<_>>();
+            &CrlRequest::new(
+                request.certificate,
+                request.issuer,
+                &reordered,
+                request.max_bytes,
+            )
+        } else {
+            request
+        };
+        let mut response = fetch_each(request, |url, max_bytes| {
+            let key = keys.get(url).cloned().unwrap_or_else(|| url_key(url));
+            self.fetch_keyed(url, key, max_bytes)
         });
-        for url in left {
-            response.failures.push(
-                CrlSourceError::new(
-                    CrlSourceErrorKind::Denied,
-                    "not tried: the built-in source tries at most 16 points per request",
-                )
-                .with_url(url.clone())
-                .detail("resource", "crl_request_points")
-                .detail("limit", MAX_POINTS_PER_REQUEST)
-                .detail("requested", points.len()),
-            );
+        // Known only once every point it reaches was reached (`fetch_each`
+        // stops at an abort or a spent allowance).
+        let requested = self.call.reaching.len();
+        for failure in &mut response.failures {
+            if failure.details.get("resource") == Some(&"crl_request_points".into()) {
+                failure.details.insert("requested".into(), requested.into());
+            }
         }
         Ok(response)
     }
 }
 
 impl HttpCrlSource {
+    /// Whether a point this source would fetch now aborts: an allowance is
+    /// spent (requests, distinct URLs, HTTP requests, network bytes or time)
+    /// or a DNS timeout closed it.
+    fn spent(&self) -> bool {
+        self.poisoned
+            || self.source_requests >= MAX_SOURCE_REQUESTS
+            || self.urls.len() >= MAX_SOURCE_URLS
+            || self.requests >= MAX_HTTP_REQUESTS
+            || self.bytes >= MAX_NETWORK_BYTES
+            || self.started.is_some() && self.remaining().is_err()
+    }
+    /// [`Self::fetch_keyed`] for a URL whose key is not computed yet.
+    #[cfg(test)]
+    fn fetch_cached(&mut self, url: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
+        self.fetch_keyed(url, url_key(url), max_bytes)
+    }
+    /// [`Self::fetch_one_keyed`] with this verification's memory of each URL's
+    /// outcome, by `key` ([`url_key`]): a repeat returns the same body or
+    /// failure, under the spelling it was offered. Not kept: an abort (the
+    /// engine asks nothing more after it); a failure about the byte allowance
+    /// a request had is kept with that allowance, so a request with more room
+    /// than that and than the size seen fetches again, and any other gets the
+    /// same failure. A response holds at most `MAX_RESPONSE_ENTRIES` bodies.
+    fn fetch_keyed(
+        &mut self,
+        url: &str,
+        key: String,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
+        // A response carries no more bodies than the engine accepts
+        // (`MAX_RESPONSE_ENTRIES`), however many points are answered from
+        // memory: the rest are not tried, so the engine keeps the response.
+        // A point whose kept outcome is a failure adds no body. Checked in
+        // the order `answer` follows, so the two agree. A point with no kept
+        // outcome is one the call would fetch, counted in `requested` even
+        // when the body cap stops it.
+        let room = max_bytes.min(MAX_CRL_BYTES);
+        let kept_failure = match self.answered.get(&key) {
+            Some(Ok(crl)) => {
+                crl.bytes.len() > room
+                    || self.replayed.saturating_add(crl.bytes.len()) > MAX_REPLAY_BYTES
+            }
+            Some(Err(_)) => true,
+            None => self
+                .too_big
+                .get(&key)
+                .is_some_and(|(under, e)| room <= *under || room < seen_size(e)),
+        };
+        if !kept_failure && !self.answered.contains_key(&key) {
+            self.call.reaching.insert(key.clone());
+        }
+        if self.call.bodies >= MAX_RESPONSE_ENTRIES && !kept_failure {
+            return Err(CrlSourceError::new(
+                CrlSourceErrorKind::Denied,
+                "not tried: the response already holds the most CRL bodies the engine accepts",
+            )
+            .with_url(url.to_owned())
+            .detail("resource", "crl_response_entries")
+            .detail("limit", MAX_RESPONSE_ENTRIES));
+        }
+        let outcome = self.answer(url, key, max_bytes);
+        if outcome.is_ok() {
+            self.call.bodies += 1;
+        }
+        outcome
+    }
+    fn answer(
+        &mut self,
+        url: &str,
+        key: String,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
+        if let Some(known) = self.answered.get(&key) {
+            // A body over this request's room is refused as a fresh fetch
+            // refuses it, without copying it: a replay counts against the
+            // allowance like any body (CRL-051).
+            let cap = max_bytes.min(MAX_CRL_BYTES);
+            if let Ok(crl) = known
+                && crl.bytes.len() > cap
+            {
+                let len = crl.bytes.len();
+                return Err(self
+                    .classify(limit("crl_response_bytes", cap, 0, len), false)
+                    .with_url(url.to_owned()));
+            }
+            if let Ok(crl) = known {
+                let len = crl.bytes.len();
+                if self.replayed.saturating_add(len) > MAX_REPLAY_BYTES {
+                    return Err(CrlSourceError::new(
+                        CrlSourceErrorKind::Denied,
+                        "not tried: the built-in source returns at most 16 MiB of kept \
+                         CRL bodies again per verification",
+                    )
+                    .with_url(url.to_owned())
+                    .detail("resource", "crl_replay_bytes")
+                    .detail("limit", MAX_REPLAY_BYTES)
+                    .detail("used", self.replayed)
+                    .detail("requested", len));
+                }
+                self.replayed += len;
+            }
+            return match known.clone() {
+                Ok(mut crl) => {
+                    crl.url = Some(url.to_owned());
+                    Ok(crl)
+                }
+                // A kept size failure reports this request's room, as one
+                // kept with its allowance does.
+                Err(e) if e.details.get("resource") == Some(&"crl_response_bytes".into()) => {
+                    let rebuilt = limit("crl_response_bytes", cap, 0, seen_size(&e));
+                    let mut e =
+                        CrlSourceError::new(e.kind, rebuilt.message).with_url(url.to_owned());
+                    e.details = rebuilt.details;
+                    Err(e)
+                }
+                Err(e) => Err(e.with_url(url.to_owned())),
+            };
+        }
+        let allowance = max_bytes.min(MAX_CRL_BYTES);
+        if let Some((failed_under, e)) = self.too_big.get(&key)
+            && (allowance <= *failed_under || allowance < seen_size(e))
+        {
+            // As this request's room, not the earlier one's.
+            let size = seen_size(e);
+            let kind = e.kind;
+            let rebuilt = limit("crl_response_bytes", allowance, 0, size);
+            let mut e = CrlSourceError::new(kind, rebuilt.message).with_url(url.to_owned());
+            e.details = rebuilt.details;
+            return Err(e);
+        }
+        // Only a point that is fetched costs anything: one of the 16 of this
+        // call, and at the first, one of the source's requests.
+        self.call.reaching.insert(key.clone());
+        if self.call.fetched >= MAX_POINTS_PER_REQUEST {
+            return Err(CrlSourceError::new(
+                CrlSourceErrorKind::Denied,
+                "not tried: the built-in source fetches at most 16 points per request \
+                 that it has not answered earlier in the verification",
+            )
+            .with_url(url.to_owned())
+            .detail("resource", "crl_request_points")
+            .detail("limit", MAX_POINTS_PER_REQUEST)
+            .detail("requested", self.call.reaching.len()));
+        }
+        if !self.call.counted {
+            if self.source_requests >= MAX_SOURCE_REQUESTS {
+                let e = limit("crl_requests", MAX_SOURCE_REQUESTS, self.source_requests, 1);
+                let mut source_error =
+                    CrlSourceError::new(CrlSourceErrorKind::Abort, e.message).with_url(url);
+                source_error.details = e.details;
+                return Err(source_error);
+            }
+            self.call.counted = true;
+            self.source_requests += 1;
+        }
+        self.call.fetched += 1;
+        let outcome = self.fetch_one_keyed(url, &key, max_bytes);
+        if cacheable(&outcome) {
+            // A kept outcome replaces an earlier size failure for the URL.
+            self.too_big.remove(&key);
+            self.answered.insert(key, outcome.clone());
+        } else if let Err(e) = &outcome
+            && e.kind != CrlSourceErrorKind::Abort
+        {
+            self.too_big.insert(key, (allowance, e.clone()));
+        }
+        outcome
+    }
+    #[cfg(test)]
     fn fetch_one(&mut self, raw: &str, max_bytes: usize) -> Result<SourcedCrl, CrlSourceError> {
+        self.fetch_one_keyed(raw, &url_key(raw), max_bytes)
+    }
+    fn fetch_one_keyed(
+        &mut self,
+        raw: &str,
+        key: &str,
+        max_bytes: usize,
+    ) -> Result<SourcedCrl, CrlSourceError> {
         // A source closed by a DNS timeout does no work at all, whatever the
         // URL: no request is spent and nothing is called denied.
         if self.poisoned {
@@ -424,14 +726,14 @@ impl HttpCrlSource {
         }
         // A URL beyond the distinct-URL cap does no work: the source can do
         // no more, like a spent request cap. One already seen costs nothing.
-        if !self.urls.contains(raw) {
+        if !self.urls.contains(key) {
             if self.urls.len() >= MAX_SOURCE_URLS {
                 let e = limit("crl_source_urls", MAX_SOURCE_URLS, self.urls.len(), 1);
                 let mut source_error = CrlSourceError::new(CrlSourceErrorKind::Abort, e.message);
                 source_error.details = e.details;
                 return Err(source_error);
             }
-            self.urls.insert(raw.to_owned());
+            self.urls.insert(key.to_owned());
         }
         // Whether the source was already spent before this request: then
         // nothing this request reports is about its own URL.
@@ -795,24 +1097,411 @@ mod tests {
     #[test]
     fn the_built_in_source_aborts_after_its_request_cap_until_a_new_verification() {
         let mut source = HttpCrlSource::new();
-        // A URL the policy refuses before any network work: no HTTP request
-        // is spent, but every call to the source counts as a source request.
-        let points = vec!["http://127.0.0.1/x.crl".to_string()];
-        let request = CrlRequest::new(&[], &[], &points, 1024);
-        for _ in 0..MAX_SOURCE_REQUESTS {
-            assert!(source.crls(&request).is_ok());
+        // URLs the policy refuses before any network work: no HTTP request
+        // is spent, but every call carrying a new point counts as a source
+        // request.
+        let point = |i: usize| vec![format!("http://127.0.0.1/{i}.crl")];
+        for i in 0..MAX_SOURCE_REQUESTS {
+            let points = point(i);
+            assert!(
+                source
+                    .crls(&CrlRequest::new(&[], &[], &points, 1024))
+                    .is_ok()
+            );
         }
-        let e = source.crls(&request).expect_err("the cap is spent");
+        // The cap is reached when a point would be fetched: that point is
+        // answered with the abort, so retrieval stops there.
+        let points = point(MAX_SOURCE_REQUESTS);
+        let request = CrlRequest::new(&[], &[], &points, 1024);
+        let abort = |source: &mut HttpCrlSource| {
+            let response = source.crls(&request).unwrap();
+            assert_eq!(response.failures.len(), 1);
+            response.failures[0].clone()
+        };
+        let e = abort(&mut source);
         assert_eq!(e.kind, CrlSourceErrorKind::Abort);
+        assert_eq!(e.url.as_deref(), Some(points[0].as_str()));
         assert_eq!(e.details["resource"], "crl_requests");
         assert_eq!(e.details["limit"], MAX_SOURCE_REQUESTS);
         assert_eq!(e.details["used"], MAX_SOURCE_REQUESTS);
         assert_eq!(e.details["requested"], 1);
         // Still spent for every later request of the verification.
-        assert!(source.crls(&request).is_err());
+        assert_eq!(abort(&mut source).kind, CrlSourceErrorKind::Abort);
+        // A point with a known outcome listed after a new one is still
+        // answered with it, before the abort.
+        let mixed = vec![points[0].clone(), point(0)[0].clone()];
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
+            .unwrap();
+        let kinds: Vec<_> = response.failures.iter().map(|f| f.kind).collect();
+        assert_eq!(
+            kinds,
+            [CrlSourceErrorKind::Denied, CrlSourceErrorKind::Abort]
+        );
+        // So it is once a DNS timeout closed the source.
+        let mut closed = HttpCrlSource {
+            poisoned: true,
+            ..HttpCrlSource::new()
+        };
+        closed.answered.insert(
+            url_key(&point(0)[0]),
+            Err(CrlSourceError::new(CrlSourceErrorKind::Denied, "kept")),
+        );
+        let response = closed
+            .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
+            .unwrap();
+        let kinds: Vec<_> = response.failures.iter().map(|f| f.kind).collect();
+        assert_eq!(
+            kinds,
+            [CrlSourceErrorKind::Denied, CrlSourceErrorKind::Abort]
+        );
+        // A point answered before is still answered, at no cost.
+        let known = point(0);
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &known, 1024))
+            .unwrap();
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Denied);
         // The cap is per verification, as every allowance of this source.
         CrlSource::begin_verification(&mut source);
-        assert!(source.crls(&request).is_ok());
+        let response = source.crls(&request).unwrap();
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Denied);
+    }
+    #[test]
+    fn a_call_with_nothing_new_to_fetch_is_not_charged_and_repeats_the_earlier_answer() {
+        // CRL-T041: the engine asks about every certificate with every point,
+        // so a call with no point, or with only points answered earlier in
+        // the verification, does no network work and costs no request.
+        let mut source = HttpCrlSource::new();
+        let points = vec!["http://127.0.0.1/x.crl".to_string()];
+        let first = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert_eq!(source.source_requests, 1);
+        assert_eq!(first.failures.len(), 1);
+        assert_eq!(first.failures[0].kind, CrlSourceErrorKind::Denied);
+        // Many more certificates listing the same point, or listing none:
+        // the cap is never reached. (A refused URL is kept under its own
+        // spelling; normalization of an allowed one is tested with
+        // `a_cached_body_is_returned_under_the_spelling_offered_and_a_duplicate_goes_with_its_first`.)
+        let spelled = points.clone();
+        for _ in 0..=MAX_SOURCE_REQUESTS {
+            let again = source
+                .crls(&CrlRequest::new(&[], &[], &spelled, 1024))
+                .unwrap();
+            assert_eq!(again.failures.len(), 1);
+            assert_eq!(again.failures[0].kind, CrlSourceErrorKind::Denied);
+            assert_eq!(again.failures[0].message, first.failures[0].message);
+            // Reported under the spelling this request offered.
+            assert_eq!(again.failures[0].url.as_deref(), Some(spelled[0].as_str()));
+            let none = source.crls(&CrlRequest::new(&[], &[], &[], 1024)).unwrap();
+            assert!(none.crls.is_empty() && none.failures.is_empty());
+        }
+        assert_eq!(source.source_requests, 1);
+        assert_eq!(source.urls.len(), 1);
+        assert_eq!(source.requests, 0);
+        // A known point beside a new one: the call is charged once, and the
+        // known one does not count toward the per-request limit.
+        let mut mixed = vec!["http://127.0.0.1/x.crl".to_string()];
+        mixed.extend((0..MAX_POINTS_PER_REQUEST).map(|i| format!("http://127.0.0.1/m-{i}.crl")));
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &mixed, 1024))
+            .unwrap();
+        assert_eq!(source.source_requests, 2);
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.details.get("resource") != Some(&"crl_request_points".into()))
+        );
+        // A new verification forgets every answer.
+        CrlSource::begin_verification(&mut source);
+        assert!(source.answered.is_empty());
+    }
+    #[test]
+    fn a_failure_about_the_request_allowance_is_not_kept_for_a_later_request() {
+        // A point that failed for lack of allowance (`crl_response_bytes`) may
+        // fit a later request with more, so it is fetched again; a failure of
+        // its own (a refused URL) is kept. No network: an allowance of 0
+        // fails before any request.
+        let mut source = HttpCrlSource::new();
+        let e = source
+            .fetch_cached("http://crl.example.com/x.crl", 0)
+            .unwrap_err();
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+        assert!(source.answered.is_empty());
+        assert_eq!(source.requests, 0);
+        let denied = source
+            .fetch_cached("http://127.0.0.1/x.crl", 1024)
+            .unwrap_err();
+        assert_eq!(denied.kind, CrlSourceErrorKind::Denied);
+        assert_eq!(source.answered.len(), 1);
+        // Over the fixed per-body cap it fails every time, so it is kept;
+        // under a smaller allowance it is not.
+        let size = |cap: usize| {
+            let e = limit("crl_response_bytes", cap, 0, cap + 1);
+            let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+            error.details = e.details;
+            Err(error)
+        };
+        assert!(cacheable(&size(MAX_CRL_BYTES)));
+        assert!(!cacheable(&size(MAX_CRL_BYTES - 1)));
+        assert!(!cacheable(&size(0)));
+        // The allowance failure is kept with its allowance: a request with
+        // no more room gets it again without a request.
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/y.crl";
+        let first = source.fetch_cached(url, 0).unwrap_err();
+        assert_eq!(source.too_big.len(), 1);
+        let again = source.fetch_cached(url, 0).unwrap_err();
+        assert_eq!(again.details, first.details);
+        assert_eq!(source.requests, 0);
+    }
+    #[test]
+    fn points_left_after_an_abort_are_left_for_the_engine_to_record_as_not_tried() {
+        let mut source = HttpCrlSource {
+            poisoned: true,
+            ..HttpCrlSource::new()
+        };
+        let points: Vec<String> = (0..MAX_POINTS_PER_REQUEST + 4)
+            .map(|i| format!("http://crl.example.com/p-{i}.crl"))
+            .collect();
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Abort);
+    }
+    #[test]
+    fn a_cached_body_is_returned_under_the_spelling_offered_and_a_duplicate_goes_with_its_first() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/x.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 10]).with_url(url)));
+        let spelled = "HTTP://CRL.Example.com/x.crl";
+        let again = source.fetch_cached(spelled, 10).unwrap();
+        assert_eq!(again.bytes.len(), 10);
+        assert_eq!(again.url.as_deref(), Some(spelled));
+        // Offered twice in one call, a URL counts once toward the point limit.
+        let points = vec![url.to_string(); MAX_POINTS_PER_REQUEST + 1];
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.details.get("resource") != Some(&"crl_request_points".into()))
+        );
+        // A repeat of a point left by the limit is left with it, not fetched.
+        let mut source = HttpCrlSource::new();
+        let mut points: Vec<String> = (0..=MAX_POINTS_PER_REQUEST)
+            .map(|i| format!("http://127.0.0.1/p-{i}.crl"))
+            .collect();
+        points.push(points[MAX_POINTS_PER_REQUEST].clone());
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        let left: Vec<_> = response
+            .failures
+            .iter()
+            .filter(|f| f.details.get("resource") == Some(&"crl_request_points".into()))
+            .collect();
+        assert_eq!(left.len(), 2);
+        assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
+    }
+    #[test]
+    fn replays_are_bounded_per_verification() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/big.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 8]).with_url(url)));
+        source.replayed = MAX_REPLAY_BYTES - 8;
+        assert!(source.fetch_cached(url, 1024).is_ok());
+        let e = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(e.kind, CrlSourceErrorKind::Denied);
+        assert_eq!(e.details["resource"], "crl_replay_bytes");
+        // Past the body cap too, the replay allowance is the reason given.
+        source.call.bodies = MAX_RESPONSE_ENTRIES;
+        let e = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_replay_bytes");
+        source.call = Call::default();
+        // A new verification starts the allowance afresh.
+        CrlSource::begin_verification(&mut source);
+        assert_eq!(source.replayed, 0);
+        // A size failure kept at the full per-body cap reports the room of
+        // the request it answers.
+        let e = limit("crl_response_bytes", MAX_CRL_BYTES, 0, MAX_CRL_BYTES + 1);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.answered.insert(url_key(url), Err(error));
+        let again = source.fetch_cached(url, 1024).unwrap_err();
+        assert_eq!(again.details["limit"], 1024);
+        assert_eq!(again.details["requested"], MAX_CRL_BYTES + 1);
+    }
+    #[test]
+    fn a_kept_body_replaces_an_earlier_size_failure_for_the_body_cap() {
+        // A URL that once failed for its size and later answered with a body:
+        // the body cap treats it as a body, as `answer` returns one.
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/w.crl";
+        let e = limit("crl_response_bytes", 100, 0, 150);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.too_big.insert(url_key(url), (100, error));
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 50]).with_url(url)));
+        source.call.bodies = MAX_RESPONSE_ENTRIES;
+        let e = source.fetch_cached(url, 80).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_response_entries");
+        // A cached body over the room is a failure, reported as its size.
+        let e = source.fetch_cached(url, 40).unwrap_err();
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+    }
+    #[test]
+    fn a_response_carries_no_more_bodies_than_the_engine_accepts() {
+        // Replayed points are outside the 16-point limit, so the source
+        // bounds the bodies of one response itself: the engine refuses a
+        // response with more than MAX_RESPONSE_ENTRIES of them.
+        let mut source = HttpCrlSource::new();
+        let points: Vec<String> = (0..MAX_RESPONSE_ENTRIES + 6)
+            .map(|i| format!("http://crl.example.com/{i}.crl"))
+            .collect();
+        for url in &points {
+            source
+                .answered
+                .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 1]).with_url(url)));
+        }
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &points, 1024))
+            .unwrap();
+        assert_eq!(response.crls.len(), MAX_RESPONSE_ENTRIES);
+        assert_eq!(response.failures.len(), 6);
+        // Points the call would fetch are counted in `requested` even when
+        // the body cap stops them (none here: all were answered).
+        assert!(source.call.reaching.is_empty());
+        assert!(
+            response
+                .failures
+                .iter()
+                .all(|f| f.details["resource"] == "crl_response_entries")
+        );
+        // A point whose kept outcome is a failure still reports it.
+        let refused = "http://127.0.0.1/x.crl".to_string();
+        source.call = Call::default();
+        source.fetch_cached(&refused, 1024).unwrap_err();
+        let mut more = points[..MAX_RESPONSE_ENTRIES].to_vec();
+        more.push(refused);
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &more, 1024))
+            .unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(response.failures[0].kind, CrlSourceErrorKind::Denied);
+        assert_ne!(
+            response.failures[0].details.get("resource"),
+            Some(&"crl_response_entries".into())
+        );
+    }
+    #[test]
+    fn a_cached_body_over_a_later_requests_room_is_refused_as_a_fetch_is() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/x.crl";
+        source
+            .answered
+            .insert(url_key(url), Ok(SourcedCrl::new(vec![0; 10]).with_url(url)));
+        let e = source.fetch_cached(url, 5).unwrap_err();
+        assert_eq!(e.kind, CrlSourceErrorKind::Failed);
+        assert_eq!(e.details["resource"], "crl_response_bytes");
+        assert_eq!(e.details["limit"], 5);
+        assert_eq!(e.url.as_deref(), Some(url));
+        assert!(source.fetch_cached(url, 10).is_ok());
+    }
+    #[test]
+    fn every_spelling_refused_before_parsing_keeps_its_own_key() {
+        // `url_key` and `checked_url` share `refused_before_parsing`: every
+        // spelling it refuses is refused by the policy and keyed by its text.
+        for raw in [
+            format!("http://crl.example.com/{}", "a".repeat(2048)),
+            " http://crl.example.com/x.crl".to_string(),
+            "http://crl.example.com/x\u{7}.crl".to_string(),
+            "http://crl.example.com\\x.crl".to_string(),
+        ] {
+            assert!(refused_before_parsing(&raw), "{raw:?}");
+            assert!(checked_url(&raw).is_err(), "{raw:?}");
+            assert_eq!(url_key(&raw), raw);
+        }
+    }
+    #[test]
+    fn a_refused_spelling_does_not_share_a_clean_urls_cache_entry() {
+        assert_ne!(
+            url_key(" http://crl.example.com/x.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+        assert_ne!(
+            url_key("http://crl.example.com/x\t.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+        assert_eq!(
+            url_key("HTTP://CRL.Example.com:80/x.crl"),
+            url_key("http://crl.example.com/x.crl")
+        );
+        // Over 2,048 bytes, refused, though it normalizes to the short URL.
+        let long = format!("http://crl.example.com/{}x.crl", "a/../".repeat(500));
+        assert!(long.len() > 2048);
+        assert_eq!(
+            Url::parse(&long).unwrap().as_str(),
+            "http://crl.example.com/x.crl"
+        );
+        assert_ne!(url_key(&long), url_key("http://crl.example.com/x.crl"));
+        // A spelling refused for its host is normalized, as the engine
+        // compares points: two spellings of one refused URL share an entry.
+        assert_eq!(
+            url_key("HTTP://127.0.0.1:80/x.crl"),
+            url_key("http://127.0.0.1/x.crl")
+        );
+    }
+    #[test]
+    fn a_kept_allowance_failure_reports_the_room_of_the_request_it_answers() {
+        let mut source = HttpCrlSource::new();
+        let url = "http://crl.example.com/z.crl";
+        let e = limit("crl_response_bytes", 4, 0, 7);
+        let mut error = CrlSourceError::new(CrlSourceErrorKind::Failed, e.message);
+        error.details = e.details;
+        source.too_big.insert(url_key(url), (4, error));
+        // More room than before, but less than the size seen: no fetch.
+        let more = source.fetch_cached(url, 6).unwrap_err();
+        assert_eq!(more.details["limit"], 6);
+        assert_eq!(source.requests, 0);
+        let again = source.fetch_cached(url, 2).unwrap_err();
+        assert_eq!(again.details["limit"], 2);
+        assert_eq!(again.details["used"], 0);
+        assert_eq!(again.details["requested"], 7);
+        assert_eq!(source.requests, 0);
+        // A call whose point is answered from memory fetches nothing, so it
+        // is not counted, even when the whole request's room is larger than
+        // the failure's: an earlier body took what was left of it.
+        let points = vec![url.to_string()];
+        let response = source.crls(&CrlRequest::new(&[], &[], &points, 2)).unwrap();
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(source.source_requests, 0);
+        let cached = "http://crl.example.com/c.crl";
+        source.answered.insert(
+            url_key(cached),
+            Ok(SourcedCrl::new(vec![0; 7]).with_url(cached)),
+        );
+        let points = vec![cached.to_string(), url.to_string()];
+        let response = source.crls(&CrlRequest::new(&[], &[], &points, 8)).unwrap();
+        assert_eq!(response.crls.len(), 1);
+        assert_eq!(response.failures.len(), 1);
+        assert_eq!(source.source_requests, 0);
+        // Past the cap the same call is not refused: nothing is fetched.
+        source.source_requests = MAX_SOURCE_REQUESTS;
+        let response = source.crls(&CrlRequest::new(&[], &[], &points, 8)).unwrap();
+        assert_eq!(response.crls.len(), 1);
+        assert_eq!(response.failures.len(), 1);
+        assert_ne!(response.failures[0].kind, CrlSourceErrorKind::Abort);
     }
     #[test]
     fn the_built_in_source_aborts_past_its_distinct_url_cap_until_a_new_verification() {
@@ -902,6 +1591,25 @@ mod tests {
         assert_eq!(skipped, &points[MAX_POINTS_PER_REQUEST..]);
         assert_eq!(source.urls.len(), MAX_POINTS_PER_REQUEST);
         assert_eq!(source.requests, 0);
+        // `requested` counts the points that were not answered earlier: with
+        // 4 of 24 answered, 20 fresh points were requested, not 24.
+        let mut more = points.clone();
+        more.extend((0..4).map(|i| format!("http://127.0.0.1/q-{i}.crl")));
+        let known: Vec<String> = more[..4].to_vec();
+        let mut source = HttpCrlSource::default();
+        source
+            .crls(&CrlRequest::new(&[], &[], &known, 1024))
+            .unwrap();
+        let response = source
+            .crls(&CrlRequest::new(&[], &[], &more, 1024))
+            .unwrap();
+        let limited: Vec<_> = response
+            .failures
+            .iter()
+            .filter(|f| f.details.get("resource") == Some(&"crl_request_points".into()))
+            .collect();
+        assert_eq!(limited.len(), more.len() - 4 - MAX_POINTS_PER_REQUEST);
+        assert!(limited.iter().all(|f| f.details["requested"] == 20));
         // The next certificate is still asked.
         let next = CrlRequest::new(&[], &[], &points[..1], 1024);
         let response = source.crls(&next).unwrap();
@@ -912,6 +1620,10 @@ mod tests {
         let mut source = HttpCrlSource {
             source_requests: MAX_SOURCE_REQUESTS,
             urls: Default::default(),
+            answered: Default::default(),
+            replayed: 0,
+            call: Call::default(),
+            too_big: Default::default(),
             requests: MAX_HTTP_REQUESTS,
             bytes: MAX_NETWORK_BYTES,
             started: Some(Instant::now() - DEADLINE),

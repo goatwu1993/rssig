@@ -56,8 +56,8 @@ X.509 `certificatePolicies`, and other tools' policies.
 | Term | Meaning | Not to be confused with |
 |---|---|---|
 | **point** | One URL a certificate lists in its `cRLDistributionPoints` extension, where its CRL may be fetched; offered to a `CrlSource` in a request ([crl-retrieval.md](crl-retrieval.md)). | A CRL's issuingDistributionPoint scope, which names the point a CRL covers (CRL-030). |
-| **spent point** | A point a source used in a verification, by returning a body or a failure for it. It is not offered again, and a failure is recorded under each certificate that lists it ([CRL-051](crl.md#crl-051-a-point-a-source-used-is-not-offered-again-and-its-failure-is-recorded-for-each-certificate-listing-it)). | A source's spent budget, which is bytes or requests (CRL-039). |
-| **unused point** | A point a source answering by certificate left alone, naming no URL for it. It stays open, so a later certificate listing it carries it again ([CRL-050](crl.md#crl-050-a-certificate-of-an-issuer-not-yet-asked-about-is-asked-whether-or-not-its-points-are-spent)). | A point no certificate lists. |
+| **replay** | A body or failure a source returns again for a point it answered earlier in the same verification, from its own memory rather than new work ([CRL-051](crl.md#crl-051-each-certificate-records-what-its-own-request-yielded-reuse-is-the-sources)). The engine remembers no body: it decodes, hashes and charges a replayed one like any other; the built-in source replays at most 16 MiB per verification (`MAX_REPLAY_BYTES`). "Answered from memory" says the same of the point. | A second fetch of the same URL, which is new work. |
+| **unused point** | A point a source answering by certificate left alone, naming no URL for it. It is reported as not used for the certificate it was left for, and a later certificate listing it carries it, as it carries every point ([CRL-050](crl.md#crl-050-each-request-carries-every-point-the-certificate-lists-whatever-was-asked-before)). | A point no certificate lists. |
 
 ## Work
 
