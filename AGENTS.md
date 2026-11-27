@@ -38,6 +38,32 @@ the specification, documentation and migration notes in the same change. This
 does not relax the "Pinned expectations" rules below: a pinned result still
 changes only for a stated reason.
 
+## Pre-1.0 flow
+
+Until 1.0.0 this section says who decides. It wins over any stricter text
+below, in `docs/` or in a skill. The owner answers, and is told, only in the
+Claude conversation; nothing on GitHub is an approval.
+
+1. **Ask first.** The change waits for the owner's answer; work that does not
+   depend on it goes on. Ask, with the `owner-question` skill, before:
+   - making rssig accept something it rejects today;
+   - changing the rule of a Decided entry that pins acceptance;
+   - changing this file or a skill under `.claude/skills/`.
+2. **Decide and tell.** Everything else that needs a judgement is the
+   agent's: a new entry, a change to diagnostics (a Decided entry's
+   included), a departure from a reference that rejects more, a reindex.
+   Record the reason where the rule lives (a new entry is Observed unless
+   Microsoft or the references settle it), list it in the PR description as
+   decided without asking, and tell the owner when the PR merges.
+3. **One task, one PR, one commit**, kept with the `pr-maintenance` skill.
+   `/review-loop` runs at most three rounds; after that only a new important
+   finding is fixed. A PR with no unanswered ask-first change merges by
+   squash, without asking, once its checks are green (the fuzz job may still
+   be running), and the owner is told what merged.
+4. **The 1.0 gate** (DOC-T012). Before 1.0.0 the owner reviews every
+   Observed entry and every call made under item 2, and this section is
+   replaced.
+
 ## Pull request titles
 
 A PR title is `<type>(<scope>): <TASK-ID> <description>`, for example
