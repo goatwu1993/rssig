@@ -316,6 +316,10 @@ and every AIA, CRL DP and OCSP fetch off. Five modes:
   constraints enforced, the closest settings to PATH-005 and PATH-011;
 - `rev` and `rev-prof`: `path` and `path-prof` with revocation on.
 
+The second set (below) ran in `path-prof`, `path-noeku-prof` and `rev-prof`,
+with `PS_KEY_USAGE` set. A `tsa-` prefix on a mode judges the timestamp
+signer's path instead of the signer's.
+
 **Coverage.** Two sets were run.
 
 - **The main set:** all 107 `tests/cases.json` cases whose input is a
@@ -429,7 +433,9 @@ Where certval and rssig agree on a rejection, the reason often differs:
 - The leaf's malformed basicConstraints, keyUsage, EKU and nameConstraints
   fail as `EncodingError`.
 
-The harness is in the appendix; it ran in under a second for all 533 runs.
+The harness is in the appendix; it ran in under a second for the
+533 main-set runs (107 cases in three path modes, 106 in two revocation modes)
+and the 66 second-set runs (18 cases, TSA fixtures also in `tsa-` modes).
 
 ## 7. Migration cost if adopted
 
@@ -486,8 +492,8 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   the dependency review of both packages.
 - **Tasks it would close or make moot:** PATH-T011, PATH-T019 and PATH-T007
   (ranking becomes rssig's own), CRL-T035 in part (certval's name comparison),
-  and the PATH-006 hardening in PATH-T022. That task was in progress in
-  another PR and not yet on `main` when this was written; it was opened
+  and the PATH-006 hardening in PATH-T022 (PR #124). That task was still
+  open in PR #124 and not yet on `main` when this was written; it was opened
   because webpki 0.103.17 is reported to accept a critical SCT-list
   extension, which this evaluation did not check.
 - **Tasks it would create:**
@@ -515,8 +521,8 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   PATH-011 and the CRL rules.
 - The engine moves to der 0.8 / x509-cert 0.3 for other reasons, which
   removes the two-stack cost.
-- webpki keeps moving in ways that loosen rssig's acceptance (PATH-T022 is
-  the first such report, for 0.103.17), so that wrapping it costs more than
+- webpki keeps moving in ways that loosen rssig's acceptance (PATH-T022,
+  PR #124, is the first such report, for 0.103.17), so that wrapping it costs more than
   composing a validator from certval.
 - rssig needs certificate-policy processing, which certval has and webpki
   lacks.
@@ -616,41 +622,189 @@ extension gaps above and the engine moves to der 0.8 for its own reasons.
 
 ## Appendix: the harness
 
-`Cargo.toml` dependencies:
-`certval = { version = "=0.2.0-rc.4", default-features = false, features = ["revocation", "rsa", "sha1_sig"] }`,
-`cms = "=0.3.0-rc.2"`, `der = "0.8.3"` (alloc, derive, oid),
-`x509-cert = "0.3.0"` (pem), `const-oid = "0.10.2"`. It reads one line per
-case: id, input, roots, CRLs and mode, taken from `tests/cases.json`.
+It was built and run outside the repository, over a copy of
+`tests/fixtures`:
 
-For the second set it also:
-- reads an MSI's `\u{5}DigitalSignature` stream (with `cfb` 0.10);
-- reads an RDP file's `signature:s:` blob (base64, past the 12-byte header),
-  with the three RDP usages as `PS_EXTENDED_KEY_USAGE`;
-- in `tsa` modes, takes the signer of the RFC 3161 token
-  (1.2.840.113549.1.9.16.2.14 or 1.3.6.1.4.1.311.3.3.1) or of a PKCS #9
-  countersignature as the target, with EKU 1.3.6.1.5.5.7.3.8;
-- sets `PS_KEY_USAGE` to digitalSignature for a non-TSA signer.
+```
+python3 cases.py > cases.tsv                         # from the repository root
+certval-harness <copy of tests/fixtures> cases.tsv   # prints id, mode, ACCEPT/REJECT, detail
+```
+
+The mode names in the case list are `path-ekupath` (`path` above),
+`path-noekupath` (`path-noeku`) and the same with `-prof`, `rev-` and
+`-ku` (sets `PS_KEY_USAGE`). The result is compared with each case's
+`expect.exit_code`.
 
 <details>
-<summary>src/main.rs (core)</summary>
+<summary>Cargo.toml</summary>
+
+```toml
+[package]
+name = "certval-harness"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+certval = { version = "=0.2.0-rc.4", default-features = false, features = ["revocation", "rsa", "sha1_sig"] }
+cms = "=0.3.0-rc.2"
+der = { version = "0.8.3", features = ["alloc", "derive", "oid"] }
+x509-cert = { version = "0.3.0", default-features = false, features = ["pem"] }
+const-oid = { version = "0.10.2", features = ["db"] }
+serde_json = "1"
+cfb = "0.10"
+base64ct = { version = "1.8", features = ["alloc"] }
+```
+
+</details>
+
+<details>
+<summary>cases.py (the case list)</summary>
+
+```python
+import json, sys
+d = json.load(open('tests/cases.json'))
+for c in d['cases']:
+    inp, cmd, dec = str(c.get('input', '')), c['command'], c.get('decision', '')
+    main_set = 'path' in inp and inp.endswith('.exe')
+    if not (main_set or dec.startswith('PATH-')) or cmd[0] != 'verify' or '--integrity-only' in cmd:
+        continue
+    if main_set and '--roots' not in cmd:
+        continue
+    roots = [cmd[i + 1].split('/', 1)[1] for i, a in enumerate(cmd) if a == '--roots']
+    crls = [cmd[i + 1].split('/', 1)[1] for i, a in enumerate(cmd) if a == '--crl']
+    norev = '--no-revocation' in cmd
+    if main_set:
+        modes = ['path-ekupath', 'path-noekupath', 'path-ekupath-prof'] + ([] if norev else ['rev-ekupath', 'rev-ekupath-prof'])
+    else:
+        modes = ['path-ekupath-prof-ku', 'path-noekupath-prof-ku'] + ([] if norev else ['rev-ekupath-prof-ku'])
+        if inp.startswith('tsa-'):
+            modes += ['tsa-' + m for m in modes]
+    for m in modes:
+        print('\t'.join([c['id'], inp, ','.join(roots), ','.join(crls), m]))
+```
+
+</details>
+
+<details>
+<summary>src/main.rs</summary>
 
 ```rust
+//! Scratch harness: run certval path validation over rssig's committed path fixtures.
+//! Usage: certval-harness <fixtures-dir> <cases.tsv>  (one case per line: id \t input \t roots(,) \t crls(,) \t mode)
+use std::{fs, path::Path};
+
+use certval::*;
+use cms::{content_info::ContentInfo, signed_data::{SignedData, SignerIdentifier}, cert::CertificateChoices};
+use der::{Decode, Encode};
+use x509_cert::Certificate;
+
+fn pe_pkcs7(bytes: &[u8]) -> std::result::Result<Vec<u8>, String> {
+    let rd32 = |o: usize| -> std::result::Result<u32, String> {
+        bytes.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).ok_or("short".into())
+    };
+    let lfanew = rd32(0x3c)? as usize;
+    let opt = lfanew + 24;
+    let magic = u16::from_le_bytes([bytes[opt], bytes[opt + 1]]);
+    let dd = opt + if magic == 0x20b { 112 } else { 96 };
+    let off = rd32(dd + 4 * 8)? as usize;
+    let size = rd32(dd + 4 * 8 + 4)? as usize;
+    let win = bytes.get(off..off + size).ok_or("bad security dir")?;
+    let len = u32::from_le_bytes([win[0], win[1], win[2], win[3]]) as usize;
+    Ok(win[8..len].to_vec())
+}
+
+fn msi_pkcs7(path: &Path) -> std::result::Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut c = cfb::open(path).map_err(|e| e.to_string())?;
+    let mut st = c.open_stream("\u{5}DigitalSignature").map_err(|e| e.to_string())?;
+    let mut v = vec![];
+    st.read_to_end(&mut v).map_err(|e| e.to_string())?;
+    Ok(v)
+}
+
+fn rdp_pkcs7(bytes: &[u8]) -> std::result::Result<Vec<u8>, String> {
+    let text = if bytes.starts_with(&[0xff, 0xfe]) {
+        let u: Vec<u16> = bytes[2..].chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        String::from_utf16_lossy(&u)
+    } else { String::from_utf8_lossy(bytes).into_owned() };
+    let line = text.lines().find_map(|l| l.trim().strip_prefix("signature:s:")).ok_or("no signature")?;
+    let b64: String = line.split_whitespace().collect();
+    use base64ct::Encoding;
+    let blob = base64ct::Base64::decode_vec(&b64).map_err(|e| e.to_string())?;
+    Ok(blob[12..].to_vec())
+}
+
+fn load_certs(path: &Path) -> Vec<Vec<u8>> {
+    let b = fs::read(path).expect("read root");
+    if b.starts_with(b"-----") {
+        Certificate::load_pem_chain(&b).expect("pem").iter().map(|c| c.to_der().unwrap()).collect()
+    } else {
+        vec![b]
+    }
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let fx = Path::new(&args[1]);
+    let cases = fs::read_to_string(&args[2]).unwrap();
+    for line in cases.lines() {
+        let f: Vec<&str> = line.split('\t').collect();
+        let (id, input, roots, crls, mode) = (f[0], f[1], f[2], f[3], f[4]);
+        let res = run(fx, input, roots, crls, mode);
+        match res {
+            Ok(v) => println!("{id}\t{mode}\t{v}"),
+            Err(e) => println!("{id}\t{mode}\tERROR {e}"),
+        }
+    }
+}
+
 fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::result::Result<String, String> {
-    let p7 = pe_pkcs7(&fs::read(fx.join(input)).map_err(|e| e.to_string())?)?; // security directory, WIN_CERTIFICATE body
+    let raw = fs::read(fx.join(input)).map_err(|e| e.to_string())?;
+    let p7 = if input.ends_with(".msi") { msi_pkcs7(&fx.join(input))? } else if input.ends_with(".rdp") { rdp_pkcs7(&raw)? } else { pe_pkcs7(&raw)? };
     let ci = ContentInfo::from_der(&p7).map_err(|e| format!("contentinfo: {e}"))?;
     let sd: SignedData = ci.content.decode_as().map_err(|e| format!("signeddata: {e}"))?;
-    let certs: Vec<Certificate> = /* CertificateChoices::Certificate entries of sd.certificates */;
-    let SignerIdentifier::IssuerAndSerialNumber(ias) = &sd.signer_infos.0.iter().next().ok_or("no signer")?.sid else { return Err("ski sid".into()) };
-    let leaf_idx = certs.iter().position(|c| c.tbs_certificate().issuer() == &ias.issuer
-        && c.tbs_certificate().serial_number() == &ias.serial_number).ok_or("signer cert not found")?;
+    let certs: Vec<Certificate> = sd.certificates.as_ref().map(|s| s.0.iter().filter_map(|c| match c {
+        CertificateChoices::Certificate(c) => Some(c.clone()), _ => None }).collect()).unwrap_or_default();
+    let si = sd.signer_infos.0.iter().next().ok_or("no signer")?;
+    let (certs, sid) = if mode.contains("tsa") {
+        let ua = si.unsigned_attrs.as_ref().ok_or("no unsigned attrs")?;
+        let mut found = None;
+        for a in ua.iter() {
+            let oid = a.oid.to_string();
+            let v = a.values.iter().next().ok_or("empty attr")?;
+            if oid == "1.2.840.113549.1.9.6" {
+                let csi: cms::signed_data::SignerInfo = v.decode_as().map_err(|e| format!("countersig: {e}"))?;
+                found = Some((certs.clone(), csi.sid.clone()));
+            } else if oid == "1.2.840.113549.1.9.16.2.14" || oid == "1.3.6.1.4.1.311.3.3.1" {
+                let tci: ContentInfo = v.decode_as().map_err(|e| format!("token: {e}"))?;
+                let tsd: SignedData = tci.content.decode_as().map_err(|e| format!("token sd: {e}"))?;
+                let tcerts: Vec<Certificate> = tsd.certificates.as_ref().map(|s| s.0.iter().filter_map(|c| match c {
+                    CertificateChoices::Certificate(c) => Some(c.clone()), _ => None }).collect()).unwrap_or_default();
+                let tsi = tsd.signer_infos.0.iter().next().ok_or("no tsa signer")?;
+                found = Some((tcerts, tsi.sid.clone()));
+            }
+        }
+        found.ok_or("no timestamp attribute")?
+    } else { (certs.clone(), si.sid.clone()) };
+    let SignerIdentifier::IssuerAndSerialNumber(ias) = &sid else { return Err("ski sid".into()) };
+    let leaf_idx = certs.iter().position(|c| c.tbs_certificate().issuer() == &ias.issuer && c.tbs_certificate().serial_number() == &ias.serial_number).ok_or("signer cert not found")?;
 
     let mut cps = CertificationPathSettings::new();
     cps.set_time_of_interest(TimeOfInterest::from_unix_secs(1_800_000_000).unwrap());
-    cps.set_extended_key_usage(vec!["1.3.6.1.5.5.7.3.3".to_string()]);
+    let ekus: Vec<String> = if mode.contains("tsa") { vec!["1.3.6.1.5.5.7.3.8".into()] }
+        else if input.ends_with(".rdp") { vec!["1.3.6.1.5.5.7.3.3".into(), "1.3.6.1.5.5.7.3.1".into(), "1.3.6.1.4.1.311.54.1.2".into()] }
+        else { vec!["1.3.6.1.5.5.7.3.3".into()] };
+    cps.set_extended_key_usage(ekus);
     cps.set_extended_key_usage_path(!mode.contains("noeku"));
     if mode.contains("prof") {
         cps.set_enforce_trust_anchor_validity(false);
         cps.set_enforce_trust_anchor_constraints(true);
+    }
+    if mode.contains("ku") && !mode.contains("tsa") {
+        let mut f = x509_cert::ext::pkix::KeyUsages::DigitalSignature.into();
+        let _ = &mut f;
+        cps.set_target_key_usage(f);
     }
     let with_rev = mode.contains("rev");
     cps.set_check_revocation_status(with_rev);
@@ -661,40 +815,51 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
     let mut env = PkiEnvironment::new();
     env.populate_5280_pki_environment();
     let mut tas = TaSource::new();
-    for each root certificate (DER, or each certificate of a PEM file) { tas.push(CertFile { filename, bytes }); }
-    tas.initialize()?;
+    for r in roots.split(',').filter(|s| !s.is_empty()) {
+        for (i, der) in load_certs(&fx.join(r)).into_iter().enumerate() {
+            tas.push(CertFile { filename: format!("{r}#{i}"), bytes: der });
+        }
+    }
+    tas.initialize().map_err(|e| format!("ta init: {e:?}"))?;
     env.add_trust_anchor_source(Box::new(tas));
+
     let mut cs = CertSource::new();
-    for each embedded certificate other than the signer { cs.push(CertFile { filename, bytes }); }
-    cs.initialize(&cps)?;
+    for (i, c) in certs.iter().enumerate() {
+        if i != leaf_idx {
+            cs.push(CertFile { filename: format!("embedded#{i}"), bytes: c.to_der().unwrap() });
+        }
+    }
+    cs.initialize(&cps).map_err(|e| format!("cs init: {e:?}"))?;
     cs.find_all_partial_paths(&env, &cps);
     env.add_certificate_source(Box::new(cs));
+
     if with_rev {
         let mcs = MemoryCrlSource::new();
-        for each --crl file { mcs.add(&bytes); }
+        for c in crls.split(',').filter(|s| !s.is_empty()) {
+            let b = fs::read(fx.join(c)).map_err(|e| e.to_string())?;
+            if !mcs.add(&b) { eprintln!("crl {c} not added"); }
+        }
         env.add_crl_source(Box::new(mcs));
     }
 
-    let mut target = PDVCertificate::try_from(certs[leaf_idx].to_der().unwrap().as_slice())?;
+    let mut target = PDVCertificate::try_from(certs[leaf_idx].to_der().unwrap().as_slice()).map_err(|e| format!("target: {e:?}"))?;
     target.parse_extensions(EXTS_OF_INTEREST);
     let mut paths = vec![];
     if let Err(e) = env.get_paths_for_target(&target, &mut paths, 0, cps.get_time_of_interest()) {
         return Ok(format!("REJECT\tget_paths: {e:?}"));
     }
-    if paths.is_empty() { return Ok("REJECT\tNoPathsFound (0 paths)".into()); }
+    if paths.is_empty() {
+        return Ok("REJECT\tNoPathsFound (0 paths)".into());
+    }
     let mut errs = vec![];
     for p in &paths {
         let mut r = CertificationPathResults::new();
-        let pcps = if mode.contains("prof") {
-            match enforce_trust_anchor_constraints(&cps, &p.trust_anchor) {
-                Ok(c) => c,
-                Err(e) => { errs.push(format!("ta-constraints {e:?}")); continue; }
-            }
-        } else { cps.clone() };
-        match validate_path_rfc5280(&env, &pcps, p, &mut r)
-            .and_then(|()| check_revocation_local(&env, &pcps, p, &mut r)) {
-            Ok(()) => return Ok(format!("ACCEPT\tpaths={}", paths.len())),
-            Err(e) => errs.push(format!("{e:?} at index {:?}", r.get_failure_index())),
+        let pcps = if mode.contains("prof") { match enforce_trust_anchor_constraints(&cps, &p.trust_anchor) { Ok(c) => c, Err(e) => { errs.push(format!("ta-constraints {e:?}")); continue; } } } else { cps.clone() };
+        let cps = &pcps;
+        let o = validate_path_rfc5280(&env, cps, p, &mut r).and_then(|()| check_revocation_local(&env, cps, p, &mut r));
+        match o {
+            Ok(()) => return Ok(format!("ACCEPT\tpaths={} valid_len={}", paths.len(), p.intermediates.len())),
+            Err(e) => errs.push(format!("{e:?} at index {:?} of {} certs", r.get_failure_index(), p.intermediates.len() + 2)),
         }
     }
     Ok(format!("REJECT\tpaths={} [{}]", paths.len(), errs.join(", ")))
