@@ -17,8 +17,9 @@ generation than the engine (der 0.8, x509-cert 0.3, rsa 0.10), and its first
 published release is a month old and still a release candidate. certval-cms
 cannot parse an Authenticode signature at all. Adopting certval would replace
 one set of adapter workarounds (the sentinel error, error ranking) with a
-larger profile layer that rssig would have to write and maintain on top of
-it, and it would leave every PATH- and CRL- acceptance entry to be proved
+validator rssig would have to compose from certval's parts and maintain. A
+wrapper around certval is not enough, because certval also rejects 4 cases rssig
+accepts. Adopting it would also leave every PATH- and CRL- acceptance entry to be proved
 again.
 
 ## What was read
@@ -312,7 +313,7 @@ and every AIA, CRL DP and OCSP fetch off. Five modes:
 
 **Coverage.** These are all 107 `tests/cases.json` cases whose input is a
 `*path*.exe` fixture verified with `--roots`: the whole PATH-001 to PATH-014
-set, the PATH-T001 corpus, the PATH-013 malformed-extension and PATH-014
+set (PATH-015 pins a report's diagnostics and is not measured here), the PATH-T001 corpus, the PATH-013 malformed-extension and PATH-014
 repeated-extension fixtures, and the CRL cases built on the path fixtures.
 106 of them ran with revocation (one case is `--no-revocation`). Not
 compared:
@@ -339,29 +340,29 @@ where rssig accepts / not compared):
 **Every case certval accepts and rssig rejects** (`rev-prof`, the closest
 settings; the same cases fail in every mode unless noted):
 
-| Case | Entry (status) | rssig | Why certval accepts |
+| Case | Entry (status) | rssig `code` (`details.reason`) | Why certval accepts |
 |---|---|---|---|
 | `path-003-bad-leaf-ca` | PATH-003 (Decided) | `certificate_chain_invalid` | target basicConstraints unchecked |
 | `path-007-bad-leaf-no-eku` | PATH-007 (Decided) | `invalid_eku` | target without EKU passes |
-| `path-013-bad-leaf-malformed-san` | PATH-013 (Decided) | `malformed_extension` | SAN not processed without name constraints |
-| `path-013-bad-leaf-malformed-ski` | PATH-013 | `malformed_extension` | SKI never processed |
-| `path-013-bad-leaf-malformed-aki` | PATH-013 | `malformed_extension` | AKI never processed |
-| `path-013-bad-leaf-malformed-crldp` | PATH-013 | `malformed_extension` | CRL DP not processed in validation |
-| `path-013-bad-leaf-san-non-ascii` | PATH-013 | `malformed_extension` | as SAN |
-| `path-013-bad-ca-malformed-san` | PATH-013 | `malformed_extension` | as SAN |
+| `path-013-bad-leaf-malformed-san` | PATH-013 (Decided) | `certificate_chain_invalid` (`malformed_extension`) | SAN not processed without name constraints |
+| `path-013-bad-leaf-malformed-ski` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | SKI never processed |
+| `path-013-bad-leaf-malformed-aki` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | AKI never processed |
+| `path-013-bad-leaf-malformed-crldp` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | CRL DP not processed in validation |
+| `path-013-bad-leaf-san-non-ascii` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | as SAN |
+| `path-013-bad-ca-malformed-san` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | as SAN |
 | `path-013-bad-ca-san-not-a-sequence` | PATH-013 | `certificate_chain_invalid` | as SAN |
-| `path-013-bad-ca-malformed-ski` | PATH-013 | `malformed_extension` | as SKI |
-| `path-013-bad-ca-malformed-aki` | PATH-013 | `malformed_extension` | as AKI |
-| `path-013-bad-ca-malformed-crldp` | PATH-013 | `malformed_extension` | as CRL DP |
-| `path-014-bad-leaf-repeated-ski` | PATH-014 (Observed) | `repeated_extension` | non-critical repeat ignored |
-| `path-014-bad-leaf-repeated-unfamiliar` | PATH-014 | `repeated_extension` | as above |
-| `path-014-bad-leaf-repeated-and-malformed-reports-the-repeat` | PATH-014 | `repeated_extension` | as above |
-| `path-014-bad-ca-repeated-ski` | PATH-014 | `repeated_extension` | as above |
+| `path-013-bad-ca-malformed-ski` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | as SKI |
+| `path-013-bad-ca-malformed-aki` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | as AKI |
+| `path-013-bad-ca-malformed-crldp` | PATH-013 | `certificate_chain_invalid` (`malformed_extension`) | as CRL DP |
+| `path-014-bad-leaf-repeated-ski` | PATH-014 (Observed) | `certificate_chain_invalid` (`repeated_extension`) | non-critical repeat ignored |
+| `path-014-bad-leaf-repeated-unfamiliar` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | as above |
+| `path-014-bad-leaf-repeated-and-malformed-reports-the-repeat` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | as above |
+| `path-014-bad-ca-repeated-ski` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | as above |
 | `path-014-bad-ca-repeated-san` | PATH-014 | `certificate_chain_invalid` | as above |
-| `path-014-bad-ca-repeated-and-malformed-reports-the-repeat` | PATH-014 | `repeated_extension` | as above |
+| `path-014-bad-ca-repeated-and-malformed-reports-the-repeat` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | as above |
 | `crl-revoked-issuer-after-good-root-crl` | claimed, no entry | `certificate_revoked` | first of two equal CRLs decides |
-| `crl-008-self-issued-rollover-with-both-crls-is-rejected` | CRL-008 (Decided) | `ambiguous_issuer_keys` | no ambiguity rule |
-| `crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected` | CRL-008 | `ambiguous_issuer_keys` | as above |
+| `crl-008-self-issued-rollover-with-both-crls-is-rejected` | CRL-008 (Decided) | `certificate_chain_invalid` (`ambiguous_issuer_keys`) | no ambiguity rule |
+| `crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected` | CRL-008 | `certificate_chain_invalid` (`ambiguous_issuer_keys`) | as above |
 
 Mode-dependent accepts:
 
@@ -386,7 +387,7 @@ No setting combination reproduces PATH-005, PATH-007 and PATH-011 together.
 
 Where certval and rssig agree on a rejection, the reason often differs:
 
-- `bad-path-ca-malformed-bc` and `bad-path-ca-malformed-ku` fail as
+- `path-013-bad-ca-malformed-bc` and `path-013-bad-ca-malformed-ku` fail as
   `MissingBasicConstraints` and `InvalidKeyUsage`, because the malformed
   extension reads as absent.
 - `path-004-bad-pathlen` finds no path at all (`NoPathsFound`), rather than
@@ -403,18 +404,30 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   - Out: the path callback, the MALFORMED_INTERMEDIATE sentinel (`:1288`),
     `path_error` (`:916`), `search_limit` (`:2072`) and the webpki CRL glue
     (`webpki_revocation_error`, `crl_rejection_reason`, `:2305,2500`).
-  - In: a loop over certval's paths and an rssig profile layer that
-    re-imposes what certval does not:
-    - the target's basicConstraints (PATH-003);
-    - the target's EKU, and the CA EKU without the anchor (PATH-007);
-    - a keyUsage-less CA (PATH-008);
-    - the root as name, key and name constraints only (PATH-005,
-      PATH-011);
-    - every extension decoding (PATH-013);
-    - no repeated extension (PATH-014);
+  - In: a loop over certval's paths and a validator of rssig's own.
+    `validate_path_rfc5280` cannot be used as it is. A layer around it can
+    only add rejections, and it rejects four cases rssig accepts
+    (section 6). rssig would compose its own order of certval's public
+    checks (`check_validity`, `check_basic_constraints`, `check_names`,
+    `check_certificate_policies_graph`, `check_extended_key_usage`,
+    `check_critical_extensions`, `verify_signatures`;
+    `path_validator.rs:154-1215`, `policy_graph.rs:40`). Then it needs:
+    - rssig's own check in place of `check_key_usage`, which rejects a
+      keyUsage-less CA (PATH-008);
+    - the root handed over as a TrustAnchorInfo carrying only name, key and
+      name constraints, so no validity, keyUsage or EKU of the root is
+      judged (PATH-011), with TA constraints enforced so that its name
+      constraints apply (PATH-005);
+    - added rejections for what certval accepts:
+      - the target's basicConstraints (PATH-003);
+      - the target's EKU (PATH-007);
+      - every extension decoding (PATH-013);
+      - no repeated extension (PATH-014);
     - a path-building budget (LIMIT-T002).
-  - rssig's own CRL evaluation (`evaluate_crls`, `:1540`) stays, or is
-    given up to certval at the cost in section 3.
+    The alternative is a fork of certval, or patches upstream.
+  - rssig's own CRL evaluation (`evaluate_crls`, `:1540`) must stay.
+    certval's revocation rejects CRL-015's configured root without cRLSign
+    and accepts what CRL-008 rejects (section 3).
 - **engine/src/rdp.rs**: the usage search and its webpki-version audit
   (`:218,284-311,916-935`, LIMIT-T007) are re-argued against certval.
 - **engine/src/retrieval.rs**: little changes structurally (3 `webpki`
@@ -427,13 +440,15 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   the dependency review of both packages.
 - **Tasks it would close or make moot:** PATH-T011, PATH-T019 and PATH-T007
   (ranking becomes rssig's own), CRL-T035 in part (certval's name comparison),
-  the PATH-006 hardening in PATH-T022, which exists because of a webpki
-  update.
-- **Tasks it would create:** the profile layer above, a no_std build check, a
+  and the PATH-006 hardening in PATH-T022. That task was in progress in
+  another PR and not yet on `main` when this was written; it was opened
+  because webpki 0.103.17 is reported to accept a critical SCT-list
+  extension, which this evaluation did not check.
+- **Tasks it would create:** the validator of rssig's own above, a no_std build check, a
   budget, the stack migration, and a pass over every PATH- and CRL- entry's
   Sources lines, which cite webpki 0.103.16 as observed behavior.
-- **Risk:** high. 21 measured accepts that rssig must catch in its own
-  layer, on a validator that is a month into its public life and a
+- **Risk:** high. 21 measured accepts and 4 measured rejects that rssig's
+  own composition must undo, on a validator that is a month into its public life and a
   release candidate. The fixtures measure only what rssig has thought to
   pin.
 
@@ -441,12 +456,13 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
 
 - certval reaches a final 0.2.0 or later, fixes the target basicConstraints
   and EKU-absent acceptances, or refuses an undecodable or repeated extension
-  of any type. Then the profile layer shrinks to PATH-011 and the CRL rules.
+  of any type. rssig's own composition would then shrink to PATH-008,
+  PATH-011 and the CRL rules.
 - The engine moves to der 0.8 / x509-cert 0.3 for other reasons, which
   removes the two-stack cost.
-- webpki keeps moving in ways that loosen rssig's acceptance (as 0.103.17 did
-  for the SCT list, PATH-T022), so that wrapping it costs more than writing
-  the profile layer.
+- webpki keeps moving in ways that loosen rssig's acceptance (PATH-T022 is
+  the first such report, for 0.103.17), so that wrapping it costs more than
+  composing a validator from certval.
 - rssig needs certificate-policy processing, which certval has and webpki
   lacks.
 
@@ -482,14 +498,22 @@ A. **Stay on webpki** (recommended). Record this evaluation and revisit
    - Later: fully reversible; the evaluation can be rerun against a newer
      certval with the appendix harness.
 
-B. **Replace webpki with certval behind an rssig profile layer.** Use
-   certval for path building and validation; rssig re-imposes PATH-003,
-   005, 007, 008, 011, 013 and 014, keeps its own CRL evaluation and adds a
-   path budget.
+B. **Replace webpki with a validator rssig composes from certval's parts.**
+   Use certval's path builder and its public checks, but not
+   `validate_path_rfc5280` as it is. rssig:
+   - replaces its keyUsage check (PATH-008);
+   - hands the root over as name, key and name constraints only (PATH-005,
+     PATH-011);
+   - adds the rejections certval lacks (PATH-003, 007, 013, 014);
+   - keeps its own CRL evaluation (CRL-008, CRL-015);
+   - adds a path budget.
+
+   A wrapper alone cannot do this: it could not undo the 4 cases certval
+   rejects and rssig accepts. The other route is a fork or upstream patches.
    - Pros: typed per-path results that rssig ranks itself; policy
      processing; RFC 5280 name comparison; no dependence on webpki's Web PKI
      choices.
-   - Cons: **fails open wherever the profile layer misses a rule**. Measured,
+   - Cons: **fails open wherever rssig's composition misses a rule**. Measured,
      21 cases need it; unmeasured ones are unknown. It needs the der 0.8
      migration or two stacks, and depends on a release-candidate crate a
      month into its public life.
@@ -510,9 +534,10 @@ C. **Add certval as a test-only cross-check**, like
      disagreements.
    - Later: easy to remove.
 
-**Recommendation:** A, because B trades two known, tested webpki workarounds
-for at least seven profile rules and the CRL ambiguity rule re-implemented
-over a pre-release validator, with acceptance at risk wherever one is missed.
+**Recommendation:** A. B trades two known, tested webpki workarounds for a
+validator rssig assembles itself. That validator has one replaced check, a
+reshaped anchor, four added rejections and rssig's CRL rules, all over a
+pre-release crate, and acceptance is at risk wherever one is missed.
 C costs more than the opinion is worth while the references are OpenSSL and
 Bouncy Castle. It would change to B if certval closes the target and
 extension gaps above and the engine moves to der 0.8 for its own reasons.
