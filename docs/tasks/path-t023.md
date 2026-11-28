@@ -183,8 +183,10 @@ builder intended for offline use" (`cert_source.rs:1213-1214`). It verifies
 a signature for each certificate against each candidate issuer on every pass
 (`cert_source.rs:1593,1658`), with no count limit, so its work grows with the
 square of the embedded certificates. certval-cms bounds its own preparation
-separately (8 intermediates, 64 candidates; `src/vetting.rs:255,260`). rssig
-would need its own budget around either one (LIMIT-T002).
+separately (8 intermediates, 64 candidates; `src/vetting.rs:255,260`). The
+existing verification budget (LIMIT-T002, done) counts webpki's search
+reservations and would not see this builder. It would have to be extended to
+charge certval's signature checks, which is new work.
 
 ## 3. Revocation
 
@@ -213,8 +215,8 @@ fetches, has no counterpart in certval's own fetching (`remote`, reqwest,
 `PS_CRL_TIMEOUT` and friends in `path_settings.rs:292-470`). That fetching
 is unusable here in any case. rssig could keep `Retrieval` and `CrlSource`
 and hand certval only verified bytes, but then certval would decide
-revocation, and every CRL- acceptance entry (CRL-001 to CRL-017, CRL-041 to
-CRL-045) would have to be proved again against it. If rssig instead kept
+revocation, and each of the 30 CRL- acceptance entries (listed in section 7)
+would have to be proved again against it. If rssig instead kept
 deciding revocation itself, certval would only build paths and webpki's
 callback role would simply move to a loop over certval's paths.
 
@@ -228,12 +230,12 @@ Measured: for `good-path-basic.exe` and `good-pe32.exe`, `verify_signed_data`
 returns `Asn1(TagUnexpected { expected: OCTET STRING, actual: SEQUENCE })`.
 Beyond that, compared with docs/cms.md:
 
-- **Looser than rssig on 9 of the 15 CMS entries:**
+- **Looser than rssig on 8 of the 13 CMS acceptance entries:**
   - The signed attributes are re-encoded as parsed under BER rather than
     taken as the signer's DER (`src/verify.rs:123,324`; CMS-008).
   - The digestAlgorithms set is not consulted (`src/verify.rs:133`; CMS-007).
   - The first matching certificate is the signer (`src/verify.rs:267`), with
-    no ambiguity check (CMS-004, CMS-014).
+    and no ambiguity check (CMS-004).
   - A subjectKeyIdentifier signer and signer certificates from outside the
     message are accepted (`src/verify.rs:270-274`; CMS-003).
   - Only content-type, message-digest and signing-certificate-v2 are checked
@@ -242,11 +244,14 @@ Beyond that, compared with docs/cms.md:
     (`src/verify.rs:326-333`; CMS-006).
   - Algorithm parameters are not checked (CMS-002).
   - BER input and SignedData versions are not limited (CMS-010).
+  - Possibly CMS-011 as well. const-oid 0.10 is reported to accept a padded
+    arc in an unknown attribute's OID; not checked here (compare PATH-T015).
 - **Missing entirely:** unsigned attributes are never read, so there are no
   countersignatures, RFC 3161 tokens or nested signatures (CMS-013, and the
   TSA- index). There are no format bindings (page hashes, SIP digests).
-- **Untyped errors:** most CMS defects are `InvalidInput(String)` and a digest
-  mismatch is `Crypto(String)` (`src/error.rs:136-158`; CMS-015).
+- **Diagnostics missing:** there is no ambiguity error with the number of
+  matching certificates (CMS-014). Most CMS defects are `InvalidInput(String)`,
+  and a digest mismatch is `Crypto(String)` (`src/error.rs:136-158`; CMS-015).
 - **Vetting** (certval path validation of the signer) runs only when settings
   are passed (`src/verify.rs:348-353`). It then requires only
   digitalSignature or nonRepudiation (`src/vetting.rs:74-77`).
@@ -340,7 +345,8 @@ where rssig accepts / not compared):
 | `rev-prof` | 71 | **21** | 3 | 11 |
 
 **Every case certval accepts and rssig rejects** (`rev-prof`, the closest
-settings; the same cases fail in every mode unless noted):
+settings). The PATH- rows hold in every mode. The last three rows are
+measured only in the revocation modes; the path modes leave them out:
 
 | Case | Entry (status) | rssig `code` (`details.reason`) | Why certval accepts |
 |---|---|---|---|
@@ -425,17 +431,29 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
       - the target's EKU (PATH-007);
       - every extension decoding (PATH-013);
       - no repeated extension (PATH-014);
-    - a path-building budget (LIMIT-T002).
+    - the LIMIT-T002 budget extended to certval's path builder.
     The alternative is a fork of certval, or patches upstream.
   - rssig's own CRL evaluation (`evaluate_crls`, `:1540`) must stay.
     certval's revocation rejects CRL-015's configured root without cRLSign
     and accepts what CRL-008 rejects (section 3).
 - **engine/src/rdp.rs**: the usage search and its webpki-version audit
   (`:218,284-311,916-935`, LIMIT-T007) are re-argued against certval.
-- **engine/src/retrieval.rs**: little changes structurally (3 `webpki`
-  references, `:766,1372,3740`), but the revocation-crosscheck feature
-  (CRL-T011), which re-runs webpki's revocation, loses its second opinion or
-  moves to certval's.
+- **The rest of the trust module:**
+  - engine/src/trust/crosscheck.rs (30 `webpki` references) is the
+    revocation-crosscheck feature (CRL-T011), which re-runs webpki's
+    revocation; it is dropped or rewritten against certval.
+  - engine/src/trust/error.rs and engine/src/trust/loading.rs (3 and 2
+    references) map webpki errors and load anchors through webpki.
+  - engine/src/crypto.rs is the RustCrypto adapter for webpki's signature
+    traits; it would be redone for certval's verification callbacks.
+- **engine/src/retrieval.rs**: 3 `webpki` references in comments and tests
+  (`:766,1372,3740`); little changes structurally.
+- **Tests that name webpki:**
+  - engine/src/tests/certificate_paths.rs (8) and
+    engine/src/tests/crl_applicability.rs (4);
+  - tests/cli/certificate_paths.rs (14), tests/cli/trust_loading.rs and
+    tests/cli/crl_applicability.rs;
+  - 16 mentions in tests/fixtures/manifest.json provenance.
 - **CMS** (engine/src/cms.rs): unchanged; certval-cms cannot replace it.
 - **Everything else:** a move of the whole engine to der 0.8 / x509-cert 0.3
   (or two stacks side by side), the fuzz targets and `fuzz/Cargo.lock`, and
@@ -446,10 +464,17 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   another PR and not yet on `main` when this was written; it was opened
   because webpki 0.103.17 is reported to accept a critical SCT-list
   extension, which this evaluation did not check.
-- **Tasks it would create:** the validator of rssig's own above, a no_std build check, a
-  budget, the stack migration, and a pass over the Sources lines of the
-  37 acceptance entries PATH-001 to PATH-015, CRL-001 to CRL-017 and CRL-041
-  to CRL-045, which cite webpki 0.103.16 as observed behavior.
+- **Tasks it would create:**
+  - the validator of rssig's own above;
+  - a no_std build check;
+  - the budget extension;
+  - the stack migration;
+  - a re-proof of the 13 PATH- acceptance entries (PATH-001 to PATH-011,
+    PATH-013, PATH-014) and of the 30 CRL- acceptance entries (CRL-001 to
+    CRL-025, CRL-041, CRL-044, CRL-045, CRL-048, CRL-050), since each is
+    judged per built path;
+  - an update of the 42 lines in docs/path.md, docs/crl.md and
+    docs/certificate-paths.md that name webpki (5 of them cite 0.103.16).
 - **Risk:** high. 28 measured cases that rssig's own composition must get
   right: the 21 accepts and 3 rejects of the closest mode, plus 3 accepts
   and 1 reject that depend on settings. That is on a validator that is a month into its public life and a
@@ -478,9 +503,9 @@ retrieval boundary would carry it in either case.
 
 ### Question 1: Should certval replace webpki as rssig's path validator?
 
-Entry or task: PATH-T024 (Open, owner decision; the entries it touches,
-PATH-001 to PATH-015, CRL-001 to CRL-017 and CRL-041 to CRL-045, are mostly
-Decided and pin acceptance). Cases: the 28 named in section 6 (21 accepts
+Entry or task: PATH-T024 (Open, owner decision). It touches 43 acceptance
+entries: PATH-001 to PATH-011, PATH-013 and PATH-014, and the 30 CRL-
+acceptance entries listed in section 7, mostly Decided. Cases: the 28 named in section 6 (21 accepts
 and 3 rejects under `rev-prof`, plus 3 mode-dependent accepts and
 `path-011-good-root-expired`).
 
@@ -526,9 +551,13 @@ B. **Replace webpki with a validator rssig composes from certval's parts.**
      28 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
      migration or two stacks, and depends on a release-candidate crate a
      month into its public life.
-   - Now: trust.rs rewritten (~3,900 lines), rdp.rs re-argued, 37
-     PATH- and CRL- entries' sources redone, all 107 cases re-verified, and a
-     no_std check.
+   - Now:
+     - trust.rs (~3,900 lines), trust/crosscheck.rs and the crypto adapter
+       rewritten;
+     - rdp.rs re-argued;
+     - 43 acceptance entries re-proved (13 PATH-, 30 CRL-);
+     - all 107 cases re-verified;
+     - a no_std check.
    - Later: hard to reverse once the entries cite certval behavior.
 
 C. **Add certval as a test-only cross-check**, like
