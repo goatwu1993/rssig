@@ -80,3 +80,10 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **configured root** (anchor) | A trust anchor from `--roots` or the system store; embedded certificates are only candidates. |
 | **undecoded extension** | A basicConstraints, keyUsage or extKeyUsage that a certificate report could not decode (malformed or repeated), listed in the report's `undecoded_extensions` with its field null. A report fact; it fails nothing by itself; a malformed or repeated extension of a path certificate is what fails the path (PATH-013, PATH-014, PATH-015). |
 | **supplied CRL** / **fetched CRL** | A CRL given locally with `--crl`, or one a `CrlSource` returned. |
+
+## Errors
+
+| Term | Meaning | Not to be confused with |
+|---|---|---|
+| **typed layer** | A `VerificationError`, or a parser error (`parse::Error`), anywhere in an internal error chain: the error itself, a context added to it or another error's source. The outermost one gives a per-file error its code, stage, message and details ([CLI candidate rule `typed-layer`](cli.md#candidate-rules)). | A **cause**, which is only text. |
+| **cause** | One entry of an error's `causes`: the message of a context or chain entry the error passed through ([CLI candidate rule `causes`](cli.md#candidate-rules)). Consumers match `code`, never causes. | The typed layer that decides the code. |
