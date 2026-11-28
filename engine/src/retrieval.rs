@@ -1014,19 +1014,51 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         }
         // The bodies are loaded first: what they turn out to be decides how
         // the points the source did not answer are recorded.
-        let loaded = self.load_all(sha256, issuer, response.crls, max_bytes, &offered)?;
+        let mut loaded = self.load_all(
+            sha256,
+            issuer,
+            response.crls,
+            max_bytes,
+            &offered,
+            // With a failure naming no URL held, a refused body answers no
+            // point: that failure, or what sets it aside, decides them. After
+            // an abort the points left were not tried, so it answers none.
+            !unanswered.is_empty() && whole_request.is_none() && !self.aborted,
+        )?;
         let returned = loaded.accepted_bytes;
-        if let Some(failure) = whole_request {
-            // Beside an answer by certificate, such a failure is recorded as
-            // it is: the points were not used, so it is not about them. So
-            // is one beside a URL-less abort in this response: the points
-            // left were not tried, as recorded below.
+        // Whether the held failure naming no URL answers the points. Beside
+        // an answer by certificate, it is recorded as it is: the points were
+        // not used, so it is not about them. So is one beside a URL-less
+        // abort in this response: the points left were not tried, as
+        // recorded below. An answer by certificate counts only without an
+        // abort (see `by_certificate` below), so with one it does not change
+        // this.
+        let whole_answers = whole_request.as_ref().is_some_and(|failure| {
             let aborted_elsewhere = whole_abort && failure.kind != CrlSourceErrorKind::Abort;
-            // An answer by certificate counts only without an abort (see
-            // `by_certificate` below), so with one it does not change this.
-            if loaded.by_certificate && !self.aborted && failure.kind != CrlSourceErrorKind::Abort
-                || aborted_elsewhere
+            !(loaded.by_certificate && !self.aborted && failure.kind != CrlSourceErrorKind::Abort
+                || aborted_elsewhere)
+        });
+        // A refused body naming no URL answers the points left only where
+        // nothing else would: a failure naming no URL, an abort, an answer by
+        // certificate or a spent allowance decides them first. Otherwise it is
+        // recorded as it is, after the other bodies rejected on load (CRL-049).
+        // Nothing is held beside a held failure naming no URL (see `hold`);
+        // were one held, it is still recorded, as it is.
+        debug_assert!(whole_request.is_none() || loaded.refused.is_none());
+        let refused = match loaded.refused.take() {
+            Some(e)
+                if whole_answers
+                    || self.aborted
+                    || loaded.by_certificate
+                    || returned >= max_bytes =>
             {
+                self.skip(sha256, None, e, None);
+                None
+            }
+            refused => refused,
+        };
+        if let Some(failure) = whole_request {
+            if !whole_answers {
                 self.source_failure(sha256, failure);
             } else {
                 for point in &unanswered {
@@ -1072,6 +1104,10 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 .detail("resource", "crl_response_bytes")
                 .detail("limit", max_bytes)
                 .detail("used", returned)
+            } else if let Some(refused) = &refused {
+                // The body the source returned for the certificate was
+                // refused: that is what this point yielded, not nothing.
+                refused.clone()
             } else {
                 error(
                     ErrorCode::CrlFetchFailed,
@@ -1083,7 +1119,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         Ok(loaded.added)
     }
 
-    /// Load every returned body.
+    /// Load every returned body. With `hold`, the last body naming no URL
+    /// that is refused is held in [`Loaded::refused`] instead of recorded.
     fn load_all(
         &mut self,
         sha256: &str,
@@ -1091,17 +1128,31 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         crls: Vec<SourcedCrl>,
         max_bytes: usize,
         points: &BTreeSet<String>,
+        hold: bool,
     ) -> Result<Loaded, VerificationError> {
         let mut loaded = Loaded::default();
         for crl in crls {
-            let (by_certificate, added) = self.load(
+            let result = self.load(
                 sha256,
                 issuer,
                 crl,
                 points,
                 &mut loaded.accepted_bytes,
                 max_bytes,
-            )?;
+                hold,
+                &mut loaded.refused,
+            );
+            // The work budget ends the run with what was recorded: a held
+            // refusal is recorded as it is first, so it stays in the report.
+            let (by_certificate, added) = match result {
+                Ok(outcome) => outcome,
+                Err(e) => {
+                    if let Some(held) = loaded.refused.take() {
+                        self.skip(sha256, None, held, None);
+                    }
+                    return Err(e);
+                }
+            };
             loaded.added |= added;
             loaded.by_certificate |= by_certificate.is_some();
             loaded.full_added |= by_certificate == Some(true);
@@ -1114,7 +1165,10 @@ impl<'b, 'l> Retrieval<'b, 'l> {
     /// whether it is an answer by certificate (it names no URL and loaded a
     /// CRL, DER or PEM, of `issuer`), and whether it added a CRL not already
     /// loaded. The body is decoded only after its size is checked and
-    /// charged.
+    /// charged. With `hold`, a refused body naming no URL is put in `held`,
+    /// not recorded: the caller decides whether it answers the points left.
+    /// The refusal it replaces, if any, is recorded then, as it is.
+    #[allow(clippy::too_many_arguments)]
     fn load(
         &mut self,
         sha256: &str,
@@ -1123,6 +1177,8 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         points: &BTreeSet<String>,
         total: &mut usize,
         max_bytes: usize,
+        hold: bool,
+        held: &mut Option<VerificationError>,
     ) -> Result<(Option<bool>, bool), VerificationError> {
         // Whether the source named a URL at all is decided before the URL is
         // screened: one withheld from the report, or outside the request, is
@@ -1148,6 +1204,18 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             None => url.clone(),
         };
         let len = crl.bytes.len();
+        // A refusal is recorded under the URL the body named, or held when it
+        // named none and the caller holds one; the refusal it replaces is
+        // recorded then, as it is, so those naming no URL keep their order
+        // among themselves. A held one can move past bodies rejected under
+        // a URL after it: holding it is what lets it answer the points.
+        let mut refuse = |this: &mut Self, e: VerificationError| {
+            if !(hold && without_url) {
+                this.skip_about(sha256, raw_url.as_deref(), e, None, outside);
+            } else if let Some(earlier) = held.replace(e) {
+                this.skip(sha256, None, earlier, None);
+            }
+        };
         self.budget.log.debug(
             Stage::Revocation,
             format_args!("CRL source returned {len} bytes from {url:?}; not yet authenticated"),
@@ -1158,7 +1226,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // the engine and every source (a replay adds nothing to the store,
         // but a source cannot tell the engine's room from its own).
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
-            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
+            refuse(self, e);
             return Ok((None, false));
         }
         *total += len;
@@ -1200,7 +1268,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 ErrorCode::InvalidCrl,
                 format!("decoding retrieved CRL: {e:#}"),
             );
-            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
+            refuse(self, e);
             return Ok((None, false));
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
@@ -1218,7 +1286,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 loaded - prior,
             );
             e.message = "not loaded: the body would take the retained CRLs past their cap".into();
-            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
+            refuse(self, e);
             return Ok((None, false));
         }
         // An answer by certificate, and whether it brought a new full CRL,
@@ -1443,6 +1511,11 @@ struct Loaded {
     /// delta) that was not already loaded: it serves every certificate of
     /// that issuer and role, so verification runs again first.
     full_added: bool,
+    /// The last body naming no URL that was refused (over the byte
+    /// allowance, not a CRL, or past the retained-CRL cap), held while a
+    /// listed point is unanswered: it may be the answer to those points.
+    /// It comes after the other bodies rejected on load (CRL-049).
+    refused: Option<VerificationError>,
 }
 
 /// What an unknown revocation status tells retrieval to ask about.
@@ -2027,6 +2100,274 @@ mod tests {
             [
                 (false, ErrorCode::InvalidCrl),
                 (true, ErrorCode::CrlFetchDenied)
+            ]
+        );
+    }
+    /// A response of `bodies` and `failures`, the same for every request.
+    struct Scripted(Vec<SourcedCrl>, Vec<CrlSourceError>);
+    impl CrlSource for Scripted {
+        fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+            let response = self
+                .0
+                .iter()
+                .cloned()
+                .fold(CrlResponse::new(), CrlResponse::with_crl);
+            Ok(self
+                .1
+                .iter()
+                .cloned()
+                .fold(response, CrlResponse::with_failure))
+        }
+    }
+    fn not_a_crl() -> SourcedCrl {
+        SourcedCrl::new(include_bytes!("../../tests/fixtures/root.der").to_vec())
+    }
+    /// Each failure entry as its URL and code, in report order.
+    fn entries(state: &Retrieval<'_, '_>) -> Vec<(Option<String>, ErrorCode)> {
+        state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.clone(), f.code))
+            .collect()
+    }
+    fn point(tag: &str, i: usize) -> Option<String> {
+        Some(format!("http://crl.example.invalid/{tag}-{i}.crl"))
+    }
+    #[test]
+    fn a_refused_body_without_a_url_is_recorded_for_each_point_it_left() {
+        // CRL-T054: the body the source returned for the certificate is what
+        // each point yielded, so it is recorded for each, and none is
+        // "returned nothing".
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(vec![not_a_crl()], Vec::new());
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::InvalidCrl)
+            ]
+        );
+        assert!(
+            state.report.failures[0]
+                .message
+                .starts_with("decoding retrieved CRL")
+        );
+    }
+    #[test]
+    fn the_last_refused_body_without_a_url_answers_after_the_other_rejected_bodies() {
+        // Two refused bodies naming no URL, then one rejected under a point:
+        // the first is recorded as it is, in its place, the one naming the
+        // point answers it, and the last refusal answers the point left,
+        // after the bodies rejected on load (CRL-049).
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![
+                not_a_crl(),
+                SourcedCrl::new(vec![0; MAX_CRL_BYTES + 1]),
+                not_a_crl().with_url(point("a", 0).unwrap()),
+            ],
+            Vec::new(),
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (None, ErrorCode::InvalidCrl),
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::ResourceLimitExceeded)
+            ]
+        );
+        assert_eq!(
+            state.report.failures[2].details["resource"],
+            "crl_response_bytes"
+        );
+    }
+    #[test]
+    fn a_refused_body_without_a_url_beside_an_answer_by_certificate_is_recorded_as_it_is() {
+        // The issuer's CRL answers by certificate: the points were not used,
+        // so the refused body is not about them (CRL-034).
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![
+                not_a_crl(),
+                SourcedCrl::new(include_bytes!("../../tests/fixtures/good.crl").to_vec()),
+            ],
+            Vec::new(),
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(entries(&state), [(None, ErrorCode::InvalidCrl)]);
+        assert!(state.unused_points.iter().any(|(held, _)| held == "a"));
+    }
+    #[test]
+    fn a_refused_body_without_a_url_beside_an_abort_leaves_the_points_not_tried() {
+        // An abort naming one point: the other point was not tried, and the
+        // refused body is recorded as it is (CRL-047).
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![not_a_crl()],
+            vec![
+                CrlSourceError::new(CrlSourceErrorKind::Abort, "deadline")
+                    .with_url(point("a", 0).unwrap()),
+            ],
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (point("a", 0), ErrorCode::CrlFetchAborted),
+                (None, ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::CrlFetchAborted)
+            ]
+        );
+        assert!(state.report.failures[2].message.starts_with("not tried"));
+    }
+    #[test]
+    fn a_held_refusal_that_answers_no_point_comes_after_the_other_rejected_bodies() {
+        // Beside an answer by certificate the held body answers no point, so
+        // it is recorded as it is, after the body rejected under a point
+        // that followed it (CRL-049).
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![
+                not_a_crl(),
+                not_a_crl().with_url(point("a", 0).unwrap()),
+                SourcedCrl::new(include_bytes!("../../tests/fixtures/good.crl").to_vec()),
+            ],
+            Vec::new(),
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (None, ErrorCode::InvalidCrl)
+            ]
+        );
+    }
+    #[test]
+    fn a_refused_body_beside_a_held_failure_without_a_url_keeps_its_place() {
+        // The failure naming no URL answers the point left, so the refused
+        // body is not held: it stays before the body rejected under a point.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![not_a_crl(), not_a_crl().with_url(point("a", 0).unwrap())],
+            vec![CrlSourceError::new(
+                CrlSourceErrorKind::Failed,
+                "mirror down",
+            )],
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (None, ErrorCode::InvalidCrl),
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::CrlFetchFailed)
+            ]
+        );
+    }
+    #[test]
+    fn refused_bodies_after_an_abort_in_the_response_keep_their_place() {
+        // An abort naming one point leaves the others not tried, so no
+        // refused body is held: each keeps its place in response order.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![not_a_crl(), not_a_crl().with_url(point("a", 0).unwrap())],
+            vec![
+                CrlSourceError::new(CrlSourceErrorKind::Abort, "deadline")
+                    .with_url(point("a", 2).unwrap()),
+            ],
+        );
+        ask(&mut state, "a", &signer_with_points("a", 3), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (point("a", 2), ErrorCode::CrlFetchAborted),
+                (None, ErrorCode::InvalidCrl),
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::CrlFetchAborted)
+            ]
+        );
+    }
+    #[test]
+    fn a_held_refusal_moves_only_while_it_is_held() {
+        // A, held, is recorded as it is when C replaces it: after B, which
+        // was rejected under a point while A was held, and before C, which
+        // answers the point left (CRL-049).
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![
+                not_a_crl(),
+                not_a_crl().with_url(point("a", 0).unwrap()),
+                SourcedCrl::new(vec![0; MAX_CRL_BYTES + 1]),
+            ],
+            Vec::new(),
+        );
+        ask(&mut state, "a", &signer_with_points("a", 2), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (point("a", 0), ErrorCode::InvalidCrl),
+                (None, ErrorCode::InvalidCrl),
+                (point("a", 1), ErrorCode::ResourceLimitExceeded)
+            ]
+        );
+    }
+    #[test]
+    fn a_held_refusal_is_recorded_when_the_work_budget_ends_the_run() {
+        // LIMIT-T002: the budget runs out on the body after the refused one;
+        // the run ends with what was recorded, the held refusal included.
+        let refused = include_bytes!("../../tests/fixtures/root.der").len();
+        let store = store();
+        let budget = Budget::default();
+        // Leave room for the refused body's eight decode charges and no more.
+        let spent = budget.decoded_bytes.limit() - (8 * refused + 1);
+        budget.decoded_bytes.charge(spent).unwrap();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(vec![not_a_crl(), SourcedCrl::new(vec![0; 64])], Vec::new());
+        let e = ask(&mut state, "a", &signer_with_points("a", 1), &mut source).unwrap_err();
+        assert_eq!(e.code, ErrorCode::ResourceLimitExceeded);
+        assert_eq!(entries(&state), [(None, ErrorCode::InvalidCrl)]);
+    }
+    #[test]
+    fn a_refused_body_without_a_url_is_recorded_as_it_is_when_no_point_is_left() {
+        // Nothing to answer: a certificate listing no point, or one whose
+        // every point the response named. The body is recorded in its place.
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(vec![not_a_crl()], Vec::new());
+        ask(&mut state, "a", &signer_with_points("a", 0), &mut source).unwrap();
+        assert_eq!(entries(&state), [(None, ErrorCode::InvalidCrl)]);
+        let mut state = Retrieval::new(&store, &budget);
+        let mut source = Scripted(
+            vec![not_a_crl(), not_a_crl().with_url(point("b", 0).unwrap())],
+            Vec::new(),
+        );
+        ask(&mut state, "b", &signer_with_points("b", 1), &mut source).unwrap();
+        assert_eq!(
+            entries(&state),
+            [
+                (None, ErrorCode::InvalidCrl),
+                (point("b", 0), ErrorCode::InvalidCrl)
             ]
         );
     }

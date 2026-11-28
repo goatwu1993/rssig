@@ -375,7 +375,9 @@ PEM responses can contain multiple CRLs. After each body is loaded, the
 combined retained count is checked after exact-DER deduplication and before
 final verification. A body past it is not loaded: its CRLs are dropped again
 and it is recorded in `crl_retrieval.failures` as `resource_limit_exceeded`,
-resource `retrieval_crl_artifacts`; `used` counts previously retained CRLs and
+resource `retrieval_crl_artifacts` (a body naming no URL may instead be
+recorded for the listed points it left, with their URLs, as CRL-049 says);
+`used` counts previously retained CRLs and
 `requested` counts distinct CRLs the body would have added. Its artifact keeps
 its download provenance, and the verifier's result with the evidence held
 stands (`limit-fetch-65-crls`, `limit-fetch-supplied-plus-bundle`). Once the

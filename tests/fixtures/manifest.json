@@ -293,7 +293,7 @@
         "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
         "crl-034-an-answer-with-several-bodies-settles-the-status",
         "crl-045-body-over-the-size-cap-is-no-answer",
-        "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+        "crl-049-an-over-cap-body-is-recorded-for-the-point-it-left",
         "crl-046-an-over-cap-body-reports-the-cap-it-hit",
         "crl-045-oversized-body-does-not-count-against-the-next",
         "crl-045-over-allowance-body-does-not-count-against-the-next"
@@ -376,11 +376,12 @@
         "crl-035-no-next-update-point-scope-crl-is-replaceable",
         "crl-020-fetch-no-next-update-point-scope-crl-replaced-by-certificate",
         "crl-048-a-body-that-is-not-a-crl-is-never-evidence",
-        "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+        "crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left",
         "crl-045-over-allowance-body-does-not-count-against-the-next",
         "crl-048-a-crl-signed-by-another-key-is-never-evidence",
         "crl-048-an-authentic-crl-from-a-source-revokes",
-        "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked"
+        "crl-047-an-abort-beside-a-revoking-crl-leaves-the-result-unmarked",
+        "crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left"
       ]
     },
     {
@@ -6934,18 +6935,19 @@
         "crl-047-url-less-abort-beside-another-failure-marks-the-point-not-tried",
         "crl-034-an-answer-with-several-bodies-settles-the-status",
         "crl-048-a-body-that-is-not-a-crl-is-never-evidence",
-        "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+        "crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left",
         "crl-048-a-crl-of-another-issuer-is-never-evidence",
         "crl-026-a-failure-naming-the-point-is-recorded-for-it",
         "crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it",
         "crl-026-url-less-unknown-failure-answers-the-listed-point",
         "crl-045-body-over-the-size-cap-is-no-answer",
-        "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+        "crl-049-an-over-cap-body-is-recorded-for-the-point-it-left",
         "crl-046-an-over-cap-body-reports-the-cap-it-hit",
         "crl-045-oversized-body-does-not-count-against-the-next",
         "crl-045-over-allowance-body-does-not-count-against-the-next",
         "crl-048-a-crl-signed-by-another-key-is-never-evidence",
-        "crl-048-an-authentic-crl-from-a-source-revokes"
+        "crl-048-an-authentic-crl-from-a-source-revokes",
+        "crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left"
       ]
     },
     {
@@ -9445,7 +9447,8 @@
       },
       "cases": [
         "limit-fetch-65-crls",
-        "limit-supplied-65-crls"
+        "limit-supplied-65-crls",
+        "crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left"
       ]
     },
     {
