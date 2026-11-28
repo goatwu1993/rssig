@@ -48,8 +48,10 @@ them is ring, aws-lc, OpenSSL, reqwest, tokio, hyper or rustls. The default
 features are a different matter: `default = ["remote", "webpki"]`
 (`Cargo.toml.orig`, `[features]`) resolves 224 crates, among them
 `aws-lc-rs 1.19.0`, `aws-lc-sys 0.47.0`, `reqwest 0.13.5`, `tokio 1.54.1`,
-`openssl-probe 0.2.2` and `rustls-webpki 0.103.17`. Those features are
-forbidden by AGENTS.md, so certval would have to be taken with
+`openssl-probe 0.2.2` and `rustls-webpki 0.103.17`. aws-lc-rs and aws-lc-sys
+are forbidden by AGENTS.md. reqwest and tokio are the network stack of
+`remote`, which the engine may not use (it reads no network; fetching is the
+application's `HttpCrlSource`). So certval would have to be taken with
 `default-features = false`, and the dependency review would have to keep it
 that way.
 
@@ -443,7 +445,9 @@ Where certval and rssig agree on a rejection, the reason often differs:
 - The leaf's malformed basicConstraints, keyUsage, EKU and nameConstraints
   fail as `EncodingError`.
 
-The harness is in the appendix; it ran in under a second for the
+No run ended in a harness `ERROR` (the published run and both control runs
+had 0), so every count above is certval's verdict. The harness is in the
+appendix; it ran in under a second for the
 533 main-set runs (107 cases in three path modes, 106 in two revocation modes)
 and the 66 second-set runs (18 cases, TSA fixtures also in `tsa-` modes).
 
@@ -647,6 +651,10 @@ certval-harness <copy of tests/fixtures> cases.tsv > results.tsv  # id, mode, AC
 python3 compare.py results.tsv                                    # the section 6 counts
 ```
 
+The two `PS_KEY_USAGE` control runs used the same case list with the mode
+suffix changed by hand: `-ku` appended to every main-set mode, and removed
+from every second-set mode.
+
 The mode names in the case list are `path-ekupath` (`path` above),
 `path-noekupath` (`path-noeku`) and the same with `-prof`, `rev-` and
 `-ku` (sets `PS_KEY_USAGE`). The result is compared with each case's
@@ -717,7 +725,7 @@ import json, sys
 from collections import defaultdict
 cases = {c['id']: c for c in json.load(open('tests/cases.json'))['cases']}
 REVOCATION = {'certificate_revoked', 'invalid_crl', 'revocation_unknown'}
-counts = defaultdict(lambda: [0, 0, 0, 0])  # agree, certval accepts, certval rejects, not compared
+counts = defaultdict(lambda: [0, 0, 0, 0, 0])  # agree, certval accepts, certval rejects, not compared, harness error
 accepts = defaultdict(list)
 rejects = defaultdict(list)
 for line in open(sys.argv[1]):
@@ -732,6 +740,9 @@ for line in open(sys.argv[1]):
             or (revocation_mode and '--fetch-crls' in c['command']):
         counts[mode][3] += 1
         continue
+    if verdict.startswith('ERROR'):
+        counts[mode][4] += 1  # the harness failed: no evidence either way
+        continue
     want, got = c['expect']['exit_code'] == 0, verdict == 'ACCEPT'
     k = 0 if want == got else (1 if got else 2)
     counts[mode][k] += 1
@@ -740,7 +751,7 @@ for line in open(sys.argv[1]):
     elif k == 2:
         rejects[mode].append(cid)
 for mode in sorted(counts):
-    print(mode, 'agree=%d accepts=%d rejects=%d not-compared=%d' % tuple(counts[mode]))
+    print(mode, 'agree=%d accepts=%d rejects=%d not-compared=%d errors=%d' % tuple(counts[mode]))
     print('  certval accepts, rssig rejects:', ' '.join(accepts[mode]))
     print('  certval rejects, rssig accepts:', ' '.join(rejects[mode]))
 ```
