@@ -682,11 +682,11 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
   - The reserved-name check trims one trailing dot before testing for a
     single-label name too, so `http://intranet./x.crl` is denied like
     `http://intranet/x.crl`. Other private-use DNS suffixes (`.lan`,
-    `.corp`, `.localdomain`) are not listed: the check is of the URL text
-    only; the built-in source refuses any DNS answer that is not a public
-    address and re-checks every redirect, which is what protects against
-    them. A custom source must do the same in its own client (see
-    `docs/library.md`).
+    `.corp`, `.localdomain`) were not listed then; CRL-T018 (PR #111)
+    added them. The check is of the URL text only: against a private name
+    it does not list, the built-in source refuses any DNS answer that is
+    not a public address and re-checks every redirect. A custom source
+    must do the same in its own client (see `docs/library.md`).
   - The built-in source also denies the RFC 6761 special-use names
     `invalid`, `test` and `example` (as whole labels), and any URL with
     surrounding whitespace, so `check_public_http_url` accepting a string
@@ -772,8 +772,10 @@ bc-java e03fee0b, relic 02c54d58 and BoringSSL `main`.
     status `invalid_crl` (`missing_next_update`). Since changed to
     `certificate_revoked` with the owner's approval; see "Case reasons (a
     CRL without nextUpdate that lists the certificate)".
-  - The built-in source's reserved-name check (now `localhost`, `local`,
-    `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion`, `alt`) matches whole labels: `foo.local` is denied,
+  - The built-in source's reserved-name check (then `localhost`, `local`,
+    `internal`, `home.arpa`, `invalid`, `test`, `example`, `onion`, `alt`;
+    CRL-T018 added the private-use labels) matches whole labels:
+    `foo.local` is denied,
     `crl.foolocal` is not (a suffix match denied public names). Unit test
     `denies_nonpublic_ambiguous_or_unsupported_destinations`.
 - **Who screens a distribution-point address.** Decided, acceptance for

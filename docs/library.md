@@ -761,6 +761,14 @@ URL policy and returns a `Denied` error to pass on. It checks the URL only;
 your HTTP client must also refuse nonpublic DNS answers and re-check redirect
 targets, as `HttpCrlSource` does.
 
+**More private-use names are denied (CRL-T018).** `check_public_http_url` and
+`HttpCrlSource` now also deny, before resolving, a host ending in the whole
+label `intranet`, `private`, `corp`, `home`, `lan` or `localdomain`, as they
+already did `local` or `internal` (CRL-037). A custom source that calls
+`check_public_http_url` now gets `Denied` for these hosts and no longer fetches
+them, even where your DNS resolves them to a public address; supply such a CRL
+locally instead.
+
 **Reusing answers is the source's (CRL-T041).** The engine asks about every
 certificate that lacks a usable CRL, with every point it lists. Before, it
 skipped a certificate with no new point whose issuer name, authority key and
