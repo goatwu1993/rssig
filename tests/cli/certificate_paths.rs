@@ -635,15 +635,23 @@ fn malformed_extension_in_an_rdp_signer_fails_the_path() {
 
 #[test]
 fn malformed_extension_in_a_tsa_certificate_fails_the_path() {
+    let mut blamed = std::collections::BTreeMap::new();
     for (input, extension) in [
         ("tsa-malformed-ski.exe", "2.5.29.14"),
+        ("tsa-malformed-bc.exe", "2.5.29.19"),
+        ("tsa-malformed-ku.exe", "2.5.29.15"),
         ("tsa-malformed-eku.exe", "2.5.29.37"),
+        // A countersignature's TSA certificate is judged by the same rule,
+        // before TSA-003's usage check: not `invalid_eku` at `timestamp`.
+        ("tsa-counter-malformed-eku.exe", "2.5.29.37"),
     ] {
         let error =
             extension_of_another_format_fails_the_path(input, "malformed_extension", extension);
         // The timestamp signer is blamed, and its report is the error's. Its
         // own failure is judged before any usage (PATH-013), TSA-003's
-        // included, so the error has no usage detail.
+        // included: the helper's code and reason checks fail on TSA-003's
+        // `invalid_eku` or `invalid_key_usage`, and the error has no usage
+        // detail.
         let details = &error["details"];
         assert_eq!(
             details["certificate"]["subject"]["display"], "CN=rssig test TSA",
@@ -658,31 +666,76 @@ fn malformed_extension_in_a_tsa_certificate_fails_the_path() {
         for usage in ["required_eku", "lifetime_signing", "signing_time"] {
             assert!(details.get(usage).is_none(), "{input}: {details}");
         }
+        blamed.insert(input, sha256.to_owned());
     }
+    // The countersignature carries the RFC 3161 fixture's TSA certificate,
+    // and it is that certificate which is blamed.
+    assert_eq!(
+        blamed["tsa-counter-malformed-eku.exe"], blamed["tsa-malformed-eku.exe"],
+        "{blamed:?}"
+    );
 }
 
 /// PATH-013 builds no path under `--integrity-only`, so a timestamp signer
-/// whose extKeyUsage does not decode verifies, and its report marks the
-/// extension (PATH-015).
+/// whose basicConstraints, keyUsage, extKeyUsage or subjectKeyIdentifier does
+/// not decode verifies, in an RFC 3161 token or a countersignature. Its
+/// report marks the first three, which it decodes, and not the
+/// subjectKeyIdentifier, which it does not (PATH-015).
 #[test]
-fn integrity_only_tsa_with_malformed_eku_verifies_and_reports_the_extension() {
-    let output = run_fixture(
-        "tsa-malformed-eku.exe",
-        &["verify", "--integrity-only", "--time", "1800000000"],
-    );
-    assert_eq!(output.exit_code, 0, "{}", output.json);
-    let signature = &output.json["results"][0]["signatures"][0];
-    assert_eq!(signature["chain_trusted"], false, "{signature}");
-    let timestamp = &signature["timestamp_verification"];
-    assert_eq!(timestamp["kind"], "rfc3161", "{timestamp}");
-    let certificate = &timestamp["certificate"];
-    assert_eq!(certificate["subject"]["display"], "CN=rssig test TSA");
-    assert!(certificate["extended_key_usage"].is_null(), "{certificate}");
-    assert_eq!(
-        certificate["undecoded_extensions"],
-        serde_json::json!([{"oid": "2.5.29.37", "reason": "malformed_extension"}]),
-        "{certificate}"
-    );
+fn integrity_only_tsa_with_malformed_extension_verifies_and_reports_the_extension() {
+    const FIELDS: [(&str, &str); 3] = [
+        ("2.5.29.19", "basic_constraints"),
+        ("2.5.29.15", "key_usage"),
+        ("2.5.29.37", "extended_key_usage"),
+    ];
+    for (input, kind, undecoded) in [
+        ("tsa-malformed-bc.exe", "rfc3161", Some("2.5.29.19")),
+        ("tsa-malformed-ku.exe", "rfc3161", Some("2.5.29.15")),
+        ("tsa-malformed-eku.exe", "rfc3161", Some("2.5.29.37")),
+        (
+            "tsa-counter-malformed-eku.exe",
+            "pkcs9_countersignature",
+            Some("2.5.29.37"),
+        ),
+        ("tsa-malformed-ski.exe", "rfc3161", None),
+    ] {
+        let output = run_fixture(
+            input,
+            &["verify", "--integrity-only", "--time", "1800000000"],
+        );
+        assert_eq!(output.exit_code, 0, "{input}: {}", output.json);
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert_eq!(signature["chain_trusted"], false, "{input}: {signature}");
+        let timestamp = &signature["timestamp_verification"];
+        assert_eq!(timestamp["kind"], kind, "{input}: {timestamp}");
+        let certificate = &timestamp["certificate"];
+        assert_eq!(
+            certificate["subject"]["display"], "CN=rssig test TSA",
+            "{input}"
+        );
+        // Only the undecoded extension's field is null; the others decode.
+        // Each is serialized, as null when it is undecoded.
+        for (oid, field) in FIELDS {
+            let value = certificate.get(field);
+            assert!(value.is_some(), "{input}: {field} missing: {certificate}");
+            assert_eq!(
+                value.is_some_and(serde_json::Value::is_null),
+                undecoded == Some(oid),
+                "{input}: {certificate}"
+            );
+        }
+        match undecoded {
+            Some(oid) => assert_eq!(
+                certificate["undecoded_extensions"],
+                serde_json::json!([{"oid": oid, "reason": "malformed_extension"}]),
+                "{input}: {certificate}"
+            ),
+            None => assert!(
+                certificate.get("undecoded_extensions").is_none(),
+                "{input}: {certificate}"
+            ),
+        }
+    }
 }
 
 #[test]

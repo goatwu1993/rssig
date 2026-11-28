@@ -9740,11 +9740,12 @@
       "file": "tsa-malformed-ski.exe",
       "sha256": "b9bbf77ca92cb03e7b72519e0887c99d178d290a9cc68c1acbe50fcc75b071e6",
       "bytes": 3720,
-      "description": "PATH-013: malformed-ski. The TSA certificate carries a noncritical subjectKeyIdentifier whose value is SEQUENCE { NULL }; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension).",
+      "description": "PATH-013: malformed-ski. The TSA certificate carries a noncritical subjectKeyIdentifier whose value is SEQUENCE { NULL }; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, where the report decodes no subjectKeyIdentifier and marks nothing undecoded.",
       "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
       "license": "Apache-2.0",
       "cases": [
-        "path-013-bad-tsa-malformed-ski"
+        "path-013-bad-tsa-malformed-ski",
+        "path-013-good-integrity-only-tsa-malformed-ski"
       ],
       "paired_good": "tsa-good.exe"
     },
@@ -9760,6 +9761,45 @@
         "path-013-good-integrity-only-tsa-malformed-eku"
       ],
       "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-malformed-bc.exe",
+      "sha256": "95266744cafb05b001dd50c633708c5b7159bb73d63979517dc3de2258577b57",
+      "bytes": 3768,
+      "description": "PATH-013: malformed-bc. The TSA certificate's critical basicConstraints keeps its place and flag but its value is SEQUENCE { NULL }, which does not decode as that extension; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, with the extension marked undecoded in timestamp_verification.certificate.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-013-bad-tsa-malformed-bc",
+        "path-013-good-integrity-only-tsa-malformed-bc"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-malformed-ku.exe",
+      "sha256": "0ce3996a8f82bf769702cb7b8a626eeb9fd0cabccd1bf0b5625ebb909dd26a38",
+      "bytes": 3760,
+      "description": "PATH-013: malformed-ku. The TSA certificate's critical keyUsage keeps its place and flag but its value is SEQUENCE { NULL }, which does not decode as that extension; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, with the extension marked undecoded in timestamp_verification.certificate.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-013-bad-tsa-malformed-ku",
+        "path-013-good-integrity-only-tsa-malformed-ku"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
+      "file": "tsa-counter-malformed-eku.exe",
+      "sha256": "378e314e4c384e7c003bde6561f2f9de06130fd1154794c6b3e447b64532b5a7",
+      "bytes": 2832,
+      "description": "PATH-013: counter-malformed-eku. The countersignature's TSA certificate's critical extKeyUsage keeps its place and flag but its value is SEQUENCE { NULL }, which does not decode as that extension; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, with the extension marked undecoded in timestamp_verification.certificate.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-013-bad-tsa-counter-malformed-eku",
+        "path-013-good-integrity-only-tsa-counter-malformed-eku"
+      ],
+      "paired_good": "tsa-good-counter.exe"
     },
     {
       "file": "tsa-repeated-ski.exe",

@@ -27569,6 +27569,66 @@
       }
     },
     {
+      "id": "path-013-good-integrity-only-tsa-malformed-ski",
+      "input": "tsa-malformed-ski.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "display": "CN=rssig test TSA"
+                      },
+                      "basic_constraints": {
+                        "ca": false,
+                        "critical": true,
+                        "path_length": null
+                      },
+                      "key_usage": {
+                        "critical": true,
+                        "usages": [
+                          "digital_signature",
+                          "content_commitment"
+                        ]
+                      },
+                      "extended_key_usage": {
+                        "critical": true,
+                        "usages": [
+                          {
+                            "name": "time_stamping",
+                            "oid": "1.3.6.1.5.5.7.3.8"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "json_absent": [
+          "/results/0/signatures/0/timestamp_verification/certificate/undecoded_extensions"
+        ]
+      }
+    },
+    {
       "id": "path-013-bad-tsa-malformed-eku",
       "input": "tsa-malformed-eku.exe",
       "decision": "PATH-013",
@@ -27627,6 +27687,282 @@
                   "timestamp_verification": {
                     "kind": "rfc3161",
                     "certificate": {
+                      "extended_key_usage": null,
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.37",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-bad-tsa-malformed-bc",
+      "input": "tsa-malformed-bc.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "malformed_extension",
+                  "extension": "2.5.29.19",
+                  "certificate_sha256": "a0bce59616fd47db70e7f91ae02593169dc64204db8150e9746f4c8a9efb8bc8"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-tsa-malformed-bc",
+      "input": "tsa-malformed-bc.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "display": "CN=rssig test TSA"
+                      },
+                      "key_usage": {
+                        "critical": true,
+                        "usages": [
+                          "digital_signature",
+                          "content_commitment"
+                        ]
+                      },
+                      "extended_key_usage": {
+                        "critical": true,
+                        "usages": [
+                          {
+                            "name": "time_stamping",
+                            "oid": "1.3.6.1.5.5.7.3.8"
+                          }
+                        ]
+                      },
+                      "basic_constraints": null,
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.19",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-bad-tsa-malformed-ku",
+      "input": "tsa-malformed-ku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "malformed_extension",
+                  "extension": "2.5.29.15",
+                  "certificate_sha256": "9244d1269fa78c0c57fd6741dc9951a01340584c68ed3c24b4a91a372e93b7c9"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-tsa-malformed-ku",
+      "input": "tsa-malformed-ku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "subject": {
+                        "display": "CN=rssig test TSA"
+                      },
+                      "basic_constraints": {
+                        "ca": false,
+                        "critical": true,
+                        "path_length": null
+                      },
+                      "extended_key_usage": {
+                        "critical": true,
+                        "usages": [
+                          {
+                            "name": "time_stamping",
+                            "oid": "1.3.6.1.5.5.7.3.8"
+                          }
+                        ]
+                      },
+                      "key_usage": null,
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.15",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-bad-tsa-counter-malformed-eku",
+      "input": "tsa-counter-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "malformed_extension",
+                  "extension": "2.5.29.37",
+                  "certificate_sha256": "202bee389a0ac503b7791ae0c6e29ef2c34585a2a59e32e167d17c85457d961e"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-tsa-counter-malformed-eku",
+      "input": "tsa-counter-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature",
+                    "certificate": {
+                      "subject": {
+                        "display": "CN=rssig test TSA"
+                      },
+                      "basic_constraints": {
+                        "ca": false,
+                        "critical": true,
+                        "path_length": null
+                      },
+                      "key_usage": {
+                        "critical": true,
+                        "usages": [
+                          "digital_signature",
+                          "content_commitment"
+                        ]
+                      },
                       "extended_key_usage": null,
                       "undecoded_extensions": [
                         {

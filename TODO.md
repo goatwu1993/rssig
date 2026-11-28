@@ -92,13 +92,12 @@ they pin or what they check, never after a task.
 - [ ] **PATH-T019** fix: Decide whether an embedded certificate webpki cannot parse is blamed when no path is found.
   It replaces `untrusted_root`, and hides PATH-008's `invalid_key_usage`.
   Detail in [path-t019.md](docs/tasks/path-t019.md).
-- [ ] **PATH-T020** test: Pin the rest of PATH-013 for a timestamp signer.
-  PATH-T018 added only `tsa-malformed-eku` (an RFC 3161 token). Add
-  `malformed-bc`, `malformed-ku` and `counter-malformed-eku` faults to
-  `regenerate_tsa_fixtures`, each with a trusted and an `--integrity-only`
-  case, and an `--integrity-only` case for `tsa-malformed-ski`; then widen
-  TSA-003's pointer to PATH-013 to countersignatures. Split from PATH-T018
-  in PR #116.
+- [x] **PATH-T020** test: Pin the rest of PATH-013 for a timestamp signer. Done ([PR #118](https://github.com/goatwu1993/rssig/pull/118)); [PATH-013](docs/path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path).
+- [ ] **PATH-T021** test: Pin a countersignature's TSA basicConstraints and keyUsage that do not decode.
+  PATH-T020 pinned the countersignature form for extKeyUsage only; add
+  `counter-malformed-bc` and `counter-malformed-ku` faults, each with a
+  trusted and an `--integrity-only` case, then drop the "no case pins" note in
+  PATH-013 and point TSA-003's keyUsage check to it (found in PR #118).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).

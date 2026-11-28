@@ -38,8 +38,12 @@ pub(super) const FAULTS: &[&str] = &[
     "counter-key-usage",
     // PATH-013: a TSA certificate whose subjectKeyIdentifier does not decode.
     "malformed-ski",
-    // PATH-013: a TSA certificate whose extKeyUsage does not decode.
+    // PATH-013: a TSA certificate whose basicConstraints, keyUsage or
+    // extKeyUsage does not decode, the last also in a countersignature.
+    "malformed-bc",
+    "malformed-ku",
     "malformed-eku",
+    "counter-malformed-eku",
     // PATH-014: a TSA certificate that repeats its subjectKeyIdentifier.
     "repeated-ski",
 ];
@@ -54,6 +58,18 @@ fn extension<'a>(
     let ext = found.next().unwrap();
     assert!(found.next().is_none(), "{oid} repeated");
     ext
+}
+
+/// SEQUENCE { NULL }: decodes as none of basicConstraints, keyUsage,
+/// extKeyUsage or subjectKeyIdentifier (an OCTET STRING), so each
+/// `malformed-` fault, `malformed-ski` included, relies on it.
+const MALFORMED_VALUE: [u8; 4] = [0x30, 0x02, 0x05, 0x00];
+
+/// Replaces only the value of the one extension with `oid`, keeping its place
+/// and critical flag.
+fn malform(exts: &mut [x509_cert::ext::Extension], oid: &str) {
+    extension(exts, oid).extn_value =
+        ::der::asn1::OctetString::new(MALFORMED_VALUE.to_vec()).unwrap();
 }
 
 /// The faults (after `counter-` is stripped) that leave the TSA certificate
@@ -115,15 +131,14 @@ fn artifact(fault: &str) -> Vec<u8> {
             exts.push(x509_cert::ext::Extension {
                 extn_id: "2.5.29.14".parse().unwrap(),
                 critical: false,
-                extn_value: ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap(),
+                extn_value: ::der::asn1::OctetString::new(MALFORMED_VALUE.to_vec()).unwrap(),
             });
         }),
         // Only the value changes: the extension keeps its place and its
         // critical flag, and SEQUENCE { NULL } does not decode as one.
-        "malformed-eku" => Some(|exts| {
-            extension(exts, "2.5.29.37").extn_value =
-                ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap();
-        }),
+        "malformed-bc" => Some(|exts| malform(exts, "2.5.29.19")),
+        "malformed-ku" => Some(|exts| malform(exts, "2.5.29.15")),
+        "malformed-eku" => Some(|exts| malform(exts, "2.5.29.37")),
         "eku-missing" => Some(|exts| exts.retain(|e| e.extn_id.to_string() != "2.5.29.37")),
         "key-usage" => Some(|exts| {
             extension(exts, "2.5.29.15").extn_value = ::der::asn1::OctetString::new(
@@ -332,19 +347,50 @@ fn certificate_sets(bytes: &[u8]) -> Vec<Vec<Certificate>> {
     sets
 }
 
-/// For an RFC 3161 fixture, paired with `tsa-good.exe`: asserts that `name`
-/// embeds the certificates of `tsa-good.exe` in each of its certificate sets
-/// (the signature's and the timestamp token's), except
-/// that in every set the TSA certificate's TBSCertificate is the one `undo`
-/// turns back into `tsa-good.exe`'s.
+/// The good fixture a committed TSA fixture pairs with: its `paired_good` in
+/// `tests/fixtures/manifest.json`, so the manifest is the one record of it.
+fn good_pair(name: &str) -> String {
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
+                .join("tests/fixtures/manifest.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let mut found = manifest["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|a| a["file"] == name);
+    let artifact = found
+        .next()
+        .unwrap_or_else(|| panic!("{name} not in the manifest"));
+    assert!(found.next().is_none(), "{name} listed twice");
+    artifact["paired_good"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{name} has no paired_good"))
+        .to_owned()
+}
+
+/// Asserts that `name` embeds the certificates of its good pair
+/// (`good_pair`) in each of its certificate sets, except that in every set the
+/// TSA certificate's TBSCertificate is the one `undo` turns back into the
+/// pair's.
 fn only_the_tsa_certificate_differs(name: &str, undo: impl Fn(&mut x509_cert::TbsCertificate)) {
-    let (good, bad) = (
-        tsa_certificate_sets("tsa-good.exe"),
-        tsa_certificate_sets(name),
-    );
-    assert_eq!(bad.len(), good.len());
-    // The signature's set and the token's each embed the TSA certificate.
-    assert!(good.len() >= 2, "{name}");
+    let pair = good_pair(name);
+    let (good, bad) = (tsa_certificate_sets(&pair), tsa_certificate_sets(name));
+    // The good RFC 3161 fixture has the signature's set and its token's; the
+    // good countersignature has the signature's only. The fixture has the
+    // same sets as its pair, so for an RFC 3161 pair the comparison covers the
+    // token's set too.
+    let sets = match pair.as_str() {
+        "tsa-good.exe" => 2,
+        "tsa-good-counter.exe" => 1,
+        other => panic!("{name}: unexpected pair {other}"),
+    };
+    assert_eq!(good.len(), sets, "{pair}");
+    assert_eq!(bad.len(), good.len(), "{name} against {pair}");
     for (good, bad) in good.iter().zip(&bad) {
         assert_eq!(bad.len(), good.len());
         let mut changed = Vec::new();
@@ -372,40 +418,90 @@ fn the_repeated_ski_tsa_certificate_differs_only_by_the_appended_copy() {
     });
 }
 
-/// PATH-013's TSA extKeyUsage cases rest on the TSA certificate of
-/// `tsa-malformed-eku.exe` being that of `tsa-good.exe` with only its
-/// extKeyUsage value replaced by SEQUENCE { NULL } (critical flag and place
+/// PATH-013's TSA cases for an extension the report decodes rest on the TSA
+/// certificate of each fixture being that of its good pair with only that
+/// extension's value replaced by SEQUENCE { NULL } (critical flag and place
 /// kept), a value that does not decode as that extension, and every other
 /// certificate unchanged.
 #[test]
-fn the_malformed_eku_tsa_certificate_differs_only_by_the_eku_value() {
+fn each_malformed_tsa_certificate_differs_only_by_the_extension_value() {
     use ::der::Decode;
-    use x509_cert::ext::pkix::ExtendedKeyUsage;
-    let good = tsa_certificate_sets("tsa-good.exe");
-    let good_eku = good[0]
+    use x509_cert::ext::pkix::{BasicConstraints, ExtendedKeyUsage, KeyUsage};
+    // Whether a value decodes as the extension.
+    type Decodes = fn(&[u8]) -> bool;
+    // The extension each `malformed-` suffix edits in place.
+    let edited: [(&str, &str, Decodes); 3] = [
+        ("bc", "2.5.29.19", |v| BasicConstraints::from_der(v).is_ok()),
+        ("ku", "2.5.29.15", |v| KeyUsage::from_der(v).is_ok()),
+        ("eku", "2.5.29.37", |v| {
+            ExtendedKeyUsage::from_der(v).is_ok()
+        }),
+    ];
+    // Every `malformed-` fault but `malformed-ski`, which replaces its
+    // extension instead (PATH-013's case rests on it not decoding, below), in
+    // either form, so a new one is checked without being listed here.
+    let decodes: Vec<(String, &str, Decodes)> = FAULTS
         .iter()
-        .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test TSA")
-        .unwrap()
-        .tbs_certificate
-        .extensions
-        .iter()
-        .flatten()
-        .find(|e| e.extn_id.to_string() == "2.5.29.37")
-        .unwrap()
-        .extn_value
-        .clone();
-    only_the_tsa_certificate_differs("tsa-malformed-eku.exe", |tbs| {
-        let extensions = tbs.extensions.as_mut().unwrap();
-        let mut ekus = extensions
-            .iter_mut()
-            .filter(|e| e.extn_id.to_string() == "2.5.29.37");
-        let eku = ekus.next().unwrap();
-        assert!(ekus.next().is_none());
-        assert!(eku.critical);
-        assert_eq!(eku.extn_value.as_bytes(), [0x30, 0x02, 0x05, 0x00]);
-        assert!(ExtendedKeyUsage::from_der(eku.extn_value.as_bytes()).is_err());
-        eku.extn_value = good_eku.clone();
-    });
+        .filter_map(|fault| {
+            let suffix = fault
+                .strip_prefix("counter-")
+                .unwrap_or(fault)
+                .strip_prefix("malformed-")?;
+            if suffix == "ski" {
+                return None;
+            }
+            let (_, oid, decodes) = edited
+                .iter()
+                .find(|(s, _, _)| *s == suffix)
+                .unwrap_or_else(|| panic!("no extension for {fault}"));
+            Some((format!("tsa-{fault}.exe"), *oid, *decodes))
+        })
+        .collect();
+    // The filter finds at least the faults PATH-013's TSA cases pin.
+    for pinned in [
+        "tsa-malformed-bc.exe",
+        "tsa-malformed-ku.exe",
+        "tsa-malformed-eku.exe",
+        "tsa-counter-malformed-eku.exe",
+    ] {
+        assert!(
+            decodes.iter().any(|(name, _, _)| name == pinned),
+            "{pinned}"
+        );
+    }
+    // `malformed-ski` rests on the same value, which is no OCTET STRING.
+    assert!(x509_cert::ext::pkix::SubjectKeyIdentifier::from_der(&MALFORMED_VALUE).is_err());
+    for (name, oid, decodes) in decodes {
+        let name = name.as_str();
+        // The value to restore comes from the pair
+        // `only_the_tsa_certificate_differs` compares with.
+        let good_ext = tsa_certificate_sets(&good_pair(name))[0]
+            .iter()
+            .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test TSA")
+            .unwrap()
+            .tbs_certificate
+            .extensions
+            .iter()
+            .flatten()
+            .find(|e| e.extn_id.to_string() == oid)
+            .unwrap()
+            .clone();
+        // The good value decodes, so the check below is not vacuous.
+        assert!(decodes(good_ext.extn_value.as_bytes()), "{name}");
+        assert!(good_ext.critical, "{name}");
+        only_the_tsa_certificate_differs(name, |tbs| {
+            let extensions = tbs.extensions.as_mut().unwrap();
+            let mut found = extensions
+                .iter_mut()
+                .filter(|e| e.extn_id.to_string() == oid);
+            let ext = found.next().unwrap();
+            assert!(found.next().is_none(), "{name}");
+            assert!(ext.critical, "{name}");
+            assert_eq!(ext.extn_value.as_bytes(), MALFORMED_VALUE, "{name}");
+            assert!(!decodes(ext.extn_value.as_bytes()), "{name}");
+            ext.extn_value = good_ext.extn_value.clone();
+        });
+    }
 }
 
 #[test]
