@@ -104,7 +104,7 @@ they pin or what they check, never after a task.
   approval.
 - [x] **PATH-T023** docs: Evaluate certval as the path and CMS layer. Done ([PR #123](https://github.com/goatwu1993/rssig/pull/123)); [evaluation](docs/tasks/path-t023.md).
 - [ ] **PATH-T024** refactor: Decide whether certval replaces webpki as the path validator (owner decision).
-  certval 0.2.0-rc.4 accepts 21 path and CRL cases rssig rejects, and
+  certval 0.2.0-rc.4 accepts 24 path and CRL cases rssig rejects, and
   certval-cms cannot parse Authenticode. The options (stay, replace with a
   validator composed from certval's checks, test-only cross-check) are in
   [path-t023.md](docs/tasks/path-t023.md#owner-question).

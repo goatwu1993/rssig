@@ -11,7 +11,7 @@ is the owner's ([the question](#owner-question)), tracked as PATH-T024.
 **Recommendation: stay on webpki.** certval is a careful RFC 5280 validator
 with typed per-path results, and in places it is closer to RFC 5280 than
 webpki (policy processing, name comparison). But measured on rssig's own
-fixtures it **accepts 21 cases that rssig rejects**, 20 of them pinned by
+fixtures it **accepts 24 cases that rssig rejects**, 23 of them pinned by
 Decided or Observed acceptance entries. It is built on a newer RustCrypto
 generation than the engine (der 0.8, x509-cert 0.3, rsa 0.10), and its first
 published release is a month old and still a release candidate. certval-cms
@@ -212,7 +212,7 @@ Measured differences:
 **Retrieval.** rssig's split (docs/crl-retrieval.md, CRL-023, CRL-039), in
 which the engine judges evidence and the application's `HttpCrlSource`
 fetches, has no counterpart in certval's own fetching (`remote`, reqwest,
-`PS_CRL_TIMEOUT` and friends in `path_settings.rs:292-470`). That fetching
+`PS_CRL_TIMEOUT` and friends in `path_settings.rs:295-462`). That fetching
 is unusable here in any case. rssig could keep `Retrieval` and `CrlSource`
 and hand certval only verified bytes, but then certval would decide
 revocation, and each of the 30 CRL- acceptance entries (listed in section 7)
@@ -235,7 +235,7 @@ Beyond that, compared with docs/cms.md:
     taken as the signer's DER (`src/verify.rs:123,324`; CMS-008).
   - The digestAlgorithms set is not consulted (`src/verify.rs:133`; CMS-007).
   - The first matching certificate is the signer (`src/verify.rs:267`), with
-    and no ambiguity check (CMS-004).
+    no ambiguity check (CMS-004).
   - A subjectKeyIdentifier signer and signer certificates from outside the
     message are accepted (`src/verify.rs:270-274`; CMS-003).
   - Only content-type, message-digest and signing-certificate-v2 are checked
@@ -316,24 +316,36 @@ and every AIA, CRL DP and OCSP fetch off. Five modes:
   constraints enforced, the closest settings to PATH-005 and PATH-011;
 - `rev` and `rev-prof`: `path` and `path-prof` with revocation on.
 
-**Coverage.** These are all 107 `tests/cases.json` cases whose input is a
-`*path*.exe` fixture verified with `--roots`: the whole PATH-001 to PATH-014
-set (PATH-015 pins a report's diagnostics and is not measured here), the PATH-T001 corpus, the PATH-013 malformed-extension and PATH-014
-repeated-extension fixtures, and the CRL cases built on the path fixtures.
-106 of them ran with revocation (one case is `--no-revocation`). Not
-compared:
+**Coverage.** Two sets were run.
 
-- `--integrity-only` and `parse` cases (no path is built);
-- in the path modes, the 18 cases whose expected failure is at the revocation
-  stage, and the 2 CRL-008 cases (`certificate_chain_invalid`,
-  `ambiguous_issuer_keys`), which only a revocation run can decide (20);
-- in the revocation modes, `--fetch-crls` cases, since certval cannot use
-  rssig's source (11).
+- **The main set:** all 107 `tests/cases.json` cases whose input is a
+  `*path*.exe` fixture verified with `--roots`. That is the PATH-T001
+  corpus, the PATH-013 malformed-extension and PATH-014 repeated-extension
+  fixtures on the signer's path, and the CRL cases built on those fixtures.
+  106 of them ran with revocation (one case is `--no-revocation`).
+- **The second set:** the 18 other verifying cases whose `decision` is a
+  PATH- entry, on other inputs. These are `bad-signer-eku.exe`,
+  `bad-signer-key-usage.exe`, `bad-ca-key-usage.exe`, `good-intermediate.exe`,
+  their four `msi-*` forms, `bad-rdp-malformed-eku.rdp` and
+  `bad-rdp-repeated-eku.rdp` (2 cases each), and the `tsa-*` fixtures,
+  whose timestamp signer's path is the one judged. The harness reads an
+  MSI's `\u{5}DigitalSignature` stream and an RDP file's `signature:s:` blob,
+  and for `tsa-*` takes the RFC 3161 token's signer, or the countersigner,
+  with EKU timeStamping.
+- **PATH-015** pins a report's diagnostics and is not measured.
+- **Not compared:**
+
+  - `--integrity-only` and `parse` cases (no path is built);
+  - in the path modes, the 18 cases whose expected failure is at the
+    revocation stage, and the 2 CRL-008 cases (`certificate_chain_invalid`,
+    `ambiguous_issuer_keys`), which only a revocation run can decide (20);
+  - in the revocation modes, the `--fetch-crls` cases, since certval cannot
+    use rssig's source (11).
 
 Whole-signature behavior (CMS, timestamps, page hashes) is not compared;
 this is path validation alone.
 
-**Results** (agree / certval accepts where rssig rejects / certval rejects
+**Results for the main set** (agree / certval accepts where rssig rejects / certval rejects
 where rssig accepts / not compared):
 
 | Mode | Agree | Accepts, rssig rejects | Rejects, rssig accepts | Not compared |
@@ -372,7 +384,21 @@ measured only in the revocation modes; the path modes leave them out:
 | `crl-008-self-issued-rollover-with-both-crls-is-rejected` | CRL-008 (Decided) | `certificate_chain_invalid` (`ambiguous_issuer_keys`) | no ambiguity rule |
 | `crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected` | CRL-008 | `certificate_chain_invalid` (`ambiguous_issuer_keys`) | as above |
 
-Mode-dependent accepts:
+**The second set.** `PS_KEY_USAGE` was also set to digitalSignature for
+the signer (not the TSA); among the main set it changes no result. Of the 18
+cases, certval agrees on 15. It **accepts 3 that rssig rejects**:
+
+| Case | Entry | rssig `code` (`details.reason`) | Why certval accepts |
+|---|---|---|---|
+| `path-013-bad-tsa-malformed-ski` | PATH-013 (Decided) | `certificate_chain_invalid` (`malformed_extension`) | SKI never processed |
+| `path-014-bad-tsa-repeated-ski` | PATH-014 (Observed) | `certificate_chain_invalid` (`repeated_extension`) | non-critical repeat ignored |
+| `path-014-bad-rdp-leaf-repeated-eku` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | non-critical repeat ignored |
+
+Without `PS_KEY_USAGE`, `path-008-bad-signer-key-usage` and
+`path-008-msi-bad-signer-key-usage` are accepted too: certval does not judge
+the target's keyUsage unless asked (`path_validator.rs:780-790`).
+
+Mode-dependent accepts in the main set:
 
 - `path-005-bad-root-name` (PATH-005, root name constraints) is accepted
   unless trust-anchor constraints are enforced.
@@ -474,9 +500,9 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
     CRL-025, CRL-041, CRL-044, CRL-045, CRL-048, CRL-050), since each is
     judged per built path;
   - an update of the 42 lines in docs/path.md, docs/crl.md and
-    docs/certificate-paths.md that name webpki (5 of them cite 0.103.16).
-- **Risk:** high. 28 measured cases that rssig's own composition must get
-  right: the 21 accepts and 3 rejects of the closest mode, plus 3 accepts
+    docs/certificate-paths.md that name webpki (6 of them cite 0.103.16).
+- **Risk:** high. 31 measured cases that rssig's own composition must get
+  right: the 24 accepts and 3 rejects of the closest settings, plus 3 accepts
   and 1 reject that depend on settings. That is on a validator that is a month into its public life and a
   release candidate. The fixtures measure only what rssig has thought to
   pin.
@@ -503,11 +529,17 @@ retrieval boundary would carry it in either case.
 
 ### Question 1: Should certval replace webpki as rssig's path validator?
 
-Entry or task: PATH-T024 (Open, owner decision). It touches 43 acceptance
-entries: PATH-001 to PATH-011, PATH-013 and PATH-014, and the 30 CRL-
-acceptance entries listed in section 7, mostly Decided. Cases: the 28 named in section 6 (21 accepts
-and 3 rejects under `rev-prof`, plus 3 mode-dependent accepts and
-`path-011-good-root-expired`).
+Entry or task: PATH-T024 (Open, owner decision, pins acceptance). It
+touches 43 acceptance entries, mostly Decided: PATH-001 to PATH-011, PATH-013
+and PATH-014, and the 30 CRL- acceptance entries listed in section 7.
+
+Cases: the 24 in section 6's two accept tables, plus:
+- `path-008-good-ca-no-ku`, `path-011-good-root-profile`,
+  `path-011-good-root-expired` and `crl-015-root-no-crl-sign-accepted`
+  (certval rejects);
+- `path-005-bad-root-name`, `path-007-bad-ca-eku` and
+  `path-013-bad-ca-malformed-ski-revoked-reports-the-extension` (accepted
+  under some settings).
 
 **Today:** rssig builds paths with rustls-webpki =0.103.16 through a
 RustCrypto adapter, decides revocation itself in webpki's path callback, and
@@ -532,7 +564,7 @@ A. **Stay on webpki** (recommended). Record this evaluation and revisit
 
 B. **Replace webpki with a validator rssig composes from certval's parts.**
    **Fails open where rssig's composition misses a rule:** certval alone
-   accepts 21 cases rssig rejects.
+   accepts 24 cases rssig rejects.
    Use certval's path builder and its public checks, but not
    `validate_path_rfc5280` as it is. rssig:
    - replaces its keyUsage check (PATH-008);
@@ -548,7 +580,7 @@ B. **Replace webpki with a validator rssig composes from certval's parts.**
      processing; RFC 5280 name comparison; no dependence on webpki's Web PKI
      choices.
    - Cons: **fails open wherever rssig's composition misses a rule**. Measured,
-     28 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
+     31 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
      migration or two stacks, and depends on a release-candidate crate a
      month into its public life.
    - Now:
@@ -556,7 +588,7 @@ B. **Replace webpki with a validator rssig composes from certval's parts.**
        rewritten;
      - rdp.rs re-argued;
      - 43 acceptance entries re-proved (13 PATH-, 30 CRL-);
-     - all 107 cases re-verified;
+     - all 125 measured cases and the rest re-verified;
      - a no_std check.
    - Later: hard to reverse once the entries cite certval behavior.
 
@@ -565,7 +597,7 @@ C. **Add certval as a test-only cross-check**, like
    any unlisted disagreement.
    - Pros: a second Rust opinion on every path fixture, with no product
      change.
-   - Cons: certval disagrees by design on 21+ cases, so the allowlist is
+   - Cons: certval disagrees by design on 24+ cases, so the allowlist is
      large; it adds a second RustCrypto generation to the dev graph; and the
      evidence for a disputed result stays OpenSSL and Bouncy Castle anyway.
    - Now: a dev-dependency, a test module and an allowlist of the section 6
