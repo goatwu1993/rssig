@@ -114,6 +114,10 @@ syn = { version = "2", default-features = false, features = ["full", "parsing", 
 # The specification runner compares a scripted URL with the listed points
 # after normalization, as the engine does. Already a dependency of `crl-fetch`.
 url = { workspace = true }
+# Parses the frontmatter of each .claude/skills/*/SKILL.md for the repository
+# checks in tests/repository.rs (DOC-T013); DOC-T010 is to reuse it for
+# scopes.yml. Pure Rust, YAML 1.2; a dev-dependency of this package only.
+yaml-rust2 = { version = "0.13", default-features = false }
 
 [profile.release]
 lto = true

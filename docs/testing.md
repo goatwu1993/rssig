@@ -139,6 +139,7 @@ cargo test --locked --test cli_interface
 | --- | --- | --- |
 | `tests/fixtures/`, `tests/cases.json`, `tests/fixtures/manifest.json` | shared | The portable specification and its fixtures, read by both packages; the engine reads the fixtures as `../tests/fixtures/`. |
 | `tests/cli.rs`, `tests/cli/`, `tests/cli_interface.rs`, `tests/spec.rs`, `tests/manifest.rs` | `rssig` | CLI behavior, the JSON specification runner and manifest consistency, through `rssig::cli`. |
+| `tests/repository.rs` | `rssig` | [Repository checks](#repository-checks): committed files no product code reads, such as the project skills' frontmatter. |
 | `src/crl.rs`, `src/roots.rs`, `src/cli.rs`, `src/cli/` unit tests | `rssig` | The default HTTP CRL source, OS root adapter, CLI internals, and the agreement of the runner's `PATH_OPTIONS` with the private Clap definition. |
 | `engine/tests/*.rs` | `rssig-engine` | The library API without the CLI: parsing, inspection, verification, policy, logging and trust loading. |
 | `engine/src/tests.rs`, `engine/src/tests/`, module unit tests | `rssig-engine` | Engine internals and the ignored fixture generators. |
@@ -379,6 +380,25 @@ need not list every case that reads it. Each rule has a test that breaks a copy
 of the committed data and requires exactly the expected problems, and no
 others. An entry with an unsafe or duplicate name still has its other fields
 checked, so one run reports all of its problems.
+
+## Repository checks
+
+`tests/repository.rs` checks committed files that no product code reads, so a
+malformed one fails `cargo test --locked` instead of passing unnoticed. YAML is
+parsed with [`yaml-rust2`](https://crates.io/crates/yaml-rust2), a pure-Rust
+YAML 1.2 parser and a dev-dependency of the root package only, never matched
+with a pattern.
+
+| Check | Requirement |
+| --- | --- |
+| Project skills | Every entry of `.claude/skills/` is a directory holding a `SKILL.md` whose first line is `---` and whose frontmatter, up to the next `---` line, is one valid YAML document (no duplicate keys): a mapping with a string `name` equal to the directory's name and a nonblank string `description`. The closing line may end the file and a CRLF line ending (a Windows checkout) is read as LF; a byte order mark is no `---` line, and a delimiter with trailing whitespace or a stray `\r` is reported as such. By-product regular files are skipped by the same rule as in [Manifest consistency](#manifest-consistency) (`tests/common/by_product.rs`: `.DS_Store`, `._name`, `.name.swp`, `name~`); a directory is always checked. `SKILL.md` is found by its exact name, even on a case-insensitive file system. A symbolic link, as `.claude`, `.claude/skills`, an entry or `SKILL.md`, is never followed and is reported as one, and so is a name that is not UTF-8. Every skill AGENTS.md names, as a backticked word (or a list of them joined by `,`, `and` or `or`) followed by the word `skill` or `skills` in any case, or as `/name` with any arguments (which AGENTS.md uses only for project skills), must be among those checked, and so must the three it names today; a code fence, double or escaped backtick, or unbalanced backtick in AGENTS.md fails the check. Name format and length limits are not checked (DOC-T015). |
+
+Each rule has a test that feeds a broken copy and requires the expected
+problem, including a description with an unquoted `: `, which makes the
+frontmatter invalid YAML. The tests of the directory scan
+(`committed_skills_*`) each create and remove a scratch directory under
+Cargo's `CARGO_TARGET_TMPDIR`, named per test and process; the symbolic-link
+cases run on Unix and the non-UTF-8 name case on Linux.
 
 ## Invariant inventory
 
