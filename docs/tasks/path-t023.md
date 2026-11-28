@@ -25,7 +25,10 @@ again.
 ## What was read
 
 Both crates were downloaded from crates.io into an empty scratch directory
-on 2026-11-28 and read as data. Every `file:line` below is in that copy.
+on 2026-11-28 and read as data. A bare `src/...` or `Cargo.toml.orig` citation
+is in that copy (certval unless the text names certval-cms). An `engine/...`,
+`docs/...` or `tests/...` citation is in this repository at `808d220`, the
+base of this change.
 
 | Crate | Version | `.crate` SHA-256 | VCS commit (`.cargo_vcs_info.json`) |
 |---|---|---|---|
@@ -199,7 +202,8 @@ evidence rssig records (which CRL was chosen, why another was set aside).
 Measured differences:
 
 - With two current CRLs of the same issuer, the same thisUpdate and
-  CRLNumber, one listing the issuer, certval took the first it was given:
+  CRLNumber, one listing the issuer, certval took the first it was given
+  (`MemoryCrlSource::add` accepted both):
   `crl-revoked-issuer-after-good-root-crl` verifies, while the same two CRLs
   in the other order revoke. rssig revokes in both orders (claimed in
   `tests/decision-claims.json`, no entry yet).
@@ -241,7 +245,9 @@ Beyond that, compared with docs/cms.md:
   - Only content-type, message-digest and signing-certificate-v2 are checked
     for single values (`src/verify.rs:173-196`; CMS-009).
   - A SignerInfo without signed attributes verifies for id-data
-    (`src/verify.rs:326-333`; CMS-006).
+    (`src/verify.rs:326-333`). It then carries no contentType attribute,
+    which CMS-006's source requires (RFC 5652 sections 5.3 and 11.1,
+    docs/cms.md).
   - Algorithm parameters are not checked (CMS-002).
   - BER input and SignedData versions are not limited (CMS-010).
   - Possibly CMS-011 as well. const-oid 0.10 is reported to accept a padded
@@ -635,7 +641,11 @@ certval-harness <copy of tests/fixtures> cases.tsv   # prints id, mode, ACCEPT/R
 The mode names in the case list are `path-ekupath` (`path` above),
 `path-noekupath` (`path-noeku`) and the same with `-prof`, `rev-` and
 `-ku` (sets `PS_KEY_USAGE`). The result is compared with each case's
-`expect.exit_code`.
+`expect.exit_code`. A `tsa-*` fixture is compared only in its `tsa-` modes:
+its plain modes judge the Authenticode signer, whose path is good (they all
+accept), not the timestamp signer the case is about. Revocation-stage cases
+are not compared in the path modes, and `--fetch-crls` cases are not compared
+in the revocation modes (section 6).
 
 <details>
 <summary>Cargo.toml</summary>
@@ -812,9 +822,7 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
         cps.set_enforce_trust_anchor_constraints(true);
     }
     if has(mode, "ku") && !has(mode, "tsa") {
-        let mut f = x509_cert::ext::pkix::KeyUsages::DigitalSignature.into();
-        let _ = &mut f;
-        cps.set_target_key_usage(f);
+        cps.set_target_key_usage(x509_cert::ext::pkix::KeyUsages::DigitalSignature.into());
     }
     let with_rev = has(mode, "rev");
     cps.set_check_revocation_status(with_rev);
