@@ -221,11 +221,7 @@ they pin or what they check, never after a task.
   is reported, but it also decides that points left once accepted bodies spend
   a request's allowance are not tried, which the two
   `crl-046-a-spent-byte-allowance-` and `-a-byte-short-` cases pin. From CRL-T037.
-- [ ] **CRL-T054** fix: Record a refused URL-less body as the answer to the points it left.
-  A body naming no URL that is refused (over the byte allowance, not a CRL, or
-  past the retained-CRL cap) is not an answer by certificate, so each point
-  the source did not name is also recorded as `crl_fetch_failed` "returned
-  nothing". Record those points with the refusal instead. From LIMIT-T004.
+- [x] **CRL-T054** fix: Record a refused URL-less body as the answer to the points it left. Done in #121; [record](docs/tasks/done.md#crl-t054-fix-record-a-refused-url-less-body-as-the-answer-to-the-points-it-left).
 - [ ] **CRL-T055** test: Pin the refused CRL URL names in the portable specification.
   The names `checked_url` refuses before resolving (CRL-037) are covered only
   by Rust tests; add `tests/cases.json` cases, with fixtures whose
@@ -240,6 +236,11 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T059** test: Let a scripted answer name a URL outside the request, and pin CRL-049's handling of one in `tests/cases.json` with a named test. The runner fails a scripted `url` that is not a listed point (`specification_an_answer_with_a_problem_is_never_sent`), so only unit tests in `engine/src/retrieval.rs` pin it; a case needs an explicit marker that the URL is foreign on purpose.
 - [ ] **CRL-T060** fix: Keep `detail` equal to `message` for a retrieval failure recorded at an engine limit. `Retrieval` overwrites the `message` of `limit()`'s error at four sites but not `problem.detail`, so the recorded failure's `detail` still says "CRL retrieval budget exhausted" (found in PR #117 review). Change the message through one setter that keeps `detail`, and any causes a conversion already recorded, in step.
 - [ ] **CRL-T061** fix: Find a usage failure's typed error as `from_internal` does. Detail in [crl-t061.md](docs/tasks/crl-t061.md).
+- [ ] **CRL-T062** fix: Record the held failure naming no URL when the work budget ends a request.
+  `Retrieval::request` holds a response's first URL-less failure until its
+  bodies are loaded; when a body's charge exhausts the LIMIT-T002 budget, the
+  `?` on `load_all` returns before it is recorded, so the report loses it.
+  Record it as it is first, as the held refused body is (found in PR #121 review).
 
 ### POLICY
 

@@ -1747,7 +1747,7 @@ fn specification_the_crl_046_allowance_cases_rest_on_the_engines_caps() {
             0,
         ),
         (
-            "crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed",
+            "crl-046-a-byte-short-of-the-allowance-leaves-the-point-to-the-last-body",
             1,
         ),
     ] {

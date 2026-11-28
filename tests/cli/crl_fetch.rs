@@ -1593,16 +1593,14 @@ fn crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point() {
     }
 }
 
-/// CRL-048: a body that is not a CRL is never evidence; CRL-034: it is no
-/// answer. The spec cases pin the result, the artifact and the two failures'
-/// codes in order; this pins the same from a source written in Rust: the
-/// undecodable body, then the listed point it left unanswered.
-#[test]
-fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered() {
-    // Answers the signer only, as the spec case does: the chain's other
-    // certificates are asked about too, and get nothing.
-    struct NotACrl(Vec<u8>, bool);
-    impl rssig_engine::retrieval::CrlSource for NotACrl {
+/// A source answering by certificate with one body, for the signer only, as
+/// the spec cases do: the chain's other certificates are asked about too, and
+/// get nothing. Returns the exit status and the result's `crl_retrieval`,
+/// whose failures are the signer's: the chain's other certificates list no
+/// points, which `the_only_failure`'s count checks.
+fn answer_the_signer_with(body: Vec<u8>) -> (u8, serde_json::Value) {
+    struct OneBody(Vec<u8>, bool);
+    impl rssig_engine::retrieval::CrlSource for OneBody {
         fn crls(
             &mut self,
             request: &rssig_engine::retrieval::CrlRequest<'_>,
@@ -1618,103 +1616,89 @@ fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered
             })
         }
     }
-    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let (mut out, mut err) = (Vec::new(), Vec::new());
-    let mut source = NotACrl(std::fs::read(base.join("root.der")).unwrap(), false);
+    let mut source = OneBody(body, false);
     let status =
         rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source).unwrap();
     assert!(source.1, "{STALE_SIGNER}");
-    assert_eq!(status, 1);
+    assert!(err.is_empty());
     let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
     let error = &report["results"][0]["error"];
     assert_eq!(error["code"], "revocation_unknown");
-    let retrieval = &error["details"]["crl_retrieval"];
+    (status, error["details"]["crl_retrieval"].clone())
+}
+
+/// The one failure a refused body naming no URL leaves (CRL-049): its
+/// refusal, recorded for the listed point it was meant to answer, never a
+/// second "returned nothing" entry for that point.
+fn the_only_failure(retrieval: &serde_json::Value, code: &str) -> serde_json::Value {
+    let failures = retrieval["failures"].as_array().unwrap();
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    let failure = &failures[0];
+    assert_eq!(failure["code"], code, "{failure}");
+    assert_eq!(failure["url"], DISCOVERY_POINT, "{failure}");
+    assert_eq!(failure["certificate_sha256"], DISCOVERY_SIGNER, "{failure}");
+    assert!(failure.get("source_error").is_none(), "{failure}");
+    failure.clone()
+}
+
+/// CRL-048: a body that is not a CRL is never evidence; CRL-034: it is no
+/// answer. The spec cases pin the result, the artifact and the failure; this
+/// pins the same from a source written in Rust: the undecodable body is
+/// recorded for the listed point it left (CRL-049).
+#[test]
+fn crl_fetch_by_certificate_a_body_that_is_not_a_crl_is_recorded_for_the_point_it_left() {
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let (status, retrieval) = answer_the_signer_with(std::fs::read(base.join("root.der")).unwrap());
+    assert_eq!(status, 1);
     // The body was taken (it is an artifact) but is no CRL.
     assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 1);
-    // In the order `CrlRetrievalReport::failures` documents: the body
-    // rejected on load, then the point it left unanswered.
-    let codes: Vec<_> = retrieval["failures"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|f| f["code"].as_str().unwrap())
-        .collect();
-    assert_eq!(codes, ["invalid_crl", "crl_fetch_failed"]);
-    let unanswered = retrieval["failures"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|f| f["code"] == "crl_fetch_failed")
-        .unwrap();
-    assert_eq!(unanswered["url"], DISCOVERY_POINT);
+    let failure = the_only_failure(&retrieval, "invalid_crl");
+    assert!(
+        failure["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("decoding retrieved CRL"),
+        "{failure}"
+    );
 }
 
 /// CRL-045 and CRL-046: a body over the per-CRL cap is rejected as
-/// `resource_limit_exceeded` with the cap it hit, and leaves the listed point
-/// unanswered, in CRL-049's order. The spec cases pin the same; this pins it
-/// from a source written in Rust, with the cap read from `MAX_CRL_BYTES`.
+/// `resource_limit_exceeded` with the cap it hit, recorded for the listed
+/// point it left (CRL-049). The spec cases pin the same; this pins it from a
+/// source written in Rust, with the cap read from `MAX_CRL_BYTES`.
 #[test]
-fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered() {
-    struct Oversized(bool);
-    impl rssig_engine::retrieval::CrlSource for Oversized {
-        fn crls(
-            &mut self,
-            request: &rssig_engine::retrieval::CrlRequest<'_>,
-        ) -> Result<rssig_engine::retrieval::CrlResponse, rssig_engine::retrieval::CrlSourceError>
-        {
-            let signer = sha256_hex(request.certificate);
-            let response = rssig_engine::retrieval::CrlResponse::new();
-            self.0 |= signer == DISCOVERY_SIGNER;
-            Ok(if signer == DISCOVERY_SIGNER {
-                response.with_crl(rssig_engine::retrieval::SourcedCrl::new(vec![
-                    0;
-                    rssig_engine::retrieval::MAX_CRL_BYTES
-                        + 1
-                ]))
-            } else {
-                response
-            })
-        }
-    }
-    let (mut out, mut err) = (Vec::new(), Vec::new());
-    let mut source = Oversized(false);
-    let status =
-        rssig::cli::run_with_crl_source(discovery_args(), &mut out, &mut err, &mut source).unwrap();
-    assert!(source.0, "{STALE_SIGNER}");
+fn crl_fetch_by_certificate_a_body_over_the_size_cap_is_recorded_for_the_point_it_left() {
+    let cap = rssig_engine::retrieval::MAX_CRL_BYTES;
+    let (status, retrieval) = answer_the_signer_with(vec![0; cap + 1]);
     assert_eq!(status, 1);
-    let report: serde_json::Value = serde_json::from_slice(&out).unwrap();
-    let error = &report["results"][0]["error"];
-    assert_eq!(error["code"], "revocation_unknown");
-    let retrieval = &error["details"]["crl_retrieval"];
     assert!(retrieval["artifacts"].as_array().unwrap().is_empty());
-    let failures = retrieval["failures"].as_array().unwrap();
-    // Exactly these two, in the order `CrlRetrievalReport::failures`
-    // documents: the body rejected on load, then the point it left.
-    let codes: Vec<_> = failures
-        .iter()
-        .map(|f| f["code"].as_str().unwrap())
-        .collect();
-    assert_eq!(codes, ["resource_limit_exceeded", "crl_fetch_failed"]);
-    let cap = failures
-        .iter()
-        .find(|f| f["code"] == "resource_limit_exceeded")
-        .unwrap_or_else(|| panic!("{failures:?}"));
-    assert_eq!(cap["details"]["resource"], "crl_response_bytes");
-    assert_eq!(
-        cap["details"]["limit"],
-        rssig_engine::retrieval::MAX_CRL_BYTES
-    );
+    let failure = the_only_failure(&retrieval, "resource_limit_exceeded");
+    assert_eq!(failure["details"]["resource"], "crl_response_bytes");
+    assert_eq!(failure["details"]["limit"], cap);
     // The per-body cap counts no earlier body (CRL-046).
-    assert_eq!(cap["details"]["used"], 0);
-    assert_eq!(
-        cap["details"]["requested"],
-        rssig_engine::retrieval::MAX_CRL_BYTES + 1
-    );
-    let unanswered = failures
-        .iter()
-        .find(|f| f["code"] == "crl_fetch_failed")
-        .unwrap_or_else(|| panic!("{failures:?}"));
-    assert_eq!(unanswered["url"], DISCOVERY_POINT);
+    assert_eq!(failure["details"]["used"], 0);
+    assert_eq!(failure["details"]["requested"], cap + 1);
+}
+
+/// LIMIT-T004: a body that would take the retained CRLs past their cap is
+/// not loaded, and, naming no URL, is recorded for the listed point it left
+/// (CRL-049). The cap is read from `MAX_RETAINED_CRLS`; the fixture holds
+/// one CRL more.
+#[test]
+fn crl_fetch_by_certificate_a_body_past_the_retained_crl_cap_is_recorded_for_the_point_it_left() {
+    let cap = rssig_engine::retrieval::MAX_RETAINED_CRLS;
+    let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let body = std::fs::read(base.join(format!("limit-fetch-{}-crls.pem", cap + 1))).unwrap();
+    let (status, retrieval) = answer_the_signer_with(body);
+    assert_eq!(status, 1);
+    // Taken and charged as a body, then not loaded.
+    assert_eq!(retrieval["artifacts"].as_array().unwrap().len(), 1);
+    let failure = the_only_failure(&retrieval, "resource_limit_exceeded");
+    assert_eq!(failure["details"]["resource"], "retrieval_crl_artifacts");
+    assert_eq!(failure["details"]["limit"], cap);
+    assert_eq!(failure["details"]["used"], 0);
+    assert_eq!(failure["details"]["requested"], cap + 1);
 }
 
 /// The outer signer is trusted and only lacks a CRL, but the nested signature

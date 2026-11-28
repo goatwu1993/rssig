@@ -704,8 +704,14 @@ pub struct CrlRetrievalReport {
     /// is the exception: it may answer those points, so it waits for the
     /// bodies and comes after those rejected on load, recorded for each point
     /// left or, when it answers none, as it is, before the points still
-    /// unanswered (CRL-049). A whole-request error naming a listed point is
-    /// recorded for every other point, in listed order, then for that one;
+    /// unanswered (CRL-049). So is the last body naming no URL that is
+    /// refused on load: it comes after the other bodies rejected on load,
+    /// recorded for each point nothing else accounts for or, when it answers
+    /// none, as it is. Beside a held failure naming no URL, or after an
+    /// abort, it answers no point and keeps its place; CRL-049 gives the
+    /// rest of its order. A whole-request
+    /// error naming a listed point is recorded for every other point, in
+    /// listed order, then for that one;
     /// naming no listed point (a URL outside the request counts as none),
     /// for every point in listed order, or once, without a URL, when the
     /// request lists none. A failure or body in a response naming a URL

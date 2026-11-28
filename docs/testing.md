@@ -523,10 +523,10 @@ The cases with a scripted answer, and those of CRL-045, CRL-048 and CRL-049, are
 listed below.
 Some cases run the same input under different entries, since a case names one:
 `crl-048-a-body-that-is-not-a-crl-is-never-evidence` and
-`crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`, and
+`crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left`, and
 `crl-045-body-over-the-size-cap-is-no-answer`,
 `crl-046-an-over-cap-body-reports-the-cap-it-hit` and
-`crl-049-an-over-cap-body-is-reported-before-the-point-it-left`; beside the
+`crl-049-an-over-cap-body-is-recorded-for-the-point-it-left`; beside the
 shared result code, each pins its own entry's part:
 - `crl-026-url-less-denial-answers-the-listed-point`
 - `crl-026-whole-request-failure-answers-the-listed-point`
@@ -542,9 +542,11 @@ shared result code, each pins its own entry's part:
 - `crl-026-a-failure-naming-the-point-is-recorded-for-it` and
   `crl-026-a-failure-naming-the-point-by-its-normalized-url-is-recorded-for-it`
 - `crl-034-an-answer-with-several-bodies-settles-the-status`
-- `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left` and
-  `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` (CRL-049: a
-  body rejected on load comes before the point it left)
+- `crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left`,
+  `crl-049-an-over-cap-body-is-recorded-for-the-point-it-left` and
+  `crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left`
+  (CRL-049: a refused body naming no URL is recorded for the point it left,
+  with the point's URL, and the point has no other entry)
 - `crl-048-a-body-that-is-not-a-crl-is-never-evidence`
 - `crl-048-a-crl-of-another-issuer-is-never-evidence`
 - `crl-048-a-crl-signed-by-another-key-is-never-evidence` and
@@ -552,15 +554,16 @@ shared result code, each pins its own entry's part:
   trusted; its CRL is authenticated like a supplied one)
 - `crl-045-body-over-the-size-cap-is-no-answer` (a body over
   the 8 MiB cap is no answer, so the result is `revocation_unknown` with no
-  artifact; `crl-049-an-over-cap-body-is-reported-before-the-point-it-left`
-  pins its failures in CRL-049's order)
+  artifact; `crl-049-an-over-cap-body-is-recorded-for-the-point-it-left`
+  pins its failure under the point, CRL-049)
 - `crl-046-an-over-cap-body-reports-the-cap-it-hit` (CRL-046: the cap it hit,
-  `limit`, `requested` and `used`, then the point it left)
+  `limit`, `requested` and `used`, recorded for the point it left)
 - `crl-046-a-spent-byte-allowance-leaves-the-point-not-tried` and
-  `crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed` (CRL-046: four
+  `crl-046-a-byte-short-of-the-allowance-leaves-the-point-to-the-last-body` (CRL-046: four
   bodies within 8 MiB, none a CRL, that add up to exactly the request's
   allowance leave the point not tried, `resource_limit_exceeded` with `limit`
-  and `used` both the allowance; one byte less leaves it `crl_fetch_failed`.
+  and `used` both the allowance; one byte less leaves it to the fourth body,
+  whose `invalid_crl` is recorded for it.
   Either way the result is `revocation_unknown`. The input lists one point,
   so the spent case pins the unanswered point, not several left over; that is
   `points_left_when_the_byte_allowance_is_spent_are_not_tried`)
@@ -601,17 +604,23 @@ Named tests in `tests/cli/crl_fetch.rs` check what the cases leave out:
 - `crl_fetch_by_certificate_failures_are_serialized_for_the_listed_point`: the
   stage, problem type and title of each source failure, beside what the cases
   pin.
-- `crl_fetch_by_certificate_a_body_that_is_not_a_crl_leaves_the_point_unanswered`:
-  both failures, the body first, from a source written in Rust.
-- `crl_fetch_by_certificate_a_body_over_the_size_cap_is_rejected_and_leaves_the_point_unanswered`:
-  the same failures as `crl-046-an-over-cap-body-reports-the-cap-it-hit`,
+- `crl_fetch_by_certificate_a_body_that_is_not_a_crl_is_recorded_for_the_point_it_left`:
+  the body's one failure, under the point, from a source written in Rust.
+- `crl_fetch_by_certificate_a_body_over_the_size_cap_is_recorded_for_the_point_it_left`:
+  the same failure as `crl-046-an-over-cap-body-reports-the-cap-it-hit`,
   from a source written in Rust, with the cap read from
   `rssig_engine::retrieval::MAX_CRL_BYTES` rather than written out.
+- `crl_fetch_by_certificate_a_body_past_the_retained_crl_cap_is_recorded_for_the_point_it_left`:
+  the same for a body of 65 CRLs, with the cap read from
+  `rssig_engine::retrieval::MAX_RETAINED_CRLS`.
 
-The failures of those two bodies come in CRL-049's order (a body rejected on
-load before a point left unanswered), so the
-cases `crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left`
-and `crl-049-an-over-cap-body-is-reported-before-the-point-it-left` pin them.
+A refused body naming no URL is recorded for the point it left, in CRL-049's
+order (since CRL-T054; before it, once without a URL and the point as
+`crl_fetch_failed`), so the cases
+`crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left`,
+`crl-049-an-over-cap-body-is-recorded-for-the-point-it-left` and
+`crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left`
+pin it, one for each refusal.
 
 A point shared by certificates of two issuers is expressible: the
 `crl-050-` and `crl-051-` cases run `crl-chain-shared-crl-dp.exe`, whose signer

@@ -38641,7 +38641,7 @@
       }
     },
     {
-      "id": "crl-049-a-body-that-is-not-a-crl-is-reported-before-the-point-it-left",
+      "id": "crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-049",
       "crl_responses": {},
@@ -38679,13 +38679,8 @@
                     "failures": [
                       {
                         "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
-                        "url": null,
-                        "code": "invalid_crl"
-                      },
-                      {
-                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
                         "url": "http://crl.example.invalid/test.crl",
-                        "code": "crl_fetch_failed"
+                        "code": "invalid_crl"
                       }
                     ]
                   }
@@ -38952,7 +38947,7 @@
       }
     },
     {
-      "id": "crl-049-an-over-cap-body-is-reported-before-the-point-it-left",
+      "id": "crl-049-an-over-cap-body-is-recorded-for-the-point-it-left",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-049",
       "crl_responses": {},
@@ -38991,13 +38986,65 @@
                     "failures": [
                       {
                         "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
-                        "url": null,
+                        "url": "http://crl.example.invalid/test.crl",
                         "code": "resource_limit_exceeded"
-                      },
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left",
+      "input": "good-crl-discovery.exe",
+      "decision": "CRL-049",
+      "crl_responses": {},
+      "crl_certificate_responses": {
+        "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19": {
+          "crls": [
+            {
+              "file": "limit-fetch-65-crls.pem"
+            }
+          ]
+        }
+      },
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--time",
+        "1800000000",
+        "--fetch-crls"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "crl_requests": [],
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "revocation_unknown",
+                "stage": "revocation",
+                "details": {
+                  "crl_retrieval": {
+                    "failures": [
                       {
                         "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
                         "url": "http://crl.example.invalid/test.crl",
-                        "code": "crl_fetch_failed"
+                        "code": "resource_limit_exceeded",
+                        "details": {
+                          "resource": "retrieval_crl_artifacts",
+                          "limit": 64,
+                          "used": 0,
+                          "requested": 65
+                        }
                       }
                     ]
                   }
@@ -39048,7 +39095,7 @@
                     "failures": [
                       {
                         "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
-                        "url": null,
+                        "url": "http://crl.example.invalid/test.crl",
                         "code": "resource_limit_exceeded",
                         "details": {
                           "resource": "crl_response_bytes",
@@ -39056,11 +39103,6 @@
                           "requested": 8388609,
                           "used": 0
                         }
-                      },
-                      {
-                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
-                        "url": "http://crl.example.invalid/test.crl",
-                        "code": "crl_fetch_failed"
                       }
                     ]
                   }
@@ -39175,11 +39217,14 @@
               }
             }
           ]
-        }
+        },
+        "json_absent": [
+          "/results/0/error/details/crl_retrieval/failures/4/details/requested"
+        ]
       }
     },
     {
-      "id": "crl-046-a-byte-short-of-the-allowance-leaves-the-point-failed",
+      "id": "crl-046-a-byte-short-of-the-allowance-leaves-the-point-to-the-last-body",
       "input": "good-crl-discovery.exe",
       "decision": "CRL-046",
       "crl_responses": {},
@@ -39263,13 +39308,8 @@
                       },
                       {
                         "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
-                        "url": null,
-                        "code": "invalid_crl"
-                      },
-                      {
-                        "certificate_sha256": "56b97d82c4c9355b70a45a3d04e96a1c8b100bffccaf701305574c397f573f19",
                         "url": "http://crl.example.invalid/test.crl",
-                        "code": "crl_fetch_failed"
+                        "code": "invalid_crl"
                       }
                     ]
                   }

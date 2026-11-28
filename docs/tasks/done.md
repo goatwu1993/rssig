@@ -620,3 +620,32 @@ whole suite found none), so no case moves. Rules: the CLI candidate rule
 kind stays the default for its own chain, as before: a typed layer in it
 decides, and its `details.scope` is added only when its own kind decides.
 Follow-ups: CLI-T007, CLI-T008 and CRL-T061.
+
+## CRL-T054 fix: Record a refused URL-less body as the answer to the points it left
+
+A body naming no URL that the engine refused (over the byte allowance, not a
+CRL, or past the retained-CRL cap) was recorded once without a URL, and each
+listed point it left was recorded beside it as `crl_fetch_failed` "the CRL
+source returned nothing for this point". The last such body of a response is
+now held while a point is unanswered and recorded for each point no failure
+naming no URL, abort, answer by certificate or spent allowance accounts for,
+with the point's URL, after the other bodies rejected on load; otherwise it is
+recorded as it is, without a URL, and an earlier such body is recorded as it is
+when the next one is held.
+Diagnostics only: result codes and acceptance are unchanged. CRL-046 and
+CRL-049 (both Observed) describe the new recording. The cases
+`crl-049-a-body-that-is-not-a-crl-is-recorded-for-the-point-it-left` and
+`crl-049-an-over-cap-body-is-recorded-for-the-point-it-left` (renamed from
+`...-is-reported-before-the-point-it-left`),
+`crl-046-an-over-cap-body-reports-the-cap-it-hit` and
+`crl-046-a-byte-short-of-the-allowance-leaves-the-point-to-the-last-body`
+(renamed from `...-leaves-the-point-failed`) moved, and
+`crl-049-a-body-past-the-retained-crl-cap-is-recorded-for-the-point-it-left`
+was added. Covered by the CLI tests
+`crl_fetch_by_certificate_a_body_that_is_not_a_crl_is_recorded_for_the_point_it_left`,
+`crl_fetch_by_certificate_a_body_over_the_size_cap_is_recorded_for_the_point_it_left`
+and
+`crl_fetch_by_certificate_a_body_past_the_retained_crl_cap_is_recorded_for_the_point_it_left`,
+and the unit tests in `engine/src/retrieval.rs` that CRL-049 lists. Follow-up:
+CRL-T062 (a held failure naming no URL is lost when the work budget ends a
+request).
