@@ -38,8 +38,53 @@ pub(super) const FAULTS: &[&str] = &[
     "counter-key-usage",
     // PATH-013: a TSA certificate whose subjectKeyIdentifier does not decode.
     "malformed-ski",
+    // PATH-013: a TSA certificate whose extKeyUsage does not decode.
+    "malformed-eku",
     // PATH-014: a TSA certificate that repeats its subjectKeyIdentifier.
     "repeated-ski",
+];
+
+/// The one extension with `oid` in a TSA certificate's extensions; panics
+/// unless exactly one has it.
+fn extension<'a>(
+    exts: &'a mut [x509_cert::ext::Extension],
+    oid: &str,
+) -> &'a mut x509_cert::ext::Extension {
+    let mut found = exts.iter_mut().filter(|e| e.extn_id.to_string() == oid);
+    let ext = found.next().unwrap();
+    assert!(found.next().is_none(), "{oid} repeated");
+    ext
+}
+
+/// The faults (after `counter-` is stripped) that leave the TSA certificate
+/// as it is in `tsa-good.exe`.
+const UNCHANGED_TSA_CERTIFICATE: &[&str] = &[
+    "version",
+    "policy",
+    "serial-negative",
+    "serial-nonminimal",
+    "time-tag",
+    "unknown",
+    "order",
+    "duplicate-optional",
+    "ordering-false",
+    "nonce-negative",
+    "accuracy-range",
+    "accuracy-order",
+    "accuracy-unknown",
+    "tsa",
+    "extensions",
+    "duplicate-rfc",
+    "duplicate-counter",
+    "mixed",
+    "mixed-reverse",
+    "aliases",
+    "multi-value",
+    "substitution",
+    "signing-time",
+    "good",
+    "good-optional",
+    "good-counter",
 ];
 
 fn artifact(fault: &str) -> Vec<u8> {
@@ -52,34 +97,36 @@ fn artifact(fault: &str) -> Vec<u8> {
         "duplicate-eku-rfc" | "duplicate-eku-counter" => "eku-missing",
         other => other.strip_prefix("counter-").unwrap_or(other),
     };
-    if policy_fault.starts_with("eku-")
-        || policy_fault == "key-usage"
-        || policy_fault == "malformed-ski"
-        || policy_fault == "repeated-ski"
-    {
-        let exts = tsa.cert.tbs_certificate.extensions.as_mut().unwrap();
-        if policy_fault == "repeated-ski" {
+    // Each fault that edits the TSA certificate has its own arm, and the
+    // default arm takes only the faults listed as editing nothing, so a new
+    // fault with neither fails here instead of copying tsa-good.exe's
+    // certificate.
+    let edit: Option<fn(&mut Vec<x509_cert::ext::Extension>)> = match policy_fault {
+        "repeated-ski" => Some(|exts| {
             let ski = exts
                 .iter()
                 .find(|e| e.extn_id.to_string() == "2.5.29.14")
                 .unwrap()
                 .clone();
             exts.push(ski);
-        } else if policy_fault == "malformed-ski" {
+        }),
+        "malformed-ski" => Some(|exts| {
             exts.retain(|e| e.extn_id.to_string() != "2.5.29.14");
             exts.push(x509_cert::ext::Extension {
                 extn_id: "2.5.29.14".parse().unwrap(),
                 critical: false,
                 extn_value: ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap(),
             });
-        } else if policy_fault == "eku-missing" {
-            exts.retain(|e| e.extn_id.to_string() != "2.5.29.37");
-        } else if policy_fault == "key-usage" {
-            let ext = exts
-                .iter_mut()
-                .find(|e| e.extn_id.to_string() == "2.5.29.15")
-                .unwrap();
-            ext.extn_value = ::der::asn1::OctetString::new(
+        }),
+        // Only the value changes: the extension keeps its place and its
+        // critical flag, and SEQUENCE { NULL } does not decode as one.
+        "malformed-eku" => Some(|exts| {
+            extension(exts, "2.5.29.37").extn_value =
+                ::der::asn1::OctetString::new(vec![0x30, 0x02, 0x05, 0x00]).unwrap();
+        }),
+        "eku-missing" => Some(|exts| exts.retain(|e| e.extn_id.to_string() != "2.5.29.37")),
+        "key-usage" => Some(|exts| {
+            extension(exts, "2.5.29.15").extn_value = ::der::asn1::OctetString::new(
                 x509_cert::ext::pkix::KeyUsage(
                     x509_cert::ext::pkix::KeyUsages::KeyEncipherment.into(),
                 )
@@ -87,21 +134,25 @@ fn artifact(fault: &str) -> Vec<u8> {
                 .unwrap(),
             )
             .unwrap();
-        } else {
-            let ext = exts
-                .iter_mut()
-                .find(|e| e.extn_id.to_string() == "2.5.29.37")
-                .unwrap();
-            if policy_fault == "eku-noncritical" {
-                ext.critical = false;
-            } else {
-                ext.extn_value = ::der::asn1::OctetString::new(seq(&[
-                    oid(trust::TIME_STAMPING),
-                    oid(trust::CODE_SIGNING),
-                ]))
-                .unwrap();
-            }
+        }),
+        "eku-noncritical" => Some(|exts| extension(exts, "2.5.29.37").critical = false),
+        "eku-mixed" => Some(|exts| {
+            extension(exts, "2.5.29.37").extn_value = ::der::asn1::OctetString::new(seq(&[
+                oid(trust::TIME_STAMPING),
+                oid(trust::CODE_SIGNING),
+            ]))
+            .unwrap();
+        }),
+        other => {
+            assert!(
+                UNCHANGED_TSA_CERTIFICATE.contains(&other),
+                "no certificate edit for {fault}"
+            );
+            None
         }
+    };
+    if let Some(edit) = edit {
+        edit(tsa.cert.tbs_certificate.extensions.as_mut().unwrap());
         let sig: Signature = tsa
             .root_key
             .sign(&tsa.cert.tbs_certificate.to_der().unwrap());
@@ -184,13 +235,9 @@ fn artifact(fault: &str) -> Vec<u8> {
             oid(cms::RFC3161),
             tlv(0x31, &[token.clone(), token].concat()),
         ])],
-        "signing-time"
-        | "counter-substitution"
-        | "good-counter"
-        | "counter-eku-noncritical"
-        | "counter-eku-mixed"
-        | "counter-eku-missing"
-        | "counter-key-usage" => vec![counter],
+        // Every counter- fault is carried by a countersignature.
+        "signing-time" | "good-counter" => vec![counter],
+        other if other.starts_with("counter-") => vec![counter],
         _ => vec![rfc],
     };
     let si = signer_info(id, body, Some(cms::INDIRECT), vec![], unsigned);
@@ -207,13 +254,44 @@ fn artifact(fault: &str) -> Vec<u8> {
     )
 }
 
+/// The good fixtures `write` adds to `FAULTS`.
+const GOOD: [&str; 3] = ["good", "good-optional", "good-counter"];
+
 pub(super) fn write(dir: &std::path::Path) {
-    for fault in FAULTS
-        .iter()
-        .copied()
-        .chain(["good", "good-optional", "good-counter"])
-    {
+    for fault in FAULTS.iter().copied().chain(GOOD) {
         std::fs::write(dir.join(format!("tsa-{fault}.exe")), artifact(fault)).unwrap();
+    }
+}
+
+/// Builds every TSA fixture in memory, so the generator's own checks (each
+/// fault edits the TSA certificate or is listed as leaving it unchanged) run
+/// in `cargo test`, not only when fixtures are regenerated.
+#[test]
+fn every_tsa_fault_builds() {
+    let tsa = |bytes: &[u8]| {
+        certificate_sets(bytes)
+            .into_iter()
+            .flatten()
+            .filter(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test TSA")
+            .collect::<Vec<_>>()
+    };
+    let good = tsa(&artifact("good"));
+    assert_eq!(good.len(), 2);
+    let mut listed = Vec::new();
+    for fault in FAULTS.iter().copied().chain(GOOD) {
+        let tsa = tsa(&artifact(fault));
+        assert!(!tsa.is_empty(), "{fault}");
+        let stripped = fault.strip_prefix("counter-").unwrap_or(fault);
+        // A fault listed as leaving the certificate unchanged does so
+        // wherever the certificate is embedded.
+        if UNCHANGED_TSA_CERTIFICATE.contains(&stripped) {
+            assert!(tsa.iter().all(|c| *c == good[0]), "{fault}");
+            listed.push(stripped);
+        }
+    }
+    // Every name in the list is a fault the generator writes.
+    for name in UNCHANGED_TSA_CERTIFICATE {
+        assert!(listed.contains(name), "{name} is not a TSA fault");
     }
 }
 
@@ -223,53 +301,111 @@ fn regenerate_tsa_fixtures() {
     write(&std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/..")).join("tests/fixtures"));
 }
 
-/// PATH-014's TSA case rests on the TSA certificate of `tsa-repeated-ski.exe`
-/// being that of `tsa-good.exe` with one copy of its subjectKeyIdentifier
-/// appended, wherever it is embedded (in the signature and in the timestamp
-/// token), and every other certificate unchanged.
-#[test]
-fn the_repeated_ski_tsa_certificate_differs_only_by_the_appended_copy() {
-    let certs = |name: &str| {
-        let bytes = std::fs::read(
+/// Every certificate set of a committed TSA fixture: the signature's, then each
+/// timestamp token's.
+fn tsa_certificate_sets(name: &str) -> Vec<Vec<Certificate>> {
+    certificate_sets(
+        &std::fs::read(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
                 .join("tests/fixtures")
                 .join(name),
         )
-        .unwrap();
-        let pe = pe::Pe::parse(&bytes).unwrap();
-        let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
-        let mut sets = vec![sd.certs.clone()];
-        let fields = sd.signers[0].children().unwrap();
-        for attr in fields[6].children().unwrap() {
-            let attr = attr.children().unwrap();
-            if attr[0].body != cms::COUNTERSIGN {
-                for value in attr[1].children().unwrap() {
-                    sets.push(cms::SignedData::parse(value.full).unwrap().certs);
-                }
+        .unwrap(),
+    )
+}
+
+/// Every certificate set of a TSA artifact: the signature's, then each RFC
+/// 3161 token's (a countersignature has no set of its own).
+fn certificate_sets(bytes: &[u8]) -> Vec<Vec<Certificate>> {
+    let pe = pe::Pe::parse(bytes).unwrap();
+    let sd = cms::SignedData::parse(pe.certificates().unwrap()[0]).unwrap();
+    let mut sets = vec![sd.certs.clone()];
+    let fields = sd.signers[0].children().unwrap();
+    for attr in fields[6].children().unwrap() {
+        let attr = attr.children().unwrap();
+        if attr[0].body != cms::COUNTERSIGN {
+            for value in attr[1].children().unwrap() {
+                sets.push(cms::SignedData::parse(value.full).unwrap().certs);
             }
         }
-        sets
-    };
-    let (good, bad) = (certs("tsa-good.exe"), certs("tsa-repeated-ski.exe"));
+    }
+    sets
+}
+
+/// For an RFC 3161 fixture, paired with `tsa-good.exe`: asserts that `name`
+/// embeds the certificates of `tsa-good.exe` in each of its certificate sets
+/// (the signature's and the timestamp token's), except
+/// that in every set the TSA certificate's TBSCertificate is the one `undo`
+/// turns back into `tsa-good.exe`'s.
+fn only_the_tsa_certificate_differs(name: &str, undo: impl Fn(&mut x509_cert::TbsCertificate)) {
+    let (good, bad) = (
+        tsa_certificate_sets("tsa-good.exe"),
+        tsa_certificate_sets(name),
+    );
     assert_eq!(bad.len(), good.len());
-    let mut changed = Vec::new();
+    // The signature's set and the token's each embed the TSA certificate.
+    assert!(good.len() >= 2, "{name}");
     for (good, bad) in good.iter().zip(&bad) {
         assert_eq!(bad.len(), good.len());
+        let mut changed = Vec::new();
         for (good, bad) in good.iter().zip(bad).filter(|(good, bad)| good != bad) {
             let mut bad = bad.tbs_certificate.clone();
-            let extensions = bad.extensions.as_mut().unwrap();
-            let copy = extensions.pop().unwrap();
-            assert_eq!(copy.extn_id.to_string(), "2.5.29.14");
-            assert!(extensions.contains(&copy));
-            assert_eq!(bad, good.tbs_certificate);
+            undo(&mut bad);
+            assert_eq!(bad, good.tbs_certificate, "{name}");
             changed.push(good.tbs_certificate.subject.to_string());
         }
+        // Each set changes exactly its TSA certificate.
+        assert_eq!(changed, ["CN=rssig test TSA"], "{name}");
     }
-    assert!(!changed.is_empty());
-    assert!(
-        changed.iter().all(|subject| subject == "CN=rssig test TSA"),
-        "{changed:?}"
-    );
+}
+
+/// PATH-014's TSA case rests on the TSA certificate of `tsa-repeated-ski.exe`
+/// being that of `tsa-good.exe` with one copy of its subjectKeyIdentifier
+/// appended, and every other certificate unchanged.
+#[test]
+fn the_repeated_ski_tsa_certificate_differs_only_by_the_appended_copy() {
+    only_the_tsa_certificate_differs("tsa-repeated-ski.exe", |tbs| {
+        let extensions = tbs.extensions.as_mut().unwrap();
+        let copy = extensions.pop().unwrap();
+        assert_eq!(copy.extn_id.to_string(), "2.5.29.14");
+        assert!(extensions.contains(&copy));
+    });
+}
+
+/// PATH-013's TSA extKeyUsage cases rest on the TSA certificate of
+/// `tsa-malformed-eku.exe` being that of `tsa-good.exe` with only its
+/// extKeyUsage value replaced by SEQUENCE { NULL } (critical flag and place
+/// kept), a value that does not decode as that extension, and every other
+/// certificate unchanged.
+#[test]
+fn the_malformed_eku_tsa_certificate_differs_only_by_the_eku_value() {
+    use ::der::Decode;
+    use x509_cert::ext::pkix::ExtendedKeyUsage;
+    let good = tsa_certificate_sets("tsa-good.exe");
+    let good_eku = good[0]
+        .iter()
+        .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test TSA")
+        .unwrap()
+        .tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.extn_id.to_string() == "2.5.29.37")
+        .unwrap()
+        .extn_value
+        .clone();
+    only_the_tsa_certificate_differs("tsa-malformed-eku.exe", |tbs| {
+        let extensions = tbs.extensions.as_mut().unwrap();
+        let mut ekus = extensions
+            .iter_mut()
+            .filter(|e| e.extn_id.to_string() == "2.5.29.37");
+        let eku = ekus.next().unwrap();
+        assert!(ekus.next().is_none());
+        assert!(eku.critical);
+        assert_eq!(eku.extn_value.as_bytes(), [0x30, 0x02, 0x05, 0x00]);
+        assert!(ExtendedKeyUsage::from_der(eku.extn_value.as_bytes()).is_err());
+        eku.extn_value = good_eku.clone();
+    });
 }
 
 #[test]
