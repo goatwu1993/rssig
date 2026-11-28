@@ -414,7 +414,14 @@ not a replacement for an application's network routing/firewall policy.
 Successful retrieval-mode bundles include optional `crl_retrieval.artifacts`:
 the `certificate_sha256` the source was asked about, the `url` it names, if
 any, the `final_url` (`url` unless a redirect changed it), the response
-`sha256`, and `bytes`.
+`sha256`, and `bytes`. A `url` is recorded only when it normalizes to one of
+the request's points and passes screening, as the source spelled it (a source
+built on `fetch_each` reports each body under the point as listed, and
+another URL its closure named, such as a mirror, as its `final_url` when it
+gave none). An artifact
+without a `url` may be an answer by certificate, a body whose URL was
+withheld, or one naming a URL outside the request (CRL-049): the report does
+not tell these apart.
 The list can be empty when supplied artifacts cover every selected issuer.
 These are retrieval provenance fields, not individual CRL verification verdicts.
 Existing CRL reports retain `role: "supplied"`; full chain revocation remains
