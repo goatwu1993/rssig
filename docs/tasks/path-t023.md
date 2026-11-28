@@ -622,6 +622,15 @@ extension gaps above and the engine moves to der 0.8 for its own reasons.
 `x509-cert = "0.3.0"` (pem), `const-oid = "0.10.2"`. It reads one line per
 case: id, input, roots, CRLs and mode, taken from `tests/cases.json`.
 
+For the second set it also:
+- reads an MSI's `\u{5}DigitalSignature` stream (with `cfb` 0.10);
+- reads an RDP file's `signature:s:` blob (base64, past the 12-byte header),
+  with the three RDP usages as `PS_EXTENDED_KEY_USAGE`;
+- in `tsa` modes, takes the signer of the RFC 3161 token
+  (1.2.840.113549.1.9.16.2.14 or 1.3.6.1.4.1.311.3.3.1) or of a PKCS #9
+  countersignature as the target, with EKU 1.3.6.1.5.5.7.3.8;
+- sets `PS_KEY_USAGE` to digitalSignature for a non-TSA signer.
+
 <details>
 <summary>src/main.rs (core)</summary>
 
