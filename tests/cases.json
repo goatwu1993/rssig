@@ -10023,6 +10023,33 @@
       }
     },
     {
+      "id": "rdp-eku-empty-store",
+      "input": "bad-rdp-eku.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "rdp-no-eku",
       "input": "bad-rdp-no-eku.rdp",
       "command": [
@@ -10046,6 +10073,33 @@
                 "code": "invalid_eku",
                 "stage": "certificate",
                 "title": "Invalid extended key usage"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "rdp-no-eku-empty-store",
+      "input": "bad-rdp-no-eku.rdp",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
               }
             }
           ]
@@ -27425,6 +27479,34 @@
       }
     },
     {
+      "id": "path-013-bad-rdp-leaf-malformed-eku-empty-store",
+      "input": "bad-rdp-malformed-eku.rdp",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "path-013-bad-tsa-malformed-ski",
       "input": "tsa-malformed-ski.exe",
       "decision": "PATH-013",
@@ -27925,6 +28007,34 @@
                   "reason": "repeated_extension",
                   "extension": "2.5.29.37"
                 }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-014-bad-rdp-leaf-repeated-eku-empty-store",
+      "input": "bad-rdp-repeated-eku.rdp",
+      "decision": "PATH-014",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
               }
             }
           ]

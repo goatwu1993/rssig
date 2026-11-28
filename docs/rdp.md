@@ -117,7 +117,13 @@ without a CRL, with only expired ones, or with only ones a source's CRL could re
 (an unknown status, or an expired or replaceable CRL, that names the certificates to ask about; an
 empty list names nothing) is reported ahead of another purpose's failure, so that `--fetch-crls` can
 ask for the CRL (`crl-027-rdp-eku-retry-ca-missing-crl-is-unknown`). An unrestricted/absent leaf EKU is not accepted
-by these rules. Digital-signature key usage, configured roots, certificate times,
+by these rules. With no configured root the result is `untrusted_root` at
+`certificate_chain` before the signer's EKU is read, as in every other format,
+whether the extKeyUsage is missing, lacks these purposes, repeats or does not
+decode (`rdp-no-eku-empty-store`, `rdp-eku-empty-store`,
+`path-014-bad-rdp-leaf-repeated-eku-empty-store`,
+`path-013-bad-rdp-leaf-malformed-eku-empty-store`).
+Digital-signature key usage, configured roots, certificate times,
 and current local CRLs retain their existing checks. Embedded certificates remain
 untrusted candidates. Root enumeration is the only OS trust integration.
 

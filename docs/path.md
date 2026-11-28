@@ -190,7 +190,8 @@ a byte above 0x7F does not decode.
   callback's rejection above the unknown issuer a missing keyCertSign is
   reported through (PATH-T007 tracks that shared flag).
 - The rule holds for a timestamp signer's chain too, with the same code and
-  stage.
+  stage, and for an RDP signer, which is checked for a configured root first
+  too (`path-013-bad-rdp-leaf-malformed-eku-empty-store`).
 - A certificate that also repeats an extension is reported for the repeat
   (PATH-014).
 - Integrity-only verification builds no path, so the rule does not apply
@@ -313,7 +314,9 @@ equal. It is judged where PATH-013 is, and reported the same way:
   is reported when none is, for a certificate on no path too, is not this
   entry's: see the candidate rule `unparsed-candidate` and PATH-T019.
 - The rule holds for a timestamp signer and an RDP signer too, with the same
-  code, stage, `details.reason` and `details.extension`.
+  code, stage, `details.reason` and `details.extension`; an RDP signer is
+  checked for a configured root first too
+  (`path-014-bad-rdp-leaf-repeated-eku-empty-store`).
 - A certificate with both defects is reported for the repeat: the first
   extension whose OID an earlier one carries, also when the value that does
   not decode sits before it.
