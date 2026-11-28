@@ -76,13 +76,56 @@ The 63-signers-plus-two case was observed returning success with 65 reports befo
 the fix. Named CLI tests assert successful boundaries, typed serialized failures
 and absence of partial reports. Focused unit tests exercise overflow, each work
 counter, inherited timestamp/nested/RDP budgets, bundle sharing, and crypto/path
-exhaustion. An inert multi-EKU RDP fixture also covers a failed first EKU
-followed by budget exhaustion on a retry: exhaustion propagates immediately with
-its original typed resource details. Ordinary EKU failures are ranked as
-[CRL-027](crl.md#crl-027-which-error-a-rejected-chain-reports) pins: a
+exhaustion. An RDP fixture whose CA admits serverAuth only covers a failed first
+EKU followed by budget exhaustion on a retry: exhaustion propagates immediately
+with its original typed resource details
+(`rdp_eku_retry_propagates_later_budget_exhaustion`). Ordinary EKU failures are
+ranked as [CRL-027](crl.md#crl-027-which-error-a-rejected-chain-reports) pins: a
 revocation first, with the other usages' CRL gaps merged into it, then a
 failure a CRL could complete, then the first. Existing failure expectations
 remain unchanged.
+
+An RDP usage is retried only when another usage could change its failure
+(LIMIT-T007), since each retry reserves a whole search. Two failures cannot
+change:
+
+- **A failure of the signer alone**, found before any path is built: a KeyUsage
+  without digitalSignature, or a lifetime signer issued after its signing time.
+  Neither reads the usage, which for RDP is never timeStamping and is always in
+  the signer's own list. The failure returned must be that one too
+  (`invalid_key_usage` at `certificate`, or lifetime signing's
+  `certificate_not_yet_valid`), so a usage-dependent check placed ahead of them
+  keeps the search going. (A signer extension that does not decode is rejected
+  before any usage is tried, by PATH-013.)
+- **Any failure when no embedded certificate other than the signer that can be
+  on its path carries an extKeyUsage.** webpki 0.103.16 judges the requested usage
+  only in a certificate on a candidate path that carries one
+  (`KeyUsage::required_if_present`), the signer lists every usage tried, and a
+  configured anchor keeps no extensions. An embedded certificate can be on a
+  path only when its subject is the signer's issuer or another such
+  certificate's; a timestamp authority's certificate beside the signer's
+  usually is not, and counts only if its subject is on that chain. With none of those carrying an extKeyUsage, every usage builds the same
+  candidate paths, and rssig's path callback never reads the usage, so each
+  fails the same way and names only another `required_eku`
+  (`without_a_steering_certificate_every_usage_has_the_same_result`,
+  `only_a_certificate_that_can_be_on_the_path_steers_it`, which also fails when
+  the webpki version or the path checks' fields change). Which certificates
+  can be on a path is found at most once, after the first failure the signer
+  alone does not explain and only while another usage is left to try, in time
+  linear in the embedded certificates; the names it re-encodes are charged to
+  `decoded_bytes`.
+
+In both, every usage not tried would fail as the first did, so the CRL-027
+ranking over the usages tried returns the same failure: the first, with its own
+CRL gaps. Otherwise (an embedded CA that can be on the path carries an
+extKeyUsage, which may admit one usage and not another) every usage is still
+tried. Stopping never accepts more: at worst it reports the first usage's
+failure. The budget effect is pinned by
+`rdp_stops_after_a_path_failure_no_other_eku_can_change` (one reservation, and
+the same `untrusted_root` with a single search left) and
+`rdp_stops_after_a_signer_failure_no_other_eku_can_change`; before LIMIT-T007 a
+file whose first usage failed this way, verified with a single search left,
+reported `resource_limit_exceeded` for the retry instead.
 
 CLI file/root/CRL reads, batch/report buffering, and nonregular/changing inputs
 are covered by [LIMIT-T003 host limits](host-limits.md). Library callers own their

@@ -367,6 +367,50 @@ impl TrustStore {
     }
 }
 
+/// Whether [`TrustStore::verify`] rejects `leaf` before building any path,
+/// for a reason no other usage can change: a KeyUsage without
+/// digitalSignature (`lacks_digital_signature`, judged in
+/// `SignerRequirements::check`), or a lifetime signer
+/// (`lists_lifetime_signing`, read there for any usage but timeStamping)
+/// issued after its signing time (the `issued_after` check that follows it in
+/// `TrustStore::verify`); a change to either keeps this in step. Neither reads the usage, so RDP's `verify_trust` asks no
+/// other usage once one holds (LIMIT-T007). It only reads the signer's
+/// KeyUsage and extKeyUsage and builds no report. Every other rejection
+/// answers `false`, so a usage-dependent one added to
+/// `SignerRequirements::check` keeps the search going; an extension that
+/// does not decode never gets here, as PATH-013 rejects it in `check_signer`.
+pub(crate) fn fails_before_any_path(
+    leaf: &Certificate,
+    signing_time: Option<SigningTime<'_>>,
+) -> bool {
+    use x509_cert::ext::pkix::ExtendedKeyUsage;
+    let lifetime = || {
+        leaf.tbs_certificate
+            .get::<ExtendedKeyUsage>()
+            .ok()
+            .flatten()
+            .is_some_and(|(_, usage)| lists_lifetime_signing(&usage))
+    };
+    lacks_digital_signature(leaf).unwrap_or(false)
+        || signing_time
+            .is_some_and(|at| lifetime() && issued_after(leaf, Some(at.seconds)).is_some())
+}
+
+/// Whether the signer's KeyUsage, when present, lacks digitalSignature.
+fn lacks_digital_signature(leaf: &Certificate) -> Result<bool> {
+    use x509_cert::ext::pkix::KeyUsage;
+    Ok(leaf
+        .tbs_certificate
+        .get::<KeyUsage>()
+        .map_err(crate::compat_error)?
+        .is_some_and(|(_, ku)| !ku.digital_signature()))
+}
+
+/// Whether an extKeyUsage lists Microsoft lifetime signing.
+fn lists_lifetime_signing(usage: &x509_cert::ext::pkix::ExtendedKeyUsage) -> bool {
+    usage.0.iter().any(|id| id.as_bytes() == LIFETIME_SIGNING)
+}
+
 /// One chain-validation request for [`TrustStore::verify`].
 pub(crate) struct ChainRequest<'a> {
     /// The signer certificate.
@@ -438,23 +482,8 @@ impl SignerRequirements {
         signing_time: Option<u64>,
         now: u64,
     ) -> Result<Self> {
-        // KeyUsage digitalSignature is not enforced by webpki's TLS-oriented
-        // leaf processing, so enforce it explicitly for CMS signers.
-        use x509_cert::ext::pkix::{ExtendedKeyUsage, KeyUsage};
-        if let Some((_, ku)) = leaf
-            .tbs_certificate
-            .get::<KeyUsage>()
-            .map_err(crate::compat_error)?
-            && !ku.digital_signature()
-        {
-            return Err(VerificationError::new(
-                ErrorCode::InvalidKeyUsage,
-                Stage::Certificate,
-                "signer KeyUsage lacks digitalSignature",
-            )
-            .detail("certificate", CertificateReport::parse(leaf)?)
-            .into());
-        }
+        use x509_cert::ext::pkix::ExtendedKeyUsage;
+        Self::check_digital_signature(leaf)?;
         let lifetime_signing = if eku == TIME_STAMPING {
             let (critical, usage) = leaf
                 .tbs_certificate
@@ -498,7 +527,7 @@ impl SignerRequirements {
                 .detail("certificate", CertificateReport::parse(leaf)?)
                 .into());
             }
-            usage.0.iter().any(|id| id.as_bytes() == LIFETIME_SIGNING)
+            lists_lifetime_signing(&usage)
         };
         // A lifetime-signing signer is not extended by its timestamp: the chain
         // must be valid at the validation time, as well as at the signing time.
@@ -513,6 +542,22 @@ impl SignerRequirements {
             lifetime_signed_at: signing_time.filter(|_| lifetime_signing),
             now,
         })
+    }
+
+    /// KeyUsage digitalSignature is not enforced by webpki's TLS-oriented
+    /// leaf processing, so enforce it explicitly for CMS signers. It reads
+    /// the signer alone, whatever the usage.
+    fn check_digital_signature(leaf: &Certificate) -> Result<()> {
+        if lacks_digital_signature(leaf)? {
+            return Err(VerificationError::new(
+                ErrorCode::InvalidKeyUsage,
+                Stage::Certificate,
+                "signer KeyUsage lacks digitalSignature",
+            )
+            .detail("certificate", CertificateReport::parse(leaf)?)
+            .into());
+        }
+        Ok(())
     }
 
     /// `cert` was issued after the lifetime signing time `at`.
@@ -601,6 +646,32 @@ struct PathEvaluator<'a, 'b> {
     fractional_at: Option<u64>,
     budget: &'a Budget<'b>,
     state: core::cell::RefCell<PathState>,
+}
+
+/// RDP's usage search (LIMIT-T007) rests on the path checks never reading the
+/// usage: this stops compiling if `PathEvaluator` gains a field, so whoever
+/// adds one decides whether it is the usage. It covers the path callback
+/// only; `path_error` and `SignerRequirements` hold the usage to name it in
+/// `required_eku`, and RDP's
+/// `without_a_steering_certificate_every_usage_has_the_same_result` fails if
+/// any other result comes to depend on it.
+#[cfg(test)]
+pub(crate) fn path_checks_hold_no_usage() {
+    #[allow(dead_code)]
+    fn fields(evaluator: PathEvaluator<'_, '_>) {
+        let PathEvaluator {
+            signer: _,
+            anchors: _,
+            anchor_certificates: _,
+            crls: _,
+            now: _,
+            revocation: _,
+            lifetime_signed_at: _,
+            fractional_at: _,
+            budget: _,
+            state: _,
+        } = evaluator;
+    }
 }
 
 impl PathEvaluator<'_, '_> {
