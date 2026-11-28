@@ -18,8 +18,8 @@ published release is a month old and still a release candidate. certval-cms
 cannot parse an Authenticode signature at all. Adopting certval would replace
 one set of adapter workarounds (the sentinel error, error ranking) with a
 validator rssig would have to compose from certval's parts and maintain. A
-wrapper around certval is not enough, because certval also rejects 4 cases rssig
-accepts. Adopting it would also leave every PATH- and CRL- acceptance entry to be proved
+wrapper around certval is not enough, because certval also rejects cases rssig accepts
+(3 in the closest mode, 4 across all modes). Adopting it would also leave every PATH- and CRL- acceptance entry to be proved
 again.
 
 ## What was read
@@ -319,7 +319,9 @@ repeated-extension fixtures, and the CRL cases built on the path fixtures.
 compared:
 
 - `--integrity-only` and `parse` cases (no path is built);
-- in the path modes, cases whose expected failure is revocation's (20);
+- in the path modes, the 18 cases whose expected failure is at the revocation
+  stage, and the 2 CRL-008 cases (`certificate_chain_invalid`,
+  `ambiguous_issuer_keys`), which only a revocation run can decide (20);
 - in the revocation modes, `--fetch-crls` cases, since certval cannot use
   rssig's source (11).
 
@@ -406,7 +408,7 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
     (`webpki_revocation_error`, `crl_rejection_reason`, `:2305,2500`).
   - In: a loop over certval's paths and a validator of rssig's own.
     `validate_path_rfc5280` cannot be used as it is. A layer around it can
-    only add rejections, and it rejects four cases rssig accepts
+    only add rejections, and it rejects up to four cases rssig accepts
     (section 6). rssig would compose its own order of certval's public
     checks (`check_validity`, `check_basic_constraints`, `check_names`,
     `check_certificate_policies_graph`, `check_extended_key_usage`,
@@ -445,10 +447,12 @@ The harness is in the appendix; it ran in under a second for all 533 runs.
   because webpki 0.103.17 is reported to accept a critical SCT-list
   extension, which this evaluation did not check.
 - **Tasks it would create:** the validator of rssig's own above, a no_std build check, a
-  budget, the stack migration, and a pass over every PATH- and CRL- entry's
-  Sources lines, which cite webpki 0.103.16 as observed behavior.
-- **Risk:** high. 21 measured accepts and 4 measured rejects that rssig's
-  own composition must undo, on a validator that is a month into its public life and a
+  budget, the stack migration, and a pass over the Sources lines of the
+  37 acceptance entries PATH-001 to PATH-015, CRL-001 to CRL-017 and CRL-041
+  to CRL-045, which cite webpki 0.103.16 as observed behavior.
+- **Risk:** high. 28 measured cases that rssig's own composition must get
+  right: the 21 accepts and 3 rejects of the closest mode, plus 3 accepts
+  and 1 reject that depend on settings. That is on a validator that is a month into its public life and a
   release candidate. The fixtures measure only what rssig has thought to
   pin.
 
@@ -474,8 +478,11 @@ retrieval boundary would carry it in either case.
 
 ### Question 1: Should certval replace webpki as rssig's path validator?
 
-Entry or task: PATH-T024 (owner decision); touches PATH-001 to PATH-015,
-CRL-001 to CRL-017 and CRL-041 to CRL-045 (mostly Decided, pin acceptance). Cases: the 21 listed in section 6.
+Entry or task: PATH-T024 (Open, owner decision; the entries it touches,
+PATH-001 to PATH-015, CRL-001 to CRL-017 and CRL-041 to CRL-045, are mostly
+Decided and pin acceptance). Cases: the 28 named in section 6 (21 accepts
+and 3 rejects under `rev-prof`, plus 3 mode-dependent accepts and
+`path-011-good-root-expired`).
 
 **Today:** rssig builds paths with rustls-webpki =0.103.16 through a
 RustCrypto adapter, decides revocation itself in webpki's path callback, and
@@ -499,6 +506,8 @@ A. **Stay on webpki** (recommended). Record this evaluation and revisit
      certval with the appendix harness.
 
 B. **Replace webpki with a validator rssig composes from certval's parts.**
+   **Fails open where rssig's composition misses a rule:** certval alone
+   accepts 21 cases rssig rejects.
    Use certval's path builder and its public checks, but not
    `validate_path_rfc5280` as it is. rssig:
    - replaces its keyUsage check (PATH-008);
@@ -508,13 +517,13 @@ B. **Replace webpki with a validator rssig composes from certval's parts.**
    - keeps its own CRL evaluation (CRL-008, CRL-015);
    - adds a path budget.
 
-   A wrapper alone cannot do this: it could not undo the 4 cases certval
-   rejects and rssig accepts. The other route is a fork or upstream patches.
+   A wrapper alone cannot do this: it could not undo the cases certval
+   rejects and rssig accepts (3 under `rev-prof`, 4 across modes). The other route is a fork or upstream patches.
    - Pros: typed per-path results that rssig ranks itself; policy
      processing; RFC 5280 name comparison; no dependence on webpki's Web PKI
      choices.
    - Cons: **fails open wherever rssig's composition misses a rule**. Measured,
-     21 cases need it; unmeasured ones are unknown. It needs the der 0.8
+     28 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
      migration or two stacks, and depends on a release-candidate crate a
      month into its public life.
    - Now: trust.rs rewritten (~3,900 lines), rdp.rs re-argued, 37
