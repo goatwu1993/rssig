@@ -479,7 +479,9 @@ All of these run on `crl-chain-shared-crl-dp.exe`. A
 URL that went stale or was mistyped therefore cannot turn a case about the point
 into one about a URL outside the request; the engine's handling of one outside it
 is unit-tested
-(`a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`).
+(`a_whole_request_error_naming_a_foreign_url_is_not_attributed_to_the_certificate`
+and, for one inside a response, the tests CRL-049 lists; a case that names one
+on purpose is CRL-T059).
 
 The runner also fails a case whose `pad_to` would cut its file, and a case with an
 injected answer, plain or scripted, that nobody requested (a stale certificate

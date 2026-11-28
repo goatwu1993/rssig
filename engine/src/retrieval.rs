@@ -146,9 +146,14 @@ impl CrlResponse {
 #[non_exhaustive]
 pub struct SourcedCrl {
     pub bytes: Vec<u8>,
-    /// Where it was obtained, if from a URL. Provenance only.
+    /// Where it was obtained, if from a URL: one of the request's points,
+    /// in any spelling that normalizes to it. Provenance only. A URL none of
+    /// the request's points normalize to is not recorded, nor is `final_url`
+    /// then: the body is reported without them, answers no point and is no
+    /// answer by certificate (CRL-049).
     pub url: Option<String>,
-    /// Where it actually came from, when a redirect changed `url`.
+    /// Where it actually came from, when a redirect (or a source's own
+    /// choice, such as a mirror) changed `url`.
     pub final_url: Option<String>,
 }
 impl SourcedCrl {
@@ -177,6 +182,9 @@ impl SourcedCrl {
 pub struct CrlSourceError {
     pub kind: CrlSourceErrorKind,
     pub message: String,
+    /// The request's point it is about, if any. A URL none of the request's
+    /// points normalize to is not recorded: the failure is reported as it
+    /// is, without it, and answers no point (CRL-049).
     pub url: Option<String>,
     /// Optional structured context, reported with the failure.
     pub details: std::collections::BTreeMap<String, serde_json::Value>,
@@ -219,7 +227,11 @@ impl CrlSourceError {
 /// still allowed (at most [`MAX_CRL_BYTES`] each), and stops at the first
 /// `Abort` or once the request's byte allowance is spent; the points left are
 /// not answered, and the engine records them as not tried. Each answer
-/// becomes a [`SourcedCrl`] or a failure with its URL. It tries every point
+/// becomes a [`SourcedCrl`] or a failure under the point it was fetched
+/// for, as listed, so no answer's `url` is outside the request (CRL-049):
+/// another `url` that `fetch` set on a body becomes its `final_url` when it
+/// set none (beside a `final_url` it is dropped), and one on a failure is
+/// replaced. It tries every point
 /// the request carries: the engine offers every URI a certificate lists
 /// (CRL-024), so a source built on it bounds its own count of points per
 /// request, as the application's `HttpCrlSource` does.
@@ -243,7 +255,7 @@ pub fn fetch_each(
             // point is still tried.
             // Only the first such body is kept; later ones are reported
             // without their bytes, so a response cannot pile them up.
-            Ok(mut crl) if crl.bytes.len() > allowed => {
+            Ok(crl) if crl.bytes.len() > allowed => {
                 if oversized {
                     response.failures.push(
                         CrlSourceError::new(
@@ -257,17 +269,15 @@ pub fn fetch_each(
                     );
                 } else {
                     oversized = true;
-                    crl.url.get_or_insert_with(|| url.clone());
-                    response.crls.push(crl);
+                    response.crls.push(fetched_from(crl, url));
                 }
             }
-            Ok(mut crl) => {
+            Ok(crl) => {
                 remaining = remaining.saturating_sub(crl.bytes.len());
-                crl.url.get_or_insert_with(|| url.clone());
-                response.crls.push(crl);
+                response.crls.push(fetched_from(crl, url));
             }
             Err(mut e) => {
-                e.url.get_or_insert_with(|| url.clone());
+                e.url = Some(url.clone());
                 let abort = e.kind == CrlSourceErrorKind::Abort;
                 response.failures.push(e);
                 if abort {
@@ -277,6 +287,20 @@ pub fn fetch_each(
         }
     }
     response
+}
+
+/// `crl` as fetched for `point`: under that point, with another URL the
+/// fetch named for it, when fit to record, kept as where it came from when
+/// it set none.
+fn fetched_from(mut crl: SourcedCrl, point: &str) -> SourcedCrl {
+    if let Some(other) = crl.url.replace(point.to_owned())
+        && crl.final_url.is_none()
+        && url_key(&other) != url_key(point)
+        && hygienic_url(&other)
+    {
+        crl.final_url = Some(other);
+    }
+    crl
 }
 
 /// A fixed-size key for a certificate and a point, so that remembering one
@@ -294,6 +318,13 @@ fn point_hash(certificate: &str, key: &str) -> [u8; 16] {
 /// A dedup key for a URI: its parsed, normalized form when it parses.
 fn url_key(raw: &str) -> String {
     url::Url::parse(raw).map_or_else(|_| raw.to_owned(), |u| u.to_string())
+}
+
+/// Whether `url` names a URL that is none of a request's `points` (their
+/// [`url_key`]s): one the source did not get from this certificate.
+fn foreign(url: &Option<String>, points: &BTreeSet<String>) -> bool {
+    url.as_deref()
+        .is_some_and(|u| !points.contains(&url_key(u)))
 }
 
 /// Whether a URI is fit to pass to a source and record: no control
@@ -535,6 +566,21 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         e: VerificationError,
         kind: Option<CrlSourceErrorKind>,
     ) {
+        self.skip_about(certificate, url, e, kind, false);
+    }
+
+    /// [`Self::skip`] for an entry that is about a point even without a URL
+    /// (`body`): a body the source returned under a URL outside the request
+    /// is the source's answer about a point, not one of the engine's entries
+    /// about no point (CRL-049).
+    fn skip_about(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: VerificationError,
+        kind: Option<CrlSourceErrorKind>,
+        body: bool,
+    ) {
         let url = url.filter(|u| hygienic_url(u));
         let e = match url {
             Some(url) => e.detail("url", url),
@@ -542,7 +588,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         };
         // Logged while the report would still list it: past the bound a
         // certificate's entries are counted, not each logged.
-        let about_points = url.is_some() || kind.is_some();
+        let about_points = url.is_some() || kind.is_some() || body;
         let listed = self
             .kept
             .get(&(certificate.to_owned(), about_points))
@@ -554,7 +600,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 format_args!("CRL evidence missing: {:?}", e.message),
             );
         }
-        self.record(certificate, url, &e, kind);
+        self.record_about(certificate, url, &e, kind, about_points);
     }
 
     /// One failure entry per certificate and URL, except a source's first
@@ -569,6 +615,18 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         url: Option<&str>,
         e: &VerificationError,
         source_error: Option<CrlSourceErrorKind>,
+    ) {
+        self.record_about(certificate, url, e, source_error, false);
+    }
+
+    /// [`Self::record`] for an entry about a point even without a URL.
+    fn record_about(
+        &mut self,
+        certificate: &str,
+        url: Option<&str>,
+        e: &VerificationError,
+        source_error: Option<CrlSourceErrorKind>,
+        about_points: bool,
     ) {
         // A source's first abort is always kept, even where its point already
         // has an entry: it is what ended retrieval.
@@ -592,8 +650,9 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // Entries about a point and entries about none (unusable names,
         // screening, whole-request failures) are bounded apart, so one kind
         // cannot hide the other.
-        // A source's failure is a point's, even one for the whole request.
-        let about_points = url.is_some() || source_error.is_some();
+        // A source's failure is a point's, even one for the whole request; so
+        // is a body under a URL outside the request.
+        let about_points = about_points || url.is_some() || source_error.is_some();
         let bucket = (certificate.to_owned(), about_points);
         let kept = self.kept.entry(bucket.clone()).or_default();
         if *kept < MAX_FAILURES_PER_CERTIFICATE || first_abort {
@@ -838,14 +897,10 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 // certificate's: it is dropped, and the error stands for the
                 // whole request.
                 let mut e = e;
-                let named = e
-                    .url
-                    .as_deref()
-                    .map(url_key)
-                    .filter(|named| points.iter().any(|p| url_key(p) == *named));
-                if named.is_none() {
+                if foreign(&e.url, &offered) {
                     e.url = None;
                 }
+                let named = e.url.as_deref().map(url_key);
                 for point in points.iter().filter(|p| named != Some(url_key(p))) {
                     self.source_failure(sha256, e.clone().with_url(point.clone()));
                 }
@@ -888,22 +943,44 @@ impl<'b, 'l> Retrieval<'b, 'l> {
             for point in &points {
                 self.skip(sha256, Some(point), e.clone(), None);
             }
-            if let Some(abort) = response
+            if let Some(mut abort) = response
                 .failures
                 .into_iter()
                 .find(|f| f.kind == CrlSourceErrorKind::Abort)
             {
+                if foreign(&abort.url, &offered) {
+                    abort.url = None;
+                }
                 self.source_failure(sha256, abort);
             }
             return Ok(false);
         }
+        // A failure naming a URL that is none of this request's points says
+        // nothing about this certificate's points: it is recorded as it is,
+        // without that URL, and answers none of them (CRL-049). Unlike a
+        // whole-request error, it is not the request's only outcome, so the
+        // points left keep their own entries. Every one is recorded, a repeat
+        // of one URL too: the report no longer shows the URL, so dropping a
+        // repeat would hide it, and the per-certificate bound counts them.
+        // Each failure is paired with whether its URL was outside.
+        let failures: Vec<(CrlSourceError, bool)> = response
+            .failures
+            .into_iter()
+            .map(|mut failure| {
+                let outside = foreign(&failure.url, &offered);
+                if outside {
+                    failure.url = None;
+                }
+                (failure, outside)
+            })
+            .collect();
         // A point is answered by a CRL or failure naming it, compared as
         // URLs (a source may report the normalized form).
         let answered: BTreeSet<String> = response
             .crls
             .iter()
             .map(|c| &c.url)
-            .chain(response.failures.iter().map(|f| &f.url))
+            .chain(failures.iter().map(|(f, _)| &f.url))
             .filter_map(|url| url.as_deref().map(url_key))
             .collect();
         let unanswered: Vec<String> = points
@@ -918,13 +995,18 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // still recorded as it is, and an `Abort` among them stops retrieval.
         // An abort about the whole request (no URL): the points left were
         // not tried, whatever other URL-less failure came with it.
-        let whole_abort = response
-            .failures
+        // An abort under a URL outside the request names no point either: the
+        // points left were not tried.
+        let whole_abort = failures
             .iter()
-            .any(|f| f.url.is_none() && f.kind == CrlSourceErrorKind::Abort);
+            .any(|(f, _)| f.url.is_none() && f.kind == CrlSourceErrorKind::Abort);
         let mut whole_request = None;
-        for failure in response.failures {
-            if failure.url.is_none() && !unanswered.is_empty() && whole_request.is_none() {
+        for (failure, outside) in failures {
+            if failure.url.is_none()
+                && !outside
+                && !unanswered.is_empty()
+                && whole_request.is_none()
+            {
                 whole_request = Some(failure);
             } else {
                 self.source_failure(sha256, failure);
@@ -932,7 +1014,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         }
         // The bodies are loaded first: what they turn out to be decides how
         // the points the source did not answer are recorded.
-        let loaded = self.load_all(sha256, issuer, response.crls, max_bytes)?;
+        let loaded = self.load_all(sha256, issuer, response.crls, max_bytes, &offered)?;
         let returned = loaded.accepted_bytes;
         if let Some(failure) = whole_request {
             // Beside an answer by certificate, such a failure is recorded as
@@ -1008,11 +1090,18 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         issuer: &[u8],
         crls: Vec<SourcedCrl>,
         max_bytes: usize,
+        points: &BTreeSet<String>,
     ) -> Result<Loaded, VerificationError> {
         let mut loaded = Loaded::default();
         for crl in crls {
-            let (by_certificate, added) =
-                self.load(sha256, issuer, crl, &mut loaded.accepted_bytes, max_bytes)?;
+            let (by_certificate, added) = self.load(
+                sha256,
+                issuer,
+                crl,
+                points,
+                &mut loaded.accepted_bytes,
+                max_bytes,
+            )?;
             loaded.added |= added;
             loaded.by_certificate |= by_certificate.is_some();
             loaded.full_added |= by_certificate == Some(true);
@@ -1030,14 +1119,24 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         &mut self,
         sha256: &str,
         issuer: &[u8],
-        crl: SourcedCrl,
+        mut crl: SourcedCrl,
+        points: &BTreeSet<String>,
         total: &mut usize,
         max_bytes: usize,
     ) -> Result<(Option<bool>, bool), VerificationError> {
         // Whether the source named a URL at all is decided before the URL is
-        // screened: one withheld from the report is still not an answer by
-        // certificate.
+        // screened: one withheld from the report, or outside the request, is
+        // still not an answer by certificate.
         let without_url = crl.url.is_none();
+        // A body naming a URL that is none of this request's points is
+        // recorded without it, and without its redirect target: the source
+        // did not get it from this certificate's point (CRL-049). Rejected
+        // on load, it is still about a point (CRL-024).
+        let outside = foreign(&crl.url, points);
+        if outside {
+            crl.url = None;
+            crl.final_url = None;
+        }
         // The URL as the source gave it: the failure recorded for it is
         // reported without it when it is not fit to be reported.
         let raw_url = crl.url.clone();
@@ -1059,7 +1158,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
         // the engine and every source (a replay adds nothing to the store,
         // but a source cannot tell the engine's room from its own).
         if let Some(e) = body_over_allowance(len, *total, max_bytes) {
-            self.skip(sha256, raw_url.as_deref(), e, None);
+            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
             return Ok((None, false));
         }
         *total += len;
@@ -1101,7 +1200,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 ErrorCode::InvalidCrl,
                 format!("decoding retrieved CRL: {e:#}"),
             );
-            self.skip(sha256, raw_url.as_deref(), e, None);
+            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
             return Ok((None, false));
         }
         // A PEM response may contain multiple distinct CRLs. Bound the
@@ -1119,7 +1218,7 @@ impl<'b, 'l> Retrieval<'b, 'l> {
                 loaded - prior,
             );
             e.message = "not loaded: the body would take the retained CRLs past their cap".into();
-            self.skip(sha256, raw_url.as_deref(), e, None);
+            self.skip_about(sha256, raw_url.as_deref(), e, None, outside);
             return Ok((None, false));
         }
         // An answer by certificate, and whether it brought a new full CRL,
@@ -2914,6 +3013,292 @@ mod tests {
                 "http://crl.example.invalid/own-1.crl"
             ]
         );
+    }
+    #[test]
+    fn a_failure_or_body_naming_a_foreign_url_in_a_response_is_recorded_without_it() {
+        // CRL-049: a URL outside the request is not this certificate's. Its
+        // failure and bodies are recorded without it, and answer no point.
+        const FOREIGN: &str = "http://other.example.invalid/x.crl";
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Failed, "down").with_url(FOREIGN),
+                    )
+                    .with_crl(
+                        SourcedCrl::new(include_bytes!("../../tests/fixtures/good.crl").to_vec())
+                            .with_url(FOREIGN)
+                            .with_final_url("http://other.example.invalid/y.crl"),
+                    )
+                    .with_crl(
+                        SourcedCrl::new(b"not a crl".to_vec())
+                            .with_url("http://other.example.invalid/z.crl"),
+                    ))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        let cert = signer_with_points("own", 1);
+        ask(&mut state, "a", &cert, &mut Source).unwrap();
+        let failures: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.as_deref(), f.code, f.source_error))
+            .collect();
+        assert_eq!(
+            failures,
+            [
+                (
+                    None,
+                    ErrorCode::CrlFetchFailed,
+                    Some(CrlSourceErrorKind::Failed)
+                ),
+                (None, ErrorCode::InvalidCrl, None),
+                (
+                    Some("http://crl.example.invalid/own-0.crl"),
+                    ErrorCode::CrlFetchFailed,
+                    None
+                ),
+            ]
+        );
+        assert_eq!(
+            state.report.failures[2].message,
+            "the CRL source returned nothing for this point"
+        );
+        let artifacts: Vec<_> = state
+            .report
+            .artifacts
+            .iter()
+            .map(|a| (a.url.as_deref(), a.final_url.as_deref()))
+            .collect();
+        assert_eq!(artifacts, [(None, None), (None, None)]);
+    }
+    #[test]
+    fn an_abort_naming_a_foreign_url_leaves_the_points_not_tried() {
+        // CRL-049: recorded as it is without the URL, it answers no point but
+        // still stops retrieval, so the URL-less failure beside it is recorded
+        // as it is and the point left is not tried.
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new()
+                    .with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Abort, "done")
+                            .with_url("http://other.example.invalid/x.crl"),
+                    )
+                    .with_failure(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("own", 1), &mut Source).unwrap();
+        assert!(state.aborted);
+        let seen: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.as_deref(), f.message.as_str()))
+            .collect();
+        assert_eq!(
+            seen,
+            [
+                (None, "done"),
+                (None, "down"),
+                (
+                    Some("http://crl.example.invalid/own-0.crl"),
+                    "not tried: the CRL source aborted retrieval"
+                ),
+            ]
+        );
+    }
+    #[test]
+    fn an_abort_naming_a_foreign_url_in_a_response_past_the_entry_bound_is_recorded_without_it() {
+        struct Floods;
+        impl CrlSource for Floods {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new().with_failure(
+                    CrlSourceError::new(CrlSourceErrorKind::Abort, "done")
+                        .with_url("http://other.example.invalid/x.crl"),
+                );
+                for _ in 0..=MAX_RESPONSE_ENTRIES {
+                    response = response.with_crl(SourcedCrl::new(Vec::new()));
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("own", 1), &mut Floods).unwrap();
+        let abort = state.report.failures.last().unwrap();
+        assert_eq!(abort.source_error, Some(CrlSourceErrorKind::Abort));
+        assert_eq!(abort.url, None);
+    }
+    #[test]
+    fn bodies_rejected_under_a_foreign_url_are_bounded_with_the_points_entries() {
+        // CRL-024: a source's bodies under URLs outside the request are about
+        // points, though their URLs are not recorded: they never fill the
+        // bound kept for the engine's entries about no point.
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                let mut response = CrlResponse::new();
+                for i in 0..MAX_FAILURES_PER_CERTIFICATE + 2 {
+                    response = response.with_crl(
+                        SourcedCrl::new(b"not a crl".to_vec())
+                            .with_url(format!("http://other.example.invalid/{i}.crl")),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("own", 1), &mut Source).unwrap();
+        assert_eq!(state.kept.get(&("a".to_owned(), false)), None);
+        let marker = state
+            .report
+            .failures
+            .iter()
+            .find(|f| f.details.contains_key("omitted"))
+            .unwrap();
+        assert_eq!(marker.details["about"], "points");
+    }
+    #[test]
+    fn fetch_each_records_every_answer_under_the_point_it_was_fetched_for() {
+        let points: Vec<String> = (0..2)
+            .map(|i| format!("http://crl.example.invalid/p-{i}.crl"))
+            .collect();
+        let mut calls = 0;
+        let response = fetch_each(&CrlRequest::new(b"", b"", &points, 100), |_, _| {
+            calls += 1;
+            if calls == 1 {
+                Ok(SourcedCrl::new(vec![0; 4]).with_url("http://mirror.example.invalid/p.crl"))
+            } else {
+                Err(CrlSourceError::new(CrlSourceErrorKind::Failed, "down")
+                    .with_url("http://mirror.example.invalid/q.crl"))
+            }
+        });
+        assert_eq!(response.crls[0].url.as_deref(), Some(points[0].as_str()));
+        assert_eq!(
+            response.crls[0].final_url.as_deref(),
+            Some("http://mirror.example.invalid/p.crl")
+        );
+        assert_eq!(
+            response.failures[0].url.as_deref(),
+            Some(points[1].as_str())
+        );
+        // A body's own target is kept, and a third URL is not.
+        let response = fetch_each(&CrlRequest::new(b"", b"", &points[..1], 100), |_, _| {
+            Ok(SourcedCrl::new(vec![0; 4])
+                .with_url("http://mirror.example.invalid/p.crl")
+                .with_final_url("http://cdn.example.invalid/p.crl"))
+        });
+        assert_eq!(response.crls[0].url.as_deref(), Some(points[0].as_str()));
+        assert_eq!(
+            response.crls[0].final_url.as_deref(),
+            Some("http://cdn.example.invalid/p.crl")
+        );
+    }
+    #[test]
+    fn a_credentialed_spelling_of_a_point_is_outside_the_request() {
+        // The request never carried it: a listed point with credentials is
+        // withheld before asking, and adding them names another URL.
+        struct Source;
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                Ok(CrlResponse::new().with_crl(
+                    SourcedCrl::new(include_bytes!("../../tests/fixtures/good.crl").to_vec())
+                        .with_url("http://u:p@crl.example.invalid/own-0.crl")
+                        .with_final_url("http://cdn.example.invalid/own-0.crl"),
+                ))
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(&mut state, "a", &signer_with_points("own", 1), &mut Source).unwrap();
+        let artifact = &state.report.artifacts[0];
+        assert_eq!(
+            (artifact.url.as_deref(), artifact.final_url.as_deref()),
+            (None, None)
+        );
+        assert_eq!(
+            state.report.failures[0].message,
+            "the CRL source returned nothing for this point"
+        );
+    }
+    #[test]
+    fn every_failure_and_rejected_body_under_one_foreign_url_is_recorded() {
+        // Without the URL the report cannot show a repeat as one, so none is
+        // dropped: each is an entry about points, counted past the bound.
+        struct Source(usize);
+        impl CrlSource for Source {
+            fn crls(&mut self, _: &CrlRequest<'_>) -> Result<CrlResponse, CrlSourceError> {
+                const FOREIGN: &str = "http://other.example.invalid/x.crl";
+                let mut response = CrlResponse::new()
+                    .with_crl(SourcedCrl::new(b"not a crl".to_vec()).with_url(FOREIGN));
+                for message in ["policy", "timeout"].iter().cycle().take(self.0) {
+                    response = response.with_failure(
+                        CrlSourceError::new(CrlSourceErrorKind::Failed, *message).with_url(FOREIGN),
+                    );
+                }
+                Ok(response)
+            }
+        }
+        let store = store();
+        let budget = Budget::default();
+        let mut state = Retrieval::new(&store, &budget);
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("own", 1),
+            &mut Source(2),
+        )
+        .unwrap();
+        let seen: Vec<_> = state
+            .report
+            .failures
+            .iter()
+            .map(|f| (f.url.as_deref(), f.code))
+            .collect();
+        assert_eq!(
+            seen,
+            [
+                (None, ErrorCode::CrlFetchFailed),
+                (None, ErrorCode::CrlFetchFailed),
+                (None, ErrorCode::InvalidCrl),
+                (
+                    Some("http://crl.example.invalid/own-0.crl"),
+                    ErrorCode::CrlFetchFailed
+                ),
+            ]
+        );
+        assert_eq!(state.report.failures[1].message, "timeout");
+        // Past the bound they are counted, not dropped.
+        let mut state = Retrieval::new(&store, &budget);
+        let count = MAX_FAILURES_PER_CERTIFICATE + 3;
+        ask(
+            &mut state,
+            "a",
+            &signer_with_points("own", 1),
+            &mut Source(count),
+        )
+        .unwrap();
+        let marker = state
+            .report
+            .failures
+            .iter()
+            .find(|f| f.details.contains_key("omitted"))
+            .unwrap();
+        // The failures past the bound, the body and the point itself.
+        assert_eq!(marker.details["omitted"], 5);
+        assert_eq!(marker.details["about"], "points");
     }
     #[test]
     fn a_duplicate_full_crl_by_certificate_beside_a_new_url_body_does_not_ask_for_verification() {

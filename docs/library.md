@@ -810,8 +810,9 @@ Report types (`rssig_engine::domain`), Rust and JSON:
 
 | Before | Now |
 |---|---|
-| `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL |
-| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect, and absent when the reported target is withheld (credentials, whitespace or control characters) |
+| `CrlRetrievalArtifact.url: String`, always in JSON | `Option<String>`, omitted from JSON when absent: a source may answer by certificate or issuer, without a URL, and a URL that is withheld by screening or names none of the request's points is not recorded (CRL-049) |
+| `CrlRetrievalArtifact.final_url: String`, always in JSON | `Option<String>`, omitted when absent; equals `url` unless the source reported a redirect, and absent when the reported target is withheld (credentials, whitespace or control characters) or the body's `url` names none of the request's points (CRL-049) |
+| `fetch_each` kept a `url` its closure set on a body or failure | Each answer is under the point it was fetched for: a body's other `url` becomes its `final_url` when the closure set none, and a failure's is replaced |
 | (none) | `CrlRetrievalArtifact.certificate_sha256: Option<String>`: the certificate the CRL was asked for |
 | (none) | `details.certificates_with_expired_crl` on `crl_expired`, `crl_not_yet_valid`, `invalid_crl`, `revocation_unknown` and `certificate_revoked`: certificates whose only CRLs have expired; a `CrlSource` is asked about them |
 | (none) | `details.certificates_with_replaceable_crl` on `crl_not_yet_valid`, `invalid_crl`, `revocation_unknown` and `certificate_revoked`: certificates whose only CRLs are unusable for another reason a source's CRL could replace; a `CrlSource` is asked about them |

@@ -541,10 +541,14 @@ pub struct CrlRetrievalArtifact {
     /// The certificate the source was asked about.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub certificate_sha256: Option<String>,
-    /// Where the source obtained it, when from a URL.
+    /// Where the source obtained it, when from a URL that normalizes to one
+    /// of the request's points and passes screening, as the source spelled
+    /// it (`fetch_each` spells it as listed); a URL outside the request is
+    /// not recorded (CRL-049).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
-    /// Where it actually came from: `url` unless a redirect changed it.
+    /// Where it actually came from: `url` unless a redirect, or the source's
+    /// own choice such as a mirror, changed it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub final_url: Option<String>,
     pub sha256: String,
@@ -632,7 +636,10 @@ pub struct CrlRetrievalReport {
     /// recorded for every other point, in listed order, then for that one;
     /// naming no listed point (a URL outside the request counts as none),
     /// for every point in listed order, or once, without a URL, when the
-    /// request lists none. Last,
+    /// request lists none. A failure or body in a response naming a URL
+    /// outside the request is recorded in its place, without that URL (a
+    /// body without its redirect target too), and answers no point; such a
+    /// body is no answer by certificate. Last,
     /// for a failed retrieval, the points a source answering by certificate
     /// left unused for a certificate still without a usable CRL, in the
     /// order those certificates were asked about.
