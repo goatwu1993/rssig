@@ -102,7 +102,7 @@ they pin or what they check, never after a task.
   unknown-issuer failure as `invalid_key_usage`. This changes a rule kept in
   TIME-T002: PATH-T009 adds its entry first, and the change needs the owner's
   approval.
-- [x] **PATH-T023** docs: Evaluate certval as the path and CMS layer. Done ([PR #PRNUM](https://github.com/goatwu1993/rssig/pull/PRNUM)); [evaluation](docs/tasks/path-t023.md).
+- [x] **PATH-T023** docs: Evaluate certval as the path and CMS layer. Done ([PR #123](https://github.com/goatwu1993/rssig/pull/123)); [evaluation](docs/tasks/path-t023.md).
 - [ ] **PATH-T024** refactor: Decide whether certval replaces webpki as the path validator (owner decision).
   certval 0.2.0-rc.4 accepts 21 path and CRL cases rssig rejects, and
   certval-cms cannot parse Authenticode. The options (stay, replace behind a
