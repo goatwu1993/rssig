@@ -110,7 +110,11 @@ For trusted RDP verification, the signer must explicitly contain at least one of
 codeSigning (`1.3.6.1.5.5.7.3.3`), serverAuth (`1.3.6.1.5.5.7.3.1`), or Remote
 Desktop Authentication (`1.3.6.1.4.1.311.54.1.2`). The verifier tries applicable
 purposes in that order, validates the whole selected path for that purpose, and
-reports it in `trust.required_eku`. When no purpose verifies, a revocation under any
+reports it in `trust.required_eku`. It stops after a failure no other purpose can
+change: one of the signer alone, or any failure while no embedded certificate
+other than the signer that can be on its path carries an extKeyUsage
+([verification budgets](verification-budgets.md), LIMIT-T007); the result is the
+one the ranking below gives over every purpose. When no purpose verifies, a revocation under any
 purpose is reported, naming once each certificate another purpose reports
 without a CRL, with only expired ones, or with only ones a source's CRL could replace
 (not yet valid, malformed, an unusable or point-scoped issuingDistributionPoint, an unsupported feature), as for candidate paths; otherwise the first failure is reported, except that a purpose which only lacks a current CRL

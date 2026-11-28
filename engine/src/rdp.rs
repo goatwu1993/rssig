@@ -5,11 +5,10 @@ use crate::{
     domain::*,
     verify::{VerifyOptions, budget::Budget, timestamp::verify_timestamp},
 };
-#[cfg(test)]
-use alloc::vec;
 use alloc::{
     format,
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
 use anyhow::Result;
@@ -177,6 +176,13 @@ pub(crate) fn verify_budget(
         appx: None,
     })
 }
+/// The usages an RDP signer is tried under, in order: codeSigning,
+/// serverAuth and Remote Desktop Authentication.
+const USAGES: &[&[u8]] = &[
+    crate::trust::CODE_SIGNING,
+    &[43, 6, 1, 5, 5, 7, 3, 1],
+    &[43, 6, 1, 4, 1, 130, 55, 54, 1, 2],
+];
 fn verify_trust(
     store: &crate::TrustStore,
     leaf: &x509_cert::Certificate,
@@ -186,11 +192,6 @@ fn verify_trust(
     budget: &Budget,
 ) -> Result<TrustReport> {
     use x509_cert::ext::pkix::ExtendedKeyUsage;
-    const USAGES: &[&[u8]] = &[
-        crate::trust::CODE_SIGNING,
-        &[43, 6, 1, 5, 5, 7, 3, 1],
-        &[43, 6, 1, 4, 1, 130, 55, 54, 1, 2],
-    ];
     // Without a configured root every format reports `untrusted_root` before
     // judging the signer (PATH-001, PATH-013, PATH-014): ask `verify` once, as the
     // other formats do, before the EKU is read (RDP-T005).
@@ -214,33 +215,57 @@ fn verify_trust(
         .tbs_certificate
         .get::<ExtendedKeyUsage>()
         .map_err(crate::compat_error)?;
+    // LIMIT-T007: each usage reserves a whole webpki search, so a failure no
+    // other usage can change ends the search. Every usage after it would fail
+    // the same way, naming only another `required_eku`, so the failure
+    // `choose_usage_failure` ranks from the usages tried (the first, with
+    // its own CRL gaps) is the one it would rank from all of them (CRL-027).
+    // When in doubt the search goes on: stopping can only reject.
+    // Whether a certificate can steer the path is asked once, and only after
+    // a failure that the signer alone does not explain.
+    let mut steers = None;
     let mut failures = Vec::new();
-    for eku in USAGES {
-        if usage
-            .as_ref()
-            .is_some_and(|(_, u)| u.0.iter().any(|v| v.as_bytes() == *eku))
-        {
-            match store.verify(
-                crate::trust::ChainRequest {
-                    leaf,
-                    certificates,
-                    eku,
-                    signing_time,
-                    now: options.now,
-                    revocation: options.check_revocation,
-                },
-                budget,
-            ) {
-                Ok(report) => return Ok(report),
-                Err(e) => {
-                    if e.chain().any(|cause| {
-                        cause
-                            .downcast_ref::<VerificationError>()
-                            .is_some_and(|error| error.code == ErrorCode::ResourceLimitExceeded)
-                    }) {
-                        return Err(e);
-                    }
-                    failures.push(e);
+    let accepted: Vec<&'static [u8]> = USAGES
+        .iter()
+        .copied()
+        .filter(|eku| {
+            usage
+                .as_ref()
+                .is_some_and(|(_, u)| u.0.iter().any(|v| v.as_bytes() == *eku))
+        })
+        .collect();
+    for (tried, eku) in accepted.iter().enumerate() {
+        match store.verify(
+            crate::trust::ChainRequest {
+                leaf,
+                certificates,
+                eku,
+                signing_time,
+                now: options.now,
+                revocation: options.check_revocation,
+            },
+            budget,
+        ) {
+            Ok(report) => return Ok(report),
+            Err(e) => {
+                if e.chain().any(|cause| {
+                    cause
+                        .downcast_ref::<VerificationError>()
+                        .is_some_and(|error| error.code == ErrorCode::ResourceLimitExceeded)
+                }) {
+                    return Err(e);
+                }
+                // The last usage asks nothing: no search is left to skip.
+                let settled = tried + 1 == accepted.len()
+                    || (signer_alone(&e)
+                        && crate::trust::fails_before_any_path(leaf, signing_time))
+                    || !match steers {
+                        Some(steers) => steers,
+                        None => *steers.insert(usage_steers_the_path(leaf, certificates, budget)?),
+                    };
+                failures.push(e);
+                if settled {
+                    break;
                 }
             }
         }
@@ -254,6 +279,96 @@ fn verify_trust(
         .detail("certificate", CertificateReport::parse(leaf).ok())
         .into()
     }))
+}
+
+/// Whether the usage tried can change the paths webpki builds, and so the
+/// result of `TrustStore::verify` (LIMIT-T007). webpki 0.103.16 judges the
+/// requested usage only in a certificate on a candidate path that carries an
+/// extKeyUsage (`KeyUsage::required_if_present`, in
+/// `check_issuer_independent_properties`), and a configured anchor carries
+/// none: webpki keeps only its name, key and name constraints
+/// (`TrustAnchor`). The signer's own list holds every usage tried, and has
+/// decoded as a SEQUENCE OF OBJECT IDENTIFIER, so webpki finds each of them
+/// in it. That leaves the embedded certificates other than the signer that
+/// can be on a path: webpki takes an intermediate only when its subject is
+/// the issuer of the path's head, so one is a candidate when its subject is
+/// the signer's issuer or another candidate's. Names are compared
+/// re-encoded, the same bytes webpki compares: `TrustStore::verify` hands it
+/// the re-encoded signer and certificates (`to_der`), which this rests on.
+/// A timestamp authority's certificate beside them is one only if its subject
+/// is on that issuer chain, which it usually is not. While no
+/// candidate carries an extKeyUsage, every usage builds the same paths with
+/// the same results, and its failure differs only in the `required_eku` it
+/// names. Any such extension, however malformed, counts as steering.
+fn usage_steers_the_path(
+    leaf: &x509_cert::Certificate,
+    certificates: &[x509_cert::Certificate],
+    budget: &Budget,
+) -> Result<bool> {
+    use ::der::{Encode, oid::AssociatedOid};
+    use alloc::collections::{BTreeMap, BTreeSet};
+    use x509_cert::ext::pkix::ExtendedKeyUsage;
+    // Names are compared re-encoded, as webpki sees them. Each
+    // certificate is encoded and looked up once, so the work is linear in
+    // the certificates, and the encoded names are charged as decoded bytes.
+    // A name that does not re-encode counts as steering.
+    let mut by_subject: BTreeMap<Vec<u8>, Vec<&x509_cert::Certificate>> = BTreeMap::new();
+    for certificate in certificates
+        .iter()
+        .filter(|certificate| *certificate != leaf)
+    {
+        let Ok(subject) = certificate.tbs_certificate.subject.to_der() else {
+            return Ok(true);
+        };
+        budget.decoded_bytes.charge(subject.len())?;
+        by_subject.entry(subject).or_default().push(certificate);
+    }
+    let Ok(issuer) = leaf.tbs_certificate.issuer.to_der() else {
+        return Ok(true);
+    };
+    budget.decoded_bytes.charge(issuer.len())?;
+    let mut seen = BTreeSet::new();
+    let mut pending = vec![issuer];
+    while let Some(name) = pending.pop() {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        for certificate in by_subject.get(&name).into_iter().flatten() {
+            if certificate
+                .tbs_certificate
+                .extensions
+                .iter()
+                .flatten()
+                .any(|extension| extension.extn_id == ExtendedKeyUsage::OID)
+            {
+                return Ok(true);
+            }
+            let Ok(issuer) = certificate.tbs_certificate.issuer.to_der() else {
+                return Ok(true);
+            };
+            budget.decoded_bytes.charge(issuer.len())?;
+            pending.push(issuer);
+        }
+    }
+    Ok(false)
+}
+
+/// Whether a usage's failure is one of the signer alone that
+/// `fails_before_any_path` describes: the signer's KeyUsage
+/// (`invalid_key_usage` at `certificate`) or its lifetime signing time
+/// (`certificate_not_yet_valid` with `lifetime_signing`). Both must agree
+/// before the search stops, so a usage-dependent rejection placed ahead of
+/// those checks keeps it going.
+fn signer_alone(e: &anyhow::Error) -> bool {
+    e.chain()
+        .find_map(|cause| cause.downcast_ref::<VerificationError>())
+        .is_some_and(|error| match error.code {
+            ErrorCode::InvalidKeyUsage => error.stage == Stage::Certificate,
+            ErrorCode::CertificateNotYetValid => {
+                error.details.get("lifetime_signing") == Some(&serde_json::Value::Bool(true))
+            }
+            _ => false,
+        })
 }
 
 /// The failure reported when no usage verifies, as for candidate paths: a
@@ -617,30 +732,339 @@ mod tests {
         )
         .unwrap()
     }
-    #[test]
-    fn rdp_eku_retry_propagates_later_budget_exhaustion() {
-        let bytes = fixture("good-rdp-multiple-ekus.rdp");
-        // A configured root that issued nothing here: every usage is tried,
-        // and each fails `untrusted_root`. An empty store stops at the first
-        // (`rdp_signer_eku_without_a_configured_root_is_untrusted`).
-        let mut store = crate::TrustStore::default();
-        store.add_roots(&fixture("unrelated-root.der")).unwrap();
-        let options = VerifyOptions::trusted_with_revocation(
-            &store,
+    fn disabled_revocation(store: &crate::TrustStore) -> VerifyOptions<'_> {
+        VerifyOptions::trusted_with_revocation(
+            store,
             1800000000,
             crate::verify::RevocationPolicy::Disabled,
-        );
-        let ordinary = verify_budget(&bytes, &options, &Budget::default()).unwrap_err();
-        let ordinary =
-            VerificationError::from_internal(ordinary, ErrorCode::InternalError, Stage::Cms);
-        assert_eq!(ordinary.code, ErrorCode::UntrustedRoot);
-
-        // Leave exactly one webpki search reservation. The first accepted EKU
-        // fails for lack of a matching anchor; the second must propagate
-        // budget exhaustion.
+        )
+    }
+    fn json(error: anyhow::Error) -> serde_json::Value {
+        serde_json::to_value(VerificationError::from_internal(
+            error,
+            ErrorCode::InternalError,
+            Stage::Cms,
+        ))
+        .unwrap()
+    }
+    /// Leave exactly one webpki search reservation in a fresh budget.
+    fn one_search_left() -> Budget<'static> {
         let budget = Budget::default();
-        budget.path_work.charge(12_600_000).unwrap();
-        let error = verify_budget(&bytes, &options, &budget).unwrap_err();
+        budget
+            .path_work
+            .charge(budget.path_work.limit() - 200_000)
+            .unwrap();
+        budget
+    }
+    fn signers_certificates(name: &str) -> Vec<x509_cert::Certificate> {
+        let rdp = Rdp::parse(&fixture(name)).unwrap();
+        DetachedData::parse(&rdp.signature).unwrap().certs
+    }
+    /// LIMIT-T007: in `good-rdp-multiple-ekus.rdp` only the signer carries an
+    /// extKeyUsage, so codeSigning and serverAuth build the same paths and
+    /// the first usage's failure is final: one search is reserved, not one
+    /// per usage, and the result is the one a second search would rank.
+    #[test]
+    fn rdp_stops_after_a_path_failure_no_other_eku_can_change() {
+        let bytes = fixture("good-rdp-multiple-ekus.rdp");
+        let certificates = signers_certificates("good-rdp-multiple-ekus.rdp");
+        assert!(
+            !usage_steers_the_path(&certificates[0], &certificates, &Budget::default()).unwrap()
+        );
+        // A configured root that issued nothing here: the path fails
+        // `untrusted_root` whatever the usage.
+        let mut store = crate::TrustStore::default();
+        store.add_roots(&fixture("unrelated-root.der")).unwrap();
+        let options = disabled_revocation(&store);
+        let budget = Budget::default();
+        let error = json(verify_budget(&bytes, &options, &budget).unwrap_err());
+        assert_eq!(error["code"], "untrusted_root");
+        assert_eq!(error["details"]["required_eku"], "1.3.6.1.5.5.7.3.3");
+        assert_eq!(budget.path_work.used(), 200_000);
+        // One reservation is enough, and the result is the same.
+        let limited = json(verify_budget(&bytes, &options, &one_search_left()).unwrap_err());
+        assert_eq!(limited, error);
+    }
+    /// What `usage_steers_the_path` rests on, on the fixtures that exercise
+    /// it: while only the signer carries an extKeyUsage, `TrustStore::verify`
+    /// gives every usage the same result apart from the `required_eku` it
+    /// names, failing or verifying. A webpki update, or a path check that
+    /// reads the usage, that breaks this fails here.
+    #[test]
+    fn without_a_steering_certificate_every_usage_has_the_same_result() {
+        use x509_cert::ext::pkix::ExtendedKeyUsage;
+        let certificates = signers_certificates("good-rdp-multiple-ekus.rdp");
+        let original = &certificates[0];
+        assert_eq!(
+            original.tbs_certificate.subject.to_string(),
+            "CN=rssig test publisher"
+        );
+        // The signer rewritten to list all three usages: its own signature no
+        // longer verifies, but every usage meets that the same way.
+        let mut every = original.clone();
+        let extension = every
+            .tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|e| e.extn_id == <ExtendedKeyUsage as ::der::oid::AssociatedOid>::OID)
+            .unwrap();
+        extension.extn_value = ::der::asn1::OctetString::new(
+            ExtendedKeyUsage(
+                USAGES
+                    .iter()
+                    .map(|eku| ::der::asn1::ObjectIdentifier::from_bytes(eku).unwrap())
+                    .collect(),
+            )
+            .to_der()
+            .unwrap(),
+        )
+        .unwrap();
+        let without_usage = |mut value: serde_json::Value| {
+            if let Some(object) = value.as_object_mut() {
+                object.remove("required_eku");
+                if let Some(details) = object.get_mut("details").and_then(|d| d.as_object_mut()) {
+                    details.remove("required_eku");
+                }
+            }
+            value
+        };
+        for (leaf, usages) in [(original, &USAGES[..2]), (&every, USAGES)] {
+            assert!(!usage_steers_the_path(leaf, &certificates, &Budget::default()).unwrap());
+            for (root, crls, revocation, outcome) in [
+                ("unrelated-root.der", &[][..], false, "untrusted_root"),
+                ("root.der", &[][..], false, "verified"),
+                ("root.der", &["good.crl"][..], true, "verified"),
+                ("root.der", &[][..], true, "revocation_unknown"),
+                (
+                    "root.der",
+                    &["crl-root-expired-revoked.crl"][..],
+                    true,
+                    "crl_expired",
+                ),
+            ] {
+                let mut store = crate::TrustStore::default();
+                store.add_roots(&fixture(root)).unwrap();
+                for crl in crls {
+                    store.add_crl(&fixture(crl)).unwrap();
+                }
+                let results: Vec<_> = usages
+                    .iter()
+                    .map(|eku| {
+                        let result = store.verify(
+                            crate::trust::ChainRequest {
+                                leaf,
+                                certificates: &certificates,
+                                eku,
+                                signing_time: None,
+                                now: 1_800_000_000,
+                                revocation,
+                            },
+                            &Budget::default(),
+                        );
+                        without_usage(match result {
+                            Ok(report) => serde_json::to_value(report).unwrap(),
+                            Err(error) => json(error),
+                        })
+                    })
+                    .collect();
+                if leaf == original {
+                    let code = results[0]["code"].as_str().unwrap_or("verified");
+                    assert_eq!(code, outcome, "{root} {crls:?}");
+                }
+                for other in &results[1..] {
+                    assert_eq!(&results[0], other, "{root} {crls:?}");
+                }
+            }
+        }
+    }
+    /// Which embedded certificates can steer: a CA on the signer's path
+    /// that carries an extKeyUsage does; a timestamp authority's certificate
+    /// beside the signer's, which issues nothing on it, does not.
+    #[test]
+    fn only_a_certificate_that_can_be_on_the_path_steers_it() {
+        let retry = signers_certificates("good-rdp-eku-retry-ca.rdp");
+        let leaf = retry
+            .iter()
+            .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test RDP publisher")
+            .unwrap();
+        assert!(usage_steers_the_path(leaf, &retry, &Budget::default()).unwrap());
+        let without_ca: Vec<_> = retry
+            .iter()
+            .filter(|c| c.tbs_certificate.subject.to_string() != "CN=rssig test RDP server CA")
+            .cloned()
+            .collect();
+        assert!(!usage_steers_the_path(leaf, &without_ca, &Budget::default()).unwrap());
+        let timestamped = signers_certificates("time-rdp-expired-timestamped.rdp");
+        let tsa = timestamped
+            .iter()
+            .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test TSA")
+            .unwrap();
+        assert!(
+            tsa.tbs_certificate
+                .get::<x509_cert::ext::pkix::ExtendedKeyUsage>()
+                .unwrap()
+                .is_some()
+        );
+        let signer = timestamped
+            .iter()
+            .find(|c| c.tbs_certificate.subject.to_string() == "CN=SEC-09 rdp-expired-timestamped")
+            .unwrap();
+        assert!(!usage_steers_the_path(signer, &timestamped, &Budget::default()).unwrap());
+        // The argument is webpki 0.103.16's: an update must re-audit it.
+        let lock =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../Cargo.lock")).unwrap();
+        // Exactly one webpki is resolved, and it is that version.
+        let lines: Vec<_> = lock.lines().map(str::trim).collect();
+        let versions: Vec<_> = lines
+            .windows(2)
+            .filter(|w| w[0] == "name = \"rustls-webpki\"")
+            .map(|w| w[1])
+            .collect();
+        assert_eq!(versions, ["version = \"0.103.16\""]);
+        crate::trust::path_checks_hold_no_usage();
+        // webpki keeps no extension of a configured anchor, so a root's
+        // extKeyUsage cannot steer: this stops compiling if `TrustAnchor`
+        // gains a field.
+        let rustls_pki_types::TrustAnchor {
+            subject: _,
+            subject_public_key_info: _,
+            name_constraints: _,
+        } = webpki::anchor_from_trusted_cert(&rustls_pki_types::CertificateDer::from(fixture(
+            "root.der",
+        )))
+        .unwrap();
+    }
+    /// Only the signer's own KeyUsage and lifetime failures count as the
+    /// signer alone; an intermediate's KeyUsage, or a validity failure that is
+    /// not lifetime signing's, does not.
+    #[test]
+    fn only_the_signers_own_failures_are_the_signer_alone() {
+        let error = |code, stage| VerificationError::new(code, stage, "x");
+        let alone = |e: VerificationError| signer_alone(&anyhow::Error::from(e).context("usage"));
+        assert!(alone(error(ErrorCode::InvalidKeyUsage, Stage::Certificate)));
+        assert!(!alone(error(
+            ErrorCode::InvalidKeyUsage,
+            Stage::CertificateChain
+        )));
+        assert!(alone(
+            error(ErrorCode::CertificateNotYetValid, Stage::CertificateChain)
+                .detail("lifetime_signing", true)
+        ));
+        assert!(!alone(error(
+            ErrorCode::CertificateNotYetValid,
+            Stage::CertificateChain
+        )));
+        assert!(!alone(error(
+            ErrorCode::UntrustedRoot,
+            Stage::CertificateChain
+        )));
+    }
+    /// LIMIT-T007: a failure of the signer alone, found before any path is
+    /// built, is the same for every usage, so it ends the search even where
+    /// a CA's extKeyUsage steers the path: a KeyUsage without
+    /// digitalSignature, and a lifetime signer issued after its signing time.
+    #[test]
+    fn rdp_stops_after_a_signer_failure_no_other_eku_can_change() {
+        use x509_cert::ext::pkix::ExtendedKeyUsage;
+        let embedded = signers_certificates("good-rdp-eku-retry-ca.rdp");
+        let publisher = |c: &x509_cert::Certificate| {
+            c.tbs_certificate.subject.to_string() == "CN=rssig test RDP publisher"
+        };
+        let original = embedded.iter().find(|c| publisher(c)).unwrap();
+        let with = |oid: &str, value: Vec<u8>| {
+            let mut leaf = original.clone();
+            let extensions = leaf.tbs_certificate.extensions.as_mut().unwrap();
+            let extension = extensions
+                .iter_mut()
+                .find(|e| e.extn_id.to_string() == oid)
+                .unwrap();
+            extension.extn_value = ::der::asn1::OctetString::new(value).unwrap();
+            leaf
+        };
+        let oid = |s: &str| s.parse::<::der::asn1::ObjectIdentifier>().unwrap();
+        let lifetime = ExtendedKeyUsage(vec![
+            oid("1.3.6.1.5.5.7.3.3"),
+            oid("1.3.6.1.5.5.7.3.1"),
+            oid("1.3.6.1.4.1.311.10.3.13"),
+        ])
+        .to_der()
+        .unwrap();
+        let not_before = original
+            .tbs_certificate
+            .validity
+            .not_before
+            .to_unix_duration()
+            .as_secs();
+        let mut store = crate::TrustStore::default();
+        store.add_roots(&fixture("root.der")).unwrap();
+        let options = disabled_revocation(&store);
+        for (leaf, signed_at, code) in [
+            // keyEncipherment only.
+            (
+                with("2.5.29.15", vec![3, 2, 5, 0x20]),
+                None,
+                "invalid_key_usage",
+            ),
+            (
+                with("2.5.29.37", lifetime),
+                Some(not_before - 1),
+                "certificate_not_yet_valid",
+            ),
+        ] {
+            // The rewritten signer replaces the original, so only the CA's
+            // extKeyUsage (serverAuth alone) steers the path.
+            let certificates: Vec<_> = embedded
+                .iter()
+                .map(|c| {
+                    if publisher(c) {
+                        leaf.clone()
+                    } else {
+                        c.clone()
+                    }
+                })
+                .collect();
+            assert!(usage_steers_the_path(&leaf, &certificates, &Budget::default()).unwrap());
+            let signing_time = signed_at.map(|seconds| crate::trust::SigningTime {
+                seconds,
+                fraction: None,
+            });
+            let run = |budget: &Budget| {
+                verify_trust(&store, &leaf, &certificates, signing_time, &options, budget)
+                    .unwrap_err()
+            };
+            let budget = Budget::default();
+            let error = json(run(&budget));
+            assert_eq!(error["code"], code);
+            assert_eq!(budget.path_work.used(), 200_000);
+            assert_eq!(json(run(&one_search_left())), error);
+        }
+    }
+    /// `good-rdp-eku-retry-ca.rdp`'s CA admits serverAuth only, so the
+    /// codeSigning path fails and serverAuth is searched again; budget
+    /// exhaustion on that retry propagates with its typed details.
+    #[test]
+    fn rdp_eku_retry_propagates_later_budget_exhaustion() {
+        let bytes = fixture("good-rdp-eku-retry-ca.rdp");
+        let certificates = signers_certificates("good-rdp-eku-retry-ca.rdp");
+        let leaf = certificates
+            .iter()
+            .find(|c| c.tbs_certificate.subject.to_string() == "CN=rssig test RDP publisher")
+            .unwrap();
+        assert!(usage_steers_the_path(leaf, &certificates, &Budget::default()).unwrap());
+        let mut store = crate::TrustStore::default();
+        store.add_roots(&fixture("root.der")).unwrap();
+        let options = disabled_revocation(&store);
+        let budget = Budget::default();
+        let report = verify_budget(&bytes, &options, &budget).unwrap();
+        let trust = report.signatures[0].trust.as_ref().unwrap();
+        assert_eq!(trust.required_eku.oid, "1.3.6.1.5.5.7.3.1");
+        assert_eq!(budget.path_work.used(), 400_000);
+
+        // The first accepted EKU fails on its path; the second must
+        // propagate budget exhaustion.
+        let error = verify_budget(&bytes, &options, &one_search_left()).unwrap_err();
         let error = VerificationError::from_internal(error, ErrorCode::InternalError, Stage::Cms);
         assert_eq!(error.code, ErrorCode::ResourceLimitExceeded);
         assert_eq!(error.stage, Stage::Cms);

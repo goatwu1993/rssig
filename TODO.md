@@ -49,12 +49,7 @@ they pin or what they check, never after a task.
   LIMIT-T004 a library store over it is verified as supplied and retrieval adds
   nothing. CRL-039 pins diagnostics but its "Decided by" line states the
   acceptance change: keep that statement in CRL-024 and refer to it. From LIMIT-T004.
-- [ ] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure.
-  RDP `verify_trust` repeats the full path search, with the lifetime leaf check
-  and a 200,000-unit reservation, for each accepted leaf EKU. Stop after a
-  failure no other EKU can change, keeping the ranking and merged CRL gaps
-  [CRL-027](docs/crl.md#crl-027-which-error-a-rejected-chain-reports) pins;
-  pin the budget effect.
+- [x] **LIMIT-T007** fix: Stop the RDP path search after an EKU-independent failure. Done ([PR #119](https://github.com/goatwu1993/rssig/pull/119)).
 
 ### CMS
 
@@ -454,6 +449,10 @@ they pin or what they check, never after a task.
 
 - [ ] **LIMIT-T005** refactor: Number the `LIMIT-` index. Fill [docs/limit.md](docs/limit.md);
   number the `limit-*` cases.
+- [ ] **LIMIT-T011** test: Pin the RDP usage-search stop in a case. LIMIT-T007
+  reserves one path search for an RDP usage failure no other usage can change;
+  only engine unit tests pin it. A case needs a file that reaches it with one
+  search left, such as an RDP signature whose 64th signer fails that way. From LIMIT-T007.
 - [ ] **LIMIT-T006** test: Pin the CRL response-entry limit in a case. A
   scripted answer can now carry more than 64 bodies and failures
   (`crl_response_entries`), which only a unit test pins; claim the case under a

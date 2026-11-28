@@ -24,8 +24,13 @@ impl Counter {
             failed_requested: AtomicUsize::new(0),
         }
     }
+    /// The limit, for tests.
+    #[cfg(test)]
+    pub(crate) fn limit(&self) -> usize {
+        self.limit
+    }
     /// What has been charged so far, for tests.
-    #[cfg(all(test, feature = "retrieval"))]
+    #[cfg(test)]
     pub(crate) fn used(&self) -> usize {
         self.used.load(core::sync::atomic::Ordering::Relaxed)
     }

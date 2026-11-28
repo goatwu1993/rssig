@@ -6790,7 +6790,7 @@
       "file": "good-rdp-multiple-ekus.rdp",
       "sha256": "01619003da614cde76d3a52e6565c61d8f17b644f148bd059456633310894a9f",
       "bytes": 1506,
-      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; exercises RDP EKU retries and shared-budget error propagation.",
+      "description": "Inert RDP signature with both codeSigning and serverAuth leaf EKUs; only the signer carries an extKeyUsage, so the first usage's failure ends the search (LIMIT-T007) and reserves one path search.",
       "provenance": {
         "generator": "engine/src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
         "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
