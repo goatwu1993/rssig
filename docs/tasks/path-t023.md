@@ -515,13 +515,14 @@ and the 66 second-set runs (18 cases, TSA fixtures also in `tsa-` modes).
     PATH-013, PATH-014) and of the 30 CRL- acceptance entries (CRL-001 to
     CRL-025, CRL-041, CRL-044, CRL-045, CRL-048, CRL-050), since each is
     judged per built path;
-  - an update of the 83 lines in 18 files under docs/ that name webpki.
+  - an update of the 83 lines in 18 files under docs/, outside docs/tasks/,
+    that name webpki (task records add about 90 more lines in 10 files).
     That is 42 in docs/path.md, docs/crl.md and docs/certificate-paths.md
     (6 of them cite 0.103.16), and the rest in validation-time.md,
     verification-budgets.md, time.md, library.md, boundaries.md (which
     AGENTS.md keeps current with each change) and 10 others.
-- **Risk:** high. 31 measured cases that rssig's own composition must get
-  right: the 24 accepts and 3 rejects of the closest settings, plus 3 accepts
+- **Risk:** high. 33 measured cases that rssig's own composition must get
+  right: the 24 accepts and 3 rejects of the closest settings, plus 5 accepts
   and 1 reject that depend on settings. That is on a validator that is a month into its public life and a
   release candidate. The fixtures measure only what rssig has thought to
   pin.
@@ -556,9 +557,10 @@ Cases: the 24 in section 6's two accept tables, plus:
 - `path-008-good-ca-no-ku`, `path-011-good-root-profile`,
   `path-011-good-root-expired` and `crl-015-root-no-crl-sign-accepted`
   (certval rejects);
-- `path-005-bad-root-name`, `path-007-bad-ca-eku` and
-  `path-013-bad-ca-malformed-ski-revoked-reports-the-extension` (accepted
-  under some settings).
+- `path-005-bad-root-name`, `path-007-bad-ca-eku`,
+  `path-013-bad-ca-malformed-ski-revoked-reports-the-extension`,
+  `path-008-bad-signer-key-usage` and `path-008-msi-bad-signer-key-usage`
+  (accepted under some settings).
 
 **Today:** rssig builds paths with rustls-webpki =0.103.16 through a
 RustCrypto adapter, decides revocation itself in webpki's path callback, and
@@ -599,7 +601,7 @@ B. **Replace webpki with a validator rssig composes from certval's parts.**
      processing; RFC 5280 name comparison; no dependence on webpki's Web PKI
      choices.
    - Cons: **fails open wherever rssig's composition misses a rule**. Measured,
-     31 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
+     33 cases depend on it; unmeasured ones are unknown. It needs the der 0.8
      migration or two stacks, and depends on a release-candidate crate a
      month into its public life.
    - Now:
@@ -631,7 +633,8 @@ C costs more than the opinion is worth while the references are OpenSSL and
 Bouncy Castle. It would change to B if certval closes the target and
 extension gaps above and the engine moves to der 0.8 for its own reasons.
 
-**Reply with:** "1 A".
+**Reply with:** "1 A", in the Claude conversation (AGENTS.md "Pre-1.0
+flow": nothing on GitHub is an approval).
 
 ## Appendix: the harness
 
@@ -716,6 +719,7 @@ cases = {c['id']: c for c in json.load(open('tests/cases.json'))['cases']}
 REVOCATION = {'certificate_revoked', 'invalid_crl', 'revocation_unknown'}
 counts = defaultdict(lambda: [0, 0, 0, 0])  # agree, certval accepts, certval rejects, not compared
 accepts = defaultdict(list)
+rejects = defaultdict(list)
 for line in open(sys.argv[1]):
     cid, mode, verdict = line.rstrip('\n').split('\t')[:3]
     c = cases[cid]
@@ -733,8 +737,12 @@ for line in open(sys.argv[1]):
     counts[mode][k] += 1
     if k == 1:
         accepts[mode].append(cid)
+    elif k == 2:
+        rejects[mode].append(cid)
 for mode in sorted(counts):
-    print(mode, 'agree=%d accepts=%d rejects=%d not-compared=%d' % tuple(counts[mode]), accepts[mode] if mode.endswith('-ku') else '')
+    print(mode, 'agree=%d accepts=%d rejects=%d not-compared=%d' % tuple(counts[mode]))
+    print('  certval accepts, rssig rejects:', ' '.join(accepts[mode]))
+    print('  certval rejects, rssig accepts:', ' '.join(rejects[mode]))
 ```
 
 </details>
