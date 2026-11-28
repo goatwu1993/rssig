@@ -190,8 +190,16 @@ a byte above 0x7F does not decode.
   callback's rejection above the unknown issuer a missing keyCertSign is
   reported through (PATH-T007 tracks that shared flag).
 - The rule holds for a timestamp signer's chain too, with the same code and
-  stage, and for an RDP signer, which is checked for a configured root first
-  too (`path-013-bad-rdp-leaf-malformed-eku-empty-store`).
+  stage, and with `details.certificate_sha256` and `details.certificate`
+  naming the TSA certificate. For an RFC 3161 token it is judged before
+  TSA-003, so a TSA extKeyUsage that does not decode is
+  `malformed_extension`, not `invalid_eku` at `timestamp`
+  (`path-013-bad-tsa-malformed-eku`). A countersignature's TSA certificate
+  goes through the same `TrustStore::verify`, which checks the signer's
+  extensions before its usage (`engine/src/trust.rs`), so the order is the
+  same there; no case pins it yet (PATH-T020). It holds for an RDP signer too, which
+  is checked for a configured root first
+  (`path-013-bad-rdp-leaf-malformed-eku-empty-store`).
 - A certificate that also repeats an extension is reported for the repeat
   (PATH-014).
 - Integrity-only verification builds no path, so the rule does not apply

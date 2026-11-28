@@ -27541,6 +27541,81 @@
       }
     },
     {
+      "id": "path-013-bad-tsa-malformed-eku",
+      "input": "tsa-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "malformed_extension",
+                  "extension": "2.5.29.37",
+                  "certificate_sha256": "202bee389a0ac503b7791ae0c6e29ef2c34585a2a59e32e167d17c85457d961e"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-013-good-integrity-only-tsa-malformed-eku",
+      "input": "tsa-malformed-eku.exe",
+      "decision": "PATH-013",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "rfc3161",
+                    "certificate": {
+                      "extended_key_usage": null,
+                      "undecoded_extensions": [
+                        {
+                          "oid": "2.5.29.37",
+                          "reason": "malformed_extension"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "path-014-bad-leaf-repeated-ski",
       "input": "bad-path-leaf-repeated-ski.exe",
       "decision": "PATH-014",

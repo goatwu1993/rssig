@@ -596,7 +596,12 @@ fn malformed_ca_of_an_unrelated_chain_is_not_blamed() {
     assert!(error["details"].get("reason").is_none(), "{error}");
 }
 
-fn extension_of_another_format_fails_the_path(input: &str, reason: &str, extension: &str) {
+/// Returns the error, for checks particular to the format.
+fn extension_of_another_format_fails_the_path(
+    input: &str,
+    reason: &str,
+    extension: &str,
+) -> serde_json::Value {
     let output = run_fixture(
         input,
         &[
@@ -616,6 +621,7 @@ fn extension_of_another_format_fails_the_path(input: &str, reason: &str, extensi
     assert_eq!(error["stage"], "certificate_chain", "{error}");
     assert_eq!(error["details"]["reason"], reason, "{error}");
     assert_eq!(error["details"]["extension"], extension, "{error}");
+    error.clone()
 }
 
 #[test]
@@ -629,10 +635,53 @@ fn malformed_extension_in_an_rdp_signer_fails_the_path() {
 
 #[test]
 fn malformed_extension_in_a_tsa_certificate_fails_the_path() {
-    extension_of_another_format_fails_the_path(
-        "tsa-malformed-ski.exe",
-        "malformed_extension",
-        "2.5.29.14",
+    for (input, extension) in [
+        ("tsa-malformed-ski.exe", "2.5.29.14"),
+        ("tsa-malformed-eku.exe", "2.5.29.37"),
+    ] {
+        let error =
+            extension_of_another_format_fails_the_path(input, "malformed_extension", extension);
+        // The timestamp signer is blamed, and its report is the error's. Its
+        // own failure is judged before any usage (PATH-013), TSA-003's
+        // included, so the error has no usage detail.
+        let details = &error["details"];
+        assert_eq!(
+            details["certificate"]["subject"]["display"], "CN=rssig test TSA",
+            "{input}: {details}"
+        );
+        let sha256 = details["certificate_sha256"].as_str().unwrap_or_default();
+        assert_eq!(sha256.len(), 64, "{input}: {details}");
+        assert_eq!(
+            details["certificate"]["sha256"], sha256,
+            "{input}: {details}"
+        );
+        for usage in ["required_eku", "lifetime_signing", "signing_time"] {
+            assert!(details.get(usage).is_none(), "{input}: {details}");
+        }
+    }
+}
+
+/// PATH-013 builds no path under `--integrity-only`, so a timestamp signer
+/// whose extKeyUsage does not decode verifies, and its report marks the
+/// extension (PATH-015).
+#[test]
+fn integrity_only_tsa_with_malformed_eku_verifies_and_reports_the_extension() {
+    let output = run_fixture(
+        "tsa-malformed-eku.exe",
+        &["verify", "--integrity-only", "--time", "1800000000"],
+    );
+    assert_eq!(output.exit_code, 0, "{}", output.json);
+    let signature = &output.json["results"][0]["signatures"][0];
+    assert_eq!(signature["chain_trusted"], false, "{signature}");
+    let timestamp = &signature["timestamp_verification"];
+    assert_eq!(timestamp["kind"], "rfc3161", "{timestamp}");
+    let certificate = &timestamp["certificate"];
+    assert_eq!(certificate["subject"]["display"], "CN=rssig test TSA");
+    assert!(certificate["extended_key_usage"].is_null(), "{certificate}");
+    assert_eq!(
+        certificate["undecoded_extensions"],
+        serde_json::json!([{"oid": "2.5.29.37", "reason": "malformed_extension"}]),
+        "{certificate}"
     );
 }
 

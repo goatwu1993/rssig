@@ -88,14 +88,17 @@ they pin or what they check, never after a task.
   `rdp::verify_trust` reads the EKU before `TrustStore::verify` checks for a
   root, so the result is `certificate_chain_invalid` with a decoder message
   where every other format reports `untrusted_root` (found in PR #108).
-- [ ] **PATH-T018** test: Pin a timestamp signer whose basicConstraints, keyUsage or extKeyUsage does not decode.
-  Since PATH-T010 it verifies under `--integrity-only` with the extension
-  marked in `timestamp_verification.certificate`, and PATH-013 rejects it with
-  a root; only `tsa-malformed-ski.exe` exists. Add a `tsa-malformed-eku`
-  fixture to `regenerate_tsa_fixtures` and both cases (found in PR #108).
+- [x] **PATH-T018** test: Pin a timestamp signer whose basicConstraints, keyUsage or extKeyUsage does not decode. Done for extKeyUsage ([PR #116](https://github.com/goatwu1993/rssig/pull/116)); the rest is PATH-T020; [PATH-013](docs/path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path).
 - [ ] **PATH-T019** fix: Decide whether an embedded certificate webpki cannot parse is blamed when no path is found.
   It replaces `untrusted_root`, and hides PATH-008's `invalid_key_usage`.
   Detail in [path-t019.md](docs/tasks/path-t019.md).
+- [ ] **PATH-T020** test: Pin the rest of PATH-013 for a timestamp signer.
+  PATH-T018 added only `tsa-malformed-eku` (an RFC 3161 token). Add
+  `malformed-bc`, `malformed-ku` and `counter-malformed-eku` faults to
+  `regenerate_tsa_fixtures`, each with a trusted and an `--integrity-only`
+  case, and an `--integrity-only` case for `tsa-malformed-ski`; then widen
+  TSA-003's pointer to PATH-013 to countersignatures. Split from PATH-T018
+  in PR #116.
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).
@@ -343,6 +346,9 @@ they pin or what they check, never after a task.
   case that reads it. `tests/manifest.rs` does not check that the lists are
   complete, so a new case on an existing fixture can be left out silently.
   Found in the review of PR #113.
+- [ ] **TEST-T021** test: Check that committed TSA fixtures match their generator.
+  As TEST-T017 does for path fixtures, compare each `tsa-*.exe` with the
+  bytes `regenerate_tsa_fixtures` would write (found in PR #116).
 
 ### BUILD
 

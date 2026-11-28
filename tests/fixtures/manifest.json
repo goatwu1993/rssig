@@ -9749,6 +9749,19 @@
       "paired_good": "tsa-good.exe"
     },
     {
+      "file": "tsa-malformed-eku.exe",
+      "sha256": "7ad29d3eb1388283ebf54bfaeacd6997c36fc62602e3e44793f7c26fc11e77e1",
+      "bytes": 3744,
+      "description": "PATH-013: malformed-eku. The TSA certificate's critical extKeyUsage keeps its place and flag but its value is SEQUENCE { NULL }, which does not decode as that extension; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (malformed_extension); verified under --integrity-only, with the extension marked undecoded in timestamp_verification.certificate.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-013-bad-tsa-malformed-eku",
+        "path-013-good-integrity-only-tsa-malformed-eku"
+      ],
+      "paired_good": "tsa-good.exe"
+    },
+    {
       "file": "tsa-repeated-ski.exe",
       "sha256": "0c51d0891412840b72b373f8c6e4f5d736397cfe181184d5f278f31a3fd52710",
       "bytes": 3832,
