@@ -5296,6 +5296,34 @@
       }
     },
     {
+      "id": "cli-causes-keep-an-inner-conversions-context",
+      "input": "bad-cms-content-type.exe",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "invalid_signature",
+                "causes": [
+                  "CMS signature verification",
+                  "signed contentType mismatch"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "id": "cli-missing-root",
       "command": [
         "verify",

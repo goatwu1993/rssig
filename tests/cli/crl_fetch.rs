@@ -29,6 +29,7 @@ fn crl_fetch_rejects_private_destinations_and_checks_integrity_first() {
         let failures = &error["details"]["crl_retrieval"]["failures"];
         if denied {
             assert_eq!(failures[0]["code"], "crl_fetch_denied");
+            assert_eq!(failures[0]["causes"], serde_json::json!([]));
         } else {
             assert!(failures.is_null());
         }
@@ -178,6 +179,9 @@ fn crl_fetch_undecodable_response_reports_each_cause_once() {
         1,
         "{message}"
     );
+    // A recorded failure is built directly, never converted: its message
+    // carries the chain and it has no causes (docs/cli.md, candidate `causes`).
+    assert_eq!(failure["causes"], serde_json::json!([]));
 }
 
 #[test]
@@ -319,6 +323,9 @@ fn a_fetched_bundle_past_the_retained_crl_limit_is_not_loaded() {
             let failures = retrieval["failures"].as_array().unwrap();
             assert_eq!(failures.len(), 1, "{failures:?}");
             assert_eq!(failures[0]["code"], "resource_limit_exceeded");
+            // A limit failure is built directly: `Retrieval` may rewrite its
+            // message only because it carries no causes to go stale.
+            assert_eq!(failures[0]["causes"], serde_json::json!([]));
             assert_eq!(failures[0]["url"], "http://crl.example.invalid/test.crl");
             let details = &failures[0]["details"];
             assert_eq!(details["resource"], "retrieval_crl_artifacts");

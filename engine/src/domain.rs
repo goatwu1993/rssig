@@ -217,13 +217,26 @@ impl VerificationError {
             Ok(error) => return error.into(),
             Err(error) => error,
         };
-        if let Some(typed) = error.chain().find_map(|e| e.downcast_ref::<Self>()) {
-            let mut typed = typed.clone();
-            typed.causes = error.chain().map(ToString::to_string).collect();
-            return typed;
+        // The first typed error in the chain is the result. Its causes are the
+        // messages of the contexts above it, then the causes an earlier
+        // conversion gave it, or its own message when none did (a typed
+        // error has no source, so its message ends the chain).
+        let mut causes = Vec::new();
+        for cause in error.chain() {
+            if let Some(typed) = cause.downcast_ref::<Self>() {
+                let mut typed = typed.clone();
+                if typed.causes.is_empty() {
+                    causes.push(typed.message.clone());
+                } else {
+                    causes.append(&mut typed.causes);
+                }
+                typed.causes = causes;
+                return typed;
+            }
+            causes.push(cause.to_string());
         }
         let mut result = Self::new(code, stage, format!("{error:#}"));
-        result.causes = error.chain().map(ToString::to_string).collect();
+        result.causes = causes;
         result
     }
 }

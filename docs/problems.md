@@ -25,7 +25,17 @@ Existing `code`, `stage`, `message`, `details`, and `causes` remain error
 extensions. `message` preserves the previous API and equals `detail` for emitted
 errors. Prefer `type` (or the typed Rust `ErrorCode`) over parsing prose.
 `details` holds structured evidence such as expected/computed digests; `causes`
-holds causal diagnostics. Consumers must ignore unknown extension members.
+holds causal diagnostics: the message of every context the error passed
+through, outermost first, then the causes an earlier conversion gave the
+typed error, or its own message when none did, kept when the error is
+converted again at a public `verify_*` boundary
+([CLI candidate rule `causes`](cli.md#candidate-rules)). `message` stays the
+typed error's own, so `causes` may begin with contexts it does not contain.
+With no typed error in the chain, `causes` are every message in the chain and
+`message` joins them with `: `. An error built directly rather than converted,
+such as `read_failed` or a `crl_retrieval.failures` entry for a denied request
+or an undecodable body, has no causes.
+Consumers must ignore unknown extension members.
 
 The root document retains `schema_version`, `command`, `ok`, and `results`.
 Historical command-level JSON failures contain the full error in `error` and

@@ -175,6 +175,9 @@
         "parse-unknown-format",
         "rfc9457-invalid-arguments"
       ],
+      "causes": [
+        "cli-causes-keep-an-inner-conversions-context"
+      ],
       "exit-codes": [
         "cli-mixed-results",
         "parse-mixed-inputs"
