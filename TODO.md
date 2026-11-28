@@ -511,11 +511,13 @@ they pin or what they check, never after a task.
   decision-index row when its kind is `decision` or `format` with an index, every
   `TODO.md` task ID and `### <SCOPE>` heading names a listed scope, and the file
   list in `docs/decisions.md` matches. Adding a YAML parser is a dependency
-  decision (fuzz `Cargo.lock` must stay in step).
+  decision (fuzz `Cargo.lock` must stay in step): reuse `yaml-rust2`, chosen
+  by DOC-T013, in `tests/repository.rs`.
 - [x] **DOC-T011** docs: Define the pre-1.0 flow: who decides, how to ask, how a PR is kept. Done ([PR #101](https://github.com/goatwu1993/rssig/pull/101)); [AGENTS.md](AGENTS.md#pre-10-flow).
 - [ ] **DOC-T012** docs: Hold the 1.0 gate for decisions (owner decision). Detail in [doc-t012.md](docs/tasks/doc-t012.md).
-- [ ] **DOC-T013** test: Check the frontmatter of the project skills. Parse each `.claude/skills/*/SKILL.md` and require `name` (the directory's) and `description`; choose the YAML parser once with DOC-T010.
+- [x] **DOC-T013** test: Check the frontmatter of the project skills. Done ([PR #114](https://github.com/goatwu1993/rssig/pull/114)); [Repository checks](docs/testing.md#repository-checks).
 - [x] **DOC-T014** docs: Let Claude start `/review-loop` itself, with up to ten rounds. Done ([PR #104](https://github.com/goatwu1993/rssig/pull/104)); [review-loop](.claude/skills/review-loop/SKILL.md).
+- [ ] **DOC-T015** test: Check the format of each project skill's `name` and the length of `name` and `description`, against the limits Claude Code documents for skills; `tests/repository.rs` checks only that they are present (DOC-T013).
 
 ### ALG
 

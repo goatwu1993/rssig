@@ -51,6 +51,8 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **injected answer** | What a case's injected CRL source returns for one certificate it is asked about (`crl_certificate_responses`): a fixture file name, or a scripted answer. Not an *answer by certificate* (CRL-034), which is a body that loads as a CRL of the certificate's issuer; an injected answer may hold none. |
 | **scripted answer** | An injected answer written out in a case: the response's bodies and failures, or the error the source fails the whole request with ([testing.md](testing.md)). |
 | **named test** | A Rust test under `tests/cli/` that checks one fixture in-process. |
+| **repository check** | A test in `tests/repository.rs` of a committed file no product code reads, such as a project skill ([testing.md](testing.md#repository-checks)). |
+| **project skill** | A Claude Code skill committed under `.claude/skills/<name>/SKILL.md`, such as `review-loop`; its frontmatter is checked by a repository check. |
 | **pinned result** | A case's expected result; every one needs a decision ([AGENTS.md](../AGENTS.md#pinned-expectations)). |
 
 ## Retrieval

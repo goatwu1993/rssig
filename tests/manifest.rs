@@ -4,11 +4,14 @@
 //! `check` is a pure function over an in-memory [`Corpus`], so every rule is
 //! also exercised against a deliberately broken copy. Nothing here regenerates
 //! or rewrites a fixture. See `docs/testing.md` for the rules and exceptions.
+#[path = "common/by_product.rs"]
+mod by_product;
 #[path = "common/crosscheck.rs"]
 mod crosscheck;
 #[path = "common/spec_suite.rs"]
 mod spec_suite;
 
+use by_product::local_by_product;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -29,18 +32,6 @@ const FIXTURES: &str = "fixtures";
 /// Files in `tests/fixtures/` that the manifest intentionally does not list.
 /// Diagnostic JSON and helper data are ordinary listed artifacts.
 const UNLISTED: &[&str] = &[MANIFEST];
-
-/// Operating-system and editor by-product files: `.DS_Store`, `._name`,
-/// `.name.swp`, and `name~`. These are exactly the patterns `.gitignore`
-/// excludes, and none can be an artifact name (see [`safe_file_name`]), so the
-/// directory scan skips such files instead of failing on a developer machine.
-/// Any other hidden file, and every directory, is still reported.
-fn local_by_product(name: &str) -> bool {
-    name == ".DS_Store"
-        || name.starts_with("._")
-        || (name.starts_with('.') && name.ends_with(".swp"))
-        || name.ends_with('~')
-}
 
 /// Inputs that cases name because they do not exist. Each must stay absent
 /// from both the manifest and the directory, and stay used by a case.
@@ -282,7 +273,8 @@ fn read_sources(root: &Path, relative: &str, sources: &mut BTreeMap<String, Sour
 }
 
 /// Regular files and other entries directly inside `directory`, skipping
-/// [`local_by_product`] files.
+/// [`local_by_product`] regular files: no such name can be an artifact name
+/// (see [`safe_file_name`]).
 fn read_fixture_directory(directory: &Path) -> (BTreeMap<String, FileFacts>, BTreeSet<String>) {
     let mut files = BTreeMap::new();
     let mut other_entries = BTreeSet::new();
@@ -1385,12 +1377,26 @@ impl Drop for Scratch {
 
 #[test]
 fn local_by_products_are_skipped_and_can_never_be_artifacts() {
-    for name in [".DS_Store", "._good.exe", ".good.exe.swp", "good.exe~"] {
+    for name in [
+        ".DS_Store",
+        "._good.exe",
+        ".good.exe.swp",
+        "..swp",
+        "good.exe~",
+    ] {
         assert!(local_by_product(name), "{name}");
         assert!(!safe_file_name(name), "{name}");
     }
     // Anything else is never skipped, so a committed one must be listed.
-    for name in ["good.exe", "good.exe.swp", "_x", ".keep", ".gitattributes"] {
+    // `.swp` alone does not match `.gitignore`'s `.*.swp`.
+    for name in [
+        "good.exe",
+        "good.exe.swp",
+        ".swp",
+        "_x",
+        ".keep",
+        ".gitattributes",
+    ] {
         assert!(!local_by_product(name), "{name}");
     }
 
