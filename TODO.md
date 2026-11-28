@@ -282,8 +282,7 @@ they pin or what they check, never after a task.
 - [x] **LIB-T008** refactor: Audit borrowing, errors, and public API stability. Done; [record](docs/tasks/done.md#lib-t008-refactor-audit-borrowing-errors-and-public-api-stability).
 - [x] **LIB-T009** feat: Evaluate a `no_std` shared verification core. Done; [record](docs/tasks/done.md#lib-t009-feat-evaluate-a-no_std-shared-verification-core).
 - [x] **LIB-T010** docs: Reassess shared interfaces and crate extraction after reuse. Done; [record](docs/tasks/done.md#lib-t010-docs-reassess-shared-interfaces-and-crate-extraction-after-reuse).
-- [ ] **LIB-T011** refactor: Remove the hidden public `cli::command()`. It is kept
-  public only for the spec runner (PR #59); give the runner another way in.
+- [x] **LIB-T011** refactor: Remove the hidden public `cli::command()`. Done ([PR #115](https://github.com/goatwu1993/rssig/pull/115)).
 
 ## P1 — Tests, portable specification, and engineering checks
 
