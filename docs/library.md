@@ -653,6 +653,14 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### Removed `rssig::cli::command()`
+
+The hidden `rssig::cli::command()`, which returned the Clap definition behind
+`rssig::cli::run`, is removed with no replacement; it existed only for the
+repository's own specification runner, whose check now runs as a unit test
+inside the crate. Drive the CLI through `run`, `run_with_writers` or
+`run_with_host`. Results, JSON, exit codes and CLI arguments are unchanged.
+
 #### Required `TrustReport.lifetime_signing`
 
 `TrustReport.lifetime_signing` no longer defaults to `false` when absent, so a
@@ -675,7 +683,7 @@ new paths:
 | `TrustStore::add_roots_typed`, `add_crl_typed` | `add_roots`, `add_crl` (removed aliases) |
 | none (CLI-internal inspection) | `rssig_engine::inspect::{pe, cms, cab, navx}` |
 | feature `rssig/crl-fetch` for `CrlSource` alone | `rssig-engine/retrieval`; `rssig/crl-fetch` adds `HttpCrlSource` |
-| `rssig::cli::*` | unchanged |
+| `rssig::cli::*` | unchanged (`rssig::cli::command()` was removed later; see [Removed `rssig::cli::command()`](#removed-rssigclicommand)) |
 
 An OS adapter of your own builds its store with
 `TrustStore::from_system_roots(ders, errors)`, passing every enumeration error;

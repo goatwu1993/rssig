@@ -59,14 +59,6 @@ impl<'a> Host<'a> {
     }
 }
 
-/// The Clap definition behind [`run`], for tests that must agree with the
-/// real argument parser (the specification runner checks which options take
-/// a file). Hidden and not a stable interface: Clap's types may change.
-#[doc(hidden)]
-pub fn command() -> clap::Command {
-    <Cli as clap::CommandFactory>::command()
-}
-
 fn execute(command: Command, host: Host<'_>) -> Result<(Value, u8)> {
     match command {
         Command::Verify(args) => verify::execute(args, host),
@@ -207,5 +199,55 @@ where
             exit: 2,
             stderr: true,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // The specification runner's list, shared without widening the public API.
+    include!("cli/path_options.rs");
+
+    #[test]
+    fn path_options_match_the_cli_definition() {
+        // Every name, alias and short form of each option whose value Clap
+        // parses as a PathBuf, read from the real command rather than its source.
+        let command = <super::Cli as clap::CommandFactory>::command();
+        let mut declared = std::collections::BTreeSet::new();
+        collect_path_options(&command, &mut declared);
+        let shared: std::collections::BTreeSet<String> =
+            PATH_OPTIONS.iter().map(|o| (*o).to_owned()).collect();
+        assert_eq!(
+            declared, shared,
+            "update PATH_OPTIONS in src/cli/path_options.rs to match the CLI"
+        );
+    }
+
+    /// Add the path-valued option names of `command` and of every subcommand
+    /// below it, at any depth.
+    fn collect_path_options(
+        command: &clap::Command,
+        declared: &mut std::collections::BTreeSet<String>,
+    ) {
+        for argument in command
+            .get_arguments()
+            .filter(|a| !a.is_positional())
+            .filter(|a| {
+                a.get_value_parser().type_id() == std::any::TypeId::of::<std::path::PathBuf>()
+            })
+        {
+            let longs = argument
+                .get_long()
+                .into_iter()
+                .chain(argument.get_all_aliases().into_iter().flatten());
+            declared.extend(longs.map(|long| format!("--{long}")));
+            let shorts = argument
+                .get_short()
+                .into_iter()
+                .chain(argument.get_all_short_aliases().into_iter().flatten());
+            declared.extend(shorts.map(|short| format!("-{short}")));
+        }
+        for subcommand in command.get_subcommands() {
+            collect_path_options(subcommand, declared);
+        }
     }
 }

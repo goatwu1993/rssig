@@ -151,8 +151,7 @@ pub struct Expectation {
     pub contains: BTreeMap<String, String>,
 }
 
-/// Options whose value is a file, given as `--crl path` or `--crl=path`.
-pub const PATH_OPTIONS: &[&str] = &["--roots", "--crl"];
+include!("../../src/cli/path_options.rs");
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Argument<'a> {

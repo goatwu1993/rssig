@@ -877,39 +877,6 @@ fn cli_conforms_to_committed_json_specification() {
 }
 
 #[test]
-fn path_options_match_the_cli_definition() {
-    // Every name, alias and short form of each option whose value Clap parses
-    // as a PathBuf, read from the real command rather than its source.
-    let command = cli::command();
-    let mut declared = std::collections::BTreeSet::new();
-    for argument in command
-        .get_arguments()
-        .chain(command.get_subcommands().flat_map(|s| s.get_arguments()))
-        .filter(|a| !a.is_positional())
-        .filter(|a| a.get_value_parser().type_id() == std::any::TypeId::of::<PathBuf>())
-    {
-        let longs = argument
-            .get_long()
-            .into_iter()
-            .chain(argument.get_all_aliases().into_iter().flatten());
-        declared.extend(longs.map(|long| format!("--{long}")));
-        let shorts = argument
-            .get_short()
-            .into_iter()
-            .chain(argument.get_all_short_aliases().into_iter().flatten());
-        declared.extend(shorts.map(|short| format!("-{short}")));
-    }
-    let shared: std::collections::BTreeSet<String> = spec_suite::PATH_OPTIONS
-        .iter()
-        .map(|o| (*o).to_owned())
-        .collect();
-    assert_eq!(
-        declared, shared,
-        "update PATH_OPTIONS in tests/common/spec_suite.rs to match the CLI"
-    );
-}
-
-#[test]
 fn specification_comparison_requires_exact_scalars_and_arrays() {
     let mut failures = Vec::new();
     compare(
