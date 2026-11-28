@@ -253,10 +253,7 @@ they pin or what they check, never after a task.
 
 - [x] **RDP-T001** fix: Keep the outer error's causes on the RDP revocation fallback. Done in #89; [record](docs/tasks/done.md#rdp-t001-fix-keep-the-outer-errors-causes-on-the-rdp-revocation-fallback).
 - [x] **RDP-T004** test: Cover RDP usage-failure causes through `rssig::cli::run`. Done; [record](docs/tasks/done.md#rdp-t004-test-cover-rdp-usage-failure-causes-through-rssigclirun).
-- [ ] **RDP-T005** fix: Report `untrusted_root` before reading the signer's EKU.
-  With trust on and no configured root, an RDP signer whose extKeyUsage does
-  not decode fails reading the EKU in `rdp::verify_trust`, where every other
-  format reports `untrusted_root` first (found in PR #97).
+- [x] **RDP-T005** fix: Report `untrusted_root` before reading the signer's EKU. Done in #113; [record](docs/tasks/done.md#rdp-t005-fix-report-untrusted_root-before-reading-the-signers-eku).
 
 ## P1 — Clean parse/verify interfaces
 
@@ -334,6 +331,10 @@ they pin or what they check, never after a task.
   later one silently overwrites a file an earlier one wrote. Have them return
   their files and merge them, failing on a repeated name. Found in the review
   of PR #110.
+- [ ] **TEST-T020** test: Require each fixture's manifest `cases` to list every
+  case that reads it. `tests/manifest.rs` does not check that the lists are
+  complete, so a new case on an existing fixture can be left out silently.
+  Found in the review of PR #113.
 
 ### BUILD
 

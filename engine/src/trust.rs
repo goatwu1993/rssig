@@ -70,13 +70,14 @@ impl TrustStore {
     }
     /// PATH-013 and PATH-014 for the signer, which is on every path: a signer
     /// that repeats an extension, or whose extension does not decode, fails
-    /// before any path is built. A format
-    /// that reads the signer's extensions before `verify` calls this first;
-    /// without a configured root it passes, so that `verify` reports that
-    /// first for every format.
+    /// before any path is built. A format that reads the signer's extensions
+    /// before `verify` calls this first. Without a configured root it reports
+    /// `untrusted_root`, as `verify` does, so that comes first for every
+    /// format; RDP's `verify_trust` asks `verify` itself then, to charge the
+    /// same budget.
     pub(crate) fn check_signer(&self, leaf: &Certificate, budget: &Budget) -> Result<()> {
         if self.roots.is_empty() {
-            return Ok(());
+            return Err(no_trust_anchors().into());
         }
         charge_extensions(leaf, budget)?;
         let Some(defect) = extension_defect(leaf) else {
@@ -109,12 +110,7 @@ impl TrustStore {
             .report_certificates
             .charge(certificates.len() + self.roots.len())?;
         if self.roots.is_empty() {
-            return Err(VerificationError::new(
-                ErrorCode::UntrustedRoot,
-                Stage::CertificateChain,
-                "no trust anchors configured",
-            )
-            .into());
+            return Err(no_trust_anchors().into());
         }
         self.check_signer(leaf, budget)?;
         let requirements =
@@ -2520,6 +2516,15 @@ fn names_distribution_point(tbs: &x509_cert::crl::TbsCertList) -> bool {
         })
 }
 
+/// The failure of a store without a configured root (PATH-001).
+fn no_trust_anchors() -> VerificationError {
+    VerificationError::new(
+        ErrorCode::UntrustedRoot,
+        Stage::CertificateChain,
+        "no trust anchors configured",
+    )
+}
+
 #[cfg(test)]
 mod revocation_reporting {
     use super::*;
@@ -3624,6 +3629,29 @@ mod fractional_expiry {
         // Without a fraction nothing is compared here; webpki's whole-second
         // check is the only one.
         assert!(matches!(path_check_failure(&path, None, None), Ok(None)));
+    }
+}
+
+/// PATH-001 before PATH-013 and PATH-014: a store without a configured root
+/// reports `untrusted_root` before the signer's extensions are judged, also
+/// for a caller that judges them before `verify` (RDP-T005).
+#[cfg(test)]
+mod signer_without_roots {
+    use super::*;
+
+    #[test]
+    fn check_signer_reports_untrusted_root_first() {
+        let bytes = include_bytes!("../../tests/fixtures/bad-rdp-malformed-eku.rdp");
+        let rdp = crate::parse::Rdp::parse(bytes).unwrap();
+        let sd = crate::parse::SignedData::parse(rdp.signature()).unwrap();
+        let leaf = sd.certificate_choices()[0].x509().unwrap().clone();
+        let error = TrustStore::default()
+            .check_signer(&leaf, &Budget::default())
+            .unwrap_err();
+        let error = error.downcast_ref::<VerificationError>().unwrap();
+        assert_eq!(error.code, ErrorCode::UntrustedRoot);
+        assert_eq!(error.stage, Stage::CertificateChain);
+        assert_eq!(error.message, "no trust anchors configured");
     }
 }
 

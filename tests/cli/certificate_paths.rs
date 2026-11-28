@@ -645,6 +645,35 @@ fn repeated_extension_in_an_rdp_signer_fails_the_path() {
     );
 }
 
+/// RDP-T005: with no configured root, an RDP signer reports `untrusted_root`
+/// before its EKU is read, as every other format does (PATH-013, PATH-014,
+/// PATH-001), whatever its extKeyUsage holds.
+#[test]
+fn rdp_signer_eku_without_a_configured_root_is_untrusted() {
+    for input in [
+        "bad-rdp-malformed-eku.rdp",
+        "bad-rdp-repeated-eku.rdp",
+        "bad-rdp-no-eku.rdp",
+        "bad-rdp-eku.rdp",
+    ] {
+        let output = run_fixture(
+            input,
+            &[
+                "verify",
+                "--no-system-roots",
+                "--no-revocation",
+                "--time",
+                "1800000000",
+            ],
+        );
+        assert_eq!(output.exit_code, 1, "{input}: {}", output.json);
+        let error = &output.json["results"][0]["error"];
+        assert_eq!(error["code"], "untrusted_root", "{input}: {error}");
+        assert_eq!(error["stage"], "certificate_chain", "{input}: {error}");
+        assert!(error["details"].get("reason").is_none(), "{input}: {error}");
+    }
+}
+
 #[test]
 fn repeated_extension_in_a_tsa_certificate_fails_the_path() {
     extension_of_another_format_fails_the_path(

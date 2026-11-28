@@ -191,10 +191,24 @@ fn verify_trust(
         &[43, 6, 1, 5, 5, 7, 3, 1],
         &[43, 6, 1, 4, 1, 130, 55, 54, 1, 2],
     ];
+    // Without a configured root every format reports `untrusted_root` before
+    // judging the signer (PATH-001, PATH-013, PATH-014): ask `verify` once, as the
+    // other formats do, before the EKU is read (RDP-T005).
+    if store.root_count() == 0 {
+        return store.verify(
+            crate::trust::ChainRequest {
+                leaf,
+                certificates,
+                eku: USAGES[0],
+                signing_time,
+                now: options.now,
+                revocation: options.check_revocation,
+            },
+            budget,
+        );
+    }
     // PATH-013 and PATH-014 for the signer before its EKU is read, as
-    // `verify` makes them for every other format. Without a configured root
-    // it passes, and a malformed or repeated extKeyUsage then fails reading
-    // the EKU below.
+    // `verify` makes them for every other format.
     store.check_signer(leaf, budget)?;
     let usage = leaf
         .tbs_certificate
@@ -570,7 +584,11 @@ mod tests {
     #[test]
     fn rdp_eku_retry_propagates_later_budget_exhaustion() {
         let bytes = fixture("good-rdp-multiple-ekus.rdp");
-        let store = crate::TrustStore::default();
+        // A configured root that issued nothing here: every usage is tried,
+        // and each fails `untrusted_root`. An empty store stops at the first
+        // (`rdp_signer_eku_without_a_configured_root_is_untrusted`).
+        let mut store = crate::TrustStore::default();
+        store.add_roots(&fixture("unrelated-root.der")).unwrap();
         let options = VerifyOptions::trusted_with_revocation(
             &store,
             1800000000,
@@ -582,7 +600,8 @@ mod tests {
         assert_eq!(ordinary.code, ErrorCode::UntrustedRoot);
 
         // Leave exactly one webpki search reservation. The first accepted EKU
-        // fails for lack of anchors; the second must propagate budget exhaustion.
+        // fails for lack of a matching anchor; the second must propagate
+        // budget exhaustion.
         let budget = Budget::default();
         budget.path_work.charge(12_600_000).unwrap();
         let error = verify_budget(&bytes, &options, &budget).unwrap_err();

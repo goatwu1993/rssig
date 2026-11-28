@@ -540,6 +540,18 @@ does, so that branch then gets an end-to-end case. Making that branch
 reachable showed that the public `verify_rdp` boundary drops the outer
 messages RDP-T001 keeps; that is CLI-T004.
 
+## RDP-T005 fix: Report `untrusted_root` before reading the signer's EKU
+
+With trust on and no configured root, `rdp::verify_trust` read the signer's
+extKeyUsage first, so an RDP signer whose EKU did not decode or repeated
+failed `certificate_chain_invalid`, and one without an accepted EKU failed
+`invalid_eku`, where every other format reports `untrusted_root`. It now asks
+`TrustStore::verify` once before reading the EKU when the store has no root.
+Cases `path-013-bad-rdp-leaf-malformed-eku-empty-store`,
+`path-014-bad-rdp-leaf-repeated-eku-empty-store`, `rdp-eku-empty-store` and
+`rdp-no-eku-empty-store`; test
+`rdp_signer_eku_without_a_configured_root_is_untrusted`. PR #113.
+
 ## LIMIT-T004 fix: Finish with the gathered evidence when an engine limit is reached
 
 Three engine retrieval limits ended the whole verification with
