@@ -45,6 +45,14 @@ subjectAltName, nameConstraints, cRLDistributionPoints, subjectKeyIdentifier or
 authorityKeyIdentifier does not decode fails the path
 ([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path));
 other extensions are not decoded, so a malformed one is unfamiliar (PATH-006).
+A leaf, intermediate, timestamp signer or RDP signer that marks critical an
+extension rssig does not process fails the path; rssig processes only
+basicConstraints, keyUsage, extKeyUsage, subjectAltName, nameConstraints and
+cRLDistributionPoints, so a critical policy extension, subjectKeyIdentifier,
+authorityKeyIdentifier or SCT list fails it, where OpenSSL and Bouncy Castle
+accept a critical policy extension
+([PATH-006](path.md#path-006-unknown-critical-extensions-are-rejected)).
+rssig checks this itself; it does not rely on which extensions webpki keeps.
 A leaf, intermediate, timestamp signer or RDP signer that carries any
 extension more than once fails the path too
 ([PATH-014](path.md#path-014-a-path-certificate-that-repeats-an-extension-fails-the-path)).
@@ -54,7 +62,7 @@ turns what would be `untrusted_root` into webpki's parse error
 (`ExtensionValueInvalid` for that repeat); how it ranks against rssig's
 other failures is open (PATH-T019, PATH-T011).
 A configured root's extensions are not judged (PATH-011).
-Both rules judge a path only: integrity-only verification and `parse` build
+These rules judge a path only: integrity-only verification and `parse` build
 none, and a certificate report marks a basicConstraints, keyUsage or
 extKeyUsage it cannot decode in `undecoded_extensions` instead of failing.
 

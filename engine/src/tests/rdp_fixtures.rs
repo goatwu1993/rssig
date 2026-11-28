@@ -523,6 +523,30 @@ fn write_eku_retry_fixture(dir: &std::path::Path) {
         &[],
     ));
     std::fs::write(dir.join("bad-rdp-repeated-eku.rdp"), bytes).unwrap();
+    // PATH-006: the same signer with a critical SCT list, which rssig does not
+    // process.
+    let mut sct = cert.clone();
+    sct.tbs_certificate
+        .extensions
+        .as_mut()
+        .unwrap()
+        .push(x509_cert::ext::Extension {
+            extn_id: super::certificate_paths::SCT_LIST_OID.parse().unwrap(),
+            critical: true,
+            extn_value: ::der::asn1::OctetString::new(super::certificate_paths::sct_list())
+                .unwrap(),
+        });
+    let signature: Signature = identity()
+        .root_key
+        .sign(&sct.tbs_certificate.to_der().unwrap());
+    sct.signature = BitString::from_bytes(signature.to_der().as_bytes()).unwrap();
+    let bytes = frame(&envelope(
+        &sct,
+        crypto::Hash::Sha256,
+        &ec_signer(&sct, false),
+        &[],
+    ));
+    std::fs::write(dir.join("bad-rdp-critical-sct.rdp"), bytes).unwrap();
 }
 
 /// A signer with codeSigning and serverAuth under a CA whose own EKU admits

@@ -108,14 +108,155 @@ name constraints are applied too. A publisher CN is not a DNS identity.
 ### PATH-006: Unknown critical extensions are rejected
 
 An unfamiliar extension is ignored when noncritical, preserving the
-certificate DER, and rejected when critical on the leaf or an intermediate.
+certificate DER. A signing leaf or an intermediate that marks critical an
+extension rssig does not process fails the path. The processed extensions are
+a fixed set rssig chooses (`PROCESSED_EXTENSIONS`), each because rssig or
+webpki enforces it on a path; one a newer webpki comes to read, such as the
+SCT list, is not added by that:
+
+- basicConstraints (2.5.29.19): webpki enforces cA and pathLenConstraint
+  (PATH-003, PATH-004);
+- keyUsage (2.5.29.15): rssig requires digitalSignature in the signer and
+  keyCertSign in an intermediate (PATH-008), and a TSA's usage (TSA-003);
+- extKeyUsage (2.5.29.37): rssig requires the signer's usage, and webpki
+  requires an intermediate's to permit it (PATH-007, TSA-003);
+- subjectAltName (2.5.29.17) and nameConstraints (2.5.29.30): webpki checks
+  each name against the constraints above it (PATH-005);
+- cRLDistributionPoints (2.5.29.31): rssig decides which CRLs cover a
+  certificate by the points it lists ([CRL decisions](crl.md)). It is
+  processed whether or not this verification checks revocation: with
+  `--no-revocation` the caller chose not to use it, as OpenSSL counts it
+  supported, and Bouncy Castle in the end certificate, whatever their
+  revocation flags.
+
+The set is judged per extension, not per certificate role: a signer may mark
+nameConstraints critical, though RFC 5280 section 4.2.1.10 reserves it for a
+CA and nothing applies a signer's own constraints, as webpki, OpenSSL
+(`X509_supported_extension`) and Bouncy Castle (`wrapupCertF`) accept it in
+the end certificate.
+
+Every other extension is unfamiliar here, including those rssig decodes for
+another purpose: subjectKeyIdentifier and authorityKeyIdentifier, read only to
+match a CRL to its issuer (RFC 5280 sections 4.2.1.1 and 4.2.1.2 require them
+noncritical); the policy extensions (certificatePolicies, policyMappings,
+policyConstraints, inhibitAnyPolicy), as rssig builds no policy tree; and the
+signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2, RFC 6962), as rssig
+checks no SCT.
+
+rssig enforces the rule itself, where PATH-013 and PATH-014 are judged
+(`extension_defect` in `engine/src/trust.rs`), so a webpki that comes to keep
+another extension does not loosen it:
+
+- The signer is on every path, so it fails before any path is built (after
+  the check for a configured root): `certificate_chain_invalid` at
+  `certificate_chain`, with `details.reason` `unknown_critical_extension`
+  (the reason CRL-012 gives a CRL's), `details.extension` its OID,
+  `details.certificate_sha256` the signer and `details.certificate` its
+  report. A repeat (PATH-014), then a value that does not decode (PATH-013),
+  is reported first. As in PATH-013, the signer's own failure is judged
+  before any usage, so it is reported over `invalid_eku` and
+  `invalid_key_usage` at `certificate`, and the error has no
+  `required_eku`, `lifetime_signing` or `signing_time` detail
+  (`path-006-bad-leaf-critical-no-eku-reports-the-extension`,
+  `path-006-bad-leaf-critical-no-ds-reports-the-extension`), and over a
+  lifetime signer issued after its signing time, which `TrustStore::verify`
+  checks after `check_signer`
+  (`path-006-bad-lifetime-signer-issued-after-signing-reports-the-extension`).
+  OpenSSL's `check_extensions` likewise rejects an unhandled critical
+  extension (`x509_vfy.c:642-644`) before it checks the certificate's
+  purpose (`:748-749`).
+- An intermediate rejects each candidate path through it in the path
+  callback, and is named with the same `reason`, `extension` and
+  `certificate_sha256` under the conditions PATH-013 gives for an
+  intermediate; as in every chain error, `details.certificate` is the
+  signer's report and `required_eku` (with `lifetime_signing` and
+  `signing_time` where they apply) is present. webpki 0.103.16 itself rejects, while it builds
+  the path, an intermediate with a critical extension other than the six
+  above: that failure is `certificate_chain_invalid` at `certificate_chain`
+  with webpki's message (`UnsupportedCriticalExtension`) and no
+  `details.reason`. So with 0.103.16 the callback names no such intermediate;
+  it does under a webpki that keeps an extension rssig does not process, as
+  0.103.17 keeps the SCT list. `path-006-bad-ca-critical-sct` therefore pins
+  only the code and stage.
+- The rule holds for a timestamp signer, in an RFC 3161 token or a
+  countersignature, with the same code, stage and details
+  (`path-006-bad-tsa-critical-sct`, `path-006-bad-tsa-counter-critical-sct`),
+  judged before TSA-003's usage checks
+  (`path-006-bad-tsa-critical-sct-eku-missing-reports-the-extension`),
+  and for an RDP signer, which is checked for a configured root first
+  (`path-006-bad-rdp-leaf-critical-sct`,
+  `path-006-bad-rdp-leaf-critical-sct-empty-store`).
+- Integrity-only verification builds no path, so the rule does not apply
+  there, as for PATH-013: a signer or timestamp signer with a critical SCT
+  list verifies (`path-006-good-integrity-only-leaf-critical-sct`,
+  `path-006-good-integrity-only-tsa-critical-sct`,
+  `path-006-good-integrity-only-tsa-counter-critical-sct`).
+- A configured root is a key (PATH-011): its extensions are not judged.
 
 - **Status:** Decided
-- **Decided by:** written argument, PR #40 (PATH-T001); enforced by webpki
+- **Decided by:** written argument, PR #40 (PATH-T001); enforced by rssig
+  since PATH-T022
 - **Pins:** acceptance
 - **Sources:**
-  - RFC 5280 section 4.2: a certificate with an unrecognized critical
-    extension must be rejected.
+  - RFC 5280 section 4.2: "A certificate-using system MUST reject the
+    certificate if it encounters a critical extension it does not recognize
+    or a critical extension that contains information that it cannot
+    process."
+  - OpenSSL 3a3f1356 `crypto/x509/v3_purp.c:311-348`
+    (`X509_supported_extension`, "a list of the NIDs of supported extensions:
+    that is those which are used by the verify process"): Netscape
+    certificate type, keyUsage, subjectAltName, basicConstraints,
+    certificatePolicies, cRLDistributionPoints, extKeyUsage, the two RFC 3779
+    extensions, OCSP no-check, policyConstraints, proxyCertInfo,
+    nameConstraints, policyMappings and inhibitAnyPolicy.
+    `v3_purp.c:549-553` marks a certificate with any other critical extension
+    `EXFLAG_CRITICAL`, and `crypto/x509/x509_vfy.c:642-644`
+    (`check_extensions`) fails each chain certificate so marked with
+    `X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION`. It agrees with rssig on the six
+    and on subjectKeyIdentifier, authorityKeyIdentifier and the SCT list,
+    which it rejects critical.
+  - Bouncy Castle e03fee0b
+    `prov/src/main/java/org/bouncycastle/jce/provider/PKIXCertPathValidatorSpi.java:400-415`
+    removes from an intermediate's critical extensions those "handled by the
+    algorithm" (keyUsage, the four policy extensions, issuingDistributionPoint,
+    deltaCRLIndicator, basicConstraints, subjectAltName, nameConstraints), and
+    `:461-478` the same and cRLDistributionPoints and extKeyUsage from the
+    end certificate's; `RFC3280CertPathUtilities.java:2044-2075`
+    (`prepareNextCertO`) and `:2212-2244` (`wrapupCertF`) reject one left over
+    that no `PKIXCertPathChecker` claims. It agrees with rssig on the six for
+    the signer, and rejects subjectKeyIdentifier, authorityKeyIdentifier and
+    the SCT list critical in either.
+  - Not followed: OpenSSL and Bouncy Castle process the policy extensions,
+    and OpenSSL the others above, so they accept them critical. rssig
+    processes none of them, so RFC 5280 section 4.2 has it reject them, as
+    webpki 0.103.16 does; accepting them would take the policy processing of
+    RFC 5280 section 6.1.3 (d) to (f), which rssig does not implement.
+  - Not followed: Bouncy Castle rejects a critical extKeyUsage or
+    cRLDistributionPoints in an intermediate unless the caller's path checker
+    claims it. rssig processes both there (PATH-007, and the CRL scope of
+    every certificate on the path), as OpenSSL counts them supported and
+    webpki 0.103.16 keeps them; rejecting them would reject paths that verify
+    today.
+  - webpki 0.103.16 `src/cert.rs:290-333` (`remember_cert_extension`) keeps
+    the six and hands every other extension to `Extension::unsupported`
+    (`src/x509.rs:26-31`), an error when it is critical. 0.103.17 also keeps
+    the SCT list, which rssig does not process, and accepts it critical: the
+    reason rssig no longer leaves this rule to webpki.
+- **Unit tests:** `only_the_extensions_rssig_or_webpki_process_may_be_critical`
+  (`engine/src/trust.rs`) pins the processed set, and that each member is one
+  the resolved webpki accepts critical, so rssig accepts no critical extension
+  webpki rejects. `an_intermediate_with_an_unknown_critical_extension_is_named`
+  pins how an intermediate the path callback rejects is reported, which no
+  fixture reaches with webpki 0.103.16.
+- **Note:** Before PATH-T022 webpki enforced the rule. The signer's failure
+  was `certificate_chain_invalid` at `certificate_chain` with webpki's message
+  (`invalid signer certificate: UnsupportedCriticalExtension`) and no
+  details, and a timestamp signer's was `invalid_timestamp` at `timestamp`
+  with the same message, and a signer that also failed a usage check was
+  reported for that usage (`invalid_eku`, say); the intermediate's is
+  unchanged. Left to webpki
+  0.103.17, a critical SCT list in the signer, an intermediate or a timestamp
+  signer would have verified (measured in PATH-T022 with the cases above).
 
 ### PATH-007: An Authenticode signer needs the code-signing EKU explicitly
 

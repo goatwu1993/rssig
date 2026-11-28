@@ -653,6 +653,28 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### rssig judges an unknown critical extension itself
+
+A signing leaf, intermediate, timestamp signer or RDP signer that marks
+critical an extension rssig does not process (anything but basicConstraints,
+keyUsage, extKeyUsage, subjectAltName, nameConstraints and
+cRLDistributionPoints) is still rejected, now by rssig rather than webpki
+(PATH-006, PATH-T022). The error is `certificate_chain_invalid` at
+`certificate_chain` with `details.reason` `unknown_critical_extension`,
+`details.extension` and `details.certificate_sha256`. These results moved:
+
+- a signer's error gains those details and rssig's message;
+- a timestamp signer's is that error, where it was `invalid_timestamp` at
+  `timestamp` with webpki's `UnsupportedCriticalExtension` message;
+- a signer that also lacks the required EKU or digitalSignature, or a
+  timestamp signer that fails TSA-003, is reported for the extension rather
+  than with `invalid_eku` or `invalid_key_usage`, as the extension is judged
+  before the signer's usage;
+- a lifetime signer issued after its signing time is reported for the
+  extension rather than with `certificate_not_yet_valid`.
+
+An intermediate webpki rejects itself is reported as before.
+
 #### A typed error attached as an anyhow context no longer decides
 
 A `verify_*` error used to take its code from a `VerificationError` or parser

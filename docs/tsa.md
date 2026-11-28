@@ -70,7 +70,10 @@ present KeyUsage must include digitalSignature (`invalid_key_usage`). This
 applies to RFC 3161 tokens and countersignatures alike; integrity-only mode
 omits it explicitly. An extKeyUsage that does not decode is PATH-013's,
 judged first for an RFC 3161 token and a countersignature alike
-([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path)).
+([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path)),
+and so is a critical extension rssig does not process
+([PATH-006](path.md#path-006-unknown-critical-extensions-are-rejected),
+`path-006-bad-tsa-critical-sct-eku-missing-reports-the-extension`).
 
 - **Status:** Decided
 - **Decided by:** written argument (RFC 3161), PR #42 (TSA-T001)

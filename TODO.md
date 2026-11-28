@@ -93,6 +93,19 @@ they pin or what they check, never after a task.
   `counter-malformed-bc` and `counter-malformed-ku` faults, each with a
   trusted and an `--integrity-only` case, then drop the "no case pins" note in
   PATH-013 and point TSA-003's keyUsage check to it (found in PR #118).
+- [ ] **PATH-T023** test: Pin the path callback's PATH-006 rejection of an intermediate end to end.
+  webpki 0.103.16 rejects such an intermediate before the callback, so only
+  a unit test of `path_error` covers it; with a webpki that keeps the SCT list
+  (0.103.17), make `path-006-bad-ca-critical-sct` pin `reason`, `extension`
+  and `certificate_sha256` and drop its either-branch test. The webpki
+  upgrade that makes it reachable fails the exact-version guard
+  `only_a_certificate_that_can_be_on_the_path_steers_it` (found in PR #124).
+- [ ] **PATH-T025** test: Check that each PATH-006 SCT fixture differs from its pair only by the SCT list.
+  `bad-rdp-critical-sct.rdp`, `tsa-critical-sct.exe`, `tsa-counter-critical-sct.exe`
+  and the path SCT fixtures are described as a good signer plus one critical
+  extension; add tests like `the_repeated_eku_rdp_signer_differs_only_by_the_appended_copy`
+  that strip it and compare with the pair (found in PR #124).
+- [x] **PATH-T022** fix: Judge unknown critical extensions in rssig instead of webpki. Done ([PR #124](https://github.com/goatwu1993/rssig/pull/124)); [PATH-006](docs/path.md#path-006-unknown-critical-extensions-are-rejected).
 - [ ] **PATH-T006** fix: Decode certificate names that carry a UniversalString.
   `der` 0.7 has no tag for UniversalString (0x1C), so a certificate or CRL
   whose name carries one does not decode (RFC 5280 section 7.1: optional).

@@ -51,6 +51,27 @@ const REPEATED_EXTENSIONS: [(&str, &str, &str); 6] = [
 /// authorityKeyIdentifier and, at an earlier position, has a
 /// subjectKeyIdentifier that does not decode.
 const BOTH_DEFECTS: [&str; 2] = ["leaf", "ca"];
+/// PATH-006: the signedCertificateTimestampList extension (RFC 6962 section
+/// 3.3). rssig does not process SCTs, so a critical one must fail the path;
+/// webpki 0.103.17 accepts it, and 0.103.16 rejects it as it rejects any
+/// extension it does not keep.
+pub(super) const SCT_LIST_OID: &str = "1.3.6.1.4.1.11129.2.4.2";
+/// The value of an SCT list extension: an OCTET STRING holding a TLS-encoded
+/// SignedCertificateTimestampList with one v1 SCT (RFC 6962 section 3.2)
+/// from a made-up log, whose signature nothing checks.
+pub(super) fn sct_list() -> Vec<u8> {
+    let mut sct = vec![0u8];
+    sct.extend([0x5a; 32]);
+    sct.extend(1_800_000_000_000u64.to_be_bytes());
+    sct.extend([0, 0]);
+    sct.extend([4, 3]);
+    sct.extend([0, 2, 0x30, 0x00]);
+    let len = u16::try_from(sct.len()).unwrap();
+    let mut list = (len + 2).to_be_bytes().to_vec();
+    list.extend(len.to_be_bytes());
+    list.extend(sct);
+    tlv(4, &list)
+}
 /// SEQUENCE { NULL }: none of the extensions above decodes from it.
 const MALFORMED_VALUE: [u8; 4] = [0x30, 0x02, 0x05, 0x00];
 const PARTITIONS: [(&str, &str, bool); 5] = [
@@ -558,6 +579,7 @@ fn generate(out: &mut Files) {
         "ca-false",
         "ca-missing-bc",
         "ca-critical",
+        "ca-critical-sct",
         "ca-noncritical",
         "ca-eku",
         "ca-good-eku",
@@ -574,6 +596,7 @@ fn generate(out: &mut Files) {
                 label == "ca-critical",
                 Some(tlv(5, &[])),
             ),
+            "ca-critical-sct" => extension(&mut changed, SCT_LIST_OID, true, Some(sct_list())),
             "ca-eku" | "ca-good-eku" => extension(
                 &mut changed,
                 "2.5.29.37",
@@ -761,6 +784,9 @@ fn generate(out: &mut Files) {
         "leaf-ca",
         "leaf-no-bc",
         "leaf-critical",
+        "leaf-critical-sct",
+        "leaf-critical-no-eku",
+        "leaf-critical-no-ds",
         "leaf-noncritical",
         "leaf-no-ku",
         "leaf-no-eku",
@@ -771,6 +797,18 @@ fn generate(out: &mut Files) {
             "leaf-no-bc" => extension(&mut changed, "2.5.29.19", true, None),
             "leaf-no-eku" => extension(&mut changed, "2.5.29.37", false, None),
             "leaf-no-ku" => extension(&mut changed, "2.5.29.15", true, None),
+            "leaf-critical-sct" => extension(&mut changed, SCT_LIST_OID, true, Some(sct_list())),
+            // PATH-006 before PATH-007: the signer's own failure is judged
+            // before its usage.
+            "leaf-critical-no-eku" => {
+                extension(&mut changed, "2.5.29.37", false, None);
+                extension(&mut changed, "1.2.3.4.5", true, Some(tlv(5, &[])));
+            }
+            // PATH-006 before PATH-008: a keyUsage of keyEncipherment alone.
+            "leaf-critical-no-ds" => {
+                extension(&mut changed, "2.5.29.15", true, Some(tlv(3, &[5, 0x20])));
+                extension(&mut changed, "1.2.3.4.5", true, Some(tlv(5, &[])));
+            }
             _ => extension(
                 &mut changed,
                 "1.2.3.4.5",

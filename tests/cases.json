@@ -26073,13 +26073,458 @@
               "ok": false,
               "error": {
                 "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.2.3.4.5"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-leaf-critical-sct",
+      "input": "bad-path-leaf-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.3.6.1.4.1.11129.2.4.2"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-leaf-critical-no-eku-reports-the-extension",
+      "input": "bad-path-leaf-critical-no-eku.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.2.3.4.5"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-leaf-critical-no-ds-reports-the-extension",
+      "input": "bad-path-leaf-critical-no-ds.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.2.3.4.5"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-ca-critical-sct",
+      "input": "bad-path-ca-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/path-root.der",
+        "--time",
+        "1800000000",
+        "--crl",
+        "fixtures/path-root.crl",
+        "--crl",
+        "fixtures/path-issuer.crl",
+        "--crl",
+        "fixtures/path-upper.crl",
+        "--crl",
+        "fixtures/path-other-root.crl"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
                 "stage": "certificate_chain"
               }
             }
           ]
-        },
-        "contains": {
-          "/results/0/error/message": "UnsupportedCriticalExtension"
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-tsa-critical-sct",
+      "input": "tsa-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.3.6.1.4.1.11129.2.4.2"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-tsa-counter-critical-sct",
+      "input": "tsa-counter-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.3.6.1.4.1.11129.2.4.2"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-tsa-critical-sct-eku-missing-reports-the-extension",
+      "input": "tsa-critical-sct-eku-missing.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.3.6.1.4.1.11129.2.4.2"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-lifetime-signer-issued-after-signing-reports-the-extension",
+      "input": "time-lifetime-before-not-before-critical-extension.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.2.3.4.5"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-rdp-leaf-critical-sct",
+      "input": "bad-rdp-critical-sct.rdp",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--roots",
+        "fixtures/root.der",
+        "--crl",
+        "fixtures/good.crl",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "certificate_chain_invalid",
+                "stage": "certificate_chain",
+                "details": {
+                  "reason": "unknown_critical_extension",
+                  "extension": "1.3.6.1.4.1.11129.2.4.2"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-bad-rdp-leaf-critical-sct-empty-store",
+      "input": "bad-rdp-critical-sct.rdp",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--no-system-roots",
+        "--no-revocation",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 1,
+        "json": {
+          "ok": false,
+          "results": [
+            {
+              "ok": false,
+              "error": {
+                "code": "untrusted_root",
+                "stage": "certificate_chain",
+                "title": "Untrusted root certificate"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-good-integrity-only-leaf-critical-sct",
+      "input": "bad-path-leaf-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-good-integrity-only-tsa-critical-sct",
+      "input": "tsa-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "rfc3161"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "path-006-good-integrity-only-tsa-counter-critical-sct",
+      "input": "tsa-counter-critical-sct.exe",
+      "decision": "PATH-006",
+      "command": [
+        "verify",
+        "--integrity-only",
+        "--time",
+        "1800000000"
+      ],
+      "expect": {
+        "exit_code": 0,
+        "json": {
+          "ok": true,
+          "results": [
+            {
+              "ok": true,
+              "signatures": [
+                {
+                  "chain_trusted": false,
+                  "revocation_checked": false,
+                  "timestamp_verification": {
+                    "kind": "pkcs9_countersignature"
+                  }
+                }
+              ]
+            }
+          ]
         }
       }
     },
