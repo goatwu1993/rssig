@@ -210,26 +210,28 @@ impl VerificationError {
         );
         self
     }
-    /// Preserve explicitly typed causes across internal anyhow contexts.
+    /// Convert an internal error, keeping the code of its typed chain entry
+    /// and the messages of the contexts above it as causes.
     ///
-    /// The outermost typed layer of the chain is the result, whether it is
-    /// the error, a context added to it or another error's `source()`: a
+    /// The outermost typed layer of the chain is the result: a
     /// `VerificationError` as it is, a `parse::Error` with the code and stage
-    /// of its kind (CLI candidate rule `typed-layer`). A parser error's kind is
-    /// the default for its own chain: a typed layer in it decides instead, as
-    /// `parse::Error::new` lets a nested parser error's kind stand. `code` and
-    /// `stage` are used only when the chain has no typed layer. A context is found in
-    /// `error` and in a parser error's own chain; one inside an anyhow error
-    /// that another error type holds is out of anyhow's reach.
+    /// of its kind (CLI candidate rule `typed-layer`). A typed layer is a
+    /// chain entry, the error itself or another error's `source()`. A parser
+    /// error's kind is only the default for its own chain: a typed layer in it
+    /// decides instead, as `parse::Error::new` lets a nested parser error's
+    /// kind stand. `code` and `stage` are used only when the chain has no
+    /// typed layer. A typed value attached as an anyhow context or message is
+    /// not a chain entry, so it is not seen here; every one the engine and the CLI
+    /// attach is text, which the repository check
+    /// `no_code_attaches_a_typed_error_as_an_anyhow_context` keeps true.
     pub(crate) fn from_internal(error: anyhow::Error, code: ErrorCode, stage: Stage) -> Self {
         Self::from_chain(&error, code, stage, Vec::new(), None)
     }
 
-    /// `causes` holds the messages of the layers above `error`. They come
+    /// `causes` holds the messages of the entries above `error`. They come
     /// first, then the typed layer's causes: an earlier conversion's, or its
-    /// message when none did (a `VerificationError` has no source), or a
-    /// parser error's own; then, below a typed context, the message of each
-    /// entry of the error it was added to. The summary of the parser error
+    /// message when none did (a `VerificationError` has no source, so it ends
+    /// the chain), or a parser error's own. The summary of the parser error
     /// that decides is not a cause, as when it is converted directly.
     /// `scope` is an unsupported RDP signscope parser error's `details.scope`,
     /// added only when its own kind decides.
@@ -240,39 +242,22 @@ impl VerificationError {
         mut causes: Vec<String>,
         scope: Option<&str>,
     ) -> Self {
-        // anyhow finds a context by type but not its place in the chain.
-        let typed_context = error.downcast_ref::<Self>();
-        let parser_context = error.downcast_ref::<crate::parse::Error>();
-        let mut chain = error.chain();
-        while let Some(cause) = chain.next() {
-            let typed = cause
-                .downcast_ref::<Self>()
-                .or_else(|| typed_context.filter(|c| context_entry(cause, *c)));
-            if let Some(typed) = typed {
+        for cause in error.chain() {
+            if let Some(typed) = cause.downcast_ref::<Self>() {
                 let mut typed = typed.clone();
                 if typed.causes.is_empty() {
                     causes.push(typed.message.clone());
                 } else {
                     causes.append(&mut typed.causes);
                 }
-                causes.extend(chain.map(ToString::to_string));
                 typed.causes = causes;
                 return typed;
             }
-            let (parser, below) = match cause.downcast_ref::<crate::parse::Error>() {
-                // Its source is its own chain, which converting it walks.
-                Some(parser) => (parser, Vec::new()),
-                None => match parser_context.filter(|c| context_entry(cause, *c)) {
-                    Some(parser) => (parser, chain.map(ToString::to_string).collect()),
-                    None => {
-                        causes.push(cause.to_string());
-                        continue;
-                    }
-                },
-            };
-            let mut result = Self::from_parser(parser, causes);
-            result.causes.extend(below);
-            return result;
+            // Its source is its own chain, which converting it walks.
+            if let Some(parser) = cause.downcast_ref::<crate::parse::Error>() {
+                return Self::from_parser(parser, causes);
+            }
+            causes.push(cause.to_string());
         }
         let mut result = Self::new(code, stage, format!("{error:#}"));
         result.causes = causes;
@@ -319,20 +304,6 @@ impl VerificationError {
     }
 }
 
-/// Whether `entry` is the chain entry anyhow shows for the context `value`.
-/// anyhow keeps a context inside its entry, beside the error it was added to
-/// (held inline, or pointed to), so the entry that holds `value` while its
-/// source does not is that context's. The unit test
-/// `a_verification_error_attached_as_a_context_is_recognised` fails if anyhow
-/// stops storing contexts this way.
-fn context_entry<T>(entry: &dyn core::error::Error, value: &T) -> bool {
-    let at = core::ptr::from_ref(value).addr();
-    let holds = |entry: &dyn core::error::Error| {
-        let start = core::ptr::from_ref(entry).cast::<u8>().addr();
-        (start..start + core::mem::size_of_val(entry)).contains(&at)
-    };
-    holds(entry) && !entry.source().is_some_and(holds)
-}
 impl fmt::Display for VerificationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.message)
@@ -1010,18 +981,6 @@ mod tests {
         let error = VerificationError::from(msi);
         assert_eq!(error.code, ErrorCode::InvalidSignature);
         assert_eq!(error.causes, vec!["msi", "typed"]);
-        // The outer parser error's `scope` stays with its own kind.
-        let typed = VerificationError::new(ErrorCode::InvalidSignature, Stage::Cms, "typed");
-        let scoped = Error::new(
-            ErrorKind::UnsupportedRdpScope,
-            anyhow::Error::from(crate::parse::rdp::UnsupportedScope {
-                entry: "Bogus Setting".into(),
-            })
-            .context(typed),
-        );
-        let error = VerificationError::from(scoped);
-        assert_eq!(error.code, ErrorCode::InvalidSignature);
-        assert!(error.details.is_empty());
         // `scope` belongs to an unsupported signscope, not to another kind.
         let invalid = Error::new(
             ErrorKind::InvalidRdp,
@@ -1032,91 +991,14 @@ mod tests {
         let error = VerificationError::from(invalid);
         assert_eq!(error.code, ErrorCode::InvalidRdp);
         assert!(error.details.is_empty());
-    }
-
-    /// A `VerificationError` attached as an anyhow context is the result, as it is
-    /// when it is the error or a source: its code, stage, message and details,
-    /// with the contexts above it first in `causes`, then its own causes (or its
-    /// message), then the error it was attached to (CLI candidate rule
-    /// `typed-layer`, CLI-T005).
-    #[test]
-    fn a_verification_error_attached_as_a_context_is_recognised() {
-        use anyhow::Context;
-        let convert =
-            |error| VerificationError::from_internal(error, ErrorCode::InternalError, Stage::Input);
-        let typed = VerificationError::new(ErrorCode::InvalidSignature, Stage::Cms, "typed")
-            .detail("signer", 1);
-        // An untyped context with the typed error's text is not taken for it.
-        let held = convert(
-            anyhow::anyhow!("leaf")
-                .context(typed.clone())
-                .context("typed")
-                .context("outer"),
-        );
-        let carried = convert(
-            Err::<(), _>(std::fmt::Error)
-                .context(typed.clone())
-                .unwrap_err()
-                .context("typed")
-                .context("outer"),
-        );
-        for (error, leaf) in [
-            (held, "leaf"),
-            (carried, "an error occurred when formatting an argument"),
-        ] {
-            assert_eq!(error.code, ErrorCode::InvalidSignature);
-            assert_eq!(error.stage, Stage::Cms);
-            assert_eq!(error.message, "typed");
-            assert_eq!(error.details, typed.details);
-            assert_eq!(error.causes, vec!["outer", "typed", "typed", leaf]);
-        }
-        // Causes an earlier conversion gave it stand in for its message.
-        let converted = convert(anyhow::anyhow!("root").context("inner"));
-        let error = convert(
-            anyhow::anyhow!("leaf")
-                .context(converted.clone())
-                .context("outer"),
-        );
-        assert_eq!(error.code, converted.code);
-        assert_eq!(error.causes, vec!["outer", "inner", "root", "leaf"]);
-        // The outermost typed layer decides, whatever its kind.
-        let parser = Error::new(ErrorKind::InvalidCab, anyhow::anyhow!("cab leaf"));
-        let error = convert(anyhow::Error::new(parser).context(typed.clone()));
-        assert_eq!(error.code, ErrorCode::InvalidSignature);
-        assert_eq!(error.causes, vec!["typed", "invalid CAB", "cab leaf"]);
-        let cab = Error::new(ErrorKind::InvalidCab, anyhow::anyhow!("cab leaf"));
-        let error = convert(anyhow::anyhow!("leaf").context(cab).context(typed.clone()));
-        assert_eq!(error.code, ErrorCode::InvalidSignature);
-        // A parser error held as a context there is its entry's text alone.
-        assert_eq!(error.causes, vec!["typed", "invalid CAB", "leaf"]);
-        // Other ways anyhow stores a context: an inline source that is not
-        // zero-sized, `Option::context` and `Error::msg`.
-        #[derive(Debug)]
-        struct Leaf(alloc::string::String);
-        impl core::fmt::Display for Leaf {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str(&self.0)
-            }
-        }
-        impl std::error::Error for Leaf {}
-        let inline = convert(
-            Err::<(), _>(Leaf("sized leaf".into()))
-                .context(typed.clone())
-                .unwrap_err()
-                .context("outer"),
-        );
-        assert_eq!(inline.causes, vec!["outer", "typed", "sized leaf"]);
-        let optional = convert(
-            None::<()>
-                .context(typed.clone())
-                .unwrap_err()
-                .context("outer"),
-        );
-        let message = convert(anyhow::Error::msg(typed.clone()).context("outer"));
-        for error in [inline, optional, message] {
-            assert_eq!(error.code, ErrorCode::InvalidSignature);
-            assert_eq!(error.stage, Stage::Cms);
-            assert_eq!(error.details, typed.details);
-        }
+        // No typed layer can sit in an unsupported signscope's chain, so its
+        // `scope` never meets one: `rdp_scope_entry` finds the entry as the
+        // chain's root, which has no source, or as a context, which the
+        // repository check `no_code_attaches_a_typed_error_as_an_anyhow_context` keeps
+        // out of the sources.
+        let entry = crate::parse::rdp::UnsupportedScope {
+            entry: "Bogus Setting".into(),
+        };
+        assert!(core::error::Error::source(&entry).is_none());
     }
 }

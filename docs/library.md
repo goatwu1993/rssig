@@ -653,6 +653,15 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### A typed error attached as an anyhow context no longer decides
+
+A `verify_*` error used to take its code from a `VerificationError` or parser
+error that an internal step attached as an anyhow context; it now takes it
+only from a typed chain entry, the error itself or another error's source,
+and a typed value attached as a context is not seen. rssig attaches none
+(a repository check keeps every context text), so no result moved
+(CLI-T009).
+
 #### A typed error is recognised in any layer of the chain
 
 A `verify_*` error now takes its code, stage, message and details from the
@@ -666,7 +675,8 @@ parser error's own chain, a typed error decides as before, now also a parser
 error that is a source there, and the outer parser error's `details.scope` is
 then not added; `details.scope` belongs to an unsupported RDP signscope alone.
 No input reached these layers when this changed, so no result moved
-(CLI-T005); match `code`, never `causes`.
+(CLI-T005); match `code`, never `causes`. Since CLI-T009 a typed error
+attached as a context no longer decides (see the note above).
 
 #### `VerificationError.causes` keep an earlier conversion's causes
 
