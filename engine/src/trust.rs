@@ -68,8 +68,9 @@ impl TrustStore {
         self.roots.iter().map(|v| v.as_ref().len()).sum::<usize>()
             + self.crls.iter().map(Vec::len).sum::<usize>()
     }
-    /// PATH-013 and PATH-014 for the signer, which is on every path: a signer
-    /// that repeats an extension, or whose extension does not decode, fails
+    /// PATH-013, PATH-014 and PATH-006 for the signer, which is on every
+    /// path: a signer that repeats an extension, whose extension does not
+    /// decode, or that has a critical extension rssig does not process, fails
     /// before any path is built. A format that reads the signer's extensions
     /// before `verify` calls this first. Without a configured root it reports
     /// `untrusted_root`, as `verify` does, so that comes first for every
@@ -378,7 +379,8 @@ impl TrustStore {
 /// KeyUsage and extKeyUsage and builds no report. Every other rejection
 /// answers `false`, so a usage-dependent one added to
 /// `SignerRequirements::check` keeps the search going; an extension that
-/// does not decode never gets here, as PATH-013 rejects it in `check_signer`.
+/// repeats, does not decode, or is critical and unprocessed never gets here,
+/// as PATH-014, PATH-013 and PATH-006 reject it in `check_signer`.
 pub(crate) fn fails_before_any_path(
     leaf: &Certificate,
     signing_time: Option<SigningTime<'_>>,
@@ -602,8 +604,9 @@ struct PathState {
     /// a fractional signing time.
     expired_at_fraction: Option<Certificate>,
     /// The first intermediate found on a candidate path that repeats an
-    /// extension (PATH-014) or has one that does not decode (PATH-013), and
-    /// what is wrong with it.
+    /// extension (PATH-014), has one that does not decode (PATH-013) or has a
+    /// critical one rssig does not process (PATH-006), and what is wrong with
+    /// it.
     extension_defect: Option<(Certificate, ExtensionDefect)>,
 }
 
@@ -677,10 +680,11 @@ pub(crate) fn path_checks_hold_no_usage() {
 impl PathEvaluator<'_, '_> {
     fn check(&self, path: &webpki::VerifiedPath<'_>) -> core::result::Result<(), webpki::Error> {
         let path_certificates = self.path_certificates(path)?;
-        // PATH-013 and PATH-014: webpki has linked this path to a configured
-        // root, so an intermediate that repeats an extension, or whose
-        // extension does not decode, is what rejects it. The signer was
-        // judged before any path was built.
+        // PATH-013, PATH-014 and PATH-006: webpki has linked this path to a
+        // configured root, so an intermediate that repeats an extension,
+        // whose extension does not decode, or that has a critical extension
+        // rssig does not process, is what rejects it. The signer was judged
+        // before any path was built.
         for cert in &path_certificates[1..] {
             charge_extensions(cert, self.budget).map_err(|_| webpki::Error::BadDer)?;
         }
@@ -697,6 +701,8 @@ impl PathEvaluator<'_, '_> {
                         ExtensionDefect::Repeated(oid) => format!("repeats extension {oid}"),
                         ExtensionDefect::Malformed(oid) =>
                             format!("has extension {oid} that does not decode"),
+                        ExtensionDefect::UnknownCritical(oid) =>
+                            format!("has critical extension {oid} that rssig does not process"),
                     }
                 ),
             );
@@ -1018,8 +1024,9 @@ fn path_error(
         )
     } else if let (&MALFORMED_INTERMEDIATE, Some((cert, defect))) = (&e, &state.extension_defect) {
         // The path callback rejected a path through an intermediate that
-        // repeats an extension (PATH-014) or whose extension does not decode
-        // (PATH-013).
+        // repeats an extension (PATH-014), whose extension does not decode
+        // (PATH-013) or that has a critical extension rssig does not process
+        // (PATH-006).
         extension_defect_error(cert, *defect)
     } else if e == MALFORMED_INTERMEDIATE {
         // Not reached (see the assertion above); never reported as a CRL
@@ -1279,8 +1286,9 @@ fn crl_may_apply(bytes: &[u8], issuer_names: &[ComparableName]) -> bool {
 }
 
 /// The error the path callback rejects a path with for an intermediate that
-/// repeats an extension (PATH-014) or whose extension does not decode
-/// (PATH-013). webpki returns trailing data in a
+/// repeats an extension (PATH-014), whose extension does not decode
+/// (PATH-013) or that has a critical extension rssig does not process
+/// (PATH-006). webpki returns trailing data in a
 /// revoked-certificate entry only while parsing a CRL (`crl/types.rs`), never
 /// while building a path, so it names only the callback's rejection. webpki
 /// ranks it (40) below its search limits, so an unfinished search is still
@@ -1295,14 +1303,55 @@ enum ExtensionDefect {
     Repeated(::der::asn1::ObjectIdentifier),
     /// PATH-013: the extension's value does not decode.
     Malformed(::der::asn1::ObjectIdentifier),
+    /// PATH-006: the extension is critical and rssig does not process it.
+    UnknownCritical(::der::asn1::ObjectIdentifier),
 }
 
 /// The defect `cert`'s extensions fail a path for: a repeat (PATH-014) is
-/// reported before a value that does not decode (PATH-013).
+/// reported before a value that does not decode (PATH-013), and that before
+/// a critical extension rssig does not process (PATH-006).
 fn extension_defect(cert: &Certificate) -> Option<ExtensionDefect> {
     repeated_extension(cert)
         .map(ExtensionDefect::Repeated)
         .or_else(|| malformed_extension(cert).map(ExtensionDefect::Malformed))
+        .or_else(|| unknown_critical_extension(cert).map(ExtensionDefect::UnknownCritical))
+}
+
+/// PATH-006: the extensions a path certificate may mark critical, the ones
+/// rssig or webpki process on a path. basicConstraints (webpki: PATH-003,
+/// PATH-004), keyUsage (rssig: PATH-008, TSA-003), extKeyUsage (webpki and
+/// rssig: PATH-007, TSA-003), subjectAltName and nameConstraints (webpki:
+/// PATH-005) and cRLDistributionPoints (rssig: the CRL scope rules). These
+/// are the extensions webpki 0.103.16 keeps (`cert.rs`,
+/// `remember_cert_extension`); rssig decodes subjectKeyIdentifier and
+/// authorityKeyIdentifier only to match CRLs, and processes no policy
+/// extension and no SCT list.
+const PROCESSED_EXTENSIONS: [::der::asn1::ObjectIdentifier; 6] = {
+    use x509_cert::ext::pkix::{
+        BasicConstraints, CrlDistributionPoints, ExtendedKeyUsage, KeyUsage, NameConstraints,
+        SubjectAltName,
+    };
+    [
+        BasicConstraints::OID,
+        KeyUsage::OID,
+        ExtendedKeyUsage::OID,
+        SubjectAltName::OID,
+        NameConstraints::OID,
+        CrlDistributionPoints::OID,
+    ]
+};
+
+/// PATH-006: the first critical extension of `cert` that rssig does not
+/// process (`PROCESSED_EXTENSIONS`). RFC 5280 section 4.2: a certificate
+/// with one must be rejected. rssig judges this itself, so a webpki that
+/// comes to keep another extension does not loosen it.
+fn unknown_critical_extension(cert: &Certificate) -> Option<::der::asn1::ObjectIdentifier> {
+    cert.tbs_certificate
+        .extensions
+        .iter()
+        .flatten()
+        .find(|e| e.critical && !PROCESSED_EXTENSIONS.contains(&e.extn_id))
+        .map(|e| e.extn_id)
 }
 
 /// PATH-014: the first extension of `cert` whose OID an earlier extension of
@@ -1366,8 +1415,8 @@ fn charge_extensions(cert: &Certificate, budget: &Budget) -> Result<()> {
     Ok(())
 }
 
-/// The failure of PATH-013 or PATH-014 for `cert`, whose extensions have
-/// `defect`.
+/// The failure of PATH-013, PATH-014 or PATH-006 for `cert`, whose
+/// extensions have `defect`.
 fn extension_defect_error(cert: &Certificate, defect: ExtensionDefect) -> VerificationError {
     let (oid, reason, message) = match defect {
         ExtensionDefect::Repeated(oid) => (
@@ -1379,6 +1428,11 @@ fn extension_defect_error(cert: &Certificate, defect: ExtensionDefect) -> Verifi
             oid,
             "malformed_extension",
             format!("certificate extension {oid} does not decode"),
+        ),
+        ExtensionDefect::UnknownCritical(oid) => (
+            oid,
+            "unknown_critical_extension",
+            format!("certificate extension {oid} is critical and rssig does not process it"),
         ),
     };
     let error = VerificationError::new(
@@ -3802,6 +3856,221 @@ mod malformed_extensions {
         assert!(malformed_extension(&x400).is_some());
     }
 
+    /// PATH-006: a critical extension is judged unless rssig or webpki
+    /// processes it on a path, and rssig rejects at least every critical
+    /// extension the resolved webpki rejects, so it never accepts one webpki
+    /// would not.
+    #[test]
+    fn only_the_extensions_rssig_or_webpki_process_may_be_critical() {
+        let issuer = include_bytes!("../../tests/fixtures/path-issuer.der");
+        let issuer = Certificate::from_der(issuer).unwrap();
+        assert_eq!(unknown_critical_extension(&issuer), None);
+        assert_eq!(extension_defect(&issuer), None);
+        // The fixture marks a processed extension critical, so the check
+        // above reads the flag.
+        assert!(
+            issuer
+                .tbs_certificate
+                .extensions
+                .iter()
+                .flatten()
+                .any(|e| e.critical)
+        );
+        // A value of the type rssig (PATH-013) or webpki reads it as, where
+        // either does (an empty SEQUENCE is an authorityKeyIdentifier; webpki
+        // 0.103.17 reads an SCT list as an OCTET STRING), so only the
+        // critical flag is judged.
+        let with = |oid: &str, critical: bool| {
+            let mut cert = issuer.clone();
+            let extensions = cert.tbs_certificate.extensions.as_mut().unwrap();
+            extensions.retain(|e| e.extn_id.to_string() != oid);
+            let value: &[u8] = match oid {
+                "2.5.29.14" => &[0x04, 0x01, 0x07],
+                // digitalSignature.
+                "2.5.29.15" => &[0x03, 0x02, 0x07, 0x80],
+                "1.3.6.1.4.1.11129.2.4.2" => &[0x04, 0x00],
+                _ => &[0x30, 0x00],
+            };
+            extensions.push(x509_cert::ext::Extension {
+                extn_id: oid.parse().unwrap(),
+                critical,
+                extn_value: ::der::asn1::OctetString::new(value).unwrap(),
+            });
+            cert
+        };
+        let processed = [
+            "2.5.29.19",
+            "2.5.29.15",
+            "2.5.29.37",
+            "2.5.29.17",
+            "2.5.29.30",
+            "2.5.29.31",
+        ];
+        assert_eq!(
+            PROCESSED_EXTENSIONS.map(|oid| oid.to_string()),
+            processed.map(|oid| oid.to_string())
+        );
+        let webpki_parse = |cert: &Certificate| {
+            webpki::EndEntityCert::try_from(&CertificateDer::from(cert.to_der().unwrap()))
+                .map(|_| ())
+        };
+        for oid in processed {
+            let critical = with(oid, true);
+            assert_eq!(unknown_critical_extension(&critical), None, "{oid}");
+            assert_eq!(extension_defect(&critical), None, "{oid}");
+            // webpki accepts each of them critical too, so rssig accepts no
+            // critical extension webpki rejects.
+            assert_eq!(webpki_parse(&critical), Ok(()), "{oid}");
+        }
+        for oid in [
+            // Decoded by rssig only to match CRLs, and never critical (RFC
+            // 5280 sections 4.2.1.1 and 4.2.1.2).
+            "2.5.29.14",
+            "2.5.29.35",
+            // The policy extensions: rssig builds no policy tree.
+            "2.5.29.32",
+            "2.5.29.33",
+            "2.5.29.36",
+            "2.5.29.54",
+            // subjectDirectoryAttributes, freshestCRL.
+            "2.5.29.9",
+            "2.5.29.46",
+            // authorityInfoAccess, subjectInfoAccess, an RFC 3779 address
+            // block, proxyCertInfo, OCSP no-check.
+            "1.3.6.1.5.5.7.1.1",
+            "1.3.6.1.5.5.7.1.11",
+            "1.3.6.1.5.5.7.1.7",
+            "1.3.6.1.5.5.7.1.14",
+            "1.3.6.1.5.5.7.48.1.5",
+            // The SCT list and the precertificate poison (RFC 6962).
+            "1.3.6.1.4.1.11129.2.4.2",
+            "1.3.6.1.4.1.11129.2.4.3",
+            // Netscape certificate type, and an OID nothing knows.
+            "2.16.840.1.113730.1.1",
+            "1.2.3.4.5",
+        ] {
+            let critical = with(oid, true);
+            assert_eq!(
+                unknown_critical_extension(&critical),
+                Some(oid.parse().unwrap()),
+                "{oid}"
+            );
+            assert_eq!(
+                extension_defect(&critical),
+                Some(ExtensionDefect::UnknownCritical(oid.parse().unwrap())),
+                "{oid}"
+            );
+            assert_eq!(unknown_critical_extension(&with(oid, false)), None, "{oid}");
+            // webpki rejects it as an unsupported critical extension, the
+            // value aside, so an intermediate with it fails in webpki with
+            // that message before the path callback (PATH-006). webpki
+            // 0.103.17 accepts a critical SCT list, which rssig rejects all
+            // the same; 0.103.16 rejects it too.
+            let parsed = webpki_parse(&critical);
+            if oid == "1.3.6.1.4.1.11129.2.4.2" {
+                assert!(
+                    matches!(
+                        parsed,
+                        Ok(()) | Err(webpki::Error::UnsupportedCriticalExtension)
+                    ),
+                    "{oid}: {parsed:?}"
+                );
+            } else {
+                assert_eq!(
+                    parsed,
+                    Err(webpki::Error::UnsupportedCriticalExtension),
+                    "{oid}"
+                );
+            }
+        }
+        // A value that does not decode is reported first (PATH-013), and a
+        // repeat before that (PATH-014).
+        let mut both = with("1.2.3.4.5", true);
+        let extensions = both.tbs_certificate.extensions.as_mut().unwrap();
+        extensions.retain(|e| e.extn_id.to_string() != "2.5.29.14");
+        extensions.push(x509_cert::ext::Extension {
+            extn_id: "2.5.29.14".parse().unwrap(),
+            critical: false,
+            extn_value: ::der::asn1::OctetString::new([0x05, 0x00]).unwrap(),
+        });
+        assert_eq!(
+            extension_defect(&both),
+            Some(ExtensionDefect::Malformed("2.5.29.14".parse().unwrap()))
+        );
+        let last = both.tbs_certificate.extensions.as_ref().unwrap()[0].clone();
+        both.tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .push(last.clone());
+        assert_eq!(
+            extension_defect(&both),
+            Some(ExtensionDefect::Repeated(last.extn_id))
+        );
+    }
+
+    /// PATH-006 for an intermediate: the path callback records an
+    /// intermediate with a critical extension rssig does not process through
+    /// `extension_defect`, as PATH-013's, and `path_error` names it. webpki
+    /// 0.103.16 rejects such an intermediate itself before the callback, so
+    /// no fixture reaches this branch with the locked webpki; 0.103.17 does
+    /// for a critical SCT list (`path-006-bad-ca-critical-sct`).
+    #[test]
+    fn an_intermediate_with_an_unknown_critical_extension_is_named() {
+        let issuer = include_bytes!("../../tests/fixtures/path-issuer.der");
+        let leaf = include_bytes!("../../tests/fixtures/path-leaf.der");
+        let (mut intermediate, leaf) = (
+            Certificate::from_der(issuer).unwrap(),
+            Certificate::from_der(leaf).unwrap(),
+        );
+        let oid: ::der::asn1::ObjectIdentifier = "1.3.6.1.4.1.11129.2.4.2".parse().unwrap();
+        intermediate
+            .tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .push(x509_cert::ext::Extension {
+                extn_id: oid,
+                critical: true,
+                extn_value: ::der::asn1::OctetString::new([0x04, 0x00]).unwrap(),
+            });
+        let defect = extension_defect(&intermediate).unwrap();
+        assert_eq!(defect, ExtensionDefect::UnknownCritical(oid));
+        let state = PathState {
+            extension_defect: Some((intermediate.clone(), defect)),
+            ..PathState::default()
+        };
+        let requirements = SignerRequirements {
+            eku_oid: "1.3.6.1.5.5.7.3.3".parse().unwrap(),
+            lifetime_signing: false,
+            validation_time: 1_800_000_000,
+            lifetime_signed_at: None,
+            now: 1_800_000_000,
+        };
+        let leaf_report = CertificateReport::parse(&leaf).unwrap();
+        let error = path_error(
+            MALFORMED_INTERMEDIATE,
+            &state,
+            &[],
+            &requirements,
+            None,
+            &leaf_report,
+        );
+        assert_eq!(error.code, ErrorCode::CertificateChainInvalid);
+        assert_eq!(error.stage, Stage::CertificateChain);
+        let details = serde_json::to_value(&error.details).unwrap();
+        assert_eq!(details["reason"], "unknown_critical_extension");
+        assert_eq!(details["extension"], oid.to_string());
+        let sha256 = crate::domain::hex(
+            &crate::crypto::Hash::Sha256.digest(&intermediate.to_der().unwrap()),
+        );
+        assert_eq!(details["certificate_sha256"], sha256);
+        // details.certificate is the signer, as in every chain error.
+        assert_eq!(details["certificate"]["sha256"], leaf_report.sha256);
+        assert_ne!(leaf_report.sha256, sha256);
+        assert_eq!(details["required_eku"], "1.3.6.1.5.5.7.3.3");
+    }
+
     /// PATH-014: any OID an earlier extension carries, whatever the values.
     #[test]
     fn a_repeat_of_any_extension_is_found_and_reported_first() {
@@ -3823,7 +4092,8 @@ mod malformed_extensions {
         };
         let oid = |text: &str| text.parse::<::der::asn1::ObjectIdentifier>().unwrap();
         let null: &[u8] = &[0x05, 0x00];
-        // One instance of an unfamiliar extension is PATH-006's.
+        // One noncritical instance of an unfamiliar extension is no defect
+        // (PATH-006 judges only a critical one; `adding` adds noncritical).
         assert_eq!(extension_defect(&adding(&[("1.2.3.4.5", null)])), None);
         // Two are a repeat, with equal values or different ones.
         for second in [null, &[0x04, 0x00]] {

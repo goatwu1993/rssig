@@ -86,6 +86,9 @@ pub(super) const LABELS: &[&str] = &[
     "lifetime-counter-expired",
     "lifetime-valid",
     "lifetime-before-not-before",
+    // PATH-006: the same signer with a critical unfamiliar extension, which
+    // is judged before the lifetime signing-time check.
+    "lifetime-before-not-before-critical-extension",
     "timestamp-before-not-before",
     "lifetime-untimestamped",
     "leaf-not-after-exact",
@@ -137,7 +140,9 @@ fn spec(label: &'static str) -> Spec {
         }
         "lifetime-counter-expired" => ((-9000, -1000), true, Root, Stamp::Counter(-5000)),
         "lifetime-valid" => ((-9000, 0), true, Root, Stamp::Rfc(-5000, None)),
-        "lifetime-before-not-before" => ((-4000, 9000), true, Root, Stamp::Rfc(-5000, None)),
+        "lifetime-before-not-before" | "lifetime-before-not-before-critical-extension" => {
+            ((-4000, 9000), true, Root, Stamp::Rfc(-5000, None))
+        }
         "timestamp-before-not-before" => ((-4000, 9000), false, Root, Stamp::Rfc(-5000, None)),
         "lifetime-untimestamped" => ((-9000, 9000), true, Root, Stamp::None),
         "leaf-not-after-exact" => ((-9000, -2000), false, Root, Stamp::Rfc(-2000, None)),
@@ -427,9 +432,23 @@ fn signer(spec: &Spec) -> (Identity, Vec<Certificate>) {
         usages.push(ObjectIdentifier::new_unwrap(LIFETIME_SIGNING));
     }
     builder.add_extension(&ExtendedKeyUsage(usages)).unwrap();
+    let mut cert = builder.build::<p256::ecdsa::DerSignature>().unwrap();
+    if spec.label.ends_with("-critical-extension") {
+        cert.tbs_certificate
+            .extensions
+            .as_mut()
+            .unwrap()
+            .push(x509_cert::ext::Extension {
+                extn_id: "1.2.3.4.5".parse().unwrap(),
+                critical: true,
+                extn_value: ::der::asn1::OctetString::new([0x05, 0x00]).unwrap(),
+            });
+        let sig: Signature = issuer_key.sign(&cert.tbs_certificate.to_der().unwrap());
+        cert.signature = BitString::from_bytes(sig.to_der().as_bytes()).unwrap();
+    }
     let id = Identity {
         key,
-        cert: builder.build::<p256::ecdsa::DerSignature>().unwrap(),
+        cert,
         root_key: root.root_key.clone(),
         root: root.root.clone(),
     };

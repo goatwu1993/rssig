@@ -6836,6 +6836,22 @@
       ]
     },
     {
+      "file": "bad-rdp-critical-sct.rdp",
+      "sha256": "1a6e2412a116548371efaf87a9331e7ace3d4f2f08a51ff2c56906d63124ae29",
+      "bytes": 1610,
+      "description": "PATH-006 RDP signed settings; the signer of good-rdp-multiple-ekus.rdp with a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT appended and re-signed. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain (unknown_critical_extension), or untrusted_root with no configured root.",
+      "provenance": {
+        "generator": "engine/src/tests/rdp_fixtures.rs::write_eku_retry_fixture",
+        "command": "cargo test --locked regenerate_rdp_eku_retry_fixture -- --ignored",
+        "source": "Existing deterministic test root/key and RDP body; append a critical SCT list extension to the leaf and re-sign with the public test-only root key.",
+        "license": "Apache-2.0"
+      },
+      "cases": [
+        "path-006-bad-rdp-leaf-critical-sct",
+        "path-006-bad-rdp-leaf-critical-sct-empty-store"
+      ]
+    },
+    {
       "file": "good-rdp-eku-retry-ca.rdp",
       "sha256": "857b8a41463a9e80c31ca1f3adbf825ed3ab7069167fe4540de2ec3c7336a1f3",
       "bytes": 2102,
@@ -7170,6 +7186,22 @@
       },
       "cases": [
         "path-006-bad-ca-critical"
+      ]
+    },
+    {
+      "file": "bad-path-ca-critical-sct.exe",
+      "sha256": "d56b94892e027800b230793f80ebf738b51a3bb6eae41a6e5747f64fddc87fe9",
+      "bytes": 2280,
+      "description": "PATH-T001 signed inert PE; ca-critical-sct. The intermediate carries a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT; image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-006-bad-ca-critical-sct"
       ]
     },
     {
@@ -7861,6 +7893,55 @@
       },
       "cases": [
         "path-006-bad-leaf-critical"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-critical-sct.exe",
+      "sha256": "1d010240e91513cef632fda4f154bb02b357e89201676c1d971a1f482291fd78",
+      "bytes": 2272,
+      "description": "PATH-T001 signed inert PE; leaf-critical-sct. The signer carries a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT; image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain; verified under --integrity-only, which builds no path.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-006-bad-leaf-critical-sct",
+        "path-006-good-integrity-only-leaf-critical-sct"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-critical-no-eku.exe",
+      "sha256": "d678a85108d7ec4caa562400b4b134b06cac6b45afed0add607a7f5f91855aed",
+      "bytes": 2192,
+      "description": "PATH-T001 signed inert PE; leaf-critical-no-eku. The signer carries the critical unfamiliar extension 1.2.3.4.5 and no extKeyUsage; the extension is reported, not the missing EKU. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-006-bad-leaf-critical-no-eku-reports-the-extension"
+      ]
+    },
+    {
+      "file": "bad-path-leaf-critical-no-ds.exe",
+      "sha256": "f4d82468a77626fc59a6b4d0d4b799c5cdaecd20019ae45ec78062df508e73cb",
+      "bytes": 2216,
+      "description": "PATH-T001 signed inert PE; leaf-critical-no-ds. The signer carries the critical unfamiliar extension 1.2.3.4.5 and a keyUsage of keyEncipherment alone; the extension is reported, not the missing digitalSignature. Image, CMS, and certificate signatures are valid; see linked cases for isolated path rule and exact selected chain or typed failure. Expected outcomes under the linked configurations: certificate_chain_invalid at certificate_chain.",
+      "provenance": {
+        "kind": "synthetic",
+        "generator": "engine/src/tests/certificate_paths.rs::regenerate_path_fixtures",
+        "command": "cargo test --locked --lib regenerate_path_fixtures -- --ignored",
+        "license": "Apache-2.0",
+        "keys": "Public test-only P-256 constants [40..45; 32]; deterministic RustCrypto signatures. No external verifier or Windows oracle."
+      },
+      "cases": [
+        "path-006-bad-leaf-critical-no-ds-reports-the-extension"
       ]
     },
     {
@@ -9817,6 +9898,44 @@
       ]
     },
     {
+      "file": "tsa-critical-sct.exe",
+      "sha256": "8c28fb94ab014fe7a75c08802ad86d9e2f5af176f9c8b2f97aedae57b49bcc2b",
+      "bytes": 3912,
+      "description": "PATH-006: critical-sct. The TSA certificate carries a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT, which rssig does not process; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (unknown_critical_extension); verified under --integrity-only, which builds no path.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "paired_good": "tsa-good.exe",
+      "cases": [
+        "path-006-bad-tsa-critical-sct",
+        "path-006-good-integrity-only-tsa-critical-sct"
+      ]
+    },
+    {
+      "file": "tsa-counter-critical-sct.exe",
+      "sha256": "83a545ed2fc688b469a7c73009c9e18ff76b35ff63702df204f35abc8aa91d11",
+      "bytes": 2912,
+      "description": "PATH-006: counter-critical-sct. The countersignature's TSA certificate carries a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT, which rssig does not process; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (unknown_critical_extension); verified under --integrity-only, which builds no path.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "paired_good": "tsa-good-counter.exe",
+      "cases": [
+        "path-006-bad-tsa-counter-critical-sct",
+        "path-006-good-integrity-only-tsa-counter-critical-sct"
+      ]
+    },
+    {
+      "file": "tsa-critical-sct-eku-missing.exe",
+      "sha256": "ed828148f89447463aa57264e633e4eab4284a03fd26482911b43a890538515b",
+      "bytes": 3864,
+      "description": "PATH-006: critical-sct-eku-missing. The TSA certificate carries a critical signedCertificateTimestampList (1.3.6.1.4.1.11129.2.4.2) holding one well-formed SCT and no extKeyUsage; parent and TSA signatures generated with deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (unknown_critical_extension), judged before TSA-003's invalid_eku.",
+      "generator": "engine/src/tests/timestamp_structure.rs::regenerate_tsa_fixtures",
+      "license": "Apache-2.0",
+      "paired_good": "tsa-good.exe",
+      "cases": [
+        "path-006-bad-tsa-critical-sct-eku-missing-reports-the-extension"
+      ]
+    },
+    {
       "file": "tsa-eku-mixed.exe",
       "sha256": "0302def880b576794559181d8fe9f98028330c21ce24ded1f3a414408e3f036f",
       "bytes": 3784,
@@ -10039,6 +10158,17 @@
       "cases": [
         "time-002-lifetime-before-not-before",
         "time-012-lifetime-before-not-before-crl-expired"
+      ]
+    },
+    {
+      "file": "time-lifetime-before-not-before-critical-extension.exe",
+      "sha256": "c64dba670a0c64d9c522f28f9bc4d6550ed048d383b3e458907f3ab641ac2c42",
+      "bytes": 3824,
+      "description": "PATH-006: the lifetime-signing signer of time-lifetime-before-not-before.exe, whose notBefore follows the RFC 3161 timestamp, with the critical unfamiliar extension 1.2.3.4.5 added. Deterministic public test keys; image unchanged. Expected certificate_chain_invalid at certificate_chain (unknown_critical_extension), judged before the lifetime signing-time check.",
+      "generator": "engine/src/tests/validation_time.rs::regenerate_time_fixtures",
+      "license": "Apache-2.0",
+      "cases": [
+        "path-006-bad-lifetime-signer-issued-after-signing-reports-the-extension"
       ]
     },
     {

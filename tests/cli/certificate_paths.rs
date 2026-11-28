@@ -132,15 +132,120 @@ fn bad_path_ca_critical() {
     );
 }
 
+/// PATH-006: the signedCertificateTimestampList extension, which rssig does
+/// not process.
+const SCT_LIST: &str = "1.3.6.1.4.1.11129.2.4.2";
+
+/// PATH-006: rssig itself rejects a signer with a critical extension it does
+/// not process, before any path is built, and names the extension and the
+/// signer, whatever webpki keeps.
+fn unknown_critical_extension_in_the_signer(input: &str, oid: &str) {
+    let output = run(input, "fixtures/path-root.der");
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    assert!(output.json["results"][0].get("signatures").is_none());
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["stage"], "certificate_chain", "{error}");
+    let details = &error["details"];
+    assert_eq!(details["reason"], "unknown_critical_extension", "{error}");
+    assert_eq!(details["extension"], oid, "{error}");
+    let sha256 = details["certificate_sha256"].as_str().unwrap();
+    assert_eq!(details["certificate"]["sha256"], sha256, "{error}");
+    // The signer is judged before any usage.
+    for usage in ["required_eku", "lifetime_signing", "signing_time"] {
+        assert!(details.get(usage).is_none(), "{error}");
+    }
+}
+
 #[test]
 fn bad_path_leaf_critical() {
-    rejected(
-        "bad-path-leaf-critical.exe",
-        "fixtures/path-root.der",
-        ErrorCode::CertificateChainInvalid,
-        Stage::CertificateChain,
-        "UnsupportedCriticalExtension",
-    );
+    unknown_critical_extension_in_the_signer("bad-path-leaf-critical.exe", "1.2.3.4.5");
+}
+
+#[test]
+fn bad_path_leaf_critical_sct() {
+    unknown_critical_extension_in_the_signer("bad-path-leaf-critical-sct.exe", SCT_LIST);
+}
+
+/// PATH-006 before PATH-007 and PATH-008: a signer with a critical
+/// unfamiliar extension and no extKeyUsage, or a keyUsage without
+/// digitalSignature, is reported for the extension, not `invalid_eku` or
+/// `invalid_key_usage`.
+#[test]
+fn unknown_critical_extension_is_reported_before_the_signers_usage() {
+    for input in [
+        "bad-path-leaf-critical-no-eku.exe",
+        "bad-path-leaf-critical-no-ds.exe",
+    ] {
+        unknown_critical_extension_in_the_signer(input, "1.2.3.4.5");
+        // The usage defect is really there, so the order is what is pinned.
+        let output = run(input, "fixtures/path-root.der");
+        let signer = &output.json["results"][0]["error"]["details"]["certificate"];
+        if input.contains("no-eku") {
+            assert!(signer["extended_key_usage"].is_null(), "{signer}");
+            let extensions = signer["extensions"].as_array().unwrap();
+            assert!(
+                !extensions.iter().any(|e| e["oid"] == "2.5.29.37"),
+                "{signer}"
+            );
+        } else {
+            assert_eq!(
+                signer["key_usage"]["usages"],
+                serde_json::json!(["key_encipherment"]),
+                "{signer}"
+            );
+        }
+    }
+}
+
+/// PATH-006: an intermediate with a critical SCT list fails the path. webpki
+/// 0.103.16 keeps no SCT list and rejects it while it builds the path, before
+/// rssig's path callback (`UnsupportedCriticalExtension`, no reason); a
+/// webpki that keeps it (0.103.17) leaves it to the callback, which names it.
+/// Either way it fails, so the case pins only the code and stage.
+#[test]
+fn bad_path_ca_critical_sct() {
+    let output = run("bad-path-ca-critical-sct.exe", "fixtures/path-root.der");
+    assert_eq!(output.exit_code, 1, "{}", output.json);
+    assert!(output.json["results"][0].get("signatures").is_none());
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_chain_invalid", "{error}");
+    assert_eq!(error["stage"], "certificate_chain", "{error}");
+    let details = &error["details"];
+    match details.get("reason") {
+        None => assert!(
+            error["message"]
+                .as_str()
+                .unwrap()
+                .contains("UnsupportedCriticalExtension"),
+            "{error}"
+        ),
+        Some(reason) => {
+            assert_eq!(reason, "unknown_critical_extension", "{error}");
+            assert_eq!(details["extension"], SCT_LIST, "{error}");
+            // The intermediate is blamed: the embedded certificate other
+            // than the signer, as an integrity-only run reports it.
+            let integrity = run_fixture(
+                "bad-path-ca-critical-sct.exe",
+                &["verify", "--integrity-only", "--time", "1800000000"],
+            );
+            let signature = &integrity.json["results"][0]["signatures"][0];
+            let signer = signature["certificate"]["sha256"].clone();
+            let embedded: Vec<_> = signature["embedded_certificates"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|c| c["sha256"] != signer)
+                .collect();
+            assert_eq!(embedded.len(), 1, "{signature}");
+            assert_eq!(
+                details["certificate_sha256"], embedded[0]["sha256"],
+                "{error}"
+            );
+            assert_eq!(details["certificate"]["sha256"], signer, "{error}");
+            assert_eq!(details["required_eku"], "1.3.6.1.5.5.7.3.3", "{error}");
+        }
+    }
 }
 
 /// PATH-013: each extension rssig or webpki decodes, given a value that does
@@ -738,6 +843,90 @@ fn integrity_only_tsa_with_malformed_extension_verifies_and_reports_the_extensio
     }
 }
 
+/// PATH-006 before TIME-002: a lifetime signer issued after its signing time
+/// with a critical unfamiliar extension is reported for the extension, not
+/// `certificate_not_yet_valid` at the signing time.
+#[test]
+fn unknown_critical_extension_is_reported_before_a_lifetime_signing_time() {
+    let error = extension_of_another_format_fails_the_path(
+        "time-lifetime-before-not-before-critical-extension.exe",
+        "unknown_critical_extension",
+        "1.2.3.4.5",
+    );
+    let details = &error["details"];
+    for usage in ["required_eku", "lifetime_signing", "signing_time"] {
+        assert!(details.get(usage).is_none(), "{details}");
+    }
+    // Without the extension the same signer fails at its signing time, so
+    // the order is what is pinned.
+    let output = run_fixture(
+        "time-lifetime-before-not-before.exe",
+        &[
+            "verify",
+            "--no-system-roots",
+            "--roots",
+            "fixtures/root.der",
+            "--crl",
+            "fixtures/good.crl",
+            "--time",
+            "1800000000",
+        ],
+    );
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "certificate_not_yet_valid", "{error}");
+    assert_eq!(error["details"]["lifetime_signing"], true, "{error}");
+}
+
+#[test]
+fn unknown_critical_extension_in_an_rdp_signer_fails_the_path() {
+    // PATH-006: RDP's `verify_trust` calls the signer's check before its
+    // usage search.
+    let error = extension_of_another_format_fails_the_path(
+        "bad-rdp-critical-sct.rdp",
+        "unknown_critical_extension",
+        SCT_LIST,
+    );
+    let details = &error["details"];
+    assert_eq!(
+        details["certificate"]["sha256"], details["certificate_sha256"],
+        "{details}"
+    );
+}
+
+/// PATH-006 judges a path only: integrity-only verification builds none, so
+/// a signer or a timestamp signer with a critical SCT list verifies, as
+/// OpenSSL checks no extension without path verification (PATH-013).
+#[test]
+fn unknown_critical_extension_is_not_judged_without_a_path() {
+    for input in [
+        "bad-path-leaf-critical-sct.exe",
+        "tsa-critical-sct.exe",
+        "tsa-counter-critical-sct.exe",
+    ] {
+        let output = run_fixture(
+            input,
+            &["verify", "--integrity-only", "--time", "1800000000"],
+        );
+        assert_eq!(output.exit_code, 0, "{input}: {}", output.json);
+        let signature = &output.json["results"][0]["signatures"][0];
+        assert_eq!(signature["chain_trusted"], false, "{input}");
+        let certificate = if input.starts_with("tsa-") {
+            &signature["timestamp_verification"]["certificate"]
+        } else {
+            &signature["certificate"]
+        };
+        // The extension is reported, critical, and not marked undecoded.
+        let extensions = certificate["extensions"].as_array().unwrap();
+        assert!(
+            extensions
+                .iter()
+                .any(|e| e["oid"] == SCT_LIST && e["critical"] == true),
+            "{input}: {certificate}"
+        );
+        assert!(certificate.get("undecoded_extensions").is_none(), "{input}");
+    }
+}
+
 #[test]
 fn repeated_extension_in_an_rdp_signer_fails_the_path() {
     extension_of_another_format_fails_the_path(
@@ -749,12 +938,13 @@ fn repeated_extension_in_an_rdp_signer_fails_the_path() {
 
 /// RDP-T005: with no configured root, an RDP signer reports `untrusted_root`
 /// before its EKU is read, as every other format does (PATH-013, PATH-014,
-/// PATH-001), whatever its extKeyUsage holds.
+/// PATH-006, PATH-001), whatever its extKeyUsage holds.
 #[test]
 fn rdp_signer_eku_without_a_configured_root_is_untrusted() {
     for input in [
         "bad-rdp-malformed-eku.rdp",
         "bad-rdp-repeated-eku.rdp",
+        "bad-rdp-critical-sct.rdp",
         "bad-rdp-no-eku.rdp",
         "bad-rdp-eku.rdp",
     ] {
@@ -783,6 +973,48 @@ fn repeated_extension_in_a_tsa_certificate_fails_the_path() {
         "repeated_extension",
         "2.5.29.14",
     );
+}
+
+#[test]
+fn unknown_critical_extension_in_a_tsa_certificate_fails_the_path() {
+    // PATH-006: a timestamp signer goes through the signer's check too, in
+    // an RFC 3161 token and in a countersignature, before TSA-003.
+    let mut blamed = Vec::new();
+    for input in ["tsa-critical-sct.exe", "tsa-counter-critical-sct.exe"] {
+        let error = extension_of_another_format_fails_the_path(
+            input,
+            "unknown_critical_extension",
+            SCT_LIST,
+        );
+        let details = &error["details"];
+        assert_eq!(
+            details["certificate"]["subject"]["display"], "CN=rssig test TSA",
+            "{input}: {details}"
+        );
+        let sha256 = details["certificate_sha256"].as_str().unwrap();
+        assert_eq!(
+            details["certificate"]["sha256"], sha256,
+            "{input}: {details}"
+        );
+        for usage in ["required_eku", "lifetime_signing", "signing_time"] {
+            assert!(details.get(usage).is_none(), "{input}: {details}");
+        }
+        blamed.push(sha256.to_owned());
+    }
+    // Both forms carry the same TSA certificate, and it is the one blamed.
+    assert_eq!(blamed[0], blamed[1]);
+    // Judged before TSA-003: without an extKeyUsage it is still the
+    // extension that is reported, not `invalid_eku` at `timestamp`.
+    let error = extension_of_another_format_fails_the_path(
+        "tsa-critical-sct-eku-missing.exe",
+        "unknown_critical_extension",
+        SCT_LIST,
+    );
+    let tsa = &error["details"]["certificate"];
+    assert_eq!(tsa["subject"]["display"], "CN=rssig test TSA", "{tsa}");
+    assert!(tsa["extended_key_usage"].is_null(), "{tsa}");
+    let extensions = tsa["extensions"].as_array().unwrap();
+    assert!(!extensions.iter().any(|e| e["oid"] == "2.5.29.37"), "{tsa}");
 }
 
 #[test]

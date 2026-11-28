@@ -193,7 +193,7 @@ fn verify_trust(
 ) -> Result<TrustReport> {
     use x509_cert::ext::pkix::ExtendedKeyUsage;
     // Without a configured root every format reports `untrusted_root` before
-    // judging the signer (PATH-001, PATH-013, PATH-014): ask `verify` once, as the
+    // judging the signer (PATH-001, PATH-013, PATH-014, PATH-006): ask `verify` once, as the
     // other formats do, before the EKU is read (RDP-T005).
     if store.root_count() == 0 {
         return store.verify(
@@ -208,8 +208,8 @@ fn verify_trust(
             budget,
         );
     }
-    // PATH-013 and PATH-014 for the signer before its EKU is read, as
-    // `verify` makes them for every other format.
+    // PATH-013, PATH-014 and PATH-006 for the signer before its EKU is read,
+    // as `verify` makes them for every other format.
     store.check_signer(leaf, budget)?;
     let usage = leaf
         .tbs_certificate

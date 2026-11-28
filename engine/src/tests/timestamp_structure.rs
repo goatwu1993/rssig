@@ -46,6 +46,12 @@ pub(super) const FAULTS: &[&str] = &[
     "counter-malformed-eku",
     // PATH-014: a TSA certificate that repeats its subjectKeyIdentifier.
     "repeated-ski",
+    // PATH-006: a TSA certificate with a critical SCT list, which rssig does
+    // not process, in a token and in a countersignature.
+    "critical-sct",
+    "counter-critical-sct",
+    // PATH-006 before TSA-003: the same, without an extKeyUsage.
+    "critical-sct-eku-missing",
 ];
 
 /// The one extension with `oid` in a TSA certificate's extensions; panics
@@ -139,6 +145,21 @@ fn artifact(fault: &str) -> Vec<u8> {
         "malformed-bc" => Some(|exts| malform(exts, "2.5.29.19")),
         "malformed-ku" => Some(|exts| malform(exts, "2.5.29.15")),
         "malformed-eku" => Some(|exts| malform(exts, "2.5.29.37")),
+        "critical-sct" => Some(|exts| {
+            exts.push(x509_cert::ext::Extension {
+                extn_id: certificate_paths::SCT_LIST_OID.parse().unwrap(),
+                critical: true,
+                extn_value: ::der::asn1::OctetString::new(certificate_paths::sct_list()).unwrap(),
+            });
+        }),
+        "critical-sct-eku-missing" => Some(|exts| {
+            exts.retain(|e| e.extn_id.to_string() != "2.5.29.37");
+            exts.push(x509_cert::ext::Extension {
+                extn_id: certificate_paths::SCT_LIST_OID.parse().unwrap(),
+                critical: true,
+                extn_value: ::der::asn1::OctetString::new(certificate_paths::sct_list()).unwrap(),
+            });
+        }),
         "eku-missing" => Some(|exts| exts.retain(|e| e.extn_id.to_string() != "2.5.29.37")),
         "key-usage" => Some(|exts| {
             extension(exts, "2.5.29.15").extn_value = ::der::asn1::OctetString::new(
