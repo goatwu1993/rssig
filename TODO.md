@@ -170,10 +170,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T017** fix: Record the points of a URL-less retrieval failure. A
   URL-less failure beside an answer by certificate is recorded without the
   points it concerned.
-- [ ] **CRL-T018** fix: Refuse more private-use DNS suffixes before resolving. The
-  built-in URL check lists reserved labels (`src/crl.rs`); other
-  private-use suffixes (`.lan`, `.corp`, `.localdomain`) rely on the
-  DNS-answer address check.
+- [x] **CRL-T018** fix: Refuse more private-use DNS suffixes before resolving. Done ([PR #111](https://github.com/goatwu1993/rssig/pull/111)); [CRL-037](docs/crl.md#crl-037-the-built-in-source-refuses-what-it-does-not-fetch).
 - [ ] **CRL-T019** fix: Decide case-insensitive distribution-point matching (owner decision). URIs
   compare byte for byte (webpki's rule), so a scheme or host differing only
   in case does not match; RFC 5280 section 7.4 compares them without regard
@@ -232,6 +229,15 @@ they pin or what they check, never after a task.
   past the retained-CRL cap) is not an answer by certificate, so each point
   the source did not name is also recorded as `crl_fetch_failed` "returned
   nothing". Record those points with the refusal instead. From LIMIT-T004.
+- [ ] **CRL-T055** test: Pin the refused CRL URL names in the portable specification.
+  The names `checked_url` refuses before resolving (CRL-037) are covered only
+  by Rust tests; add `tests/cases.json` cases, with fixtures whose
+  distribution points use them, so another implementation inherits the list.
+  From CRL-T018.
+- [ ] **CRL-T056** docs: Decide whether CRL-037's refusals need an acceptance entry.
+  CRL-037 pins diagnostics, but a URL it refuses can turn a verified result
+  into `revocation_unknown` (its Note, split-horizon names); check the index
+  and reindex if the refusal is an acceptance pin. From CRL-T018.
 
 ### POLICY
 

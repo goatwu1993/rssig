@@ -549,7 +549,7 @@ Without an answer from the source, the CRL's own error stands. An expired CRL st
 
 ### CRL-037: The built-in source refuses what it does not fetch
 
-The built-in `HttpCrlSource` is stricter than the references (public addresses, `http` only, no redirects, size and time bounds) and reports a refused URL as denied; `rssig::crl::check_public_http_url` gives a custom source the same check.
+The built-in `HttpCrlSource` is stricter than the references (public addresses, `http` only, at most three redirects each checked again, size and time bounds) and reports a refused URL as denied; `rssig::crl::check_public_http_url` gives a custom source the same check. Before resolving, it refuses a single-label host and a host ending in a special-use label (`localhost`, `local`, `home.arpa`, `invalid`, `test`, `example`, `onion`, `alt`) or a privately used one (`intranet`, `internal`, `private`, `corp`, `home`, `lan`, `localdomain`), matched as whole labels; every other name is resolved and refused unless every address in the answer is public.
 
 - **Status:** Decided
 - **Decided by:** owner, PR #60
@@ -558,6 +558,8 @@ The built-in `HttpCrlSource` is stricter than the references (public addresses, 
   - OpenSSL crypto/x509/x509_vfy.c:2228: the verifier only calls lookup_crls; apps/lib/apps.c:2833 and :2905-2907 (get_dp_url, crls_http_cb): the scheme rule (http only) lives in the application callback.
   - Bouncy Castle prov/src/main/java/org/bouncycastle/jce/provider/CrlCache.java:136-141 and :185-188: the fetch helper applies an optional scheme allow-list (unrestricted by default) and opens the URL.
   - BoringSSL crypto/x509/x509_vfy.cc:697-704 (get_crl): never fetches.
+  - RFC 6761 section 6 (`localhost`, `invalid`, `test`, `example`), RFC 6762 section 3 (`local`), RFC 7686 (`onion`), RFC 8375 (`home.arpa`) and RFC 9476 (`alt`) reserve their names. RFC 6762 Appendix G reserves nothing: it reports `intranet`, `internal`, `private`, `corp`, `home` and `lan` as top-level names seen in private use and recommends against them; ICANN reserved `internal` for private use in 2024, and none of the others is delegated in the public root. `localdomain` is not listed anywhere; hosts use it for local names (`localhost.localdomain`) and the root does not delegate it. Refusing these names is this entry's choice, not a reservation. None of the references refuses a name.
+- **Note:** PR #111 (CRL-T018) added `intranet`, `private`, `corp`, `home`, `lan` and `localdomain` without asking the owner, as a departure from the references that rejects more (AGENTS.md, Pre-1.0 flow item 2), for the owner's 1.0 review. It can turn a verified result into `revocation_unknown`: a distribution point such as `http://crl.corp/ca.crl` that split-horizon DNS resolves to a public address was fetched before and is refused now. Supplying that CRL locally still verifies.
 
 ### CRL-038: A URI that is not an absolute URL is never offered to a source
 

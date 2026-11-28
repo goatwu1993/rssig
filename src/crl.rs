@@ -177,11 +177,13 @@ fn checked_url(raw: &str) -> Result<Url, VerificationError> {
         Host::Ipv6(ip) if !public_ip(IpAddr::V6(ip)) => return Err(not_public()),
         Host::Domain(name)
             if !name.trim_end_matches('.').contains('.')
-                // Special-use names (RFC 6761, 6762, 7686, 8375, 9476) and the
-                // private-use `internal`.
+                // Special-use names (RFC 6761, 6762, 7686, 8375, 9476); then
+                // the top-level names RFC 6762 Appendix G reports in private
+                // use (ICANN reserved `internal` in 2024) and the conventional
+                // `localdomain`, none of which the public root delegates.
                 || [
                     "localhost", "local", "internal", "home.arpa", "invalid", "test", "example",
-                    "onion", "alt",
+                    "onion", "alt", "intranet", "private", "corp", "home", "lan", "localdomain",
                 ]
                     .iter()
                     .any(|reserved| {
@@ -421,7 +423,9 @@ fn headers(bytes: &[u8]) -> Result<Headers, VerificationError> {
 /// distribution points: `Ok` for a public HTTP URL on port 80 without
 /// credentials or fragments and at most 2,048 bytes, `Denied` for anything
 /// else (another scheme such as `file:` or `https:`, a literal private,
-/// loopback or link-local address, a single-label or local name).
+/// loopback or link-local address, a single-label name, or a name ending in
+/// a special-use or private-use label such as `local`, `test`, `corp` or
+/// `lan`; CRL-037 in `docs/crl.md` lists them).
 ///
 /// The engine passes a source every listed URI that passes input hygiene
 /// and applies no transport policy itself, so a source that fetches by URL
@@ -945,6 +949,14 @@ mod tests {
             "http://printer./",
             "http://a.b.internal./",
             "http://x.home.arpa/",
+            // Private-use suffixes (RFC 6762 Appendix G) and `localdomain`.
+            "http://crl.corp/x.crl",
+            "http://ca.example.lan/x.crl",
+            "http://pki.home./x.crl",
+            "http://crl.intranet/x.crl",
+            "http://crl.private/x.crl",
+            "http://ca.localdomain/x.crl",
+            "http://localhost.localdomain/",
             "http://example.com/\r\nx",
         ] {
             assert!(checked_url(url).is_err(), "{url}");
@@ -952,6 +964,16 @@ mod tests {
         // Each reason has its own message.
         let message = |url: &str| checked_url(url).unwrap_err().message;
         assert!(message("http://ca.test/x.crl").contains("not public"));
+        for url in [
+            "http://crl.corp/x.crl",
+            "http://ca.example.lan/x.crl",
+            "http://pki.home./x.crl",
+            "http://crl.intranet/x.crl",
+            "http://crl.private/x.crl",
+            "http://ca.localdomain/x.crl",
+        ] {
+            assert!(message(url).contains("not public"), "{url}");
+        }
         assert!(message("http://10.0.0.1/x.crl").contains("not public"));
         assert!(message(" http://example.com/x").contains("whitespace"));
         assert!(message("https://example.com/x").contains("port 80"));
@@ -964,6 +986,9 @@ mod tests {
             "http://crl.foolocal/x",
             "http://pki.theinternal/x",
             "http://crl.notlocalhost/x",
+            "http://crl.mycorp/x",
+            "http://pki.plan/x",
+            "http://crl.corp.example.com/x",
         ] {
             assert!(checked_url(url).is_ok(), "{url}");
         }
@@ -1020,6 +1045,9 @@ mod tests {
             "https://crl.example.com/a.crl",
             "http://localhost/a.crl",
             "http://10.0.0.1/a.crl",
+            // Private-use names are refused before resolving (CRL-037).
+            "http://crl.corp/a.crl",
+            "http://ca.localdomain/a.crl",
         ] {
             let denied = check_public_http_url(url).unwrap_err();
             assert_eq!(denied.kind, CrlSourceErrorKind::Denied, "{url}");
