@@ -397,7 +397,9 @@ measured only in the revocation modes; the path modes leave them out:
 **The second set.** `PS_KEY_USAGE` was also set to digitalSignature for
 the signer (not the TSA). A control run of all 533 main-set runs with it set
 changed no result. Of the 18
-cases, certval agrees on 15. It **accepts 3 that rssig rejects**:
+cases, certval agrees on 15. Two of those agree only because no root is
+configured: the RDP `-empty-store` cases, where both find no path, so they
+say nothing about PATH-013/014. It **accepts 3 that rssig rejects**:
 
 | Case | Entry | rssig `code` (`details.reason`) | Why certval accepts |
 |---|---|---|---|
@@ -493,7 +495,7 @@ and the 66 second-set runs (18 cases, TSA fixtures also in `tsa-` modes).
     engine/src/tests/crl_applicability.rs (4);
   - tests/cli/certificate_paths.rs (14), tests/cli/trust_loading.rs and
     tests/cli/crl_applicability.rs;
-  - 16 mentions in tests/fixtures/manifest.json provenance.
+  - 19 mentions on 16 lines of tests/fixtures/manifest.json provenance.
 - **CMS** (engine/src/cms.rs): unchanged; certval-cms cannot replace it.
 - **Everything else:** a move of the whole engine to der 0.8 / x509-cert 0.3
   (or two stacks side by side), the fuzz targets and `fuzz/Cargo.lock`, and
@@ -513,8 +515,11 @@ and the 66 second-set runs (18 cases, TSA fixtures also in `tsa-` modes).
     PATH-013, PATH-014) and of the 30 CRL- acceptance entries (CRL-001 to
     CRL-025, CRL-041, CRL-044, CRL-045, CRL-048, CRL-050), since each is
     judged per built path;
-  - an update of the 42 lines in docs/path.md, docs/crl.md and
-    docs/certificate-paths.md that name webpki (6 of them cite 0.103.16).
+  - an update of the 83 lines in 18 files under docs/ that name webpki.
+    That is 42 in docs/path.md, docs/crl.md and docs/certificate-paths.md
+    (6 of them cite 0.103.16), and the rest in validation-time.md,
+    verification-budgets.md, time.md, library.md, boundaries.md (which
+    AGENTS.md keeps current with each change) and 10 others.
 - **Risk:** high. 31 measured cases that rssig's own composition must get
   right: the 24 accepts and 3 rejects of the closest settings, plus 3 accepts
   and 1 reject that depend on settings. That is on a validator that is a month into its public life and a
@@ -634,8 +639,9 @@ It was built and run outside the repository, over a copy of
 `tests/fixtures`:
 
 ```
-python3 cases.py > cases.tsv                         # from the repository root
-certval-harness <copy of tests/fixtures> cases.tsv   # prints id, mode, ACCEPT/REJECT, detail
+python3 cases.py > cases.tsv                                      # from the repository root
+certval-harness <copy of tests/fixtures> cases.tsv > results.tsv  # id, mode, ACCEPT/REJECT, detail
+python3 compare.py results.tsv                                    # the section 6 counts
 ```
 
 The mode names in the case list are `path-ekupath` (`path` above),
@@ -694,6 +700,41 @@ for c in d['cases']:
             modes += ['tsa-' + m for m in modes]
     for m in modes:
         print('\t'.join([c['id'], inp, ','.join(roots), ','.join(crls), m]))
+```
+
+</details>
+
+<details>
+<summary>compare.py (the tables in section 6)</summary>
+
+Run from the repository root as `python3 compare.py results.tsv`.
+
+```python
+import json, sys
+from collections import defaultdict
+cases = {c['id']: c for c in json.load(open('tests/cases.json'))['cases']}
+REVOCATION = {'certificate_revoked', 'invalid_crl', 'revocation_unknown'}
+counts = defaultdict(lambda: [0, 0, 0, 0])  # agree, certval accepts, certval rejects, not compared
+accepts = defaultdict(list)
+for line in open(sys.argv[1]):
+    cid, mode, verdict = line.rstrip('\n').split('\t')[:3]
+    c = cases[cid]
+    if c['input'].startswith('tsa-') and not mode.startswith('tsa-'):
+        continue  # the plain modes judge the Authenticode signer, not the TSA
+    err = (c['expect'].get('json', {}).get('results') or [{}])[0].get('error') or {}
+    code, reason = err.get('code'), (err.get('details') or {}).get('reason')
+    revocation_mode = 'rev' in mode.split('-')
+    if (not revocation_mode and (code in REVOCATION or reason == 'ambiguous_issuer_keys')) \
+            or (revocation_mode and '--fetch-crls' in c['command']):
+        counts[mode][3] += 1
+        continue
+    want, got = c['expect']['exit_code'] == 0, verdict == 'ACCEPT'
+    k = 0 if want == got else (1 if got else 2)
+    counts[mode][k] += 1
+    if k == 1:
+        accepts[mode].append(cid)
+for mode in sorted(counts):
+    print(mode, 'agree=%d accepts=%d rejects=%d not-compared=%d' % tuple(counts[mode]), accepts[mode] if mode.endswith('-ku') else '')
 ```
 
 </details>
