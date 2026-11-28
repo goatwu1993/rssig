@@ -239,6 +239,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T058** fix: Withhold the `final_url` of a body that names no `url`. `Retrieval::load` records a reported redirect target, any hygienic URL, for a body answering by certificate, so an artifact can carry a URL outside the request without a point.
 - [ ] **CRL-T059** test: Let a scripted answer name a URL outside the request, and pin CRL-049's handling of one in `tests/cases.json` with a named test. The runner fails a scripted `url` that is not a listed point (`specification_an_answer_with_a_problem_is_never_sent`), so only unit tests in `engine/src/retrieval.rs` pin it; a case needs an explicit marker that the URL is foreign on purpose.
 - [ ] **CRL-T060** fix: Keep `detail` equal to `message` for a retrieval failure recorded at an engine limit. `Retrieval` overwrites the `message` of `limit()`'s error at four sites but not `problem.detail`, so the recorded failure's `detail` still says "CRL retrieval budget exhausted" (found in PR #117 review). Change the message through one setter that keeps `detail`, and any causes a conversion already recorded, in step.
+- [ ] **CRL-T061** fix: Find a usage failure's typed error as `from_internal` does. Detail in [crl-t061.md](docs/tasks/crl-t061.md).
 
 ### POLICY
 
@@ -561,8 +562,18 @@ they pin or what they check, never after a task.
   panic paths while preserving one JSON document where output is writable;
   argument/configuration errors remain plain stderr with exit 2.
 - [x] **CLI-T004** fix: Keep the causes an inner conversion already reported. Done in #117; [record](docs/tasks/done.md#cli-t004-fix-keep-the-causes-an-inner-conversion-already-reported).
-- [ ] **CLI-T005** fix: Recognise every typed layer in `from_internal`. Detail in [cli-t005.md](docs/tasks/cli-t005.md).
+- [x] **CLI-T005** fix: Recognise every typed layer in `from_internal`. Done in #120; [record](docs/tasks/done.md#cli-t005-fix-recognise-every-typed-layer-in-from_internal).
 - [ ] **CLI-T006** fix: Do not repeat a source's text in `causes` or `message`. Detail in [cli-t006.md](docs/tasks/cli-t006.md).
+- [ ] **CLI-T007** fix: Keep the contexts above a parser error `parse::Error::new` unwraps.
+  It downcasts its inner error by value, so contexts above a nested parser
+  error, and the error a parser error was attached to as a context, leave
+  `causes` and `{:#}`: an unsigned MSI drops `MSI container` (`msi::unsigned`,
+  `msp::unsigned`). Diagnostics only. From CLI-T005.
+- [ ] **CLI-T008** fix: Recognise a `VerificationError` that anyhow holds boxed.
+  An error built from a `Box<dyn Error + Send + Sync>` (`anyhow!` on one, or
+  `anyhow::Error::from_boxed`) hides the typed error from `from_internal`,
+  which then reports the caller's default code. No call site boxes one today.
+  From CLI-T005.
 
 ### DOC
 

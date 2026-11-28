@@ -599,3 +599,24 @@ and acceptance are unchanged. Pinned by the case
 `rdp_invalid_integer_keeps_the_context_and_its_source_as_causes` (the RDP
 path), and the unit test
 `converting_again_keeps_the_causes_an_earlier_conversion_reported`.
+
+## CLI-T005 fix: Recognise every typed layer in `from_internal`
+
+`VerificationError::from_internal` took a typed error only where it was the
+chain's object or a source, and found a parser error only by a by-value
+downcast. It now walks the chain once and takes the outermost typed layer: a
+`VerificationError` that is the error, a source or an anyhow context, or a
+parser error that is the error, a context or another error's source, with the
+code and stage of its kind and `details.scope`. The contexts above a parser
+error now lead its `causes`; below a typed context, the error it was added to
+follows. No committed fixture reached these layers (an instrumented run of the
+whole suite found none), so no case moves. Rules: the CLI candidate rule
+`causes`, extended, and the new `typed-layer`. Unit tests in
+`engine/src/domain.rs`:
+`the_contexts_above_a_parser_error_come_first_in_its_causes`,
+`a_parser_error_that_is_another_errors_source_keeps_its_code_and_scope`,
+`a_typed_layer_inside_a_parser_errors_chain_decides` and
+`a_verification_error_attached_as_a_context_is_recognised`. A parser error's
+kind stays the default for its own chain, as before: a typed layer in it
+decides, and its `details.scope` is added only when its own kind decides.
+Follow-ups: CLI-T007, CLI-T008 and CRL-T061.

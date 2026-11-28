@@ -653,6 +653,21 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### A typed error is recognised in any layer of the chain
+
+A `verify_*` error now takes its code, stage, message and details from the
+outermost typed error in its internal chain even when that error is a
+`VerificationError` added as a context, or a parser error that is another
+error's source; such a parser error keeps the code and stage of its kind and
+its `details.scope`, where the default of the step that failed was used
+before. A parser error added as a context already kept its code; the contexts
+above it, and the error it was added to, now appear in its `causes`. Within a
+parser error's own chain, a typed error decides as before, now also a parser
+error that is a source there, and the outer parser error's `details.scope` is
+then not added; `details.scope` belongs to an unsupported RDP signscope alone.
+No input reached these layers when this changed, so no result moved
+(CLI-T005); match `code`, never `causes`.
+
 #### `VerificationError.causes` keep an earlier conversion's causes
 
 A `verify_*` error whose typed error already carried causes from an earlier
