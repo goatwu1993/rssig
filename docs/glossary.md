@@ -51,7 +51,7 @@ X.509 `certificatePolicies`, and other tools' policies.
 | **injected answer** | What a case's injected CRL source returns for one certificate it is asked about (`crl_certificate_responses`): a fixture file name, or a scripted answer. Not an *answer by certificate* (CRL-034), which is a body that loads as a CRL of the certificate's issuer; an injected answer may hold none. |
 | **scripted answer** | An injected answer written out in a case: the response's bodies and failures, or the error the source fails the whole request with ([testing.md](testing.md)). |
 | **named test** | A Rust test under `tests/cli/` that checks one fixture in-process. |
-| **repository check** | A test in `tests/repository.rs` of a committed file no product code reads, such as a project skill ([testing.md](testing.md#repository-checks)). |
+| **repository check** | A test in `tests/repository.rs` of a committed file no product code reads, such as a project skill, or of a source convention the compiler cannot check, such as text-only anyhow contexts ([testing.md](testing.md#repository-checks)). |
 | **project skill** | A Claude Code skill committed under `.claude/skills/<name>/SKILL.md`, such as `review-loop`; its frontmatter is checked by a repository check. |
 | **pinned result** | A case's expected result; every one needs a decision ([AGENTS.md](../AGENTS.md#pinned-expectations)). |
 
@@ -85,5 +85,5 @@ X.509 `certificatePolicies`, and other tools' policies.
 
 | Term | Meaning | Not to be confused with |
 |---|---|---|
-| **typed layer** | A `VerificationError`, or a parser error (`parse::Error`), anywhere in an internal error chain: the error itself, a context added to it or another error's source. The outermost one gives a per-file error its code, stage, message and details ([CLI candidate rule `typed-layer`](cli.md#candidate-rules)). | A **cause**, which is only text. |
+| **typed layer** | A `VerificationError`, or a parser error (`parse::Error`), that is an entry of an internal error chain: the error itself or another error's source, never a value attached as an anyhow context. The outermost one gives a per-file error its code, stage, message and details, unless it is a parser error whose own chain holds a typed layer, which then decides in its place ([CLI candidate rule `typed-layer`](cli.md#candidate-rules)). | A **cause**, which is only text. |
 | **cause** | One entry of an error's `causes`: the message of a context or chain entry the error passed through ([CLI candidate rule `causes`](cli.md#candidate-rules)). Consumers match `code`, never causes. | The typed layer that decides the code. |

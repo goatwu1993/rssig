@@ -1,6 +1,7 @@
 //! Repository checks: committed files that no product code reads, checked so
 //! that a malformed one fails `cargo test --locked` instead of passing
-//! unnoticed. See `docs/testing.md`, "Repository checks".
+//! unnoticed, and source conventions the compiler cannot check
+//! (`typed_text`). See `docs/testing.md`, "Repository checks".
 //!
 //! YAML is parsed with `yaml-rust2`, a real YAML 1.2 parser, never matched
 //! with a pattern: a file that a pattern accepts can still be invalid YAML.
@@ -9,6 +10,8 @@
 mod by_product;
 #[path = "common/crosscheck.rs"]
 mod crosscheck;
+#[path = "repository/typed_text.rs"]
+mod typed_text;
 
 use by_product::local_by_product;
 use std::{collections::BTreeSet, path::Path};

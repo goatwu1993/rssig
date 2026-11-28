@@ -382,8 +382,8 @@ fn signer_alone(e: &anyhow::Error) -> bool {
 /// usage's failure; on a tie, the first.
 fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
     // A failure's code is the first verification error that is an entry of
-    // its chain. `VerificationError::from_internal` also takes one attached
-    // as a context; no usage failure carries one yet (CRL-T061).
+    // its chain. `VerificationError::from_internal` also takes a parser error
+    // that is an entry; no usage failure carries one yet (CRL-T061).
     let revoked_at = failures.iter().position(|e| {
         e.chain()
             .find_map(|cause| cause.downcast_ref::<VerificationError>())
@@ -460,7 +460,7 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
     add(&mut error, gaps);
     let mut merged = anyhow::Error::new(error);
     for message in messages[..depth].iter().rev() {
-        merged = merged.context(message.clone());
+        merged = merged.context(String::clone(message));
     }
     Some(merged)
 }

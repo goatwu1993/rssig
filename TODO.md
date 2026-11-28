@@ -570,11 +570,9 @@ they pin or what they check, never after a task.
   error, and the error a parser error was attached to as a context, leave
   `causes` and `{:#}`: an unsigned MSI drops `MSI container` (`msi::unsigned`,
   `msp::unsigned`). Diagnostics only. From CLI-T005.
-- [ ] **CLI-T008** fix: Recognise a `VerificationError` that anyhow holds boxed.
-  An error built from a `Box<dyn Error + Send + Sync>` (`anyhow!` on one, or
-  `anyhow::Error::from_boxed`) hides the typed error from `from_internal`,
-  which then reports the caller's default code. No call site boxes one today.
-  From CLI-T005.
+- [ ] **CLI-T008** test: Guard that no code hands anyhow a boxed typed error.
+  Detail in [cli-t008.md](docs/tasks/cli-t008.md).
+- [x] **CLI-T009** refactor: Drop the typed-context lookup from `from_internal`. Done ([PR #122](https://github.com/goatwu1993/rssig/pull/122)).
 
 ### DOC
 

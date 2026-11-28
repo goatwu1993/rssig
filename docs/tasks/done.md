@@ -620,6 +620,10 @@ whole suite found none), so no case moves. Rules: the CLI candidate rule
 kind stays the default for its own chain, as before: a typed layer in it
 decides, and its `details.scope` is added only when its own kind decides.
 Follow-ups: CLI-T007, CLI-T008 and CRL-T061.
+CLI-T009 ([PR #122](https://github.com/goatwu1993/rssig/pull/122)) later
+dropped the recognition of a typed context, with
+`a_verification_error_attached_as_a_context_is_recognised`; a repository check
+keeps every context text instead.
 
 ## CRL-T054 fix: Record a refused URL-less body as the answer to the points it left
 
