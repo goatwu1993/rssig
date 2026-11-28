@@ -233,7 +233,7 @@ Serde types are in `engine/src/domain.rs`. Example error object:
   "stage": "image_digest",
   "message": "PE image digest mismatch (file was modified)",
   "details": {"digest": {"algorithm": "Sha256", "expected": "...", "computed": "..."}},
-  "causes": []
+  "causes": ["PE image digest mismatch (file was modified)"]
 }
 ```
 

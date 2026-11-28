@@ -244,6 +244,7 @@ they pin or what they check, never after a task.
 - [ ] **CRL-T057** fix: Record an entry a source names by a withheld spelling of a listed point under the point as listed. A spelling that normalizes to a point but fails screening (a trailing tab or space) answers the point, yet its failure or rejected body is recorded without a URL, so the point has no entry of its own, and a rejected body is counted with the engine's entries about no point (`"about": "no point"`), where one under a URL outside the request is about points since CRL-T049.
 - [ ] **CRL-T058** fix: Withhold the `final_url` of a body that names no `url`. `Retrieval::load` records a reported redirect target, any hygienic URL, for a body answering by certificate, so an artifact can carry a URL outside the request without a point.
 - [ ] **CRL-T059** test: Let a scripted answer name a URL outside the request, and pin CRL-049's handling of one in `tests/cases.json` with a named test. The runner fails a scripted `url` that is not a listed point (`specification_an_answer_with_a_problem_is_never_sent`), so only unit tests in `engine/src/retrieval.rs` pin it; a case needs an explicit marker that the URL is foreign on purpose.
+- [ ] **CRL-T060** fix: Keep `detail` equal to `message` for a retrieval failure recorded at an engine limit. `Retrieval` overwrites the `message` of `limit()`'s error at four sites but not `problem.detail`, so the recorded failure's `detail` still says "CRL retrieval budget exhausted" (found in PR #117 review). Change the message through one setter that keeps `detail`, and any causes a conversion already recorded, in step.
 
 ### POLICY
 
@@ -561,12 +562,9 @@ they pin or what they check, never after a task.
   batches, and writer/flush failures through in-process CLI entry points. Prevent
   panic paths while preserving one JSON document where output is writable;
   argument/configuration errors remain plain stderr with exit 2.
-- [ ] **CLI-T004** fix: Keep the causes an inner conversion already reported.
-  `VerificationError::from_internal` rebuilds `causes` from the chain even
-  when the typed error on top already carries causes from an earlier
-  conversion, so a public `verify_*` boundary reduces them to the message
-  (RDP: `at`, then `verify_rdp`). The outer messages RDP-T001 keeps never
-  reach the JSON; no case yet pins more than one cause.
+- [x] **CLI-T004** fix: Keep the causes an inner conversion already reported. Done in #117; [record](docs/tasks/done.md#cli-t004-fix-keep-the-causes-an-inner-conversion-already-reported).
+- [ ] **CLI-T005** fix: Recognise every typed layer in `from_internal`. Detail in [cli-t005.md](docs/tasks/cli-t005.md).
+- [ ] **CLI-T006** fix: Do not repeat a source's text in `causes` or `message`. Detail in [cli-t006.md](docs/tasks/cli-t006.md).
 
 ### DOC
 

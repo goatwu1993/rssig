@@ -394,6 +394,26 @@ fn bad_cms() {
     );
 }
 
+/// The CMS stage reports its context and the signer check's error as two
+/// causes, and the public `verify_pe` boundary keeps them rather than
+/// reducing them to the message (CLI-T004).
+#[test]
+fn bad_cms_content_type_keeps_the_cms_stage_context_as_its_own_cause() {
+    let output = run_fixture("bad-cms-content-type.exe", INTEGRITY);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_signature");
+    assert_eq!(error["stage"], "cms");
+    assert_eq!(
+        error["message"],
+        "CMS signature verification: signed contentType mismatch"
+    );
+    assert_eq!(
+        error["causes"],
+        json!(["CMS signature verification", "signed contentType mismatch"])
+    );
+}
+
 #[test]
 fn bad_page_hashes() {
     let output = run_fixture("bad-page-hashes.exe", INTEGRITY);
@@ -656,6 +676,8 @@ fn missing_input() {
         None,
         Some("reading"),
     );
+    // Built directly, never converted: no causes (docs/cli.md, candidate `causes`).
+    assert_eq!(output.json["results"][0]["error"]["causes"], json!([]));
 }
 
 #[test]

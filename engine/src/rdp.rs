@@ -329,7 +329,8 @@ fn choose_usage_failure(failures: Vec<anyhow::Error>) -> Option<anyhow::Error> {
     // Otherwise (the revocation is the source of another error type, not an
     // anyhow context), it is reported at the top with the names. The outer
     // error's messages stay in the chain as contexts around it, so
-    // `from_internal` reports them in its causes. Only the messages survive:
+    // `from_internal` reports them in its causes, ahead of any causes the
+    // revocation already carries. Only the messages survive:
     // nothing downcasts to the outer type, and the revocation has no sources.
     let messages: Vec<String> = revoked.chain().map(ToString::to_string).collect();
     let depth = revoked
@@ -529,7 +530,8 @@ mod tests {
             anyhow::Error::from(unknown),
         ])
         .unwrap();
-        // As `at` reports it: `from_internal` rebuilds the causes from the chain.
+        // As `at` reports it: `from_internal` takes the context messages above the
+        // typed error, then its message (it carries no causes yet).
         let error = VerificationError::from_internal(
             chosen,
             ErrorCode::CertificateChainInvalid,
@@ -538,6 +540,40 @@ mod tests {
         assert_eq!(error.code, ErrorCode::CertificateRevoked);
         assert!(error.details.contains_key("certificates_without_crl"));
         assert_eq!(error.causes, vec!["usage", "outer failure", "x"]);
+        // As the public `verify_rdp` boundary converts `at`'s result again:
+        // the outer messages survive it (CLI-T004).
+        let error = VerificationError::from_internal(
+            anyhow::Error::new(error),
+            ErrorCode::InvalidCertificate,
+            Stage::Certificate,
+        );
+        assert_eq!(error.code, ErrorCode::CertificateRevoked);
+        assert_eq!(error.causes, vec!["usage", "outer failure", "x"]);
+        // A revocation an earlier conversion gave causes keeps them behind
+        // the outer messages through the rebuild and both conversions.
+        let mut converted =
+            VerificationError::new(ErrorCode::CertificateRevoked, Stage::Revocation, "x");
+        converted.causes = vec!["inner".into(), "x".into()];
+        let chosen = choose_usage_failure(vec![
+            anyhow::Error::new(Outer(converted)).context("usage"),
+            anyhow::Error::from(VerificationError::new(
+                ErrorCode::RevocationUnknown,
+                Stage::Revocation,
+                "y",
+            )),
+        ])
+        .unwrap();
+        let once = VerificationError::from_internal(
+            chosen,
+            ErrorCode::CertificateChainInvalid,
+            Stage::CertificateChain,
+        );
+        let error = VerificationError::from_internal(
+            anyhow::Error::new(once),
+            ErrorCode::InvalidCertificate,
+            Stage::Certificate,
+        );
+        assert_eq!(error.causes, vec!["usage", "outer failure", "inner", "x"]);
     }
     #[test]
     fn only_a_named_missing_crl_ranks_a_usage_failure_as_completable() {

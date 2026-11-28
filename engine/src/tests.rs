@@ -949,3 +949,39 @@ fn problem_details_preserve_typed_causes_and_roundtrip() {
     assert_eq!(error.problem.title, different.problem.title);
     assert_ne!(error.problem.detail, different.problem.detail);
 }
+
+/// A second conversion, as at a public `verify_*` boundary, keeps the causes
+/// the first reported and puts the contexts added since in front (CLI-T004).
+#[test]
+fn converting_again_keeps_the_causes_an_earlier_conversion_reported() {
+    use crate::domain::{ErrorCode, Stage, VerificationError};
+    let convert =
+        |error| VerificationError::from_internal(error, ErrorCode::InternalError, Stage::Input);
+    let inner = anyhow::anyhow!("root cause").context("inner context");
+    let once = convert(inner);
+    assert_eq!(once.causes, vec!["inner context", "root cause"]);
+    // Converted again with nothing added: the same causes.
+    let twice = convert(anyhow::Error::new(once.clone()));
+    assert_eq!(twice.causes, once.causes);
+    assert_eq!(twice.message, once.message);
+    // Contexts added between the conversions come first.
+    let wrapped = convert(anyhow::Error::new(once.clone()).context("outer"));
+    assert_eq!(wrapped.causes, vec!["outer", "inner context", "root cause"]);
+    assert_eq!(wrapped.code, once.code);
+    assert_eq!(wrapped.message, once.message);
+    // A typed error no conversion has reported yet ends in its message.
+    let fresh = VerificationError::new(ErrorCode::InvalidSignature, Stage::Cms, "fresh");
+    // `from_internal` stops at a typed error: it has no source to walk.
+    assert!(std::error::Error::source(&fresh).is_none());
+    let reported = convert(anyhow::Error::new(fresh).context("outer"));
+    assert_eq!(reported.causes, vec!["outer", "fresh"]);
+}
+
+/// `Retrieval` rewrites the message of a `limit()` error in place. That is
+/// safe only while the error carries no causes: `from_internal` keeps causes
+/// an error already has, so rewritten text would leave them stale (CRL-T060).
+#[cfg(feature = "retrieval")]
+#[test]
+fn a_retrieval_limit_error_carries_no_causes() {
+    assert!(crate::retrieval::limit("r", 1, 1, 1).causes.is_empty());
+}

@@ -653,6 +653,17 @@ Loading still never authenticates roots or CRLs or implies a verification verdic
 
 ### Migration notes
 
+#### `VerificationError.causes` keep an earlier conversion's causes
+
+A `verify_*` error whose typed error already carried causes from an earlier
+internal conversion used to report the contexts above that error followed by
+its message, replacing the causes the earlier conversion recorded. It now
+reports those contexts followed by the earlier causes (CLI-T004), so `causes`
+can hold more entries than before, for example
+`["CMS signature verification", "signature error"]` where it held
+`["CMS signature verification: signature error"]`. Codes, stages, messages,
+details and verdicts are unchanged; match `code`, never `causes`.
+
 #### Removed `rssig::cli::command()`
 
 The hidden `rssig::cli::command()`, which returned the Clap definition behind

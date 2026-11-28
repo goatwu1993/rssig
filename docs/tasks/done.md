@@ -584,3 +584,18 @@ CLI tests `a_fetched_bundle_past_the_retained_crl_limit_is_not_loaded` and
 `a_store_holding_64_crls_asks_the_source_nothing`, and the unit test
 `the_cli_never_supplies_more_than_the_engine_retains` in `src/cli/limits.rs`; the case
 `limit-fetch-with-64-supplied-crls-asks-nothing` pins the store at 64 CRLs.
+
+## CLI-T004 fix: Keep the causes an inner conversion already reported
+
+`VerificationError::from_internal` rebuilt `causes` from the chain even when
+the typed error on top already carried causes from an earlier conversion, so
+each public `verify_*` boundary reduced them to the message. It now keeps
+those causes behind the messages of any context added since. Diagnostics
+only: about 70 unpinned cases gain a second cause; codes, stages, messages
+and acceptance are unchanged. Pinned by the case
+`cli-causes-keep-an-inner-conversions-context` under the CLI candidate rule
+`causes`, the CLI tests
+`bad_cms_content_type_keeps_the_cms_stage_context_as_its_own_cause` and
+`rdp_invalid_integer_keeps_the_context_and_its_source_as_causes` (the RDP
+path), and the unit test
+`converting_again_keeps_the_causes_an_earlier_conversion_reported`.

@@ -729,6 +729,28 @@ fn rdp_invalid_integer() {
     );
 }
 
+/// The RDP stage's context and the integer parser's error stay two causes
+/// through `at` and the public `verify_rdp` boundary (CLI-T004). The second
+/// is the standard library's wording, so no spec case pins it.
+#[test]
+fn rdp_invalid_integer_keeps_the_context_and_its_source_as_causes() {
+    let output = run_fixture("bad-rdp-invalid-integer.rdp", TRUSTED);
+    assert_eq!(output.exit_code, 1);
+    let error = &output.json["results"][0]["error"];
+    assert_eq!(error["code"], "invalid_rdp");
+    assert_eq!(error["stage"], "rdp");
+    // Pin the shape, not the second cause's text.
+    let causes = error["causes"].as_array().unwrap();
+    assert_eq!(causes.len(), 2);
+    assert_eq!(causes[0], "invalid RDP integer");
+    let joined = format!(
+        "{}: {}",
+        causes[0].as_str().unwrap(),
+        causes[1].as_str().unwrap()
+    );
+    assert_eq!(error["message"], joined);
+}
+
 #[test]
 fn rdp_missing_scope() {
     let output = run_fixture(
