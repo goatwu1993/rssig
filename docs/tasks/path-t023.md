@@ -389,7 +389,8 @@ measured only in the revocation modes; the path modes leave them out:
 | `crl-008-self-issued-rollover-with-a-differently-encoded-crl-is-rejected` | CRL-008 | `certificate_chain_invalid` (`ambiguous_issuer_keys`) | as above |
 
 **The second set.** `PS_KEY_USAGE` was also set to digitalSignature for
-the signer (not the TSA); among the main set it changes no result. Of the 18
+the signer (not the TSA). A control run of all 533 main-set runs with it set
+changed no result. Of the 18
 cases, certval agrees on 15. It **accepts 3 that rssig rejects**:
 
 | Case | Entry | rssig `code` (`details.reason`) | Why certval accepts |
@@ -398,8 +399,9 @@ cases, certval agrees on 15. It **accepts 3 that rssig rejects**:
 | `path-014-bad-tsa-repeated-ski` | PATH-014 (Observed) | `certificate_chain_invalid` (`repeated_extension`) | non-critical repeat ignored |
 | `path-014-bad-rdp-leaf-repeated-eku` | PATH-014 | `certificate_chain_invalid` (`repeated_extension`) | non-critical repeat ignored |
 
-Without `PS_KEY_USAGE`, `path-008-bad-signer-key-usage` and
-`path-008-msi-bad-signer-key-usage` are accepted too: certval does not judge
+A control run of the second set without `PS_KEY_USAGE` changed only
+`path-008-bad-signer-key-usage` and `path-008-msi-bad-signer-key-usage`,
+which certval then accepts: certval does not judge
 the target's keyUsage unless asked (`path_validator.rs:780-790`).
 
 Mode-dependent accepts in the main set:
@@ -705,13 +707,14 @@ fn pe_pkcs7(bytes: &[u8]) -> std::result::Result<Vec<u8>, String> {
     };
     let lfanew = rd32(0x3c)? as usize;
     let opt = lfanew + 24;
-    let magic = u16::from_le_bytes([bytes[opt], bytes[opt + 1]]);
+    let m = bytes.get(opt..opt + 2).ok_or("short optional header")?;
+    let magic = u16::from_le_bytes([m[0], m[1]]);
     let dd = opt + if magic == 0x20b { 112 } else { 96 };
     let off = rd32(dd + 4 * 8)? as usize;
     let size = rd32(dd + 4 * 8 + 4)? as usize;
     let win = bytes.get(off..off + size).ok_or("bad security dir")?;
-    let len = u32::from_le_bytes([win[0], win[1], win[2], win[3]]) as usize;
-    Ok(win[8..len].to_vec())
+    let len = win.get(0..4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).ok_or("short WIN_CERTIFICATE")? as usize;
+    Ok(win.get(8..len).ok_or("bad WIN_CERTIFICATE length")?.to_vec())
 }
 
 fn msi_pkcs7(path: &Path) -> std::result::Result<Vec<u8>, String> {
@@ -724,15 +727,15 @@ fn msi_pkcs7(path: &Path) -> std::result::Result<Vec<u8>, String> {
 }
 
 fn rdp_pkcs7(bytes: &[u8]) -> std::result::Result<Vec<u8>, String> {
-    let text = if bytes.starts_with(&[0xff, 0xfe]) {
-        let u: Vec<u16> = bytes[2..].chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let text = if let Some(rest) = bytes.strip_prefix(&[0xff, 0xfe]) {
+        let u: Vec<u16> = rest.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
         String::from_utf16_lossy(&u)
     } else { String::from_utf8_lossy(bytes).into_owned() };
     let line = text.lines().find_map(|l| l.trim().strip_prefix("signature:s:")).ok_or("no signature")?;
     let b64: String = line.split_whitespace().collect();
     use base64ct::Encoding;
     let blob = base64ct::Base64::decode_vec(&b64).map_err(|e| e.to_string())?;
-    Ok(blob[12..].to_vec())
+    Ok(blob.get(12..).ok_or("short RDP signature blob")?.to_vec())
 }
 
 fn load_certs(path: &Path) -> Vec<Vec<u8>> {
@@ -759,6 +762,11 @@ fn main() {
     }
 }
 
+/// Whether the dash-separated mode names `token` exactly ("ku" must not match "ekupath").
+fn has(mode: &str, token: &str) -> bool {
+    mode.split('-').any(|t| t == token)
+}
+
 fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::result::Result<String, String> {
     let raw = fs::read(fx.join(input)).map_err(|e| e.to_string())?;
     let p7 = if input.ends_with(".msi") { msi_pkcs7(&fx.join(input))? } else if input.ends_with(".rdp") { rdp_pkcs7(&raw)? } else { pe_pkcs7(&raw)? };
@@ -767,7 +775,7 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
     let certs: Vec<Certificate> = sd.certificates.as_ref().map(|s| s.0.iter().filter_map(|c| match c {
         CertificateChoices::Certificate(c) => Some(c.clone()), _ => None }).collect()).unwrap_or_default();
     let si = sd.signer_infos.0.iter().next().ok_or("no signer")?;
-    let (certs, sid) = if mode.contains("tsa") {
+    let (certs, sid) = if has(mode, "tsa") {
         let ua = si.unsigned_attrs.as_ref().ok_or("no unsigned attrs")?;
         let mut found = None;
         for a in ua.iter() {
@@ -775,6 +783,7 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
             let v = a.values.iter().next().ok_or("empty attr")?;
             if oid == "1.2.840.113549.1.9.6" {
                 let csi: cms::signed_data::SignerInfo = v.decode_as().map_err(|e| format!("countersig: {e}"))?;
+                if found.is_some() { return Err("more than one timestamp attribute".into()); }
                 found = Some((certs.clone(), csi.sid.clone()));
             } else if oid == "1.2.840.113549.1.9.16.2.14" || oid == "1.3.6.1.4.1.311.3.3.1" {
                 let tci: ContentInfo = v.decode_as().map_err(|e| format!("token: {e}"))?;
@@ -782,6 +791,7 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
                 let tcerts: Vec<Certificate> = tsd.certificates.as_ref().map(|s| s.0.iter().filter_map(|c| match c {
                     CertificateChoices::Certificate(c) => Some(c.clone()), _ => None }).collect()).unwrap_or_default();
                 let tsi = tsd.signer_infos.0.iter().next().ok_or("no tsa signer")?;
+                if found.is_some() { return Err("more than one timestamp attribute".into()); }
                 found = Some((tcerts, tsi.sid.clone()));
             }
         }
@@ -792,21 +802,21 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
 
     let mut cps = CertificationPathSettings::new();
     cps.set_time_of_interest(TimeOfInterest::from_unix_secs(1_800_000_000).unwrap());
-    let ekus: Vec<String> = if mode.contains("tsa") { vec!["1.3.6.1.5.5.7.3.8".into()] }
+    let ekus: Vec<String> = if has(mode, "tsa") { vec!["1.3.6.1.5.5.7.3.8".into()] }
         else if input.ends_with(".rdp") { vec!["1.3.6.1.5.5.7.3.3".into(), "1.3.6.1.5.5.7.3.1".into(), "1.3.6.1.4.1.311.54.1.2".into()] }
         else { vec!["1.3.6.1.5.5.7.3.3".into()] };
     cps.set_extended_key_usage(ekus);
-    cps.set_extended_key_usage_path(!mode.contains("noeku"));
-    if mode.contains("prof") {
+    cps.set_extended_key_usage_path(!has(mode, "noekupath"));
+    if has(mode, "prof") {
         cps.set_enforce_trust_anchor_validity(false);
         cps.set_enforce_trust_anchor_constraints(true);
     }
-    if mode.contains("ku") && !mode.contains("tsa") {
+    if has(mode, "ku") && !has(mode, "tsa") {
         let mut f = x509_cert::ext::pkix::KeyUsages::DigitalSignature.into();
         let _ = &mut f;
         cps.set_target_key_usage(f);
     }
-    let with_rev = mode.contains("rev");
+    let with_rev = has(mode, "rev");
     cps.set_check_revocation_status(with_rev);
     cps.set_check_ocsp_from_aia(false);
     cps.set_check_crldp_http(false);
@@ -854,7 +864,7 @@ fn run(fx: &Path, input: &str, roots: &str, crls: &str, mode: &str) -> std::resu
     let mut errs = vec![];
     for p in &paths {
         let mut r = CertificationPathResults::new();
-        let pcps = if mode.contains("prof") { match enforce_trust_anchor_constraints(&cps, &p.trust_anchor) { Ok(c) => c, Err(e) => { errs.push(format!("ta-constraints {e:?}")); continue; } } } else { cps.clone() };
+        let pcps = if has(mode, "prof") { match enforce_trust_anchor_constraints(&cps, &p.trust_anchor) { Ok(c) => c, Err(e) => { errs.push(format!("ta-constraints {e:?}")); continue; } } } else { cps.clone() };
         let cps = &pcps;
         let o = validate_path_rfc5280(&env, cps, p, &mut r).and_then(|()| check_revocation_local(&env, cps, p, &mut r));
         match o {
