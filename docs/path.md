@@ -191,14 +191,19 @@ a byte above 0x7F does not decode.
   reported through (PATH-T007 tracks that shared flag).
 - The rule holds for a timestamp signer's chain too, with the same code and
   stage, and with `details.certificate_sha256` and `details.certificate`
-  naming the TSA certificate. For an RFC 3161 token it is judged before
-  TSA-003, so a TSA extKeyUsage that does not decode is
-  `malformed_extension`, not `invalid_eku` at `timestamp`
-  (`path-013-bad-tsa-malformed-eku`). A countersignature's TSA certificate
-  goes through the same `TrustStore::verify`, which checks the signer's
-  extensions before its usage (`engine/src/trust.rs`), so the order is the
-  same there; no case pins it yet (PATH-T020). It holds for an RDP signer too, which
-  is checked for a configured root first
+  naming the TSA certificate (`path-013-bad-tsa-malformed-{ski,bc,ku,eku}`).
+  For the two extensions TSA-003 reads, keyUsage and extKeyUsage, the rule
+  is judged before TSA-003, since an RFC 3161 token's and a
+  countersignature's TSA certificate both go through `TrustStore::verify`,
+  which checks the signer's extensions before its usage
+  (`engine/src/trust.rs`): a TSA extKeyUsage that does not decode is
+  `malformed_extension`, not `invalid_eku` at `timestamp`, in either form
+  (`path-013-bad-tsa-malformed-eku`,
+  `path-013-bad-tsa-counter-malformed-eku`), and an RFC 3161 token's TSA
+  keyUsage that does not decode is not `invalid_key_usage`
+  (`path-013-bad-tsa-malformed-ku`). No case pins a countersignature's
+  basicConstraints or keyUsage (PATH-T021). It
+  holds for an RDP signer too, which is checked for a configured root first
   (`path-013-bad-rdp-leaf-malformed-eku-empty-store`).
 - A certificate that also repeats an extension is reported for the repeat
   (PATH-014).
@@ -206,7 +211,10 @@ a byte above 0x7F does not decode.
   there, as OpenSSL checks no extension without path verification: a signer
   whose basicConstraints, keyUsage, extKeyUsage or subjectKeyIdentifier does
   not decode verifies, and so does a signature that embeds such a
-  certificate.
+  certificate or whose timestamp signer is one
+  (`path-013-good-integrity-only-tsa-malformed-{ski,bc,ku,eku}`, RFC 3161
+  tokens; `path-013-good-integrity-only-tsa-counter-malformed-eku`, the one
+  countersignature case).
 - The rule judges a path, not a report. Every embedded certificate is
   reported, with or without a path, and the report decodes basicConstraints,
   keyUsage and extKeyUsage. One it cannot decode never fails the signature:

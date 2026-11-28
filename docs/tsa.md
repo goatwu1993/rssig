@@ -68,8 +68,8 @@ In trusted verification the TSA certificate's ExtendedKeyUsage must be
 critical and contain only timeStamping (`invalid_eku` at `timestamp`), and a
 present KeyUsage must include digitalSignature (`invalid_key_usage`). This
 applies to RFC 3161 tokens and countersignatures alike; integrity-only mode
-omits it explicitly. An extKeyUsage that does not decode is
-PATH-013's, judged first for an RFC 3161 token
+omits it explicitly. An extKeyUsage that does not decode is PATH-013's,
+judged first for an RFC 3161 token and a countersignature alike
 ([PATH-013](path.md#path-013-a-path-certificate-whose-extension-does-not-decode-fails-the-path)).
 
 - **Status:** Decided
